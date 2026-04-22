@@ -457,3 +457,41 @@ export function cloneWithFreshIds(node: Record<string, unknown>): Record<string,
   return result;
 }
 
+/**
+ * Deep-clone a node tree, assigning fresh UUIDs to `id` but PRESERVING
+ * `_sharedKey` on every node. Used when spawning a new SC instance so the
+ * instance nodes share identity with the model by sharedKey (not by id).
+ *
+ * Also strips instance-only metadata fields on descendants (`_overrides`,
+ * `_descendantOverrides`, `_removedKeys`, `_localInsertions`, `_shared`
+ * markers on nested roots are preserved since nested SCs must keep their
+ * own `_shared`).
+ */
+export function cloneWithFreshIdsKeepSharedKey(
+  node: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...node, id: crypto.randomUUID() };
+  const children = (result.children ?? []) as Record<string, unknown>[];
+  if (children.length > 0) {
+    result.children = children.map(c =>
+      cloneWithFreshIdsKeepSharedKey(JSON.parse(JSON.stringify(c)) as Record<string, unknown>)
+    );
+  }
+  return result;
+}
+
+/**
+ * Walk a tree and ensure every node has a stable `_sharedKey`. Fresh UUIDs
+ * are minted for any node missing one; existing keys are preserved. This is
+ * the migration/self-heal entry point called when an SC is created or when
+ * legacy content is first encountered.
+ */
+export function stampSharedKeys(node: Record<string, unknown>): Record<string, unknown> {
+  if (typeof node._sharedKey !== 'string' || !node._sharedKey) {
+    node._sharedKey = crypto.randomUUID();
+  }
+  const children = (node.children ?? []) as Record<string, unknown>[];
+  for (const c of children) stampSharedKeys(c);
+  return node;
+}
+

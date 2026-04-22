@@ -1,0 +1,2154 @@
+{
+  "meta": {
+    "title": "Shared Component Showcase — Calendar & Workflow Zoo"
+  },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "max-w-[1200px] mx-auto flex flex-col gap-8 py-10 px-6"
+        },
+        "children": [
+          {
+            "type": "Heading",
+            "props": {
+              "size": "2xl",
+              "className": "font-bold text-gray-900 dark:text-white"
+            },
+            "text": "Shared Component Showcase"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Three independent sc-calendar instances (each with its own year/month/selected-date/grid) + one sc-calendar-workflow-zoo instance covering all remaining workflow step types. Each calendar demonstrates all 5 component lifecycle triggers (created, mounted, propertyChange, beforeUnmount, execution)."
+          },
+          {
+            "type": "Heading",
+            "props": {
+              "size": "lg",
+              "className": "font-semibold text-gray-800 dark:text-gray-200"
+            },
+            "text": "Three Independent Calendar Instances"
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-row flex-wrap items-start gap-6"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "d938eb56-ed0c-4a38-9374-5ee770e44f6c",
+                "props": {
+                  "className": "flex flex-col gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-[320px]",
+                  "label": "Default (today)",
+                  "accentColor": "#6366f1"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "{{context.component.props.label}}",
+                    "_sharedKey": "96bf1c68-1279-421c-9f88-a46ea24db478",
+                    "id": "2f9e7ee1-4bab-4691-82bf-8d141949565b"
+                  },
+                  {
+                    "type": "Box",
+                    "id": "e0012c2a-578c-4749-bf10-52be16eacfba",
+                    "props": {
+                      "className": "inline-flex flex-row items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer hover:border-blue-400 bg-white dark:bg-gray-900"
+                    },
+                    "popover": {
+                      "trigger": "click",
+                      "placement": "bottom-start",
+                      "offset": 6,
+                      "openVariable": "cal-v-is-open-uuid"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:calendar",
+                          "size": 16,
+                          "color": "{{context.component.props.accentColor}}"
+                        },
+                        "_sharedKey": "988ed8e4-b42b-4872-8531-cd1982571d67",
+                        "id": "6ee2f040-35db-4b83-b403-4ac2f739614d"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-700 dark:text-gray-200 flex-1"
+                        },
+                        "text": {
+                          "formula": "context?.component?.variables?.['cal-v-selected-date-uuid'] || context?.component?.props?.initialDate || '(select a date)'"
+                        },
+                        "_sharedKey": "536e92b7-deb5-40c7-b55e-2da3871a8f19",
+                        "id": "4b038a50-2abf-4654-b9e0-141822a32b0a"
+                      },
+                      {
+                        "type": "Box",
+                        "_popoverContent": true,
+                        "props": {
+                          "className": "bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3",
+                          "style": {
+                            "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+                            "width": 300
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row items-center justify-between px-1 pb-2"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "0d99e21f-68e4-4581-9c7d-046d9419ec4f",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-prev-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-left",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "f3637292-1e75-4717-b0b9-048e33cc85d6",
+                                    "id": "aeaddae9-19c8-4462-81e9-6989d77403b6"
+                                  }
+                                ],
+                                "_sharedKey": "628e0279-8b98-438e-9655-8d601b33ddf4"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                },
+                                "text": {
+                                  "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['cal-v-month-uuid'] ?? 0] + ' ' + (context?.component?.variables?.['cal-v-year-uuid'] ?? 2026)"
+                                },
+                                "_sharedKey": "7d6bd750-e5a2-4944-a971-870d833730af",
+                                "id": "d1256292-d441-4938-be2b-0877b136e038"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "be7e58a0-77a1-401d-a458-8fb430af264e",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-right",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "96055240-5aa5-4d47-91e2-54155547ccb0",
+                                    "id": "0a2713df-28a4-4cc5-880f-154a0a99bae2"
+                                  }
+                                ],
+                                "_sharedKey": "83e086b6-8d1b-45db-af4b-68e4c90e1282"
+                              }
+                            ],
+                            "_sharedKey": "6345cd51-2bed-4e52-b804-f89c49116090",
+                            "id": "8fe0286d-eae5-4d84-9502-005f3ebad08f"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Su",
+                                "_sharedKey": "f2bcde8f-abba-46a6-a415-1da1d78306d6",
+                                "id": "409b385b-8225-41d6-941c-04f0278bf290"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Mo",
+                                "_sharedKey": "8d14348f-ce72-48af-9889-bee7df49e15c",
+                                "id": "6fd7d7c5-6753-4f03-b7c2-e6f79c1a782c"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Tu",
+                                "_sharedKey": "88bb4ee6-e0fd-416f-96db-e65704616f10",
+                                "id": "9f6f1d24-63de-4523-a856-bb22527abc2f"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "We",
+                                "_sharedKey": "9844020e-8f99-4ed3-876b-ced7e15bf5c9",
+                                "id": "d125eda0-f907-472d-b53f-687e3b8d6ce9"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Th",
+                                "_sharedKey": "08282617-1f65-44ca-b48f-036138a8eeb2",
+                                "id": "9d0c3354-7538-4d4d-b589-d7934b163d80"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Fr",
+                                "_sharedKey": "92eb4020-20cd-4be6-891a-a604cb31a4e9",
+                                "id": "da32719f-721f-4451-8e7f-bdb182bd65c5"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Sa",
+                                "_sharedKey": "a01e3cbe-f963-4a1d-8d16-d1440d8b64f6",
+                                "id": "d5d997e5-8e77-4da3-9e28-b3b9d347311d"
+                              }
+                            ],
+                            "_sharedKey": "ac812161-3301-4d28-8058-27f171b49511",
+                            "id": "6a800d73-4250-42c3-8214-345ef004aa41"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "map": "context.component.variables['cal-v-grid-uuid']",
+                                "key": "context.item.data.idx",
+                                "props": {
+                                  "className": "contents"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && context?.item?.data?.isSelected",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full",
+                                      "style": {
+                                        "backgroundColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-white font-semibold"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "2d99cb3a-3f23-435e-a8b9-0eb102759378",
+                                        "id": "3fa0c14a-ea33-4edb-96f8-6bbd05b58d24"
+                                      }
+                                    ],
+                                    "_sharedKey": "18c4f74a-36eb-4d53-aa60-b7dda10b4283",
+                                    "id": "aa87059d-3cd2-4265-b900-79d95672a497"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full border-2",
+                                      "style": {
+                                        "borderColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] font-semibold text-gray-800 dark:text-gray-200"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "3c9d11cb-6606-42df-9f6e-91ca962ec5cc",
+                                        "id": "5f621434-a6ca-4569-9d89-80c1f6544142"
+                                      }
+                                    ],
+                                    "_sharedKey": "8d4eb665-0b42-4fd4-9e8d-0b14dbe85f1d",
+                                    "id": "fefbde95-7374-4373-ac7f-d7ec089e17d8"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "4f3d62c4-658c-4f05-bd99-d9c704c8a0e3",
+                                        "id": "d13561f6-9c54-4bed-90ef-7371e851a3de"
+                                      }
+                                    ],
+                                    "_sharedKey": "8c309fe6-811a-411c-8038-ef0b27c77cfb",
+                                    "id": "b4a7a666-36d8-46f3-8f01-5e80b7cd0e6a"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "!context?.item?.data?.inMonth",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-300 dark:text-gray-600"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "aad45ec8-58c3-478a-8604-f0db75008515",
+                                        "id": "b06dd551-25e3-4de4-9f07-6cf0af862fa3"
+                                      }
+                                    ],
+                                    "_sharedKey": "7aeedd80-92bc-4268-a685-6d687eb24f8d",
+                                    "id": "e908d3bf-ef74-4db9-ae0c-5333879f6504"
+                                  }
+                                ],
+                                "_sharedKey": "b2f4fbfa-749a-419c-87e2-da50073351d2",
+                                "id": "23ff9a25-8508-4688-9ff5-4c8bde2fb138"
+                              }
+                            ],
+                            "_sharedKey": "1897e5dd-8769-4aa6-81eb-7d9d7e00f81a",
+                            "id": "52832d9a-5e6a-47ce-acd1-5b9775d1585b"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row flex-wrap gap-1.5 pt-3 border-t border-gray-100 dark:border-gray-800"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "414b14b1-a235-4e01-bcfd-7b375a96c021",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-go-today"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Today",
+                                    "_sharedKey": "3feeda61-efa4-45e9-8d18-8ef289e656b3",
+                                    "id": "fe10a9b4-0e4d-487d-a0f0-13b160b7d29f"
+                                  }
+                                ],
+                                "_sharedKey": "7e0f290b-0862-486a-a079-14f2e3afcad2"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "2bdb3049-fa99-4f1d-ac9f-a46cca1bd6b1",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-clear"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Clear",
+                                    "_sharedKey": "d88f7b50-7dc4-48bd-8500-f7b3fce62057",
+                                    "id": "8d05c9ac-864a-45dd-bf78-b2582618f511"
+                                  }
+                                ],
+                                "_sharedKey": "692abf79-74e3-48a4-9eb6-2720d9136717"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "45ead2e0-467c-4198-bd49-6b6dd1139209",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-workday"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Next Workday",
+                                    "_sharedKey": "b43b2a1c-1045-4d0e-b342-e93ea0489e5b",
+                                    "id": "a908fbf3-326f-4719-9280-0aaab38899f7"
+                                  }
+                                ],
+                                "_sharedKey": "527c6e09-1768-4d87-8a75-980054773a9d"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "e9d0b038-b9d7-4166-8575-b4f8cab17d43",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-classify"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Classify",
+                                    "_sharedKey": "7e416a8c-8892-4279-83d8-2e612677bdc8",
+                                    "id": "ce6b8dc0-a35f-4986-a5b6-80209e4fec5e"
+                                  }
+                                ],
+                                "_sharedKey": "37cd5cd0-e59c-402a-af65-edfdfeba87fe"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "2ed20b2f-cc70-49e7-b2a3-50f7ea5af6f0",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-goto-booking"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-white"
+                                    },
+                                    "text": "Book",
+                                    "_sharedKey": "b58a0d81-94ae-441a-8a7f-79d7f84d4658",
+                                    "id": "c7a0f897-9fac-4682-b521-081558dc8e32"
+                                  }
+                                ],
+                                "_sharedKey": "8a5ae131-9634-4ddb-a5c3-ecaf3e16255c"
+                              }
+                            ],
+                            "_sharedKey": "27431c0d-8b97-4123-84cf-42574d3a4a51",
+                            "id": "45989dff-d548-4674-9306-ae6246e881e1"
+                          }
+                        ],
+                        "_sharedKey": "9c71e178-c712-4a1e-81f5-42e3eda95205",
+                        "id": "9576270d-2f37-4125-92a8-3ca14c6f3796"
+                      }
+                    ],
+                    "_sharedKey": "39228592-239c-430a-b52c-65c3da6adc85"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                    },
+                    "text": {
+                      "formula": "'Last action: ' + (context?.component?.variables?.['cal-v-last-action-uuid'] ?? '(idle)')"
+                    },
+                    "_sharedKey": "6c4e1ede-7a3e-491c-8d20-169f2d181bc6",
+                    "id": "4ad554b2-c4fa-4ca4-89e7-912d3c7aec21"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                    },
+                    "text": {
+                      "formula": "'Holidays: ' + (context?.component?.variables?.['cal-v-holidays-uuid']?.length ?? 0) + ' · Loading: ' + (context?.component?.variables?.['cal-v-loading-uuid'] ? 'yes' : 'no')"
+                    },
+                    "_sharedKey": "0d791d88-9b38-426b-9a39-f09b76b85842",
+                    "id": "710aba1c-3dbb-40b6-a995-4096d32bcc97"
+                  }
+                ],
+                "_sharedKey": "b2f9c359-2efc-41e2-88ff-7b1a12bf0959",
+                "_shared": {
+                  "id": "sc-calendar",
+                  "name": "Calendar (DatePicker)"
+                },
+                "_overrides": []
+              },
+              {
+                "type": "Box",
+                "id": "fabcc659-6193-47a4-895d-cf3f6eb2745d",
+                "props": {
+                  "className": "flex flex-col gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-[320px]",
+                  "label": "Christmas 2026",
+                  "initialDate": "2026-12-25",
+                  "accentColor": "#ec4899",
+                  "minDate": "2026-01-01",
+                  "maxDate": "2026-12-31"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "{{context.component.props.label}}",
+                    "_sharedKey": "96bf1c68-1279-421c-9f88-a46ea24db478",
+                    "id": "088f7939-2d1d-4f90-a930-307e0a777b01"
+                  },
+                  {
+                    "type": "Box",
+                    "id": "c9cde368-40f3-4c20-9687-800aa39dcfaa",
+                    "props": {
+                      "className": "inline-flex flex-row items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer hover:border-blue-400 bg-white dark:bg-gray-900"
+                    },
+                    "popover": {
+                      "trigger": "click",
+                      "placement": "bottom-start",
+                      "offset": 6,
+                      "openVariable": "cal-v-is-open-uuid"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:calendar",
+                          "size": 16,
+                          "color": "{{context.component.props.accentColor}}"
+                        },
+                        "_sharedKey": "988ed8e4-b42b-4872-8531-cd1982571d67",
+                        "id": "e91bd332-a58d-4189-ac32-2dee89a6569e"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-700 dark:text-gray-200 flex-1"
+                        },
+                        "text": {
+                          "formula": "context?.component?.variables?.['cal-v-selected-date-uuid'] || context?.component?.props?.initialDate || '(select a date)'"
+                        },
+                        "_sharedKey": "536e92b7-deb5-40c7-b55e-2da3871a8f19",
+                        "id": "7d898fd4-d619-49df-88a9-1a0665929f51"
+                      },
+                      {
+                        "type": "Box",
+                        "_popoverContent": true,
+                        "props": {
+                          "className": "bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3",
+                          "style": {
+                            "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+                            "width": 300
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row items-center justify-between px-1 pb-2"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "2c764d2d-54ee-41a9-a4bf-1f4efd996819",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-prev-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-left",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "f3637292-1e75-4717-b0b9-048e33cc85d6",
+                                    "id": "f7993a43-ff8f-47f8-a97e-f039e07b33d7"
+                                  }
+                                ],
+                                "_sharedKey": "628e0279-8b98-438e-9655-8d601b33ddf4"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                },
+                                "text": {
+                                  "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['cal-v-month-uuid'] ?? 0] + ' ' + (context?.component?.variables?.['cal-v-year-uuid'] ?? 2026)"
+                                },
+                                "_sharedKey": "7d6bd750-e5a2-4944-a971-870d833730af",
+                                "id": "7bf6cc9d-230c-47c7-8e72-6d76813da8da"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "2353e5cd-0e21-463f-86f8-c1331ae0641e",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-right",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "96055240-5aa5-4d47-91e2-54155547ccb0",
+                                    "id": "00d9a970-3c22-45f6-89c5-4b38f811b8f3"
+                                  }
+                                ],
+                                "_sharedKey": "83e086b6-8d1b-45db-af4b-68e4c90e1282"
+                              }
+                            ],
+                            "_sharedKey": "6345cd51-2bed-4e52-b804-f89c49116090",
+                            "id": "9692b26b-10a2-459a-a752-3ee0ca39ba2e"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Su",
+                                "_sharedKey": "f2bcde8f-abba-46a6-a415-1da1d78306d6",
+                                "id": "67003fea-eec4-4381-93dd-6436db84531b"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Mo",
+                                "_sharedKey": "8d14348f-ce72-48af-9889-bee7df49e15c",
+                                "id": "648856c3-af04-4694-8584-e6bfc0222b81"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Tu",
+                                "_sharedKey": "88bb4ee6-e0fd-416f-96db-e65704616f10",
+                                "id": "c216cdfe-5d2d-4e8b-bca5-624b53efc545"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "We",
+                                "_sharedKey": "9844020e-8f99-4ed3-876b-ced7e15bf5c9",
+                                "id": "6a396c28-d589-4c81-b4af-3eb597a7dfb9"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Th",
+                                "_sharedKey": "08282617-1f65-44ca-b48f-036138a8eeb2",
+                                "id": "1942b9b0-009a-49b6-a22d-f192ab3c694d"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Fr",
+                                "_sharedKey": "92eb4020-20cd-4be6-891a-a604cb31a4e9",
+                                "id": "6a384811-9deb-49a2-88ab-33390436ad31"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Sa",
+                                "_sharedKey": "a01e3cbe-f963-4a1d-8d16-d1440d8b64f6",
+                                "id": "2e0182b0-ed14-4c8a-833f-3ab746c6200a"
+                              }
+                            ],
+                            "_sharedKey": "ac812161-3301-4d28-8058-27f171b49511",
+                            "id": "ff7f564b-87cd-4480-9328-2236b2a52a98"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "map": "context.component.variables['cal-v-grid-uuid']",
+                                "key": "context.item.data.idx",
+                                "props": {
+                                  "className": "contents"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && context?.item?.data?.isSelected",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full",
+                                      "style": {
+                                        "backgroundColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-white font-semibold"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "2d99cb3a-3f23-435e-a8b9-0eb102759378",
+                                        "id": "7c92c215-b04c-4c46-9cef-4f12502b98f1"
+                                      }
+                                    ],
+                                    "_sharedKey": "18c4f74a-36eb-4d53-aa60-b7dda10b4283",
+                                    "id": "62371a9a-8496-49fe-900d-269ceac86713"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full border-2",
+                                      "style": {
+                                        "borderColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] font-semibold text-gray-800 dark:text-gray-200"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "3c9d11cb-6606-42df-9f6e-91ca962ec5cc",
+                                        "id": "cae1c094-bd8f-4121-86e0-dcad4175f0c9"
+                                      }
+                                    ],
+                                    "_sharedKey": "8d4eb665-0b42-4fd4-9e8d-0b14dbe85f1d",
+                                    "id": "e39ed086-a86a-4f2a-8889-6c29c71998e9"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "4f3d62c4-658c-4f05-bd99-d9c704c8a0e3",
+                                        "id": "0112ab3e-3406-492d-8d88-6b28074f63d0"
+                                      }
+                                    ],
+                                    "_sharedKey": "8c309fe6-811a-411c-8038-ef0b27c77cfb",
+                                    "id": "5b2fe753-8fc0-4352-8e85-0f139ebc56a6"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "!context?.item?.data?.inMonth",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-300 dark:text-gray-600"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "aad45ec8-58c3-478a-8604-f0db75008515",
+                                        "id": "f09c6380-b653-4e74-b388-eda839dbe2f6"
+                                      }
+                                    ],
+                                    "_sharedKey": "7aeedd80-92bc-4268-a685-6d687eb24f8d",
+                                    "id": "8759dd11-4e00-4c54-999d-33c619c23330"
+                                  }
+                                ],
+                                "_sharedKey": "b2f4fbfa-749a-419c-87e2-da50073351d2",
+                                "id": "b8778ea4-b458-4544-8046-6c1bfa5fac41"
+                              }
+                            ],
+                            "_sharedKey": "1897e5dd-8769-4aa6-81eb-7d9d7e00f81a",
+                            "id": "68206d39-4787-4c2d-8791-46ca93cfe5c9"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row flex-wrap gap-1.5 pt-3 border-t border-gray-100 dark:border-gray-800"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "c43aee14-b0bf-4612-9590-cf20b49fc283",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-go-today"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Today",
+                                    "_sharedKey": "3feeda61-efa4-45e9-8d18-8ef289e656b3",
+                                    "id": "b4192ce4-8c3e-4a4d-abd9-7cba2a0628d2"
+                                  }
+                                ],
+                                "_sharedKey": "7e0f290b-0862-486a-a079-14f2e3afcad2"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "83ab275d-f707-41fc-9cf9-0d2eb2fba4d3",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-clear"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Clear",
+                                    "_sharedKey": "d88f7b50-7dc4-48bd-8500-f7b3fce62057",
+                                    "id": "b01d8f1b-e60d-4b09-8383-a7e69811cada"
+                                  }
+                                ],
+                                "_sharedKey": "692abf79-74e3-48a4-9eb6-2720d9136717"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "b74e718d-9c35-4a26-95e0-03d3df0ffd03",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-workday"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Next Workday",
+                                    "_sharedKey": "b43b2a1c-1045-4d0e-b342-e93ea0489e5b",
+                                    "id": "e9416b57-0bbb-4ab3-b518-2465e530986e"
+                                  }
+                                ],
+                                "_sharedKey": "527c6e09-1768-4d87-8a75-980054773a9d"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "56da0b9c-32d1-473f-867e-4b02ad3aaeea",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-classify"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Classify",
+                                    "_sharedKey": "7e416a8c-8892-4279-83d8-2e612677bdc8",
+                                    "id": "c2f125b0-b5c7-4de4-9bfe-d3d3aa23ad36"
+                                  }
+                                ],
+                                "_sharedKey": "37cd5cd0-e59c-402a-af65-edfdfeba87fe"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "a22fdc24-ee31-4440-921b-dfeb28f756bc",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-goto-booking"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-white"
+                                    },
+                                    "text": "Book",
+                                    "_sharedKey": "b58a0d81-94ae-441a-8a7f-79d7f84d4658",
+                                    "id": "462150ef-c8c1-4dbc-93fd-e25661cf4b9c"
+                                  }
+                                ],
+                                "_sharedKey": "8a5ae131-9634-4ddb-a5c3-ecaf3e16255c"
+                              }
+                            ],
+                            "_sharedKey": "27431c0d-8b97-4123-84cf-42574d3a4a51",
+                            "id": "cc66765d-49c0-4056-aefe-bac12995f624"
+                          }
+                        ],
+                        "_sharedKey": "9c71e178-c712-4a1e-81f5-42e3eda95205",
+                        "id": "9f3a29f3-a31a-48f4-a09c-77594b395865"
+                      }
+                    ],
+                    "_sharedKey": "39228592-239c-430a-b52c-65c3da6adc85"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                    },
+                    "text": {
+                      "formula": "'Last action: ' + (context?.component?.variables?.['cal-v-last-action-uuid'] ?? '(idle)')"
+                    },
+                    "_sharedKey": "6c4e1ede-7a3e-491c-8d20-169f2d181bc6",
+                    "id": "c93d24d2-48a7-430a-9f59-5434c069a633"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                    },
+                    "text": {
+                      "formula": "'Holidays: ' + (context?.component?.variables?.['cal-v-holidays-uuid']?.length ?? 0) + ' · Loading: ' + (context?.component?.variables?.['cal-v-loading-uuid'] ? 'yes' : 'no')"
+                    },
+                    "_sharedKey": "0d791d88-9b38-426b-9a39-f09b76b85842",
+                    "id": "478d0e17-89ad-467b-a4d9-0da64aaab7a1"
+                  }
+                ],
+                "_sharedKey": "b2f9c359-2efc-41e2-88ff-7b1a12bf0959",
+                "_shared": {
+                  "id": "sc-calendar",
+                  "name": "Calendar (DatePicker)"
+                },
+                "_overrides": []
+              },
+              {
+                "type": "Box",
+                "id": "6762f8e9-cfeb-47b4-9d31-6d43f95a3380",
+                "props": {
+                  "className": "flex flex-col gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-[320px]",
+                  "label": "Calendrier (fr)",
+                  "locale": "fr",
+                  "accentColor": "#10b981"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "{{context.component.props.label}}",
+                    "_sharedKey": "96bf1c68-1279-421c-9f88-a46ea24db478",
+                    "id": "81b0d55f-5bb9-48cc-9637-d361abed0554"
+                  },
+                  {
+                    "type": "Box",
+                    "id": "58bb40d2-c551-4db5-acc1-e4a0bf709f65",
+                    "props": {
+                      "className": "inline-flex flex-row items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer hover:border-blue-400 bg-white dark:bg-gray-900"
+                    },
+                    "popover": {
+                      "trigger": "click",
+                      "placement": "bottom-start",
+                      "offset": 6,
+                      "openVariable": "cal-v-is-open-uuid"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:calendar",
+                          "size": 16,
+                          "color": "{{context.component.props.accentColor}}"
+                        },
+                        "_sharedKey": "988ed8e4-b42b-4872-8531-cd1982571d67",
+                        "id": "1b65d5e0-ce78-460d-8343-3c3b86224ea1"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-700 dark:text-gray-200 flex-1"
+                        },
+                        "text": {
+                          "formula": "context?.component?.variables?.['cal-v-selected-date-uuid'] || context?.component?.props?.initialDate || '(select a date)'"
+                        },
+                        "_sharedKey": "536e92b7-deb5-40c7-b55e-2da3871a8f19",
+                        "id": "9de6ea95-7076-4bc3-a1cf-253e2f3260f1"
+                      },
+                      {
+                        "type": "Box",
+                        "_popoverContent": true,
+                        "props": {
+                          "className": "bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3",
+                          "style": {
+                            "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+                            "width": 300
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row items-center justify-between px-1 pb-2"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "b66a9d83-0dbd-43b7-8cb3-8b2bb20d8bc6",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-prev-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-left",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "f3637292-1e75-4717-b0b9-048e33cc85d6",
+                                    "id": "3689b2cb-df0e-411b-8e69-e45d71524117"
+                                  }
+                                ],
+                                "_sharedKey": "628e0279-8b98-438e-9655-8d601b33ddf4"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                },
+                                "text": {
+                                  "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['cal-v-month-uuid'] ?? 0] + ' ' + (context?.component?.variables?.['cal-v-year-uuid'] ?? 2026)"
+                                },
+                                "_sharedKey": "7d6bd750-e5a2-4944-a971-870d833730af",
+                                "id": "dfa5fa87-df1d-47f3-8571-2eb2e24c7b07"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "473820ae-f772-4459-af61-8c8cd7d94fb6",
+                                "props": {
+                                  "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-month"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-right",
+                                      "size": 16,
+                                      "color": "#6b7280"
+                                    },
+                                    "_sharedKey": "96055240-5aa5-4d47-91e2-54155547ccb0",
+                                    "id": "30bf7dfc-510e-43e2-bb50-f7305570c94d"
+                                  }
+                                ],
+                                "_sharedKey": "83e086b6-8d1b-45db-af4b-68e4c90e1282"
+                              }
+                            ],
+                            "_sharedKey": "6345cd51-2bed-4e52-b804-f89c49116090",
+                            "id": "183f16df-612c-4829-91d7-9840748b5603"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Su",
+                                "_sharedKey": "f2bcde8f-abba-46a6-a415-1da1d78306d6",
+                                "id": "1e7427d0-938d-4ed3-9900-7eefab4e6830"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Mo",
+                                "_sharedKey": "8d14348f-ce72-48af-9889-bee7df49e15c",
+                                "id": "0a96a65f-4059-4457-ab9a-8980f8a8e0ab"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Tu",
+                                "_sharedKey": "88bb4ee6-e0fd-416f-96db-e65704616f10",
+                                "id": "05387b5f-9003-4557-bc87-87909f58d2ee"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "We",
+                                "_sharedKey": "9844020e-8f99-4ed3-876b-ced7e15bf5c9",
+                                "id": "65402018-23fd-4b36-aad7-0a0dcf76a5dd"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Th",
+                                "_sharedKey": "08282617-1f65-44ca-b48f-036138a8eeb2",
+                                "id": "fc401f7a-8192-44f4-bcd2-8a0e843336a6"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Fr",
+                                "_sharedKey": "92eb4020-20cd-4be6-891a-a604cb31a4e9",
+                                "id": "e786b6bc-2346-45d2-b524-a731f8046a31"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1"
+                                },
+                                "text": "Sa",
+                                "_sharedKey": "a01e3cbe-f963-4a1d-8d16-d1440d8b64f6",
+                                "id": "669e435b-3f0a-4dda-8df0-c94bbe238dc4"
+                              }
+                            ],
+                            "_sharedKey": "ac812161-3301-4d28-8058-27f171b49511",
+                            "id": "76b958bb-0364-445b-be49-c6f08d468132"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-7"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "map": "context.component.variables['cal-v-grid-uuid']",
+                                "key": "context.item.data.idx",
+                                "props": {
+                                  "className": "contents"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && context?.item?.data?.isSelected",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full",
+                                      "style": {
+                                        "backgroundColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-white font-semibold"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "2d99cb3a-3f23-435e-a8b9-0eb102759378",
+                                        "id": "b87025d1-127a-4301-ab4a-c7ecbd1450d8"
+                                      }
+                                    ],
+                                    "_sharedKey": "18c4f74a-36eb-4d53-aa60-b7dda10b4283",
+                                    "id": "b22abad1-609b-4fde-9f2d-dbe9c5527823"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full border-2",
+                                      "style": {
+                                        "borderColor": "{{context.component.props.accentColor}}"
+                                      }
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] font-semibold text-gray-800 dark:text-gray-200"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "3c9d11cb-6606-42df-9f6e-91ca962ec5cc",
+                                        "id": "65238d53-6a1d-46c9-a0ee-afb5ded5f444"
+                                      }
+                                    ],
+                                    "_sharedKey": "8d4eb665-0b42-4fd4-9e8d-0b14dbe85f1d",
+                                    "id": "6cbd7660-927d-4ad2-b5c0-adb4237f6933"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                    },
+                                    "actions": [
+                                      {
+                                        "action": "cal-do-select-day"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "4f3d62c4-658c-4f05-bd99-d9c704c8a0e3",
+                                        "id": "3a17f031-5271-45a3-8857-bdb4a22c9e76"
+                                      }
+                                    ],
+                                    "_sharedKey": "8c309fe6-811a-411c-8038-ef0b27c77cfb",
+                                    "id": "77912521-7953-4150-9e4f-254b47285de8"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "condition": "!context?.item?.data?.inMonth",
+                                    "props": {
+                                      "className": "flex items-center justify-center w-9 h-9"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[13px] text-gray-300 dark:text-gray-600"
+                                        },
+                                        "text": "{{context.item.data.day}}",
+                                        "_sharedKey": "aad45ec8-58c3-478a-8604-f0db75008515",
+                                        "id": "86b32a4a-b602-4f2a-8851-d5f0177fd2f9"
+                                      }
+                                    ],
+                                    "_sharedKey": "7aeedd80-92bc-4268-a685-6d687eb24f8d",
+                                    "id": "3df13764-e389-4993-8512-ca83ab5729a9"
+                                  }
+                                ],
+                                "_sharedKey": "b2f4fbfa-749a-419c-87e2-da50073351d2",
+                                "id": "a266a9c6-7b66-44c3-9885-3e483700bd7a"
+                              }
+                            ],
+                            "_sharedKey": "1897e5dd-8769-4aa6-81eb-7d9d7e00f81a",
+                            "id": "495201f8-a5f2-4cc6-a57d-25fc2962cca5"
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row flex-wrap gap-1.5 pt-3 border-t border-gray-100 dark:border-gray-800"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "id": "6892327e-59f4-4734-b949-1a1f23ac04d8",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-go-today"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Today",
+                                    "_sharedKey": "3feeda61-efa4-45e9-8d18-8ef289e656b3",
+                                    "id": "aa8103ab-775b-48c0-80e1-5445f1a08646"
+                                  }
+                                ],
+                                "_sharedKey": "7e0f290b-0862-486a-a079-14f2e3afcad2"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "c287d32d-e8a6-40fa-8201-a39c33ab4a0c",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-clear"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Clear",
+                                    "_sharedKey": "d88f7b50-7dc4-48bd-8500-f7b3fce62057",
+                                    "id": "aeb66e4d-7479-4ba7-aeac-ffd82d963451"
+                                  }
+                                ],
+                                "_sharedKey": "692abf79-74e3-48a4-9eb6-2720d9136717"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "0d10b04c-19f6-474f-9c26-540609ecac5e",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-next-workday"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Next Workday",
+                                    "_sharedKey": "b43b2a1c-1045-4d0e-b342-e93ea0489e5b",
+                                    "id": "b51d9892-596b-4eea-b9b2-71eb0a7ff124"
+                                  }
+                                ],
+                                "_sharedKey": "527c6e09-1768-4d87-8a75-980054773a9d"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "441a65d0-ed64-427e-b377-a8d2d50e11a3",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-classify"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                                    },
+                                    "text": "Classify",
+                                    "_sharedKey": "7e416a8c-8892-4279-83d8-2e612677bdc8",
+                                    "id": "db126126-9cee-4cd2-a6f1-a3f9684615b1"
+                                  }
+                                ],
+                                "_sharedKey": "37cd5cd0-e59c-402a-af65-edfdfeba87fe"
+                              },
+                              {
+                                "type": "Box",
+                                "id": "8d6d77aa-e2fd-42ee-a045-2994e1f7a61b",
+                                "props": {
+                                  "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                                },
+                                "actions": [
+                                  {
+                                    "action": "cal-do-goto-booking"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[11px] font-semibold text-white"
+                                    },
+                                    "text": "Book",
+                                    "_sharedKey": "b58a0d81-94ae-441a-8a7f-79d7f84d4658",
+                                    "id": "5e7e6467-c163-4aae-a4b1-7746ba6bea35"
+                                  }
+                                ],
+                                "_sharedKey": "8a5ae131-9634-4ddb-a5c3-ecaf3e16255c"
+                              }
+                            ],
+                            "_sharedKey": "27431c0d-8b97-4123-84cf-42574d3a4a51",
+                            "id": "01180863-d95d-4036-8504-559762f7f22f"
+                          }
+                        ],
+                        "_sharedKey": "9c71e178-c712-4a1e-81f5-42e3eda95205",
+                        "id": "a7ceffbe-5469-4bdd-b711-ae45dca19b4a"
+                      }
+                    ],
+                    "_sharedKey": "39228592-239c-430a-b52c-65c3da6adc85"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                    },
+                    "text": {
+                      "formula": "'Last action: ' + (context?.component?.variables?.['cal-v-last-action-uuid'] ?? '(idle)')"
+                    },
+                    "_sharedKey": "6c4e1ede-7a3e-491c-8d20-169f2d181bc6",
+                    "id": "05515cc2-7906-4efb-bca3-82f20e4a8986"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                    },
+                    "text": {
+                      "formula": "'Holidays: ' + (context?.component?.variables?.['cal-v-holidays-uuid']?.length ?? 0) + ' · Loading: ' + (context?.component?.variables?.['cal-v-loading-uuid'] ? 'yes' : 'no')"
+                    },
+                    "_sharedKey": "0d791d88-9b38-426b-9a39-f09b76b85842",
+                    "id": "7ebc42b3-9f13-47aa-a607-050eb93a5cff"
+                  }
+                ],
+                "_sharedKey": "b2f9c359-2efc-41e2-88ff-7b1a12bf0959",
+                "_shared": {
+                  "id": "sc-calendar",
+                  "name": "Calendar (DatePicker)"
+                },
+                "_overrides": []
+              }
+            ]
+          },
+          {
+            "type": "Heading",
+            "props": {
+              "size": "lg",
+              "className": "font-semibold text-gray-800 dark:text-gray-200"
+            },
+            "text": "Workflow Step Zoo"
+          },
+          {
+            "type": "Box",
+            "id": "76598305-e4dd-434f-879e-09cb2a027fe0",
+            "props": {
+              "className": "flex flex-col gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 w-full max-w-[560px]",
+              "title": "Workflow Step Zoo"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-semibold text-gray-800 dark:text-gray-100"
+                },
+                "text": "{{context.component.props.title}}",
+                "_sharedKey": "580b8199-9787-4302-9757-d094f45c1a33",
+                "id": "3af7e485-2b16-4b2a-adc7-23fcf887c368"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-500 dark:text-gray-400"
+                },
+                "text": "One button per remaining workflow step type — each writes to zooLastAction.",
+                "_sharedKey": "e7a77328-7faf-4142-90cc-6297809de948",
+                "id": "82406ca8-8cf5-4f90-89d7-352eeb81e7a0"
+              },
+              {
+                "type": "FormContainer",
+                "id": "a36f102e-f395-4ea1-87e1-9a326ab52e17",
+                "actions": [],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "grid grid-cols-3 gap-2 md:grid-cols-4"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-fetch-rest"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "fetchData",
+                            "_sharedKey": "ba26ecd9-6608-41ed-bf3c-9e0b82d8eed1",
+                            "id": "89e5b4c8-05b3-4f81-b76e-ec7f57e29aac"
+                          }
+                        ],
+                        "_sharedKey": "2edc1408-fbea-4ddb-b429-590305505381",
+                        "id": "b0a784f9-b996-4e35-b928-5388fae42044"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-graphql"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "graphql",
+                            "_sharedKey": "1e9c4d6b-3e2c-43a4-b641-3a3b74354ece",
+                            "id": "3e45f720-05e9-4fc6-ab65-7f66a400d1f1"
+                          }
+                        ],
+                        "_sharedKey": "13e235d4-3c59-429f-9cc7-de6ec0ec493f",
+                        "id": "a2a1067b-824e-4e7c-b83d-2f7335951972"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-fetch-collection"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "fetchCollection",
+                            "_sharedKey": "ef914b8c-79af-4b28-88c5-38955fdfde6a",
+                            "id": "0be92981-399e-4d29-8947-2e419ec5e107"
+                          }
+                        ],
+                        "_sharedKey": "93da6cde-7109-4e50-96f5-7307759d81fe",
+                        "id": "ede396b5-a81c-4e8b-a01d-15a4a0df2938"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-fetch-parallel"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "fetchParallel",
+                            "_sharedKey": "f211b844-bf46-487e-9b66-6827c7a18b4c",
+                            "id": "6cb585f6-20ea-437b-8366-8e3e4b5070af"
+                          }
+                        ],
+                        "_sharedKey": "cc7d8fed-1713-4895-b322-edfb7c9be9f9",
+                        "id": "07c454bd-45b1-44c7-b10c-6f848e6ed03f"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-update-collection"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "updateCollection",
+                            "_sharedKey": "4fdcbd0f-8556-4c6e-8d1a-95ff5bacb518",
+                            "id": "61593bcd-f95a-471e-a626-b9a40f4d0c40"
+                          }
+                        ],
+                        "_sharedKey": "c2de2b48-2d1d-4db7-abcc-02ad2d079a4e",
+                        "id": "b8014a89-f37e-4941-aac5-c4dd902c14a2"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-upload-file"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "uploadFile",
+                            "_sharedKey": "cffc9956-f1f8-46aa-84e1-ca9cb0908f15",
+                            "id": "948f5fb8-77f7-4baf-9de6-38564eff9d93"
+                          }
+                        ],
+                        "_sharedKey": "e25d9d6d-dbe1-46a1-ad62-7c33f58048a3",
+                        "id": "5a738816-823f-4967-8379-e578b0c3b002"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-download-file"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "downloadFile",
+                            "_sharedKey": "dffe9c43-35e4-48e1-908e-e7b4cae39066",
+                            "id": "25506094-aeab-4bf2-9ae8-fb5539dc4ff7"
+                          }
+                        ],
+                        "_sharedKey": "bb2d244d-41dd-445d-b689-ad37df177371",
+                        "id": "f0e3e38e-de12-4f54-b4c1-0944deef37c3"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-copy"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "copyClipboard",
+                            "_sharedKey": "e5bbddbe-8ec4-4a1f-b52d-033ebbb87067",
+                            "id": "22538488-3fa4-4535-8e5e-aef8eb904320"
+                          }
+                        ],
+                        "_sharedKey": "cca5113e-91fb-4dd2-b1a3-58b84a01836c",
+                        "id": "65ac859a-3d94-4587-af32-1111471454f4"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-print-pdf"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "printPdf",
+                            "_sharedKey": "76f8ed15-3ec8-4a2d-a3ff-10c43a41bcb6",
+                            "id": "aae08920-fd67-4e73-84d5-e2f0dcb7b1c0"
+                          }
+                        ],
+                        "_sharedKey": "7a9da0dd-c50b-451f-ba15-d3063c5cbfc7",
+                        "id": "b07c0654-8801-468d-abdf-4ed2e4c018b6"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-create-b64"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "createUrlFromB64",
+                            "_sharedKey": "ebe7a8a5-0663-4cd4-8d56-965da837ba21",
+                            "id": "877de46c-099e-4c0e-8be7-7eb667ac0073"
+                          }
+                        ],
+                        "_sharedKey": "348ca122-f962-4d1a-a52c-dde3433abc76",
+                        "id": "d5066f74-9129-44cc-8d05-e099c016e99a"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-encode-b64"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "encodeAsB64",
+                            "_sharedKey": "0f379ab8-a0d8-4d53-9a76-9954ec2ff1e4",
+                            "id": "607f3471-4279-4a94-a3ea-17d65c100f7d"
+                          }
+                        ],
+                        "_sharedKey": "8b72bfae-ed03-42ae-90fa-d2b4b369be9e",
+                        "id": "70921353-5c41-4314-b0cf-9e9c2c5412d7"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-custom-js"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "customJS",
+                            "_sharedKey": "c87eb2a0-68e6-4791-a634-16b08bca5138",
+                            "id": "55f79689-b9f7-47b2-b82f-522e99f268d3"
+                          }
+                        ],
+                        "_sharedKey": "df62dc08-ab94-4d54-84b7-57c9f16d2d06",
+                        "id": "f2022b3e-0026-4985-9bad-48c3cb898b73"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-open-popup"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "openPopup",
+                            "_sharedKey": "84a72492-4056-47f3-b98a-2bd8b3081bf0",
+                            "id": "61983b7b-2352-42b7-8ca5-55ee46d00f1b"
+                          }
+                        ],
+                        "_sharedKey": "eee1fa11-8f09-4de0-b9c5-4290e9e6e206",
+                        "id": "fbc95723-a4c8-41f2-b9ba-fdb398fb0d3b"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-close-popups"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "closePopups",
+                            "_sharedKey": "215e0bed-7deb-4518-9182-3fa7e159e075",
+                            "id": "bcf25225-e357-4c9a-a5f5-0a2eac9c92fc"
+                          }
+                        ],
+                        "_sharedKey": "0e653132-afa5-49f7-863d-2ead2d569c41",
+                        "id": "d3195949-c934-473d-847a-a84ea5f1db68"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-change-language"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "changeLanguage",
+                            "_sharedKey": "dfdf16f9-fcb7-45ca-8b5a-0d0c2a89e6fc",
+                            "id": "5e60a980-57f8-48ca-bdf0-8bcd01993e0e"
+                          }
+                        ],
+                        "_sharedKey": "f8083c72-3dff-4c60-9568-f68f31844165",
+                        "id": "bcc8cb89-db2b-4f90-9649-447a9f962630"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-page-loader"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "pageLoader",
+                            "_sharedKey": "a263b8e1-28a0-4cd0-aa60-75a34065668f",
+                            "id": "49b161d9-4a3f-497a-8e8c-19f3e250da04"
+                          }
+                        ],
+                        "_sharedKey": "b03d0441-911c-41e6-b444-4f5e87d8313e",
+                        "id": "85b5378f-b0ed-40f7-8157-8449daec7651"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-stop-propagation"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "stopPropagation",
+                            "_sharedKey": "4f9ce856-039f-4089-8d2b-0b8bc73f7e19",
+                            "id": "a9f8e5b6-e0f1-41f6-8896-39dc09786b35"
+                          }
+                        ],
+                        "_sharedKey": "aa848189-4f20-4505-9789-50b87a49843d",
+                        "id": "b6e1558b-f262-43ad-9bb6-3a794fdeef7b"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-run-sub"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "runSubWorkflow",
+                            "_sharedKey": "2a5a29d7-c555-4427-af14-01dff2a2ba12",
+                            "id": "08b215d1-0f92-4b02-8d38-42bfc14b751e"
+                          }
+                        ],
+                        "_sharedKey": "6c187317-f254-4c5f-b1c3-c6ca0686c2d0",
+                        "id": "6dac0328-c00f-4250-b669-72123efb21f0"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-set-form-state"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "setFormState",
+                            "_sharedKey": "18184bee-edaf-47c7-b066-a83ac09c6283",
+                            "id": "03189ca7-ce37-4cbe-8775-5e62de1eabf7"
+                          }
+                        ],
+                        "_sharedKey": "61b31786-7cf4-4013-aa13-f3920bca73ec",
+                        "id": "6a37536c-7c53-43d6-a510-60c60f65320b"
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row items-center justify-center px-2 py-1.5 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                        },
+                        "actions": [
+                          {
+                            "action": "zoo-do-reset-form"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
+                            },
+                            "text": "resetForm",
+                            "_sharedKey": "95466816-9560-4f44-9cf7-8f54fda4c4c4",
+                            "id": "22b63e47-3268-4ce3-a2eb-b435ba0a1455"
+                          }
+                        ],
+                        "_sharedKey": "599a364b-36bc-48aa-b897-e7c2e1f4a68b",
+                        "id": "54afd88a-49a7-4d96-b519-a0cb3e1016b9"
+                      }
+                    ],
+                    "_sharedKey": "d202538c-79be-4217-b17c-d176bc20bb63",
+                    "id": "fb375bc4-657f-4b27-af10-ac8c1add5f34"
+                  }
+                ],
+                "_sharedKey": "4d258fa7-c2b6-4bd2-9049-033a3b925c76"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-600 dark:text-gray-300"
+                },
+                "text": {
+                  "formula": "'Last: ' + (context?.component?.variables?.['zoo-v-last-action-uuid'] ?? '(idle)')"
+                },
+                "_sharedKey": "0e231dbe-9a3b-4785-ae06-5bd389e50cf7",
+                "id": "83c839a4-d2f7-40ca-9614-5766ede42466"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                },
+                "text": {
+                  "formula": "'form.isSubmitting=' + String(local?.data?.form?.isSubmitting ?? false) + ' · isSubmitted=' + String(local?.data?.form?.isSubmitted ?? false)"
+                },
+                "_sharedKey": "19d9c151-1477-42b2-a841-d734fa177915",
+                "id": "e4c3f5f4-4c34-4008-9449-aaaff87a0661"
+              }
+            ],
+            "_sharedKey": "c24efe9a-e7fb-4543-ae54-2d5031a34852",
+            "_shared": {
+              "id": "sc-calendar-workflow-zoo",
+              "name": "Workflow Step Zoo"
+            },
+            "_overrides": []
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-2 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+            },
+            "children": [
+              {
+                "type": "Heading",
+                "props": {
+                  "size": "md",
+                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                },
+                "text": "Debug Panel"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                },
+                "text": "Each calendar instance owns isolated scoped variables. Use the buttons inside each calendar to mutate its own state — others are unaffected."
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                },
+                "text": "Workflow step types covered by sc-calendar: branch · multiOptionBranch · forEach · whileLoop · breakLoop · continueLoop · passThroughCondition · timeDelay · navigateTo · navigatePrev · changeVariableValue · setVar · resetVariableValue · executeComponentAction · returnValue"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                },
+                "text": "Workflow step types covered by sc-calendar-workflow-zoo: fetchData · graphql · fetchCollection · fetchCollectionsParallel · updateCollection · uploadFile · downloadFileFromUrl · copyToClipboard · printPdf · createUrlFromBase64 · encodeFileAsBase64 · customJavaScript · openPopup · closeAllPopups · changeLanguage · pageLoader · stopPropagation · runProjectWorkflow · setFormState · resetForm"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                },
+                "text": "Lifecycle triggers demonstrated: created · mounted · propertyChange · beforeUnmount · execution"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

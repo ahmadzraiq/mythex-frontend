@@ -22,6 +22,7 @@ import {
 } from './_canvas-helpers';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable } from './_store';
 import { findSharedRoot, getNodeSubtrees } from './_store-node-helpers';
+import { getOverrides } from './_shared-overrides';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
@@ -2114,7 +2115,23 @@ export default function BuilderCanvas() {
 
     // Collect DOM elements of other shared instances (same model ID) for live resize sync.
     // Search ALL pages (not just focused) since multiple page frames are visible on the canvas.
-    const sharedSiblingEls: HTMLElement[] = [];
+    //
+    // IMPORTANT: Only live-sync siblings when we're in Edit Component mode for this model.
+    // Outside of edit mode, a resize is a per-instance override (w-[Npx] on THIS instance
+    // only) — writing width/height imperatively onto sibling DOM elements would visually
+    // change them, and because nothing propagates to their pageNodes state nothing would
+    // re-render to reset the DOM, so the stray inline styles would stick after pointerup.
+    // Per-axis sync flags let us skip live-syncing an axis on siblings that
+    // already have their own override for that axis — those siblings MUST keep
+    // their own value visually, because on pointerup _syncSharedInstances
+    // preserves their override via overlayOverrides and the drag-time DOM
+    // mutation would otherwise visibly shadow that preserved value.
+    // allSharedSiblingIds tracks EVERY shared-instance sibling DOM id (sync'd OR
+    // skipped) so the snap engine can exclude them all from snap targets —
+    // another SC instance's size is not a natural alignment target for the user.
+    type SharedSiblingSyncTarget = { el: HTMLElement; syncW: boolean; syncH: boolean };
+    const sharedSiblingEls: SharedSiblingSyncTarget[] = [];
+    const allSharedSiblingIds = new Set<string>();
     (() => {
       const s = useBuilderStore.getState();
       // Build a flat list of all nodes across every page
@@ -2127,17 +2144,34 @@ export default function BuilderCanvas() {
       const sharedMeta = (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
       if (!sharedMeta?.id) return;
 
-      // Build path from resized node to shared root (list of child indices)
-      const pathFromRoot: number[] = [];
+      // Only broadcast to siblings in Edit Component mode. In instance mode the resize
+      // is a per-instance override and must not affect other instances.
+      if (!s.editingSharedComponentIds.includes(sharedMeta.id)) return;
+
+      // Build path from resized node to shared root as a list of `_sharedKey`
+      // values (from the root's direct child down to the target). We walk by
+      // sharedKey — NOT child index — because instances can have local
+      // insertions that shift indices. Walking by index in a sibling with a
+      // locally-inserted node lands on the wrong descendant (potentially the
+      // inserted node itself, which then gets live-resized incorrectly).
+      //
+      // If any ancestor between the target and the shared root lacks a
+      // `_sharedKey`, the target is inside (or is itself) a local insertion
+      // with no equivalent in other instances — abort live-sync entirely.
+      const pathFromRoot: string[] = [];
       let cur = id;
+      let pathOk = true;
       while (cur !== sharedRoot.id) {
         const parent = findParentNode(allNodes, cur);
-        if (!parent) break;
-        const idx = ((parent.children ?? []) as SDUINode[]).findIndex(c => c.id === cur);
-        if (idx < 0) break;
-        pathFromRoot.unshift(idx);
+        if (!parent) { pathOk = false; break; }
+        const curNode = ((parent.children ?? []) as SDUINode[]).find(c => c.id === cur);
+        if (!curNode) { pathOk = false; break; }
+        const sk = (curNode as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+        if (!sk) { pathOk = false; break; }
+        pathFromRoot.unshift(sk);
         cur = parent.id!;
       }
+      if (!pathOk) return;
 
       // Find other shared roots with the same model ID across all pages
       const otherRoots: SDUINode[] = [];
@@ -2152,16 +2186,57 @@ export default function BuilderCanvas() {
       for (const otherRoot of otherRoots) {
         let target: SDUINode = otherRoot;
         let valid = true;
-        for (const childIdx of pathFromRoot) {
+        for (const sk of pathFromRoot) {
           const ch = (target.children ?? []) as SDUINode[];
-          if (childIdx >= ch.length) { valid = false; break; }
-          target = ch[childIdx];
+          const next = ch.find(c => ((c as unknown as Record<string, unknown>)._sharedKey as string | undefined) === sk);
+          if (!next) { valid = false; break; }
+          target = next;
         }
         if (!valid || !target.id) continue;
+
+        // Always exclude this sibling from snap targets (regardless of whether
+        // we end up live-syncing its DOM below).
+        allSharedSiblingIds.add(target.id);
+
+        // Determine per-axis sync. For the SC instance root, `_overrides` tracks
+        // overridden cssProps explicitly. For descendants of the instance root,
+        // per-descendant overrides live on the ROOT's `_descendantOverrides` map
+        // keyed by `_sharedKey`. If the sibling target owns 'width' or 'height'
+        // on its own axis, it must NOT follow A's resize visually — both
+        // because state (via overlayOverrides at pointerup) will restore the
+        // override, and because the imperatively-written inline style can
+        // visibly shadow the restored value until React clears it.
+        let syncW = true;
+        let syncH = true;
+        const isRootTarget = target.id === otherRoot.id;
+        if (isRootTarget) {
+          const ov = getOverrides(target);
+          if (ov.includes('width')) syncW = false;
+          if (ov.includes('height')) syncH = false;
+        } else {
+          const targetSharedKey = (target as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+          const descOverrides = (otherRoot as unknown as Record<string, unknown>)._descendantOverrides as Record<string, string[]> | undefined;
+          if (targetSharedKey && descOverrides) {
+            const ov = descOverrides[targetSharedKey] ?? [];
+            if (ov.includes('width')) syncW = false;
+            if (ov.includes('height')) syncH = false;
+          }
+        }
+        if (!syncW && !syncH) continue;
+
         const targetEl = document.querySelector(`[data-builder-id="${target.id}"]`) as HTMLElement | null;
-        if (targetEl) sharedSiblingEls.push(targetEl);
+        if (targetEl) sharedSiblingEls.push({ el: targetEl, syncW, syncH });
       }
     })();
+
+    // IDs of ALL shared-instance siblings (live-synced AND skipped). These must
+    // be excluded from the snap-to-sibling calculation during drag:
+    //   - Live-synced siblings mirror A's size each frame — including them would
+    //     create a feedback loop that prevents 1:1 pixel tracking.
+    //   - Skipped siblings (with their own overrides) sit at static sizes that
+    //     are not natural alignment targets for the user; snapping to them
+    //     produces sticky / non-responsive drag behavior.
+    const sharedSiblingIdSet = allSharedSiblingIds;
 
     // Track final committed size for the onUp handler
     let lastW = startW;
@@ -2178,8 +2253,13 @@ export default function BuilderCanvas() {
       if (handle.includes('w')) newW = Math.max(20, Math.round(startW - dx));
       if (handle.includes('n')) newH = Math.max(20, Math.round(startH - dy));
 
-      // Snap to sibling sizes
-      const siblings = getAllSiblingRects(id, frame as HTMLElement, z);
+      // Snap to sibling sizes. Exclude live-synced shared-instance siblings —
+      // their DOM sizes mirror A each frame, so including them as snap targets
+      // creates a feedback loop that prevents 1:1 pixel tracking.
+      let siblings = getAllSiblingRects(id, frame as HTMLElement, z);
+      if (sharedSiblingIdSet.size > 0) {
+        siblings = siblings.filter(s => !sharedSiblingIdSet.has(s.id));
+      }
       const snapped = snapResizeSize(newW, newH, handle, siblings);
       newW = snapped.w;
       newH = snapped.h;
@@ -2190,15 +2270,27 @@ export default function BuilderCanvas() {
       // Apply size directly to DOM — zero React re-renders during the drag gesture.
       // Zustand is committed once on pointerup (same strategy as pan/zoom world container).
       // Also update all repeat-sibling instances so they resize in sync (weWeb-style).
+      //
+      // CRITICAL: only write the axis being resized. Writing BOTH axes for every
+      // handle (e.g. setting style.width for a top-center 'n' handle drag) pins
+      // the non-resized axis to its startW/startH pixel value. Inline styles win
+      // over className, and React's style-prop diff cannot clear inline styles
+      // it never wrote — so the stale inline dimension survives the commit and
+      // overrides class-based sizing after release, "breaking" the other axis.
+      const isHoriz = handle.includes('e') || handle.includes('w');
+      const isVert  = handle.includes('n') || handle.includes('s');
       const allResizeEls = document.querySelectorAll(`[data-builder-id="${id}"]`);
       allResizeEls.forEach(sibEl => {
-        (sibEl as HTMLElement).style.width  = `${newW}px`;
-        (sibEl as HTMLElement).style.height = `${newH}px`;
+        if (isHoriz) (sibEl as HTMLElement).style.width  = `${newW}px`;
+        if (isVert)  (sibEl as HTMLElement).style.height = `${newH}px`;
       });
-      // Live-sync: update other shared instances' DOM elements
-      for (const sibEl of sharedSiblingEls) {
-        sibEl.style.width  = `${newW}px`;
-        sibEl.style.height = `${newH}px`;
+      // Live-sync: update other shared instances' DOM elements. Respect per-axis
+      // sync flags AND the handle direction — siblings that have 'width' (or
+      // 'height') in their `_overrides` keep their own value visually during
+      // the drag, and non-resized axes are never touched.
+      for (const sibTarget of sharedSiblingEls) {
+        if (isHoriz && sibTarget.syncW) sibTarget.el.style.width  = `${newW}px`;
+        if (isVert  && sibTarget.syncH) sibTarget.el.style.height = `${newH}px`;
       }
 
       // Synchronous ring update so handles track the new size in the same frame
@@ -2276,6 +2368,34 @@ export default function BuilderCanvas() {
       // Strip width/height from inline style — classes are now the source of truth
       const { width: _w, height: _h, ...styleWithoutDims } = existingStyle as Record<string, string>;
       useBuilderStore.getState().patchProp(id, 'props.style', styleWithoutDims);
+
+      // Clear the imperatively-set inline width/height on the PRIMARY element
+      // (and any repeat copies matching the same data-builder-id) for the axes
+      // we touched during the drag. React's style-prop diff only clears inline
+      // styles it previously wrote, and since we wrote these imperatively they
+      // would otherwise survive the re-render and shadow the new className.
+      // Clearing them here lets the committed `w-[Npx]` / `h-[Npx]` class be
+      // the sole source of truth for size.
+      const upIsHoriz = handle.includes('e') || handle.includes('w');
+      const upIsVert  = handle.includes('n') || handle.includes('s');
+      const primaryEls = document.querySelectorAll(`[data-builder-id="${id}"]`);
+      primaryEls.forEach(pel => {
+        if (upIsHoriz) (pel as HTMLElement).style.width  = '';
+        if (upIsVert)  (pel as HTMLElement).style.height = '';
+      });
+
+      // Clear the imperatively-set inline width/height on live-synced shared
+      // sibling DOM elements. _syncSharedInstances (via patchProp above) has
+      // already updated each sibling's pageNodes state with that sibling's OWN
+      // preserved _overrides — React's upcoming re-render will apply each
+      // sibling's correct className. But CSS inline styles always win over
+      // class rules, so the stale inline width/height we wrote during drag
+      // would shadow each sibling's real size. Clearing only the axes we
+      // actually touched lets the className be the sole source of truth.
+      for (const sibTarget of sharedSiblingEls) {
+        if (upIsHoriz && sibTarget.syncW) sibTarget.el.style.width  = '';
+        if (upIsVert  && sibTarget.syncH) sibTarget.el.style.height = '';
+      }
 
       // Update canvas node wrapper dimensions if the resized node is a top-level canvas node
       const cnArr = useBuilderStore.getState().canvasNodes as import('./_store-types').CanvasNode[];

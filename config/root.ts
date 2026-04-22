@@ -67,6 +67,8 @@ import navbarScrollAware from './screens/navbar-scroll-aware.json';
 import popoverTest from './screens/popover-test.json';
 import animationShowcase from './screens/animation-showcase.json';
 import triggersTest from './screens/triggers-test.json';
+import scComponentShowcase from './screens/sc-component-showcase.json';
+import workflowCallTest from './screens/workflow-call-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -93,6 +95,7 @@ import sharedComponentTestActions from './actions/shared-component-test.json';
 import popoverTestActions from './actions/popover-test.json';
 import animationShowcaseActions from './actions/animation-showcase.json';
 import triggersTestActions from './actions/triggers-test.json';
+import scComponentShowcaseActions from './actions/sc-component-showcase.json';
 
 const screens = {
   home,
@@ -153,6 +156,8 @@ const screens = {
   popoverTest,
   animationShowcase,
   triggersTest,
+  scComponentShowcase,
+  workflowCallTest,
 };
 
 const layouts = {
@@ -182,6 +187,7 @@ const actions = {
   ...popoverTestActions,
   ...animationShowcaseActions,
   ...triggersTestActions,
+  ...scComponentShowcaseActions,
 };
 
 const actionsByFile = {
@@ -203,6 +209,7 @@ const actionsByFile = {
   popoverTest: popoverTestActions,
   animationShowcase: animationShowcaseActions,
   triggersTest: triggersTestActions,
+  scComponentShowcase: scComponentShowcaseActions,
 };
 
 export const root = {

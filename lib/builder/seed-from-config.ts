@@ -92,6 +92,28 @@ export function buildSeedConfig(): Record<string, unknown> {
     pageWorkflowMeta[wf.id] = { trigger: wf.trigger, name: wf.name };
   }
 
+  // ── Shared component workflows (so executeComponentAction's picker finds them) ─
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const sharedComponents = require('@/config/shared-components.json') as Record<string, {
+      name?: string;
+      workflows?: Record<string, { trigger: string; steps: unknown[]; name?: string }>;
+    }>;
+    for (const [scId, scModel] of Object.entries(sharedComponents)) {
+      const scName = scModel.name ?? scId;
+      for (const [wfId, wf] of Object.entries(scModel.workflows ?? {})) {
+        // Only register if not already present (avoids overwriting user-edited ids)
+        if (!pageWorkflows[wfId]) {
+          pageWorkflows[wfId] = wf.steps ?? [];
+          pageWorkflowMeta[wfId] = {
+            trigger: wf.trigger,
+            name: `${scName} — ${wf.name ?? wfId}`,
+          };
+        }
+      }
+    }
+  } catch { /* no shared components registered */ }
+
   // ── Variables from config/variables.json ─────────────────────────────────
   const customVars = builderCfg.variables.map(v => ({
     id: v.id,

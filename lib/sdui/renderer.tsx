@@ -403,7 +403,6 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const _instanceId = _sharedMeta
     ? ((node as unknown as Record<string, unknown>).id as string | undefined ?? _sharedMeta.id)
     : null;
-  const _prevResolvedPropsRef = useRef<Record<string, unknown>>({});
 
   if (_sharedMeta) {
     let scModel: {
@@ -463,7 +462,6 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         },
       },
     };
-    _prevResolvedPropsRef.current = resolvedProps;
   }
 
   // ── Component lifecycle triggers ──────────────────────────────────────────────
@@ -489,16 +487,29 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     // gets wrapped as a single-step workflow and dispatched to workflow-steps-handler's inline handler.
     const fireLifecycle = (wfId: string) => {
       try {
+        // Dispatch as a workflow with a single executeComponentAction step.
+        // IMPORTANT: do NOT include an `action` string field — runOne's alias
+        // redirect (`return runOne({action: ...})`) strips `steps` in recursion.
+        // Include `type` so runOne's fallback (line ~443) promotes the object
+        // to actionDef, then dispatchToHandler sees the steps array and routes
+        // to workflowStepsHandler (which handles executeComponentAction inline).
         _runActionRef.current(
           {
-            action: '__sc_lifecycle__',
-            type: 'executeComponentAction',
-            config: { workflowId: wfId, modelId: meta.id },
+            type: 'workflow',
+            steps: [
+              {
+                id: `lifecycle-${wfId}`,
+                type: 'executeComponentAction',
+                config: { action: wfId, modelId: meta.id },
+              },
+            ],
           } as unknown as Parameters<typeof runAction>[0],
           undefined,
           _effectiveScopeRef.current,
         );
-      } catch { /* non-fatal */ }
+      } catch (err) {
+        if (typeof window !== 'undefined') console.warn('[renderer] fireLifecycle error', wfId, err);
+      }
     };
 
     let scModel: { workflows?: Record<string, { trigger: string }> } | undefined;
@@ -557,9 +568,14 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         try {
           _runActionRef.current(
             {
-              action: '__sc_lifecycle__',
-              type: 'executeComponentAction',
-              config: { workflowId: wfId, modelId: meta.id },
+              type: 'workflow',
+              steps: [
+                {
+                  id: `propchange-${wfId}`,
+                  type: 'executeComponentAction',
+                  config: { action: wfId, modelId: meta.id },
+                },
+              ],
             } as unknown as Parameters<typeof runAction>[0],
             undefined,
             _effectiveScopeRef.current,
@@ -599,7 +615,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // per-container isolated store (variables['formKey'].*) so only this container's
   // state changes trigger re-renders for this node — not other containers' submits.
   const LOCAL_FORM = 'local.data.form';
-  const deps = activeFormKey
+  const formMappedDeps = activeFormKey
     ? screenMappedDeps.map(p => {
         if (p === LOCAL_FORM) return `variables['${activeFormKey}']`;
         if (p.startsWith(LOCAL_FORM + '.')) return `variables['${activeFormKey}'].${p.slice(LOCAL_FORM.length + 1)}`;
@@ -607,8 +623,79 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       })
     : screenMappedDeps;
 
+  // Component instance variable subscription: when a map/text/condition references
+  // `context.component.variables['UUID']`, translate the dep to the actual global
+  // store path `_componentInstances.{instanceId}.UUID` so useVariablePaths
+  // subscribes to the source-of-truth and re-renders when it changes.
+  // Without this, `context.component.variables` is only a snapshot on scope and
+  // the node never re-renders when the per-instance value updates.
+  const currentInstanceId = effectiveScope?.context
+    ? ((((effectiveScope.context as Record<string, unknown>).component as Record<string, unknown> | undefined)?.instanceId) as string | undefined)
+    : undefined;
+  const deps = currentInstanceId
+    ? formMappedDeps.map(p => {
+        if (typeof p !== 'string') return p;
+        // Match both bracket and dot forms: context.component.variables['UUID'] or context.component.variables.UUID
+        const mBracket = p.match(/^context\.component\.variables\s*\[\s*['"]([^'"]+)['"]\s*\](.*)$/);
+        if (mBracket) {
+          const uuid = mBracket[1];
+          const rest = mBracket[2] ?? '';
+          return `_componentInstances.${currentInstanceId}.${uuid}${rest}`;
+        }
+        const mDot = p.match(/^context\.component\.variables\.([A-Za-z0-9_-]+)(.*)$/);
+        if (mDot) {
+          return `_componentInstances.${currentInstanceId}.${mDot[1]}${mDot[2] ?? ''}`;
+        }
+        return p;
+      })
+    : formMappedDeps;
+
   useVariablePaths(store, deps, effectiveScope, mergedStore);
-  const get = createGet(store, merged, effectiveScope, mergedStore, screenName, screenScopedAliases);
+  // When inside an SC instance scope, replace the stale `context.component.variables` snapshot
+  // on `effectiveScope` with a LIVE snapshot read from `_componentInstances.{instanceId}`.
+  // This ensures children that re-render via `_componentInstances.*` subscriptions also see
+  // the latest values when formulas/templates evaluate against `stateWithScope`.
+  if (currentInstanceId && effectiveScope?.context) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const vsMod = require('@/lib/sdui/global-variable-store');
+      const liveVars = vsMod.getComponentInstanceVars?.(currentInstanceId) ?? {};
+      const ctx = effectiveScope.context as Record<string, unknown>;
+      const comp = ctx.component as Record<string, unknown> | undefined;
+      if (comp && comp.variables !== liveVars) {
+        effectiveScope = {
+          ...effectiveScope,
+          context: {
+            ...ctx,
+            component: { ...comp, variables: liveVars },
+          },
+        };
+      }
+    } catch { /* non-fatal */ }
+  }
+  const rawGet = createGet(store, merged, effectiveScope, mergedStore, screenName, screenScopedAliases);
+  // Always resolve `context.component.variables['UUID']` paths from the live
+  // `_componentInstances.{instanceId}` slot, NOT from the stale `context.component.variables`
+  // snapshot that was placed on `scope` at the SC root render. Without this, nodes that
+  // re-render due to `_componentInstances.*` subscription would still read the frozen snapshot
+  // from their `scope` prop and display stale values (e.g. empty calendar grid).
+  const get: typeof rawGet = currentInstanceId
+    ? (path: string, s?: Record<string, unknown>) => {
+        if (typeof path === 'string' && path.includes('context.component.variables')) {
+          const mBracket = path.match(/^context\.component\.variables\s*\[\s*['"]([^'"]+)['"]\s*\](.*)$/);
+          if (mBracket) {
+            const redirected = `_componentInstances.${currentInstanceId}.${mBracket[1]}${mBracket[2] ?? ''}`;
+            return rawGet(redirected, s);
+          }
+          const mDot = path.match(/^context\.component\.variables\.([A-Za-z0-9_-]+)(.*)$/);
+          if (mDot) {
+            const redirected = `_componentInstances.${currentInstanceId}.${mDot[1]}${mDot[2] ?? ''}`;
+            return rawGet(redirected, s);
+          }
+        }
+        return rawGet(path, s);
+      }
+    : rawGet;
   const storeState = store.getState().getFullState();
   const state = merged ? { ...storeState, ...merged } : storeState;
   const stateBase = effectiveScope
@@ -759,7 +846,20 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
               key={node.key ? `${node.key}-${index}` : index}
               node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
               context={context}
-              scope={{ ...effectiveScope, $item: item, $index: index, $parent: effectiveScope?.$item, context: { item: itemCtx, index, parent: outerItemCtx } }}
+              scope={{
+                ...effectiveScope,
+                $item: item,
+                $index: index,
+                $parent: effectiveScope?.$item,
+                context: {
+                  // Preserve outer context.component so {{context.component.props.*}} and
+                  // context.component.variables['uuid'] subscriptions still resolve inside the map.
+                  ...((effectiveScope?.context as Record<string, unknown> | undefined) ?? {}),
+                  item: itemCtx,
+                  index,
+                  parent: outerItemCtx,
+                },
+              }}
               builderPath={`${builderPath}-m${index}`}
               builderMapIndex={index}
             />
@@ -792,8 +892,39 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     effectiveScope
   );
 
+  // If this node is a shared-component root, strip model properties from cleanProps so
+  // they don't leak onto the DOM element (React warns about unknown props like
+  // accentColor, minDate, etc.). The properties are still available to children via
+  // `context.component.props.*`.
+  const _scModelPropNames: Set<string> | null = (() => {
+    if (!_sharedMeta) return null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const scData = require('@/lib/builder/shared-component-data');
+      const model = scData.getSharedComponents()[_sharedMeta.id] as
+        | { properties?: Array<{ name: string }> }
+        | undefined;
+      const props = model?.properties ?? [];
+      return new Set(props.map(p => p.name));
+    } catch {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const staticModel = require('@/config/shared-components.json')[_sharedMeta.id] as
+          | { properties?: Array<{ name: string }> }
+          | undefined;
+        return new Set((staticModel?.properties ?? []).map(p => p.name));
+      } catch {
+        return new Set();
+      }
+    }
+  })();
   const cleanProps = Object.fromEntries(
-    Object.entries(resolvedProps).filter(([k]) => !k.startsWith('$') && k !== '_meta' && k !== 'animation')
+    Object.entries(resolvedProps).filter(([k]) =>
+      !k.startsWith('$')
+      && k !== '_meta'
+      && k !== 'animation'
+      && !(_scModelPropNames && _scModelPropNames.has(k))
+    )
   ) as Record<string, unknown>;
 
   for (const ck of _CONTROLLED_VALUE_KEYS) {
@@ -1681,8 +1812,27 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const popCfg = node.popover;
   if (popCfg && _popoverContentNode) {
     const pcNode = _popoverContentNode;
+    // Use effectiveScope (which carries context.component.* when inside a
+    // shared-component instance) so the popover content also resolves
+    // context.component.props / variables correctly.
     const renderOverlayContent = () =>
-      <SDURendererInner key={(pcNode as { id?: string }).id || 'popover-content'} node={pcNode} context={context} scope={scope} />;
+      <SDURendererInner key={(pcNode as { id?: string }).id || 'popover-content'} node={pcNode} context={context} scope={effectiveScope} />;
+
+    // Determine whether the popover's openVariable is a scoped component
+    // variable. When yes AND we have an enclosing instanceId, the popover
+    // open state must be stored per-instance so sibling instances don't
+    // all open together when only one trigger is clicked.
+    let popInstanceId: string | undefined;
+    let popOpenVarIsScoped = false;
+    if (popCfg.openVariable && effectiveScope?.context) {
+      const compCtx = (effectiveScope.context as Record<string, unknown>).component as Record<string, unknown> | undefined;
+      const instanceId = compCtx?.instanceId as string | undefined;
+      const modelRef = compCtx?.model as { variables?: Record<string, unknown> } | null | undefined;
+      if (instanceId && modelRef?.variables && popCfg.openVariable in modelRef.variables) {
+        popInstanceId = instanceId;
+        popOpenVarIsScoped = true;
+      }
+    }
 
     return (
       <PopoverHostLazy
@@ -1692,6 +1842,8 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         renderPopoverContent={renderOverlayContent}
         builderMode={builderMode}
         shownPopovers={builderCtx.shownPopovers}
+        instanceId={popInstanceId}
+        openVariableIsComponentScoped={popOpenVarIsScoped}
       />
     );
   }

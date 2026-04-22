@@ -490,10 +490,12 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       const nodeActions = node?.actions;
       const dam = store.directActionsMap;
       if (Array.isArray(nodeActions) && nodeActions.length > 0) {
-        // Wrapped format: [{ trigger, steps: [...] }] — single wrapper item with a steps array.
+        // Wrapped format: [{ trigger, params, steps: [...] }] — single wrapper item with a steps array.
         const first = (nodeActions as unknown[])[0] as Record<string, unknown>;
         if (Array.isArray(first?.steps)) {
           setTriggerValue((first.trigger as string) ?? (target.event || firstTrigger));
+          const elementParams = (first.params as WorkflowParam[] | undefined) ?? [];
+          setWorkflowMeta(prev => ({ ...prev, params: elementParams }));
           initialSteps = deserializeStepArray(first.steps as unknown[], dam);
         } else {
           // Legacy flat steps array (backward compat)
@@ -555,8 +557,13 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       // the trigger directly and the engine auto-detects it as a workflow via the steps array.
       const nodeId = target.nodeId;
       const serializedSteps = steps.map(serializeStep);
+      const elementParams = workflowMeta.params ?? [];
       const wrapped = serializedSteps.length > 0
-        ? [{ trigger: triggerValue, steps: serializedSteps }]
+        ? [{
+            trigger: triggerValue,
+            ...(elementParams.length > 0 ? { params: elementParams } : {}),
+            steps: serializedSteps,
+          }]
         : undefined;
       store.patchNodeField(nodeId, 'actions', wrapped);
     } else if (target.kind === 'globalWorkflow') {
@@ -1016,21 +1023,17 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                 )}
               </div>
 
-              {/* Parameters node — shown for global and component workflows */}
-              {(target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow') && (
-                <>
-                  <Connector />
-                  <ParametersCanvasNode
-                    params={workflowMeta.params ?? []}
-                    isSelected={paramsNodeSelected}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setParamsNodeSelected(true);
-                      setSelectedPath(null);
-                    }}
-                  />
-                </>
-              )}
+              {/* Parameters node — shown for every workflow kind */}
+              <Connector />
+              <ParametersCanvasNode
+                params={workflowMeta.params ?? []}
+                isSelected={paramsNodeSelected}
+                onClick={e => {
+                  e.stopPropagation();
+                  setParamsNodeSelected(true);
+                  setSelectedPath(null);
+                }}
+              />
 
               {/* Main flow */}
               <Connector />
@@ -1127,7 +1130,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
           {/* Panel body */}
           <div data-testid="workflow-props-panel" style={S.rightPanelBody}>
-            {paramsNodeSelected && (target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow') ? (
+            {paramsNodeSelected ? (
               <ParamsConfigPanel
                 params={workflowMeta.params ?? []}
                 onChange={params => setWorkflowMeta(prev => ({ ...prev, params }))}

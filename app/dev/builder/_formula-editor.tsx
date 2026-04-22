@@ -416,6 +416,27 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const props = (model as { properties?: Array<{ id: string; name: string }> } | undefined)?.properties ?? [];
     return new Map(props.map(p => [p.name, p.name]));
   }, [sharedAncestorModelId]);
+
+  // UUID → label maps for shared-component variables and formulas so populateEditor
+  // can render readable pills for `context.component.variables['UUID']` and
+  // `context.component.model.formulas['id'].formula` chips.
+  const scVarMap = useMemo((): Map<string, string> => {
+    if (!sharedAncestorModelId) return new Map();
+    const model = getSharedComponents()[sharedAncestorModelId] as {
+      variables?: Record<string, { label?: string }>;
+    } | undefined;
+    const vars = model?.variables ?? {};
+    return new Map(Object.entries(vars).map(([uuid, def]) => [uuid, def.label ?? uuid.slice(0, 8)]));
+  }, [sharedAncestorModelId]);
+
+  const scFormulaMap = useMemo((): Map<string, string> => {
+    if (!sharedAncestorModelId) return new Map();
+    const model = getSharedComponents()[sharedAncestorModelId] as {
+      formulas?: Record<string, { name?: string }>;
+    } | undefined;
+    const fns = model?.formulas ?? {};
+    return new Map(Object.entries(fns).map(([id, def]) => [id, def.name ?? id.slice(0, 8)]));
+  }, [sharedAncestorModelId]);
   // Show Workflow tab when there are test results OR when a trigger with event data is active
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
   // Show Workflow tab for global workflows with params too (PARAMETERS section)
@@ -428,7 +449,16 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const hasFormulaParams = (formulaParams?.length ?? 0) > 0;
   // When paramsInQuick is true, params appear in the Quick tab and don't force Workflow tab
   const paramsForceWorkflow = hasFormulaParams && !paramsInQuick;
-  const showWorkflowTab = hasEventContext || Object.keys(currentWorkflowTestResults ?? {}).length > 0 || isGlobalWorkflowWithParams || paramsForceWorkflow;
+  // Only surface the Workflow tab when the user is actually editing workflow-adjacent logic.
+  // Outside the workflow canvas (e.g. editing a shared-component prop formula) the Workflow
+  // tab would otherwise leak in from unrelated cached test results — hide it entirely there.
+  const isWorkflowContext = !!workflowCanvasTarget || hasEventContext || paramsForceWorkflow;
+  const showWorkflowTab = isWorkflowContext && (
+    hasEventContext ||
+    Object.keys(currentWorkflowTestResults ?? {}).length > 0 ||
+    isGlobalWorkflowWithParams ||
+    paramsForceWorkflow
+  );
 
   const [tab, setTab] = useState<Tab>(() => {
     if (hasEventContext || paramsForceWorkflow) return 'workflow';
@@ -577,7 +607,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap, scPropMap);
+    populateEditor(el, initialFormula, dsMap, varMap, stepNameMap, scPropMap, scVarMap, scFormulaMap);
     setFormula(initialFormula);
     historyRef.current = [initialFormula];
     historyIdxRef.current = 0;
@@ -947,7 +977,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const el = editorRef.current;
     if (!el) return;
     isUndoRedoRef.current = true;
-    populateEditor(el, f, dsMap, varMap, stepNameMap, scPropMap);
+    populateEditor(el, f, dsMap, varMap, stepNameMap, scPropMap, scVarMap, scFormulaMap);
     setFormula(f);
     // Move cursor to end
     const r = document.createRange();
@@ -955,7 +985,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const sel = window.getSelection();
     sel?.removeAllRanges(); sel?.addRange(r);
     isUndoRedoRef.current = false;
-  }, [dsMap, varMap, stepNameMap]);
+  }, [dsMap, varMap, stepNameMap, scPropMap, scVarMap, scFormulaMap]);
 
   // Restore the saved caret position before any programmatic insertion
   const restoreCaret = useCallback(() => {

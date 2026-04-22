@@ -25,6 +25,8 @@ import sharedComponentTestActions from '@/config/actions/shared-component-test.j
 import popoverTestActions from '@/config/actions/popover-test.json';
 import animationShowcaseActions from '@/config/actions/animation-showcase.json';
 import triggersTestActions from '@/config/actions/triggers-test.json';
+import scComponentShowcaseActions from '@/config/actions/sc-component-showcase.json';
+import sharedComponentsJson from '@/config/shared-components.json';
 import formulasJson from '@/config/formulas.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
@@ -159,6 +161,7 @@ export function getBuilderConfig() {
     ...(popoverTestActions as Record<string, Record<string, unknown>>),
     ...(animationShowcaseActions as Record<string, Record<string, unknown>>),
     ...(triggersTestActions as Record<string, Record<string, unknown>>),
+    ...(scComponentShowcaseActions as Record<string, Record<string, unknown>>),
   };
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)
@@ -175,6 +178,30 @@ export function getBuilderConfig() {
       // Pass through params so global workflows (those with params) are detected by the store
       params: (def.params as Array<{ id: string; name: string; type: string; allowMultiple?: boolean; testValue?: unknown }> | undefined),
     }));
+
+  // ── Register shared component workflows so executeComponentAction's picker can find them.
+  // These are NOT page-scoped actions, but they need to appear in pageWorkflowMeta so the
+  // builder UI can display a human-readable name when a config.action references them.
+  const scModels = sharedComponentsJson as Record<string, {
+    name?: string;
+    workflows?: Record<string, { trigger: string; steps: unknown[]; name?: string }>;
+  }>;
+  for (const [scId, scModel] of Object.entries(scModels)) {
+    const scName = scModel.name ?? scId;
+    for (const [wfId, wf] of Object.entries(scModel.workflows ?? {})) {
+      if (workflows.some(w => w.id === wfId)) continue;
+      workflows.push({
+        id: wfId,
+        name: `${scName} — ${wf.name ?? wfId}`,
+        trigger: wf.trigger ?? 'execution',
+        steps: (wf.steps as object[]) ?? [],
+        onErrorSteps: undefined,
+        isTrigger: undefined,
+        pageScope: undefined,
+        params: undefined,
+      });
+    }
+  }
 
   const directActions = Object.fromEntries(
     Object.entries(allActions).filter(([, def]) => def.type && !Array.isArray(def.steps))

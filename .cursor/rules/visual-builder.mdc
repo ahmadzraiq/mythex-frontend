@@ -3207,3 +3207,66 @@ test.beforeEach(async () => {
   await resetBuilder(sharedPage);
 });
 ```
+
+---
+
+## Workflow Parameters — Available on Every Workflow Kind
+
+**Rule:** The Parameters node (on the workflow canvas) and the Parameters right-side panel are now available for **every** workflow kind in the builder — not just `globalWorkflow` and `componentWorkflow`. The kinds affected:
+
+- `element` — element workflows bound to a node event (click, change, etc.)
+- `pageTrigger` — `appLoad` / `pageLoad` triggers
+- `pageWorkflow` — named, page-scoped workflows
+- `globalWorkflow` — named, app-global workflows
+- `componentWorkflow` — named, shared-component-scoped workflows
+
+### Persistence formats
+
+| Kind | Storage shape |
+|---|---|
+| `element` | `node.actions[0] = { trigger, params?, steps }` (params only serialized when non-empty) |
+| `pageWorkflow` | `pageWorkflowMeta[id] = { trigger, name, params? }`; `pageWorkflows[id] = steps` |
+| `globalWorkflow` | `globalWorkflowMeta[id] = { trigger, name, params?, global: true }`; steps via `globalWorkflows[id]` |
+| `componentWorkflow` | Stored inside shared-component model: `scModel.workflows[wfId] = { trigger, name, params, steps }` |
+| `pageTrigger` | Same as `pageWorkflow` with `trigger: 'appLoad' \| 'pageLoad'` and `isTrigger: true` |
+
+### Cross-instance dispatch — `executeComponentAction` with explicit `modelId` + `instanceId`
+
+`executeComponentAction` now accepts an explicit `cfg.instanceId` override in its config. When provided, it targets that specific shared-component instance. Falls back to the ambient `compInfo.instanceId` when omitted (the in-SC internal-button pattern).
+
+```json
+// Call scWorkflowB on a SPECIFIC instance from an external (page/global) workflow
+{
+  "id": "s1",
+  "type": "executeComponentAction",
+  "config": {
+    "modelId": "sc-workflow-caller",
+    "instanceId": "wftest-sc-inst-1",
+    "action": "scWorkflowB",
+    "args": {
+      "multiplier": { "formula": "5" }
+    }
+  }
+}
+```
+
+Rules:
+- `cfg.workflowId` and `cfg.action` are interchangeable keys (handler reads both).
+- `cfg.modelId` falls back to ambient `compInfo.id`; `cfg.instanceId` falls back to ambient `compInfo.instanceId`.
+- `cfg.args` values may be plain literals or `{ "formula": "..." }` — formulas are resolved in the caller's scope (which includes any enclosing `parameters` object).
+
+### Test harness — `/workflow-call-test`
+
+A dedicated screen at `/workflow-call-test` exercises four call-chain scenarios end-to-end:
+
+1. **page → page** — `runProjectWorkflow pageWorkflowA(greeting, count)` → writes `wftest-result-1`
+2. **page → global** — `pageWorkflowB` → `runProjectWorkflow GlobalGreet(name, times)` → writes `wftest-result-2`
+3. **SC internal** — SC instance's own button → `executeComponentAction scWorkflowA(label)` → writes per-instance `scResult` AND mirrors to `wftest-result-3`
+4. **page → SC instance → global** — `pageWorkflowExtKick` → `executeComponentAction` with explicit `instanceId: 'wftest-sc-inst-1'` → `scWorkflowB(multiplier)` → `runProjectWorkflow GlobalFinalize(sum)` → writes `wftest-result-4`
+
+Source files:
+- `config/screens/workflow-call-test.json` — the screen
+- `config/shared-components.json` → `sc-workflow-caller` — the SC with `scWorkflowA` + `scWorkflowB`
+- `config/actions/workflow-test.json` — contains `GlobalGreet`, `GlobalFinalize` (with `"global": true`), `pageWorkflowA`, `pageWorkflowB`, `pageWorkflowExtKick`, and the scenario-runner wrappers (`runScenario1`, `runScenario2`, `runScenario4`, `runScWorkflowAInternal`)
+
+When adding a new workflow file, spread it into `config/root.ts` `actions` AND `lib/builder/config-data.ts` `allActions` so the builder's `pageWorkflowMeta` picks up the definitions (see existing imports as a pattern).

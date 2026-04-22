@@ -282,14 +282,32 @@ function buildFormulaCtx(
   ctx: ActionHandlerContext,
   parameters?: Record<string, unknown>,
 ): Record<string, unknown> {
+  // When the scope refers to a shared-component instance, always read the
+  // latest per-instance variables from the global store. Formulas inside a
+  // workflow can write to these variables step-by-step; each subsequent
+  // step's formula must see the up-to-date value, not a snapshot.
+  let scopeCtx = (ctx.scope?.context as Record<string, unknown> | undefined) ?? {};
+  const compInfo = scopeCtx.component as Record<string, unknown> | undefined;
+  const instanceId = compInfo?.instanceId as string | undefined;
+  if (instanceId) {
+    try {
+      const instances = (vsState['_componentInstances'] as Record<string, Record<string, unknown>> | undefined) ?? {};
+      const liveVars = instances[instanceId] ?? {};
+      scopeCtx = {
+        ...scopeCtx,
+        component: {
+          ...(compInfo ?? {}),
+          variables: liveVars,
+        },
+      };
+    } catch { /* non-fatal */ }
+  }
   return {
     ...vsState,
     variables: vsState,
     ...(ctx.scope ?? {}),
     ...(parameters ? { parameters } : {}),
-    context: (ctx.scope?.context as Record<string, unknown> | undefined)
-      ?? (vsState['context'] as Record<string, unknown> | undefined)
-      ?? {},
+    context: scopeCtx,
   };
 }
 
@@ -752,8 +770,22 @@ async function runSteps(
       const workflowId = (cfg.workflowId ?? cfg.action) as string | undefined;
       const componentCtx = (ctx.scope?.context as Record<string, unknown> | undefined) ?? {};
       const compInfo = (componentCtx.component ?? {}) as Record<string, unknown>;
-      const instanceId = compInfo.instanceId as string | undefined;
+      // Allow an explicit instanceId override from the step config so an
+      // external (page/global) workflow can target a specific SC instance.
+      // Falls back to the ambient scope when called from inside the SC.
+      const instanceId = (cfg.instanceId as string | undefined) ?? (compInfo.instanceId as string | undefined);
       const modelId = (cfg.modelId ?? compInfo.id) as string | undefined;
+
+      if (typeof window !== 'undefined') {
+        console.log('[executeComponentAction] step:', {
+          stepId: step.id,
+          workflowId,
+          modelId,
+          instanceId,
+          cfgArgs: cfg.args,
+          ambientComponentId: compInfo.id,
+        });
+      }
 
       if (workflowId && modelId) {
         let scModel: { workflows?: Record<string, { steps: WorkflowStep[]; params?: Array<{ name: string }> }> } | undefined;
@@ -761,9 +793,47 @@ async function runSteps(
         if (!scModel) { try { scModel = require('@/config/shared-components.json')[modelId]; } catch { /* noop */ } }
 
         const wf = scModel?.workflows?.[workflowId];
+        if (typeof window !== 'undefined') {
+          console.log('[executeComponentAction] model lookup:', {
+            modelId,
+            modelFound: !!scModel,
+            availableWorkflows: scModel?.workflows ? Object.keys(scModel.workflows) : [],
+            workflowFound: !!wf,
+            stepCount: wf?.steps?.length ?? 0,
+          });
+        }
         if (wf?.steps) {
           const vsState = getGlobalVariableStore().getState().getFullState();
-          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+
+          // Read LIVE instance variables from _componentInstances so formulas
+          // referencing context.component.variables['UUID'] always see the
+          // current value — not a stale snapshot captured at click time.
+          let liveInstanceVars: Record<string, unknown> = {};
+          if (instanceId) {
+            try {
+              const { getComponentInstanceVars } = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+              liveInstanceVars = getComponentInstanceVars(instanceId) ?? {};
+            } catch { /* non-fatal */ }
+          }
+
+          // Build a formula context that carries the LIVE variables (not
+          // whatever was snapshotted on ctx.scope.context.component.variables).
+          const ctxWithLiveVars: ActionHandlerContext = {
+            ...ctx,
+            scope: {
+              ...(ctx.scope ?? {}),
+              context: {
+                ...componentCtx,
+                component: {
+                  ...(compInfo ?? {}),
+                  id: modelId,
+                  instanceId,
+                  variables: liveInstanceVars,
+                },
+              },
+            },
+          };
+          const formulaCtx = buildFormulaCtx(vsState, ctxWithLiveVars, parameters);
           const resolvedArgs: Record<string, unknown> = {};
           if (cfg.args && typeof cfg.args === 'object') {
             for (const [k, v] of Object.entries(cfg.args as Record<string, unknown>)) {
@@ -774,20 +844,39 @@ async function runSteps(
           }
           const componentScope = {
             ...(ctx.scope ?? {}),
+            // Expose resolvedArgs as `parameters` on ctx.scope so setVarHandler's
+            // evalCtx (which spreads ctx.scope) can resolve `parameters['name']`
+            // formulas. Without this, changeVariableValue steps referencing
+            // parameters inside a component workflow would see undefined.
+            parameters: resolvedArgs,
             context: {
               ...componentCtx,
               params: resolvedArgs,
-              component: { ...compInfo, instanceId },
+              component: { ...compInfo, id: modelId, instanceId, variables: liveInstanceVars },
             },
           };
           const subCtx = { ...ctx, scope: componentScope };
           const subWorkflowCtx: WorkflowCtx = {};
+
+          // Also write parameters into the global variable store so formula
+          // evaluators that don't see ctx.scope directly (e.g. graphql variables)
+          // still pick them up. Restore the previous value afterwards so nested
+          // component workflow calls don't bleed parameters across siblings.
+          const prevParameters = getGlobalVariableStore().getState().getFullState()['parameters'];
+          getGlobalVariableStore().getState().setState(prev =>
+            setNestedValue(prev, 'parameters', resolvedArgs)
+          );
+
           let stepResult: unknown = undefined;
           let stepError: unknown = null;
           try {
             stepResult = await runSteps(wf.steps, subCtx as ActionHandlerContext, subWorkflowCtx, resolvedArgs);
           } catch (err) {
             stepError = err instanceof Error ? err.message : String(err);
+          } finally {
+            getGlobalVariableStore().getState().setState(prev =>
+              setNestedValue(prev, 'parameters', prevParameters ?? null)
+            );
           }
           if (step.id) {
             workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
@@ -841,6 +930,15 @@ export const workflowStepsHandler =
   (ctx: ActionHandlerContext) =>
   async (actionDef: ActionDef): Promise<void> => {
     const steps = (actionDef.steps ?? []) as WorkflowStep[];
+    if (typeof window !== 'undefined') {
+      console.log('[workflowStepsHandler] invoked:', {
+        action: (actionDef as Record<string, unknown>).name ?? (actionDef as Record<string, unknown>).id,
+        trigger: (actionDef as Record<string, unknown>).trigger,
+        stepCount: steps.length,
+        stepTypes: steps.map(s => (s as unknown as Record<string, unknown>).type ?? (s as unknown as Record<string, unknown>).action),
+        payloadParams: ctx.payload?.parameters,
+      });
+    }
     // workflowCtx is shared across all steps (including sub-branches).
     // Pre-populate with any existing workflow context so chained workflow calls
     // can read results from prior top-level steps.
@@ -852,46 +950,50 @@ export const workflowStepsHandler =
     // Resolve global workflow parameters from the caller's payload.
     // Each value may be a plain value or a formula string — evaluate formulas
     // in the calling context so parameters['name'] resolves to the real value.
+    //
+    // Param values reach us as strings (the runProjectWorkflow step converts
+    // both `{ "formula": "..." }` objects and plain strings to a bare string).
+    // To tell them apart we try evaluating; if the evaluator returns an error
+    // (ReferenceError, SyntaxError, etc.) the string is a literal, not a
+    // formula, so we keep the original string value.
+    const resolveParamValue = (v: unknown, callingCtx: Record<string, unknown>): unknown => {
+      if (typeof v !== 'string' || v.trim().length === 0) return v;
+      try {
+        const result = evaluateFormula(v, callingCtx);
+        // Evaluator flagged the string as an invalid formula → treat as a
+        // literal string value (e.g. "World", "Hi", "Ahmad").
+        if (result.error != null) return v;
+        return result.value;
+      } catch {
+        return v;
+      }
+    };
+
     let parameters: Record<string, unknown> | undefined;
     const rawParamsFromPayload = ctx.payload?.parameters as Record<string, unknown> | undefined;
     if (rawParamsFromPayload && Object.keys(rawParamsFromPayload).length > 0) {
       const vsState = getGlobalVariableStore().getState().getFullState();
       const callingCtx = buildFormulaCtx(vsState, ctx, undefined);
       parameters = Object.fromEntries(
-        Object.entries(rawParamsFromPayload).map(([k, v]) => {
-          if (typeof v === 'string' && v.trim().length > 0) {
-            // Try to evaluate as a formula expression (may just be a plain string value)
-            try {
-              const result = evaluateFormula(v, callingCtx);
-              // Only use evaluated result if it's not undefined — keeps plain string values intact
-              const resolved = result.value;
-              return [k, resolved !== undefined ? resolved : v];
-            } catch {
-              return [k, v];
-            }
-          }
-          return [k, v];
-        })
+        Object.entries(rawParamsFromPayload).map(([k, v]) => [k, resolveParamValue(v, callingCtx)])
       );
+      if (typeof window !== 'undefined') {
+        console.log('[workflow-steps-handler] resolved payload parameters:', {
+          action: (actionDef as Record<string, unknown>).name ?? (actionDef as Record<string, unknown>).id,
+          raw: rawParamsFromPayload,
+          resolved: parameters,
+        });
+      }
     }
-    // Also check the params defined on the actionDef itself (for JSON config usage)
+    // Also check the params defined on the actionDef itself (for JSON config usage).
+    // Skip if params is an Array — that's parameter METADATA (e.g. [{id,name,testValue}])
+    // from the workflow definition, not actual caller-supplied values.
     const rawParamsFromDef = (actionDef as Record<string, unknown>).params as Record<string, unknown> | undefined;
-    if (rawParamsFromDef && !parameters) {
+    if (rawParamsFromDef && !Array.isArray(rawParamsFromDef) && !parameters) {
       const vsState = getGlobalVariableStore().getState().getFullState();
       const callingCtx = buildFormulaCtx(vsState, ctx, undefined);
       parameters = Object.fromEntries(
-        Object.entries(rawParamsFromDef).map(([k, v]) => {
-          if (typeof v === 'string' && v.trim().length > 0) {
-            try {
-              const result = evaluateFormula(v, callingCtx);
-              const resolved = result.value;
-              return [k, resolved !== undefined ? resolved : v];
-            } catch {
-              return [k, v];
-            }
-          }
-          return [k, v];
-        })
+        Object.entries(rawParamsFromDef).map(([k, v]) => [k, resolveParamValue(v, callingCtx)])
       );
     }
 

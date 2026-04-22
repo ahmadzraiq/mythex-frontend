@@ -160,7 +160,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   auth?.['key']*           — authentication state (user, accessToken, refreshToken)
  *   parameters?.['name'] | parameters?.name | parameters.name  — global workflow params
  */
-export const CHIP_RE = /collections(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)workflow(?:\?\.)?\['[^']+'\](?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context\.component\?\.props\?\.\['[^']*'\]|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\??\.(?:browser|screen)(?:\??\.(?:\['[^']*'\]|[\w$]+))*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|auth(?:(?:\?\.|\.)[\w$]+|(?:\?\.|\.)?\['[^']+'\])(?:\?\.[\w$]+|\?\.\['[^']*'\])*|parameters(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|parameters(?:\?\.|\.)[\w$]+/g;
+export const CHIP_RE = /collections(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)workflow(?:\?\.)?\['[^']+'\](?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context(?:\?\.|\.)component(?:(?:\?\.|\.)(?:props|variables|model)(?:(?:\?\.|\.)(?:\['[^']*'\]|[\w$]+)|\['[^']*'\])*)?|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\??\.(?:browser|screen)(?:\??\.(?:\['[^']*'\]|[\w$]+))*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|auth(?:(?:\?\.|\.)[\w$]+|(?:\?\.|\.)?\['[^']+'\])(?:\?\.[\w$]+|\?\.\['[^']*'\])*|parameters(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|parameters(?:\?\.|\.)[\w$]+/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -790,6 +790,8 @@ export function populateEditor(
   varMap?: Map<string, { label: string }>,
   stepNameMap?: Map<string, string>,
   scPropMap?: Map<string, string>,
+  scVarMap?: Map<string, string>,
+  scFormulaMap?: Map<string, string>,
 ): void {
   el.innerHTML = '';
   if (!formula) return;
@@ -879,10 +881,45 @@ export function populateEditor(
         .replace(/\.\[(\d+)\]/g, '[$1]');
       const isErrorPath = afterStepId.startsWith('.error');
       el.appendChild(buildChipSpan(formulaPath, friendly, isErrorPath ? 'error' : 'collection'));
-    } else if (/^context\.component\?\.props\?\.\['([^']+)'\]$/.test(formulaPath)) {
-      const propUUID = formulaPath.match(/^context\.component\?\.props\?\.\['([^']+)'\]$/)?.[1] ?? '';
-      const propName = scPropMap?.get(propUUID) ?? propUUID;
-      el.appendChild(buildChipSpan(formulaPath, propName, 'shared-component'));
+    } else if (/^context(?:\?\.|\.)component\b/.test(formulaPath)) {
+      // Shared-component context paths. Supports both dot and optional-chaining
+      // bracket forms:
+      //   context.component.props.label                    → pill labelled "label"
+      //   context.component?.props?.['label']              → pill labelled "label"
+      //   context.component.variables['UUID']              → pill labelled with variable's label
+      //   context.component.variables['UUID'].field        → "varLabel.field"
+      //   context.component.model.formulas['id'].formula   → pill labelled "ƒ fnName"
+      const propM = formulaPath.match(/^context(?:\?\.|\.)component(?:\?\.|\.)props(?:\?\.\['([^']+)'\]|\['([^']+)'\]|\.([\w$]+))(.*)$/);
+      const varM  = !propM && formulaPath.match(/^context(?:\?\.|\.)component(?:\?\.|\.)variables(?:\?\.\['([^']+)'\]|\['([^']+)'\]|\.([\w$]+))(.*)$/);
+      const fnM   = !propM && !varM && formulaPath.match(/^context(?:\?\.|\.)component(?:\?\.|\.)model(?:\?\.|\.)formulas(?:\?\.\['([^']+)'\]|\['([^']+)'\])(.*)$/);
+
+      const prettifySuffix = (s: string): string => s
+        .replace(/\?\.\['([^']+)'\]/g, '.$1')
+        .replace(/\['([^']+)'\]/g, '.$1')
+        .replace(/\?\./g, '.');
+
+      if (propM) {
+        const propName = propM[1] ?? propM[2] ?? propM[3] ?? '';
+        const display  = (scPropMap?.get(propName) ?? propName) + prettifySuffix(propM[4] ?? '');
+        el.appendChild(buildChipSpan(formulaPath, display, 'shared-component'));
+      } else if (varM) {
+        const uuid = varM[1] ?? varM[2] ?? varM[3] ?? '';
+        const label = scVarMap?.get(uuid) ?? uuid.slice(0, 8);
+        const display = label + prettifySuffix(varM[4] ?? '');
+        el.appendChild(buildChipSpan(formulaPath, display, 'shared-component'));
+      } else if (fnM) {
+        const fnId = fnM[1] ?? fnM[2] ?? '';
+        const fnName = scFormulaMap?.get(fnId) ?? fnId.slice(0, 8);
+        el.appendChild(buildChipSpan(formulaPath, `ƒ ${fnName}`, 'shared-component'));
+      } else {
+        // Fallback for other context.component.* paths (rare)
+        const friendly = formulaPath
+          .replace(/^context(?:\?\.|\.)/, '')
+          .replace(/\?\.\['([^']+)'\]/g, '.$1')
+          .replace(/\['([^']+)'\]/g, '.$1')
+          .replace(/\?\./g, '.');
+        el.appendChild(buildChipSpan(formulaPath, friendly, 'shared-component'));
+      }
     } else if (formulaPath.startsWith('context.local')) {
       const keyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/);
       const friendly = keyMatch ? `local.${keyMatch[1]}` : 'local';

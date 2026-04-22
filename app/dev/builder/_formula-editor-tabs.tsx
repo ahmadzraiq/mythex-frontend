@@ -2389,7 +2389,10 @@ function EventFieldGroup({
 
 // ─── SharedComponentContextSection ───────────────────────────────────────────
 // Shown in the "Quick" tab when the selected node is inside a shared component being edited.
-// Renders property chips → context.component?.props?.['<name>']
+// Renders property / variable / formula chips scoped to the SC model:
+//   • Properties → context.component?.props?.['<name>']
+//   • Variables  → context.component?.variables?.['<uuid>']  (VariableEntry-style teal pill + tree)
+//   • Formulas   → context.component?.model?.formulas?.['<id>']?.formula (FnRow-style pill)
 
 const SC_CHIP = { bg: '#78350f', border: '#d97706', text: '#fde68a' };
 
@@ -2429,6 +2432,172 @@ function SCPropChip({
         </span>
       )}
     </div>
+  );
+}
+
+// ─── SCVariableEntry — mirrors VariableEntry design but scoped to context.component.variables ──
+// Shows a teal pill + chevron + value preview; expands to a DataTreeNode tree for
+// objects/arrays. Clicking the pill inserts `context.component?.variables?.['UUID']`;
+// clicking a leaf in the tree inserts the chained sub-path.
+
+function SCVariableEntry({
+  uuid, label, initialValue, onInsert,
+}: {
+  uuid: string;
+  label: string;
+  initialValue: unknown;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [arrayIndices, setArrayIndices] = useState<Map<string, number>>(new Map());
+
+  const rootPath = `context.component?.variables?.['${uuid}']`;
+  const treeData: unknown = initialValue;
+
+  // DataTreeNode passes a dot-path like "rootPath.field[0].sub" — convert to
+  // chained optional-access formula `...?.['field']?.[0]?.['sub']`.
+  const handleNodeInsert = useCallback((nodePath: string) => {
+    const escaped = rootPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const after = nodePath.replace(new RegExp(`^${escaped}\\.?`), '');
+    const segments = after.match(/\[\d+\]|[^.\[\]]+/g) ?? [];
+    const chained = segments.map(p => {
+      const bracketMatch = p.match(/^\[(\d+)\]$/);
+      if (bracketMatch) return `?.[${bracketMatch[1]}]`;
+      return `?.['${p}']`;
+    }).join('');
+    const fp = `${rootPath}${chained}`;
+    const friendly = after ? `${label}${after.startsWith('[') ? '' : '.'}${after}` : label;
+    onInsert(fp, friendly, 'shared-component');
+  }, [rootPath, label, onInsert]);
+
+  const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));
+
+  const isUndefined = treeData === undefined;
+
+  return (
+    <div>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+      >
+        <span
+          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          onClick={() => setIsOpen(o => !o)}
+        >
+          <FEChevron open={isOpen} size={8} />
+        </span>
+        <div
+          style={{ display: 'inline-flex', alignItems: 'center', background: VAR_CHIP.bg, border: `1px solid ${VAR_CHIP.border}`, borderRadius: 5, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}
+          onClick={() => onInsert(rootPath, label, 'shared-component')}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = VAR_CHIP.bgHover; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = VAR_CHIP.bg; }}
+        >
+          <span style={{ fontSize: 11, color: VAR_CHIP.text, fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
+        </div>
+        {isUndefined ? (
+          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
+        ) : typeof treeData !== 'object' || treeData === null ? (
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {feValuePreview(treeData)}
+          </span>
+        ) : null}
+      </div>
+
+      {isOpen && (
+        <div>
+          {isUndefined ? (
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+              No value set yet
+            </div>
+          ) : typeof treeData === 'object' && treeData !== null && !Array.isArray(treeData) ? (
+            Object.entries(treeData as Record<string, unknown>).map(([k, v]) => (
+              <DataTreeNode
+                key={k} fieldName={k} path={`${rootPath}.${k}`} value={v}
+                depth={1} onInsert={handleNodeInsert}
+                expanded={expanded} toggleExpand={toggleExpand}
+                arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
+                chipColor={VAR_CHIP}
+              />
+            ))
+          ) : Array.isArray(treeData) ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 28px' }}>
+                <span style={{ fontSize: 9, color: VAR_CHIP.text, fontFamily: 'monospace', fontWeight: 700, minWidth: 14 }}>[]</span>
+                <select
+                  value={arrayIndices.get(rootPath) ?? 0}
+                  onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
+                  onClick={e => e.stopPropagation()}
+                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                >
+                  {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 9, color: '#4b5563' }}>{(treeData as unknown[]).length} items</span>
+              </div>
+              {(treeData as unknown[]).length > 0 && (() => {
+                const idx = arrayIndices.get(rootPath) ?? 0;
+                return (
+                  <DataTreeNode
+                    fieldName={`${label}[${idx}]`} path={`${rootPath}[${idx}]`} value={(treeData as unknown[])[idx]}
+                    depth={1} onInsert={handleNodeInsert}
+                    expanded={expanded} toggleExpand={toggleExpand}
+                    arrayIndices={arrayIndices} setArrayIndex={setArrayIndex}
+                    chipColor={VAR_CHIP}
+                  />
+                );
+              })()}
+            </div>
+          ) : (
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace' }}>
+              {feValuePreview(treeData)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SCFormulaRow — FnRow-style pill that inserts a formula chip on click ──
+// Matches the Formulas-tab FnRow look (rounded-12 gray pill with ƒ icon and name)
+// but on click it inserts `context.component?.model?.formulas?.['id']?.formula`
+// as a shared-component chip rather than the raw function-call syntax.
+
+function SCFormulaRow({
+  id, name, formula, params, onInsert,
+}: {
+  id: string;
+  name: string;
+  formula?: string;
+  params?: Array<{ name: string }>;
+  onInsert: (formulaPath: string, displayLabel: string, type: VarRowItem['type']) => void;
+}) {
+  const paramStr = (params ?? []).map(p => p.name).join(', ');
+  const signature = `${name}(${paramStr})`;
+  const preview = formula && formula.length > 120 ? `${formula.slice(0, 120)}…` : (formula ?? '');
+  const tip = preview ? `${signature}\n\n${preview}` : signature;
+  const fp = `context.component?.model?.formulas?.['${id}']?.formula`;
+  return (
+    <Tooltip text={tip}>
+      <button
+        onClick={() => onInsert(fp, name, 'shared-component')}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 3,
+          padding: '2px 7px',
+          background: '#1f2937', border: '1px solid #374151', borderRadius: 12,
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}
+        onMouseEnter={ev => { ev.currentTarget.style.borderColor = '#d97706'; ev.currentTarget.style.background = '#78350f'; }}
+        onMouseLeave={ev => { ev.currentTarget.style.borderColor = '#374151'; ev.currentTarget.style.background = '#1f2937'; }}
+      >
+        <span style={{ fontSize: 9, color: '#fde68a', fontStyle: 'italic' }}>ƒ</span>
+        <span style={{ fontSize: 11, color: '#e2e8f0' }}>{name}</span>
+      </button>
+    </Tooltip>
   );
 }
 
@@ -2502,45 +2671,44 @@ export function SharedComponentContextSection({
         </div>
       )}
 
-      {/* VARIABLES */}
+      {/* VARIABLES — VariableEntry-style teal pill + chevron + value preview + expandable tree */}
       <SCSectionHeader label="Variables" open={varsOpen} onToggle={() => setVarsOpen(o => !o)} />
       {varsOpen && (
         <div style={{ paddingBottom: 4 }}>
           {varEntries.length === 0 ? (
             <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No variables defined</div>
           ) : varEntries.map(([uuid, def]) => (
-            <SCPropChip
+            <SCVariableEntry
               key={uuid}
-              icon="V"
+              uuid={uuid}
               label={def.label ?? uuid.slice(0, 8)}
-              value={def.initialValue}
-              formula={`context.component?.variables?.['${uuid}']`}
+              initialValue={def.initialValue}
               onInsert={onInsert}
             />
           ))}
         </div>
       )}
 
-      {/* FORMULAS */}
+      {/* FORMULAS — FnRow-style pill layout (wraps to fill row) */}
       <SCSectionHeader label="Formulas" open={formulasOpen} onToggle={() => setFormulasOpen(o => !o)} />
       {formulasOpen && (
         <div style={{ paddingBottom: 4 }}>
           {formulaEntries.length === 0 ? (
             <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No formulas defined</div>
-          ) : formulaEntries.map(([id, def]) => {
-            const paramList = (def.params ?? []).map(p => `/* ${p.name} */`).join(', ');
-            const formula = `context.component?.model?.formulas?.['${id}']?.formula`;
-            return (
-              <SCPropChip
-                key={id}
-                icon="ƒ"
-                label={def.name || id.slice(0, 8)}
-                value={def.formula ? `${def.formula.slice(0, 30)}${def.formula.length > 30 ? '…' : ''}` : undefined}
-                formula={paramList ? `/* ${def.name}(${paramList}) */ ${formula}` : formula}
-                onInsert={onInsert}
-              />
-            );
-          })}
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '2px 10px 6px 22px' }}>
+              {formulaEntries.map(([id, def]) => (
+                <SCFormulaRow
+                  key={id}
+                  id={id}
+                  name={def.name || id.slice(0, 8)}
+                  formula={def.formula}
+                  params={def.params}
+                  onInsert={onInsert}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

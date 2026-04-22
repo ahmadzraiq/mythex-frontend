@@ -55,6 +55,21 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
         const storeState = ctx.store?.getState?.() as { getFullState?: () => Record<string, unknown>; data?: Record<string, unknown> } | undefined;
         const vsData = (storeState?.getFullState?.() ?? storeState?.data ?? {}) as Record<string, unknown>;
         const mergedState = ctx.getFullMergedState?.() ?? {};
+
+        // If we're inside a shared-component workflow, rebuild context.component.variables
+        // from the LIVE per-instance slot so sequential formulas see each other's writes.
+        let ctxForFormula = (ctx.scope?.context ?? (vsData['context'] as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>;
+        const compInfo = ctxForFormula.component as Record<string, unknown> | undefined;
+        const liveInstanceId = compInfo?.instanceId as string | undefined;
+        if (liveInstanceId) {
+          const instances = (vsData['_componentInstances'] as Record<string, Record<string, unknown>> | undefined) ?? {};
+          const liveVars = instances[liveInstanceId] ?? {};
+          ctxForFormula = {
+            ...ctxForFormula,
+            component: { ...(compInfo ?? {}), variables: liveVars },
+          };
+        }
+
         const evalCtx = {
           ...mergedState,
           ...sduiData,
@@ -62,9 +77,18 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
           ...(ctx.scope ?? {}),
           variables: vsData,
           collections: (sduiData?.collections ?? sduiData?.['collections'] ?? {}) as Record<string, unknown>,
-          context: (ctx.scope?.context ?? (vsData['context'] as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>,
+          context: ctxForFormula,
           event: (ctx.event as Record<string, unknown> | undefined) ?? {},
         };
+        if (typeof window !== 'undefined' && String(obj.formula ?? '').includes("parameters?.['")) {
+          console.log('[setVarHandler] evaluating formula with parameters:', {
+            path,
+            formula: obj.formula,
+            parameters: evalCtx.parameters,
+            hasScope: !!ctx.scope,
+            scopeKeys: Object.keys(ctx.scope ?? {}),
+          });
+        }
         value = evaluateFormula(obj.formula, evalCtx, ctx.get).value ?? null;
       } else {
         value = resolvePayload(obj, ctx.get, ctx.scope);

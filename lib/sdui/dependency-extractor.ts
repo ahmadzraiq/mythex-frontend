@@ -31,6 +31,23 @@ function extractFormulaVarPaths(expr: string): string[] {
   while ((gc = gcRe.exec(expr)) !== null) {
     paths.push(`globalContext.${gc[1].replace(/\?\./g, '.')}`);
   }
+  // Extract shared-component instance variable references so formulas/text
+  // templates re-render when the underlying variable changes:
+  //   context?.component?.variables?.['UUID']   → context.component.variables.UUID
+  //   context.component.variables.UUID           → context.component.variables.UUID
+  // The renderer later rewrites context.component.variables.UUID → _componentInstances.{instanceId}.UUID
+  const compBracket = /\bcontext\s*(?:\?\.|\.)\s*component\s*(?:\?\.|\.)\s*variables\s*(?:\?\.)?\s*\[\s*['"]([^'"]+)['"]\s*\]/g;
+  let cb: RegExpExecArray | null;
+  while ((cb = compBracket.exec(expr)) !== null) {
+    paths.push(`context.component.variables.${cb[1]}`);
+  }
+  const compDot = /\bcontext\s*(?:\?\.|\.)\s*component\s*(?:\?\.|\.)\s*variables\s*(?:\?\.|\.)\s*([A-Za-z0-9_-]+)/g;
+  let cd: RegExpExecArray | null;
+  while ((cd = compDot.exec(expr)) !== null) {
+    // Avoid double-adding when bracket form already matched
+    const p = `context.component.variables.${cd[1]}`;
+    if (!paths.includes(p)) paths.push(p);
+  }
   return paths;
 }
 

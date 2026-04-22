@@ -34,8 +34,96 @@ import {
   clone, removeNodesByIds,
   _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
   GLUESTACK_PRIMARY_BRIDGE, injectFontsFromOverrides,
-  findSharedRoot, cloneWithFreshIds,
+  findSharedRoot, cloneWithFreshIdsKeepSharedKey, stampSharedKeys,
 } from './_store-node-helpers';
+import {
+  diffCssProps, addOverrides, removeOverrides, getOverrides, overlayOverrides, readPropValue,
+  copyCssProp, diffAllOverrideableProps,
+} from './_shared-overrides';
+
+/**
+ * Walk every descendant of `root` in parallel with the corresponding descendant
+ * of `modelContent` (matched by child-index path). The root itself is NOT
+ * visited — callers handle it separately. When `modelContent` has no node at a
+ * given path (e.g. instance has extra children), `modelDesc` is `null`.
+ */
+function _walkDescendantsParallel(
+  root: SDUINode,
+  modelContent: Record<string, unknown> | null | undefined,
+  onEach: (instDesc: SDUINode, modelDesc: Record<string, unknown> | null, path: number[]) => void,
+): void {
+  function walk(inst: SDUINode, model: Record<string, unknown> | null, path: number[]): void {
+    const iCh = (inst.children ?? []) as SDUINode[];
+    const mCh = ((model?.children ?? []) as SDUINode[]);
+    for (let i = 0; i < iCh.length; i++) {
+      const p = [...path, i];
+      const iC = iCh[i];
+      const mC = (mCh[i] ?? null) as unknown as Record<string, unknown> | null;
+      onEach(iC, mC, p);
+      walk(iC, mC, p);
+    }
+  }
+  walk(root, (modelContent ?? null) as Record<string, unknown> | null, []);
+}
+
+/** Resolve a descendant by child-index path. Returns null if the path no longer exists. */
+function _resolveDescendantByPath(root: SDUINode, path: number[]): SDUINode | null {
+  let cur: SDUINode = root;
+  for (const idx of path) {
+    const ch = (cur.children ?? []) as SDUINode[];
+    if (idx < 0 || idx >= ch.length) return null;
+    cur = ch[idx];
+  }
+  return cur;
+}
+
+/**
+ * Resolve a descendant by its stable `_sharedKey`. Searches the whole subtree
+ * rooted at `root` (the root itself is included). Returns null when no node in
+ * the subtree carries that sharedKey.
+ */
+function _resolveDescendantBySharedKey(
+  root: Record<string, unknown>,
+  sharedKey: string,
+): Record<string, unknown> | null {
+  if (root._sharedKey === sharedKey) return root;
+  const children = (root.children ?? []) as Record<string, unknown>[];
+  for (const c of children) {
+    const found = _resolveDescendantBySharedKey(c, sharedKey);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Walk every descendant of `instRoot` that has a `_sharedKey` and pair it with
+ * the model descendant carrying the same `_sharedKey`. Index-path pairing
+ * silently misaligns when the instance has structural divergences (local
+ * insertions, removed keys); sharedKey pairing stays correct under those
+ * conditions.
+ *
+ * Descendants without a `_sharedKey` are skipped — they are instance-local
+ * insertions that have no model counterpart to diff against.
+ */
+function _walkDescendantsBySharedKey(
+  instRoot: SDUINode,
+  modelContent: Record<string, unknown> | null | undefined,
+  onEach: (instDesc: SDUINode, modelDesc: Record<string, unknown> | null, sharedKey: string) => void,
+): void {
+  if (!modelContent) return;
+  (function walk(inst: SDUINode) {
+    const children = (inst.children ?? []) as SDUINode[];
+    for (const c of children) {
+      const rec = c as unknown as Record<string, unknown>;
+      const key = typeof rec._sharedKey === 'string' ? rec._sharedKey as string : null;
+      if (key) {
+        const modelDesc = _resolveDescendantBySharedKey(modelContent, key);
+        if (modelDesc) onEach(c, modelDesc, key);
+      }
+      walk(c);
+    }
+  })(instRoot);
+}
 
 export {
   REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable,
@@ -72,6 +160,43 @@ function _flushHistoryIfPending(set: SetFn): void {
     _historyTimer = 0;
     _flushHistory(set);
   }
+}
+
+/**
+ * Snapshot the shared-component ROOT that contains a given node id (deep clone).
+ * Used to diff pre- vs. post-edit state for per-instance override tracking.
+ * Returns null when `id` is not inside any shared-component subtree.
+ */
+function _snapshotSharedRoot(s: { pageNodes: SDUINode[] }, id: string): SDUINode | null {
+  const root = findSharedRoot(s.pageNodes as SDUINode[], id);
+  if (!root) return null;
+  return JSON.parse(JSON.stringify(root)) as SDUINode;
+}
+
+/**
+ * Collect every distinct shared-component ROOT id (with a deep-clone snapshot)
+ * that is an ANCESTOR of any of the given node ids. Used by structural
+ * mutations (moveNode, moveNodes, moveNodeFromPage, deleteNodes, etc.) to
+ * record PRE-op SC roots so we can call `_syncSharedInstances` correctly
+ * even when the node has been removed from its SC after the mutation.
+ *
+ * Without this, `findSharedRoot(postNodes, movedChildId)` returns `null`
+ * when the moved child is no longer under any SC, and `_syncSharedInstances`
+ * silently skips the model update — the source SC keeps the child in the
+ * model even though the user dragged it out. See plan Gap 1.
+ */
+function _collectSharedRoots(
+  nodes: SDUINode[],
+  ids: Array<string | null | undefined>,
+): Map<string, SDUINode> {
+  const out = new Map<string, SDUINode>();
+  for (const id of ids) {
+    if (!id) continue;
+    const root = findSharedRoot(nodes, id);
+    if (!root?.id || out.has(root.id)) continue;
+    out.set(root.id, JSON.parse(JSON.stringify(root)) as SDUINode);
+  }
+  return out;
 }
 
 /** Recursively assign fresh UUIDs to every node in the subtree. */
@@ -463,6 +588,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   editingSharedComponentModelsMap: {},
   editingSharedComponentContent: null,
   editingSharedComponentModel: null,
+  _preEditInstanceSnapshot: {},
   activePreviewStates: ['normal'],
   showInteractionLines: false,
   activeLogicSection: null,
@@ -613,6 +739,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   addNode: (node, parentId = null, atIdx) => {
+    const preNodes = get().pageNodes as SDUINode[];
+    const preRoots = _collectSharedRoots(preNodes, [parentId]);
     set(s => {
       const pageNodes = insertNode(s.pageNodes, node, parentId ?? null, atIdx);
       const insertedId = node.id;
@@ -621,7 +749,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         selectedIds: insertedId ? [insertedId] : s.selectedIds,
       };
     });
-    if (parentId) get()._syncSharedInstances(parentId);
+    // Sync every SC root whose subtree was affected by this insertion.
+    // (Typically 0 or 1 — either parent is inside an SC or it isn't.)
+    for (const [rootId, snap] of preRoots) {
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
     get()._pushHistory();
   },
 
@@ -705,6 +837,15 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   moveNode: (nodeId, newParentId, atIdx) => {
+    // Capture SC roots BEFORE the move:
+    //  • ancestor of the node being moved (source SC — may lose the child)
+    //  • ancestor of the destination parent (target SC — may gain the child)
+    // Both need to be synced post-op, because the source SC only exists as
+    // the child's ancestor before the move, and the target SC only contains
+    // the child after the move.
+    const preNodes = get().pageNodes as SDUINode[];
+    const preRoots = _collectSharedRoots(preNodes, [nodeId, newParentId]);
+
     set(s => {
       const node = findNode(s.pageNodes, nodeId);
       if (!node) return s;
@@ -739,11 +880,30 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       const newNodes = insertNode(withoutNode, node, newParentId, adjustedIdx);
       return { pageNodes: newNodes, selectedIds: [nodeId] };
     });
-    get()._syncSharedInstances(nodeId);
+
+    // Also look at POST-op ancestry (in case the moved node landed in an SC
+    // that wasn't on our pre-op radar — e.g. new parent is at root and we
+    // already captured its absence-of-SC, or it's been rearranged). Harmless
+    // duplicate detection via the Map keyed on rootId.
+    const postNodes = get().pageNodes as SDUINode[];
+    const postRoot = findSharedRoot(postNodes, nodeId);
+    if (postRoot?.id && !preRoots.has(postRoot.id)) {
+      preRoots.set(postRoot.id, JSON.parse(JSON.stringify(postRoot)) as SDUINode);
+    }
+    for (const [rootId, snap] of preRoots) {
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
     get()._pushHistory();
   },
 
   moveNodes: (nodeIds, newParentId, atIdx) => {
+    // Capture SC roots BEFORE the mutation for every moving node + destination
+    // parent. Multiple nodes may live under different SC ancestors; all of
+    // them need to be synced post-op (the source SCs to drop the children,
+    // the destination SC to pick them up).
+    const preNodes = get().pageNodes as SDUINode[];
+    const preRoots = _collectSharedRoots(preNodes, [...nodeIds, newParentId]);
+
     set(s => {
       // Guard: refuse to drop the selection into one of the nodes being moved.
       // The UI's onDragOver should prevent this, but defend here too.
@@ -792,11 +952,31 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       }
       return { pageNodes: result, selectedIds: [...movingIds] };
     });
-    if (nodeIds[0]) get()._syncSharedInstances(nodeIds[0]);
+
+    // Also catch post-op roots for any moving node that landed inside an SC
+    // not on our pre-op radar.
+    const postNodes = get().pageNodes as SDUINode[];
+    for (const id of nodeIds) {
+      const postRoot = findSharedRoot(postNodes, id);
+      if (postRoot?.id && !preRoots.has(postRoot.id)) {
+        preRoots.set(postRoot.id, JSON.parse(JSON.stringify(postRoot)) as SDUINode);
+      }
+    }
+    for (const [rootId, snap] of preRoots) {
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
     get()._pushHistory();
   },
 
   moveNodeFromPage: (nodeId, fromPageId, parentId, atIdx) => {
+    // Capture SC roots BEFORE the cross-page move:
+    //  • any SC on the SOURCE page that contains the moved node
+    //  • any SC on the DESTINATION (focused) page that contains the parent
+    // Both may need to receive a model update afterwards.
+    const srcPageNodes = (get().pages as BuilderPage[]).find(p => p.id === fromPageId)?.nodes as SDUINode[] | undefined;
+    const srcPreRoots = srcPageNodes ? _collectSharedRoots(srcPageNodes, [nodeId]) : new Map<string, SDUINode>();
+    const dstPreRoots = _collectSharedRoots(get().pageNodes as SDUINode[], [parentId]);
+
     set(s => {
       // Find the source page
       const srcPage = s.pages.find(p => p.id === fromPageId);
@@ -820,6 +1000,69 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         selectedIds: node.id ? [node.id] : s.selectedIds,
       };
     });
+
+    // Destination is the focused page, so `_syncSharedInstances` (which only
+    // walks the focused page for editedNodeId lookup) handles SC roots there.
+    // Source-page SC roots are trickier: the SC root still lives on the
+    // source page (not the focused one), so `findSharedRoot(pageNodes, ...)`
+    // in `_syncSharedInstances` would return null. We therefore propagate
+    // source-page model updates directly using the pre-op snapshot.
+    for (const [rootId, snap] of srcPreRoots) {
+      // If the source page is NOT the focused page, we can't rely on
+      // `_syncSharedInstances` to find the root in `pageNodes`. But we can
+      // build an equivalent model-update by finding the root in the source
+      // page's post-op state and rerunning the sync against a fake context.
+      // Simplest approach: temporarily treat as if focused, by directly
+      // updating the shared model from the new source-page content.
+      const postSrcPage = (get().pages as BuilderPage[]).find(p => p.id === fromPageId);
+      const postRoot = postSrcPage ? findNode(postSrcPage.nodes as SDUINode[], rootId) : null;
+      if (!postRoot) continue;
+      // If the removed node's SC root is on the focused page (rare: tabs?),
+      // let the normal call path handle it.
+      if (fromPageId === get().focusedPageId) {
+        get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+        continue;
+      }
+      // Non-focused source page: manually call sync by temporarily switching
+      // pageNodes view. Safer: emulate by invoking sync with a wrapper that
+      // pretends the node is on the focused tree. Because _syncSharedInstances
+      // only propagates BETWEEN instances on multiple pages (it already
+      // iterates `s.pages`), the cleanest fix is to ensure an SC root with
+      // that id exists on the focused page. If it doesn't (pure cross-page
+      // move OUT of the SC on another page), we update the model directly.
+      const meta = (postRoot as unknown as Record<string, unknown>)._shared as { id?: string } | undefined;
+      if (!meta?.id) continue;
+      const prevModel = getSharedComponents()[meta.id];
+      if (!prevModel) continue;
+      const content = JSON.parse(JSON.stringify(postRoot)) as Record<string, unknown>;
+      delete content._shared;
+      delete content._overrides;
+      updateSharedComponent({ ...prevModel, content });
+      // Propagate to other pages/instances via a normal sync on one
+      // representative instance id if any exist anywhere.
+      let repInstanceId: string | null = null;
+      for (const page of get().pages as BuilderPage[]) {
+        (function walk(nodes: SDUINode[]) {
+          if (repInstanceId) return;
+          for (const n of nodes) {
+            const sm = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
+            if (sm?.id === meta.id && n.id) { repInstanceId = n.id; return; }
+            if (n.children?.length) walk(n.children as SDUINode[]);
+          }
+        })(page.nodes as SDUINode[]);
+        if (repInstanceId) break;
+      }
+      if (repInstanceId) get()._syncSharedInstances(repInstanceId, { prevEditedNode: snap });
+    }
+    // Destination-page roots: standard path.
+    for (const [rootId, snap] of dstPreRoots) {
+      if (srcPreRoots.has(rootId)) continue;
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
+    const postRoot = findSharedRoot(get().pageNodes as SDUINode[], nodeId);
+    if (postRoot?.id && !dstPreRoots.has(postRoot.id) && !srcPreRoots.has(postRoot.id)) {
+      get()._syncSharedInstances(postRoot.id, { prevEditedNode: JSON.parse(JSON.stringify(postRoot)) as SDUINode });
+    }
     get()._pushHistory();
   },
 
@@ -830,10 +1073,14 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     );
     const idSet = new Set(ids.filter(id => !protectedRootIds.has(id)));
     if (idSet.size === 0) return;
-    const affectedSharedRootIds = new Set<string>();
+    // Capture PRE-op SC root snapshots for every deleted node that lives
+    // inside an SC subtree. Skip entries where the deleted node IS the SC
+    // root itself (there's nothing left to sync in that case).
+    const affectedSharedRoots = new Map<string, SDUINode>();
     for (const id of idSet) {
       const root = findSharedRoot(preNodes as SDUINode[], id);
-      if (root && root.id && !idSet.has(root.id)) affectedSharedRootIds.add(root.id);
+      if (!root?.id || idSet.has(root.id) || affectedSharedRoots.has(root.id)) continue;
+      affectedSharedRoots.set(root.id, JSON.parse(JSON.stringify(root)) as SDUINode);
     }
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
@@ -841,11 +1088,19 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
       aiSelectedNodeIds: s.aiSelectedNodeIds.filter(id => !idSet.has(id)),
     }));
-    for (const rootId of affectedSharedRootIds) get()._syncSharedInstances(rootId);
+    for (const [rootId, snap] of affectedSharedRoots) {
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
     get()._pushHistory();
   },
 
   duplicateNodes: (ids) => {
+    // Capture SC roots for every duplicated id BEFORE the duplication so we
+    // can sync each one post-op. Duplicating a node inside an SC subtree
+    // effectively inserts a copy into that SC.
+    const preNodes = get().pageNodes as SDUINode[];
+    const preRoots = _collectSharedRoots(preNodes, ids);
+
     set(s => {
       const newNodes: SDUINode[] = [];
       for (const id of ids) {
@@ -861,7 +1116,9 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         selectedIds: newNodes.map(n => n.id ?? '').filter(Boolean),
       };
     });
-    if (ids[0]) get()._syncSharedInstances(ids[0]);
+    for (const [rootId, snap] of preRoots) {
+      get()._syncSharedInstances(rootId, { prevEditedNode: snap });
+    }
     get()._pushHistory();
   },
 
@@ -995,6 +1252,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchProp: (id, propPath, value) => {
+    const prevRootSnap = _snapshotSharedRoot(get(), id);
     set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
       const parts = propPath.split('.');
       if (parts.length === 1) {
@@ -1012,10 +1270,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       obj[parts[parts.length - 1]] = value;
       return root;
     }));
-    get()._syncSharedInstances(id);
+    get()._syncSharedInstances(id, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
   },
 
   patchClassName: (id, oldToken, newToken) => {
+    const prevRootSnap = _snapshotSharedRoot(get(), id);
     set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
       const cls: string = (node.props as { className?: string })?.className ?? '';
       const newCls = oldToken
@@ -1023,15 +1282,16 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         : `${cls} ${newToken}`.trim();
       return { ...node, props: { ...(node.props as object), className: newCls } };
     }));
-    get()._syncSharedInstances(id);
+    get()._syncSharedInstances(id, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
   },
 
   renameNode: (id, newId) => {
+    const prevRootSnap = _snapshotSharedRoot(get(), id);
     set(s => ({
       ...patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, id: newId })),
       selectedIds: s.selectedIds.map(sid => (sid === id ? newId : sid)),
     }));
-    get()._syncSharedInstances(newId);
+    get()._syncSharedInstances(newId, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
     get()._pushHistory();
   },
 
@@ -1582,19 +1842,266 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     });
   },
 
-  _syncSharedInstances: (editedNodeId: string) => {
-    const { pageNodes, focusedPageId } = get();
+  _syncSharedInstances: (editedNodeId: string, opts?: { prevEditedNode?: SDUINode | null }) => {
+    const { pageNodes, focusedPageId, editingSharedComponentIds } = get();
     const sharedRoot = findSharedRoot(pageNodes as SDUINode[], editedNodeId);
     if (!sharedRoot) return;
 
     const meta = (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string; name: string };
     if (!meta?.id) return;
 
+    const isEditingModel = editingSharedComponentIds.includes(meta.id);
+
+    // ── Instance-side edit (not in Edit Component mode) ───────────────────────
+    // Do NOT propagate to model. Record per-instance overrides when the edit is
+    // on the shared ROOT itself. Nested edits inside an instance are allowed but
+    // untracked — they will be wiped on the next model-edit sync by design.
+    //
+    // Invariant: `_overrides` only contains cssProps whose current instance
+    // value ACTUALLY differs from the model baseline. A "reset to shared
+    // default" edit (which sets the value back to the baseline) therefore
+    // REMOVES the cssProp from `_overrides` rather than re-adding it.
+    if (!isEditingModel) {
+      const prev = opts?.prevEditedNode;
+      if (!prev) return; // no snapshot → can't diff; skip tracking rather than guess
+      const modelContent = (getSharedComponents()[meta.id]?.content ?? null) as Record<string, unknown> | null;
+
+      // ── Structural divergence detection (Figma-style sticky overrides) ──
+      // Compare the current instance root against the MODEL content by
+      // `_sharedKey`. Any model descendant missing from the instance is a
+      // "remove" override. Any instance descendant whose `_sharedKey` is NOT
+      // in the model is a "local insertion" override (or legacy unkeyed).
+      if (modelContent) {
+        const modelKeys = new Set<string>();
+        (function idx(n: Record<string, unknown>) {
+          const k = n._sharedKey;
+          if (typeof k === 'string' && k) modelKeys.add(k);
+          const children = (n.children ?? []) as Record<string, unknown>[];
+          for (const c of children) idx(c);
+        })(modelContent);
+
+        // Collect instance's current keys + track local insertions relative
+        // to the first parent whose `_sharedKey` IS in the model. While
+        // walking, stamp fresh `local-*` keys on any unkeyed nodes so they
+        // can be tracked across future model edits.
+        const instanceKeys = new Set<string>();
+        const detectedInsertions: Array<{ parentSharedKey: string; atIdx: number; subtreeSharedKey: string }> = [];
+        const nodesToStampKey: Array<{ id: string; key: string }> = [];
+        (function walk(n: SDUINode, parentKey: string | null, atIdx: number) {
+          const rec = n as unknown as Record<string, unknown>;
+          let k = rec._sharedKey as string | undefined;
+          // Unkeyed node inside an SC subtree → it's a local insertion. Mint
+          // a `local-*` key so future syncs can track it.
+          if ((typeof k !== 'string' || !k) && n.id) {
+            k = `local-${crypto.randomUUID()}`;
+            nodesToStampKey.push({ id: n.id, key: k });
+          }
+          if (typeof k === 'string' && k) {
+            instanceKeys.add(k);
+            if (!modelKeys.has(k) && parentKey && modelKeys.has(parentKey)) {
+              detectedInsertions.push({ parentSharedKey: parentKey, atIdx, subtreeSharedKey: k });
+            }
+          }
+          const children = (n.children ?? []) as SDUINode[];
+          for (let i = 0; i < children.length; i++) walk(children[i], (typeof k === 'string' ? k : parentKey), i);
+        })(sharedRoot, null, 0);
+
+        // Stamp any newly-minted local keys onto the tree (one batch write)
+        if (nodesToStampKey.length > 0) {
+          set(s => {
+            let nodes = s.pageNodes as SDUINode[];
+            for (const stamp of nodesToStampKey) {
+              nodes = patchNodeById(nodes, stamp.id, n => ({
+                ...(n as object),
+                _sharedKey: stamp.key,
+              } as unknown as SDUINode));
+            }
+            return { pageNodes: nodes };
+          });
+        }
+
+        // "Removed keys" = model keys missing from the instance EXCEPT the
+        // root key itself (SC root always exists in instance).
+        const rootKey = (sharedRoot as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+        const detectedRemovals = new Set<string>();
+        for (const mk of modelKeys) {
+          if (mk === rootKey) continue;
+          if (!instanceKeys.has(mk)) detectedRemovals.add(mk);
+        }
+        // BUT: if this descendant is already listed in _localInsertions chain
+        // (its parent chain contains a locally-inserted key), skip. Heuristic
+        // covered by the "parentKey must be in modelKeys" guard above.
+
+        // Merge with existing stored overrides
+        const existingRemoved = Array.isArray((sharedRoot as unknown as Record<string, unknown>)._removedKeys)
+          ? (sharedRoot as unknown as Record<string, unknown>)._removedKeys as string[]
+          : [];
+        const existingInsertions = Array.isArray((sharedRoot as unknown as Record<string, unknown>)._localInsertions)
+          ? (sharedRoot as unknown as Record<string, unknown>)._localInsertions as Array<{ parentSharedKey: string; atIdx: number; subtreeSharedKey: string }>
+          : [];
+
+        const nextRemoved = Array.from(detectedRemovals);
+        // Previously removed keys that have "come back" (e.g. user re-inserted
+        // a matching model node — rare but possible) are naturally dropped
+        // because we rebuild from detectedRemovals each time.
+        void existingRemoved;
+
+        // Deduplicate insertions by subtreeSharedKey (re-detection should
+        // yield the same position; if not, latest wins).
+        const insertionMap = new Map<string, { parentSharedKey: string; atIdx: number; subtreeSharedKey: string }>();
+        for (const e of existingInsertions) insertionMap.set(e.subtreeSharedKey, e);
+        for (const e of detectedInsertions) insertionMap.set(e.subtreeSharedKey, e);
+        // Purge any insertion whose subtreeSharedKey is no longer in the
+        // instance (user deleted the locally-inserted node).
+        for (const key of Array.from(insertionMap.keys())) {
+          if (!instanceKeys.has(key)) insertionMap.delete(key);
+        }
+        const nextInsertions = Array.from(insertionMap.values());
+
+        // Write the structural metadata back onto the SC root if it changed.
+        const curRemovedStr = JSON.stringify(existingRemoved.slice().sort());
+        const nextRemovedStr = JSON.stringify(nextRemoved.slice().sort());
+        const curInsertionsStr = JSON.stringify(existingInsertions);
+        const nextInsertionsStr = JSON.stringify(nextInsertions);
+        const structChanged = curRemovedStr !== nextRemovedStr || curInsertionsStr !== nextInsertionsStr;
+        if (structChanged) {
+          set(s => ({
+            pageNodes: patchNodeById(s.pageNodes as SDUINode[], sharedRoot.id!, n => {
+              const rec = { ...(n as object) } as Record<string, unknown>;
+              if (nextRemoved.length > 0) rec._removedKeys = nextRemoved;
+              else delete rec._removedKeys;
+              if (nextInsertions.length > 0) rec._localInsertions = nextInsertions;
+              else delete rec._localInsertions;
+              return rec as unknown as SDUINode;
+            }),
+          }));
+        }
+      }
+
+      // ── Edit on the SC ROOT itself — update root-level _overrides ───────
+      if (sharedRoot.id === editedNodeId) {
+        const changedProps = diffCssProps(prev, sharedRoot);
+        if (changedProps.length === 0) return;
+
+        const toAdd: string[] = [];
+        const toRemove: string[] = [];
+        for (const p of changedProps) {
+          const baselineVal = modelContent ? readPropValue(modelContent, p) : '';
+          const curVal = readPropValue(sharedRoot, p);
+          if (curVal === baselineVal) toRemove.push(p);
+          else toAdd.push(p);
+        }
+        if (toAdd.length === 0 && toRemove.length === 0) return;
+
+        set(s => ({
+          pageNodes: patchNodeById(s.pageNodes as SDUINode[], sharedRoot.id!, n => {
+            let next = n as SDUINode;
+            if (toAdd.length > 0) next = addOverrides(next, toAdd);
+            if (toRemove.length > 0) next = removeOverrides(next, toRemove);
+            return next;
+          }),
+        }));
+        return;
+      }
+
+      // ── Edit on a DESCENDANT of the SC — update _descendantOverrides ──
+      // Resolve the current edited descendant by id (post-op).
+      const editedDesc = findNode(pageNodes as SDUINode[], editedNodeId);
+      if (!editedDesc) return;
+      const sharedKey = (editedDesc as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+      if (!sharedKey) return; // legacy descendant without a key — cannot track
+      // Resolve the model descendant by sharedKey.
+      let modelDesc: Record<string, unknown> | null = null;
+      if (modelContent) {
+        (function find(n: Record<string, unknown>) {
+          if (modelDesc) return;
+          if (n._sharedKey === sharedKey) { modelDesc = n; return; }
+          const children = (n.children ?? []) as Record<string, unknown>[];
+          for (const c of children) find(c);
+        })(modelContent);
+      }
+      if (!modelDesc) return; // descendant is instance-local (_localInsertions territory)
+
+      // Diff current descendant vs. PREVIOUS descendant (the pre-op snapshot
+      // covers the entire SC root; resolve the same sharedKey in prev).
+      const prevDesc = (function find(n: Record<string, unknown>): Record<string, unknown> | null {
+        if (n._sharedKey === sharedKey) return n;
+        const children = (n.children ?? []) as Record<string, unknown>[];
+        for (const c of children) {
+          const r = find(c);
+          if (r) return r;
+        }
+        return null;
+      })(prev as unknown as Record<string, unknown>);
+
+      const allKeys = diffAllOverrideableProps(prevDesc, editedDesc);
+      if (allKeys.length === 0) return;
+
+      // For each changed key, compare against the MODEL baseline. If equal →
+      // remove from _descendantOverrides[sharedKey]; else → add.
+      const curDescOverrides = ((sharedRoot as unknown as Record<string, unknown>)._descendantOverrides ?? {}) as Record<string, string[]>;
+      const existing = new Set(curDescOverrides[sharedKey] ?? []);
+      for (const k of allKeys) {
+        // Read model baseline for this key
+        let modelVal: string;
+        let curVal: string;
+        if (k === 'text' || k === 'actions' || k === 'animation' || k === 'condition' || k === 'map') {
+          // non-CSS
+          // readNonCssValue is exported from _shared-overrides (same file family)
+          modelVal = JSON.stringify((modelDesc as Record<string, unknown>)[k] ?? null);
+          curVal = JSON.stringify((editedDesc as unknown as Record<string, unknown>)[k] ?? null);
+        } else {
+          modelVal = readPropValue(modelDesc, k);
+          curVal = readPropValue(editedDesc, k);
+        }
+        if (curVal === modelVal) existing.delete(k);
+        else existing.add(k);
+      }
+      const nextList = Array.from(existing);
+
+      set(s => ({
+        pageNodes: patchNodeById(s.pageNodes as SDUINode[], sharedRoot.id!, n => {
+          const rec = { ...(n as object) } as Record<string, unknown>;
+          const cur = (rec._descendantOverrides ?? {}) as Record<string, string[]>;
+          const nextMap = { ...cur };
+          if (nextList.length === 0) delete nextMap[sharedKey];
+          else nextMap[sharedKey] = nextList;
+          if (Object.keys(nextMap).length === 0) delete rec._descendantOverrides;
+          else rec._descendantOverrides = nextMap;
+          return rec as unknown as SDUINode;
+        }),
+      }));
+      return;
+    }
+
+    // ── Model-edit mode ───────────────────────────────────────────────────────
     const content = JSON.parse(JSON.stringify(sharedRoot)) as Record<string, unknown>;
     delete content._shared;
-    const model = getSharedComponents()[meta.id];
+    delete content._overrides;
+    delete content._descendantOverrides;
+    delete content._removedKeys;
+    delete content._localInsertions;
+    // Strip instance-only metadata from every nested node. Nested SCs keep
+    // their own `_shared` + `_sharedKey` (so the outer model's structure
+    // still references the inner model) but lose any override metadata that
+    // belongs only to the outer instance's state.
+    (function stripNested(n: Record<string, unknown>) {
+      const children = (n.children ?? []) as Record<string, unknown>[];
+      for (const c of children) {
+        delete c._overrides;
+        delete c._descendantOverrides;
+        delete c._removedKeys;
+        delete c._localInsertions;
+        stripNested(c);
+      }
+    })(content);
+    // Ensure every node in the new model content has a _sharedKey (migrates
+    // legacy content on first edit).
+    stampSharedKeys(content);
+    const prevModel = getSharedComponents()[meta.id];
+    const prevModelContent = prevModel?.content ?? null;
     // Declared property names — these are per-instance overrides that must be preserved
-    const declaredPropNames = new Set((model?.properties ?? []).map(p => p.name));
+    const declaredPropNames = new Set((prevModel?.properties ?? []).map(p => p.name));
 
     // Strip per-instance property overrides from model content before saving
     if (declaredPropNames.size > 0 && content.props) {
@@ -1602,21 +2109,221 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       for (const propName of declaredPropNames) delete modelProps[propName];
       content.props = modelProps;
     }
-    if (model) updateSharedComponent({ ...model, content });
 
-    // Build a replacement node from content while preserving the target's property overrides
+    // ── Prevent the entered-from instance's pre-existing per-cssProp overrides
+    //    from leaking into the shared model ────────────────────────────────
+    // Simple edit mode edits the original instance directly, so `sharedRoot`
+    // can have A's local override values baked into its className / style /
+    // animation. If we saved that as the new model content verbatim, those
+    // override values would become the MODEL's baseline — and any OTHER
+    // instance that did NOT have its own override for that cssProp would
+    // silently inherit A's override value. That is the bug this block fixes.
+    //
+    // Strategy: for every cssProp listed in sharedRoot._overrides, restore the
+    // OLD model's value on `content` UNLESS the user actually changed that
+    // cssProp in this patch (detected via diff against the pre-edit snapshot).
+    // The exception exists so the user can intentionally "promote" an override
+    // to the model by editing it while in Edit Component mode.
+    const prevSharedOverrides = getOverrides(sharedRoot);
+    const prevSnap = opts?.prevEditedNode;
+    const editedOnRoot = prevSnap && prevSnap.id === sharedRoot.id;
+    const changedProps = editedOnRoot ? diffCssProps(prevSnap, sharedRoot) : [];
+    const changedSet = new Set(changedProps);
+    const preservedOverrides = prevSharedOverrides.filter(p => !changedSet.has(p));
+    if (preservedOverrides.length > 0 && prevModelContent) {
+      for (const p of preservedOverrides) {
+        copyCssProp(prevModelContent as Record<string, unknown>, content as Parameters<typeof copyCssProp>[1], p);
+      }
+    }
+
+    if (prevModel) updateSharedComponent({ ...prevModel, content });
+
+    // Update sharedRoot's own `_overrides`: drop any cssProp the user just
+    // changed while in edit mode (those values are now the MODEL baseline, no
+    // longer per-instance overrides). Also purge entries that happen to match
+    // the new model baseline even though we didn't touch them (defensive).
+    const nextSharedOverrides = prevSharedOverrides.filter(p => !changedSet.has(p));
+    if (nextSharedOverrides.length !== prevSharedOverrides.length) {
+      set(s => ({
+        pageNodes: patchNodeById(s.pageNodes as SDUINode[], sharedRoot.id!, n => {
+          return { ...(n as object), _overrides: nextSharedOverrides } as unknown as SDUINode;
+        }),
+      }));
+    }
+
+    // ── Build a replacement node from the new model content ─────────────────
+    // Preserve for each instance:
+    //   1. Declared-property overrides (per-instance values for declared props)
+    //   2. Root-level CSS overrides (from instance._overrides)
+    //   3. Descendant-level overrides (from instance._descendantOverrides)
+    //   4. Structural instance-mode divergences (_removedKeys, _localInsertions)
+    //
+    // Matching is done by stable `_sharedKey`. Legacy instances without keys
+    // fall back to positional matching against the OLD model content (same
+    // behaviour as before).
     const buildReplacement = (targetNode: SDUINode): SDUINode => {
-      const fresh = cloneWithFreshIds(JSON.parse(JSON.stringify(content)) as Record<string, unknown>);
+      // 1) Fresh clone of model content — fresh node ids, preserve _sharedKey
+      const fresh = cloneWithFreshIdsKeepSharedKey(
+        JSON.parse(JSON.stringify(content)) as Record<string, unknown>,
+      ) as Record<string, unknown>;
       const freshProps = (fresh.props ?? {}) as Record<string, unknown>;
       const targetProps = ((targetNode as unknown as Record<string, unknown>).props ?? {}) as Record<string, unknown>;
-      // Restore each declared property value from the target (per-instance override)
+      // Restore declared properties from target (per-instance override)
       for (const propName of declaredPropNames) {
         if (propName in targetProps) {
           freshProps[propName] = targetProps[propName];
         }
       }
       fresh.props = freshProps;
-      return { ...fresh, id: targetNode.id, _shared: meta } as unknown as SDUINode;
+
+      // 2) Index the instance and its _overrides metadata
+      const targetRec = targetNode as unknown as Record<string, unknown>;
+      const instDescOverrides = (targetRec._descendantOverrides
+        ?? {}) as Record<string, string[]>;
+      const removedKeys = new Set<string>(
+        Array.isArray(targetRec._removedKeys) ? targetRec._removedKeys as string[] : []
+      );
+      const localInsertions = Array.isArray(targetRec._localInsertions)
+        ? targetRec._localInsertions as Array<{ parentSharedKey: string; atIdx: number; subtreeSharedKey: string }>
+        : [];
+
+      // Walk the instance tree and index descendants by _sharedKey for
+      // O(1) lookup during the parallel walk below.
+      const instBySharedKey = new Map<string, SDUINode>();
+      (function idx(n: SDUINode) {
+        const k = (n as unknown as Record<string, unknown>)._sharedKey;
+        if (typeof k === 'string' && k) instBySharedKey.set(k, n);
+        if (n.children?.length) for (const c of n.children as SDUINode[]) idx(c);
+      })(targetNode);
+
+      // Self-heal: if the instance lacks `_descendantOverrides`, infer it by
+      // diffing each instance descendant against the OLD model content
+      // (positional match). This runs once per instance per edit cycle.
+      // The inferred list is written back to the instance via the returned
+      // metadata on the replacement node.
+      const inferredDescOverrides: Record<string, string[]> = {};
+      const hasDescOverridesField = targetRec._descendantOverrides !== undefined;
+      if (!hasDescOverridesField && prevModelContent) {
+        _walkDescendantsParallel(targetNode, prevModelContent as Record<string, unknown>, (instDesc, modelDesc) => {
+          if (!modelDesc) return;
+          const diffs = diffAllOverrideableProps(modelDesc, instDesc);
+          if (diffs.length === 0) return;
+          const sk = (instDesc as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+          if (!sk) return;
+          inferredDescOverrides[sk] = diffs;
+        });
+      }
+      const effectiveDescOverrides = hasDescOverridesField ? instDescOverrides : inferredDescOverrides;
+
+      // 3) Prune fresh descendants whose _sharedKey is in _removedKeys
+      const pruneRemoved = (node: Record<string, unknown>): void => {
+        const children = (node.children ?? []) as Record<string, unknown>[];
+        const kept: Record<string, unknown>[] = [];
+        for (const c of children) {
+          const k = c._sharedKey;
+          if (typeof k === 'string' && removedKeys.has(k)) continue;
+          pruneRemoved(c);
+          kept.push(c);
+        }
+        if (kept.length !== children.length) node.children = kept;
+      };
+      pruneRemoved(fresh);
+
+      // 4) Walk fresh in parallel-by-sharedKey, overlaying descendant overrides
+      const overlayDescendant = (freshNode: Record<string, unknown>): void => {
+        const k = freshNode._sharedKey;
+        if (typeof k === 'string' && k) {
+          const inst = instBySharedKey.get(k);
+          const keys = effectiveDescOverrides[k];
+          if (inst && keys && keys.length > 0) {
+            overlayOverrides(inst, freshNode as unknown as Parameters<typeof overlayOverrides>[1], keys);
+          }
+        }
+        const children = (freshNode.children ?? []) as Record<string, unknown>[];
+        for (const c of children) overlayDescendant(c);
+      };
+      overlayDescendant(fresh);
+
+      // 5) Graft local insertions back onto fresh by parentSharedKey + atIdx
+      if (localInsertions.length > 0) {
+        // Build a map: subtreeSharedKey → the actual subtree node in the instance
+        const insertedSubtrees = new Map<string, SDUINode>();
+        for (const entry of localInsertions) {
+          const sub = instBySharedKey.get(entry.subtreeSharedKey);
+          if (sub) insertedSubtrees.set(entry.subtreeSharedKey, sub);
+        }
+        // Find each parent in fresh by its _sharedKey and splice the subtree in
+        const freshBySharedKey = new Map<string, Record<string, unknown>>();
+        (function idxFresh(n: Record<string, unknown>) {
+          const k = n._sharedKey;
+          if (typeof k === 'string' && k) freshBySharedKey.set(k, n);
+          const children = (n.children ?? []) as Record<string, unknown>[];
+          for (const c of children) idxFresh(c);
+        })(fresh);
+        for (const entry of localInsertions) {
+          const freshParent = freshBySharedKey.get(entry.parentSharedKey);
+          const sub = insertedSubtrees.get(entry.subtreeSharedKey);
+          if (!freshParent || !sub) continue;
+          const cloned = cloneWithFreshIdsKeepSharedKey(JSON.parse(JSON.stringify(sub)) as Record<string, unknown>);
+          const children = ((freshParent.children ?? []) as Record<string, unknown>[]).slice();
+          const idx = Math.max(0, Math.min(entry.atIdx, children.length));
+          children.splice(idx, 0, cloned);
+          freshParent.children = children;
+        }
+      }
+
+      // 6) Root-level CSS overrides
+      let overrides = getOverrides(targetNode);
+      const hasOverridesField = Array.isArray((targetNode as unknown as Record<string, unknown>)._overrides);
+      if (!hasOverridesField && prevModelContent) {
+        overrides = diffCssProps(prevModelContent as Record<string, unknown>, targetNode);
+      }
+      if (overrides.length > 0) {
+        overlayOverrides(targetNode, fresh as unknown as Parameters<typeof overlayOverrides>[1], overrides);
+      }
+
+      // 7) Persist _descendantOverrides on the root so next sync doesn't
+      // re-infer. Drop any keys whose descendant no longer exists in the
+      // new model (removed upstream). Keep only keys for descendants that
+      // both exist in the new model AND still have the listed props.
+      const freshKeys = new Set<string>();
+      (function idxKeys(n: Record<string, unknown>) {
+        const k = n._sharedKey;
+        if (typeof k === 'string' && k) freshKeys.add(k);
+        const children = (n.children ?? []) as Record<string, unknown>[];
+        for (const c of children) idxKeys(c);
+      })(fresh);
+      const nextDescOverrides: Record<string, string[]> = {};
+      for (const [k, ps] of Object.entries(effectiveDescOverrides)) {
+        if (!freshKeys.has(k)) continue;
+        if (!Array.isArray(ps) || ps.length === 0) continue;
+        nextDescOverrides[k] = [...ps];
+      }
+      // Drop _removedKeys entries for descendants no longer in the model
+      // (model already dropped them; our structural override is now redundant).
+      const nextRemovedKeys: string[] = [];
+      for (const k of removedKeys) {
+        // We don't have the old model for comparison here cheaply; keep as-is
+        // but strip keys that coincidentally show up in fresh (shouldn't happen
+        // after pruneRemoved ran). Model may have re-added a key with the same
+        // value — treat as "still removed" in that case (user intent wins).
+        if (!freshKeys.has(k)) nextRemovedKeys.push(k);
+        else nextRemovedKeys.push(k);
+      }
+      const nextLocalInsertions = localInsertions
+        .filter(e => freshKeys.has(e.parentSharedKey));
+
+      const replacement: Record<string, unknown> = {
+        ...(fresh as object),
+        id: targetNode.id,
+        _shared: meta,
+        _overrides: overrides,
+      };
+      if (Object.keys(nextDescOverrides).length > 0) replacement._descendantOverrides = nextDescOverrides;
+      if (nextRemovedKeys.length > 0) replacement._removedKeys = nextRemovedKeys;
+      if (nextLocalInsertions.length > 0) replacement._localInsertions = nextLocalInsertions;
+
+      return replacement as unknown as SDUINode;
     };
 
     // Sync other instances on the FOCUSED page
@@ -1828,10 +2535,307 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         ? { nodeId: entryNodeId, pageId: s.focusedPageId }
         : null);
 
-      // Simple mode: just open the panel without modifying the canvas
+      // ── Simple mode: open panel without backdrop ────────────────────────
+      // The live instance A stays on the canvas. We need to temporarily hide
+      // A's per-instance overrides so both canvas + panel show the pure MODEL
+      // view. Overrides are snapshotted and restored on exit for any prop the
+      // user did not explicitly change while editing the model.
       if (simple) {
+        let nextPageNodes = s.pageNodes;
+        const nextSnapshots = { ...(s._preEditInstanceSnapshot ?? {}) };
+
+        try {
+          if (entryNodeId) {
+            const instanceA = findNode(s.pageNodes as SDUINode[], entryNodeId);
+            if (instanceA) {
+              const instanceOverrides = getOverrides(instanceA);
+              const aProps = (instanceA as unknown as { props?: Record<string, unknown> }).props ?? {};
+              const aAnim = (instanceA as unknown as { animation?: Record<string, unknown> }).animation;
+
+              // Plain JSON round-trip avoids any issues with structuredClone on
+              // non-cloneable refs that may live on style/animation objects.
+              const safeClone = <T>(v: T): T | undefined => {
+                if (v === undefined || v === null) return v as T | undefined;
+                try { return JSON.parse(JSON.stringify(v)) as T; } catch { return undefined; }
+              };
+
+              // Compute descendant-level overrides by diffing each descendant of A
+              // against the corresponding descendant in the model content. Nested
+              // nodes (e.g. a Button inside a Container SC) don't track
+              // `_overrides` explicitly, so any cssProp that differs is an
+              // effective per-instance override we must preserve.
+              const descendantOverrides: Array<{
+                sharedKey: string;
+                cssProps: string[];
+                propsSnapshot: {
+                  className?: string;
+                  style?: Record<string, unknown>;
+                  animation?: Record<string, unknown>;
+                };
+              }> = [];
+              try {
+                // Pair descendants by `_sharedKey`. Index-path pairing silently
+                // misaligns under structural divergences (e.g. instance moved
+                // a descendant OUT of the SC — the remaining descendants shift
+                // into positions occupied by unrelated model descendants, and
+                // the diff becomes nonsense). sharedKey pairing is robust.
+                _walkDescendantsBySharedKey(
+                  instanceA,
+                  content as unknown as Record<string, unknown>,
+                  (instDesc, modelDesc, sharedKey) => {
+                    if (!modelDesc) return;
+                    const props = (instDesc as unknown as { props?: Record<string, unknown> }).props ?? {};
+                    const anim = (instDesc as unknown as { animation?: Record<string, unknown> }).animation;
+                    const diff = diffCssProps(modelDesc as Record<string, unknown>, instDesc);
+                    if (diff.length === 0) return;
+                    descendantOverrides.push({
+                      sharedKey,
+                      cssProps: diff,
+                      propsSnapshot: {
+                        className: (props as { className?: string }).className,
+                        style: safeClone((props as { style?: Record<string, unknown> }).style),
+                        animation: safeClone(anim),
+                      },
+                    });
+                  },
+                );
+              } catch (err) {
+                console.error('[enterSharedComponentEdit] descendant-diff failed', err);
+              }
+
+              const instanceRec = instanceA as unknown as Record<string, unknown>;
+              const explicitDescOverrides = instanceRec._descendantOverrides
+                ? safeClone(instanceRec._descendantOverrides as Record<string, string[]>)
+                : undefined;
+              const removedKeysSnap = Array.isArray(instanceRec._removedKeys)
+                ? [...(instanceRec._removedKeys as string[])]
+                : undefined;
+              const localInsertionsSnap = Array.isArray(instanceRec._localInsertions)
+                ? safeClone(instanceRec._localInsertions as Array<{ parentSharedKey: string; atIdx: number; subtreeSharedKey: string }>)
+                : undefined;
+
+              // ── Capture the actual subtree payloads for each local insertion ──
+              // We're about to strip them from the live canvas so the user sees a
+              // pure model view. At exit we need to re-graft these exact subtrees
+              // (with their instance-side edits intact).
+              const findBySharedKey = (root: Record<string, unknown>, key: string): Record<string, unknown> | null => {
+                if (root._sharedKey === key) return root;
+                const children = (root.children ?? []) as Record<string, unknown>[];
+                for (const c of children) {
+                  const found = findBySharedKey(c, key);
+                  if (found) return found;
+                }
+                return null;
+              };
+              const insertedSubtrees: Record<string, Record<string, unknown>> = {};
+              if (localInsertionsSnap) {
+                for (const entry of localInsertionsSnap) {
+                  const subtree = findBySharedKey(instanceRec, entry.subtreeSharedKey);
+                  if (subtree) {
+                    const cloned = safeClone(subtree);
+                    if (cloned) insertedSubtrees[entry.subtreeSharedKey] = cloned;
+                  }
+                }
+              }
+
+              nextSnapshots[modelId] = {
+                instanceNodeId: entryNodeId,
+                instanceOverrides: [...instanceOverrides],
+                instancePropsSnapshot: {
+                  className: (aProps as { className?: string }).className,
+                  style: safeClone((aProps as { style?: Record<string, unknown> }).style),
+                  animation: safeClone(aAnim),
+                },
+                descendantOverrides,
+                modelContentSnapshot: safeClone(content as unknown as Record<string, unknown>) ?? {},
+                explicitDescendantOverrides: explicitDescOverrides,
+                removedKeys: removedKeysSnap,
+                localInsertions: localInsertionsSnap,
+                insertedSubtrees: Object.keys(insertedSubtrees).length > 0 ? insertedSubtrees : undefined,
+              };
+
+              // Reset A and its descendants to the MODEL baseline so the canvas
+              // shows a pure model view during edit. We clear root-level
+              // overrides AND copy each descendant's overridden cssProps back
+              // from the model. We also hide instance-only STRUCTURAL
+              // divergences (_localInsertions — remove those children;
+              // _removedKeys — graft the missing model descendants back in).
+              // Snapshots above let us restore on exit.
+              const hasCssReset = instanceOverrides.length > 0 || descendantOverrides.length > 0;
+              const hasLocalInsertions = (localInsertionsSnap?.length ?? 0) > 0;
+              const hasRemovedKeys = (removedKeysSnap?.length ?? 0) > 0;
+              const hasAnyReset = hasCssReset || hasLocalInsertions || hasRemovedKeys;
+              if (hasAnyReset) {
+                nextPageNodes = patchNodeById(s.pageNodes as SDUINode[], entryNodeId, n => {
+                  const fresh = JSON.parse(JSON.stringify(n)) as Record<string, unknown>;
+
+                  // Reset root-level cssProps
+                  for (const p of instanceOverrides) {
+                    try {
+                      copyCssProp(content as unknown as Record<string, unknown>, fresh, p);
+                    } catch (err) {
+                      console.error('[enterSharedComponentEdit] copyCssProp failed for root prop', p, err);
+                    }
+                  }
+                  fresh._overrides = [];
+
+                  // Reset descendant-level cssProps by matching `_sharedKey`
+                  // between fresh and model content. This is robust to any
+                  // structural divergence between instance and model.
+                  for (const entry of descendantOverrides) {
+                    const liveDesc = _resolveDescendantBySharedKey(fresh, entry.sharedKey);
+                    const modelDesc = _resolveDescendantBySharedKey(
+                      content as unknown as Record<string, unknown>,
+                      entry.sharedKey,
+                    );
+                    if (!liveDesc || !modelDesc) continue;
+                    for (const p of entry.cssProps) {
+                      try {
+                        copyCssProp(modelDesc, liveDesc, p);
+                      } catch (err) {
+                        console.error('[enterSharedComponentEdit] copyCssProp failed for descendant prop', p, err);
+                      }
+                    }
+                  }
+
+                  // Hide instance-only local insertions from the model view.
+                  if (hasLocalInsertions) {
+                    const insertedKeys = new Set((localInsertionsSnap ?? []).map(e => e.subtreeSharedKey));
+                    const pruneInsertions = (node: Record<string, unknown>) => {
+                      const children = (node.children ?? []) as Record<string, unknown>[];
+                      const kept: Record<string, unknown>[] = [];
+                      for (const c of children) {
+                        const k = c._sharedKey;
+                        if (typeof k === 'string' && insertedKeys.has(k)) continue;
+                        pruneInsertions(c);
+                        kept.push(c);
+                      }
+                      if (kept.length !== children.length) node.children = kept;
+                    };
+                    pruneInsertions(fresh);
+                  }
+
+                  // Graft removed model descendants back in (pure model view).
+                  // Two guards prevent INTERNAL duplicates inside the SC
+                  // (e.g. a Button with two identical Text children):
+                  //   1. DEDUP BY ANCESTOR: if a key's ancestor in the model
+                  //      is ALSO in `_removedKeys`, skip it — grafting the
+                  //      ancestor brings the descendant along for free, and
+                  //      grafting the descendant again would duplicate it
+                  //      INSIDE the grafted ancestor.
+                  //   2. SKIP IF ALREADY PRESENT IN FRESH: defensive guard
+                  //      against any other source of a pre-existing key
+                  //      (e.g. a prior partial graft pass).
+                  //
+                  // NOTE: We intentionally do NOT skip when the key lives
+                  // elsewhere on the page (move-out case). The user
+                  // explicitly wants to see the "model view" inside the SC
+                  // while editing — even if a real copy of that node is
+                  // also visible at some other position outside the SC. The
+                  // outside copy stays at its location; the graft appears
+                  // inside the SC; on exit, the graft is pruned and the SC
+                  // returns to its "moved out" state.
+                  if (hasRemovedKeys) {
+                    const contentRec = content as unknown as Record<string, unknown>;
+                    const findInModel = (
+                      root: Record<string, unknown>,
+                      key: string,
+                    ): { node: Record<string, unknown>; parentKey: string | null; atIdx: number; depth: number } | null => {
+                      const walk = (n: Record<string, unknown>, depth: number): { node: Record<string, unknown>; parentKey: string | null; atIdx: number; depth: number } | null => {
+                        const children = (n.children ?? []) as Record<string, unknown>[];
+                        for (let i = 0; i < children.length; i++) {
+                          const c = children[i];
+                          if (c._sharedKey === key) {
+                            return { node: c, parentKey: (n._sharedKey as string) ?? null, atIdx: i, depth: depth + 1 };
+                          }
+                          const sub = walk(c, depth + 1);
+                          if (sub) return sub;
+                        }
+                        return null;
+                      };
+                      return walk(root, 0);
+                    };
+                    // Helper: collect every sharedKey inside a subtree.
+                    const keysInSubtree = (node: Record<string, unknown>): Set<string> => {
+                      const out = new Set<string>();
+                      (function collect(n: Record<string, unknown>) {
+                        const k = n._sharedKey;
+                        if (typeof k === 'string' && k) out.add(k);
+                        const children = (n.children ?? []) as Record<string, unknown>[];
+                        for (const c of children) collect(c);
+                      })(node);
+                      return out;
+                    };
+
+                    const removedSet = new Set(removedKeysSnap ?? []);
+                    // Order removed keys by actual depth in the model,
+                    // ancestors (smaller depth) FIRST. This is essential: a
+                    // stable-sort that doesn't differentiate depth would let
+                    // a descendant be processed before its ancestor,
+                    // defeating the ancestor-dedup guard.
+                    const orderedKeys = [...(removedKeysSnap ?? [])]
+                      .map(k => ({ key: k, depth: findInModel(contentRec, k)?.depth ?? Number.MAX_SAFE_INTEGER }))
+                      .sort((a, b) => a.depth - b.depth)
+                      .map(e => e.key);
+                    const graftedKeys = new Set<string>();
+
+                    for (const key of orderedKeys) {
+                      const match = findInModel(contentRec, key);
+                      if (!match || !match.parentKey) continue;
+
+                      // Guard 1: if an ancestor of this key in the model is also
+                      // in _removedKeys AND we've already grafted it, this key
+                      // came along inside the ancestor subtree — skip.
+                      let ancestorAlreadyGrafted = false;
+                      {
+                        let cursorKey: string | null = match.parentKey;
+                        while (cursorKey) {
+                          if (graftedKeys.has(cursorKey)) { ancestorAlreadyGrafted = true; break; }
+                          if (!removedSet.has(cursorKey)) break;
+                          const up = findInModel(contentRec, cursorKey);
+                          cursorKey = up?.parentKey ?? null;
+                        }
+                      }
+                      if (ancestorAlreadyGrafted) continue;
+
+                      // Guard 2: already present in fresh (defensive)?
+                      if (findBySharedKey(fresh, key)) continue;
+
+                      const freshParent = findBySharedKey(fresh, match.parentKey);
+                      if (!freshParent) continue;
+                      const grafted = cloneWithFreshIdsKeepSharedKey(
+                        JSON.parse(JSON.stringify(match.node)) as Record<string, unknown>,
+                      );
+                      const pChildren = ((freshParent.children ?? []) as Record<string, unknown>[]).slice();
+                      const idx = Math.max(0, Math.min(match.atIdx, pChildren.length));
+                      pChildren.splice(idx, 0, grafted);
+                      freshParent.children = pChildren;
+
+                      // Mark every sharedKey inside the grafted subtree as
+                      // "covered" so subsequent iterations don't re-graft.
+                      for (const k of keysInSubtree(grafted)) graftedKeys.add(k);
+                    }
+                  }
+
+                  // Hide instance-only structural metadata during edit so the
+                  // canvas truly shows a pure model view. It's restored on exit.
+                  delete fresh._localInsertions;
+                  delete fresh._removedKeys;
+
+                  return fresh as unknown as SDUINode;
+                }) as SDUINode[];
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[enterSharedComponentEdit] snapshot/apply-baseline failed; entering edit mode without snapshotting', err);
+          nextPageNodes = s.pageNodes;
+        }
+
         return {
+          pageNodes: nextPageNodes,
           _editEntrySelection: entrySelection,
+          _preEditInstanceSnapshot: nextSnapshots,
           editingSharedComponentIds: [...s.editingSharedComponentIds, modelId],
           editingSharedComponentId: modelId,
           editingSharedComponentContentsMap: { ...s.editingSharedComponentContentsMap, [modelId]: content },
@@ -1905,6 +2909,20 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       : undefined;
 
     if (liveNode) {
+      // ── No-op in SIMPLE edit mode ──────────────────────────────────────────
+      // Simple mode edits the original instance directly (liveNode carries
+      // `_shared`). In that mode `_syncSharedInstances` already propagates
+      // every intentional patch to the model incrementally AND strips A's
+      // per-instance `_overrides` so they don't leak in. If we also ran this
+      // "save live node verbatim" path (e.g. from the 800ms auto-save timer),
+      // it would copy A's full current state — including A's override values —
+      // straight onto the model, leaking instance edits to the SC. Skip it.
+      //
+      // Full mode uses a synthetic `builderContent` node with NO `_shared`,
+      // so this guard lets it through unchanged.
+      const liveShared = (liveNode as unknown as Record<string, unknown>)._shared;
+      if (liveShared) return;
+
       const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
       const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
       const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
@@ -1914,8 +2932,23 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       const savedNode = {
         ...liveNode,
         props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
-      };
-      updateSharedComponent({ ...(targetModel as { id: string }), content: savedNode as Record<string, unknown> });
+      } as Record<string, unknown>;
+      // Strip instance-only metadata from the root AND every descendant.
+      delete savedNode._overrides;
+      delete savedNode._descendantOverrides;
+      delete savedNode._removedKeys;
+      delete savedNode._localInsertions;
+      (function stripNested(n: Record<string, unknown>) {
+        const children = (n.children ?? []) as Record<string, unknown>[];
+        for (const c of children) {
+          delete c._overrides;
+          delete c._descendantOverrides;
+          delete c._removedKeys;
+          delete c._localInsertions;
+          stripNested(c);
+        }
+      })(savedNode);
+      updateSharedComponent({ ...(targetModel as { id: string }), content: savedNode });
     }
   },
 
@@ -1927,6 +2960,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       editingSharedComponentModelsMap,
       pageNodes,
       _savedPageNodes,
+      _preEditInstanceSnapshot,
     } = get();
 
     const targetId = modelId ?? lastId;
@@ -1935,6 +2969,174 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     const targetContent = editingSharedComponentContentsMap[targetId];
     const targetModel   = getSharedComponents()[targetId] ?? editingSharedComponentModelsMap[targetId];
 
+    // ── SIMPLE edit mode detection ─────────────────────────────────────────
+    // Presence of a pre-edit snapshot means we entered via simple mode and the
+    // live instance node lives somewhere in `pageNodes` (possibly nested). We
+    // use the snapshot's `instanceNodeId` — NOT the model's content root id —
+    // because duplicate/nested instances have their own ids that don't match
+    // the model's content id.
+    const snap = (_preEditInstanceSnapshot ?? {})[targetId];
+    if (snap) {
+      let nextPageNodes = pageNodes as SDUINode[];
+
+      try {
+        const hasRootOverrides = snap.instanceOverrides.length > 0;
+        const hasDescOverrides = (snap.descendantOverrides ?? []).length > 0;
+        const hasRemovedKeys = (snap.removedKeys?.length ?? 0) > 0;
+        const hasLocalInsertions = (snap.localInsertions?.length ?? 0) > 0;
+        if (hasRootOverrides || hasDescOverrides || hasRemovedKeys || hasLocalInsertions) {
+          // ALWAYS restore snapshotted overrides on exit. The instance's
+          // override is "sticky" — it wins over the model for any cssProp in
+          // `_overrides` (root) or the descendant override snapshot (children),
+          // even if the user edited that same prop in the model while inside
+          // Edit Component mode. To promote a model value to an instance, the
+          // user must first RESET the override on the instance (outside edit
+          // mode), which removes the cssProp from `_overrides` and lets the
+          // model value flow through.
+          const rootMockSource: Record<string, unknown> = {
+            props: {
+              className: snap.instancePropsSnapshot.className,
+              style: snap.instancePropsSnapshot.style,
+            },
+            animation: snap.instancePropsSnapshot.animation,
+          };
+
+          nextPageNodes = patchNodeById(nextPageNodes, snap.instanceNodeId, n => {
+            const fresh = JSON.parse(JSON.stringify(n)) as Record<string, unknown>;
+
+            // Restore root-level overrides
+            if (hasRootOverrides) {
+              for (const p of snap.instanceOverrides) {
+                copyCssProp(rootMockSource, fresh, p);
+              }
+            }
+            fresh._overrides = [...snap.instanceOverrides];
+
+            // Restore descendant-level overrides by matching `_sharedKey`.
+            // The tree may have changed during edit (adds/removes of siblings
+            // from the model, local insertions, etc.); sharedKey matching is
+            // robust to those shifts. Entries whose key no longer resolves
+            // are silently skipped.
+            for (const entry of snap.descendantOverrides ?? []) {
+              const liveDesc = _resolveDescendantBySharedKey(fresh, entry.sharedKey);
+              if (!liveDesc) continue;
+              const descMockSource: Record<string, unknown> = {
+                props: {
+                  className: entry.propsSnapshot.className,
+                  style: entry.propsSnapshot.style,
+                },
+                animation: entry.propsSnapshot.animation,
+              };
+              for (const p of entry.cssProps) {
+                copyCssProp(descMockSource, liveDesc, p);
+              }
+            }
+
+            // Restore the explicit Phase-3/5 metadata. These were preserved
+            // unchanged during edit (instance-only state), but edit-mode
+            // patches to the instance root may have accidentally stripped them.
+            if (snap.explicitDescendantOverrides !== undefined) {
+              if (Object.keys(snap.explicitDescendantOverrides).length > 0) {
+                fresh._descendantOverrides = JSON.parse(JSON.stringify(snap.explicitDescendantOverrides));
+              } else {
+                delete fresh._descendantOverrides;
+              }
+            }
+            if (snap.removedKeys !== undefined) {
+              if (snap.removedKeys.length > 0) fresh._removedKeys = [...snap.removedKeys];
+              else delete fresh._removedKeys;
+            }
+            if (snap.localInsertions !== undefined) {
+              if (snap.localInsertions.length > 0) fresh._localInsertions = JSON.parse(JSON.stringify(snap.localInsertions));
+              else delete fresh._localInsertions;
+            }
+
+            // ── Restore structural divergences hidden at enter ────────────
+            // Shared helper to locate a node by its `_sharedKey`.
+            const findBySharedKey = (root: Record<string, unknown>, key: string): Record<string, unknown> | null => {
+              if (root._sharedKey === key) return root;
+              const children = (root.children ?? []) as Record<string, unknown>[];
+              for (const c of children) {
+                const found = findBySharedKey(c, key);
+                if (found) return found;
+              }
+              return null;
+            };
+
+            // 1. Re-remove the model descendants that this instance had in
+            //    `_removedKeys` pre-edit. At enter we grafted them back to
+            //    show the pure model view; now we prune them again so the
+            //    instance keeps its local deletion. Matches work by
+            //    `_sharedKey`, so if the model itself deleted the key
+            //    during edit mode, the graft is already gone and this is a
+            //    safe no-op.
+            if (hasRemovedKeys) {
+              const removedSet = new Set(snap.removedKeys ?? []);
+              const pruneRemoved = (node: Record<string, unknown>) => {
+                const children = (node.children ?? []) as Record<string, unknown>[];
+                const kept: Record<string, unknown>[] = [];
+                for (const c of children) {
+                  const k = c._sharedKey;
+                  if (typeof k === 'string' && removedSet.has(k)) continue;
+                  pruneRemoved(c);
+                  kept.push(c);
+                }
+                if (kept.length !== children.length) node.children = kept;
+              };
+              pruneRemoved(fresh);
+            }
+
+            // 2. Re-insert the instance-only local insertions we stripped
+            //    at enter. We replay them from the saved subtree payloads
+            //    using fresh ids (but preserving `_sharedKey`) so the DOM
+            //    ids don't collide with anything already on the canvas.
+            if (hasLocalInsertions && snap.insertedSubtrees) {
+              for (const entry of snap.localInsertions ?? []) {
+                const savedSubtree = snap.insertedSubtrees[entry.subtreeSharedKey];
+                if (!savedSubtree) continue;
+                const freshParent = findBySharedKey(fresh, entry.parentSharedKey);
+                if (!freshParent) continue;
+                const cloned = cloneWithFreshIdsKeepSharedKey(
+                  JSON.parse(JSON.stringify(savedSubtree)) as Record<string, unknown>,
+                );
+                const pChildren = ((freshParent.children ?? []) as Record<string, unknown>[]).slice();
+                const idx = Math.max(0, Math.min(entry.atIdx, pChildren.length));
+                pChildren.splice(idx, 0, cloned);
+                freshParent.children = pChildren;
+              }
+            }
+
+            return fresh as unknown as SDUINode;
+          }) as SDUINode[];
+        }
+      } catch (err) {
+        console.error('[exitSharedComponentEdit] snapshot restore failed; exiting without restoring overrides', err);
+      }
+
+      const newEditingIds  = editingSharedComponentIds.filter(id => id !== targetId);
+      const newContentsMap = Object.fromEntries(Object.entries(editingSharedComponentContentsMap).filter(([k]) => k !== targetId));
+      const newModelsMap   = Object.fromEntries(Object.entries(editingSharedComponentModelsMap).filter(([k]) => k !== targetId));
+      const newLastId      = newEditingIds[newEditingIds.length - 1] ?? null;
+      const allClosed      = newEditingIds.length === 0;
+      const nextSnapshots  = Object.fromEntries(Object.entries(_preEditInstanceSnapshot ?? {}).filter(([k]) => k !== targetId));
+
+      set({
+        pageNodes: nextPageNodes,
+        _savedPageNodes: allClosed ? null : _savedPageNodes,
+        _editEntrySelection: allClosed ? null : get()._editEntrySelection,
+        _preEditInstanceSnapshot: nextSnapshots,
+        editingSharedComponentIds: newEditingIds,
+        editingSharedComponentId: newLastId,
+        editingSharedComponentContentsMap: newContentsMap,
+        editingSharedComponentModelsMap: newModelsMap,
+        editingSharedComponentContent: newLastId ? newContentsMap[newLastId] ?? null : null,
+        editingSharedComponentModel: newLastId ? newModelsMap[newLastId] ?? null : null,
+        selectedIds: [],
+      });
+      get()._pushHistory();
+      return;
+    }
+
     if (targetContent) {
       const contentRootId = (targetContent as unknown as { id?: string }).id;
       const liveNode = contentRootId
@@ -1942,6 +3144,15 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         : undefined;
 
       if (liveNode) {
+        // `_shared` is never added to the full-mode `builderContent` wrapper, so
+        // reaching this branch via simple-mode entry shouldn't happen (simple
+        // mode always records a snapshot and returns above). Guard for safety.
+        const liveShared = (liveNode as unknown as Record<string, unknown>)._shared;
+        if (liveShared) return;
+
+        // ── FULL edit mode ──────────────────────────────────────────────────
+        // Live node is a synthetic `builderContent` with no `_shared`; save it
+        // as the model and remove it (+ backdrop) from pageNodes.
         const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
         const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
         const cleanStyle = Object.fromEntries(Object.entries(rawStyle).filter(([k]) => !BUILDER_KEYS.has(k)));
@@ -1951,8 +3162,22 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         const savedNode = {
           ...liveNode,
           props: { ...(liveNode.props ?? {}), style: Object.keys(cleanStyle).length > 0 ? cleanStyle : undefined },
-        };
-        updateSharedComponent({ id: targetId, ...(targetModel as Record<string, unknown>), content: savedNode as Record<string, unknown> });
+        } as Record<string, unknown>;
+        delete savedNode._overrides;
+        delete savedNode._descendantOverrides;
+        delete savedNode._removedKeys;
+        delete savedNode._localInsertions;
+        (function stripNested(n: Record<string, unknown>) {
+          const children = (n.children ?? []) as Record<string, unknown>[];
+          for (const c of children) {
+            delete c._overrides;
+            delete c._descendantOverrides;
+            delete c._removedKeys;
+            delete c._localInsertions;
+            stripNested(c);
+          }
+        })(savedNode);
+        updateSharedComponent({ id: targetId, ...(targetModel as Record<string, unknown>), content: savedNode });
 
         const backdropId = `__sc-edit-backdrop-${targetId}`;
         const newPageNodes = (pageNodes as SDUINode[]).filter(
@@ -2084,14 +3309,44 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchNodeField: (id, field, value) => {
+    const prevRootSnap = _snapshotSharedRoot(get(), id);
     set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
-    get()._syncSharedInstances(id);
+    get()._syncSharedInstances(id, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
     get()._pushHistory();
   },
 
   patchNodeFieldLive: (id, field, value) => {
     set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
     // Intentionally no _pushHistory — caller must call _pushHistory() once on commit.
+  },
+
+  detachInstance: (id) => {
+    const STRIP_KEYS = new Set([
+      '_shared',
+      '_overrides',
+      '_descendantOverrides',
+      '_removedKeys',
+      '_localInsertions',
+      '_sharedKey',
+    ]);
+    const strip = (n: Record<string, unknown>): Record<string, unknown> => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(n)) {
+        if (STRIP_KEYS.has(k)) continue;
+        if (k === 'children' && Array.isArray(v)) {
+          out.children = (v as Record<string, unknown>[]).map(strip);
+        } else {
+          out[k] = v;
+        }
+      }
+      return out;
+    };
+    set(s => patchAnyNode(
+      s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
+      id,
+      node => strip(node as unknown as Record<string, unknown>) as unknown as SDUINode,
+    ));
+    get()._pushHistory();
   },
 
   setPreviewState: (state) => set({ activePreviewStates: [state] }),

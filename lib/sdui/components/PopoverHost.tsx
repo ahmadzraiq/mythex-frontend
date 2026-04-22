@@ -4,7 +4,11 @@ import React, {
   useState, useRef, useCallback, useEffect, useLayoutEffect, cloneElement,
   type ReactElement, type ReactNode, type CSSProperties,
 } from 'react';
-import { getGlobalVariableStore } from '../global-variable-store';
+import {
+  getGlobalVariableStore,
+  getComponentInstanceVar,
+  setComponentInstanceVar,
+} from '../global-variable-store';
 import type { PopoverConfig, PopoverPlacement } from '../types/node';
 
 export interface PopoverHostProps {
@@ -14,6 +18,20 @@ export interface PopoverHostProps {
   renderPopoverContent?: () => ReactNode;
   builderMode?: boolean;
   builderPopoverShown?: boolean;
+  /**
+   * Component instance id — when set AND popoverConfig.openVariable is a UUID
+   * that matches a scoped component variable, the open state is read/written
+   * to the per-instance slot instead of the global flat variable store.
+   * This prevents sibling instances of the same shared component from all
+   * opening when only one trigger is clicked.
+   */
+  instanceId?: string;
+  /**
+   * True when popoverConfig.openVariable is a scoped component variable on
+   * this instance. Renderer decides this because only it knows the model
+   * definition; PopoverHost only uses the flag to choose read/write routing.
+   */
+  openVariableIsComponentScoped?: boolean;
 }
 
 // ── Placement → CSS ──────────────────────────────────────────────────────────
@@ -53,27 +71,43 @@ const OPPOSITE: Record<string, string> = {
 function usePopoverState(
   nodeId: string | undefined,
   config: PopoverConfig | undefined,
+  instanceId: string | undefined,
+  openVariableIsComponentScoped: boolean | undefined,
 ) {
   const [localOpen, setLocalOpen] = useState(false);
   const variableUuid = config?.openVariable;
+  const useInstanceSlot = !!(variableUuid && instanceId && openVariableIsComponentScoped);
   const storePath = variableUuid || (nodeId ? `_popover.popover.${nodeId}` : '');
 
   const setOpen = useCallback((val: boolean) => {
     setLocalOpen(val);
-    if (storePath) {
-      try { getGlobalVariableStore().getState().set(storePath, val); } catch { /* noop */ }
+    if (useInstanceSlot && variableUuid && instanceId) {
+      try {
+        setComponentInstanceVar(instanceId, variableUuid, val);
+      } catch { /* noop */ }
+      return;
     }
-  }, [storePath]);
+    if (storePath) {
+      try {
+        getGlobalVariableStore().getState().set(storePath, val);
+      } catch { /* noop */ }
+    }
+  }, [storePath, useInstanceSlot, variableUuid, instanceId]);
 
   useEffect(() => {
     if (!variableUuid) return;
     const store = getGlobalVariableStore();
     const unsub = store.subscribe((state) => {
-      const val = state.data[variableUuid];
+      let val: unknown;
+      if (useInstanceSlot && instanceId) {
+        val = getComponentInstanceVar(instanceId, variableUuid);
+      } else {
+        val = state.data[variableUuid];
+      }
       setLocalOpen(!!val);
     });
     return unsub;
-  }, [variableUuid]);
+  }, [variableUuid, useInstanceSlot, instanceId]);
 
   return { isOpen: localOpen, setOpen };
 }
@@ -87,13 +121,15 @@ export default function PopoverHost({
   renderPopoverContent,
   builderMode,
   builderPopoverShown,
+  instanceId,
+  openVariableIsComponentScoped,
 }: PopoverHostProps) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const floatingRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const active = !!popoverConfig;
-  const { isOpen, setOpen } = usePopoverState(nodeId, popoverConfig);
+  const { isOpen, setOpen } = usePopoverState(nodeId, popoverConfig, instanceId, openVariableIsComponentScoped);
   const effectiveOpen = active && (builderMode ? !!builderPopoverShown : isOpen);
 
   const isClick = active && popoverConfig?.trigger === 'click' && !builderMode;

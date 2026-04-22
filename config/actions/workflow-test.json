@@ -3251,5 +3251,178 @@
         }
       }
     ]
+  },
+
+  "GlobalGreet": {
+    "name": "Global: Greet",
+    "trigger": "execution",
+    "global": true,
+    "params": [
+      { "id": "p-name",  "name": "name",  "type": "Text",   "testValue": "World" },
+      { "id": "p-times", "name": "times", "type": "Number", "testValue": 3 }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Write scenario 2 result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wftest-result-2-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "'from global: ' + String(parameters?.['name'] ?? '(no name)') + ' x' + String(parameters?.['times'] ?? 0)"
+          }
+        }
+      }
+    ]
+  },
+
+  "GlobalFinalize": {
+    "name": "Global: Finalize",
+    "trigger": "execution",
+    "global": true,
+    "params": [
+      { "id": "p-sum", "name": "sum", "type": "Number", "testValue": 50 }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Write scenario 4 result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wftest-result-4-0000-0000-0000-000000000004",
+          "value": {
+            "formula": "'finalized: ' + String(parameters?.['sum'] ?? 0)"
+          }
+        }
+      }
+    ]
+  },
+
+  "pageWorkflowA": {
+    "name": "Page: Workflow A (greeting + count → result 1)",
+    "trigger": "execution",
+    "params": [
+      { "id": "p-greeting", "name": "greeting", "type": "Text",   "testValue": "Hi" },
+      { "id": "p-count",    "name": "count",    "type": "Number", "testValue": 2 }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Write scenario 1 result",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wftest-result-1-0000-0000-0000-000000000001",
+          "value": {
+            "formula": "'Hello ' + String(parameters?.['greeting'] ?? '') + ' x' + String(parameters?.['count'] ?? 0)"
+          }
+        }
+      }
+    ]
+  },
+
+  "pageWorkflowB": {
+    "name": "Page: Workflow B (calls GlobalGreet)",
+    "trigger": "execution",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Call GlobalGreet with fixed params",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "GlobalGreet",
+          "params": {
+            "name": "World",
+            "times": 3
+          }
+        }
+      }
+    ]
+  },
+
+  "pageWorkflowExtKick": {
+    "name": "Page: Ext Kick (dispatch SC workflow on specific instance)",
+    "trigger": "execution",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "executeComponentAction scWorkflowB on wftest-sc-inst-1",
+        "type": "executeComponentAction",
+        "config": {
+          "modelId": "sc-workflow-caller",
+          "instanceId": "wftest-sc-inst-1",
+          "action": "scWorkflowB",
+          "args": {
+            "multiplier": { "formula": "5" }
+          }
+        }
+      }
+    ]
+  },
+
+  "runScenario1": {
+    "name": "Run Scenario 1 (page workflow with params)",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Call pageWorkflowA",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "pageWorkflowA",
+          "params": {
+            "greeting": "Hi",
+            "count": 2
+          }
+        }
+      }
+    ]
+  },
+
+  "runScenario2": {
+    "name": "Run Scenario 2 (page → global)",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Call pageWorkflowB",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "pageWorkflowB"
+        }
+      }
+    ]
+  },
+
+  "runScenario4": {
+    "name": "Run Scenario 4 (page → SC instance → global)",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "Call pageWorkflowExtKick",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "pageWorkflowExtKick"
+        }
+      }
+    ]
+  },
+
+  "runScWorkflowAInternal": {
+    "name": "SC internal button — call scWorkflowA on ambient instance",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "name": "executeComponentAction scWorkflowA (ambient scope)",
+        "type": "executeComponentAction",
+        "config": {
+          "workflowId": "scWorkflowA",
+          "args": {
+            "label": { "formula": "context?.component?.props?.label ?? 'inner'" }
+          }
+        }
+      }
+    ]
   }
 }

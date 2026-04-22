@@ -2316,32 +2316,84 @@ function FetchDataStepConfig({
 }
 
 // ─── ExecuteComponentActionConfig ────────────────────────────────────────────
-// Searchable dropdown listing all named non-system workflows from pageWorkflowMeta.
-// Optionally records a component element ID for targeted dispatch.
+// Searchable dropdown listing workflows from every shared-component model,
+// grouped by component. Selecting a row writes BOTH {workflowId, modelId} so
+// the runtime handler can resolve the workflow without relying on the ambient
+// component scope. Also exposes an optional Instance ID input so a page-level
+// workflow can target a specific SC instance on the page.
+//
+// Backwards-compat: reads selection from cfg.workflowId first, falling back to
+// cfg.action. If only a workflow name is stored (no modelId), the picker tries
+// to infer the model by matching the name across all shared components — when
+// the match is unique we pre-select that row; otherwise the picker stays
+// unbound until the user picks explicitly.
 
 function ExecuteComponentActionConfig({
   cfg,
   onUpdate,
+  workflowTrigger,
 }: {
   cfg: Record<string, unknown>;
   onUpdate: (patch: Record<string, unknown>) => void;
+  workflowTrigger?: string;
 }) {
-  const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
+  // Subscribe to shared-component store so the dropdown refreshes when workflows
+  // are added/removed/renamed while the right panel is open.
+  const [, forceTick] = useState(0);
+  useEffect(() => subscribeSharedComponents(() => forceTick(n => n + 1)), []);
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const allWorkflows = Object.values(pageWorkflowMeta)
-    .filter(w => !w.isSystem)
-    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  type Row = {
+    key: string;         // `${modelId}::${workflowId}`
+    modelId: string;
+    modelName: string;
+    workflowId: string;  // the workflow key within model.workflows (also its runtime name)
+    workflowName: string;
+    trigger?: string;
+    paramCount: number;
+  };
+
+  // Flatten every shared component's workflows into a single list of rows.
+  const models = getSharedComponentList();
+  const rows: Row[] = [];
+  for (const m of models) {
+    const wfs = (m.workflows ?? {}) as Record<string, { name?: string; trigger?: string; params?: unknown[] }>;
+    for (const [wid, w] of Object.entries(wfs)) {
+      rows.push({
+        key: `${m.id}::${wid}`,
+        modelId: m.id,
+        modelName: m.name ?? m.id,
+        workflowId: wid,
+        workflowName: w?.name ?? wid,
+        trigger: w?.trigger,
+        paramCount: Array.isArray(w?.params) ? w!.params!.length : 0,
+      });
+    }
+  }
+  rows.sort((a, b) => (a.modelName + a.workflowName).localeCompare(b.modelName + b.workflowName));
+
+  // Resolve the currently-bound selection. Prefer explicit modelId; otherwise
+  // try to unique-match the workflow name across all shared components.
+  const storedWorkflowId = (cfg.workflowId as string | undefined) ?? (cfg.action as string | undefined) ?? '';
+  const storedModelId = (cfg.modelId as string | undefined) ?? '';
+  let selected: Row | undefined;
+  if (storedWorkflowId) {
+    if (storedModelId) {
+      selected = rows.find(r => r.modelId === storedModelId && r.workflowId === storedWorkflowId);
+    } else {
+      const matches = rows.filter(r => r.workflowId === storedWorkflowId);
+      if (matches.length === 1) selected = matches[0];
+    }
+  }
 
   const q = search.toLowerCase();
   const filtered = q
-    ? allWorkflows.filter(w => (w.name ?? w.id).toLowerCase().includes(q))
-    : allWorkflows;
-
-  const selected = pageWorkflowMeta[cfg.action as string];
+    ? rows.filter(r => (`${r.modelName} ${r.workflowName}`).toLowerCase().includes(q))
+    : rows;
 
   useEffect(() => {
     if (!open) return;
@@ -2356,21 +2408,51 @@ function ExecuteComponentActionConfig({
     return () => window.removeEventListener('mousedown', handler, true);
   }, [open]);
 
+  // Write {workflowId, modelId} on select. Keeps legacy `action` field in
+  // sync for older readers but the new canonical field is `workflowId`.
+  const selectRow = (r: Row) => {
+    const next: Record<string, unknown> = {
+      ...cfg,
+      workflowId: r.workflowId,
+      modelId: r.modelId,
+      action: r.workflowId,
+    };
+    onUpdate(next);
+    setOpen(false);
+    setSearch('');
+  };
+
+  // Group filtered rows by model for the dropdown UI.
+  const byModel = new Map<string, { modelName: string; items: Row[] }>();
+  for (const r of filtered) {
+    if (!byModel.has(r.modelId)) byModel.set(r.modelId, { modelName: r.modelName, items: [] });
+    byModel.get(r.modelId)!.items.push(r);
+  }
+
+  const displayLabel = selected
+    ? `${selected.modelName} › ${selected.workflowName}`
+    : (storedWorkflowId
+        ? `${storedWorkflowId}  (not found — pick again)`
+        : 'Choose a component workflow…');
+
   return (
     <>
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Component *</label>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Component workflow *</label>
       <div ref={wrapperRef} data-popover="component-action-picker" style={{ position: 'relative', width: '100%' }}>
         <button
           style={{ ...S.fieldSelect, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textAlign: 'left', paddingRight: 28 }}
           onClick={() => { setOpen(v => !v); setSearch(''); }}
         >
           <span style={{ fontSize: 12, flexShrink: 0 }}>⚡</span>
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? '#f3f4f6' : '#6b7280' }}>
-            {selected ? (selected.name ?? selected.id) : 'Choose a component…'}
+          <span style={{
+            flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            color: selected ? '#f3f4f6' : (storedWorkflowId ? '#f59e0b' : '#6b7280'),
+          }}>
+            {displayLabel}
           </span>
-          {selected?.trigger && (
-            <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0, marginRight: 16 }}>
-              {selected.trigger}
+          {selected && selected.paramCount > 0 && (
+            <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
+              {selected.paramCount} param{selected.paramCount !== 1 ? 's' : ''}
             </span>
           )}
           <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
@@ -2379,51 +2461,91 @@ function ExecuteComponentActionConfig({
         </button>
 
         {open && (
-          <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 280 }}>
+          <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 320 }}>
             <input
               ref={searchRef}
               style={S.dropdownSearch}
-              placeholder="Search workflows…"
+              placeholder="Search component workflows…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
             {filtered.length === 0 && (
               <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
-                {allWorkflows.length === 0 ? 'No workflows available' : 'No results'}
+                {rows.length === 0 ? 'No shared-component workflows defined' : 'No results'}
               </div>
             )}
-            {filtered.map(w => {
-              const isActive = w.id === (cfg.action as string);
-              return (
-                <button
-                  key={w.id}
-                  style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
-                  onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                  onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
-                  onClick={() => { onUpdate({ ...cfg, action: w.id }); setOpen(false); setSearch(''); }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                    {w.name ?? w.id}
-                  </span>
-                  {w.trigger && (
-                    <span style={{ fontSize: 10, color: '#6b7280' }}>{w.trigger}</span>
-                  )}
-                </button>
-              );
-            })}
+            {Array.from(byModel.entries()).map(([modelId, { modelName, items }]) => (
+              <div key={modelId}>
+                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {modelName}
+                </div>
+                {items.map(r => {
+                  const isActive = selected?.key === r.key;
+                  return (
+                    <button
+                      key={r.key}
+                      style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
+                      onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+                      onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+                      onClick={() => selectRow(r)}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                        {r.workflowName}
+                      </span>
+                      <span style={{ fontSize: 10, color: '#6b7280' }}>
+                        {r.trigger ?? 'execution'}{r.paramCount ? ` · ${r.paramCount} param${r.paramCount !== 1 ? 's' : ''}` : ''}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
       </div>
 
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>
-        Component ID <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span>
+        Instance ID <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional — target a specific instance)</span>
       </label>
       <input
         style={S.fieldInput}
-        placeholder="e.g. my-form-id"
-        value={(cfg.componentId as string) ?? ''}
-        onChange={e => onUpdate({ ...cfg, componentId: e.target.value || undefined })}
+        placeholder="e.g. wftest-sc-inst-1"
+        value={(cfg.instanceId as string) ?? (cfg.componentId as string) ?? ''}
+        onChange={e => {
+          const v = e.target.value || undefined;
+          onUpdate({ ...cfg, instanceId: v, componentId: v });
+        }}
       />
+
+      {/* Declared-parameter inputs — shown when the selected SC workflow has a
+          non-empty `params` array. Values are stored under cfg.args and passed
+          to the workflow as `parameters` at runtime. */}
+      {(() => {
+        if (!selected) return null;
+        const model = models.find(m => m.id === selected.modelId) as SharedComponentModel | undefined;
+        const declared = (model?.workflows?.[selected.workflowId]?.params ?? []) as WorkflowParam[];
+        if (!declared.length) return null;
+        const savedArgs = (cfg.args as Record<string, unknown>) ?? {};
+        return (
+          <div style={{ marginTop: 14, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 12 }}>Φ</span> Arguments
+            </div>
+            {declared.map(p => (
+              <ParamBoundField
+                key={p.id}
+                param={p}
+                value={savedArgs[p.name] as FormulaValue | undefined}
+                onChange={v => {
+                  const next = { ...savedArgs, [p.name]: v };
+                  onUpdate({ ...cfg, args: next });
+                }}
+                workflowTrigger={workflowTrigger}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </>
   );
 }
@@ -3501,7 +3623,10 @@ function GlobalWorkflowPicker({
 
 // ─── RunProjectWorkflowConfig ─────────────────────────────────────────────────
 // Config section for runProjectWorkflow steps — shows the workflow picker
-// and dynamic param input fields when the selected global workflow has params.
+// and dynamic param input fields when the selected workflow has params.
+// Resolves the bound workflow from BOTH pageWorkflowMeta and globalWorkflowMeta
+// because any named workflow (page or global) can be called via runProjectWorkflow
+// at runtime (the engine merges both into a single action map).
 
 function RunProjectWorkflowConfig({
   step,
@@ -3512,18 +3637,21 @@ function RunProjectWorkflowConfig({
   onUpdate: (patch: Partial<ActionStep>) => void;
   workflowTrigger?: string;
 }) {
-  const { globalWorkflowMeta } = useBuilderStore();
+  const { globalWorkflowMeta, pageWorkflowMeta } = useBuilderStore();
   const workflowId = (step.config?.workflowId as string) ?? step.action ?? '';
-  const selectedGlobalMeta = workflowId ? globalWorkflowMeta[workflowId] : undefined;
-  const params: WorkflowParam[] = selectedGlobalMeta?.params ?? [];
+  const selectedMeta = workflowId
+    ? (globalWorkflowMeta[workflowId] ?? pageWorkflowMeta[workflowId])
+    : undefined;
+  const params: WorkflowParam[] = selectedMeta?.params ?? [];
   const savedParams = (step.config?.params as Record<string, unknown>) ?? {};
 
   return (
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>Workflow *</label>
-      <GlobalWorkflowPicker
+      <WorkflowBindButton
         value={workflowId}
         onChange={uuid => onUpdate({ action: uuid, config: { ...(step.config ?? {}), workflowId: uuid }, name: uuid })}
+        globalOnly={false}
       />
 
       {/* Param input fields — only shown when the selected workflow has declared params */}
@@ -4023,7 +4151,11 @@ export function NodePropsPanel({
       })()}
 
       {step.type === 'executeComponentAction' && (
-        <ExecuteComponentActionConfig cfg={cfg} onUpdate={patch => onUpdate({ config: patch })} />
+        <ExecuteComponentActionConfig
+          cfg={cfg}
+          onUpdate={patch => onUpdate({ config: patch })}
+          workflowTrigger={workflowTrigger}
+        />
       )}
 
       {step.type === 'returnValue' && (() => {

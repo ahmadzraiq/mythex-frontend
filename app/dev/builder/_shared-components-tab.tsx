@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useBuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import { cloneWithFreshIds } from './_store-node-helpers';
+import { cloneWithFreshIds, cloneWithFreshIdsKeepSharedKey, stampSharedKeys } from './_store-node-helpers';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import {
   getSharedComponentList, createSharedComponent,
@@ -339,7 +339,9 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (m: SharedComponentMod
   const [name, setName] = useState('');
   const create = () => {
     const t = name.trim(); if (!t) return;
-    onCreated(createSharedComponent({ id: `sc-${crypto.randomUUID()}`, name: t, properties: [], content: makeStarterContent() }));
+    const content = makeStarterContent();
+    stampSharedKeys(content);
+    onCreated(createSharedComponent({ id: `sc-${crypto.randomUUID()}`, name: t, properties: [], content }));
   };
   return (
     <div style={{ padding: '12px', borderBottom: '1px solid #374151', background: '#111827' }}>
@@ -391,8 +393,13 @@ function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, 
   };
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
-    const cloned = cloneWithFreshIds(JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>);
+    // Ensure the model content has _sharedKey stamped (self-heal for legacy).
+    const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
+    stampSharedKeys(modelContent);
+    // Keep _sharedKey on the instance so it can be walked in parallel with the model.
+    const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
     cloned._shared = { id: model.id, name: model.name };
+    cloned._overrides = [];
     const data = JSON.stringify(cloned);
     e.dataTransfer.setData('text/primitive-node', data);
     e.dataTransfer.effectAllowed = 'copy';
@@ -623,8 +630,11 @@ export function SharedComponentsTab() {
       return;
     }
     if (editingSharedComponentIds.includes(model.id)) saveEditingSharedComponent(model.id);
-    const cloned = cloneWithFreshIds(JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>);
+    const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
+    stampSharedKeys(modelContent);
+    const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
     cloned._shared = { id: model.id, name: model.name };
+    cloned._overrides = [];
     const nodeId = cloned.id as string;
     useBuilderStore.getState().addNode(cloned as unknown as SDUINode, null, 0);
     setPreviewIds(prev => ({ ...prev, [model.id]: nodeId }));

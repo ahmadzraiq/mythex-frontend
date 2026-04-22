@@ -420,6 +420,68 @@ export interface BuilderStore {
   editingSharedComponentContent: SDUINode | null;
   /** Convenience alias: model of the most-recently-opened shared component */
   editingSharedComponentModel: Record<string, unknown> | null;
+  /**
+   * Pre-edit snapshot for SIMPLE edit mode (keyed by modelId).
+   *
+   * When the user enters simple edit mode on an instance A that has per-instance
+   * overrides, we temporarily hide those overrides so the canvas + panel show
+   * the pure MODEL view (matching user expectation of "entering the component").
+   * The snapshot records A's pre-edit state so we can restore overrides on exit
+   * for props the user didn't explicitly change while editing the model.
+   */
+  _preEditInstanceSnapshot: Record<string, {
+    /** ID of the instance node (A) that was used as the simple-mode entry */
+    instanceNodeId: string;
+    /** A._overrides before we cleared them */
+    instanceOverrides: string[];
+    /** Snapshot of A's relevant props + animation (enough for copyCssProp to restore values) */
+    instancePropsSnapshot: {
+      className?: string;
+      style?: Record<string, unknown>;
+      animation?: Record<string, unknown>;
+    };
+    /**
+     * Per-descendant overrides inside A's subtree (nested "hidden" overrides).
+     *
+     * Child nodes do NOT currently track `_overrides` explicitly — any cssProp
+     * where the instance descendant's value differs from the corresponding model
+     * descendant's value is treated as an effective override. We compute this
+     * diff at entry time (sharedKey → cssProps + snapshot) so exit can restore
+     * them even after the user edits the same cssProp inside the model in edit
+     * mode, AND even after structural divergences (local insertions, removed
+     * keys) have shifted the index-path alignment between instance and model.
+     *
+     * Descendants are matched by their stable `_sharedKey` (not by child-index
+     * path) because the path of a descendant in the instance may not match the
+     * path of the same descendant in the model whenever the instance has
+     * structural divergences relative to the model.
+     */
+    descendantOverrides: Array<{
+      sharedKey: string;
+      cssProps: string[];
+      propsSnapshot: {
+        className?: string;
+        style?: Record<string, unknown>;
+        animation?: Record<string, unknown>;
+      };
+    }>;
+    /** Deep clone of the model content BEFORE editing started (to detect what the user changed) */
+    modelContentSnapshot: Record<string, unknown>;
+    /** Snapshot of the instance's explicit `_descendantOverrides` map at enter time (Phase 3 metadata). */
+    explicitDescendantOverrides?: Record<string, string[]>;
+    /** Snapshot of the instance's `_removedKeys` at enter time (Phase 5 metadata). */
+    removedKeys?: string[];
+    /** Snapshot of the instance's `_localInsertions` at enter time (Phase 5 metadata). */
+    localInsertions?: Array<{ parentSharedKey: string; atIdx: number; subtreeSharedKey: string }>;
+    /**
+     * Actual subtree payload for each local insertion at enter time,
+     * keyed by `subtreeSharedKey`. The live subtree is removed from the
+     * canvas on enter (so the user sees a pure model view); the saved
+     * payload here lets exit re-graft the insertion back onto the live
+     * instance at the original parent + position.
+     */
+    insertedSubtrees?: Record<string, Record<string, unknown>>;
+  }>;
   /** Enter shared-component-edit mode.
    *  Pass `entryNodeId` to record which instance the user came from (for Back to instance).
    *  Pass `simple: true` to open the panel without inserting a backdrop/overlay into the canvas
@@ -591,6 +653,14 @@ export interface BuilderStore {
   patchVariant: (id: string, variants: unknown[] | null) => void;
   /** Generic: patch any top-level or nested field on a node */
   patchNodeField: (id: string, field: string, value: unknown) => void;
+  /**
+   * Detach a single shared-component instance subtree.
+   * Strips _shared, _overrides, _descendantOverrides, _removedKeys,
+   * _localInsertions, and _sharedKey from the node AND all of its
+   * descendants. Leaves the SC model and all other instances untouched.
+   * (Figma-style per-instance detach.)
+   */
+  detachInstance: (id: string) => void;
   /** Same as patchNodeField but does NOT push to history — use for live drag updates.
    *  Call _pushHistory() once when the gesture ends (mouseup / blur / picker close). */
   patchNodeFieldLive: (id: string, field: string, value: unknown) => void;
@@ -773,8 +843,24 @@ export interface BuilderStore {
 
   // Internal (debounce wrapper)
   _pushHistory: () => void;
-  /** Propagate edits from a `_shared` node to the model and all other instances. */
-  _syncSharedInstances: (editedNodeId: string) => void;
+  /**
+   * Propagate edits between a shared-component model and its instances.
+   *
+   * Behavior depends on whether the edited node lives under an active Edit
+   * Component session (its `_shared.id` is in `editingSharedComponentIds`):
+   *   - In edit-model mode: write the edited content to the model and
+   *     propagate to every instance, preserving per-instance overrides
+   *     (declared props + cssProps listed in each instance's `_overrides`).
+   *   - Outside edit-model mode (instance-side edit): record the changed
+   *     cssProps into that instance root's `_overrides` array. The model
+   *     and other instances are NOT touched.
+   *
+   * `opts.prevEditedNode` is the snapshot of the edited node captured
+   * immediately before the mutation — used to diff cssProps for override
+   * tracking. When omitted (legacy callers), instance-side override recording
+   * is skipped and the call becomes a no-op outside edit-model mode.
+   */
+  _syncSharedInstances: (editedNodeId: string, opts?: { prevEditedNode?: SDUINode | null }) => void;
   _setPageNodes: (nodes: SDUINode[]) => void;
   /** E2E only — resets undo/redo history to a single empty snapshot so tests start clean. */
   _clearHistory: () => void;

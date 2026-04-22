@@ -1,0 +1,269 @@
+{
+  "cal-do-prev-month": {
+    "name": "Calendar — Previous Month",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-prev-month", "args": {} }
+      }
+    ]
+  },
+  "cal-do-next-month": {
+    "name": "Calendar — Next Month",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-next-month", "args": {} }
+      }
+    ]
+  },
+  "cal-do-select-day": {
+    "name": "Calendar — Select Day",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": {
+          "action": "cal-wf-select-day",
+          "args": {
+            "date": { "formula": "context?.item?.data?.dateStr" }
+          }
+        }
+      }
+    ]
+  },
+  "cal-do-rebuild": {
+    "name": "Calendar — Rebuild Grid",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-rebuild-grid", "args": {} }
+      }
+    ]
+  },
+  "cal-do-go-today": {
+    "name": "Calendar — Go Today",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-go-today", "args": {} }
+      }
+    ]
+  },
+  "cal-do-clear": {
+    "name": "Calendar — Clear Selection",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-clear", "args": {} }
+      }
+    ]
+  },
+  "cal-do-next-workday": {
+    "name": "Calendar — Find Next Workday",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-find-next-workday", "args": {} }
+      }
+    ]
+  },
+  "cal-do-classify": {
+    "name": "Calendar — Classify Selected Weekday",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-classify-date", "args": {} }
+      }
+    ]
+  },
+  "cal-do-goto-booking": {
+    "name": "Calendar — Go To Booking",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-goto-booking", "args": {} }
+      }
+    ]
+  },
+  "cal-do-go-back": {
+    "name": "Calendar — Navigate Back",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "cal-wf-go-back", "args": {} }
+      }
+    ]
+  },
+
+  "zoo-do-fetch-rest": {
+    "name": "Zoo — fetchData",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-fetch-rest", "args": {} } }
+    ]
+  },
+  "zoo-do-graphql": {
+    "name": "Zoo — graphql",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-graphql", "args": {} } }
+    ]
+  },
+  "zoo-do-fetch-collection": {
+    "name": "Zoo — fetchCollection",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-fetch-collection", "args": {} } }
+    ]
+  },
+  "zoo-do-fetch-parallel": {
+    "name": "Zoo — fetchCollectionsParallel",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-fetch-parallel", "args": {} } }
+    ]
+  },
+  "zoo-do-update-collection": {
+    "name": "Zoo — updateCollection",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-update-collection", "args": {} } }
+    ]
+  },
+  "zoo-do-upload-file": {
+    "name": "Zoo — uploadFile",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-upload-file", "args": {} } }
+    ]
+  },
+  "zoo-do-download-file": {
+    "name": "Zoo — downloadFileFromUrl",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-download-file", "args": {} } }
+    ]
+  },
+  "zoo-do-copy": {
+    "name": "Zoo — copyToClipboard",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-copy-clipboard", "args": {} } }
+    ]
+  },
+  "zoo-do-print-pdf": {
+    "name": "Zoo — printPdf",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-print-pdf", "args": {} } }
+    ]
+  },
+  "zoo-do-create-b64": {
+    "name": "Zoo — createUrlFromBase64",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-create-url-b64", "args": {} } }
+    ]
+  },
+  "zoo-do-encode-b64": {
+    "name": "Zoo — encodeFileAsBase64",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-encode-b64", "args": {} } }
+    ]
+  },
+  "zoo-do-custom-js": {
+    "name": "Zoo — customJavaScript",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-custom-js", "args": {} } }
+    ]
+  },
+  "zoo-do-open-popup": {
+    "name": "Zoo — openPopup",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-open-popup", "args": {} } }
+    ]
+  },
+  "zoo-do-close-popups": {
+    "name": "Zoo — closeAllPopups",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-close-popups", "args": {} } }
+    ]
+  },
+  "zoo-do-change-language": {
+    "name": "Zoo — changeLanguage",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-change-language", "args": {} } }
+    ]
+  },
+  "zoo-do-page-loader": {
+    "name": "Zoo — pageLoader",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-page-loader", "args": {} } }
+    ]
+  },
+  "zoo-do-stop-propagation": {
+    "name": "Zoo — stopPropagation",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-stop-propagation", "args": {} } }
+    ]
+  },
+  "zoo-do-run-sub": {
+    "name": "Zoo — runProjectWorkflow",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-run-sub", "args": {} } }
+    ]
+  },
+  "zoo-do-set-form-state": {
+    "name": "Zoo — setFormState",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-set-form-state", "args": {} } }
+    ]
+  },
+  "zoo-do-reset-form": {
+    "name": "Zoo — resetForm",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-reset-form", "args": {} } }
+    ]
+  },
+  "zooSubHelper": {
+    "name": "Zoo — Sub Helper (global)",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "executeComponentAction",
+        "config": { "action": "zoo-wf-sub-helper", "args": {} }
+      }
+    ]
+  }
+}

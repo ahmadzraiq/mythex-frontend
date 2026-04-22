@@ -57,20 +57,42 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
 
   const handleToggleShared = () => {
     if (isShared && nodeShared) {
-      if (window.confirm(`Remove "${nodeShared.name}" as a shared component? Instances on other pages will become detached.`)) {
-        store.patchNodeField(nodeId, '_shared', undefined);
-        // Dynamic import to avoid circular deps
-        import('@/lib/builder/shared-component-data').then(m => m.deleteSharedComponent(nodeShared.id)).catch(() => {});
-      }
+      // PER-INSTANCE DETACH (Figma-style):
+      // Strip ALL shared-component metadata from THIS instance's subtree only.
+      // The SC model and other instances remain untouched.
+      if (!window.confirm(`Detach this instance of "${nodeShared.name}"? The shared component and other instances will remain intact.`)) return;
+      store.detachInstance(nodeId);
     } else if (targetNode) {
       const scId = `sc-${crypto.randomUUID()}`;
       const scName = (targetNode as unknown as { name?: string }).name || targetNode.type || 'Shared Component';
       const content = JSON.parse(JSON.stringify(targetNode)) as Record<string, unknown>;
       delete content._shared;
-      import('@/lib/builder/shared-component-data').then(m => {
-        m.createSharedComponent({ id: scId, name: String(scName), properties: [], content });
+      delete content._overrides;
+      // Stamp stable _sharedKey on every node of the model content. We then
+      // mirror the same keys onto the now-instance subtree so that model and
+      // instance can be walked in parallel by _sharedKey for future merges.
+      import('./_store-node-helpers').then(nh => {
+        nh.stampSharedKeys(content);
+        import('@/lib/builder/shared-component-data').then(m => {
+          m.createSharedComponent({ id: scId, name: String(scName), properties: [], content });
+        }).catch(() => {});
+        // Walk targetNode and content in lockstep by structural position,
+        // copying model _sharedKey onto the instance. They are structurally
+        // identical at this point (content was cloned from targetNode).
+        const stampInstance = (instNode: Record<string, unknown>, modelNode: Record<string, unknown>) => {
+          if (typeof modelNode._sharedKey === 'string') {
+            store.patchNodeField(instNode.id as string, '_sharedKey', modelNode._sharedKey);
+          }
+          const iChildren = (instNode.children ?? []) as Record<string, unknown>[];
+          const mChildren = (modelNode.children ?? []) as Record<string, unknown>[];
+          for (let i = 0; i < iChildren.length && i < mChildren.length; i++) {
+            stampInstance(iChildren[i], mChildren[i]);
+          }
+        };
+        stampInstance(targetNode as unknown as Record<string, unknown>, content);
       }).catch(() => {});
       store.patchNodeField(nodeId, '_shared', { id: scId, name: scName });
+      store.patchNodeField(nodeId, '_overrides', []);
     }
   };
 

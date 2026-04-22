@@ -238,9 +238,25 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
     e.preventDefault();
     if (!name.trim()) return;
     const scId = `sc-${crypto.randomUUID()}`;
-    // Clone source node content, strip _shared metadata
+    // Clone source node content, strip _shared + _overrides metadata
     const content = JSON.parse(JSON.stringify(sourceNode)) as Record<string, unknown>;
     delete content._shared;
+    delete content._overrides;
+    // Stamp stable _sharedKey on every node in the model content. Mirror the
+    // same keys onto the source node (now the first instance) so they share
+    // identity 1:1.
+    import('./_store-node-helpers').then(nh => {
+      nh.stampSharedKeys(content);
+      const stampInstance = (inst: Record<string, unknown>, model: Record<string, unknown>) => {
+        if (typeof model._sharedKey === 'string') {
+          store.patchNodeField(inst.id as string, '_sharedKey', model._sharedKey);
+        }
+        const iChildren = (inst.children ?? []) as Record<string, unknown>[];
+        const mChildren = (model.children ?? []) as Record<string, unknown>[];
+        for (let i = 0; i < iChildren.length && i < mChildren.length; i++) stampInstance(iChildren[i], mChildren[i]);
+      };
+      stampInstance(sourceNode as unknown as Record<string, unknown>, content);
+    }).catch(() => {});
 
     createSharedComponent({
       id: scId,
@@ -254,8 +270,10 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
       content,
     });
 
-    // Attach _shared marker to the source node in the page
-    store.patchNodeField((sourceNode as unknown as { id?: string }).id ?? '', '_shared', { id: scId, name: name.trim() });
+    // Attach _shared marker (and empty override list) to the source node in the page
+    const sourceId = (sourceNode as unknown as { id?: string }).id ?? '';
+    store.patchNodeField(sourceId, '_shared', { id: scId, name: name.trim() });
+    store.patchNodeField(sourceId, '_overrides', []);
 
     // Enter edit mode — simple mode: no backdrop, component stays in place
     const model = getSharedComponents()[scId];

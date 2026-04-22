@@ -2096,7 +2096,12 @@
     "tr000000-0000-0000-0000-000000000007": { "label": "Viewport Width", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
     "tr000000-0000-0000-0000-000000000008": { "label": "Last Keydown", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
     "tr000000-0000-0000-0000-000000000009": { "label": "Last Keyup", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000010": { "label": "Collection Fetch Error", "type": "string", "initialValue": "None", "folder": "Triggers Test" }
+    "tr000000-0000-0000-0000-000000000010": { "label": "Collection Fetch Error", "type": "string", "initialValue": "None", "folder": "Triggers Test" },
+
+    "wftest-result-1-0000-0000-0000-000000000001": { "label": "Scenario 1 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
+    "wftest-result-2-0000-0000-0000-000000000002": { "label": "Scenario 2 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
+    "wftest-result-3-0000-0000-0000-000000000003": { "label": "Scenario 3 Result (SC Instance Mirror)", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
+    "wftest-result-4-0000-0000-0000-000000000004": { "label": "Scenario 4 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" }
   },
   "varFolders": [
     {
@@ -2210,6 +2215,10 @@
     {
       "id": "Triggers Test",
       "label": "Triggers Test"
+    },
+    {
+      "id": "WorkflowTest",
+      "label": "WorkflowTest"
     }
   ]
 }

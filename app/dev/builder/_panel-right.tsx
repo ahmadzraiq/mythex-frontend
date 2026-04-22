@@ -62,6 +62,7 @@ import { useBuilderStore, findParentNode } from './_store';
 import { useShallow } from 'zustand/react/shallow';
 import type { BuilderStore } from './_store-types';
 import { findNode, findSharedRoot } from './_store-node-helpers';
+import { getOverrides, readPropValue, copyCssProp } from './_shared-overrides';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
 // findSharedRoot and getSharedComponents used in isFieldChanged to detect SC baseline
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
@@ -1065,8 +1066,9 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
 // ─── Design Tab ───────────────────────────────────────────────────────────────
 
 export function DesignTab({ node }: { node: SDUINode }) {
-  const { zoom, pageNodes, activeBreakpoint } = useBuilderStore(useShallow(s => ({
+  const { zoom, pageNodes, activeBreakpoint, editingSharedComponentIds } = useBuilderStore(useShallow(s => ({
     zoom: s.zoom, pageNodes: s.pageNodes, activeBreakpoint: s.activeBreakpoint,
+    editingSharedComponentIds: s.editingSharedComponentIds,
   })));
   const store = useBuilderStore.getState() as BuilderStore;
   const nodeId = (node as { id?: string }).id ?? '';
@@ -1869,14 +1871,81 @@ export function DesignTab({ node }: { node: SDUINode }) {
 
   // ── Per-field changed-from-default helpers ─────────────────────────────────
   // Detect whether this node is a shared component instance so we can compare
-  // its current values against the SC model's baseline className.
-  const scBaselineCls = useMemo((): string | undefined => {
+  // its current values against the SC model's baseline.
+
+  /**
+   * Full shared-component baseline for this node. Covers:
+   *  - className (for Tailwind-token fields)
+   *  - props.style (for inline-style fields)
+   *  - animation.* (for gradient / blur / etc.)
+   *
+   * Note: the baseline applies to the shared-component ROOT node. When a nested
+   * node inside a shared instance is selected, no baseline is exposed here —
+   * nested-node overrides are out of scope (see plan § "Out of scope").
+   */
+  const scBaseline = useMemo(():
+    | { node: Record<string, unknown>; cls: string; instanceRoot: SDUINode; isRootSelected: boolean; modelId: string }
+    | undefined => {
     const scRoot = findSharedRoot(pageNodes as SDUINode[], nodeId);
     const scMeta = (scRoot as unknown as Record<string, unknown> | undefined)?._shared as { id: string } | undefined;
-    if (!scMeta) return undefined;
+    if (!scMeta || !scRoot) return undefined;
     const model = getSharedComponents()[scMeta.id];
-    return (model?.content?.props as { className?: string } | undefined)?.className;
+    if (!model?.content) return undefined;
+    const content = model.content as unknown as Record<string, unknown>;
+
+    // Root selection → baseline is the model content root.
+    if (scRoot.id === nodeId) {
+      const bcls = ((content.props as { className?: string } | undefined)?.className ?? '');
+      return {
+        node: content,
+        cls: bcls,
+        instanceRoot: scRoot,
+        isRootSelected: true,
+        modelId: scMeta.id,
+      };
+    }
+
+    // Descendant selection → resolve the model descendant by `_sharedKey`.
+    // We cannot walk by child index: instance trees may have local insertions
+    // that shift indices, so index-walking would land on the wrong model node
+    // and reset-to-SC would copy values from a sibling/unrelated descendant.
+    // `_sharedKey` is stamped identically on the instance node and the
+    // corresponding model node, so a key-based lookup is stable regardless
+    // of local insertions, removals, or reorderings.
+    const selectedNode = findNode(pageNodes as SDUINode[], nodeId);
+    const selectedSharedKey = (selectedNode as unknown as Record<string, unknown> | undefined)?._sharedKey as string | undefined;
+    if (!selectedSharedKey) return undefined; // local insertion or un-keyed node → no SC baseline
+    const findBySharedKey = (root: Record<string, unknown>, key: string): Record<string, unknown> | null => {
+      if (root._sharedKey === key) return root;
+      const children = (root.children ?? []) as Record<string, unknown>[];
+      for (const c of children) {
+        const hit = findBySharedKey(c, key);
+        if (hit) return hit;
+      }
+      return null;
+    };
+    const modelDesc = findBySharedKey(content, selectedSharedKey);
+    if (!modelDesc) return undefined;
+    const descCls = ((modelDesc.props as { className?: string } | undefined)?.className ?? '');
+    return {
+      node: modelDesc,
+      cls: descCls,
+      instanceRoot: scRoot,
+      isRootSelected: false,
+      modelId: scMeta.id,
+    };
   }, [pageNodes, nodeId]);
+
+  /**
+   * True when the selected node's shared component is currently in Edit Component
+   * mode. In this mode, "green" (inherited) labels also become resettable — hovering
+   * offers "Reset to default" which strips the value from the model (and propagates
+   * to all non-overriding instances via _syncSharedInstances).
+   */
+  const isEditingThisSC = !!(scBaseline && editingSharedComponentIds.includes(scBaseline.modelId));
+
+  /** Legacy name — keep for existing call sites that only need the className. */
+  const scBaselineCls: string | undefined = scBaseline?.cls;
 
   /**
    * Returns true when the individual CSS property differs from its default value
@@ -2014,8 +2083,100 @@ export function DesignTab({ node }: { node: SDUINode }) {
     return (parseTwToken(cls, defPrefix) ?? def) !== def;
   }, [cls, nodeStyle, scBaselineCls, node]);
 
-  /** Strips the class token (and inline style) for a single CSS property. */
+  /**
+   * Returns true when the selected node lives inside a shared-component
+   * instance AND the current value for `cssProp` equals the shared model's
+   * corresponding baseline value for that node.
+   *
+   * Drives the GREEN label color: "this value is inherited from the shared
+   * component, not a per-instance override". Works for both the SC root
+   * (checked against model content root + `_overrides` list) and for nested
+   * descendants (checked against the corresponding model descendant resolved
+   * via child-index path — nested overrides aren't tracked in a list, the
+   * value-equality check is authoritative).
+   */
+  const isInheritedFromShared = useCallback((cssProp: string): boolean => {
+    if (!scBaseline) return false;
+    if (scBaseline.isRootSelected) {
+      const overrides = getOverrides(scBaseline.instanceRoot);
+      if (overrides.includes(cssProp)) return false;
+    } else {
+      // Descendant: consult the instance root's _descendantOverrides map.
+      const descOverrides = ((scBaseline.instanceRoot as unknown as Record<string, unknown>)._descendantOverrides
+        ?? {}) as Record<string, string[]>;
+      const sk = (node as unknown as Record<string, unknown>)._sharedKey as string | undefined;
+      if (sk && Array.isArray(descOverrides[sk]) && descOverrides[sk].includes(cssProp)) return false;
+    }
+    const baseVal = readPropValue(scBaseline.node, cssProp);
+    if (!baseVal) return false; // no baseline value for this prop → not inherited
+    const curVal = readPropValue(node, cssProp);
+    return curVal === baseVal;
+  }, [scBaseline, node]);
+
+  /**
+   * Strips the class token (and inline style) for a single CSS property.
+   *
+   * Behaviour depends on context:
+   *  • Outside a shared-component tree → wipe the value to its native
+   *    default (remove class token, delete inline style key, clear
+   *    animation field).
+   *  • Inside a shared-component tree with the SC root selected →
+   *    restore the value from the shared-model baseline via
+   *    `copyCssProp`. When the written value matches the baseline
+   *    `_syncSharedInstances` will auto-remove the cssProp from
+   *    `_overrides`, flipping the label from orange back to green.
+   */
   const resetField = useCallback((cssProp: string) => {
+    // ── Shared-component instance: restore from model baseline ──
+    //
+    // Exception: when we're editing THIS shared component AND the cssProp is
+    // inherited from the model (green label), the user wants to reset to the
+    // NATIVE default (strip the value from the model entirely). We fall through
+    // to the generic stripping logic below — because A currently matches the
+    // model, the strip propagates to the model via _syncSharedInstances (which
+    // runs in model-edit mode while editingSharedComponentIds contains this id).
+    const baseOverrides = scBaseline ? getOverrides(scBaseline.instanceRoot) : [];
+    // "Green in edit mode" = we're editing this SC AND the selected node's
+    // current value matches the model's baseline (no per-instance override).
+    // In that state, resetting means stripping the value from the MODEL — we
+    // must NOT re-apply the baseline afterwards. For root selection we also
+    // require the cssProp to not be in `_overrides` (nested descendants don't
+    // track `_overrides`, so the root-only gate is skipped for them).
+    const greenRootOk = scBaseline?.isRootSelected && !baseOverrides.includes(cssProp);
+    const greenDescOk = !!(scBaseline && !scBaseline.isRootSelected);
+    const isGreenInEditMode = !!(
+      isEditingThisSC &&
+      (greenRootOk || greenDescOk) &&
+      readPropValue(scBaseline?.node ?? null, cssProp) &&
+      readPropValue(node, cssProp) === readPropValue(scBaseline?.node ?? null, cssProp)
+    );
+    // Restore from the corresponding model baseline (root OR descendant) when
+    // we're NOT in green-edit-mode.
+    if (scBaseline && !isGreenInEditMode) {
+      const fresh = JSON.parse(JSON.stringify(node)) as Record<string, unknown>;
+      copyCssProp(scBaseline.node, fresh as Parameters<typeof copyCssProp>[1], cssProp);
+      const freshProps = (fresh.props ?? {}) as Record<string, unknown>;
+      const freshCls = (freshProps.className ?? '') as string;
+      const freshStyle = (freshProps.style ?? {}) as Record<string, unknown>;
+      const freshAnim = fresh.animation;
+      const origAnim = (node as unknown as Record<string, unknown>).animation;
+      if (freshCls !== cls) store.patchProp(nodeId, 'props.className', freshCls);
+      if (JSON.stringify(freshStyle) !== JSON.stringify(nodeStyle)) {
+        store.patchProp(nodeId, 'props.style', freshStyle);
+      }
+      if (JSON.stringify(freshAnim ?? null) !== JSON.stringify(origAnim ?? null)) {
+        store.patchNodeField(nodeId, 'animation', freshAnim);
+      }
+      commitHistory();
+      return;
+    }
+
+    // In green-in-edit-mode we are stripping a model-level value, so the
+    // baseline must NOT be re-applied after stripping (otherwise the token
+    // gets put right back). Use `baselineCls` below in place of scBaselineCls
+    // for all re-apply branches.
+    const baselineCls = isGreenInEditMode ? undefined : scBaselineCls;
+
     // Special case: element blur lives in node.animation.filter
     if (cssProp === 'filterBlur') {
       const animNode = node as unknown as Record<string, unknown>;
@@ -2044,7 +2205,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
       const STYLE_TOKENS = new Set(['border-solid', 'border-dashed', 'border-dotted', 'border-none']);
       let nextCls = cls.split(/\s+/).filter(t => !STYLE_TOKENS.has(t)).join(' ');
       // Restore border-solid (default) unless SC baseline says otherwise
-      const baseStyle = scBaselineCls ? cls.split(/\s+/).find(t => STYLE_TOKENS.has(t)) : undefined;
+      const baseStyle = baselineCls ? cls.split(/\s+/).find(t => STYLE_TOKENS.has(t)) : undefined;
       nextCls = `${nextCls} ${baseStyle ?? 'border-solid'}`.trim();
       store.patchProp(nodeId, 'props.className', nextCls);
       if ('borderStyle' in nodeStyle) {
@@ -2119,8 +2280,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
     if (cssProp === 'position') {
       let next = cls;
       POSITION_TOKENS.forEach(t => { if (t !== 'static') next = removeTwToken(next, t); });
-      if (scBaselineCls) {
-        const baseTok = POSITION_TOKENS.find(t => t !== 'static' && scBaselineCls.split(/\s+/).includes(t));
+      if (baselineCls) {
+        const baseTok = POSITION_TOKENS.find(t => t !== 'static' && baselineCls.split(/\s+/).includes(t));
         if (baseTok) next = `${next} ${baseTok}`.trim();
       }
       store.patchProp(nodeId, 'props.className', next);
@@ -2136,9 +2297,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
       if (curJustify && curJustify !== 'justify-between') {
         next = removeTwToken(next, 'justify-');
       }
-      if (scBaselineCls) {
-        const baseItems   = parseTwToken(scBaselineCls, 'items-');
-        const baseJustify = parseTwToken(scBaselineCls, 'justify-');
+      if (baselineCls) {
+        const baseItems   = parseTwToken(baselineCls, 'items-');
+        const baseJustify = parseTwToken(baselineCls, 'justify-');
         if (baseItems)   next = `${next} ${baseItems}`.trim();
         if (baseJustify) next = `${next} ${baseJustify}`.trim();
       }
@@ -2177,8 +2338,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
     let nextCls = cls;
     if (prefix) {
       nextCls = removeTwToken(nextCls, prefix);
-      if (scBaselineCls) {
-        const baseToken = parseTwToken(scBaselineCls, prefix);
+      if (baselineCls) {
+        const baseToken = parseTwToken(baselineCls, prefix);
         if (baseToken) nextCls = `${nextCls} ${baseToken}`.trim();
       }
     }
@@ -2189,7 +2350,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
       store.patchProp(nodeId, 'props.style', newStyle);
     }
     commitHistory();
-  }, [cls, nodeStyle, nodeId, store, commitHistory, scBaselineCls, node]);
+  }, [cls, nodeStyle, nodeId, store, commitHistory, scBaselineCls, node, scBaseline, isEditingThisSC]);
 
   // ── Text content helpers ─────────────────────────────────────────────────────
   // For Text / Heading / ButtonText nodes we expose their `text` prop directly.
@@ -2224,7 +2385,13 @@ export function DesignTab({ node }: { node: SDUINode }) {
   }
 
   return (
-    <ChangedFieldContext.Provider value={{ isChanged: isFieldChanged, resetField }}>
+    <ChangedFieldContext.Provider value={{
+      isChanged: isFieldChanged,
+      resetField,
+      isInheritedFromShared,
+      inSharedTree: !!scBaseline,
+      isEditingSharedComponent: isEditingThisSC,
+    }}>
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} onFocus={() => { editingNodeIdRef.current = nodeId; }}>
 
       {/* ── Content (text value) — shown for text nodes and buttons ── */}

@@ -25,22 +25,48 @@ import { FigmaColorPicker } from './_color-picker';
 /**
  * Provided by DesignTab around all its sections.
  * Primitives consume it via `cssProp` to highlight labels and offer reset.
+ *
+ * Three-state label logic:
+ *  - gray   — value matches the native default; no shared-component baseline.
+ *  - green  — instance value is inherited from the shared-component model
+ *             baseline (`isInheritedFromShared` returns true).
+ *  - orange — instance value is a per-instance override, or a non-SC node's
+ *             value differs from the native default.
+ *
+ * The "Reset" popup is offered for:
+ *  - orange labels (always) → restores to SC baseline (if in SC) or native default.
+ *  - green labels (only in Edit Component mode) → strips the value from the
+ *    model and propagates to all non-overriding instances.
  */
 export const ChangedFieldContext = React.createContext<{
   isChanged: (cssProp: string) => boolean;
   resetField: (cssProp: string) => void;
+  isInheritedFromShared?: (cssProp: string) => boolean;
+  /** True when the selected node lives under a shared-component tree. */
+  inSharedTree?: boolean;
+  /** True when the selected node's shared component is in Edit Component mode. */
+  isEditingSharedComponent?: boolean;
 } | null>(null);
 
 /**
- * Renders a field label that turns orange and shows a "Reset to default" popup
- * when the field's value differs from its default.
- * Falls back to a plain gray span when there is no context or no cssProp.
+ * Renders a field label that adapts its color based on override state:
+ * - green: value is inherited from the shared-component baseline.
+ * - orange: value is a per-instance override (or non-SC changed-from-default).
+ * - gray: value matches the native default.
+ *
+ * Reset popup visibility:
+ * - orange: always shown.
+ * - green: shown only when in Edit Component mode (reset removes from model).
+ * - gray: never shown.
  */
 export function ChangedLabel({
   text, cssProp, style: extraStyle,
 }: { text: string; cssProp?: string; style?: React.CSSProperties }) {
   const ctx = useContext(ChangedFieldContext);
-  const changed = !!(cssProp && ctx && ctx.isChanged(cssProp));
+  const inherited = !!(cssProp && ctx?.isInheritedFromShared?.(cssProp));
+  const changed = !inherited && !!(cssProp && ctx && ctx.isChanged(cssProp));
+  const greenInEditMode = !!(inherited && ctx?.isEditingSharedComponent);
+  const resettable = changed || greenInEditMode;
   const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const spanRef = useRef<HTMLSpanElement | null>(null);
@@ -49,7 +75,7 @@ export function ChangedLabel({
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (spanRef.current) {
       const r = spanRef.current.getBoundingClientRect();
-      const popW = 140;
+      const popW = 160;
       const left = Math.min(r.left, window.innerWidth - popW - 8);
       setPopupPos({ top: r.bottom + 4, left: Math.max(8, left) });
     }
@@ -58,15 +84,26 @@ export function ChangedLabel({
     hideTimer.current = setTimeout(() => setPopupPos(null), 120);
   };
 
+  const color = inherited ? '#10b981' : (changed ? '#f97316' : '#6b7280');
   const baseStyle: React.CSSProperties = {
-    fontSize: 9, color: changed ? '#f97316' : '#6b7280',
-    cursor: changed && ctx ? 'pointer' : undefined,
+    fontSize: 9,
+    color,
+    cursor: resettable && ctx ? 'pointer' : undefined,
     ...extraStyle,
   };
 
-  if (!changed || !ctx) {
+  // Gray (default) has no reset popup. Green only has a popup in edit mode.
+  if (!resettable || !ctx) {
     return <span style={baseStyle}>{text}</span>;
   }
+
+  // Label varies by context:
+  // - orange in SC tree → "Reset to shared default" (restore from model baseline)
+  // - green in edit mode → "Reset to default" (strip from model)
+  // - orange outside SC → "Reset to default" (strip to native default)
+  const resetLabel = greenInEditMode
+    ? 'Reset to default'
+    : (ctx.inSharedTree ? 'Reset to shared default' : 'Reset to default');
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -98,7 +135,7 @@ export function ChangedLabel({
               display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
-            <span>↺</span><span>Reset to default</span>
+            <span>↺</span><span>{resetLabel}</span>
           </button>
         </div>
       )}

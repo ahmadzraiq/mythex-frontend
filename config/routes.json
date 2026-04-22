@@ -355,6 +355,18 @@
       "config": "triggersTest",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/sc-component-showcase",
+      "config": "scComponentShowcase",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/workflow-call-test",
+      "config": "workflowCallTest",
+      "auth": false,
+      "layout": "full"
     }
   ]
 }
