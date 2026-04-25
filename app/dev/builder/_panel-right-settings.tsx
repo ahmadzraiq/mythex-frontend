@@ -24,12 +24,13 @@ import {
   updateSharedComponent as updateSCData,
   getSharedComponents,
 } from '@/lib/builder/shared-component-data';
+import { getSystemComponents } from '@/lib/builder/system-component-data';
 import type { SharedComponentProperty } from '@/lib/builder/shared-component-data';
-import { findSharedRoot } from './_store-node-helpers';
+import { findSharedRoot, findLinkedRoot } from './_store-node-helpers';
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
-const SETTINGS_INPUT_TYPES = new Set(['Input', 'InputField', 'Select', 'TextArea', 'Checkbox', 'Radio', 'Switch', 'Button']);
+const SETTINGS_INPUT_TYPES = new Set(['Input', 'Select', 'Textarea', 'Checkbox', 'Radio', 'Switch']);
 
 const INPUT_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'Email',    value: 'email' },
@@ -888,9 +889,6 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const rawInputType = (nodeProps.type as string | undefined) ?? 'text';
   const currentInputType = rawInputType === 'number' && nodeProps.step === '0.01' ? 'decimal' : rawInputType;
 
-  // Button submit detection — renderer uses props.type === 'submit' to wire the button to formCtx.submit()
-  const isSubmitButton = (nodeProps as unknown as Record<string, unknown>).type === 'submit';
-
   const selectInputType = (val: string) => {
     if (val === 'decimal' || val === 'currency') {
       store.patchNodeField(nodeId, 'props', { ...nodeProps, type: 'number', step: '0.01' });
@@ -906,7 +904,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
   // Determine if there is anything specific to show for this node type
   const hasSpecific = nodeType === 'Icon' || nodeType === 'Image' || nodeType === 'Video'
-    || nodeType === 'Button' || nodeType === 'FormContainer'
+    || nodeType === 'FormContainer'
     || SETTINGS_INPUT_TYPES.has(nodeType);
 
   return (
@@ -929,23 +927,33 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         </div>
       )}
 
-      {/* ── Component Properties — shown when inside a _shared tree ──────── */}
+      {/* ── Component Properties — shown when inside a _shared or _system tree ── */}
       {(() => {
-        const sharedRoot = findSharedRoot(store.pageNodes as SDUINode[], nodeId);
-        const sharedMeta = sharedRoot ? (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined : undefined;
-        if (!sharedMeta) return null;
-        const scModel = getSharedComponents()[sharedMeta.id];
+        const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'any');
+        if (!linkedRoot) return null;
+        const rootRec = linkedRoot as unknown as Record<string, unknown>;
+        const sharedMeta = rootRec._shared as { id: string; name: string } | undefined;
+        const systemMeta = rootRec._system as { id: string; name: string } | undefined;
+        const meta = sharedMeta ?? systemMeta;
+        if (!meta) return null;
+        const isSystem = !!systemMeta;
+        const scModel = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
         if (!scModel || !scModel.properties?.length) return null;
-        const rootProps = (sharedRoot!.props ?? {}) as Record<string, unknown>;
+        const rootProps = (linkedRoot.props ?? {}) as Record<string, unknown>;
         return (
           <div style={{ borderBottom: '1px solid #1f2937', overflow: 'hidden' }}>
             <div style={{ padding: '6px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 4px', fontWeight: 700 }}>SC</span>
-              Component Properties
+              <span style={{
+                fontSize: 9,
+                color: isSystem ? '#fbbf24' : '#60a5fa',
+                background: isSystem ? '#3f2a0b' : '#1e3a5f',
+                borderRadius: 3, padding: '1px 4px', fontWeight: 700,
+              }}>{isSystem ? 'SYS' : 'SC'}</span>
+              {isSystem ? 'System Component' : 'Component Properties'}
             </div>
             {(scModel.properties as SharedComponentProperty[]).map(prop => {
               const rawVal = rootProps[prop.name] ?? prop.defaultValue;
-              const patchProp = (v: unknown) => { if (sharedRoot?.id) store.patchProp(sharedRoot.id, `props.${prop.name}`, v); };
+              const patchProp = (v: unknown) => { if (linkedRoot?.id) store.patchProp(linkedRoot.id, `props.${prop.name}`, v); };
               const isAny = prop.type === 'any';
               const strVal = isAny ? (typeof rawVal === 'string' ? rawVal : (rawVal !== undefined ? JSON.stringify(rawVal, null, 2) : '')) : '';
               return (
@@ -1012,40 +1020,6 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         </div>
       )}
 
-      {/* ── Button-specific: Submit toggle ───────────────────────────────────── */}
-      {nodeType === 'Button' && (
-        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
-          <div style={{ padding: '0 12px 4px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Button</div>
-          <SettingsRow label="Submit">
-            <div data-testid="submit-toggle" style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
-              {[true, false].map(val => (
-                <button
-                  key={String(val)}
-                  data-testid={val ? 'submit-toggle-on' : 'submit-toggle-off'}
-                  style={{
-                    padding: '2px 10px', fontSize: 10, border: 'none', cursor: 'pointer',
-                    borderRadius: 3, fontWeight: 500,
-                    background: isSubmitButton === val ? '#374151' : 'transparent',
-                    color: isSubmitButton === val ? '#f3f4f6' : '#6b7280',
-                  }}
-                  onClick={() => {
-                    if (val) {
-                      store.patchNodeField(nodeId, 'props', { ...(nodeProps as unknown as Record<string, unknown>), type: 'submit' });
-                    } else {
-                      const { type: _t, ...rest } = nodeProps as unknown as Record<string, unknown>;
-                      void _t;
-                      store.patchNodeField(nodeId, 'props', rest);
-                    }
-                  }}
-                >
-                  {val ? 'On' : 'Off'}
-                </button>
-              ))}
-            </div>
-          </SettingsRow>
-        </div>
-      )}
-
       {/* ── FormContainer: registered fields inspector ───────────────────────── */}
       {nodeType === 'FormContainer' && <FormContainerFieldsPanel nodeId={nodeId} />}
 
@@ -1066,7 +1040,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
 
       {/* ── Form Container Section (input types only) ────────────────────────── */}
-      {SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && formContainerAncestor && (
+      {SETTINGS_INPUT_TYPES.has(nodeType) && formContainerAncestor && (
         <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
           <div style={{ padding: '0 12px 4px', display: 'flex', alignItems: 'center', gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1206,12 +1180,11 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
       )}
 
       {/* ── Specific section (input types only) ──────────────────────────────── */}
-      {SETTINGS_INPUT_TYPES.has(nodeType) && nodeType !== 'Button' && (
+      {SETTINGS_INPUT_TYPES.has(nodeType) && (
         <div style={{ padding: '8px 0 4px' }}>
           <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Specific</div>
 
-          {/* Input type (Input and InputField only) */}
-          {(nodeType === 'Input' || nodeType === 'InputField') && (
+          {nodeType === 'Input' && (
             <SettingsRow label="Input type">
               <select
                 data-testid="settings-input-type-select"
@@ -1513,6 +1486,30 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
     store.setPopoverConfig(nodeId, { ...(config ?? {}), [key]: value });
   }, [store, nodeId, config]);
 
+  // Merge page-scoped custom variables with component-scoped variables from the
+  // enclosing _shared/_system root (if any) so the Control Variable picker can
+  // resolve UUIDs like `cal-v-is-open-uuid` defined inside a system component.
+  const mergedCustomVars = useMemo(() => {
+    const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'any');
+    if (!linkedRoot) return store.customVars;
+    const rootRec = linkedRoot as unknown as Record<string, unknown>;
+    const sharedMeta = rootRec._shared as { id: string; name: string } | undefined;
+    const systemMeta = rootRec._system as { id: string; name: string } | undefined;
+    const meta = sharedMeta ?? systemMeta;
+    if (!meta) return store.customVars;
+    const isSystem = !!systemMeta;
+    const scModel = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
+    const vars = scModel?.variables as Record<string, { label?: string; type?: string }> | undefined;
+    if (!vars) return store.customVars;
+    const componentVars = Object.entries(vars).map(([id, v]) => ({
+      id,
+      name: v?.label || id,
+      label: v?.label || id,
+      type: String(v?.type ?? 'any'),
+    }));
+    return [...componentVars, ...store.customVars];
+  }, [store.pageNodes, store.customVars, nodeId]);
+
   return (
     <div style={{ borderBottom: '1px solid #1f2937' }}>
       <div
@@ -1625,7 +1622,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
               {/* Control variable — programmatic open/close */}
               <OpenVariablePicker
                 value={config?.openVariable}
-                customVars={store.customVars}
+                customVars={mergedCustomVars}
                 onChange={varId => {
                   if (varId) patchConfig('openVariable', varId);
                   else {

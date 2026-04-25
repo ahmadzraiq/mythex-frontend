@@ -36,10 +36,6 @@ export const REQUIRED_PARENT: Record<string, string> = {
   SelectContent:      'Select',
   SelectPortal:       'Select',
   SelectBackdrop:     'Select',
-  AccordionItem:      'Accordion',
-  AccordionTrigger:   'Accordion',
-  AccordionContent:   'Accordion',
-  AccordionHeader:    'Accordion',
   SliderThumb:        'Slider',
   SliderTrack:        'Slider',
   SliderFilledTrack:  'Slider',
@@ -67,7 +63,6 @@ export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
   Checkbox:      new Set(['CheckboxIndicator', 'CheckboxLabel']),
   Radio:         new Set(['RadioIndicator', 'RadioLabel']),
   Select:        new Set(['SelectTrigger', 'SelectInput', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
-  Accordion:     new Set(['AccordionItem', 'AccordionTrigger', 'AccordionContent', 'AccordionHeader']),
   Slider:        new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
   Progress:      new Set(['ProgressFilledTrack']),
   Textarea:      new Set(['TextareaInput']),
@@ -432,19 +427,45 @@ export function insertNode(
 }
 
 /**
- * Walk up from `nodeId` through parent chain to find the nearest ancestor (or self)
- * with `_shared` metadata. Returns null if no shared ancestor exists.
+ * Walk up from `nodeId` through the parent chain looking for the nearest
+ * ancestor (or self) that is a *linked instance root* — i.e. carries either
+ * `_shared` (shared component) or `_system` (system component) metadata.
+ *
+ * Pass `kind` to restrict the search:
+ *   - 'shared' — only `_shared` roots (legacy SC behaviour, still the default)
+ *   - 'system' — only `_system` roots
+ *   - 'any'    — whichever is encountered first walking upward
  */
-export function findSharedRoot(nodes: SDUINode[], nodeId: string): SDUINode | null {
+export function findLinkedRoot(
+  nodes: SDUINode[],
+  nodeId: string,
+  kind: 'shared' | 'system' | 'any' = 'shared',
+): SDUINode | null {
   let current: string | undefined = nodeId;
   while (current) {
     const node = findNode(nodes, current);
-    if (node && (node as unknown as Record<string, unknown>)._shared) return node;
+    if (node) {
+      const rec = node as unknown as Record<string, unknown>;
+      const hasShared = !!rec._shared;
+      const hasSystem = !!rec._system;
+      if (kind === 'shared' && hasShared) return node;
+      if (kind === 'system' && hasSystem) return node;
+      if (kind === 'any' && (hasShared || hasSystem)) return node;
+    }
     const parent = findParentNode(nodes, current);
     if (parent === null || parent === undefined) break;
     current = parent.id;
   }
   return null;
+}
+
+/**
+ * Backwards-compatible alias — previously only matched `_shared`. Callers that
+ * need to also recognise system-component roots should use `findLinkedRoot`
+ * with `kind: 'system'` or `kind: 'any'`.
+ */
+export function findSharedRoot(nodes: SDUINode[], nodeId: string): SDUINode | null {
+  return findLinkedRoot(nodes, nodeId, 'shared');
 }
 
 /** Deep-clone a node tree, assigning fresh UUIDs to every node. */

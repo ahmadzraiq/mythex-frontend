@@ -15,7 +15,16 @@ export interface PrimitiveComponent {
   type: string;
   label: string;
   icon: string;
+  /** AI-facing template. Minimal shell — what `add_component(label)` inserts. */
   defaultNode: object;
+  /**
+   * Palette-only richer default used by drag-and-drop in the builder.
+   * The AI never sees this — `sdui-component-schema.ts` keeps reading `defaultNode`.
+   * Use this to pre-populate structure (e.g. Form with email/password inputs + submit)
+   * or layout tokens (e.g. empty Box with `flex flex-col p-[16px] gap-[16px]`) that
+   * improve the drag-drop UX but would clutter the AI's tool output.
+   */
+  builderDefaultNode?: object;
   /**
    * Controls how the AI template is stripped before being handed to the AI:
    *   'placeholder' — remove only sample Heading/Text children (e.g. Card's "Card Title")
@@ -23,22 +32,34 @@ export interface PrimitiveComponent {
    *   undefined     — keep children as-is
    */
   aiStrip?: 'all' | 'placeholder';
+  /**
+   * If set, dragging this palette entry creates a *linked instance* of the
+   * system component with this id (from `lib/builder/system-components/`),
+   * stamping `_system: { id, name }` + `_overrides: []` onto the cloned content.
+   * `defaultNode` still ships a minimal snapshot so the AI schema export stays
+   * sensible (AI-generated JSON simply doesn't carry `_system`).
+   */
+  systemComponentId?: string;
 }
 
 export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
   Layout: [
     { type: 'Box',  label: 'Box',        icon: '□',
-      defaultNode: { type: 'Box', props: {} } },
+      defaultNode: { type: 'Box', props: {} },
+      builderDefaultNode: { type: 'Box', props: { className: 'flex flex-col p-[16px] gap-[16px] w-full' } } },
     { type: 'Box',  label: 'Row',        icon: '⬌',
-      defaultNode: { type: 'Box', props: {} } },
+      defaultNode: { type: 'Box', props: {} },
+      builderDefaultNode: { type: 'Box', props: { className: 'flex flex-row gap-[16px] p-[16px] w-full items-center' } } },
     { type: 'Box',  label: 'Grid',        icon: '⊞',
-      defaultNode: { type: 'Box', props: {} } },
+      defaultNode: { type: 'Box', props: {} },
+      builderDefaultNode: { type: 'Box', props: { className: 'grid grid-cols-2 gap-[16px] w-full' } } },
     { type: 'Box',  label: 'Card',       icon: '▣', aiStrip: 'placeholder',
       defaultNode: { type: 'Box', props: { className: 'rounded-[8px] border border-border bg-[var(--theme-card)] p-[16px] flex flex-col gap-[8px]' }, children: [{ type: 'Text', text: 'Card Title', props: { className: 'text-[18px] font-semibold text-foreground' } }, { type: 'Text', text: 'Card content goes here.', props: { className: 'text-[14px] text-muted-foreground' } }] } },
     { type: 'Box',  label: 'Divider',    icon: '—',
       defaultNode: { type: 'Box', props: { className: 'w-full h-px bg-border' } } },
     { type: 'Box',  label: 'ScrollView', icon: '↕',
-      defaultNode: { type: 'Box', props: { style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] } },
+      defaultNode: { type: 'Box', props: { style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] },
+      builderDefaultNode: { type: 'Box', props: { className: 'flex flex-col gap-[16px] overflow-auto w-full', style: { maxHeight: '200px' } }, children: [{ type: 'Text', text: 'Scroll content here', props: { className: 'text-[14px] text-foreground' } }] } },
   ],
   Typography: [
     { type: 'Text', label: 'Text',    icon: 'T',
@@ -83,6 +104,26 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
         type: 'FormContainer',
         props: { className: 'flex flex-col gap-[16px] w-full', initialFormData: {} },
       },
+      builderDefaultNode: {
+        type: 'FormContainer',
+        props: { className: 'flex flex-col gap-[16px] w-full', initialFormData: { email: '', password: '' } },
+        children: [
+          {
+            type: 'Input',
+            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-[6px] !border-border !bg-background', placeholder: 'Email', name: 'email' },
+          },
+          {
+            type: 'Input',
+            props: { variant: 'outline', size: 'md', className: 'w-full !rounded-[6px] !border-border !bg-background', placeholder: 'Password', name: 'password', type: 'password' },
+          },
+          {
+            type: 'Box',
+            props: { className: 'flex flex-row items-center justify-center w-full px-[16px] py-[10px] rounded-[6px] bg-[var(--theme-primary)] hover:opacity-90 cursor-pointer' },
+            children: [{ type: 'Text', text: 'Submit', props: { className: 'text-[14px] font-medium text-[var(--theme-primary-foreground)]' } }],
+            actions: { click: { type: 'submitForm' } },
+          },
+        ],
+      },
     },
     { type: 'Input',    label: 'Input',        icon: '▭',
       defaultNode: { type: 'Input', props: { variant: 'outline', size: 'md', className: 'w-full !rounded-[6px] !border-border !bg-background', placeholder: 'Enter text…' } } },
@@ -116,6 +157,9 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       defaultNode: { type: 'CheckboxGroup', props: { className: 'flex flex-col gap-[12px]' }, children: [{ type: 'Checkbox', props: { value: 'a' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option A' }] }, { type: 'Checkbox', props: { value: 'b' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option B' }] }] } },
     { type: 'Switch', label: 'Switch', icon: '⏵',
       defaultNode: { type: 'Switch', props: { defaultIsChecked: false, size: 'md' } } },
+    { type: 'Box', label: 'DatePicker', icon: '📅',
+      systemComponentId: 'sys-datepicker',
+      defaultNode: { type: 'Box', props: { className: 'flex flex-col gap-[8px] p-[12px] rounded-[8px] border border-border bg-background' }, children: [{ type: 'Text', props: { className: 'text-[12px] font-medium text-foreground' }, text: 'DatePicker' }] } },
   ],
   Composite: [
     {
@@ -230,6 +274,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Accordion',
       icon: '▾',
+      systemComponentId: 'sys-accordion',
       defaultNode: {
         type: 'Box',
         props: { className: 'w-full border border-border rounded-[6px] overflow-hidden' },
@@ -250,6 +295,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Table',
       icon: '⊞',
+      systemComponentId: 'sys-table',
       defaultNode: {
         type: 'Box',
         props: { className: 'w-full overflow-hidden rounded-[6px] border border-border' },
@@ -288,6 +334,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Autocomplete',
       icon: '⌕',
+      systemComponentId: 'sys-autocomplete',
       defaultNode: {
         type: 'Box',
         props: { className: 'relative flex flex-col w-full' },
@@ -316,6 +363,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Snackbar',
       icon: '🔔',
+      systemComponentId: 'sys-snackbar',
       defaultNode: {
         type: 'Box',
         props: { className: 'flex flex-row items-center justify-between gap-[12px] px-[16px] py-[12px] rounded-[8px] bg-gray-900 shadow-lg w-full max-w-[384px]' },
@@ -338,22 +386,10 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       defaultNode: { type: 'Video', props: { controls: false, muted: true, loop: true, autoPlay: true, className: 'w-full h-full' }, src: '' } },
   ],
   'Data & Media': [
-    { type: 'DatePicker',     label: 'Date Picker',  icon: '📅',
-      defaultNode: { type: 'DatePicker',     props: { label: 'Date', style: { width: '220px' } } } },
-    { type: 'TimePicker',     label: 'Time Picker',  icon: '⏱',
-      defaultNode: { type: 'TimePicker',     props: { label: 'Time', style: { width: '220px' } } } },
-    { type: 'DateTimePicker', label: 'Date & Time',  icon: '📆',
-      defaultNode: { type: 'DateTimePicker', props: { label: 'Date & Time', style: { width: '260px' } } } },
-    { type: 'ColorPicker',    label: 'Color Picker', icon: '🎨',
-      defaultNode: { type: 'ColorPicker',    props: { label: 'Color', value: '#6366f1', style: { width: '220px' } } } },
     { type: 'FileUpload',     label: 'File Upload',  icon: '📎',
       defaultNode: { type: 'FileUpload',     props: { label: 'Click or drag to upload', style: { width: '280px', minHeight: '120px' } } } },
     { type: 'Iframe',         label: 'Iframe',       icon: '⬜',
       defaultNode: { type: 'Iframe',         props: { title: 'Embedded', style: { width: '400px', height: '240px' } } } },
-    { type: 'SvgViewer',      label: 'SVG Viewer',   icon: '⬡',
-      defaultNode: { type: 'SvgViewer',      props: { style: { width: '120px', height: '120px' } } } },
-    { type: 'JsonViewer',     label: 'JSON Viewer',  icon: '{}',
-      defaultNode: { type: 'JsonViewer',     props: { data: { name: 'Alice', age: 30, active: true }, style: { width: '320px' } } } },
     { type: 'Chart',          label: 'Chart',        icon: '📊',
       defaultNode: { type: 'Chart',          props: { chartType: 'bar', style: { width: '340px', height: '260px' } } } },
     { type: 'QRCodeWidget',   label: 'QR Code',      icon: '▦',
@@ -370,12 +406,14 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Badge',
       icon: '🏷',
+      systemComponentId: 'sys-badge',
       defaultNode: { type: 'Box', props: { className: 'w-fit inline-flex flex-row items-center px-[10px] py-[2px] rounded-[9999px] bg-[var(--theme-primary)]' }, children: [{ type: 'Text', props: { className: 'text-[12px] font-medium text-white' }, text: 'Badge' }] },
     },
     {
       type: 'Box',
       label: 'Avatar',
       icon: '👤',
+      systemComponentId: 'sys-avatar',
       defaultNode: { type: 'Box', props: { className: 'w-[48px] h-[48px] rounded-[9999px] bg-gray-200 flex items-center justify-center overflow-hidden' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-gray-600' }, text: 'AB' }] },
     },
     // Spinner replaced with animated Box + icon (no Gluestack dependency)
@@ -398,6 +436,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Alert',
       icon: '⚠',
+      systemComponentId: 'sys-alert',
       defaultNode: { type: 'Box', props: { className: 'flex flex-row items-start gap-[12px] p-[16px] rounded-[6px] bg-amber-50 border border-amber-200' }, children: [{ type: 'Icon', props: { icon: 'lucide:alert-circle', size: 18, color: '#d97706' } }, { type: 'Text', text: 'This is an alert message.', props: { className: 'text-[14px] text-amber-800' } }] },
     },
   ],
@@ -419,6 +458,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Modal',
       icon: '🗔',
+      systemComponentId: 'sys-modal',
       defaultNode: {
         type: 'Box',
         condition: '',
@@ -430,13 +470,13 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
             props: { className: 'relative z-[1] w-[480px] max-w-[90vw] bg-white dark:bg-gray-900 rounded-[12px] p-[24px] flex flex-col gap-[16px]', animation: { enter: { type: 'zoomIn', duration: 200 } } },
             children: [
               { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
-                { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Modal Title' },
+                { type: 'Text', props: { className: 'text-[18px] font-semibold text-gray-900 dark:text-white' }, text: 'Modal Title' },
                 { type: 'Box', props: { className: 'cursor-pointer p-[4px]' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
               ] },
               { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Modal body content goes here.' },
               { type: 'Box', props: { className: 'flex flex-row justify-end gap-[8px] pt-[8px]' }, children: [
-                { type: 'Button', props: { action: 'default', className: '!bg-gray-200 dark:!bg-gray-700 !text-gray-800 dark:!text-gray-200' }, children: [{ type: 'ButtonText', text: 'Cancel' }] },
-                { type: 'Button', props: { action: 'primary' }, children: [{ type: 'ButtonText', text: 'Confirm' }] },
+                { type: 'Box', props: { className: 'flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[6px] bg-gray-200 dark:bg-gray-700 hover:opacity-90 cursor-pointer' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-gray-800 dark:text-gray-200' }, text: 'Cancel' }] },
+                { type: 'Box', props: { className: 'flex flex-row items-center justify-center px-[16px] py-[8px] rounded-[6px] bg-[var(--theme-primary)] hover:opacity-90 cursor-pointer' }, children: [{ type: 'Text', props: { className: 'text-[14px] font-medium text-[var(--theme-primary-foreground)]' }, text: 'Confirm' }] },
               ] },
             ],
           },
@@ -447,6 +487,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Bottom Sheet',
       icon: '⬆',
+      systemComponentId: 'sys-bottom-sheet',
       defaultNode: {
         type: 'Box',
         condition: '',
@@ -460,7 +501,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
               { type: 'Box', props: { className: 'flex justify-center' }, children: [
                 { type: 'Box', props: { className: 'w-[40px] h-[4px] rounded-full bg-gray-300 dark:bg-gray-600' } },
               ] },
-              { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Bottom Sheet' },
+              { type: 'Text', props: { className: 'text-[18px] font-semibold text-gray-900 dark:text-white' }, text: 'Bottom Sheet' },
               { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Bottom sheet content goes here.' },
             ],
           },
@@ -471,6 +512,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Drawer',
       icon: '☰',
+      systemComponentId: 'sys-drawer',
       defaultNode: {
         type: 'Box',
         condition: '',
@@ -481,7 +523,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
             props: { className: 'relative z-[1] w-[320px] h-full bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]', animation: { enter: { type: 'slideInLeft', duration: 300 } } },
             children: [
               { type: 'Box', props: { className: 'flex flex-row items-center justify-between' }, children: [
-                { type: 'Heading', props: { size: 'lg', className: 'font-semibold text-gray-900 dark:text-white' }, text: 'Drawer' },
+                { type: 'Text', props: { className: 'text-[18px] font-semibold text-gray-900 dark:text-white' }, text: 'Drawer' },
                 { type: 'Box', props: { className: 'cursor-pointer p-[4px]' }, children: [{ type: 'Icon', props: { icon: 'lucide:x', size: 18, color: '#6b7280' } }] },
               ] },
               { type: 'Text', props: { className: 'text-[14px] text-gray-600 dark:text-gray-300' }, text: 'Drawer content goes here.' },
@@ -495,6 +537,7 @@ export const PRIMITIVE_COMPONENTS: Record<string, PrimitiveComponent[]> = {
       type: 'Box',
       label: 'Toast',
       icon: '🔔',
+      systemComponentId: 'sys-toast',
       defaultNode: {
         type: 'Box',
         condition: '',

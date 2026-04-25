@@ -1,5 +1,7 @@
 {
-  "meta": { "title": "Nested Pricing Demo" },
+  "meta": {
+    "title": "Nested Pricing Demo"
+  },
   "state": {},
   "layout": "store",
   "content": {
@@ -45,7 +47,11 @@
                 }
               }
             },
-            "actions": [{ "action": "toggleNestedPricingBilling" }],
+            "actions": [
+              {
+                "action": "toggleNestedPricingBilling"
+              }
+            ],
             "children": [
               {
                 "type": "Box",
@@ -79,7 +85,9 @@
             "type": "Box",
             "map": "variables['pr1c0001-0000-0000-0000-000000000001']",
             "key": "id",
-            "props": { "className": "contents" },
+            "props": {
+              "className": "contents"
+            },
             "children": [
               {
                 "type": "Box",
@@ -96,7 +104,9 @@
                     "condition": "context?.item?.data?.isFeatured",
                     "props": {
                       "className": "mb-[20px] w-full overflow-hidden rounded-[6px]",
-                      "style": { "backgroundColor": "#7c3aed" }
+                      "style": {
+                        "backgroundColor": "#7c3aed"
+                      }
                     },
                     "children": [
                       {
@@ -175,9 +185,13 @@
                     "children": [
                       {
                         "type": "Box",
-                        "map": { "formula": "variables['pr1c0002-0000-0000-0000-000000000002']?.[context?.item?.data?.index]" },
+                        "map": {
+                          "formula": "variables['pr1c0002-0000-0000-0000-000000000002']?.[context?.item?.data?.index]"
+                        },
                         "key": "id",
-                        "props": { "className": "contents" },
+                        "props": {
+                          "className": "contents"
+                        },
                         "children": [
                           {
                             "type": "Box",

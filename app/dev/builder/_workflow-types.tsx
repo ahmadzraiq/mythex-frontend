@@ -44,6 +44,7 @@ export type ActionStepType =
   | 'updateCollection'
   | 'resetVariableValue'
   | 'executeComponentAction'
+  | 'emitComponentTrigger'
   | 'returnValue'
   | 'timeDelay'
   | 'uploadFile'
@@ -73,6 +74,8 @@ export type ActionStepType =
   | 'restoreSession'
   // Project workflows
   | 'runProjectWorkflow'
+  // Code
+  | 'runJavaScript'
   // Placeholder — new step not yet configured
   | 'unconfigured';
 
@@ -254,17 +257,40 @@ export const TRIGGER_WORKFLOW_CATEGORIES: TriggerCategory[] = [
   },
 ];
 
-export function getTriggerCategories(nodeType?: string): TriggerCategory[] {
+/**
+ * A custom component event declared on an SC model. Passed into the trigger
+ * picker so listener workflows on an instance can bind to the event by id
+ * and render a friendly label.
+ */
+export interface CustomTriggerOption {
+  id: string;
+  name: string;
+}
+
+export function getTriggerCategories(
+  nodeType?: string,
+  customTriggers?: readonly CustomTriggerOption[],
+): TriggerCategory[] {
   const elementOptions = nodeType ? (ELEMENT_TRIGGERS[nodeType] ?? []) : [];
   const cats: TriggerCategory[] = [];
   if (elementOptions.length) {
     cats.push({ category: 'Element triggers', options: elementOptions });
   }
+  if (customTriggers && customTriggers.length) {
+    cats.push({
+      category: 'Component events',
+      options: customTriggers.map(t => ({ value: t.id, label: t.name })),
+    });
+  }
   return [...cats, ...UNIVERSAL_TRIGGER_CATEGORIES];
 }
 
-export function getTriggerLabel(value: string, nodeType?: string): string {
-  const all = getTriggerCategories(nodeType).flatMap(c => c.options);
+export function getTriggerLabel(
+  value: string,
+  nodeType?: string,
+  customTriggers?: readonly CustomTriggerOption[],
+): string {
+  const all = getTriggerCategories(nodeType, customTriggers).flatMap(c => c.options);
   return all.find(o => o.value === value)?.label ?? value;
 }
 
@@ -424,12 +450,19 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'updateCollection', label: 'Update collection', icon: '🗄' },
       { type: 'resetVariableValue', label: 'Reset variable value', icon: '⇄' },
       { type: 'executeComponentAction', label: 'Execute component action', icon: '⚡' },
+      { type: 'emitComponentTrigger', label: 'Emit component trigger', icon: '⚡' },
       { type: 'returnValue', label: 'Return a value', icon: '⚡' },
       { type: 'timeDelay', label: 'Time delay', icon: '⏱' },
       { type: 'uploadFile', label: 'Upload file', icon: '⬆' },
     ],
   },
   // "Project workflows" is injected dynamically in AddActionPopover (not a fixed category)
+  {
+    category: 'Code',
+    items: [
+      { type: 'runJavaScript', label: 'JavaScript', icon: '</>' },
+    ],
+  },
   {
     category: 'GraphQL',
     items: [
@@ -669,6 +702,8 @@ export function isStepComplete(step: ActionStep): boolean {
       return Boolean(cfg.condition);
     case 'runProjectWorkflow':
       return Boolean(cfg.workflowId || step.action);
+    case 'runJavaScript':
+      return Boolean(typeof cfg.code === 'string' && (cfg.code as string).trim().length > 0);
     case 'timeDelay':
       return Boolean(cfg.time ?? cfg.delay ?? cfg.ms);
     case 'copyToClipboard':
@@ -724,6 +759,7 @@ function cfgStr(val: unknown): string | null {
   if (typeof val === 'object') {
     const o = val as Record<string, unknown>;
     if (typeof o.formula === 'string') return o.formula.slice(0, 40) || null;
+    if (typeof o.js === 'string') return (o.js.split('\n').find(l => l.trim()) ?? o.js).trim().slice(0, 40) || null;
     if (typeof o.var === 'string') return o.var.slice(0, 40) || null;
     if (typeof o.expr === 'string') return o.expr.slice(0, 40) || null;
   }
@@ -775,6 +811,12 @@ export function getStepSummary(
     }
     case 'runProjectWorkflow':
       return (cfg.workflowId as string) || (step.action as string) || null;
+    case 'runJavaScript': {
+      const code = (cfg.code as string | undefined) ?? '';
+      if (!code) return null;
+      const oneLine = code.split('\n').find(l => l.trim()) ?? code;
+      return oneLine.trim().slice(0, 40);
+    }
     case 'timeDelay': {
       const ms = cfg.time ?? cfg.delay ?? cfg.ms;
       return ms != null ? `${ms}ms` : null;
@@ -782,8 +824,11 @@ export function getStepSummary(
     case 'forEach': {
       const fi = cfg.items;
       if (!fi) return null;
-      if (typeof fi === 'object' && fi !== null && 'formula' in (fi as object))
-        return ((fi as Record<string, string>).formula ?? '').slice(0, 40);
+      if (typeof fi === 'object' && fi !== null) {
+        const o = fi as Record<string, unknown>;
+        if (typeof o.formula === 'string') return o.formula.slice(0, 40);
+        if (typeof o.js === 'string') return (o.js.split('\n').find(l => l.trim()) ?? o.js).trim().slice(0, 40);
+      }
       return String(fi).slice(0, 40);
     }
     case 'branch':

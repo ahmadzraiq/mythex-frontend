@@ -16,10 +16,9 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
-              "size": "2xl",
-              "className": "font-bold text-gray-900 dark:text-gray-100"
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
             },
             "text": "Workflow Engine Showcase"
           },
@@ -45,10 +44,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 1 — setVar + Variable Binding"
               },
@@ -170,10 +168,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 2 — Branch (if/else)"
               },
@@ -326,10 +323,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 3 — runMultiple"
               },
@@ -463,10 +459,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-indigo-700 dark:text-indigo-300"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-indigo-700 dark:text-indigo-300"
                 },
                 "text": "Card 5 — The Complete Pipeline"
               },
@@ -811,10 +806,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 6 — Trigger Sampler"
               },
@@ -1111,31 +1105,25 @@
                 "id": "wa-trigger-input",
                 "props": {
                   "variant": "outline",
-                  "size": "md"
+                  "size": "md",
+                  "data-testid": "wa-trigger-input",
+                  "placeholder": "Type here…",
+                  "placeholderTextColor": "#9ca3af",
+                  "className": "!text-gray-900 dark:!text-gray-100"
                 },
-                "children": [
+                "children": [],
+                "actions": [
                   {
-                    "type": "InputField",
-                    "props": {
-                      "data-testid": "wa-trigger-input",
-                      "placeholder": "Type here…",
-                      "placeholderTextColor": "#9ca3af",
-                      "className": "!text-gray-900 dark:!text-gray-100"
-                    },
-                    "actions": [
-                      {
-                        "action": "waOnChange"
-                      },
-                      {
-                        "action": "waOnEnterKey"
-                      },
-                      {
-                        "action": "waOnFocus"
-                      },
-                      {
-                        "action": "waOnBlur"
-                      }
-                    ]
+                    "action": "waOnChange"
+                  },
+                  {
+                    "action": "waOnEnterKey"
+                  },
+                  {
+                    "action": "waOnFocus"
+                  },
+                  {
+                    "action": "waOnBlur"
                   }
                 ]
               }
@@ -1156,10 +1144,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 7 — Form Triggers + setFormState + resetForm"
               },
@@ -1304,33 +1291,27 @@
                         "id": "wa-input-email",
                         "props": {
                           "variant": "outline",
-                          "size": "md"
+                          "size": "md",
+                          "name": "wa-email",
+                          "value": "{{variables['wa000001-0000-0000-0000-000000000043']}}",
+                          "placeholder": "Email (required)",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "data-testid": "wa-form-email"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "wa-email",
-                              "value": "{{variables['wa000001-0000-0000-0000-000000000043']}}",
-                              "placeholder": "Email (required)",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "data-testid": "wa-form-email"
-                            },
-                            "actions": [
-                              {
-                                "action": "waEmailInputChange"
-                              }
-                            ]
+                            "action": "waEmailInputChange"
                           }
                         ]
                       },
@@ -1350,24 +1331,18 @@
                     "id": "wa-input-name",
                     "props": {
                       "variant": "outline",
-                      "size": "md"
+                      "size": "md",
+                      "name": "wa-name",
+                      "value": "{{variables['wa000001-0000-0000-0000-000000000044']}}",
+                      "placeholder": "Name",
+                      "placeholderTextColor": "#9ca3af",
+                      "className": "!text-gray-900 dark:!text-gray-100",
+                      "data-testid": "wa-form-name"
                     },
-                    "children": [
+                    "children": [],
+                    "actions": [
                       {
-                        "type": "InputField",
-                        "props": {
-                          "name": "wa-name",
-                          "value": "{{variables['wa000001-0000-0000-0000-000000000044']}}",
-                          "placeholder": "Name",
-                          "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
-                          "data-testid": "wa-form-name"
-                        },
-                        "actions": [
-                          {
-                            "action": "waNameInputChange"
-                          }
-                        ]
+                        "action": "waNameInputChange"
                       }
                     ]
                   },
@@ -1457,10 +1432,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 8 — navigateTo + navigatePrev"
               },
@@ -1538,10 +1512,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 9 — REST API + GraphQL"
               },
@@ -1717,10 +1690,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 10 — fetchCollection + parallel + updateCollection + resetVariableValue"
               },
@@ -1961,10 +1933,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card — Update Collection (all 4 types)"
               },
@@ -2248,10 +2219,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 11 — returnValue (via branch)"
               },
@@ -2352,10 +2322,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 12 — executeComponentAction + runProjectWorkflow"
               },
@@ -2487,10 +2456,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 13 — breakLoop + continueLoop + passThroughCondition"
               },
@@ -2687,10 +2655,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 14 — multiOptionBranch"
               },
@@ -2833,10 +2800,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 15 — Advanced Actions"
               },
@@ -3188,10 +3154,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 16 — Branch inside Loop inside Branch"
               },
@@ -3329,10 +3294,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 17 — multiOptionBranch + whileLoop + forEach + continueLoop + passThroughCondition"
               },
@@ -3517,10 +3481,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card 4 — increment / decrement"
               },
@@ -3635,10 +3598,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card — Input Sync + FormContainer"
               },
@@ -3677,35 +3639,29 @@
                         "id": "sync-input-1",
                         "props": {
                           "variant": "outline",
-                          "size": "md"
+                          "size": "md",
+                          "name": "input1",
+                          "placeholder": "Input 1 — enter a valid email",
+                          "value": "{{variables['wa-sync-0000-0000-0000-000000000001']}}",
+                          "className": "!text-gray-900 dark:!text-gray-100"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
+                            },
+                            {
+                              "type": "email",
+                              "message": "Please enter a valid email"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "email",
-                                  "message": "Please enter a valid email"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "input1",
-                              "placeholder": "Input 1 — enter a valid email",
-                              "value": "{{variables['wa-sync-0000-0000-0000-000000000001']}}",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": [
-                              {
-                                "action": "waSyncInput1Change"
-                              }
-                            ]
+                            "action": "waSyncInput1Change"
                           }
                         ]
                       },
@@ -3730,30 +3686,24 @@
                         "id": "sync-input-2",
                         "props": {
                           "variant": "outline",
-                          "size": "md"
+                          "size": "md",
+                          "name": "input2",
+                          "placeholder": "Input 2 — type here to update Input 1",
+                          "className": "!text-gray-900 dark:!text-gray-100"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Input 2 is required"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Input 2 is required"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "input2",
-                              "placeholder": "Input 2 — type here to update Input 1",
-                              "className": "!text-gray-900 dark:!text-gray-100"
-                            },
-                            "actions": [
-                              {
-                                "action": "waSyncInput2Change"
-                              }
-                            ]
+                            "action": "waSyncInput2Change"
                           }
                         ]
                       },
@@ -4209,17 +4159,11 @@
                 "id": "nested-outer-input",
                 "props": {
                   "variant": "outline",
-                  "size": "sm"
+                  "size": "sm",
+                  "name": "outerField",
+                  "placeholder": "Type in outer field..."
                 },
-                "children": [
-                  {
-                    "type": "InputField",
-                    "props": {
-                      "name": "outerField",
-                      "placeholder": "Type in outer field..."
-                    }
-                  }
-                ]
+                "children": []
               },
               {
                 "type": "Box",
@@ -4351,17 +4295,11 @@
                     "id": "nested-inner-input",
                     "props": {
                       "variant": "outline",
-                      "size": "sm"
+                      "size": "sm",
+                      "name": "innerField",
+                      "placeholder": "Type in inner field..."
                     },
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "name": "innerField",
-                          "placeholder": "Type in inner field..."
-                        }
-                      }
-                    ]
+                    "children": []
                   },
                   {
                     "type": "Box",
@@ -4488,10 +4426,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card A — Full Pipeline: API Chain + Response Reading"
               },
@@ -4763,10 +4700,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card B — Complex Form Validation"
               },
@@ -4815,37 +4751,31 @@
                         "id": "val2-username-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2username",
+                          "placeholder": "Min 3 characters",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000001']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Username is required"
+                            },
+                            {
+                              "type": "minLength",
+                              "value": "3",
+                              "message": "Username must be at least 3 characters"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Username is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "3",
-                                  "message": "Username must be at least 3 characters"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2username",
-                              "placeholder": "Min 3 characters",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000001']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2UsernameChange"
-                              }
-                            ]
+                            "action": "waVal2UsernameChange"
                           }
                         ]
                       },
@@ -4878,38 +4808,32 @@
                         "id": "val2-email-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2email",
+                          "placeholder": "valid@email.com",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "keyboardType": "email-address",
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000002']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
+                            },
+                            {
+                              "type": "pattern",
+                              "value": "^[^@]+@[^@]+\\.[^@]+$",
+                              "message": "Enter a valid email address"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "pattern",
-                                  "value": "^[^@]+@[^@]+\\.[^@]+$",
-                                  "message": "Enter a valid email address"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2email",
-                              "placeholder": "valid@email.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "keyboardType": "email-address",
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000002']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2EmailChange"
-                              }
-                            ]
+                            "action": "waVal2EmailChange"
                           }
                         ]
                       },
@@ -4942,34 +4866,28 @@
                         "id": "val2-phone-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2phone",
+                          "placeholder": "+12345678",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "keyboardType": "phone-pad",
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000005']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "pattern",
+                              "value": "^(\\+?[0-9]{7,15})?$",
+                              "message": "Phone must be blank or a valid number like +12345678"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "pattern",
-                                  "value": "^(\\+?[0-9]{7,15})?$",
-                                  "message": "Phone must be blank or a valid number like +12345678"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2phone",
-                              "placeholder": "+12345678",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "keyboardType": "phone-pad",
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000005']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2PhoneChange"
-                              }
-                            ]
+                            "action": "waVal2PhoneChange"
                           }
                         ]
                       },
@@ -5002,38 +4920,32 @@
                         "id": "val2-age-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2age",
+                          "placeholder": "18",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "keyboardType": "numeric",
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000006']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Age is required"
+                            },
+                            {
+                              "type": "formula",
+                              "value": "Number(local?.data?.form?.formData?.['v2age']) >= 18",
+                              "message": "You must be at least 18 years old"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Age is required"
-                                },
-                                {
-                                  "type": "formula",
-                                  "value": "Number(local?.data?.form?.formData?.['v2age']) >= 18",
-                                  "message": "You must be at least 18 years old"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2age",
-                              "placeholder": "18",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "keyboardType": "numeric",
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000006']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2AgeChange"
-                              }
-                            ]
+                            "action": "waVal2AgeChange"
                           }
                         ]
                       },
@@ -5066,58 +4978,52 @@
                         "id": "val2-password-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2password",
+                          "placeholder": "e.g. SecureP@ss1",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "secureTextEntry": true,
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000007']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Password is required"
+                            },
+                            {
+                              "type": "minLength",
+                              "value": "8",
+                              "message": "Password must be at least 8 characters"
+                            },
+                            {
+                              "type": "pattern",
+                              "value": "[A-Z]",
+                              "message": "Password must contain at least one uppercase letter"
+                            },
+                            {
+                              "type": "pattern",
+                              "value": "[a-z]",
+                              "message": "Password must contain at least one lowercase letter"
+                            },
+                            {
+                              "type": "pattern",
+                              "value": "[0-9]",
+                              "message": "Password must contain at least one number"
+                            },
+                            {
+                              "type": "pattern",
+                              "value": "[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]",
+                              "message": "Password must contain at least one special character (!@#$%^&*...)"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Password is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "8",
-                                  "message": "Password must be at least 8 characters"
-                                },
-                                {
-                                  "type": "pattern",
-                                  "value": "[A-Z]",
-                                  "message": "Password must contain at least one uppercase letter"
-                                },
-                                {
-                                  "type": "pattern",
-                                  "value": "[a-z]",
-                                  "message": "Password must contain at least one lowercase letter"
-                                },
-                                {
-                                  "type": "pattern",
-                                  "value": "[0-9]",
-                                  "message": "Password must contain at least one number"
-                                },
-                                {
-                                  "type": "pattern",
-                                  "value": "[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]",
-                                  "message": "Password must contain at least one special character (!@#$%^&*...)"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2password",
-                              "placeholder": "e.g. SecureP@ss1",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "secureTextEntry": true,
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000007']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2PasswordChange"
-                              }
-                            ]
+                            "action": "waVal2PasswordChange"
                           }
                         ]
                       },
@@ -5150,38 +5056,32 @@
                         "id": "val2-confirm-input",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "v2confirm",
+                          "placeholder": "Repeat password",
+                          "placeholderTextColor": "#9ca3af",
+                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "secureTextEntry": true,
+                          "value": "{{variables['wa-val2-0000-0000-0000-000000000008']}}"
                         },
-                        "children": [
+                        "children": [],
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Please confirm your password"
+                            },
+                            {
+                              "type": "equalsField",
+                              "value": "v2password",
+                              "message": "Passwords do not match"
+                            }
+                          ]
+                        },
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Please confirm your password"
-                                },
-                                {
-                                  "type": "equalsField",
-                                  "value": "v2password",
-                                  "message": "Passwords do not match"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "v2confirm",
-                              "placeholder": "Repeat password",
-                              "placeholderTextColor": "#9ca3af",
-                              "className": "!text-gray-900 dark:!text-gray-100",
-                              "secureTextEntry": true,
-                              "value": "{{variables['wa-val2-0000-0000-0000-000000000008']}}"
-                            },
-                            "actions": [
-                              {
-                                "action": "waVal2ConfirmChange"
-                              }
-                            ]
+                            "action": "waVal2ConfirmChange"
                           }
                         ]
                       },
@@ -5331,10 +5231,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card C — executeComponentAction: All Patterns"
               },
@@ -5554,10 +5453,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
                 },
                 "text": "Card D — Event Object by Trigger Type"
               },
@@ -5594,20 +5492,14 @@
                     "id": "evt-input-change",
                     "props": {
                       "variant": "outline",
-                      "size": "sm"
+                      "size": "sm",
+                      "name": "evtChange",
+                      "placeholder": "Type anything…"
                     },
-                    "children": [
+                    "children": [],
+                    "actions": [
                       {
-                        "type": "InputField",
-                        "props": {
-                          "name": "evtChange",
-                          "placeholder": "Type anything…"
-                        },
-                        "actions": [
-                          {
-                            "action": "waEvtChange"
-                          }
-                        ]
+                        "action": "waEvtChange"
                       }
                     ]
                   },
@@ -5683,20 +5575,14 @@
                     "id": "evt-input-enter",
                     "props": {
                       "variant": "outline",
-                      "size": "sm"
+                      "size": "sm",
+                      "name": "evtEnter",
+                      "placeholder": "Type something then press Enter…"
                     },
-                    "children": [
+                    "children": [],
+                    "actions": [
                       {
-                        "type": "InputField",
-                        "props": {
-                          "name": "evtEnter",
-                          "placeholder": "Type something then press Enter…"
-                        },
-                        "actions": [
-                          {
-                            "action": "waEvtEnterKey"
-                          }
-                        ]
+                        "action": "waEvtEnterKey"
                       }
                     ]
                   },
@@ -5734,20 +5620,14 @@
                         "id": "evt-input-focus",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "evtFocus",
+                          "placeholder": "Click to focus…"
                         },
-                        "children": [
+                        "children": [],
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "props": {
-                              "name": "evtFocus",
-                              "placeholder": "Click to focus…"
-                            },
-                            "actions": [
-                              {
-                                "action": "waEvtFocus"
-                              }
-                            ]
+                            "action": "waEvtFocus"
                           }
                         ]
                       },
@@ -5779,20 +5659,14 @@
                         "id": "evt-input-blur",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "evtBlur",
+                          "placeholder": "Focus then click away…"
                         },
-                        "children": [
+                        "children": [],
+                        "actions": [
                           {
-                            "type": "InputField",
-                            "props": {
-                              "name": "evtBlur",
-                              "placeholder": "Focus then click away…"
-                            },
-                            "actions": [
-                              {
-                                "action": "waEvtBlur"
-                              }
-                            ]
+                            "action": "waEvtBlur"
                           }
                         ]
                       },
@@ -5908,73 +5782,25 @@
                     "text": "onValueChange (Select)"
                   },
                   {
-                    "type": "Select",
-                    "props": {},
-                    "actions": [
-                      {
-                        "action": "waEvtValueChange"
-                      }
-                    ],
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center justify-between gap-[8px] px-[12px] py-[8px] rounded-[6px] border border-border bg-background min-w-[200px]"
+                    },
                     "children": [
                       {
-                        "type": "SelectTrigger",
+                        "type": "Text",
                         "props": {
-                          "data-testid": "evt-select-trigger"
+                          "className": "text-[14px] text-muted-foreground"
                         },
-                        "children": [
-                          {
-                            "type": "SelectInput",
-                            "props": {
-                              "placeholder": "Pick an option…"
-                            }
-                          },
-                          {
-                            "type": "Icon",
-                            "children": [
-                              {
-                                "type": "Icon",
-                                "props": {
-                                  "icon": "lucide:chevron-down",
-                                  "size": 14
-                                }
-                              }
-                            ]
-                          }
-                        ]
+                        "text": "Select placeholder"
                       },
                       {
-                        "type": "SelectPortal",
-                        "children": [
-                          {
-                            "type": "SelectBackdrop"
-                          },
-                          {
-                            "type": "SelectContent",
-                            "children": [
-                              {
-                                "type": "SelectItem",
-                                "props": {
-                                  "label": "Alpha",
-                                  "value": "alpha"
-                                }
-                              },
-                              {
-                                "type": "SelectItem",
-                                "props": {
-                                  "label": "Beta",
-                                  "value": "beta"
-                                }
-                              },
-                              {
-                                "type": "SelectItem",
-                                "props": {
-                                  "label": "Gamma",
-                                  "value": "gamma"
-                                }
-                              }
-                            ]
-                          }
-                        ]
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:chevron-down",
+                          "size": 16,
+                          "color": "#6b7280"
+                        }
                       }
                     ]
                   },
@@ -6049,7 +5875,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -6063,10 +5888,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-bold text-gray-900 dark:text-gray-100"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
                 },
                 "text": "Global Workflow Parameters"
               },
@@ -6091,11 +5915,17 @@
                   "className": "flex flex-row items-center justify-center px-[16px] py-[10px] rounded-[8px] bg-blue-600 cursor-pointer",
                   "data-testid": "btn-greet-formal"
                 },
-                "actions": [{ "action": "callGreetFormal" }],
+                "actions": [
+                  {
+                    "action": "callGreetFormal"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "props": {
+                      "className": "text-white font-semibold text-[14px]"
+                    },
                     "text": "Formal Greeting"
                   }
                 ]
@@ -6106,11 +5936,17 @@
                   "className": "flex flex-row items-center justify-center px-[16px] py-[10px] rounded-[8px] bg-indigo-600 cursor-pointer",
                   "data-testid": "btn-greet-casual"
                 },
-                "actions": [{ "action": "callGreetCasual" }],
+                "actions": [
+                  {
+                    "action": "callGreetCasual"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-white font-semibold text-[14px]" },
+                    "props": {
+                      "className": "text-white font-semibold text-[14px]"
+                    },
                     "text": "Casual Greeting"
                   }
                 ]
@@ -6131,32 +5967,44 @@
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[10px] font-semibold text-blue-500 uppercase tracking-wide" },
+                    "props": {
+                      "className": "text-[10px] font-semibold text-blue-500 uppercase tracking-wide"
+                    },
                     "text": "Formal params"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "greeting: \"Good morning\""
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "formal: true | max: 3"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "tags: [\"vip\", \"premium\"]"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "userProfile: {role:\"manager\",level:5}"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "allowedRoles: [\"admin\",\"manager\"]"
                   }
                 ]
@@ -6169,32 +6017,44 @@
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[10px] font-semibold text-indigo-500 uppercase tracking-wide" },
+                    "props": {
+                      "className": "text-[10px] font-semibold text-indigo-500 uppercase tracking-wide"
+                    },
                     "text": "Casual params"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "greeting: \"Hey\""
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "formal: false | max: 10"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "tags: [\"friend\"]"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "userProfile: {role:\"guest\",level:1}"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400" },
+                    "props": {
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                    },
                     "text": "allowedRoles: [\"viewer\"]"
                   }
                 ]
@@ -6232,11 +6092,15 @@
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row items-center gap-[6px]" },
+                "props": {
+                  "className": "flex flex-row items-center gap-[6px]"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[12px]" },
+                    "props": {
+                      "className": "text-[12px]"
+                    },
                     "text": "↩"
                   },
                   {
@@ -6268,39 +6132,55 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex flex-row items-center gap-[8px] mb-[4px]" },
+            "props": {
+              "className": "flex flex-row items-center gap-[8px] mb-[4px]"
+            },
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-[16px]" },
+                "props": {
+                  "className": "text-[16px]"
+                },
                 "text": "🌐"
               },
               {
                 "type": "Text",
-                "props": { "className": "text-[14px] font-bold text-sky-700 dark:text-sky-300" },
+                "props": {
+                  "className": "text-[14px] font-bold text-sky-700 dark:text-sky-300"
+                },
                 "text": "API Global Workflow — fetchTodo"
               }
             ]
           },
           {
             "type": "Text",
-            "props": { "className": "text-[12px] text-sky-600 dark:text-sky-400" },
+            "props": {
+              "className": "text-[12px] text-sky-600 dark:text-sky-400"
+            },
             "text": "Calls https://jsonplaceholder.typicode.com/todos/1, returns the JSON, and stores it below."
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "props": {
+              "className": "flex flex-row gap-[8px] flex-wrap"
+            },
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "className": "px-[14px] py-[8px] rounded-[8px] bg-sky-600 hover:bg-sky-700 cursor-pointer"
                 },
-                "actions": [{ "action": "callFetchTodo" }],
+                "actions": [
+                  {
+                    "action": "callFetchTodo"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[13px] font-semibold text-white" },
+                    "props": {
+                      "className": "text-[13px] font-semibold text-white"
+                    },
                     "text": "Fetch Todo #1"
                   }
                 ]
@@ -6309,20 +6189,28 @@
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-col gap-[4px]" },
+            "props": {
+              "className": "flex flex-col gap-[4px]"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row items-center gap-[6px]" },
+                "props": {
+                  "className": "flex flex-row items-center gap-[6px]"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[12px]" },
+                    "props": {
+                      "className": "text-[12px]"
+                    },
                     "text": "↩"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[11px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide" },
+                    "props": {
+                      "className": "text-[11px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide"
+                    },
                     "text": "Return Value (context.workflow['s1'].result)"
                   }
                 ]

@@ -72,7 +72,10 @@
                   "style": {
                     "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.25)",
                     "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 4
+                    },
                     "shadowRadius": 12,
                     "shadowOpacity": 0.25,
                     "elevation": 6
@@ -94,8 +97,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               }
             ],

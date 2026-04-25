@@ -33,12 +33,18 @@ import {
   createSharedComponent,
   updateSharedComponent,
 } from '@/lib/builder/shared-component-data';
+import {
+  getSystemComponents,
+  updateSystemComponent,
+  resetSystemComponent,
+} from '@/lib/builder/system-component-data';
 import type {
   SharedComponentModel,
   SharedComponentProperty,
   ScopedVarDef,
   ScopedFormulaDef,
   ScopedWorkflow,
+  ComponentTrigger,
 } from '@/lib/builder/shared-component-data';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { WorkflowCanvas } from './_workflow-canvas';
@@ -47,8 +53,31 @@ import { ElementWorkflowsTab } from './_panel-right-workflows';
 import { VariableSlideContent, getDefaultForType } from './_variable-form';
 import { FormulaSlideBase } from './_logic-tab';
 import { Chevron } from './_layers-panel';
+import { BoundField } from './_workflow-node-configs';
+import type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 import type { CustomVar } from './_store';
 import type { GlobalFormulaParam } from './_store-types';
+
+// ─── Store helpers (kind-aware) ───────────────────────────────────────────────
+
+/**
+ * Read the current `editingKind` from the builder store and return the right
+ * model-getter / updater. The component editor treats shared and system
+ * components identically except for which in-memory store they read/write.
+ */
+function getEditingModel(modelId: string): SharedComponentModel | null {
+  const kind = useBuilderStore.getState().editingKindMap[modelId]
+    ?? useBuilderStore.getState().editingKind;
+  if (kind === 'system') return (getSystemComponents()[modelId] as SharedComponentModel | undefined) ?? null;
+  return (getSharedComponents()[modelId] as SharedComponentModel | undefined) ?? null;
+}
+
+function updateEditingModel(patch: Partial<SharedComponentModel> & { id: string }) {
+  const kind = useBuilderStore.getState().editingKindMap[patch.id]
+    ?? useBuilderStore.getState().editingKind;
+  if (kind === 'system') return updateSystemComponent(patch as Partial<SharedComponentModel> & { id: string }) as unknown as SharedComponentModel | null;
+  return updateSharedComponent(patch);
+}
 
 // ─── Shared palette ───────────────────────────────────────────────────────────
 
@@ -405,16 +434,20 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
   const [tick, setTick] = useState(0);
   const forceUpdate = useCallback(() => setTick(t => t + 1), []);
 
-  // Subscribe to shared component changes
+  // Subscribe to BOTH shared-component and system-component stores so the
+  // editor repaints regardless of which data layer the model lives in.
   useEffect(() => {
-    const { subscribeSharedComponents } = require('@/lib/builder/shared-component-data') as typeof import('@/lib/builder/shared-component-data');
-    return subscribeSharedComponents(forceUpdate);
+    const sc = require('@/lib/builder/shared-component-data') as typeof import('@/lib/builder/shared-component-data');
+    const sys = require('@/lib/builder/system-component-data') as typeof import('@/lib/builder/system-component-data');
+    const unsubSc = sc.subscribeSharedComponents(forceUpdate);
+    const unsubSys = sys.subscribeSystemComponents(forceUpdate);
+    return () => { unsubSc(); unsubSys(); };
   }, [forceUpdate]);
 
-  // Include `tick` so the model refreshes whenever updateSharedComponent is called
+  // Include `tick` so the model refreshes whenever the model data store updates
   const model: SharedComponentModel | null = useMemo(() => {
     if (!modelId) return null;
-    return getSharedComponents()[modelId] ?? null;
+    return getEditingModel(modelId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId, tick]);
 
@@ -447,7 +480,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
 
   const commitRename = useCallback(() => {
     if (!modelId || !renameDraft.trim()) { setRenaming(false); return; }
-    updateSharedComponent({ id: modelId, name: renameDraft.trim() });
+    updateEditingModel({ id: modelId, name: renameDraft.trim() });
     setRenaming(false);
   }, [modelId, renameDraft]);
 
@@ -625,6 +658,10 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
   const ref = useRef<HTMLDivElement>(null);
   const { updateSharedComponent: _u } = { updateSharedComponent }; void _u;
 
+  const exitSharedComponentEdit = useBuilderStore(s => s.exitSharedComponentEdit);
+  const editingKind = useBuilderStore(s => s.editingKindMap[model.id] ?? s.editingKind);
+  const isSystem = editingKind === 'system';
+
   const [showDescEditor, setShowDescEditor] = useState(false);
   const [desc, setDesc] = useState(model.description ?? '');
 
@@ -661,7 +698,7 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
           <button type="button" onClick={onClose} style={{ ...BTN_GHOST, padding: '4px 10px', fontSize: 11 }}>Cancel</button>
           <button type="button" onClick={() => {
-            updateSharedComponent({ id: model.id, description: desc.trim() || undefined });
+            updateEditingModel({ id: model.id, description: desc.trim() || undefined });
             onClose();
           }} style={{ ...BTN_PRIMARY, padding: '4px 10px', fontSize: 11 }}>Save</button>
         </div>
@@ -687,6 +724,20 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
       >
         <IconEdit /> Edit description
       </button>
+      {isSystem && (
+        <button style={{ ...itemStyle, color: '#f59e0b' }}
+          onClick={() => {
+            if (!window.confirm(`Reset "${model.name}" to the built-in default? All your edits to this system component will be lost.`)) return;
+            resetSystemComponent(model.id);
+            onClose();
+            exitSharedComponentEdit(model.id);
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <IconEdit /> Reset to default
+        </button>
+      )}
     </div>
   );
 }
@@ -741,6 +792,11 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
 
       <div style={{ borderTop: '1px solid #1f2937' }} />
 
+      {/* Triggers (custom component events) */}
+      <TriggersSection model={model} modelId={modelId} />
+
+      <div style={{ borderTop: '1px solid #1f2937' }} />
+
       {/* Formulas section */}
       <FormulasSection model={model} modelId={modelId} />
     </div>
@@ -763,19 +819,19 @@ function PropertiesSection({ model, modelId }: { model: SharedComponentModel; mo
       defaultValue: '',
     };
     const props = [...(model.properties ?? []), newProp];
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp({ prop: newProp, anchorY: e.clientY });
   }, [model, modelId]);
 
   const handleUpdateProp = useCallback((propId: string, field: keyof SharedComponentProperty, val: unknown) => {
     const props = (model.properties ?? []).map(p => p.id === propId ? { ...p, [field]: val } : p);
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp(prev => prev ? { ...prev, prop: { ...prev.prop, [field]: val } } : null);
   }, [model, modelId]);
 
   const handleDeleteProp = useCallback((propId: string) => {
     const props = (model.properties ?? []).filter(p => p.id !== propId);
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp(null);
   }, [model, modelId]);
 
@@ -825,19 +881,19 @@ function SettingsTab({ model, modelId, designContent }: {
       defaultValue: '',
     };
     const props = [...(model.properties ?? []), newProp];
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp({ prop: newProp, anchorY: e.clientY });
   }, [model, modelId]);
 
   const handleUpdateProp = useCallback((propId: string, field: keyof SharedComponentProperty, val: unknown) => {
     const props = (model.properties ?? []).map(p => p.id === propId ? { ...p, [field]: val } : p);
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp(prev => prev ? { ...prev, prop: { ...prev.prop, [field]: val } } : null);
   }, [model, modelId]);
 
   const handleDeleteProp = useCallback((propId: string) => {
     const props = (model.properties ?? []).filter(p => p.id !== propId);
-    updateSharedComponent({ id: modelId, properties: props });
+    updateEditingModel({ id: modelId, properties: props });
     setPopupProp(null);
   }, [model, modelId]);
 
@@ -1127,7 +1183,7 @@ function ComponentVarForm({
 }) {
   // Derive unique folder names from the component's variables
   const existingFolders = useMemo(() => {
-    const vars = (getSharedComponents()[modelId] as SharedComponentModel | undefined)?.variables ?? {};
+    const vars = (getEditingModel(modelId) as SharedComponentModel | undefined)?.variables ?? {};
     const names = new Set<string>();
     Object.values(vars).forEach(v => { if (v.folder) names.add(v.folder); });
     return Array.from(names).sort();
@@ -1414,7 +1470,7 @@ function VariablesSection({ modelId }: { model: SharedComponentModel; modelId: s
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
   const liveVars = (): Record<string, ScopedVarDef> =>
-    (getSharedComponents()[modelId] as SharedComponentModel | undefined)?.variables ?? {};
+    (getEditingModel(modelId) as SharedComponentModel | undefined)?.variables ?? {};
 
   const [, forceList] = useState(0);
   useEffect(() => {
@@ -1439,14 +1495,14 @@ function VariablesSection({ modelId }: { model: SharedComponentModel; modelId: s
   const handleDelete = useCallback((varId: string) => {
     const current = liveVars();
     const { [varId]: _removed, ...rest } = current;
-    updateSharedComponent({ id: modelId, variables: rest });
+    updateEditingModel({ id: modelId, variables: rest });
     setSlideVar(v => (v?.id === varId ? null : v));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
 
   const handleSave = useCallback((id: string, v: ScopedVarDef) => {
     const current = liveVars();
-    updateSharedComponent({ id: modelId, variables: { ...current, [id]: v } });
+    updateEditingModel({ id: modelId, variables: { ...current, [id]: v } });
     setSlideVar(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
@@ -1456,7 +1512,7 @@ function VariablesSection({ modelId }: { model: SharedComponentModel; modelId: s
     const updated = Object.fromEntries(
       Object.entries(current).map(([id, v]) => [id, v.folder === oldName ? { ...v, folder: newName } : v])
     );
-    updateSharedComponent({ id: modelId, variables: updated });
+    updateEditingModel({ id: modelId, variables: updated });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
 
@@ -1465,7 +1521,7 @@ function VariablesSection({ modelId }: { model: SharedComponentModel; modelId: s
     const updated = Object.fromEntries(
       Object.entries(current).map(([id, v]) => [id, v.folder === name ? { ...v, folder: undefined } : v])
     );
-    updateSharedComponent({ id: modelId, variables: updated });
+    updateEditingModel({ id: modelId, variables: updated });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
 
@@ -1549,7 +1605,7 @@ function FormulasSection({ modelId }: { model: SharedComponentModel; modelId: st
 
   // Always read directly from the store to avoid stale closure issues
   const liveFormulas = (): Record<string, ScopedFormulaDef> =>
-    (getSharedComponents()[modelId] as SharedComponentModel | undefined)?.formulas ?? {};
+    (getEditingModel(modelId) as SharedComponentModel | undefined)?.formulas ?? {};
 
   const [, forceList] = useState(0);
   useEffect(() => {
@@ -1568,7 +1624,7 @@ function FormulasSection({ modelId }: { model: SharedComponentModel; modelId: st
   const handleDelete = useCallback((fId: string) => {
     const current = liveFormulas();
     const { [fId]: _removed, ...rest } = current;
-    updateSharedComponent({ id: modelId, formulas: rest });
+    updateEditingModel({ id: modelId, formulas: rest });
     setSlideFormula(f => (f?.id === fId ? null : f));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
@@ -1576,7 +1632,7 @@ function FormulasSection({ modelId }: { model: SharedComponentModel; modelId: st
   const handleSave = useCallback((id: string, f: ScopedFormulaDef) => {
     // Read live from store to avoid stale closure
     const current = liveFormulas();
-    updateSharedComponent({ id: modelId, formulas: { ...current, [id]: f } });
+    updateEditingModel({ id: modelId, formulas: { ...current, [id]: f } });
     setSlideFormula(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
@@ -1800,6 +1856,15 @@ const TRIGGER_ICONS: Record<string, string> = {
   propertyChange: '↻',
 };
 
+// Workflows with one of these triggers are component-scoped (surface here,
+// in the SC's Actions tab). DOM-event-triggered workflows (click, etc.) are
+// element-scoped and surface in the right-panel Workflow tab when the owning
+// inner element is selected — they're deliberately hidden here to keep the
+// Actions tab focused on component-level lifecycle behaviour.
+const LIFECYCLE_TRIGGERS = new Set<string>([
+  'execution', 'created', 'mounted', 'beforeUnmount', 'propertyChange',
+]);
+
 function ActionsTab({ model, modelId, openWorkflowId, onOpenWorkflow }: {
   model: SharedComponentModel;
   modelId: string;
@@ -1807,7 +1872,9 @@ function ActionsTab({ model, modelId, openWorkflowId, onOpenWorkflow }: {
   onOpenWorkflow: (id: string | null) => void;
 }) {
   const workflows = model.workflows ?? {};
-  const entries = Object.entries(workflows);
+  const entries = Object.entries(workflows).filter(
+    ([, wf]) => LIFECYCLE_TRIGGERS.has(wf.trigger),
+  );
 
   const handleNewWorkflow = useCallback(() => {
     const id = crypto.randomUUID();
@@ -1818,13 +1885,13 @@ function ActionsTab({ model, modelId, openWorkflowId, onOpenWorkflow }: {
       params: [],
       steps: [],
     };
-    updateSharedComponent({ id: modelId, workflows: { ...workflows, [id]: newWf } });
+    updateEditingModel({ id: modelId, workflows: { ...workflows, [id]: newWf } });
     onOpenWorkflow(id);
   }, [workflows, modelId, onOpenWorkflow]);
 
   const handleDelete = useCallback((wfId: string) => {
     const { [wfId]: _removed, ...rest } = workflows;
-    updateSharedComponent({ id: modelId, workflows: rest });
+    updateEditingModel({ id: modelId, workflows: rest });
   }, [workflows, modelId]);
 
   return (
@@ -1844,6 +1911,252 @@ function ActionsTab({ model, modelId, openWorkflowId, onOpenWorkflow }: {
         ))
       }
     </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Triggers — WeWeb-parity custom component events
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Section listing the component's custom triggers. A trigger is a named event
+ * the component declares and emits (via the `emitComponentTrigger` step) from
+ * inside its own workflows. Parent pages bind listener workflows on an
+ * instance by setting `workflow.trigger = trigger.id`; those listeners receive
+ * the emitted payload as `context.event` in scope.
+ */
+function TriggersSection({ model, modelId }: { model: SharedComponentModel; modelId: string }) {
+  const triggers = model.triggers ?? [];
+  const [modalAnchorY, setModalAnchorY] = useState<number | null>(null);
+  const [editing, setEditing] = useState<ComponentTrigger | null>(null);
+
+  const handleNew = useCallback((e: React.MouseEvent) => {
+    setEditing(null);
+    setModalAnchorY(e.clientY);
+  }, []);
+
+  const handleEdit = useCallback((t: ComponentTrigger, anchorY: number) => {
+    setEditing(t);
+    setModalAnchorY(anchorY);
+  }, []);
+
+  const handleDelete = useCallback((triggerId: string) => {
+    const next = triggers.filter(t => t.id !== triggerId);
+    updateEditingModel({ id: modelId, triggers: next.length ? next : undefined });
+  }, [triggers, modelId]);
+
+  const handleSave = useCallback((t: ComponentTrigger) => {
+    const existingIdx = triggers.findIndex(x => x.id === t.id);
+    const next = existingIdx >= 0
+      ? triggers.map((x, i) => i === existingIdx ? t : x)
+      : [...triggers, t];
+    updateEditingModel({ id: modelId, triggers: next });
+    setModalAnchorY(null);
+    setEditing(null);
+  }, [triggers, modelId]);
+
+  return (
+    <div>
+      <SectionBar label="Triggers" count={triggers.length} onNew={handleNew} newTestId="sc-triggers-new" />
+      {triggers.length === 0
+        ? <EmptyState label="triggers" />
+        : triggers.map(t => (
+          <TriggerRow
+            key={t.id}
+            trigger={t}
+            onEdit={e => handleEdit(t, e.clientY)}
+            onDelete={() => handleDelete(t.id)}
+          />
+        ))
+      }
+      {modalAnchorY !== null && (
+        <TriggerEditModal
+          initial={editing}
+          anchorY={modalAnchorY}
+          onSave={handleSave}
+          onClose={() => { setModalAnchorY(null); setEditing(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function TriggerRow({ trigger, onEdit, onDelete }: {
+  trigger: ComponentTrigger;
+  onEdit: (e: React.MouseEvent) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      data-testid={`sc-trigger-row-${trigger.id}`}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px',
+        cursor: 'pointer', background: 'transparent',
+        borderLeft: '2px solid transparent',
+      }}
+      onClick={onEdit}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0a1020'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+    >
+      <span style={{ fontSize: 12, color: '#a78bfa', flexShrink: 0 }}>⚡</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {trigger.name}
+        </div>
+        <div style={{ fontSize: 10, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          Component event · {(() => {
+            const p = trigger.payload;
+            if (!p) return 'no payload';
+            if (typeof p === 'object' && 'formula' in p) return 'bound payload';
+            return 'literal payload';
+          })()}
+        </div>
+      </div>
+      <button
+        onClick={e => { e.stopPropagation(); onEdit(e); }}
+        title="Edit trigger"
+        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+      >
+        <IconEdit />
+      </button>
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(); }}
+        title="Delete trigger"
+        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+      >
+        <IconTrash />
+      </button>
+    </div>
+  );
+}
+
+function TriggerEditModal({ initial, anchorY, onSave, onClose }: {
+  initial: ComponentTrigger | null;
+  anchorY: number;
+  onSave: (t: ComponentTrigger) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [payload, setPayload] = useState<FormulaValue | undefined>(
+    (initial?.payload as FormulaValue | undefined) ?? undefined,
+  );
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node | null;
+      if (!ref.current || !t) return;
+      if (ref.current.contains(t)) return;
+      // The Payload BoundField opens a FormulaEditor via createPortal on
+      // document.body — clicks inside it are DOM-outside our form ref but
+      // logically belong to this modal, so treat them as "inside".
+      if ((t as HTMLElement).closest?.('[data-testid="formula-editor"]')) return;
+      onClose();
+    };
+    window.addEventListener('mousedown', h, true);
+    return () => window.removeEventListener('mousedown', h, true);
+  }, [onClose]);
+
+  const canSave = name.trim().length > 0;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSave) return;
+    const normalizedPayload = (() => {
+      if (payload == null) return undefined;
+      if (typeof payload === 'string') {
+        const trimmed = payload.trim();
+        return trimmed.length ? trimmed : undefined;
+      }
+      if (typeof payload === 'object' && payload && 'formula' in (payload as Record<string, unknown>)) {
+        const f = (payload as { formula?: unknown }).formula;
+        if (typeof f === 'string' && f.trim()) return payload as { formula: string };
+        return undefined;
+      }
+      return undefined;
+    })();
+    onSave({
+      id: initial?.id ?? crypto.randomUUID(),
+      name: name.trim(),
+      payload: normalizedPayload,
+    });
+  };
+
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    top: Math.max(anchorY - 120, 80),
+    // Sit flush against the right panel's left edge (panel is 260px wide) so
+    // the modal and the FormulaEditor (anchorRight=260 below) form one strip.
+    right: 260,
+    width: 320,
+    background: '#111827',
+    border: '1px solid #374151',
+    borderRadius: 8,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+    zIndex: 99999,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: 14,
+    gap: 10,
+  };
+
+  return ReactDOM.createPortal(
+    <form ref={ref} style={style} onSubmit={handleSubmit}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb', marginBottom: 2 }}>
+        {initial ? 'Edit trigger' : 'New trigger'}
+      </div>
+
+      <div>
+        <label style={SECTION_LABEL}>Label *</label>
+        <input
+          autoFocus
+          style={INPUT_BASE}
+          value={name}
+          placeholder="On login success"
+          onChange={e => setName(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <BoundField
+          label="Payload"
+          value={payload}
+          onChange={setPayload}
+          code
+          expectedType="object"
+          placeholder={'{\n  "date": "2026-01-15"\n}'}
+          // Anchor the FormulaEditor to the left edge of this modal so it
+          // sits adjacent (modal is at right:260, width:320, so its left
+          // edge = 260+320 from the viewport right).
+          anchorRight={260 + 320}
+          // Payloads typically emit from DOM-event (e.g. click) workflows where
+          // ancestor `map` / event scope is available — wire `click` so the
+          // formula editor chips `context.item.*`, `event.*`, etc.
+          workflowTrigger="click"
+        />
+        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>
+          Payload delivered to listeners as <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.event</code>.
+          Bind a formula (e.g. <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>{'{ date: context?.item?.data?.dateStr }'}</code>)
+          so emitting fires with the real runtime value.
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 4 }}>
+        <button type="button" onClick={onClose} style={BTN_GHOST}>Cancel</button>
+        <button
+          type="submit"
+          disabled={!canSave}
+          style={{ ...BTN_PRIMARY, opacity: canSave ? 1 : 0.5, cursor: canSave ? 'pointer' : 'not-allowed' }}
+        >
+          {initial ? 'Save' : 'Create'}
+        </button>
+      </div>
+    </form>,
+    document.body,
   );
 }
 
@@ -1902,52 +2215,119 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
   const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const existingShared = (selectedNode as unknown as Record<string, unknown>)?._shared as { id: string; name: string } | undefined;
-  const { enterSharedComponentEdit } = useBuilderStore(
-    useShallow(s => ({ enterSharedComponentEdit: s.enterSharedComponentEdit }))
+  const existingSystem = (selectedNode as unknown as Record<string, unknown>)?._system as { id: string; name: string } | undefined;
+  const { enterSharedComponentEdit, enterSystemComponentEdit, detachInstance, resetInstanceToSystem } = useBuilderStore(
+    useShallow(s => ({
+      enterSharedComponentEdit: s.enterSharedComponentEdit,
+      enterSystemComponentEdit: s.enterSystemComponentEdit,
+      detachInstance: s.detachInstance,
+      resetInstanceToSystem: s.resetInstanceToSystem,
+    }))
   );
   const nodeId = (selectedNode as unknown as { id?: string })?.id;
 
   if (!selectedNode) return null;
 
-  // If this node is a shared component instance, show an Edit button to enter edit mode.
-  if (existingShared) {
+  // If this node is a shared or system component instance, show Edit / Detach / Reset buttons.
+  if (existingShared || existingSystem) {
+    const meta = (existingShared ?? existingSystem)!;
+    const isSystem = !!existingSystem;
     const handleEdit = () => {
-      const scData = getSharedComponents();
-      const m = scData[existingShared.id];
+      const m = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
       if (!m) return;
-      enterSharedComponentEdit(
-        existingShared.id,
-        m.content as import('@/lib/sdui/types/node').SDUINode,
-        m as unknown as Record<string, unknown>,
-        nodeId,
-        true, // simple mode: no backdrop/canvas overlay
-      );
+      if (isSystem) {
+        enterSystemComponentEdit(
+          meta.id,
+          m.content as unknown as import('@/lib/sdui/types/node').SDUINode,
+          m as unknown as Record<string, unknown>,
+          nodeId,
+          true,
+        );
+      } else {
+        enterSharedComponentEdit(
+          meta.id,
+          m.content as unknown as import('@/lib/sdui/types/node').SDUINode,
+          m as unknown as Record<string, unknown>,
+          nodeId,
+          true,
+        );
+      }
+    };
+    const handleDetach = () => {
+      if (!nodeId) return;
+      const label = isSystem ? `system component "${meta.name}"` : `instance of "${meta.name}"`;
+      if (!window.confirm(`Detach from ${label}? The definition and other instances will remain intact.`)) return;
+      detachInstance(nodeId);
+    };
+    const handleResetToSystem = () => {
+      if (!nodeId) return;
+      if (!window.confirm(`Reset this "${meta.name}" instance to the system default? Any per-instance overrides will be lost.`)) return;
+      resetInstanceToSystem(nodeId);
+    };
+    const baseBtn: React.CSSProperties = {
+      display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
+      background: 'none', border: '1px solid #374151', borderRadius: 4,
+      color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0,
+      fontWeight: 600, letterSpacing: '0.04em',
     };
     return (
-      <button
-        data-testid="panel-right-edit-component"
-        onClick={e => { e.stopPropagation(); handleEdit(); }}
-        title="Edit component"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
-          background: 'none', border: '1px solid #374151', borderRadius: 4,
-          color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0,
-          fontWeight: 600, letterSpacing: '0.04em',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6';
-          (e.currentTarget as HTMLElement).style.color = '#60a5fa';
-          (e.currentTarget as HTMLElement).style.background = '#0f172a';
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-          (e.currentTarget as HTMLElement).style.color = '#9ca3af';
-          (e.currentTarget as HTMLElement).style.background = 'none';
-        }}
-      >
-        <IconEdit />
-        <span>Edit</span>
-      </button>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        <button
+          data-testid="panel-right-edit-component"
+          onClick={e => { e.stopPropagation(); handleEdit(); }}
+          title={isSystem ? 'Edit system component' : 'Edit component'}
+          style={baseBtn}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6';
+            (e.currentTarget as HTMLElement).style.color = '#60a5fa';
+            (e.currentTarget as HTMLElement).style.background = '#0f172a';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#374151';
+            (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+            (e.currentTarget as HTMLElement).style.background = 'none';
+          }}
+        >
+          <IconEdit />
+          <span>{isSystem ? 'Edit System' : 'Edit'}</span>
+        </button>
+        {isSystem && (
+          <>
+            <button
+              data-testid="panel-right-reset-to-system"
+              onClick={e => { e.stopPropagation(); handleResetToSystem(); }}
+              title="Reset to system default"
+              style={baseBtn}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#f59e0b';
+                (e.currentTarget as HTMLElement).style.color = '#fbbf24';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#374151';
+                (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+              }}
+            >
+              <span>Reset</span>
+            </button>
+            <button
+              data-testid="panel-right-detach-system"
+              onClick={e => { e.stopPropagation(); handleDetach(); }}
+              title="Detach from system"
+              style={baseBtn}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#ef4444';
+                (e.currentTarget as HTMLElement).style.color = '#f87171';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#374151';
+                (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+              }}
+            >
+              <span>Detach</span>
+            </button>
+          </>
+        )}
+      </div>
     );
   }
 

@@ -32,7 +32,7 @@
             "type": "Box",
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold"
                 },
@@ -77,7 +77,7 @@
         "condition": "get('showAddForm')",
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[18px] font-semibold mb-[16px]"
             },
@@ -105,15 +105,11 @@
                   {
                     "type": "Input",
                     "id": "ddc7570e-0709-4d9e-a8e0-ea73f60a49fe",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "placeholder": "Jane Doe",
-                          "name": "fullName"
-                        }
-                      }
-                    ]
+                    "children": [],
+                    "props": {
+                      "placeholder": "Jane Doe",
+                      "name": "fullName"
+                    }
                   }
                 ]
               },
@@ -133,15 +129,11 @@
                   {
                     "type": "Input",
                     "id": "06219502-9af1-40b6-b1b3-0089df2b1431",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "placeholder": "123 Main St",
-                          "name": "streetLine1"
-                        }
-                      }
-                    ]
+                    "children": [],
+                    "props": {
+                      "placeholder": "123 Main St",
+                      "name": "streetLine1"
+                    }
                   }
                 ]
               },
@@ -167,15 +159,11 @@
                       {
                         "type": "Input",
                         "id": "5be72730-114b-4fc3-b692-175b74c383d4",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "placeholder": "New York",
-                              "name": "city"
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "placeholder": "New York",
+                          "name": "city"
+                        }
                       }
                     ]
                   },
@@ -195,15 +183,11 @@
                       {
                         "type": "Input",
                         "id": "bc82cd04-3153-49b7-a1af-0cdea39f1d7d",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "placeholder": "10001",
-                              "name": "postalCode"
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "placeholder": "10001",
+                          "name": "postalCode"
+                        }
                       }
                     ]
                   }
@@ -225,15 +209,11 @@
                   {
                     "type": "Input",
                     "id": "079e999a-72c4-4389-b736-1a2c961ddb8e",
-                    "children": [
-                      {
-                        "type": "InputField",
-                        "props": {
-                          "placeholder": "US",
-                          "name": "countryCode"
-                        }
-                      }
-                    ]
+                    "children": [],
+                    "props": {
+                      "placeholder": "US",
+                      "name": "countryCode"
+                    }
                   }
                 ]
               },

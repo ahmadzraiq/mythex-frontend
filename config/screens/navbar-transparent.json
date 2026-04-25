@@ -1,16 +1,28 @@
 {
-  "meta": { "title": "Transparent Navbar" },
+  "meta": {
+    "title": "Transparent Navbar"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "props": {
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+    },
     "children": [
       {
         "type": "Box",
         "props": {
           "className": "w-full h-[64px] fixed top-[0px] left-[0px] right-[0px] z-[50] flex flex-row items-center px-6",
           "animation": {
-            "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "backgroundColor", "from": "rgba(255,255,255,0)", "to": "rgba(255,255,255,1)", "start": 0, "end": 200 }
+            "scrollProgress": {
+              "enabled": true,
+              "useWindowScroll": true,
+              "property": "backgroundColor",
+              "from": "rgba(255,255,255,0)",
+              "to": "rgba(255,255,255,1)",
+              "start": 0,
+              "end": 200
+            }
           }
         },
         "children": [
@@ -19,22 +31,51 @@
             "props": {
               "className": "absolute bottom-[0px] left-[0px] right-[0px] h-[1px] bg-[#e5e7eb]",
               "animation": {
-                "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "opacity", "from": 0, "to": 1, "start": 100, "end": 200 }
+                "scrollProgress": {
+                  "enabled": true,
+                  "useWindowScroll": true,
+                  "property": "opacity",
+                  "from": 0,
+                  "to": 1,
+                  "start": 100,
+                  "end": 200
+                }
               }
             }
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-row items-center gap-3 cursor-pointer" },
-            "actions": [{ "action": "navigateToNavbarTypes" }],
+            "props": {
+              "className": "flex flex-row items-center gap-3 cursor-pointer"
+            },
+            "actions": [
+              {
+                "action": "navigateToNavbarTypes"
+              }
+            ],
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 18, "color": "currentColor" } },
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:arrow-left",
+                  "size": 18,
+                  "color": "currentColor"
+                }
+              },
               {
                 "type": "Text",
                 "props": {
                   "className": "font-bold text-lg",
                   "animation": {
-                    "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "color", "from": "#ffffff", "to": "#111827", "start": 60, "end": 180 }
+                    "scrollProgress": {
+                      "enabled": true,
+                      "useWindowScroll": true,
+                      "property": "color",
+                      "from": "#ffffff",
+                      "to": "#111827",
+                      "start": 60,
+                      "end": 180
+                    }
                   }
                 },
                 "text": "NavbarDemo"
@@ -43,116 +84,543 @@
           },
           {
             "type": "Box",
-            "props": { "className": "flex-1 flex flex-row items-center justify-center gap-8" },
+            "props": {
+              "className": "flex-1 flex flex-row items-center justify-center gap-8"
+            },
             "children": [
-              { "type": "Text", "props": { "className": "text-sm font-medium", "animation": { "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "color", "from": "#ffffff", "to": "#374151", "start": 60, "end": 180 } } }, "text": "Home" },
-              { "type": "Text", "props": { "className": "text-sm font-medium", "animation": { "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "color", "from": "#ffffff", "to": "#374151", "start": 60, "end": 180 } } }, "text": "Features" },
-              { "type": "Text", "props": { "className": "text-sm font-medium", "animation": { "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "color", "from": "#ffffff", "to": "#374151", "start": 60, "end": 180 } } }, "text": "About" },
-              { "type": "Text", "props": { "className": "text-sm font-medium", "animation": { "scrollProgress": { "enabled": true, "useWindowScroll": true, "property": "color", "from": "#ffffff", "to": "#374151", "start": 60, "end": 180 } } }, "text": "Contact" }
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium",
+                  "animation": {
+                    "scrollProgress": {
+                      "enabled": true,
+                      "useWindowScroll": true,
+                      "property": "color",
+                      "from": "#ffffff",
+                      "to": "#374151",
+                      "start": 60,
+                      "end": 180
+                    }
+                  }
+                },
+                "text": "Home"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium",
+                  "animation": {
+                    "scrollProgress": {
+                      "enabled": true,
+                      "useWindowScroll": true,
+                      "property": "color",
+                      "from": "#ffffff",
+                      "to": "#374151",
+                      "start": 60,
+                      "end": 180
+                    }
+                  }
+                },
+                "text": "Features"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium",
+                  "animation": {
+                    "scrollProgress": {
+                      "enabled": true,
+                      "useWindowScroll": true,
+                      "property": "color",
+                      "from": "#ffffff",
+                      "to": "#374151",
+                      "start": 60,
+                      "end": 180
+                    }
+                  }
+                },
+                "text": "About"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium",
+                  "animation": {
+                    "scrollProgress": {
+                      "enabled": true,
+                      "useWindowScroll": true,
+                      "property": "color",
+                      "from": "#ffffff",
+                      "to": "#374151",
+                      "start": 60,
+                      "end": 180
+                    }
+                  }
+                },
+                "text": "Contact"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "bg-emerald-500 rounded-lg px-4 py-2 cursor-pointer" },
-            "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": "Get Started" }]
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": { "className": "w-full min-h-screen bg-gradient-to-b from-emerald-900 via-emerald-800 to-teal-900 flex flex-col items-center justify-center px-6 relative" },
-        "children": [
-          { "type": "Box", "props": { "className": "bg-white/10 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-emerald-200" }, "text": "Transparent \u2192 Solid" }] },
-          { "type": "Heading", "props": { "size": "4xl", "className": "font-bold text-white text-center" }, "text": "Seamless Transition" },
-          { "type": "Text", "props": { "className": "text-xl text-white/70 text-center max-w-2xl mt-4" }, "text": "The navbar starts transparent to let the hero breathe, then gains a solid background as you scroll down for readability." },
-          { "type": "Box", "props": { "className": "mt-8 flex flex-row items-center gap-2" }, "children": [
-            { "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 20, "color": "rgba(255,255,255,0.6)" } },
-            { "type": "Text", "props": { "className": "text-white/60 text-sm" }, "text": "Scroll to see the transition" }
-          ]}
-        ]
-      },
-      {
-        "type": "Box",
-        "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
-        "children": [
-          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
-          {
-            "type": "Box",
-            "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+            "props": {
+              "className": "bg-emerald-500 rounded-lg px-4 py-2 cursor-pointer"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:eye", "size": 24, "color": "#10b981" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Visual Hierarchy" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "The hero gets full visual attention without navbar interference." }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:palette", "size": 24, "color": "#14b8a6" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Elegant Transition" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Smooth opacity fade powered by scroll position tracking." }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:image", "size": 24, "color": "#22c55e" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Hero-First Design" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Perfect for landing pages and portfolios with full-bleed imagery." }
-              ]}
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-white"
+                },
+                "text": "Get Started"
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+        "props": {
+          "className": "w-full min-h-screen bg-gradient-to-b from-emerald-900 via-emerald-800 to-teal-900 flex flex-col items-center justify-center px-6 relative"
+        },
         "children": [
-          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
           {
             "type": "Box",
-            "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+            "props": {
+              "className": "bg-white/10 rounded-full px-4 py-1 mb-6"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The transparent navbar adds so much elegance to our landing page.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Emily Swift" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Creative Director" }
-              ]},
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Our hero images finally get the attention they deserve without a solid bar on top.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "David Kim" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Photographer" }
-              ]},
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The scroll-driven fade is buttery smooth. Users love the experience.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Nina Torres" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "UX Researcher" }
-              ]}
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-emerald-200"
+                },
+                "text": "Transparent → Solid"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-white text-center"
+            },
+            "text": "Seamless Transition"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-xl text-white/70 text-center max-w-2xl mt-4"
+            },
+            "text": "The navbar starts transparent to let the hero breathe, then gains a solid background as you scroll down for readability."
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "mt-8 flex flex-row items-center gap-2"
+            },
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:chevron-down",
+                  "size": 20,
+                  "color": "rgba(255,255,255,0.6)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-white/60 text-sm"
+                },
+                "text": "Scroll to see the transition"
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+        "props": {
+          "className": "w-full max-w-6xl mx-auto px-6 py-20"
+        },
         "children": [
           {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+            },
+            "text": "Features"
+          },
+          {
             "type": "Box",
-            "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+            "props": {
+              "className": "grid grid-cols-1 md:grid-cols-3 gap-8"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-emerald-500" }, "text": "0\u20921" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Opacity Range" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-emerald-500" }, "text": "200px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Scroll Range" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-emerald-500" }, "text": "60fps" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Animation Speed" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-emerald-500" }, "text": "\u221e" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Customizability" }] }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:eye",
+                          "size": 24,
+                          "color": "#10b981"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Visual Hierarchy"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "The hero gets full visual attention without navbar interference."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:palette",
+                          "size": 24,
+                          "color": "#14b8a6"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Elegant Transition"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "Smooth opacity fade powered by scroll position tracking."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:image",
+                          "size": 24,
+                          "color": "#22c55e"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Hero-First Design"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "Perfect for landing pages and portfolios with full-bleed imagery."
+                  }
+                ]
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+        "props": {
+          "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+            },
+            "text": "Testimonials"
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"The transparent navbar adds so much elegance to our landing page.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "Emily Swift"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "Creative Director"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"Our hero images finally get the attention they deserve without a solid bar on top.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "David Kim"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "Photographer"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"The scroll-driven fade is buttery smooth. Users love the experience.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "Nina Torres"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "UX Researcher"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full max-w-5xl mx-auto px-6 py-20"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+            "props": {
+              "className": "flex flex-row flex-wrap justify-center gap-12"
+            },
             "children": [
-              { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
-              { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-emerald-500"
+                    },
+                    "text": "0ₒ1"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Opacity Range"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-emerald-500"
+                    },
+                    "text": "200px"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Scroll Range"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-emerald-500"
+                    },
+                    "text": "60fps"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Animation Speed"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-emerald-500"
+                    },
+                    "text": "∞"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Customizability"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "max-w-5xl mx-auto flex flex-row items-center justify-between"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-400"
+                },
+                "text": "NavbarDemo © 2026"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 cursor-pointer"
+                },
+                "text": "← Back to all types",
+                "actions": [
+                  {
+                    "action": "navigateToNavbarTypes"
+                  }
+                ]
+              }
             ]
           }
         ]

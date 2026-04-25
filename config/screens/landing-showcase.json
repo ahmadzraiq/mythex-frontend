@@ -11,7 +11,6 @@
     "id": "page-root",
     "name": "Page Root",
     "children": [
-
       {
         "type": "Box",
         "props": {
@@ -155,7 +154,10 @@
                       "style": {
                         "boxShadow": "0px 4px 12px 0px rgba(123, 57, 237, 0.4)",
                         "shadowColor": "rgb(123,57,237)",
-                        "shadowOffset": { "width": 0, "height": 4 },
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 4
+                        },
                         "shadowRadius": 12,
                         "shadowOpacity": 0.4,
                         "elevation": 6
@@ -177,8 +179,14 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   },
                   {
@@ -202,8 +210,14 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   }
                 ],
@@ -235,7 +249,6 @@
           }
         }
       },
-
       {
         "type": "Box",
         "props": {
@@ -299,7 +312,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -311,7 +327,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:zap", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:zap",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-1-icon",
                     "children": []
                   },
@@ -337,10 +357,24 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15
+                  }
                 }
               },
               {
@@ -349,7 +383,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -361,7 +398,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:shield", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:shield",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-2-icon",
                     "children": []
                   },
@@ -387,10 +428,26 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "delay": 80, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15, "delay": 80 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "delay": 80,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15,
+                    "delay": 80
+                  }
                 }
               },
               {
@@ -399,7 +456,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -411,7 +471,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:users", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:users",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-3-icon",
                     "children": []
                   },
@@ -437,10 +501,26 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "delay": 160, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15, "delay": 160 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "delay": 160,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15,
+                    "delay": 160
+                  }
                 }
               },
               {
@@ -449,7 +529,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -461,7 +544,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:bar-chart-2", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:bar-chart-2",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-4-icon",
                     "children": []
                   },
@@ -487,10 +574,26 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "delay": 240, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15, "delay": 80 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "delay": 240,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15,
+                    "delay": 80
+                  }
                 }
               },
               {
@@ -499,7 +602,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -511,7 +617,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:settings", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:settings",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-5-icon",
                     "children": []
                   },
@@ -537,10 +647,26 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "delay": 320, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15, "delay": 160 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "delay": 320,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15,
+                    "delay": 160
+                  }
                 }
               },
               {
@@ -549,7 +675,10 @@
                   "style": {
                     "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 2 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 2
+                    },
                     "shadowRadius": 8,
                     "shadowOpacity": 0.06,
                     "elevation": 4
@@ -561,7 +690,11 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:headphones", "size": 28, "color": "#7b39ed" },
+                    "props": {
+                      "icon": "lucide:headphones",
+                      "size": 28,
+                      "color": "#7b39ed"
+                    },
                     "id": "card-6-icon",
                     "children": []
                   },
@@ -587,17 +720,32 @@
                   }
                 ],
                 "animation": {
-                  "enter": { "type": "zoomIn", "duration": 500, "delay": 400, "easing": "easeOut" },
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 },
-                  "scroll": { "type": "slideInUp", "duration": 500, "threshold": 0.15, "delay": 240 }
+                  "enter": {
+                    "type": "zoomIn",
+                    "duration": 500,
+                    "delay": 400,
+                    "easing": "easeOut"
+                  },
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  },
+                  "scroll": {
+                    "type": "slideInUp",
+                    "duration": 500,
+                    "threshold": 0.15,
+                    "delay": 240
+                  }
                 }
               }
             ]
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -644,7 +792,10 @@
                   "style": {
                     "boxShadow": "0px 4px 12px 0px rgba(123, 57, 237, 0.3)",
                     "shadowColor": "rgb(123,57,237)",
-                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 4
+                    },
                     "shadowRadius": 12,
                     "shadowOpacity": 0.3,
                     "elevation": 6
@@ -666,8 +817,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               }
             ],
@@ -725,7 +882,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -806,7 +962,10 @@
                   "style": {
                     "boxShadow": "0px 4px 16px 0px rgba(0,0,0,0.2)",
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 4
+                    },
                     "shadowRadius": 16,
                     "shadowOpacity": 0.2,
                     "elevation": 6
@@ -828,8 +987,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 },
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  },
                   "scroll": {
                     "type": "slideInUp",
                     "duration": 600,
@@ -852,7 +1017,6 @@
           }
         }
       }
-
     ]
   }
 }

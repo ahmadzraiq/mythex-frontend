@@ -17,7 +17,35 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
 import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
+import { getSystemComponents, updateSystemComponent } from '@/lib/builder/system-component-data';
+import type { SharedComponentModel } from '@/config/shared-component-types';
+import type { SystemComponentModel } from '@/lib/builder/system-component-types';
 import { useSduiStore } from '@/store/sdui-store';
+
+/**
+ * Kind-aware model accessors for `componentWorkflow` targets.
+ *
+ * `editingKindMap[modelId]` discriminates shared vs system SCs — mirrors the
+ * `getEditingModel` / `updateEditingModel` helpers in `_component-editor.tsx`
+ * so loading/saving a System Component's workflow hits its own store instead
+ * of silently no-op'ing against the shared map.
+ */
+function getLinkedModel(modelId: string): SharedComponentModel | undefined {
+  const s = useBuilderStore.getState();
+  const kind = s.editingKindMap[modelId] ?? s.editingKind;
+  return kind === 'system'
+    ? (getSystemComponents()[modelId] as SharedComponentModel | undefined)
+    : getSharedComponents()[modelId];
+}
+function updateLinkedModel(patch: Partial<SharedComponentModel> & { id: string }): void {
+  const s = useBuilderStore.getState();
+  const kind = s.editingKindMap[patch.id] ?? s.editingKind;
+  if (kind === 'system') {
+    updateSystemComponent(patch as Partial<SystemComponentModel> & { id: string });
+  } else {
+    updateSharedComponent(patch);
+  }
+}
 
 /** Derives a stable ID that uniquely identifies the open workflow, used to scope test results. */
 function workflowIdFromTarget(t: WorkflowCanvasTarget): string {
@@ -522,7 +550,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       initialSteps = deserializeStepArray(rawPage, store.directActionsMap);
       setSteps(initialSteps);
     } else if (target.kind === 'componentWorkflow') {
-      const scModel = getSharedComponents()[target.modelId];
+      const scModel = getLinkedModel(target.modelId);
       const wf = scModel?.workflows?.[target.workflowId];
       const trigger = wf?.trigger ?? 'execution';
       setTriggerValue(trigger);
@@ -573,10 +601,10 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       store.setPageWorkflow(target.name, steps as object[]);
       store.setPageWorkflowMeta(target.name, { ...workflowMeta, trigger: triggerValue });
     } else if (target.kind === 'componentWorkflow') {
-      const scModel = getSharedComponents()[target.modelId];
+      const scModel = getLinkedModel(target.modelId);
       if (scModel) {
         const existing = scModel.workflows?.[target.workflowId] ?? {};
-        updateSharedComponent({
+        updateLinkedModel({
           id: target.modelId,
           workflows: {
             ...(scModel.workflows ?? {}),
@@ -584,7 +612,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
               ...existing,
               id: target.workflowId,
               name: workflowMeta.name ?? 'Workflow',
-              trigger: (triggerValue as 'execution' | 'created' | 'mounted' | 'beforeUnmount' | 'propertyChange'),
+              trigger: triggerValue as import('@/config/shared-component-types').ScopedWorkflow['trigger'],
               params: (workflowMeta.params ?? []) as Array<{ id: string; name: string; type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array'; testValue?: unknown }>,
               steps: steps.map(serializeStep) as import('@/config/shared-component-types').ScopedWorkflowStep[],
             },
@@ -601,19 +629,52 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     if (target.kind === 'pageWorkflow' && target.nodeId) return findNode(store.pageNodes, target.nodeId)?.type as string | undefined;
     return undefined;
   })();
+  // When the workflow is bound to an SC instance (node has `_shared` or
+  // `_system`), surface that component model's custom triggers in the picker
+  // so a listener workflow can subscribe to events like "On date selected".
+  const targetCustomTriggers = (() => {
+    if (target.kind !== 'element' && target.kind !== 'pageWorkflow') return undefined;
+    const nodeId = target.kind === 'element' ? target.nodeId : target.nodeId;
+    if (!nodeId) return undefined;
+    const n = findNode(store.pageNodes, nodeId) as unknown as Record<string, unknown> | undefined;
+    if (!n) return undefined;
+    const shared = n._shared as { id: string } | undefined;
+    const system = n._system as { id: string } | undefined;
+    const meta = shared ?? system;
+    if (!meta) return undefined;
+    const model = getLinkedModel(meta.id);
+    const triggers = model?.triggers ?? [];
+    return triggers.length ? triggers : undefined;
+  })();
   // pageWorkflow and element both have an editable trigger; globalWorkflow/pageTrigger are fixed
   const isComponentWorkflow = target.kind === 'componentWorkflow';
   const isFixedTrigger = target.kind !== 'element' && target.kind !== 'pageWorkflow' && !isComponentWorkflow;
+  // Component workflows accept BOTH DOM-event triggers (element-scoped, e.g.
+  // the day cell's `click`) and Component-Lifecycle triggers (execution /
+  // created / mounted / …). The picker offers both categories; the label
+  // helper searches both so a `click`-triggered component workflow correctly
+  // renders as "On click" in the pill.
+  const componentTriggerLabel = (v: string): string => {
+    const compHit = COMPONENT_TRIGGER_CATEGORIES.flatMap(c => c.options).find(o => o.value === v);
+    if (compHit) return compHit.label;
+    return getTriggerLabel(v, undefined);
+  };
   const triggerLabel = isFixedTrigger
     ? 'On execution'
     : isComponentWorkflow
-      ? (COMPONENT_TRIGGER_CATEGORIES[0].options.find(o => o.value === triggerValue)?.label ?? 'On execution')
-      : getTriggerLabel(triggerValue, targetNodeType);
+      ? componentTriggerLabel(triggerValue)
+      : getTriggerLabel(triggerValue, targetNodeType, targetCustomTriggers);
   // Trigger workflows (from the Triggers tab) use a restricted set of trigger options
   const isTriggerWorkflow = target.kind === 'pageWorkflow' && !!store.pageWorkflowMeta?.[target.name]?.isTrigger;
   const triggerCategories = isComponentWorkflow
-    ? COMPONENT_TRIGGER_CATEGORIES
-    : isTriggerWorkflow ? TRIGGER_WORKFLOW_CATEGORIES : undefined;
+    ? [...COMPONENT_TRIGGER_CATEGORIES, ...getTriggerCategories(undefined)]
+    : isTriggerWorkflow
+      ? TRIGGER_WORKFLOW_CATEGORIES
+      : targetCustomTriggers
+        // Build a bespoke category list that includes the instance's component
+        // events alongside the standard element / universal triggers.
+        ? getTriggerCategories(targetNodeType, targetCustomTriggers)
+        : undefined;
   // Form context: show form-specific action types when the source element is inside (or is) a FormContainer
   const isFormContext = (() => {
     if (target.kind === 'element') {
@@ -1116,10 +1177,10 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                   } else if (target.kind === 'globalWorkflow') {
                     store.removeGlobalWorkflow(target.id);
                   } else if (target.kind === 'componentWorkflow') {
-                    const scModel = getSharedComponents()[target.modelId];
+                    const scModel = getLinkedModel(target.modelId);
                     if (scModel?.workflows) {
                       const { [target.workflowId]: _removed, ...rest } = scModel.workflows;
-                      updateSharedComponent({ id: target.modelId, workflows: rest });
+                      updateLinkedModel({ id: target.modelId, workflows: rest });
                     }
                   }
                   onClose();
@@ -1146,6 +1207,11 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                   onUpdate={patch => updateSelectedStep(patch)}
                   isFormContext={isFormContext}
                   workflowTrigger={triggerValue}
+                  componentTriggers={
+                    target.kind === 'componentWorkflow'
+                      ? (getLinkedModel(target.modelId)?.triggers ?? [])
+                      : undefined
+                  }
                 />
               </>
             ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow') ? (

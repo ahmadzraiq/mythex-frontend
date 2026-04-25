@@ -125,14 +125,8 @@ export const COMPONENT_CAPABILITIES: Record<string, ToolGroup[]> = {
 
   // ── Data & Media widgets ──────────────────────────────────────────────────
   // These are mostly opaque components — only size makes sense externally.
-  DatePicker:      ['size', 'border', 'disabled'],
-  TimePicker:      ['size', 'border', 'disabled'],
-  DateTimePicker:  ['size', 'border', 'disabled'],
-  ColorPicker:     ['size', 'disabled'],
   FileUpload:      ['size', 'border', 'disabled'],
   Iframe:          ['size'],
-  SvgViewer:       ['size'],
-  JsonViewer:      ['size'],
   Chart:           ['size'],
   QRCodeWidget:    ['size'],
   MarkdownViewer:  ['size'],

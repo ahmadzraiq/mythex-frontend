@@ -165,10 +165,10 @@ test.describe('FC — FormContainer Palette & Store', () => {
           props: { placeholder: 'Password', name: 'password' },
         },
         {
-          type: 'Button',
+          type: 'Box',
           id: 'fc03-btn',
           props: {},
-          children: [{ type: 'ButtonText', id: 'fc03-btntxt', text: 'Submit' }],
+          children: [{ type: 'Text', id: 'fc03-btntxt', text: 'Submit' }],
         },
       ],
     });
@@ -199,7 +199,7 @@ test.describe('FC — FormContainer Palette & Store', () => {
 
     expect(shape?.childCount).toBe(3);
     expect(shape?.types).toContain('Input');
-    expect(shape?.types).toContain('Button');
+    expect(shape?.types).toContain('Box');
   });
 
   test('FC-14: Variables tab does not list any form entries', async ({ page }) => {

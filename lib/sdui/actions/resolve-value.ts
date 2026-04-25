@@ -94,7 +94,7 @@ export function resolveValue(
       const resolved = get(path, scope);
       return resolved !== undefined && resolved !== null ? resolved : fallback;
     }
-    if ('formula' in obj && fullState) {
+    if (('formula' in obj || 'js' in obj) && fullState) {
       try {
         const stateForEval = {
           ...fullState,
@@ -102,8 +102,9 @@ export function resolveValue(
           _timestamp: Date.now(),
           _date: new Date().toISOString().slice(0, 10),
         };
-        const formulaVal = (obj as { formula: string | object }).formula;
-        return evaluateFormula(formulaVal, stateForEval).value;
+        // Both { formula } and { js } are routed through evaluateFormula —
+        // the evaluator detects { js } and delegates to the JavaScript evaluator.
+        return evaluateFormula(obj as object, stateForEval).value;
       } catch (e) {
         if (typeof window !== 'undefined') console.warn('[resolveValue] formula eval failed:', e);
         return undefined;

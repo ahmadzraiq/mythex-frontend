@@ -2315,6 +2315,58 @@ function FetchDataStepConfig({
   );
 }
 
+// ─── EmitComponentTriggerConfig ──────────────────────────────────────────────
+// Configures an `emitComponentTrigger` step. The only knob is the trigger id:
+// the payload template is authored on the trigger declaration itself (Component
+// Editor → Triggers → Payload). At emit time the engine resolves the trigger on
+// the ambient model, evaluates its `payload` (literal or formula) against the
+// current workflow scope, and delivers the result to every matching listener
+// as `context.event`. Keeping the payload in one place prevents it drifting
+// from the declared shape and keeps emit sites boilerplate-free.
+
+function EmitComponentTriggerConfig({
+  cfg,
+  onUpdate,
+  componentTriggers,
+}: {
+  cfg: Record<string, unknown>;
+  onUpdate: (patch: Record<string, unknown>) => void;
+  workflowTrigger?: string;
+  componentTriggers: Array<{ id: string; name: string }>;
+}) {
+  const triggerId = (cfg.triggerId as string | undefined) ?? '';
+  const selected = componentTriggers.find(t => t.id === triggerId);
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Trigger *</label>
+      {componentTriggers.length === 0 ? (
+        <div style={S.infoBox}>
+          No triggers defined. Declare a trigger in the Component Editor
+          (Triggers section) to expose it here.
+        </div>
+      ) : (
+        <OptionPickerDropdown
+          value={triggerId}
+          onChange={v => onUpdate({ ...cfg, triggerId: v })}
+          options={[
+            { value: '', label: 'Select a trigger…' },
+            ...componentTriggers.map(t => ({ value: t.id, label: t.name })),
+          ]}
+        />
+      )}
+
+      {selected && (
+        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>
+          Fires <span style={{ color: '#a78bfa', fontWeight: 600 }}>{selected.name}</span>.
+          The payload is defined on the trigger declaration and delivered to listeners as
+          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3, margin: '0 3px' }}>context.event</code>.
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── ExecuteComponentActionConfig ────────────────────────────────────────────
 // Searchable dropdown listing workflows from every shared-component model,
 // grouped by component. Selecting a row writes BOTH {workflowId, modelId} so
@@ -2844,6 +2896,7 @@ export function BoundField({
   numeric,
   workflowTrigger,
   expectedType,
+  anchorRight,
 }: {
   label: string;
   required?: boolean;
@@ -2856,6 +2909,13 @@ export function BoundField({
   numeric?: boolean;
   workflowTrigger?: string;
   expectedType?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
+  /**
+   * Pixels the FormulaEditor's right edge sits from the viewport right edge.
+   * Defaults to 292 (the workflow canvas's right-config-panel width). Override
+   * to 260 when mounting inside the standard right panel so the editor sits
+   * flush against its left edge instead of leaving a visible gap.
+   */
+  anchorRight?: number;
 }) {
   const [open, setOpen] = React.useState(false);
   // Must be called unconditionally — used by CodeMirror when code=true
@@ -2894,6 +2954,7 @@ export function BoundField({
         <BindingIcon isBound={isBound} onClick={handleOpenEditor} />
         {isBoundValue(value) ? (
           <button
+            type="button"
             onClick={handleOpenEditor}
             style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
               borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
@@ -2942,7 +3003,7 @@ export function BoundField({
           value={value ?? null}
           onChange={handleFormulaChange}
           onClose={() => setOpen(false)}
-          anchorRight={292}
+          anchorRight={anchorRight ?? 292}
           expectedType={expectedType}
           workflowTrigger={workflowTrigger}
         />
@@ -3678,6 +3739,103 @@ function RunProjectWorkflowConfig({
   );
 }
 
+// ─── RunJavaScriptConfig ──────────────────────────────────────────────────────
+// Config section for the runJavaScript step type. Renders an "Edit code" tile
+// that opens the full FormulaEditor locked into JavaScript mode, mirroring
+// WeWeb's Custom JavaScript action. The side tabs (Variables / Data / Formulas /
+// Quick) are still available so the user can insert WeWeb-style identifiers
+// (e.g. `variables.cartCount`, `collections.products.data`) at the cursor.
+//
+// The editor's body runs as an async function with access to wwLib (variables,
+// collections, workflow context, parameters). Return value is stored at
+// context.workflow[stepId].result.
+
+function RunJavaScriptConfig({
+  step,
+  onUpdate,
+  workflowTrigger,
+}: {
+  step: ActionStep;
+  onUpdate: (patch: Partial<ActionStep>) => void;
+  workflowTrigger?: string;
+}) {
+  const code = (step.config?.code as string | undefined) ?? '';
+  const [open, setOpen] = React.useState(false);
+
+  // Wrap the raw code string as a `{ js: code }` FormulaValue when handing it
+  // to the FormulaEditor, and unwrap on save so we keep persisting a plain
+  // string at step.config.code (the runtime in workflow-steps-handler.ts
+  // expects a string).
+  const value: FormulaValue = code ? ({ js: code } as unknown as FormulaValue) : null;
+  const handleChange = (next: FormulaValue) => {
+    let nextCode = '';
+    if (next && typeof next === 'object' && 'js' in next && typeof (next as { js?: unknown }).js === 'string') {
+      nextCode = (next as { js: string }).js;
+    } else if (typeof next === 'string') {
+      nextCode = next;
+    }
+    onUpdate({ config: { ...(step.config ?? {}), code: nextCode } });
+  };
+
+  // Compact preview of the first non-blank line of the code, shown on the tile
+  // so users can see what's bound at a glance.
+  const previewLine = (code.split('\n').map(l => l.trim()).find(Boolean) ?? '').slice(0, 56);
+
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>JavaScript code *</label>
+      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, lineHeight: 1.5 }}>
+        Async function body. Available globals: <code style={{ color: '#a78bfa' }}>variables</code>, <code style={{ color: '#a78bfa' }}>collections</code>,{' '}
+        <code style={{ color: '#a78bfa' }}>context</code>, <code style={{ color: '#a78bfa' }}>parameters</code>, <code style={{ color: '#a78bfa' }}>wwLib</code>.
+        Return value is stored at <code style={{ color: '#fbbf24' }}>{`context.workflow["${step.id}"].result`}</code>.
+      </div>
+      <button
+        type="button"
+        data-testid="run-javascript-edit"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          width: '100%', padding: '6px 8px',
+          background: code ? 'rgba(139, 92, 246, 0.12)' : '#0f172a',
+          border: `1px solid ${code ? '#8b5cf6' : '#374151'}`,
+          borderRadius: 5,
+          color: code ? '#c4b5fd' : '#9ca3af',
+          fontSize: 11,
+          fontFamily: '"JetBrains Mono","Fira Mono",monospace',
+          textAlign: 'left',
+          cursor: 'pointer',
+          minHeight: 30,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 16, height: 16, borderRadius: 3,
+            background: '#fbbf24', color: '#1f2937',
+            fontSize: 9, fontWeight: 800, flexShrink: 0,
+          }}
+        >JS</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {code ? (previewLine || `${code.length} characters`) : 'Edit code'}
+        </span>
+      </button>
+      {open && (
+        <FormulaEditor
+          label="JavaScript code"
+          value={value}
+          onChange={handleChange}
+          onClose={() => setOpen(false)}
+          anchorRight={292}
+          workflowTrigger={workflowTrigger}
+          lockToJs
+          hideUnbind
+        />
+      )}
+    </>
+  );
+}
+
 // ─── NodePropsPanel ────────────────────────────────────────────────────────────
 
 export function NodePropsPanel({
@@ -3685,11 +3843,18 @@ export function NodePropsPanel({
   onUpdate,
   isFormContext = false,
   workflowTrigger,
+  componentTriggers,
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
   isFormContext?: boolean;
   workflowTrigger?: string;
+  /**
+   * Custom triggers declared on the ambient component model. Forwarded to the
+   * `emitComponentTrigger` config form so its dropdown lists the triggers that
+   * this component can actually fire.
+   */
+  componentTriggers?: Array<{ id: string; name: string }>;
 }) {
   const cfg = step.config ?? {};
 
@@ -3728,6 +3893,11 @@ export function NodePropsPanel({
           onUpdate={onUpdate}
           workflowTrigger={workflowTrigger}
         />
+      )}
+
+      {/* runJavaScript: opens full FormulaEditor locked to JavaScript mode */}
+      {step.type === 'runJavaScript' && (
+        <RunJavaScriptConfig step={step} onUpdate={onUpdate} workflowTrigger={workflowTrigger} />
       )}
 
       {/* Type-specific fields */}
@@ -4155,6 +4325,15 @@ export function NodePropsPanel({
           cfg={cfg}
           onUpdate={patch => onUpdate({ config: patch })}
           workflowTrigger={workflowTrigger}
+        />
+      )}
+
+      {step.type === 'emitComponentTrigger' && (
+        <EmitComponentTriggerConfig
+          cfg={cfg}
+          onUpdate={patch => onUpdate({ config: patch })}
+          workflowTrigger={workflowTrigger}
+          componentTriggers={componentTriggers ?? []}
         />
       )}
 

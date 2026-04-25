@@ -201,7 +201,7 @@ test('WEV-04: Event section shows mouse fields (x, y) for "click" trigger', asyn
   const page = sharedPage;
   const btnId = `wev04-btn-${Date.now()}`;
 
-  await addNode(page, { id: btnId, type: 'Button', name: 'My Button', props: {} });
+  await addNode(page, { id: btnId, type: 'Box', name: 'My Button', props: {} });
   await openWorkflowCanvasForNode(page, btnId, 'click');
   await addChangeVariableStep(page);
   await selectFirstActionNode(page);

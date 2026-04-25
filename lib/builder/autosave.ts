@@ -31,6 +31,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import type { BuilderStore, BuilderPage } from '@/app/dev/builder/_store-types';
 import { useBuilderStore } from '@/app/dev/builder/_store';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
+import { getSystemComponentOverrides } from '@/lib/builder/system-component-data';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -65,6 +66,7 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getSharedComponents(),
+    systemComponentOverrides: getSystemComponentOverrides(),
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
@@ -86,7 +88,7 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getSharedComponents(),
-    // Include a thin page list (id/name/route) so the backend knows the ordering
+    systemComponentOverrides: getSystemComponentOverrides(),
     pages: store.pages.map(({ id, name, route }) => ({ id, name, route })),
   };
   const pm = serializeProjectMeta(store);

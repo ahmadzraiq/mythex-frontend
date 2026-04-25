@@ -43,23 +43,23 @@ const LAYOUT_NODES: Record<string, unknown> = {
     type: 'Box',
     props: { className: 'rounded-lg border border-border bg-card p-4 w-full flex flex-col gap-2', style: { width: '280px', height: '120px' } },
     children: [
-      { id: 'test-card-heading', type: 'Heading', text: 'Card Title', props: { className: 'text-lg font-semibold text-foreground' } },
+      { id: 'test-card-heading', type: 'Text', text: 'Card Title', props: { className: 'text-lg font-semibold text-foreground' } },
       { id: 'test-card-text', type: 'Text', text: 'Card content.', props: { className: 'text-sm text-muted-foreground' } },
     ],
   },
   Center: {
     id: 'test-center',
-    type: 'Center',
-    props: { className: 'p-4 w-full', style: { width: '200px', height: '100px' } },
+    type: 'Box',
+    props: { className: 'flex items-center justify-center p-4 w-full', style: { width: '200px', height: '100px' } },
     children: [{ id: 'test-center-text', type: 'Text', text: 'Centered', props: { className: 'text-sm text-foreground' } }],
   },
   Grid: {
     id: 'test-grid',
-    type: 'Grid',
+    type: 'Box',
     props: { className: 'grid grid-cols-2 gap-4 w-full', style: { width: '300px', height: '120px' } },
     children: [
-      { id: 'test-grid-item-1', type: 'GridItem', props: { className: 'bg-muted rounded p-4 min-h-[60px]' } },
-      { id: 'test-grid-item-2', type: 'GridItem', props: { className: 'bg-muted rounded p-4 min-h-[60px]' } },
+      { id: 'test-grid-item-1', type: 'Box', props: { className: 'bg-muted rounded p-4 min-h-[60px]' } },
+      { id: 'test-grid-item-2', type: 'Box', props: { className: 'bg-muted rounded p-4 min-h-[60px]' } },
     ],
   },
   Divider: {
@@ -418,11 +418,6 @@ test.describe('PL — Tier 3 Layout & Media', () => {
       type: 'Iframe',
       props: { title: 'Embedded', style: { width: '400px', height: '240px' } },
     },
-    SvgViewer: {
-      id: 'test-svg-viewer',
-      type: 'SvgViewer',
-      props: { style: { width: '120px', height: '120px' } },
-    },
     Chart: {
       id: 'test-chart',
       type: 'Chart',
@@ -493,13 +488,6 @@ test.describe('PL — Tier 3 Layout & Media', () => {
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).not.toBeVisible();
     console.log('✅ Iframe is leaf widget — no Auto Layout');
-  });
-
-  test('PL-17: SvgViewer → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectT3(sharedPage, 'SvgViewer');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ SvgViewer is leaf widget — no Auto Layout');
   });
 
   test('PL-18: Chart → isLeafWidget → Auto Layout HIDDEN', async () => {

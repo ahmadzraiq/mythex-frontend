@@ -1,5 +1,7 @@
 {
-  "meta": { "title": "Hero Layered Collage" },
+  "meta": {
+    "title": "Hero Layered Collage"
+  },
   "ui": {
     "id": "d6abaeb0-7b9c-40b7-aecf-eddcd5acfd44",
     "name": "hero-layered-collage",
@@ -31,7 +33,11 @@
             },
             "children": [],
             "animation": {
-              "enter": { "type": "slideInLeft", "delay": 100, "duration": 600 }
+              "enter": {
+                "type": "slideInLeft",
+                "delay": 100,
+                "duration": 600
+              }
             }
           },
           {
@@ -43,7 +49,11 @@
             },
             "children": [],
             "animation": {
-              "enter": { "type": "slideInLeft", "delay": 250, "duration": 600 }
+              "enter": {
+                "type": "slideInLeft",
+                "delay": 250,
+                "duration": 600
+              }
             }
           },
           {
@@ -55,7 +65,10 @@
                 "boxShadow": "0px 12px 24px -8px rgba(124, 58, 237, 0.3)",
                 "elevation": 12,
                 "shadowColor": "rgb(124,58,237)",
-                "shadowOffset": { "width": 0, "height": 12 },
+                "shadowOffset": {
+                  "width": 0,
+                  "height": 12
+                },
                 "shadowRadius": 24,
                 "shadowOpacity": 0.3
               },
@@ -73,8 +86,15 @@
               }
             ],
             "animation": {
-              "enter": { "type": "slideInLeft", "delay": 400, "duration": 700 },
-              "hover": { "scale": 1.06, "duration": 250 }
+              "enter": {
+                "type": "slideInLeft",
+                "delay": 400,
+                "duration": 700
+              },
+              "hover": {
+                "scale": 1.06,
+                "duration": 250
+              }
             }
           }
         ]
@@ -88,7 +108,10 @@
             "boxShadow": "0px 20px 40px -10px rgba(123, 58, 237, 0.25)",
             "elevation": 20,
             "shadowColor": "rgb(123,58,237)",
-            "shadowOffset": { "width": 0, "height": 20 },
+            "shadowOffset": {
+              "width": 0,
+              "height": 20
+            },
             "shadowRadius": 40,
             "shadowOpacity": 0.25
           },
@@ -119,7 +142,11 @@
           }
         ],
         "animation": {
-          "enter": { "type": "slideInRight", "delay": 300, "duration": 800 }
+          "enter": {
+            "type": "slideInRight",
+            "delay": 300,
+            "duration": 800
+          }
         }
       },
       {
@@ -131,7 +158,10 @@
             "boxShadow": "0px 16px 32px -8px rgba(123, 58, 237, 0.2)",
             "elevation": 16,
             "shadowColor": "rgb(123,58,237)",
-            "shadowOffset": { "width": 0, "height": 16 },
+            "shadowOffset": {
+              "width": 0,
+              "height": 16
+            },
             "shadowRadius": 32,
             "shadowOpacity": 0.2
           },
@@ -162,7 +192,11 @@
           }
         ],
         "animation": {
-          "enter": { "type": "zoomIn", "delay": 500, "duration": 700 }
+          "enter": {
+            "type": "zoomIn",
+            "delay": 500,
+            "duration": 700
+          }
         }
       },
       {

@@ -100,7 +100,7 @@ function wrapChangeProps(
  *   - Switch        — `onValueChange(value: boolean)` / `onToggle(value: boolean)`
  *   - RadioGroup    — `onChange(value: string)`
  *   - Slider        — `onChange(value: number)`
- *   - TextareaInput, Select, DatePicker, ColorPicker, …
+ *   - TextareaInput, Select, …
  *
  * Also converts `readOnly={true}` → `editable={false}` for InputField nodes
  * (React Native TextInput requires `editable` while HTML inputs use `readOnly`).
@@ -147,7 +147,7 @@ export function trackFormFieldProps(
   }
 
   // Direct-write controlled components: Checkbox, Switch, RadioGroup, Select, TextareaInput,
-  // Slider, DatePicker, ColorPicker — all have writesOwnId:true and skipExternalSync:undefined.
+  // Slider — all have writesOwnId:true and skipExternalSync:undefined.
   // Write variables['{nodeId}-value'] on every change. Inside a FormContainer, fall through
   // so FormContainer tracking also runs.
   // Input wrapper is excluded via skipExternalSync:true (handled separately below).

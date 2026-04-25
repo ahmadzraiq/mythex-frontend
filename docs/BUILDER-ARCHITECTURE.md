@@ -207,6 +207,50 @@ Gluestack `Button` renders as `<div role="button">` — clicking it does NOT fir
 
 ---
 
+## System Components
+
+Built-in editable component templates that ship with the builder. Parallel architecture to Shared Components — the same sync engine, override model, and linked-instance metadata cover both kinds.
+
+### File Map
+
+| File | Purpose |
+|---|---|
+| `lib/builder/system-components/` | Per-component definitions. Static SCs use `makeSystemComponent()` (e.g. `accordion.ts`); complex ones pair a thin `.ts` with a sibling `.data.json` (e.g. `datepicker.ts` + `datepicker.data.json`) |
+| `lib/builder/system-components/index.ts` | Aggregates all entries into `SYSTEM_COMPONENT_DEFAULTS` |
+| `lib/builder/system-component-data.ts` | Runtime registry — merges defaults with per-project overrides; stamps `_sharedKey` on every model node at module init |
+| `lib/builder/system-component-types.ts` | `SystemComponentModel` (mirrors `SharedComponentModel` with `isBuiltIn: true`) |
+
+### Data flow
+
+```
+SYSTEM_COMPONENT_DEFAULTS          <─ code-defined defaults (stamped with _sharedKey)
+        │
+        ▼
+getSystemComponents()              <─ merges defaults with user overrides
+        │
+        ▼
+systemComponentOverrides in        <─ persisted by autosave (lib/builder/autosave.ts)
+autosave snapshot
+```
+
+Dropped instances carry `_system: { modelId, sharedKey }` plus `_overrides`, analogous to `_shared`. The sync engine `_syncSharedInstances` in `app/dev/builder/_store.ts` is kind-agnostic and walks both `_shared` and `_system` roots; `findLinkedRoot(node, 'any')` in `app/dev/builder/_store-node-helpers.ts` resolves either. Per-instance overrides are preserved when the model is edited.
+
+### Instance operations
+
+- **Edit System Component** — sets `editingSharedComponentIds` for that `modelId`, opens Component Editor; edits flow to every instance live.
+- **Detach from System** — strips `_system` + `_overrides`, instance becomes a plain node tree.
+- **Reset to System** — clears local overrides, snaps back to the model's current content.
+
+### Trigger model
+
+`ScopedWorkflow.trigger` accepts both component lifecycle triggers (`created`, `mounted`, `propertyChange`, …) and DOM-event literals (`click`, `doubleClick`, `keydown`, …). Lifecycle workflows are managed in the Component Editor's Actions tab; DOM-event workflows appear in the right-panel Workflow tab only while the SC is being edited.
+
+For JSON conventions — the canonical bare-ref shape for SC inner-element bindings (`{ action: "<wfId>", args: {...} }`), which the engine auto-routes to `executeComponentAction` under the ambient `compInfo` — see the `## System Components` section in `.cursor/rules/visual-builder.mdc`. The legacy inline-workflow wrapper still resolves but should not be used for new bindings.
+
+### Custom triggers (component events)
+
+Components can declare named events (WeWeb-parity) so parent pages bind listener workflows on specific instances. The model carries `triggers: ComponentTrigger[]`; internal workflows fire via an `emitComponentTrigger` step; `lib/sdui/component-trigger-registry.ts` routes emissions to instance-scoped dispatchers registered by `renderer.tsx` on mount, ensuring multi-instance isolation. The listener runs with `context.event = payload` in scope. See the `### Custom triggers (component events)` subsection in `.cursor/rules/visual-builder.mdc` for the full contract and visibility rules.
+
 ---
 
 ## AI Chat System

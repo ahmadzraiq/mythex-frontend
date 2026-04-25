@@ -3,7 +3,10 @@
     "title": "Verify Email"
   },
   "queryParams": [
-    { "name": "token", "value": "" }
+    {
+      "name": "token",
+      "value": ""
+    }
   ],
   "state": {},
   "ui": {
@@ -19,7 +22,7 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[30px] font-bold"
             },
@@ -39,10 +42,27 @@
             },
             "children": [
               {
-                "type": "Spinner",
+                "type": "Box",
                 "props": {
-                  "className": "h-[32px] w-[32px] text-[#7c3aed]"
-                }
+                  "className": "flex items-center justify-center h-[32px] w-[32px] text-[#7c3aed]",
+                  "animation": {
+                    "loop": {
+                      "type": "spin",
+                      "duration": 1000,
+                      "repeatCount": -1
+                    }
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:loader-2",
+                      "size": 24,
+                      "color": "#6b7280"
+                    }
+                  }
+                ]
               }
             ]
           }

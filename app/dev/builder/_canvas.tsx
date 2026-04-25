@@ -21,7 +21,7 @@ import {
   sanitizeGhostClone,
 } from './_canvas-helpers';
 import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable } from './_store';
-import { findSharedRoot, getNodeSubtrees } from './_store-node-helpers';
+import { findLinkedRoot, getNodeSubtrees } from './_store-node-helpers';
 import { getOverrides } from './_shared-overrides';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
 import BuilderOverlay, { type ResizeHandle } from './_overlay';
@@ -41,8 +41,7 @@ import { StateBar } from './_state-bar';
 /** Node types that act as containers and accept dropped children. */
 // Keep in sync with isContainer in _panel-right.tsx
 const CONTAINER_TYPES = new Set([
-  'Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem',
-  'ScrollView', 'SafeAreaView',
+  'Box',
   'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup',
   'Skeleton', 'Tooltip',
   'FormContainer',
@@ -77,12 +76,9 @@ function ensureIds(node: SDUINode): SDUINode {
  * Any node type listed here must store its display text on the `text` prop.
  */
 const TEXT_NODE_TYPES = new Set([
-  'Text', 'Heading',
+  'Text',
   'CheckboxLabel', 'RadioLabel',
-  'TabTitle', 'AccordionTitle',
   'SelectItem', 'SelectInput',
-  'AlertTitle', 'AlertDescription',
-  'ToastTitle', 'ToastDescription',
 ]);
 
 
@@ -1012,11 +1008,9 @@ export default function BuilderCanvas() {
 
   /**
    * Returns true when a node lays out its children horizontally (flex-row).
-   * Checks the component type (HStack) and the className for `flex-row`.
    */
   function isRowContainer(node: SDUINode | null | undefined): boolean {
     if (!node) return false;
-    if (node.type === 'HStack') return true;
     const cls = (node.props as Record<string, unknown> | undefined)?.className as string | undefined;
     return !!(cls && cls.includes('flex-row'));
   }
@@ -2139,14 +2133,19 @@ export default function BuilderCanvas() {
       for (const page of s.pages as Array<{ nodes: SDUINode[] }>) {
         allNodes.push(...(page.nodes as SDUINode[]));
       }
-      const sharedRoot = findSharedRoot(allNodes, id);
+      // Accept both Shared AND System component roots — live-resize broadcast
+      // during Edit mode applies to _system instances the same way it does to
+      // _shared instances.
+      const sharedRoot = findLinkedRoot(allNodes, id, 'any');
       if (!sharedRoot) return;
-      const sharedMeta = (sharedRoot as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
-      if (!sharedMeta?.id) return;
+      const sharedRootRec = sharedRoot as unknown as Record<string, unknown>;
+      const sharedKindMeta = (sharedRootRec._shared ?? sharedRootRec._system) as { id: string } | undefined;
+      if (!sharedKindMeta?.id) return;
+      const siblingMetaKey: '_shared' | '_system' = sharedRootRec._shared ? '_shared' : '_system';
 
       // Only broadcast to siblings in Edit Component mode. In instance mode the resize
       // is a per-instance override and must not affect other instances.
-      if (!s.editingSharedComponentIds.includes(sharedMeta.id)) return;
+      if (!s.editingSharedComponentIds.includes(sharedKindMeta.id)) return;
 
       // Build path from resized node to shared root as a list of `_sharedKey`
       // values (from the root's direct child down to the target). We walk by
@@ -2173,12 +2172,13 @@ export default function BuilderCanvas() {
       }
       if (!pathOk) return;
 
-      // Find other shared roots with the same model ID across all pages
+      // Find other linked roots with the same model ID across all pages.
+      // Match siblings of the SAME kind (_shared ↔ _shared, _system ↔ _system).
       const otherRoots: SDUINode[] = [];
       (function walk(nodes: SDUINode[]) {
         for (const n of nodes) {
-          const sm = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
-          if (sm?.id === sharedMeta.id && n.id !== sharedRoot.id) otherRoots.push(n);
+          const sm = (n as unknown as Record<string, unknown>)[siblingMetaKey] as { id: string } | undefined;
+          if (sm?.id === sharedKindMeta.id && n.id !== sharedRoot.id) otherRoots.push(n);
           if (n.children?.length) walk(n.children as SDUINode[]);
         }
       })(allNodes);

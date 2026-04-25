@@ -15,9 +15,10 @@ import type {
   ScopedVarDef,
   ScopedFormulaDef,
   ScopedWorkflow,
+  ComponentTrigger,
 } from '@/config/shared-component-types';
 
-export type { SharedComponentModel, SharedComponentProperty, ScopedVarDef, ScopedFormulaDef, ScopedWorkflow };
+export type { SharedComponentModel, SharedComponentProperty, ScopedVarDef, ScopedFormulaDef, ScopedWorkflow, ComponentTrigger };
 
 // ── In-memory store ────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ for (const [id, raw] of Object.entries(initialData as Record<string, Record<stri
     variables: ((raw as Record<string, unknown>).variables ?? {}) as Record<string, ScopedVarDef>,
     formulas: ((raw as Record<string, unknown>).formulas ?? {}) as Record<string, ScopedFormulaDef>,
     workflows: ((raw as Record<string, unknown>).workflows ?? {}) as Record<string, ScopedWorkflow>,
+    triggers: Array.isArray((raw as Record<string, unknown>).triggers) ? ((raw as Record<string, unknown>).triggers as ComponentTrigger[]) : undefined,
     content: ((raw as Record<string, unknown>).content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
   };
 }

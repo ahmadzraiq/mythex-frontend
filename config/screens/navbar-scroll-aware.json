@@ -1,9 +1,13 @@
 {
-  "meta": { "title": "Scroll-Aware Navbar" },
+  "meta": {
+    "title": "Scroll-Aware Navbar"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "props": {
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+    },
     "children": [
       {
         "type": "Box",
@@ -15,8 +19,12 @@
               "defaultState": "up",
               "duration": 300,
               "states": {
-                "down": { "transform": "translateY(-100%)" },
-                "up": { "transform": "translateY(0%)" }
+                "down": {
+                  "transform": "translateY(-100%)"
+                },
+                "up": {
+                  "transform": "translateY(0%)"
+                }
               }
             }
           }
@@ -24,127 +32,524 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex flex-row items-center gap-3 cursor-pointer" },
-            "actions": [{ "action": "navigateToNavbarTypes" }],
+            "props": {
+              "className": "flex flex-row items-center gap-3 cursor-pointer"
+            },
+            "actions": [
+              {
+                "action": "navigateToNavbarTypes"
+              }
+            ],
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 18, "color": "#6b7280" } },
-              { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-white" }, "text": "NavbarDemo" }
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:arrow-left",
+                  "size": 18,
+                  "color": "#6b7280"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-bold text-lg text-gray-900 dark:text-white"
+                },
+                "text": "NavbarDemo"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "flex-1 flex flex-row items-center justify-center gap-8" },
+            "props": {
+              "className": "flex-1 flex flex-row items-center justify-center gap-8"
+            },
             "children": [
-              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Home" },
-              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Features" },
-              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "About" },
-              { "type": "Text", "props": { "className": "text-sm font-medium text-gray-600 dark:text-gray-300" }, "text": "Contact" }
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                },
+                "text": "Home"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                },
+                "text": "Features"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                },
+                "text": "About"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                },
+                "text": "Contact"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "bg-cyan-500 rounded-lg px-4 py-2 cursor-pointer" },
-            "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": "Get Started" }]
+            "props": {
+              "className": "bg-cyan-500 rounded-lg px-4 py-2 cursor-pointer"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-white"
+                },
+                "text": "Get Started"
+              }
+            ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full pt-[64px]" },
+        "props": {
+          "className": "w-full pt-[64px]"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "w-full min-h-[80vh] bg-gradient-to-br from-cyan-50 to-sky-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6" },
+            "props": {
+              "className": "w-full min-h-[80vh] bg-gradient-to-br from-cyan-50 to-sky-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "bg-cyan-100 dark:bg-cyan-900/30 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-cyan-700 dark:text-cyan-300" }, "text": "Scroll-Aware" }] },
-              { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white text-center" }, "text": "Smart Auto-hide Navbar" },
-              { "type": "Text", "props": { "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4" }, "text": "This navbar hides when you scroll down to maximize content space, then reappears instantly when you scroll back up. Powered by live scroll tracking in the SDUI engine." },
-              { "type": "Text", "props": { "className": "text-sm text-gray-400 mt-8" }, "text": "Scroll down to hide the navbar, scroll up to bring it back" }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "bg-cyan-100 dark:bg-cyan-900/30 rounded-full px-4 py-1 mb-6"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium text-cyan-700 dark:text-cyan-300"
+                    },
+                    "text": "Scroll-Aware"
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+                },
+                "text": "Smart Auto-hide Navbar"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+                },
+                "text": "This navbar hides when you scroll down to maximize content space, then reappears instantly when you scroll back up. Powered by live scroll tracking in the SDUI engine."
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-400 mt-8"
+                },
+                "text": "Scroll down to hide the navbar, scroll up to bring it back"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
+            "props": {
+              "className": "w-full max-w-6xl mx-auto px-6 py-20"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "How It Works" },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                },
+                "text": "How It Works"
+              },
               {
                 "type": "Box",
-                "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+                "props": {
+                  "className": "grid grid-cols-1 md:grid-cols-3 gap-8"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:mouse", "size": 24, "color": "#06b6d4" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "1. Scroll Tracking" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "The engine tracks window.scrollY in real-time with rAF throttling and writes { y, direction, yPercent } to variables['scroll']." }
-                  ]},
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:git-branch", "size": 24, "color": "#0ea5e9" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "2. State Machine" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "animation.states watches the direction variable. When it changes to 'down', it transitions to translateY(-100%). On 'up', back to 0%." }
-                  ]},
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:shield-check", "size": 24, "color": "#3b82f6" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "3. Dead-zone" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "A \u00b14px dead-zone prevents flickering when the user pauses mid-scroll. Direction only changes with definitive movement." }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:mouse",
+                              "size": 24,
+                              "color": "#06b6d4"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "1. Scroll Tracking"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "The engine tracks window.scrollY in real-time with rAF throttling and writes { y, direction, yPercent } to variables['scroll']."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:git-branch",
+                              "size": 24,
+                              "color": "#0ea5e9"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "2. State Machine"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "animation.states watches the direction variable. When it changes to 'down', it transitions to translateY(-100%). On 'up', back to 0%."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:shield-check",
+                              "size": 24,
+                              "color": "#3b82f6"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "3. Dead-zone"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "A ±4px dead-zone prevents flickering when the user pauses mid-scroll. Direction only changes with definitive movement."
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+            "props": {
+              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                },
+                "text": "Testimonials"
+              },
               {
                 "type": "Box",
-                "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+                "props": {
+                  "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The auto-hide navbar is the best of both worlds \u2014 it's there when you need it, gone when you don't.\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Sam Wilson" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Mobile Developer" }
-                  ]},
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"No jank, no flicker. The dead-zone makes the scroll detection feel professional.\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Priya Sharma" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Performance Eng" }
-                  ]},
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Pure JSON config, reactive engine, no custom JavaScript. This is how SDUI should work.\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Alex Martinez" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Tech Lead" }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"The auto-hide navbar is the best of both worlds — it's there when you need it, gone when you don't.\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Sam Wilson"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "Mobile Developer"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"No jank, no flicker. The dead-zone makes the scroll detection feel professional.\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Priya Sharma"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "Performance Eng"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"Pure JSON config, reactive engine, no custom JavaScript. This is how SDUI should work.\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Alex Martinez"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "Tech Lead"
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+            "props": {
+              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Live Scroll Data" },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                },
+                "text": "Live Scroll Data"
+              },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+                "props": {
+                  "className": "flex flex-row flex-wrap justify-center gap-12"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-cyan-500" }, "text": "{{variables['scroll'].y}}" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Scroll Y (px)" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-cyan-500" }, "text": "{{variables['scroll'].direction}}" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Direction" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-cyan-500" }, "text": "{{variables['scroll'].yPercent}}%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Scroll %" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-cyan-500" }, "text": "300ms" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Transition" }] }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-cyan-500"
+                        },
+                        "text": "{{variables['scroll'].y}}"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Scroll Y (px)"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-cyan-500"
+                        },
+                        "text": "{{variables['scroll'].direction}}"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Direction"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-cyan-500"
+                        },
+                        "text": "{{variables['scroll'].yPercent}}%"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Scroll %"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-cyan-500"
+                        },
+                        "text": "300ms"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Transition"
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+            "props": {
+              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+                "props": {
+                  "className": "max-w-5xl mx-auto flex flex-row items-center justify-between"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-400"
+                    },
+                    "text": "NavbarDemo © 2026"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 cursor-pointer"
+                    },
+                    "text": "← Back to all types",
+                    "actions": [
+                      {
+                        "action": "navigateToNavbarTypes"
+                      }
+                    ]
+                  }
                 ]
               }
             ]

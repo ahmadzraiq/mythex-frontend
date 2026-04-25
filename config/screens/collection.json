@@ -151,7 +151,7 @@
                     },
                     "children": [
                       {
-                        "type": "Heading",
+                        "type": "Text",
                         "props": {
                           "className": "font-semibold text-[18px] text-[var(--theme-foreground)]"
                         },
@@ -326,11 +326,11 @@
                       },
                       {
                         "type": "Icon",
-                            "props": {
-                              "icon": "lucide:chevron-down",
-                              "size": 14,
-                              "color": "#6b7280"
-                            }
+                        "props": {
+                          "icon": "lucide:chevron-down",
+                          "size": 14,
+                          "color": "#6b7280"
+                        }
                       },
                       {
                         "type": "Box",

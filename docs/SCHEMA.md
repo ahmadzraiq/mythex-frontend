@@ -105,6 +105,20 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 - Use kebab-case with section-type prefix: `hero-cta-primary`, `newsletter-input`
 - Do NOT add `id` to every node — only key anchor points (headings, CTAs, images, section roots, form inputs)
 
+### Linked instance markers
+
+The builder writes a small set of metadata keys onto nodes that are instances of a Shared or System Component. **These are builder-managed — AI and hand-authored JSON should never produce them.**
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `_shared` | `{ id, name }` | Marks the root of a Shared Component instance. `id` is the model id in `config/shared-components.json`. |
+| `_system` | `{ modelId, sharedKey }` | Marks the root of a System Component instance (built-in template). `modelId` matches a key in `SYSTEM_COMPONENT_DEFAULTS`. |
+| `_sharedKey` | `string (uuid)` | Stable per-node identity inside a linked subtree. Stamped on every node of the model content at module init; cloned verbatim to instances so the sync engine can pair instance nodes to model nodes even after the user edits local copies. |
+| `_overrides` | `object` | Per-instance overrides (props, classNames, deleted/added descendants) applied on top of the model's current content. Preserved across model edits by `_syncSharedInstances` in `app/dev/builder/_store.ts`. |
+| `_popoverContent` | `boolean` | On a Box inside a node whose parent declares `popover`, marks that Box as the popover's content subtree. |
+
+Only `_shared`, `_system`, and `_overrides` ever appear at a subtree root. `_sharedKey` appears on every node inside a linked subtree.
+
 ### Interpolation & inline formula
 
 **String:** Use `{{path}}` to inject state:
@@ -143,6 +157,15 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 - Cart count: `{ "formula": "collections['a1b2c3d4']?.data?.activeOrder?.lines?.reduce((acc, l) => acc + (l.quantity || 1), 0)", "suffix": " items" }`
 - Subtotal: `{ "formula": "formatCurrency(collections['a1b2c3d4']?.data?.activeOrder?.subTotalWithTax / 100, 'AED')" }`
 - Conditional: `{ "formula": "(collections['a1b2c3d4']?.data?.activeOrder?.lines?.length || 0) === 0 ? '—' : (collections['a1b2c3d4']?.data?.activeOrder?.shippingEstimate?.label || 'Free')" }`
+
+**Inline JavaScript binding (`{ "js": "..." }`):** As an alternative to formula expressions, properties can be bound to a JavaScript function body. The value the function returns becomes the resolved value. Variables and collections are addressed by **name** (not UUID) via WeWeb-style proxies:
+
+```json
+{ "type": "Text", "text": { "js": "const items = collections.products.data ?? [];\nreturn `Total: $${items.reduce((s, p) => s + p.price, 0).toFixed(2)}`;" } }
+{ "type": "Box",  "props": { "style": { "js": "return { backgroundColor: variables.cartCount > 0 ? '#10b981' : '#6b7280' };" } } }
+```
+
+Inside a `{ js }` body these globals are available: `variables.<name>`, `collections.<name>.data`, `context.item.<field>`, `parameters.<name>`, plus the helper API `wwLib.variables.get/set` (see §13). The body is evaluated synchronously (single-expression bodies auto-`return`).
 
 ### Condition (JSON Logic)
 
@@ -223,6 +246,79 @@ The `_shared` marker is for the builder only — the runtime renders the inline 
 **Register:** Add to `config/fragments/index.ts`: `'fragments/name': import`
 
 **Example fragment:** `config/fragments/modals/createProduct.json` – a single UI node (Modal, Box, etc.).
+
+---
+
+## 5A. System Component Schema
+
+System components are **built-in editable templates** shipped with the builder, parallel to Shared Components. JSON lives in `lib/builder/system-components/*.data.json` (or is constructed via `makeSystemComponent()` in TypeScript for static cases).
+
+**Model format** — mirrors Shared Component plus an `isBuiltIn` marker:
+
+```json
+{
+  "id": "sys-datepicker",
+  "name": "DatePicker",
+  "isBuiltIn": true,
+  "properties": [...],
+  "variables": { ... },
+  "workflows": { ... },
+  "content": { "type": "Box", "children": [...] }
+}
+```
+
+**Usage (inline at the usage site, written by the builder on drop):**
+
+```json
+{
+  "type": "Box",
+  "_system": { "modelId": "sys-datepicker", "sharedKey": "<uuid>" },
+  "children": [...]
+}
+```
+
+**Inner-element action bindings — bare ref (canonical):**
+
+When an inner element of an SC invokes one of the SC's own workflows, write the `actions` entry as a bare ref:
+
+```json
+"actions": [
+  { "action": "<wfId>" },
+  { "action": "<wfId>", "args": { "paramName": { "formula": "context?.item?.data?.dateStr" } } }
+]
+```
+
+The engine's `runOne` (`lib/sdui/sdui-engine.tsx`) performs an ambient-SC lookup: when the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (rendering inside a `_shared` / `_system` subtree), it resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition so dispatch runs under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely for parameterless workflows.
+
+**Legacy fallback (do not author):** the inline-workflow wrapper shape `{ "type": "workflow", "steps": [{ "type": "executeComponentAction", "config": {...} }] }` still resolves correctly and is kept for older content, but new bindings should always use the bare ref above.
+
+**Trigger model:** `ScopedWorkflow.trigger` accepts both lifecycle triggers (`created`, `mounted`, `propertyChange`, …) and DOM events (`click`, `doubleClick`, `keydown`, …). Lifecycle workflows surface in the Component Editor's Actions tab; DOM-event workflows surface in the right-panel Workflow tab while the SC is being edited.
+
+**Custom triggers (component events):** A component can declare named events that parent pages listen to on each instance. Authored in the Component Editor's Triggers section and persisted on the model:
+
+```json
+"triggers": [
+  { "id": "dp-t-on-date-selected", "name": "On date selected", "eventSchema": "{ \"date\": \"2026-01-15\" }" }
+]
+```
+
+Fire from an internal workflow with an `emitComponentTrigger` step:
+
+```json
+{
+  "type": "emitComponentTrigger",
+  "config": {
+    "triggerId": "dp-t-on-date-selected",
+    "payload": { "formula": "{ date: context?.item?.data?.dateStr }" }
+  }
+}
+```
+
+Parent-page listener workflows bind on a specific instance with `trigger: "<triggerId>"` and read the payload via `context?.event?.<field>`. See the "Custom triggers" subsection in `.cursor/rules/visual-builder.mdc` for runtime plumbing and visibility rules.
+
+**Register:** Add to `lib/builder/system-components/index.ts` so the entry is picked up by `SYSTEM_COMPONENT_DEFAULTS`.
+
+For full implementation details (sync engine, instance operations, parser unwrap logic) see the `## System Components` section in `.cursor/rules/visual-builder.mdc` and `docs/BUILDER-ARCHITECTURE.md`.
 
 ---
 
@@ -850,7 +946,54 @@ Applied to the `Animated.View` wrapper (not the inner component). Required for `
 
 ---
 
-## 13. Quick Reference: Adding a New Screen
+## 13. JavaScript bindings & `runJavaScript` workflow step
+
+Two places accept user-written JavaScript:
+
+1. **`{ "js": "..." }` bindings** — evaluated synchronously when a property is read. Replaces / augments the existing `{ "formula": "..." }` shape on any prop, prop.style, condition, etc.
+2. **`runJavaScript` workflow step** — async function body run as part of a workflow. Result is stored at `context.workflow["<stepId>"].result` like every other step.
+
+### Globals available in JS code
+
+| Global | Description |
+| --- | --- |
+| `variables.<name>` | Read (and in `runJavaScript`, write) variables by their human-readable name. Resolves through the variable-name registry to the underlying UUID. |
+| `collections.<name>` | The live `{ data, error, isFetching }` snapshot of the named datasource. |
+| `context.item.<field>`, `context.workflow[stepId].result` | Same shapes as in formula expressions. |
+| `parameters.<name>` | Global-workflow parameters. |
+| `wwLib` | Helper API (see below). |
+
+### `wwLib` helper API
+
+```js
+wwLib.variables.get('cartCount')                // read variable by name
+wwLib.variables.set('cartCount', 5)             // write variable (runJavaScript only)
+wwLib.variables.reset('cartCount')              // reset to null
+wwLib.collections.get('products')               // returns { data, error, isFetching }
+await wwLib.collections.refetch('products')     // triggers a refetch via fetchCollection
+wwLib.workflow['stepId'].result                 // prior step results
+wwLib.parameters.someParam                      // current workflow's parameters
+wwLib.navigateTo('/path')                       // window.location.href = '/path'
+```
+
+### Workflow step shape
+
+```json
+{
+  "id": "step-1",
+  "type": "runJavaScript",
+  "name": "Compute total",
+  "config": {
+    "code": "const r = await fetch('/api/data');\nconst json = await r.json();\nreturn json.total * 1.05;"
+  }
+}
+```
+
+The body is wrapped in `new AsyncFunction(...)`, so `await` is supported. Single-expression bodies (no `;`, no `\n`, no `return`) auto-return their value. The return value is written to `context.workflow["step-1"].result` and can be read by downstream steps via `{ "formula": "context.workflow['step-1'].result" }` or `{ "js": "return context.workflow['step-1'].result;" }`.
+
+---
+
+## 14. Quick Reference: Adding a New Screen
 
 1. Create `config/screens/myScreen.json`
 2. Add route in `config/routes.json`

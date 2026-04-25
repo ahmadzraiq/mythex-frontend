@@ -145,10 +145,10 @@ test('ST-04: Selecting a Button node in Settings tab shows a Submit toggle', asy
   await gotoBuilder(page);
 
   await addNode(page, {
-    type: 'Button',
+    type: 'Box',
     id: 'st04-btn',
     props: { action: 'primary', className: 'w-full' },
-    children: [{ type: 'ButtonText', text: 'Click me' }],
+    children: [{ type: 'Text', text: 'Click me' }],
   });
   await selectNode(page, 'st04-btn');
   await openSettingsTab(page);
@@ -164,10 +164,10 @@ test('ST-05: Submit toggle On → actions.click.type === submitForm', async ({ p
   await gotoBuilder(page);
 
   await addNode(page, {
-    type: 'Button',
+    type: 'Box',
     id: 'st05-btn',
     props: { action: 'primary', className: 'w-full' },
-    children: [{ type: 'ButtonText', text: 'Submit' }],
+    children: [{ type: 'Text', text: 'Submit' }],
   });
   await selectNode(page, 'st05-btn');
   await openSettingsTab(page);
@@ -189,10 +189,10 @@ test('ST-06: Submit toggle Off → click action removed', async ({ page }) => {
 
   // Start with submitForm already on the button
   await addNode(page, {
-    type: 'Button',
+    type: 'Box',
     id: 'st06-btn',
     props: { action: 'primary', className: 'w-full' },
-    children: [{ type: 'ButtonText', text: 'Submit' }],
+    children: [{ type: 'Text', text: 'Submit' }],
     actions: { click: { type: 'submitForm' } },
   });
   await selectNode(page, 'st06-btn');

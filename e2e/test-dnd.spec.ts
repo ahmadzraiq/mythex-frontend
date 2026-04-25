@@ -157,13 +157,13 @@ test.beforeEach(async () => { await resetBuilder(sharedPage); });
 test('DnD-1: moveNode — Text becomes child of VStack', async () => {
   const page = sharedPage;
 
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Text');
 
   const { vstackId, textId } = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore.getState();
     return {
-      vstackId: store.pageNodes.find(n => n.type === 'VStack')?.id ?? '',
+      vstackId: store.pageNodes.find(n => n.type === 'Box')?.id ?? '',
       textId:   store.pageNodes.find(n => n.type === 'Text')?.id ?? '',
     };
   });
@@ -174,7 +174,7 @@ test('DnD-1: moveNode — Text becomes child of VStack', async () => {
   const rootBefore = await getPageNodeTypes(page);
   console.log('Root types before moveNode:', rootBefore);
   expect(rootBefore).toContain('Text');
-  expect(rootBefore).toContain('VStack');
+  expect(rootBefore).toContain('Box');
 
   // Call moveNode directly via the store
   await page.evaluate(({ vId, tId }) => {
@@ -190,27 +190,27 @@ test('DnD-1: moveNode — Text becomes child of VStack', async () => {
   const rootAfter = await getPageNodeTypes(page);
   console.log('Root types after moveNode:', rootAfter);
   expect(rootAfter).not.toContain('Text');
-  expect(rootAfter).toContain('VStack');
+  expect(rootAfter).toContain('Box');
   console.log('✅ moveNode correctly places Text inside VStack');
 });
 
 test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async () => {
   const page = sharedPage;
 
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Btn Solid');
 
   const { vstackId, buttonId } = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore.getState();
     return {
-      vstackId: store.pageNodes.find(n => n.type === 'VStack')?.id ?? '',
+      vstackId: store.pageNodes.find(n => n.type === 'Box')?.id ?? '',
       buttonId: store.pageNodes.find(n => n.type === 'Pressable')?.id ?? '',
     };
   });
 
   const before = await getPageNodeTypes(page);
   console.log('Root order before:', before);
-  expect(before[0]).toBe('VStack');
+  expect(before[0]).toBe('Box');
 
   // Move Button (Pressable) to index 0 (before VStack)
   await page.evaluate(({ bId }) => {
@@ -221,7 +221,7 @@ test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async
   const after = await getPageNodeTypes(page);
   console.log('Root order after:', after);
   expect(after[0]).toBe('Pressable');
-  expect(after[1]).toBe('VStack');
+  expect(after[1]).toBe('Box');
   console.log('✅ moveNode correctly places Pressable-Button before VStack');
 
   // Also ensure vstackId is still valid (wasn't accidentally deleted)
@@ -243,11 +243,11 @@ test('DnD-2: moveNode — Pressable-Button moves BEFORE VStack (index 0)', async
 test('DnD-3: moveNode — cannot drop node into itself (no-op)', async () => {
   const page = sharedPage;
 
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
 
   const vstackId = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore.getState();
-    return store.pageNodes.find(n => n.type === 'VStack')?.id ?? '';
+    return store.pageNodes.find(n => n.type === 'Box')?.id ?? '';
   });
 
   const before = await getPageNodeTypes(page);
@@ -362,7 +362,7 @@ test.describe('Fix-1: Drop from left panel into container', () => {
     // Inject a VStack with known size
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore.getState()._setPageNodes([
-        { type: 'VStack', id: 'container-vstack', props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
+        { type: 'Box', id: 'container-vstack', props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
       ]);
     });
     await page.waitForSelector('[data-builder-id="container-vstack"]', { timeout: 10_000 });
@@ -716,10 +716,10 @@ test('DnD-UI-1: Drag from canvas triggers dragstart on capture overlay', async (
 test('DnD-4: Container drop highlight appears when dragging over VStack center', async () => {
   const page = sharedPage;
 
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Text');
 
-  const vstackEl = page.locator('[data-builder-type="VStack"]').first();
+  const vstackEl = page.locator('[data-builder-type="Box"]').first();
   const textEl   = page.locator('[data-builder-type="Text"]').first();
 
   // Start a drag: move text toward center of vstack and pause (don't drop yet)
@@ -983,13 +983,13 @@ test('T7: NumberInput applies value immediately on change (no Enter needed)', as
 
 test('T8: moveNode — drag Text out of VStack back to root', async () => {
   const page = sharedPage;
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Text');
 
   const { vstackId, textId } = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore.getState();
     return {
-      vstackId: store.pageNodes.find(n => n.type === 'VStack')?.id ?? '',
+      vstackId: store.pageNodes.find(n => n.type === 'Box')?.id ?? '',
       textId:   store.pageNodes.find(n => n.type === 'Text')?.id ?? '',
     };
   });
@@ -1014,20 +1014,20 @@ test('T8: moveNode — drag Text out of VStack back to root', async () => {
 
   const rootTypes = await getPageNodeTypes(page);
   expect(rootTypes).toContain('Text');
-  expect(rootTypes).toContain('VStack');
+  expect(rootTypes).toContain('Box');
   console.log('✅ Text moved out of VStack back to root');
 });
 
 test('T9: moveNode — two Text nodes inside VStack, reorder them', async () => {
   const page = sharedPage;
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Text');
   await dropComponent(page, 'Btn Solid');
 
   const { vstackId, textId, buttonId } = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ id: string; type: string }> } }>).__builderStore.getState();
     return {
-      vstackId: store.pageNodes.find(n => n.type === 'VStack')?.id ?? '',
+      vstackId: store.pageNodes.find(n => n.type === 'Box')?.id ?? '',
       textId:   store.pageNodes.find(n => n.type === 'Text')?.id ?? '',
       buttonId: store.pageNodes.find(n => n.type === 'Pressable')?.id ?? '',
     };
@@ -1063,10 +1063,10 @@ test('T9: moveNode — two Text nodes inside VStack, reorder them', async () => 
 
 test('T10: Drop zone line appears when dragover fires at top of a sibling', async () => {
   const page = sharedPage;
-  await dropComponent(page, 'VStack');
+  await dropComponent(page, 'Box');
   await dropComponent(page, 'Btn Solid');
 
-  const vstackEl = page.locator('[data-builder-type="VStack"]').first();
+  const vstackEl = page.locator('[data-builder-type="Box"]').first();
   const vstackBox = await vstackEl.boundingBox();
   if (!vstackBox) throw new Error('VStack not found');
 
@@ -1818,7 +1818,7 @@ test.describe('Fix-MultiDrag: multi-select drag moves all selected nodes', () =>
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'VStack', id: 'vs',  props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
+          { type: 'Box', id: 'vs',  props: { className: 'w-64 h-48', style: { width: '256px', height: '192px' } }, children: [] },
           { type: 'Box',    id: 'box', props: { className: 'w-48 h-10' },
             children: [{ type: 'Text', id: 'txt-child', props: {}, text: 'Hello' }] },
         ]);
@@ -2025,8 +2025,8 @@ test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'btn-a', props: { className: 'w-32 h-10' }, children: [] },
-          { type: 'Button', id: 'btn-b', props: { className: 'w-32 h-10' }, children: [] },
+          { type: 'Box', id: 'btn-a', props: { className: 'w-32 h-10' }, children: [] },
+          { type: 'Box', id: 'btn-b', props: { className: 'w-32 h-10' }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="btn-a"]', { timeout: 5_000 });
@@ -2040,7 +2040,7 @@ test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
 
     // Both buttons must still be at root level
     const rootTypes = await getPageNodeTypes(page);
-    expect(rootTypes).toContain('Button');
+    expect(rootTypes).toContain('Box');
     expect(rootTypes).toHaveLength(2);
     console.log('Root types:', rootTypes);
     console.log('✅ moveNodes(btn-b, btn-b) is a no-op — cannot drop into self');
@@ -2052,8 +2052,8 @@ test.describe('Fix-SelfDrop: dragged nodes excluded from drop targets', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'btn-a', props: { className: 'w-32 h-10' }, children: [] },
-          { type: 'Button', id: 'btn-b', props: { className: 'w-32 h-10' }, children: [] },
+          { type: 'Box', id: 'btn-a', props: { className: 'w-32 h-10' }, children: [] },
+          { type: 'Box', id: 'btn-b', props: { className: 'w-32 h-10' }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="btn-a"]', { timeout: 5_000 });
@@ -2101,10 +2101,10 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'b0', props: { className: 'w-full h-10' }, children: [] },
-          { type: 'Button', id: 'b1', props: { className: 'w-full h-10' }, children: [] },
-          { type: 'Button', id: 'b2', props: { className: 'w-full h-10' }, children: [] },
-          { type: 'Button', id: 'b3', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b0', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b1', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b2', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b3', props: { className: 'w-full h-10' }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="b0"]', { timeout: 5_000 });
@@ -2143,10 +2143,10 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'b0', props: {}, children: [] },
-          { type: 'Button', id: 'b1', props: {}, children: [] },
-          { type: 'Button', id: 'b2', props: {}, children: [] },
-          { type: 'Button', id: 'b3', props: {}, children: [] },
+          { type: 'Box', id: 'b0', props: {}, children: [] },
+          { type: 'Box', id: 'b1', props: {}, children: [] },
+          { type: 'Box', id: 'b2', props: {}, children: [] },
+          { type: 'Box', id: 'b3', props: {}, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="b0"]', { timeout: 5_000 });
@@ -2175,10 +2175,10 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'b0', props: {}, children: [] },
-          { type: 'Button', id: 'b1', props: {}, children: [] },
-          { type: 'Button', id: 'b2', props: {}, children: [] },
-          { type: 'Button', id: 'b3', props: {}, children: [] },
+          { type: 'Box', id: 'b0', props: {}, children: [] },
+          { type: 'Box', id: 'b1', props: {}, children: [] },
+          { type: 'Box', id: 'b2', props: {}, children: [] },
+          { type: 'Box', id: 'b3', props: {}, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="b0"]', { timeout: 5_000 });
@@ -2206,9 +2206,9 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'b0', props: { className: 'w-full h-10' }, children: [] },
-          { type: 'Button', id: 'b1', props: { className: 'w-full h-10' }, children: [] },
-          { type: 'Button', id: 'b2', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b0', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b1', props: { className: 'w-full h-10' }, children: [] },
+          { type: 'Box', id: 'b2', props: { className: 'w-full h-10' }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="b0"]', { timeout: 5_000 });
@@ -2246,8 +2246,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
           {
             type: 'Box', id: 'vstack', props: { className: 'flex flex-col gap-2' },
             children: [
-              { type: 'Button', id: 'btn-a', props: {}, children: [] },
-              { type: 'Button', id: 'btn-b', props: {}, children: [] },
+              { type: 'Box', id: 'btn-a', props: {}, children: [] },
+              { type: 'Box', id: 'btn-b', props: {}, children: [] },
             ],
           },
         ]);
@@ -2285,11 +2285,11 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
         .getState()._setPageNodes([
           {
             type: 'Box', id: 'box-a', props: { className: 'flex flex-col gap-2' },
-            children: [{ type: 'Button', id: 'btn-move', props: {}, children: [] }],
+            children: [{ type: 'Box', id: 'btn-move', props: {}, children: [] }],
           },
           {
             type: 'Box', id: 'box-b', props: { className: 'flex flex-col gap-2' },
-            children: [{ type: 'Button', id: 'btn-stay', props: {}, children: [] }],
+            children: [{ type: 'Box', id: 'btn-stay', props: {}, children: [] }],
           },
         ]);
     });
@@ -2321,8 +2321,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'btn-x', props: {}, children: [] },
-          { type: 'Button', id: 'btn-y', props: {}, children: [] },
+          { type: 'Box', id: 'btn-x', props: {}, children: [] },
+          { type: 'Box', id: 'btn-y', props: {}, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="btn-x"]', { timeout: 5_000 });
@@ -2362,11 +2362,11 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
           {
             type: 'Box', id: 'vstack', props: { className: 'flex flex-col gap-2' },
             children: [
-              { type: 'Button', id: 'c0', props: {}, children: [] },
-              { type: 'Button', id: 'c1', props: {}, children: [] },
+              { type: 'Box', id: 'c0', props: {}, children: [] },
+              { type: 'Box', id: 'c1', props: {}, children: [] },
             ],
           },
-          { type: 'Button', id: 'ext', props: {}, children: [] },
+          { type: 'Box', id: 'ext', props: {}, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="vstack"]', { timeout: 5_000 });
@@ -2396,8 +2396,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'abs-a', props: { className: 'absolute', style: { left: '10px', top: '10px' } }, children: [] },
-          { type: 'Button', id: 'abs-b', props: { className: 'absolute', style: { left: '20px', top: '20px' } }, children: [] },
+          { type: 'Box', id: 'abs-a', props: { className: 'absolute', style: { left: '10px', top: '10px' } }, children: [] },
+          { type: 'Box', id: 'abs-b', props: { className: 'absolute', style: { left: '20px', top: '20px' } }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="abs-b"]', { timeout: 5_000 });
@@ -2427,8 +2427,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'abs-a', props: { className: 'absolute', style: { left: '10px', top: '10px' } }, children: [] },
-          { type: 'Button', id: 'abs-b', props: { className: 'absolute', style: { left: '20px', top: '20px' } }, children: [] },
+          { type: 'Box', id: 'abs-a', props: { className: 'absolute', style: { left: '10px', top: '10px' } }, children: [] },
+          { type: 'Box', id: 'abs-b', props: { className: 'absolute', style: { left: '20px', top: '20px' } }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="abs-a"]', { timeout: 5_000 });
@@ -2455,8 +2455,8 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'abs-a', props: { className: 'absolute' }, children: [] },
-          { type: 'Button', id: 'abs-b', props: { className: 'absolute' }, children: [] },
+          { type: 'Box', id: 'abs-a', props: { className: 'absolute' }, children: [] },
+          { type: 'Box', id: 'abs-b', props: { className: 'absolute' }, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="abs-a"]', { timeout: 5_000 });
@@ -2486,7 +2486,7 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { type: 'Button', id: 'btn-sel', props: {}, children: [] },
+          { type: 'Box', id: 'btn-sel', props: {}, children: [] },
         ]);
     });
     await page.waitForSelector('[data-builder-id="btn-sel"]', { timeout: 5_000 });
@@ -2536,7 +2536,7 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
           { type: 'Box', id: 'box-empty', props: { className: 'flex flex-col' }, children: [] },
-          { type: 'Button', id: 'btn-root', props: {}, children: [] },
+          { type: 'Box', id: 'btn-root', props: {}, children: [] },
         ]);
     });
     // Empty box has no visible size — wait for it to be attached to the DOM
@@ -2585,7 +2585,7 @@ test.describe('Fix-DropLine: drop line behaviour', () => {
             children: [],
           },
           {
-            type: 'Button', id: 'abs-btn',
+            type: 'Box', id: 'abs-btn',
             props: { className: 'absolute', style: { left: '10px', top: '10px' } },
             children: [],
           },
@@ -2661,7 +2661,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
         .getState()._setPageNodes([
           {
             id: 'hstack-root',
-            type: 'HStack',
+            type: 'Box',
             props: { className: 'gap-4 p-4 w-full min-h-[60px] items-center' },
             children: [
               { id: 'hstack-c1', type: 'Text', props: { className: 'text-sm' }, text: 'Item 1' },
@@ -2833,7 +2833,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
     await page.evaluate(() => {
       (window as unknown as Record<string, { getState: () => { _setPageNodes: (n: unknown[]) => void } }>).__builderStore
         .getState()._setPageNodes([
-          { id: 'hs', type: 'HStack', props: {}, children: [
+          { id: 'hs', type: 'Box', props: {}, children: [
             { id: 'hs-c1', type: 'Text', props: {}, text: 'X' },
           ]},
         ]);
@@ -2845,7 +2845,7 @@ test.describe('DropIndicator-Direction: vertical line for row containers', () =>
       const node = (store.pageNodes[0] as { type: string });
       return node?.type;
     });
-    expect(nodeType).toBe('HStack');
+    expect(nodeType).toBe('Box');
     console.log('✅ HStack node is in the tree and will trigger isRowContainer path');
   });
 });

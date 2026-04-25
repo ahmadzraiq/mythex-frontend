@@ -509,7 +509,10 @@
                     "boxShadow": "0px 4px 12px 0px rgba(0,0,0,0.05)",
                     "elevation": 6,
                     "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 4
+                    },
                     "shadowRadius": 12,
                     "shadowOpacity": 0.05
                   },
@@ -528,7 +531,9 @@
                   },
                   {
                     "id": "b24b484e-89bd-4bbf-950e-da04378e6153",
-                    "text": { "formula": "context?.item?.data?.title" },
+                    "text": {
+                      "formula": "context?.item?.data?.title"
+                    },
                     "type": "Text",
                     "props": {
                       "className": "mt-[16px] mb-[8px] text-[18px] font-semibold !text-[var(--theme-foreground)]"
@@ -537,7 +542,9 @@
                   },
                   {
                     "id": "95deadfa-86eb-4ba9-a71d-f10e14a93e21",
-                    "text": { "formula": "context?.item?.data?.description" },
+                    "text": {
+                      "formula": "context?.item?.data?.description"
+                    },
                     "type": "Text",
                     "props": {
                       "className": "text-[14px] leading-relaxed !text-[var(--theme-muted-foreground)]"

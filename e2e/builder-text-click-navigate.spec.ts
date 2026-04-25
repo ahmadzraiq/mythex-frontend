@@ -518,9 +518,9 @@ test.describe('TCN-06: Runtime renderer wraps Text with [data-clickable] on clic
 
     await injectAndSelectNode(sharedPage, {
       id: nodeId,
-      type: 'Button',
+      type: 'Box',
       props: {},
-      children: [{ type: 'ButtonText', text: 'Go home', id: 'btn-text-inner' }],
+      children: [{ type: 'Text', text: 'Go home', id: 'btn-text-inner' }],
       actions: [
         { trigger: 'click', steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }] },
       ],

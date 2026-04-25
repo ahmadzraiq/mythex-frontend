@@ -5,6 +5,7 @@
 
 import type { SDUINode } from './types';
 import type { ComputedDef } from './variable-store';
+import { getVariableUuidByName, getCollectionUuidByName } from './variable-name-registry';
 
 /** Extract variable paths from {{path}} in strings */
 export function extractPathsFromTemplate(template: string): string[] {
@@ -51,6 +52,39 @@ function extractFormulaVarPaths(expr: string): string[] {
   return paths;
 }
 
+/**
+ * Extract `variables.<name>` / `variables['<name>']` / `collections.<name>` references
+ * from a `{ js: "..." }` binding body and resolve each name to a UUID via the
+ * variable-name-registry. Returns dot-notation paths like "variables.<UUID>" so
+ * the renderer's path-based subscription system re-evaluates JS bindings when the
+ * underlying variables change. Names that aren't registered yet are skipped.
+ */
+function extractJsBindingPaths(code: string): string[] {
+  if (!code || typeof code !== 'string') return [];
+  const paths: string[] = [];
+  const pushVar = (name: string | undefined) => {
+    if (!name) return;
+    const uuid = getVariableUuidByName(name);
+    paths.push(`variables.${uuid ?? name}`);
+  };
+  const pushCol = (name: string | undefined) => {
+    if (!name) return;
+    const uuid = getCollectionUuidByName(name);
+    paths.push(`collections.${uuid ?? name}`);
+  };
+  // variables.foo / variables?.foo / variables['foo'] / variables?.['foo']
+  const varDot = /\bvariables\s*(?:\?\.)?\s*\.?\s*([A-Za-z_$][\w$]*)/g;
+  let m: RegExpExecArray | null;
+  while ((m = varDot.exec(code)) !== null) pushVar(m[1]);
+  const varBracket = /\bvariables\s*(?:\?\.)?\s*\[\s*['"`]([^'"`]+)['"`]\s*\]/g;
+  while ((m = varBracket.exec(code)) !== null) pushVar(m[1]);
+  const colDot = /\bcollections\s*(?:\?\.)?\s*\.?\s*([A-Za-z_$][\w$]*)/g;
+  while ((m = colDot.exec(code)) !== null) pushCol(m[1]);
+  const colBracket = /\bcollections\s*(?:\?\.)?\s*\[\s*['"`]([^'"`]+)['"`]\s*\]/g;
+  while ((m = colBracket.exec(code)) !== null) pushCol(m[1]);
+  return paths;
+}
+
 /** Extract variable paths from objects and strings (e.g. "{{path}}" or formula strings) */
 export function extractPathsFromObject(obj: unknown): string[] {
   if (obj == null) return [];
@@ -66,6 +100,12 @@ export function extractPathsFromObject(obj: unknown): string[] {
     const paths: string[] = [f.trim()];
     paths.push(...extractFormulaVarPaths(f));
     return paths;
+  }
+  // JavaScript bindings: { js: "<body>" }
+  if (typeof obj === 'object' && !Array.isArray(obj) && 'js' in obj) {
+    const j = (obj as { js: unknown }).js;
+    if (typeof j !== 'string' || !j.trim()) return [];
+    return extractJsBindingPaths(j);
   }
   if (typeof obj === 'object') {
     return Object.values(obj).flatMap(extractPathsFromObject);
@@ -91,6 +131,8 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
         paths.push(formulaVal.trim());
         paths.push(...extractFormulaVarPaths(formulaVal));
       }
+    } else if (typeof node.text === 'object' && 'js' in node.text) {
+      paths.push(...extractPathsFromObject(node.text));
     }
   }
   if (node.props) paths.push(...extractPathsFromObject(node.props));

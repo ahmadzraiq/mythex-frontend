@@ -383,10 +383,10 @@ test.describe('BSD — Builder State & Data Panel', () => {
       (store._setPageNodes as (nodes: unknown[]) => void)([
         {
           id,
-          type: 'Button',
+          type: 'Box',
           props: { className: 'px-4 py-2', disabled: true },
           _disabledOverlay: { color: '#ff0000', opacity: 0.4 },
-          children: [{ type: 'ButtonText', text: 'Disabled Button' }],
+          children: [{ type: 'Text', text: 'Disabled Button' }],
         },
       ]);
     }, nodeId);

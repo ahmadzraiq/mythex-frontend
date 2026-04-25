@@ -180,7 +180,7 @@ test.describe('Logic Tab — presence and navigation', () => {
 
   test('Logic tab shows dot indicator when node has actions', async () => {
     await injectNode(sharedPage, {
-      type: 'Button',
+      type: 'Box',
       id: 'btn-with-actions',
       actions: { click: { action: 'navigate', payload: { path: '/home' } } },
     });
@@ -1012,7 +1012,7 @@ test.describe('Interaction Lines toggle', () => {
   test('interaction lines SVG appears when enabled and node has actions', async () => {
     // Inject a node with actions
     await injectNode(sharedPage, {
-      type: 'Button',
+      type: 'Box',
       id: 'action-btn',
       actions: { click: { action: 'navigate', payload: { path: '/home' } } },
     });
@@ -1160,7 +1160,7 @@ test.describe('Left panel enriched badges', () => {
 
   test('actions badge shows event count', async () => {
     await injectNode(sharedPage, {
-      type: 'Button', id: 'action-badge-test',
+      type: 'Box', id: 'action-badge-test',
       actions: {
         click: { action: 'navigate', payload: { path: '/' } },
         change: { type: 'setState', payload: { path: 'x', value: '' } },

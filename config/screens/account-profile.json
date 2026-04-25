@@ -24,7 +24,7 @@
         "type": "Box",
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[30px] font-bold"
             },
@@ -49,7 +49,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[18px] font-semibold mb-[16px]"
                 },
@@ -83,15 +83,11 @@
                           {
                             "type": "Input",
                             "id": "f1cc6656-57da-4814-a981-e1530a57942b",
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "props": {
-                                  "placeholder": "Jane",
-                                  "name": "firstName"
-                                }
-                              }
-                            ]
+                            "children": [],
+                            "props": {
+                              "placeholder": "Jane",
+                              "name": "firstName"
+                            }
                           }
                         ]
                       },
@@ -111,15 +107,11 @@
                           {
                             "type": "Input",
                             "id": "7a425bc1-4ee5-4292-9e43-e3e1664728bd",
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "props": {
-                                  "placeholder": "Doe",
-                                  "name": "lastName"
-                                }
-                              }
-                            ]
+                            "children": [],
+                            "props": {
+                              "placeholder": "Doe",
+                              "name": "lastName"
+                            }
                           }
                         ]
                       }
@@ -141,16 +133,12 @@
                       {
                         "type": "Input",
                         "id": "2e8ed8ad-ffaa-4c28-9d74-78aa4302bb6f",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "tel",
-                              "placeholder": "+1 (555) 000-0000",
-                              "name": "phoneNumber"
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "type": "tel",
+                          "placeholder": "+1 (555) 000-0000",
+                          "name": "phoneNumber"
+                        }
                       }
                     ]
                   },
@@ -193,7 +181,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[18px] font-semibold mb-[16px]"
                 },
@@ -221,16 +209,12 @@
                       {
                         "type": "Input",
                         "id": "1a9ca77f-87ba-4416-afdf-9da9892caec3",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "type": "email",
-                              "placeholder": "you@example.com",
-                              "name": "emailAddress"
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "type": "email",
+                          "placeholder": "you@example.com",
+                          "name": "emailAddress"
+                        }
                       }
                     ]
                   },
@@ -273,7 +257,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[18px] font-semibold mb-[16px]"
                 },
@@ -301,16 +285,12 @@
                       {
                         "type": "Input",
                         "id": "ff0a280b-c141-4099-bbe0-2d88dea510c2",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "placeholder": "••••••••",
-                              "name": "currentPassword",
-                              "secureTextEntry": true
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "placeholder": "••••••••",
+                          "name": "currentPassword",
+                          "secureTextEntry": true
+                        }
                       }
                     ]
                   },
@@ -330,16 +310,12 @@
                       {
                         "type": "Input",
                         "id": "95bf8303-fb42-4966-8f63-3dfd8da4e79c",
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "placeholder": "••••••••",
-                              "name": "newPassword",
-                              "secureTextEntry": true
-                            }
-                          }
-                        ]
+                        "children": [],
+                        "props": {
+                          "placeholder": "••••••••",
+                          "name": "newPassword",
+                          "secureTextEntry": true
+                        }
                       }
                     ]
                   },

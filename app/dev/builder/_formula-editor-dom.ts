@@ -81,6 +81,54 @@ export function pathToFormulaAndDisplay(
   };
 }
 
+// ─── JavaScript-identifier conversion (for the JS mode in the formula editor) ─
+
+/**
+ * Convert a chip-style formula path (e.g. `variables['a1b2…']?.['cart']?.[0]?.['name']`,
+ * `collections['UUID']?.['data']`, or `context.item.field`) into WeWeb-style
+ * JavaScript identifier syntax (`variables.cartName.cart[0].name`,
+ * `collections.products.data`).
+ *
+ * UUID-keyed roots (variables / collections) are mapped through the provided
+ * name maps. When a UUID has no name we fall back to the original bracket form
+ * so the code at least keeps working at runtime.
+ */
+export function buildIdentifierForJs(
+  path: string,
+  uuidToVarName: Map<string, string>,
+  uuidToCollectionName: Map<string, string>,
+): string {
+  if (!path) return '';
+
+  // 1) Strip `?.` optional-chaining (cosmetic in JS bindings — wwLib proxy handles missing keys).
+  let p = path.replace(/\?\./g, '.');
+
+  // 2) Replace `variables['UUID']` and `collections['UUID']` with their named forms.
+  p = p.replace(/^(variables|collections)\['([^']+)'\]/, (_m, root: string, uuid: string) => {
+    const map = root === 'variables' ? uuidToVarName : uuidToCollectionName;
+    const name = map.get(uuid);
+    if (!name) return `${root}['${uuid}']`;
+    return isSafeJsIdent(name) ? `${root}.${name}` : `${root}[${JSON.stringify(name)}]`;
+  });
+
+  // 3) Convert subsequent `['key']` segments to `.key` when the key is a safe identifier.
+  p = p.replace(/\['([^']+)'\]/g, (_m, key: string) => (isSafeJsIdent(key) ? `.${key}` : `[${JSON.stringify(key)}]`));
+
+  // 4) Numeric indexes stay as `[n]`.
+  return p;
+}
+
+const JS_KEYWORDS = new Set([
+  'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete',
+  'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import',
+  'in', 'instanceof', 'let', 'new', 'null', 'of', 'return', 'super', 'switch', 'this', 'throw',
+  'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield',
+]);
+
+function isSafeJsIdent(s: string): boolean {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s) && !JS_KEYWORDS.has(s);
+}
+
 // ─── Editor serialization ─────────────────────────────────────────────────────
 
 export function serializeEditor(el: HTMLElement): string {
@@ -160,7 +208,7 @@ export function serializeRangeFromEditor(editorEl: HTMLElement, sel: Selection):
  *   auth?.['key']*           — authentication state (user, accessToken, refreshToken)
  *   parameters?.['name'] | parameters?.name | parameters.name  — global workflow params
  */
-export const CHIP_RE = /collections(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)workflow(?:\?\.)?\['[^']+'\](?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context\.(?:item|index|parent)(?:(?:\?\.\['[^']*'\]|\?\.\[\d+\])|(?:\.\w+))*|context(?:\?\.|\.)component(?:(?:\?\.|\.)(?:props|variables|model)(?:(?:\?\.|\.)(?:\['[^']*'\]|[\w$]+)|\['[^']*'\])*)?|context\.local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\??\.(?:browser|screen)(?:\??\.(?:\['[^']*'\]|[\w$]+))*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|auth(?:(?:\?\.|\.)[\w$]+|(?:\?\.|\.)?\['[^']+'\])(?:\?\.[\w$]+|\?\.\['[^']*'\])*|parameters(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|parameters(?:\?\.|\.)[\w$]+/g;
+export const CHIP_RE = /collections(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|variables(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|local\??\.data(?:\??\.(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)workflow(?:\?\.)?\['[^']+'\](?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|context(?:\?\.|\.)(?:item|index|parent)(?:(?:\?\.|\.)(?:\['[^']*'\]|[\w$]+)|\?\.\[\d+\])*|context(?:\?\.|\.)component(?:(?:\?\.|\.)(?:props|variables|model)(?:(?:\?\.|\.)(?:\['[^']*'\]|[\w$]+)|\['[^']*'\])*)?|context(?:\?\.|\.)local(?:\?\.data(?:\?\.\['[^']*'\])*)*|globalContext\??\.(?:browser|screen)(?:\??\.(?:\['[^']*'\]|[\w$]+))*|pages\['[^']+'\](?:\?\.\['[^']*'\])*|theme(?:\.(?:colors|sections|fonts|radius)|\?\.\['(?:colors|sections|fonts|radius)'\])(?:\?\.\['[^']*'\]|\.\w+)*|components\?\.\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\])*|event(?:(?:\?\.|\.)[\w$]+|\?\.\['[^']*'\]|\?\.\[\d+\])*|auth(?:(?:\?\.|\.)[\w$]+|(?:\?\.|\.)?\['[^']+'\])(?:\?\.[\w$]+|\?\.\['[^']*'\])*|parameters(?:\?\.)?\['([^']+)'\](?:\?\.\['[^']*'\]|\?\.\[\d+\]|\.[\w$]+)*|parameters(?:\?\.|\.)[\w$]+/g;
 
 export const CHIP_INNER_CSS = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:block';
 
@@ -747,6 +795,10 @@ export function rechipCurrentTextNode(editorEl: HTMLElement): boolean {
 // ─── context path helper ──────────────────────────────────────────────────────
 
 export function contextPathToChipFormula(path: string): string {
+  // Accept optional-chained authoring like `context?.item?.data?.dateStr`.
+  // Branches below work off the canonical dot form, so strip `?.` once up front.
+  path = path.replace(/\?\./g, '.');
+
   let scopeRoot: string;
   let fieldParts: string[];
 
@@ -920,18 +972,19 @@ export function populateEditor(
           .replace(/\?\./g, '.');
         el.appendChild(buildChipSpan(formulaPath, friendly, 'shared-component'));
       }
-    } else if (formulaPath.startsWith('context.local')) {
+    } else if (formulaPath.startsWith('context.local') || formulaPath.startsWith('context?.local')) {
       const keyMatch = formulaPath.match(/\?\.\['([^']+)'\]\s*$/);
       const friendly = keyMatch ? `local.${keyMatch[1]}` : 'local';
       el.appendChild(buildChipSpan(formulaPath, friendly, 'shared-component'));
-    } else if (formulaPath.startsWith('context.')) {
+    } else if (formulaPath.startsWith('context.') || formulaPath.startsWith('context?.')) {
       if (!formulaPath.includes("?.['")) {
         formulaPath = contextPathToChipFormula(formulaPath);
       }
       const friendly = formulaPath
-        .replace(/^context\./, '')
+        .replace(/^context\??\./, '')
         .replace(/\?\.\['([^']+)'\]/g, '.$1')
-        .replace(/\?\.\[(\d+)\]/g, '[$1]');
+        .replace(/\?\.\[(\d+)\]/g, '[$1]')
+        .replace(/\?\./g, '.');
       el.appendChild(buildChipSpan(formulaPath, friendly, 'context'));
     } else if (formulaPath.startsWith('globalContext.') || formulaPath.startsWith('globalContext?.')) {
       const friendly = formulaPath
@@ -973,7 +1026,11 @@ export function populateEditor(
         .replace(/\['([^']+)'\]/, '.$1');
       el.appendChild(buildChipSpan(formulaPath, friendly, 'auth'));
     }
-    lastEnd = match.index + formulaPath.length;
+    // Use the *original* match length, not formulaPath.length: some branches
+    // (e.g. `context.`) reassign formulaPath to a longer canonical form via
+    // contextPathToChipFormula, which would otherwise advance lastEnd past
+    // the real end of the match and eat trailing source text (like a `}`).
+    lastEnd = match.index + match[0].length;
   }
 
   if (lastEnd < processed.length) {

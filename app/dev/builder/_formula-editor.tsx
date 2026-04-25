@@ -89,7 +89,10 @@ import {
   appendTextWithOperatorChips,
   contextPathToChipFormula, insertPastedFormulaAtCaret, populateEditor,
   pathToFormulaAndDisplay,
+  buildIdentifierForJs,
 } from './_formula-editor-dom';
+import { JavaScriptEditor, type JavaScriptEditorHandle } from './_javascript-editor';
+import { isJsBoundValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,6 +142,12 @@ export interface FormulaEditorProps {
    * the Quick tab already shows component context).
    */
   paramsInQuick?: boolean;
+  /**
+   * Lock the editor into JavaScript mode and hide the Formula | JavaScript dropdown.
+   * Used by the runJavaScript workflow step config so the side tabs (Variables, Data,
+   * Formulas, Quick) are available but the user can never switch into chip-formula mode.
+   */
+  lockToJs?: boolean;
 }
 
 // ─── WorkflowResultsTab ───────────────────────────────────────────────────────
@@ -280,7 +289,7 @@ function WorkflowResultGroup({
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick, lockToJs }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -300,6 +309,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     }))
   );
   const selectedIds = useBuilderStore(s => s.selectedIds);
+  const selectedMapIndex = useBuilderStore(s => s.selectedMapIndex);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const editingSharedComponentId = useBuilderStore(s => s.editingSharedComponentId);
   const [isFocused, setIsFocused] = useState(false);
@@ -378,6 +388,16 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
 
   // formula state: serialized string from the contenteditable div
   const [formula, setFormula] = useState(initialFormula);
+
+  // Mode: 'formula' = legacy chip editor, 'js' = CodeMirror JavaScript editor.
+  // Initialize from the stored value shape — `{ js: "..." }` opens directly into JS mode.
+  // When `lockToJs` is set the editor is permanently in JS mode (mode toggle is hidden).
+  const [mode, setMode] = useState<'formula' | 'js'>(() => (lockToJs || isJsBoundValue(value) ? 'js' : 'formula'));
+  const [jsCode, setJsCode] = useState<string>(() => {
+    if (isJsBoundValue(value)) return (value as { js: string }).js;
+    return '';
+  });
+  const jsEditorRef = useRef<JavaScriptEditorHandle | null>(null);
 
   // Filter test results to only those belonging to the currently open workflow canvas.
   // Entries from other workflows (e.g. Login, older runs) are excluded so the Workflow
@@ -700,6 +720,38 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     }
     Object.assign(collectionsMap, collStaging);
 
+    // SC contexts are built BEFORE the map-ancestor loop so the map evaluator can
+    // see `context.component.props.*` while resolving inner maps that read from it
+    // (e.g. the DatePicker day-cell map reads `context.component.variables[...]`).
+    const scComponentContext = (() => {
+      if (!sharedAncestorModelId) return undefined;
+      const model = getSharedComponents()[sharedAncestorModelId];
+      const props = (model as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined)?.properties ?? [];
+      const selId = selectedIds[0];
+      const sharedRootNode = selId ? findSharedRoot(pageNodes as SDUINode[], selId) : null;
+      const instanceProps = sharedRootNode
+        ? ((sharedRootNode as unknown as Record<string, unknown>).props ?? {}) as Record<string, unknown>
+        : {};
+      const propsMap: Record<string, unknown> = {};
+      for (const p of props) {
+        let val = p.name in instanceProps ? instanceProps[p.name] : (p.defaultValue ?? '');
+        if (val && typeof val === 'object' && 'formula' in (val as Record<string, unknown>)) {
+          const f = (val as { formula: string }).formula;
+          try {
+            val = evaluateFormula(f, { ...zustandData, ...vs, variables: vs }).value;
+          } catch {
+            val = f;
+          }
+        }
+        propsMap[p.name] = val;
+      }
+      return { props: propsMap };
+    })();
+
+    const scLocalContext = sharedAncestorModelId ? {
+      data: { sharedComponent: { instancesCount: 1, index: 0, totalCount: 1 } },
+    } : undefined;
+
     // Resolve context.item from the selected node's repeat ancestors (supports nested repeats)
     let contextItem: Record<string, unknown> | undefined;
     let contextParentItem: Record<string, unknown> | undefined;
@@ -724,69 +776,51 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         walkNode = p ?? null;
       }
 
-      // Resolve a non-context-relative map binding to its first array item
-      const resolveMapItem = (mp: string): Record<string, unknown> | undefined => {
-        const bm = mp.match(/^variables\s*\[['"]([^'"]+)['"]\]/);
-        if (bm) {
-          const vsVal = (vs as Record<string, unknown>)?.[bm[1]];
-          if (Array.isArray(vsVal) && vsVal.length > 0) {
-            const hasExtraNav = mp.length > bm[0].length;
-            const first = vsVal[0];
-            if (hasExtraNav && Array.isArray(first) && first.length > 0) {
-              return first[0] as Record<string, unknown>;
-            }
-            return first as Record<string, unknown>;
-          }
-          if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
-          return undefined;
-        }
-        const parts = mp.split('.');
-        for (let pi = 1; pi <= parts.length; pi++) {
-          const flatKey = parts.slice(0, pi).join('.');
-          const flatVal = zustandData[flatKey];
-          if (flatVal !== undefined) {
-            let val: unknown = flatVal;
-            for (let j = pi; j < parts.length; j++) {
-              if (val && typeof val === 'object' && !Array.isArray(val)) {
-                const next = (val as Record<string, unknown>)[parts[j]];
-                if (next !== undefined) val = next;
-              } else { break; }
-            }
-            if (Array.isArray(val) && val.length > 0) return val[0] as Record<string, unknown>;
-            if (val && typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
-          }
-        }
-        if (mp.startsWith('variables.')) {
-          const vsKey = mp.slice('variables.'.length);
-          const vsVal = (vs as Record<string, unknown>)?.[vsKey];
-          if (Array.isArray(vsVal) && vsVal.length > 0) return vsVal[0] as Record<string, unknown>;
-          if (vsVal && typeof vsVal === 'object' && !Array.isArray(vsVal)) return vsVal as Record<string, unknown>;
-        }
-        return undefined;
-      };
-
-      // Resolve from outermost to innermost so context-relative inner maps
-      // can navigate through the already-resolved outer item
+      // Resolve from outermost to innermost so context-relative inner maps can
+      // navigate through the already-resolved outer item. We delegate ALL binding
+      // shapes (variables['UUID'], dot paths, complex JS expressions like
+      // Array.from(...), and context.item.* relative paths) to evaluateFormula —
+      // one code path that mirrors what the runtime engine does.
       for (let ai = mapAncestors.length - 1; ai >= 0; ai--) {
         const mp = mapAncestors[ai];
-        const ctxMatch = mp.match(/^(?:context\.item\.data\.|context\.item\.|\$item\.)(.+)$/);
-        if (ctxMatch && contextItem) {
-          contextParentItem = contextItem;
-          let val: unknown = contextItem;
-          for (const seg of ctxMatch[1].split('.')) {
-            if (val && typeof val === 'object' && !Array.isArray(val)) {
-              val = (val as Record<string, unknown>)[seg];
-            } else { val = undefined; break; }
-          }
-          if (Array.isArray(val) && val.length > 0) contextItem = val[0] as Record<string, unknown>;
-          else if (val && typeof val === 'object' && !Array.isArray(val)) contextItem = val as Record<string, unknown>;
-          else contextItem = undefined;
-        } else if (!ctxMatch) {
-          const resolved = resolveMapItem(mp);
-          if (resolved) {
-            if (contextItem) contextParentItem = contextItem;
-            contextItem = resolved;
-          }
+        const itemCtx = contextItem
+          ? {
+              ...contextItem,
+              data: { ...contextItem, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [contextItem] },
+              index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [contextItem],
+            }
+          : undefined;
+        const snapshot: Record<string, unknown> = {
+          ...zustandData,
+          ...vs,
+          variables: vs,
+          collections: collectionsMap,
+          context: {
+            ...(itemCtx ? { item: itemCtx, index: 0 } : {}),
+            ...(scComponentContext ? { component: scComponentContext } : {}),
+            ...(scLocalContext ? { local: scLocalContext } : {}),
+          },
+        };
+
+        let value: unknown;
+        try { value = evaluateFormula(mp, snapshot).value; } catch { value = undefined; }
+
+        // Innermost map (ai === 0) honors the canvas-tracked selectedMapIndex so the preview
+        // matches the cell the user clicked. Outer maps fall back to element 0 since
+        // selectedMapIndex applies to the innermost iteration only.
+        const isInnermost = ai === 0;
+        const pickIdx = isInnermost && typeof selectedMapIndex === 'number' ? selectedMapIndex : 0;
+        let resolved: Record<string, unknown> | undefined;
+        if (Array.isArray(value) && value.length > 0) {
+          const target = value[pickIdx] ?? value[0];
+          if (target && typeof target === 'object' && !Array.isArray(target)) resolved = target as Record<string, unknown>;
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+          resolved = value as Record<string, unknown>;
+        }
+
+        if (resolved) {
+          if (contextItem) contextParentItem = contextItem;
+          contextItem = resolved;
         }
       }
     }
@@ -832,37 +866,6 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       workflowMap[key] = { result: entry.result, error: entry.error };
     }
 
-    const scComponentContext = (() => {
-      if (!sharedAncestorModelId) return undefined;
-      const model = getSharedComponents()[sharedAncestorModelId];
-      const props = (model as { properties?: Array<{ id: string; name: string; defaultValue?: unknown }> } | undefined)?.properties ?? [];
-      // Read the actual instance's property overrides from the shared root node
-      const selId = selectedIds[0];
-      const sharedRootNode = selId ? findSharedRoot(pageNodes as SDUINode[], selId) : null;
-      const instanceProps = sharedRootNode
-        ? ((sharedRootNode as unknown as Record<string, unknown>).props ?? {}) as Record<string, unknown>
-        : {};
-      const propsMap: Record<string, unknown> = {};
-      for (const p of props) {
-        let val = p.name in instanceProps ? instanceProps[p.name] : (p.defaultValue ?? '');
-        // Unwrap FormulaValue objects so the preview shows the resolved value
-        if (val && typeof val === 'object' && 'formula' in (val as Record<string, unknown>)) {
-          const f = (val as { formula: string }).formula;
-          try {
-            val = evaluateFormula(f, { ...zustandData, ...vs, variables: vs }).value;
-          } catch {
-            val = f;
-          }
-        }
-        propsMap[p.name] = val;
-      }
-      return { props: propsMap };
-    })();
-
-    const scLocalContext = sharedAncestorModelId ? {
-      data: { sharedComponent: { instancesCount: 1, index: 0, totalCount: 1 } },
-    } : undefined;
-
     // Build parameters map from global workflow test values when editing a global workflow
     const parametersCtx: Record<string, unknown> = {};
     if (workflowCanvasTarget?.kind === 'globalWorkflow') {
@@ -895,6 +898,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       },
       context: {
         ...(contextItem ? (() => {
+          const innerIdx = typeof selectedMapIndex === 'number' ? selectedMapIndex : 0;
           const parentCtx = contextParentItem
             ? { data: { ...contextParentItem, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [contextParentItem] } }
             : null;
@@ -903,14 +907,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               ...contextItem,
               data: {
                 ...contextItem,
-                index: 0,
-                repeatIndex: 0,
+                index: innerIdx,
+                repeatIndex: innerIdx,
                 isACopy: false,
                 parent: parentCtx,
                 repeatedItems: [contextItem],
               },
-              index: 0,
-              repeatIndex: 0,
+              index: innerIdx,
+              repeatIndex: innerIdx,
               isACopy: false,
               parent: parentCtx,
               repeatedItems: [contextItem],
@@ -926,7 +930,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       pages,
       theme,
     };
-  }, [vsData, zustandData, selectedIds, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta]);
+  }, [vsData, zustandData, selectedIds, selectedMapIndex, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -935,14 +939,30 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     return { ...context, event: eventShape };
   }, [context, workflowTrigger]);
 
-  const evalResult = useMemo(() => evaluateFormula(formula, contextWithEvent), [formula, contextWithEvent]);
+  const evalResult = useMemo(() => {
+    if (mode === 'js') {
+      // Evaluate the JS body via the same evaluator pipeline ({ js } shape).
+      return evaluateFormula({ js: jsCode } as object, contextWithEvent);
+    }
+    return evaluateFormula(formula, contextWithEvent);
+  }, [mode, jsCode, formula, contextWithEvent]);
 
   const apply = useCallback(() => {
+    if (mode === 'js') {
+      const trimmed = jsCode.trim();
+      if (!trimmed) {
+        onChange('');
+      } else {
+        onChange({ js: jsCode } as unknown as FormulaValue);
+      }
+      onClose();
+      return;
+    }
     const el = editorRef.current;
     const formulaStr = el ? serializeEditor(el) : formula;
     onChange(formulaToStoredValue(formulaStr));
     onClose();
-  }, [formula, onChange, onClose]);
+  }, [mode, jsCode, formula, onChange, onClose]);
 
   const unbind = useCallback(() => {
     onChange('');
@@ -1000,41 +1020,74 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     }
   }, []);
 
+  // UUID → name maps for converting chip-style formula paths to JS identifier syntax
+  // when in JavaScript mode. We strip the trailing label-style segments and use
+  // the canonical labels stored in `varMap`/`dsMap`.
+  const uuidToVarName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const [uuid, info] of varMap) m.set(uuid, info.label);
+    return m;
+  }, [varMap]);
+  const uuidToCollectionName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const [uuid, info] of dsMap) m.set(uuid, info.label);
+    return m;
+  }, [dsMap]);
+
   // Insert a chip at the current caret position
   const insertChip = useCallback((formulaPath: string, displayLabel: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter') => {
+    if (mode === 'js') {
+      // JavaScript mode: insert WeWeb-style identifier (variables.cartCount, etc.)
+      // at the caret of the CodeMirror editor instead of a chip.
+      const ident = buildIdentifierForJs(formulaPath, uuidToVarName, uuidToCollectionName);
+      jsEditorRef.current?.insertAtCursor(ident);
+      return;
+    }
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
     insertChipAtCaret(el, formulaPath, displayLabel, type);
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
-  }, [restoreCaret, pushHistory]);
+  }, [mode, uuidToVarName, uuidToCollectionName, restoreCaret, pushHistory]);
 
   // Insert plain text (operators, variable paths) at caret
   const insertAtCursor = useCallback((text: string) => {
+    if (mode === 'js') {
+      jsEditorRef.current?.insertAtCursor(text);
+      return;
+    }
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
     insertPlainTextAtCaret(el, text);
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
-  }, [restoreCaret, pushHistory]);
+  }, [mode, restoreCaret, pushHistory]);
 
   // Insert a function as visual chips: [fnName] [(] [,]* [)]
   const insertFunction = useCallback((fnInsert: string, signature: string) => {
+    if (mode === 'js') {
+      jsEditorRef.current?.insertAtCursor(fnInsert);
+      return;
+    }
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
     insertFunctionChipsAtCaret(el, fnInsert, signature);
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
-  }, [restoreCaret, pushHistory]);
+  }, [mode, restoreCaret, pushHistory]);
 
   // Insert a colored operator chip
   const insertOperatorChip = useCallback((label: string, insertValue: string, category: string) => {
+    if (mode === 'js') {
+      jsEditorRef.current?.insertAtCursor(insertValue);
+      return;
+    }
     const el = editorRef.current;
     if (!el) return;
     restoreCaret();
     insertOperatorChipAtCaret(el, label, insertValue, category);
     const f = serializeEditor(el); setFormula(f); pushHistory(f);
-  }, [restoreCaret, pushHistory]);
+  }, [mode, restoreCaret, pushHistory]);
 
   // Copy: serialize selected formula text (not display labels) to clipboard
   const handleCopy = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -1258,6 +1311,32 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: '#f3f4f6', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        {/* Formula | JavaScript mode toggle — hidden when locked into JS mode
+            (e.g. from the runJavaScript workflow step config). */}
+        {!lockToJs && (
+          <select
+            data-testid="formula-mode-select"
+            value={mode}
+            onChange={(e) => {
+              const next = e.target.value as 'formula' | 'js';
+              if (next === 'js' && mode === 'formula') {
+                // Best-effort migration: seed JS body with `return <formula>;` so
+                // the user has something runnable. Lossy if the formula uses
+                // chip-only syntax (UUIDs); user will fix up identifiers via tabs.
+                const seed = formula.trim();
+                if (seed && !jsCode) setJsCode(`return ${seed};`);
+              }
+              setMode(next);
+            }}
+            style={{
+              fontSize: 10, padding: '1px 6px', background: '#1f2937', color: '#e5e7eb',
+              border: '1px solid #374151', borderRadius: 3, cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <option value="formula">Formula</option>
+            <option value="js">JavaScript</option>
+          </select>
+        )}
         {!hideUnbind && (
           <button onClick={unbind} data-testid="formula-unbind"
             style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
@@ -1268,9 +1347,22 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, lineHeight: 1, padding: '1px' }}>×</button>
       </div>
 
-      {/* ── Formula input — contenteditable ── */}
+      {/* ── Formula / JavaScript input ── */}
       <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Formula</div>
+        <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          {mode === 'js' ? 'JavaScript' : 'Formula'}
+        </div>
+        {mode === 'js' ? (
+          <JavaScriptEditor
+            ref={jsEditorRef}
+            value={jsCode}
+            onChange={setJsCode}
+            placeholder={"// Write JavaScript that returns a value.\n// Available: variables.<name>, collections.<name>.data, context.item, parameters\nreturn variables.cartCount > 0;"}
+            minHeight={120}
+            maxHeight={260}
+            testId="formula-js-input"
+          />
+        ) : (
         <div style={{
           background: '#0f172a',
           border: `1px solid ${isFocused ? '#818cf8' : '#374151'}`,
@@ -1336,6 +1428,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             }}
           />
         </div>
+        )}
       </div>
 
       {/* ── Current value + Expected format ── */}

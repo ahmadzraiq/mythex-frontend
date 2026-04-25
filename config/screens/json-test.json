@@ -152,7 +152,10 @@
                       "style": {
                         "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.3)",
                         "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": { "width": 0, "height": 4 },
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 4
+                        },
                         "shadowRadius": 12,
                         "shadowOpacity": 0.3,
                         "elevation": 6
@@ -175,8 +178,14 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   },
                   {
@@ -201,8 +210,14 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   }
                 ],
@@ -351,7 +366,10 @@
                           "style": {
                             "boxShadow": "0px 20px 60px -10px rgba(124, 58, 237, 0.25)",
                             "shadowColor": "rgb(124,58,237)",
-                            "shadowOffset": { "width": 0, "height": 20 },
+                            "shadowOffset": {
+                              "width": 0,
+                              "height": 20
+                            },
                             "shadowRadius": 60,
                             "shadowOpacity": 0.25,
                             "elevation": 30
@@ -384,15 +402,26 @@
                       {
                         "type": "Box",
                         "props": {
-                          "style": { "backgroundColor": "rgba(255, 255, 255, 0.08)" },
+                          "style": {
+                            "backgroundColor": "rgba(255, 255, 255, 0.08)"
+                          },
                           "className": "absolute z-[2] top-[0px] left-[0px] w-[100%] min-w-[0px] h-[100%]"
                         },
                         "id": "a1a28317-ada8-4cf2-9945-eb86942309f6",
                         "name": "Light Reflection Overlay",
                         "children": [],
                         "animation": {
-                          "enter": { "type": "fadeIn", "duration": 1200, "delay": 500 },
-                          "loop": { "type": "breathe", "duration": 5000, "repeatCount": -1, "direction": "alternate" }
+                          "enter": {
+                            "type": "fadeIn",
+                            "duration": 1200,
+                            "delay": 500
+                          },
+                          "loop": {
+                            "type": "breathe",
+                            "duration": 5000,
+                            "repeatCount": -1,
+                            "direction": "alternate"
+                          }
                         }
                       }
                     ]
@@ -422,8 +451,18 @@
                         "name": "Secondary Product Image",
                         "children": [],
                         "animation": {
-                          "enter": { "type": "slideInRight", "duration": 900, "delay": 200, "easing": "easeOut" },
-                          "loop": { "type": "float", "duration": 5500, "repeatCount": -1, "direction": "alternate" }
+                          "enter": {
+                            "type": "slideInRight",
+                            "duration": 900,
+                            "delay": 200,
+                            "easing": "easeOut"
+                          },
+                          "loop": {
+                            "type": "float",
+                            "duration": 5500,
+                            "repeatCount": -1,
+                            "direction": "alternate"
+                          }
                         }
                       }
                     ]
@@ -472,9 +511,20 @@
                       }
                     ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 300, "easing": "easeOut" },
-                      "hover": { "y": -4, "duration": 300 },
-                      "filter": { "enabled": true, "backdropBlur": 10 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 300,
+                        "easing": "easeOut"
+                      },
+                      "hover": {
+                        "y": -4,
+                        "duration": 300
+                      },
+                      "filter": {
+                        "enabled": true,
+                        "backdropBlur": 10
+                      }
                     }
                   },
                   {
@@ -511,9 +561,20 @@
                       }
                     ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 450, "easing": "easeOut" },
-                      "hover": { "y": -4, "duration": 300 },
-                      "filter": { "enabled": true, "backdropBlur": 10 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 450,
+                        "easing": "easeOut"
+                      },
+                      "hover": {
+                        "y": -4,
+                        "duration": 300
+                      },
+                      "filter": {
+                        "enabled": true,
+                        "backdropBlur": 10
+                      }
                     }
                   },
                   {
@@ -550,9 +611,20 @@
                       }
                     ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 600, "easing": "easeOut" },
-                      "hover": { "y": -4, "duration": 300 },
-                      "filter": { "enabled": true, "backdropBlur": 10 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 600,
+                        "easing": "easeOut"
+                      },
+                      "hover": {
+                        "y": -4,
+                        "duration": 300
+                      },
+                      "filter": {
+                        "enabled": true,
+                        "backdropBlur": 10
+                      }
                     }
                   }
                 ]
@@ -580,8 +652,17 @@
                 "name": "Floating Particle 1",
                 "children": [],
                 "animation": {
-                  "enter": { "type": "fadeIn", "duration": 1200 },
-                  "loop": { "type": "float", "duration": 6000, "repeatCount": -1, "direction": "alternate", "delay": 0 }
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 1200
+                  },
+                  "loop": {
+                    "type": "float",
+                    "duration": 6000,
+                    "repeatCount": -1,
+                    "direction": "alternate",
+                    "delay": 0
+                  }
                 }
               },
               {
@@ -597,8 +678,18 @@
                 "name": "Floating Particle 2",
                 "children": [],
                 "animation": {
-                  "enter": { "type": "fadeIn", "duration": 1200, "delay": 200 },
-                  "loop": { "type": "float", "duration": 7000, "repeatCount": -1, "direction": "alternate", "delay": 200 }
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 1200,
+                    "delay": 200
+                  },
+                  "loop": {
+                    "type": "float",
+                    "duration": 7000,
+                    "repeatCount": -1,
+                    "direction": "alternate",
+                    "delay": 200
+                  }
                 }
               },
               {
@@ -614,27 +705,43 @@
                 "name": "Floating Particle 3",
                 "children": [],
                 "animation": {
-                  "enter": { "type": "fadeIn", "duration": 1200, "delay": 400 },
-                  "loop": { "type": "float", "duration": 8000, "repeatCount": -1, "direction": "alternate", "delay": 400 }
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 1200,
+                    "delay": 400
+                  },
+                  "loop": {
+                    "type": "float",
+                    "duration": 8000,
+                    "repeatCount": -1,
+                    "direction": "alternate",
+                    "delay": 400
+                  }
                 }
               }
             ]
           }
         ],
         "animation": {
-          "enter": { "type": "fadeIn", "duration": 800, "easing": "easeOut" }
+          "enter": {
+            "type": "fadeIn",
+            "duration": 800,
+            "easing": "easeOut"
+          }
         }
       },
       {
         "type": "Box",
         "props": {
           "className": "w-full flex flex-col gap-[12px] pt-[40px] pr-[40px] pb-[40px] pl-[40px]",
-          "style": { "backgroundColor": "#0f172a" }
+          "style": {
+            "backgroundColor": "#0f172a"
+          }
         },
         "id": "issues-panel",
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[20px] font-bold !text-[#f8fafc]"
             },
@@ -644,21 +751,30 @@
           },
           {
             "type": "Text",
-            "props": { "className": "text-[13px] !text-[#94a3b8]" },
+            "props": {
+              "className": "text-[13px] !text-[#94a3b8]"
+            },
             "text": "6 issues were found in the original JSON. The hero above shows the corrected version.",
             "id": "issues-sub",
             "children": []
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-col gap-[12px] pt-[12px]" },
+            "props": {
+              "className": "flex flex-col gap-[12px] pt-[12px]"
+            },
             "id": "issues-list",
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-1",
                 "children": [
@@ -666,7 +782,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-1-badge",
@@ -674,19 +798,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-1-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "min-h-screen on parent breaks all h-[100%] children",
                         "id": "issue-1-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "Background Layer (absolute h-[100%]), Main Content Container (h-[100%]), and their children all resolve height:100% against the parent's auto height since only min-height was set. Background gradient and layout container collapsed to 0px height. Fix: changed root to h-screen.",
                         "id": "issue-1-detail",
                         "children": []
@@ -699,7 +829,12 @@
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-2",
                 "children": [
@@ -707,7 +842,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-2-badge",
@@ -715,19 +858,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-2-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "Right Column had empty props — no layout, no width, no padding",
                         "id": "issue-2-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "\"Right Column - Glassmorphism Panel\" had props:{} with nothing set. No flex-col, no width, no gap between cards. The column shrank to content width and cards had no spacing. Fix: added flex flex-col flex-1 min-w-[280px] gap-[16px].",
                         "id": "issue-2-detail",
                         "children": []
@@ -740,7 +889,12 @@
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-3",
                 "children": [
@@ -748,7 +902,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-3-badge",
@@ -756,19 +918,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-3-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "Glassmorphism cards had no padding and no border-solid",
                         "id": "issue-3-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "Cards had border-[1px] and border-color but no border-solid — on web, border-style defaults to none so borders were invisible. Also no padding so text rendered flush against the card edge. Fix: added border-solid + padding + flex flex-col gap to all three cards.",
                         "id": "issue-3-detail",
                         "children": []
@@ -781,7 +949,12 @@
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-4",
                 "children": [
@@ -789,7 +962,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-4-badge",
@@ -797,19 +978,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-4-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "Floating Elements Layer had no position and particles had no size",
                         "id": "issue-4-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "The layer had props:{} — not positioned absolutely, so it rendered in document flow pushing layout down. The three particles had only a background color class but no w/h — they collapsed to 0x0px and were invisible. Fix: added absolute inset, w/h, and rounded corners to the layer and particles.",
                         "id": "issue-4-detail",
                         "children": []
@@ -822,7 +1009,12 @@
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-5",
                 "children": [
@@ -830,7 +1022,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-5-badge",
@@ -838,19 +1038,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-5-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "Floating Secondary Image Container had no absolute positioning",
                         "id": "issue-5-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "props:{} with no position classes. The secondary image rendered in document flow below the main 450px container, adding unexpected height to the left column. Also the image used style width/height as strings (\"300px\") — should be numbers. Fix: added absolute z-[4] bottom-[-40px] right-[-60px] to the container, and converted string dimensions to numbers.",
                         "id": "issue-5-detail",
                         "children": []
@@ -863,7 +1069,12 @@
                 "type": "Box",
                 "props": {
                   "className": "flex-row gap-[12px] rounded-[8px] pt-[14px] pr-[18px] pb-[14px] pl-[18px]",
-                  "style": { "backgroundColor": "#1a0a0a", "borderWidth": 1, "borderColor": "#7f1d1d", "borderStyle": "solid" }
+                  "style": {
+                    "backgroundColor": "#1a0a0a",
+                    "borderWidth": 1,
+                    "borderColor": "#7f1d1d",
+                    "borderStyle": "solid"
+                  }
                 },
                 "id": "issue-6",
                 "children": [
@@ -871,7 +1082,15 @@
                     "type": "Text",
                     "props": {
                       "className": "text-[11px] font-bold !text-[#fff]",
-                      "style": { "backgroundColor": "#ef4444", "borderRadius": 4, "paddingTop": 2, "paddingBottom": 2, "paddingLeft": 8, "paddingRight": 8, "marginTop": 2 }
+                      "style": {
+                        "backgroundColor": "#ef4444",
+                        "borderRadius": 4,
+                        "paddingTop": 2,
+                        "paddingBottom": 2,
+                        "paddingLeft": 8,
+                        "paddingRight": 8,
+                        "marginTop": 2
+                      }
                     },
                     "text": "FIXED",
                     "id": "issue-6-badge",
@@ -879,19 +1098,25 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col flex-1 gap-[4px]" },
+                    "props": {
+                      "className": "flex flex-col flex-1 gap-[4px]"
+                    },
                     "id": "issue-6-body",
                     "children": [
                       {
                         "type": "Text",
-                        "props": { "className": "text-[14px] font-semibold !text-[#e2e8f0]" },
+                        "props": {
+                          "className": "text-[14px] font-semibold !text-[#e2e8f0]"
+                        },
                         "text": "Gradient shapes missing backgroundSize in outerStyle",
                         "id": "issue-6-title",
                         "children": []
                       },
                       {
                         "type": "Text",
-                        "props": { "className": "text-[13px] !text-[#94a3b8]" },
+                        "props": {
+                          "className": "text-[13px] !text-[#94a3b8]"
+                        },
                         "text": "All three gradient shapes had backgroundImage in animation.outerStyle but no backgroundSize. Without it, some browsers render the gradient at auto dimensions which may not fill the element. Fix: added backgroundSize:\"100% 100%\" to all three gradient shape outerStyles.",
                         "id": "issue-6-detail",
                         "children": []

@@ -6,11 +6,35 @@
 import root from './root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import formulasJson from './formulas.json';
+import variablesJson from './variables.json';
+import dataSourcesJson from './datasources.json';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
+import { registerVariableNames, registerCollectionNames } from '@/lib/sdui/variable-name-registry';
 
 // Bootstrap global formula registry for runtime formula evaluation
 // (builder also calls registerGlobalFormulas via its store subscription)
 registerGlobalFormulas(formulasJson as Record<string, unknown>);
+
+// Bootstrap variable / collection name registries so JavaScript bindings
+// ({ "js": "variables.cartCount" }) and the runJavaScript workflow action
+// can resolve names → UUIDs at runtime.
+{
+  const vars = (variablesJson as { variables?: Record<string, { label?: string }> })?.variables ?? {};
+  const varMap: Record<string, string> = {};
+  for (const [uuid, def] of Object.entries(vars)) {
+    const label = def?.label ?? uuid;
+    if (label) varMap[label] = uuid;
+  }
+  registerVariableNames(varMap);
+
+  const ds = dataSourcesJson as Record<string, { label?: string; name?: string }>;
+  const colMap: Record<string, string> = {};
+  for (const [uuid, def] of Object.entries(ds)) {
+    const label = def?.label ?? def?.name ?? uuid;
+    if (label) colMap[label] = uuid;
+  }
+  registerCollectionNames(colMap);
+}
 
 const registry: ConfigRegistry = {
   layouts: root.layouts as ConfigRegistry['layouts'],

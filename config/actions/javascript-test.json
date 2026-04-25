@@ -1,0 +1,171 @@
+{
+  "jsDemoMath": {
+    "name": "JS — Read variable + math, write back",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "calc",
+        "name": "compute cartCount * 1.05",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const count = wwLib.variables.get('cartCount');\nconst withTax = count * 1.05;\nreturn `cartCount=${count}, withTax=${withTax.toFixed(2)}`;"
+        }
+      },
+      {
+        "id": "writeback",
+        "name": "Write JS result back into jsMathResult",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "js-demo-0000-0000-0000-000000000006",
+          "value": { "formula": "context.workflow.calc.result" }
+        }
+      }
+    ]
+  },
+
+  "jsDemoIncrementCart": {
+    "name": "JS — Increment cartCount via wwLib.variables.set",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "incr",
+        "name": "wwLib.variables.set('cartCount', current + 1)",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const current = wwLib.variables.get('cartCount') ?? 0;\nwwLib.variables.set('cartCount', current + 1);\nreturn current + 1;"
+        }
+      }
+    ]
+  },
+
+  "jsDemoResetCart": {
+    "name": "JS — Reset cartCount to 0",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "reset",
+        "type": "runJavaScript",
+        "config": {
+          "code": "wwLib.variables.set('cartCount', 0);\nreturn 0;"
+        }
+      }
+    ]
+  },
+
+  "jsDemoFetchAsync": {
+    "name": "JS — Async fetch (GitHub API) + branch on result",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "fetchRepo",
+        "name": "fetch facebook/react stargazers",
+        "type": "runJavaScript",
+        "config": {
+          "code": "try {\n  const r = await fetch('https://api.github.com/repos/facebook/react');\n  if (!r.ok) throw new Error('HTTP ' + r.status);\n  const json = await r.json();\n  return { ok: true, stars: json.stargazers_count, name: json.full_name };\n} catch (err) {\n  return { ok: false, error: String(err && err.message || err) };\n}"
+        }
+      },
+      {
+        "id": "branchOnResult",
+        "name": "branch on fetch.ok",
+        "type": "branch",
+        "config": {
+          "condition": { "js": "return context.workflow.fetchRepo.result?.ok === true;" }
+        },
+        "trueBranch": [
+          {
+            "id": "writeOk",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "js-demo-0000-0000-0000-000000000007",
+              "value": {
+                "js": "const r = context.workflow.fetchRepo.result;\nreturn `${r.name} — ${r.stars.toLocaleString()} stars`;"
+              }
+            }
+          }
+        ],
+        "falseBranch": [
+          {
+            "id": "writeErr",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "js-demo-0000-0000-0000-000000000007",
+              "value": {
+                "js": "return `fetch failed: ${context.workflow.fetchRepo.result?.error ?? 'unknown'}`;"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "jsDemoSideEffect": {
+    "name": "JS — Side effect: refetch + set variable + return",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "syncStep",
+        "name": "Refetch products + stamp lastSyncAt",
+        "type": "runJavaScript",
+        "config": {
+          "code": "try {\n  await wwLib.collections.refetch('Featured Products');\n} catch (err) {\n  // collection may not exist in this build — keep going so the demo always finishes\n}\nconst stamp = new Date().toISOString();\nwwLib.variables.set('lastSyncAt', stamp);\nwwLib.variables.set('jsSyncStatus', `synced @ ${stamp}`);\nreturn { syncedAt: stamp };"
+        }
+      }
+    ]
+  },
+
+  "jsDemoForEachUsers": {
+    "name": "JS — forEach over variables.users with inner runJavaScript",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "resetCount",
+        "type": "runJavaScript",
+        "config": {
+          "code": "wwLib.variables.set('processedCount', 0);\nreturn 0;"
+        }
+      },
+      {
+        "id": "loopUsers",
+        "name": "forEach user (only active)",
+        "type": "forEach",
+        "config": {
+          "items": { "js": "return (variables.users ?? []).filter(u => u.active);" }
+        },
+        "loopBody": [
+          {
+            "id": "incrCount",
+            "type": "runJavaScript",
+            "config": {
+              "code": "const next = (wwLib.variables.get('processedCount') ?? 0) + 1;\nwwLib.variables.set('processedCount', next);\nreturn next;"
+            }
+          }
+        ]
+      },
+      {
+        "id": "writeForEachResult",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "js-demo-0000-0000-0000-000000000009",
+          "value": {
+            "js": "const total = (variables.users ?? []).length;\nconst done = wwLib.variables.get('processedCount');\nreturn `Processed ${done} active user(s) out of ${total}.`;"
+          }
+        }
+      }
+    ]
+  },
+
+  "jsDemoOnPageMount": {
+    "name": "JS — On page mount: seed userEmail",
+    "trigger": "mounted",
+    "steps": [
+      {
+        "id": "seedEmail",
+        "type": "runJavaScript",
+        "config": {
+          "code": "if (!wwLib.variables.get('userEmail')) {\n  wwLib.variables.set('userEmail', '');\n}\nreturn true;"
+        }
+      }
+    ]
+  }
+}

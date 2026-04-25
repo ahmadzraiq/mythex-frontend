@@ -25,7 +25,7 @@
  *   Cmd+P               — toggle preview
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, startTransition } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 
 /**
@@ -776,7 +776,7 @@ function TopBar({
           <button
             key={v}
             data-testid={`viewport-${v}`}
-            onClick={() => setViewport(v)}
+            onClick={() => startTransition(() => setViewport(v))}
             title={`${v} (${VIEWPORT_LABELS[v]}px)`}
             style={{
               display: 'flex', alignItems: 'center', gap: 3,

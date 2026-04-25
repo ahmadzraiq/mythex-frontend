@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BuilderContext } from './builder-context';
+import { BuilderContext, PopoverShownContext } from './builder-context';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useColorScheme } from 'nativewind';
 import { create } from 'zustand';
@@ -438,6 +438,35 @@ export function SDUIEngine({
           storeErrorsIn?: string;
           actions?: Array<{ action: string; payload?: Record<string, unknown> }>;
         } | undefined;
+        // Ambient Shared/System Component lookup: when the action name isn't a
+        // known top-level actionsConfig entry AND we're rendering inside an SC
+        // subtree (scope.context.component.id set by the renderer on `_shared` /
+        // `_system` roots), try resolving the name as a component-scoped workflow
+        // on the ambient model. If found, synthesize an `executeComponentAction`
+        // actionDef so element bindings can be written as plain
+        //   `{ action: "<scWfId>", args: {...} }`
+        // instead of an inline `{ type: "workflow", steps: [...] }` wrapper.
+        if (!actionDef && scope) {
+          const ambientComp = ((scope.context as Record<string, unknown> | undefined)?.component) as Record<string, unknown> | undefined;
+          const ambientModelId = ambientComp?.id as string | undefined;
+          if (ambientModelId) {
+            let scModel: { workflows?: Record<string, unknown> } | undefined;
+            try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[ambientModelId]; } catch { /* noop */ }
+            if (!scModel) {
+              try { scModel = require('@/lib/builder/system-component-data').getSystemComponents()[ambientModelId]; } catch { /* noop */ }
+            }
+            if (!scModel) {
+              try { scModel = require('@/config/shared-components.json')[ambientModelId]; } catch { /* noop */ }
+            }
+            if (scModel?.workflows?.[actionName]) {
+              const ambientArgs = (a as { args?: Record<string, unknown> }).args;
+              actionDef = {
+                type: 'executeComponentAction',
+                config: { action: actionName, args: ambientArgs },
+              } as unknown as typeof actionDef;
+            }
+          }
+        }
         // Fall back to treating the action object itself as the definition when no named action found
         // This allows inline types like { "type": "increment", "path": "..." } inside runMultiple
         if (!actionDef && 'type' in (a as object)) {
@@ -700,14 +729,19 @@ export function SDUIEngine({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [builderMode, configName]);
 
-  const builderContextValue = useMemo(() => ({ builderMode, activeBreakpoint, shownPopovers }), [builderMode, activeBreakpoint, shownPopovers]);
+  const builderContextValue = useMemo(
+    () => ({ builderMode, activeBreakpoint }),
+    [builderMode, activeBreakpoint],
+  );
 
   return (
     <BuilderContext.Provider value={builderContextValue}>
-      <RunActionProvider value={runActionStable}>
-        <SDURenderer node={config.ui} context={context} />
-        <SharedComponentDynamicRenderer context={context} viewportHeight={builderViewportHeight} />
-      </RunActionProvider>
+      <PopoverShownContext.Provider value={shownPopovers}>
+        <RunActionProvider value={runActionStable}>
+          <SDURenderer node={config.ui} context={context} />
+          <SharedComponentDynamicRenderer context={context} viewportHeight={builderViewportHeight} />
+        </RunActionProvider>
+      </PopoverShownContext.Provider>
     </BuilderContext.Provider>
   );
 }

@@ -1,11 +1,14 @@
 {
-  "meta": { "title": "Animation Showcase" },
+  "meta": {
+    "title": "Animation Showcase"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-gray-950 flex flex-col" },
+    "props": {
+      "className": "w-full min-h-screen bg-gray-950 flex flex-col"
+    },
     "children": [
-
       {
         "type": "Box",
         "props": {
@@ -16,9 +19,16 @@
             "type": "Box",
             "props": {
               "className": "absolute top-[80px] left-[-100px] w-[400px] h-[400px] rounded-full",
-              "style": { "background": "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)" },
+              "style": {
+                "background": "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)"
+              },
               "animation": {
-                "loop": { "type": "float", "duration": 4000, "repeatCount": -1, "direction": "alternate" }
+                "loop": {
+                  "type": "float",
+                  "duration": 4000,
+                  "repeatCount": -1,
+                  "direction": "alternate"
+                }
               }
             }
           },
@@ -26,9 +36,16 @@
             "type": "Box",
             "props": {
               "className": "absolute bottom-[60px] right-[-80px] w-[500px] h-[500px] rounded-full",
-              "style": { "background": "radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)" },
+              "style": {
+                "background": "radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)"
+              },
               "animation": {
-                "loop": { "type": "float", "duration": 5000, "repeatCount": -1, "direction": "alternate" }
+                "loop": {
+                  "type": "float",
+                  "duration": 5000,
+                  "repeatCount": -1,
+                  "direction": "alternate"
+                }
               }
             }
           },
@@ -36,93 +53,221 @@
             "type": "Box",
             "props": {
               "className": "absolute top-[40%] left-[50%] w-[300px] h-[300px] rounded-full",
-              "style": { "background": "radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)", "translateX": "-50%", "translateY": "-50%" },
+              "style": {
+                "background": "radial-gradient(circle, rgba(236,72,153,0.2) 0%, transparent 70%)",
+                "translateX": "-50%",
+                "translateY": "-50%"
+              },
               "animation": {
-                "loop": { "type": "pulse", "duration": 3000, "repeatCount": -1, "direction": "alternate" }
+                "loop": {
+                  "type": "pulse",
+                  "duration": 3000,
+                  "repeatCount": -1,
+                  "direction": "alternate"
+                }
               }
             }
           },
-
           {
             "type": "Box",
-            "props": { "className": "z-[10] flex flex-col items-center gap-[24px] px-[24px] max-w-[900px]" },
+            "props": {
+              "className": "z-[10] flex flex-col items-center gap-[24px] px-[24px] max-w-[900px]"
+            },
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-[14px] font-semibold tracking-[4px] uppercase text-violet-400 text-center" },
+                "props": {
+                  "className": "text-[14px] font-semibold tracking-[4px] uppercase text-violet-400 text-center"
+                },
                 "text": "Animation Showcase",
                 "animation": {
-                  "enter": { "type": "fadeIn", "duration": 800, "delay": 200 }
-                }
-              },
-              {
-                "type": "Heading",
-                "props": { "size": "3xl", "className": "font-black text-white text-center leading-tight" },
-                "text": "Scroll Down. Watch Everything Come Alive.",
-                "animation": {
-                  "enter": { "type": "slideInUp", "duration": 900, "delay": 400 },
-                  "hover": { "scale": 1.02, "duration": 300 }
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 800,
+                    "delay": 200
+                  }
                 }
               },
               {
                 "type": "Text",
-                "props": { "className": "text-[18px] text-gray-400 text-center max-w-[600px]" },
-                "text": "This page demonstrates parallax layers, scroll-driven animations, hover/press interactions, staggered reveals, morphing shapes, gradient drifts, and more.",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-black text-white text-center leading-tight"
+                },
+                "text": "Scroll Down. Watch Everything Come Alive.",
                 "animation": {
-                  "enter": { "type": "fadeIn", "duration": 800, "delay": 700 }
+                  "enter": {
+                    "type": "slideInUp",
+                    "duration": 900,
+                    "delay": 400
+                  },
+                  "hover": {
+                    "scale": 1.02,
+                    "duration": 300
+                  }
                 }
               },
-
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[18px] text-gray-400 text-center max-w-[600px]"
+                },
+                "text": "This page demonstrates parallax layers, scroll-driven animations, hover/press interactions, staggered reveals, morphing shapes, gradient drifts, and more.",
+                "animation": {
+                  "enter": {
+                    "type": "fadeIn",
+                    "duration": 800,
+                    "delay": 700
+                  }
+                }
+              },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row flex-wrap justify-center gap-[12px] mt-[16px]" },
+                "props": {
+                  "className": "flex flex-row flex-wrap justify-center gap-[12px] mt-[16px]"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "bg-violet-600 rounded-full px-[24px] py-[12px] cursor-pointer" },
-                    "children": [{ "type": "Text", "props": { "className": "text-white font-semibold text-[14px]" }, "text": "Explore Features" }],
-                    "actions": [{ "action": "scrollToFeatures" }],
+                    "props": {
+                      "className": "bg-violet-600 rounded-full px-[24px] py-[12px] cursor-pointer"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-semibold text-[14px]"
+                        },
+                        "text": "Explore Features"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "scrollToFeatures"
+                      }
+                    ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 900 },
-                      "hover": { "y": -3, "scale": 1.05, "duration": 200, "styles": { "backgroundColor": "rgb(124,58,237)" } },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 900
+                      },
+                      "hover": {
+                        "y": -3,
+                        "scale": 1.05,
+                        "duration": 200,
+                        "styles": {
+                          "backgroundColor": "rgb(124,58,237)"
+                        }
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "rounded-full px-[24px] py-[12px] border-[1px] border-white/30 cursor-pointer" },
-                    "children": [{ "type": "Text", "props": { "className": "text-white font-semibold text-[14px]" }, "text": "See Parallax" }],
-                    "actions": [{ "action": "scrollToParallax" }],
+                    "props": {
+                      "className": "rounded-full px-[24px] py-[12px] border-[1px] border-white/30 cursor-pointer"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-semibold text-[14px]"
+                        },
+                        "text": "See Parallax"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "scrollToParallax"
+                      }
+                    ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 1000 },
-                      "hover": { "y": -3, "duration": 200, "styles": { "borderColor": "rgba(255,255,255,0.7)", "backgroundColor": "rgba(255,255,255,0.1)" } },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 1000
+                      },
+                      "hover": {
+                        "y": -3,
+                        "duration": 200,
+                        "styles": {
+                          "borderColor": "rgba(255,255,255,0.7)",
+                          "backgroundColor": "rgba(255,255,255,0.1)"
+                        }
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "rounded-full px-[24px] py-[12px] border-[1px] border-white/30 cursor-pointer" },
-                    "children": [{ "type": "Text", "props": { "className": "text-white font-semibold text-[14px]" }, "text": "Gallery" }],
-                    "actions": [{ "action": "scrollToGallery" }],
+                    "props": {
+                      "className": "rounded-full px-[24px] py-[12px] border-[1px] border-white/30 cursor-pointer"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-semibold text-[14px]"
+                        },
+                        "text": "Gallery"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "scrollToGallery"
+                      }
+                    ],
                     "animation": {
-                      "enter": { "type": "slideInUp", "duration": 700, "delay": 1100 },
-                      "hover": { "y": -3, "duration": 200, "styles": { "borderColor": "rgba(255,255,255,0.7)" } },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "enter": {
+                        "type": "slideInUp",
+                        "duration": 700,
+                        "delay": 1100
+                      },
+                      "hover": {
+                        "y": -3,
+                        "duration": 200,
+                        "styles": {
+                          "borderColor": "rgba(255,255,255,0.7)"
+                        }
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   }
                 ]
               },
-
               {
                 "type": "Box",
-                "props": { "className": "mt-[48px] cursor-pointer" },
-                "actions": [{ "action": "scrollToFeatures" }],
+                "props": {
+                  "className": "mt-[48px] cursor-pointer"
+                },
+                "actions": [
+                  {
+                    "action": "scrollToFeatures"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:chevrons-down", "size": 32, "color": "rgba(255,255,255,0.4)" },
+                    "props": {
+                      "icon": "lucide:chevrons-down",
+                      "size": 32,
+                      "color": "rgba(255,255,255,0.4)"
+                    },
                     "animation": {
-                      "loop": { "type": "bounce", "duration": 2000, "repeatCount": -1 }
+                      "loop": {
+                        "type": "bounce",
+                        "duration": 2000,
+                        "repeatCount": -1
+                      }
                     }
                   }
                 ]
@@ -131,208 +276,499 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "id": "section-features",
-        "props": { "className": "w-full py-[120px] px-[24px] relative overflow-hidden" },
+        "props": {
+          "className": "w-full py-[120px] px-[24px] relative overflow-hidden"
+        },
         "children": [
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[0px] right-[-200px] w-[600px] h-[600px] rounded-full",
-              "style": { "background": "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)" },
+              "style": {
+                "background": "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)"
+              },
               "animation": {
-                "parallax": { "enabled": true, "speed": -0.3, "direction": "vertical" }
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.3,
+                  "direction": "vertical"
+                }
               }
             }
           },
-
           {
             "type": "Box",
-            "props": { "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px] relative z-[2]" },
+            "props": {
+              "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px] relative z-[2]"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col items-center gap-[16px]" },
+                "props": {
+                  "className": "flex flex-col items-center gap-[16px]"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[12px] font-semibold tracking-[4px] uppercase text-violet-400 text-center" },
+                    "props": {
+                      "className": "text-[12px] font-semibold tracking-[4px] uppercase text-violet-400 text-center"
+                    },
                     "text": "Features",
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.2, "once": true }
-                    }
-                  },
-                  {
-                    "type": "Heading",
-                    "props": { "size": "2xl", "className": "font-bold text-white text-center" },
-                    "text": "Staggered Scroll Reveals",
-                    "animation": {
-                      "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 800 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.2,
+                        "once": true
+                      }
                     }
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-gray-400 text-center max-w-[500px]" },
+                    "props": {
+                      "className": "text-[24px] text-foreground font-bold text-white text-center"
+                    },
+                    "text": "Staggered Scroll Reveals",
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInUp",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 800
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-400 text-center max-w-[500px]"
+                    },
                     "text": "Each card below enters the viewport with a different animation type and stagger delay.",
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.15, "once": true, "duration": 600 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 600
+                      }
                     }
                   }
                 ]
               },
-
               {
                 "type": "Box",
-                "props": { "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]" },
+                "props": {
+                  "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]"
+                },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
                       "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
-                      "style": { "background": "linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(59,130,246,0.1) 100%)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(59,130,246,0.1) 100%)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.15, "once": true, "duration": 700 },
-                      "hover": { "y": -8, "scale": 1.02, "duration": 300, "styles": { "borderColor": "rgba(139,92,246,0.5)", "boxShadow": "0 20px 40px rgba(139,92,246,0.15)" } },
-                      "loop": { "type": "glowPulse", "duration": 3000, "repeatCount": -1, "direction": "alternate", "color": "#8b5cf6", "intensity": 0.3 }
-                    },
-                    "children": [
-                      {
-                        "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-violet-600/20 flex items-center justify-center" },
-                        "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:zap", "size": 24, "color": "#a78bfa" } }
-                        ]
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInUp",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 700
                       },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "Scroll Triggers" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Elements animate in when they enter the viewport. Fade, slide, zoom, flip — pick your style." }
-                    ]
-                  },
-
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
-                      "style": { "background": "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(16,185,129,0.1) 100%)" }
-                    },
-                    "animation": {
-                      "scroll": { "enabled": true, "type": "zoomIn", "threshold": 0.15, "once": true, "duration": 700 },
-                      "hover": { "y": -8, "scale": 1.02, "duration": 300, "styles": { "borderColor": "rgba(59,130,246,0.5)", "boxShadow": "0 20px 40px rgba(59,130,246,0.15)" } },
-                      "tilt": { "enabled": true, "maxX": 8, "maxY": 8, "perspective": 800, "scale": 1.02 }
-                    },
-                    "children": [
-                      {
-                        "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-blue-600/20 flex items-center justify-center" },
-                        "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:rotate-3d", "size": 24, "color": "#60a5fa" } }
-                        ]
+                      "hover": {
+                        "y": -8,
+                        "scale": 1.02,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(139,92,246,0.5)",
+                          "boxShadow": "0 20px 40px rgba(139,92,246,0.15)"
+                        }
                       },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "3D Tilt Effect" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Move your mouse over this card — it responds with a 3D perspective tilt." }
-                    ]
-                  },
-
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
-                      "style": { "background": "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(234,179,8,0.1) 100%)" }
-                    },
-                    "animation": {
-                      "scroll": { "enabled": true, "type": "flipInX", "threshold": 0.15, "once": true, "duration": 800 },
-                      "hover": { "y": -8, "scale": 1.02, "duration": 300, "styles": { "borderColor": "rgba(16,185,129,0.5)", "boxShadow": "0 20px 40px rgba(16,185,129,0.15)" } },
-                      "morphShape": { "enabled": true, "steps": ["16px", "24px 8px", "8px 24px", "16px"], "duration": 4000, "loop": true }
+                      "loop": {
+                        "type": "glowPulse",
+                        "duration": 3000,
+                        "repeatCount": -1,
+                        "direction": "alternate",
+                        "color": "#8b5cf6",
+                        "intensity": 0.3
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-emerald-600/20 flex items-center justify-center" },
-                        "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:shapes", "size": 24, "color": "#34d399" } }
-                        ]
-                      },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "Morph Shape" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Watch the card border-radius morph between shapes in a continuous loop." }
-                    ]
-                  },
-
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10 overflow-hidden",
-                      "style": { "background": "linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(139,92,246,0.1) 100%)" }
-                    },
-                    "animation": {
-                      "scroll": { "enabled": true, "type": "slideInLeft", "threshold": 0.15, "once": true, "duration": 700 },
-                      "hover": { "y": -8, "duration": 300, "styles": { "borderColor": "rgba(236,72,153,0.5)", "boxShadow": "0 20px 40px rgba(236,72,153,0.15)" } },
-                      "gradientAnimation": { "enabled": true, "type": "conic", "colors": ["#ec4899", "#8b5cf6", "#3b82f6", "#ec4899"], "duration": 6000, "animateAngle": true, "loop": true }
-                    },
-                    "children": [
-                      {
-                        "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-pink-600/20 flex items-center justify-center" },
-                        "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:palette", "size": 24, "color": "#f472b6" } }
-                        ]
-                      },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "Gradient Animation" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Animated gradient background that rotates its angle over time." }
-                    ]
-                  },
-
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
-                      "style": { "background": "linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(249,115,22,0.1) 100%)" }
-                    },
-                    "animation": {
-                      "scroll": { "enabled": true, "type": "slideInRight", "threshold": 0.15, "once": true, "duration": 700 },
-                      "hover": { "y": -8, "duration": 300, "styles": { "borderColor": "rgba(234,179,8,0.5)", "boxShadow": "0 20px 40px rgba(234,179,8,0.15)" } }
-                    },
-                    "children": [
-                      {
-                        "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-yellow-600/20 flex items-center justify-center" },
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-violet-600/20 flex items-center justify-center"
+                        },
                         "children": [
                           {
                             "type": "Icon",
-                            "props": { "icon": "lucide:mouse-pointer-click", "size": 24, "color": "#fbbf24" },
-                            "animation": {
-                              "loop": { "type": "pulse", "duration": 2000, "repeatCount": -1, "direction": "alternate" }
+                            "props": {
+                              "icon": "lucide:zap",
+                              "size": 24,
+                              "color": "#a78bfa"
                             }
                           }
                         ]
                       },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "Hover & Press" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Rich hover lift with shadow glow, and satisfying press scale feedback." }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "Scroll Triggers"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Elements animate in when they enter the viewport. Fade, slide, zoom, flip — pick your style."
+                      }
                     ]
                   },
-
                   {
                     "type": "Box",
                     "props": {
                       "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
-                      "style": { "background": "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.1) 100%)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(16,185,129,0.1) 100%)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "riseFade", "threshold": 0.15, "once": true, "duration": 800 },
-                      "hover": { "y": -8, "duration": 300, "styles": { "borderColor": "rgba(249,115,22,0.5)", "boxShadow": "0 20px 40px rgba(249,115,22,0.15)" } },
-                      "filter": { "enabled": true, "blur": 0, "brightness": 1, "saturate": 1, "duration": 300 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "zoomIn",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 700
+                      },
+                      "hover": {
+                        "y": -8,
+                        "scale": 1.02,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(59,130,246,0.5)",
+                          "boxShadow": "0 20px 40px rgba(59,130,246,0.15)"
+                        }
+                      },
+                      "tilt": {
+                        "enabled": true,
+                        "maxX": 8,
+                        "maxY": 8,
+                        "perspective": 800,
+                        "scale": 1.02
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "w-[48px] h-[48px] rounded-[12px] bg-orange-600/20 flex items-center justify-center" },
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-blue-600/20 flex items-center justify-center"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:sparkles", "size": 24, "color": "#fb923c" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:rotate-3d",
+                              "size": 24,
+                              "color": "#60a5fa"
+                            }
+                          }
                         ]
                       },
-                      { "type": "Heading", "props": { "size": "lg", "className": "font-semibold text-white" }, "text": "Rise Fade In" },
-                      { "type": "Text", "props": { "className": "text-gray-400 text-[14px]" }, "text": "Elements rise from below with a subtle scale and fade for a premium feel." }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "3D Tilt Effect"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Move your mouse over this card — it responds with a 3D perspective tilt."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(234,179,8,0.1) 100%)"
+                      }
+                    },
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "flipInX",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 800
+                      },
+                      "hover": {
+                        "y": -8,
+                        "scale": 1.02,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(16,185,129,0.5)",
+                          "boxShadow": "0 20px 40px rgba(16,185,129,0.15)"
+                        }
+                      },
+                      "morphShape": {
+                        "enabled": true,
+                        "steps": [
+                          "16px",
+                          "24px 8px",
+                          "8px 24px",
+                          "16px"
+                        ],
+                        "duration": 4000,
+                        "loop": true
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-emerald-600/20 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:shapes",
+                              "size": 24,
+                              "color": "#34d399"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "Morph Shape"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Watch the card border-radius morph between shapes in a continuous loop."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10 overflow-hidden",
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(139,92,246,0.1) 100%)"
+                      }
+                    },
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInLeft",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 700
+                      },
+                      "hover": {
+                        "y": -8,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(236,72,153,0.5)",
+                          "boxShadow": "0 20px 40px rgba(236,72,153,0.15)"
+                        }
+                      },
+                      "gradientAnimation": {
+                        "enabled": true,
+                        "type": "conic",
+                        "colors": [
+                          "#ec4899",
+                          "#8b5cf6",
+                          "#3b82f6",
+                          "#ec4899"
+                        ],
+                        "duration": 6000,
+                        "animateAngle": true,
+                        "loop": true
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-pink-600/20 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:palette",
+                              "size": 24,
+                              "color": "#f472b6"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "Gradient Animation"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Animated gradient background that rotates its angle over time."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(234,179,8,0.15) 0%, rgba(249,115,22,0.1) 100%)"
+                      }
+                    },
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInRight",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 700
+                      },
+                      "hover": {
+                        "y": -8,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(234,179,8,0.5)",
+                          "boxShadow": "0 20px 40px rgba(234,179,8,0.15)"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-yellow-600/20 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:mouse-pointer-click",
+                              "size": 24,
+                              "color": "#fbbf24"
+                            },
+                            "animation": {
+                              "loop": {
+                                "type": "pulse",
+                                "duration": 2000,
+                                "repeatCount": -1,
+                                "direction": "alternate"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "Hover & Press"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Rich hover lift with shadow glow, and satisfying press scale feedback."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "rounded-[16px] p-[32px] flex flex-col gap-[16px] border-[1px] border-white/10",
+                      "style": {
+                        "background": "linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(239,68,68,0.1) 100%)"
+                      }
+                    },
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "riseFade",
+                        "threshold": 0.15,
+                        "once": true,
+                        "duration": 800
+                      },
+                      "hover": {
+                        "y": -8,
+                        "duration": 300,
+                        "styles": {
+                          "borderColor": "rgba(249,115,22,0.5)",
+                          "boxShadow": "0 20px 40px rgba(249,115,22,0.15)"
+                        }
+                      },
+                      "filter": {
+                        "enabled": true,
+                        "blur": 0,
+                        "brightness": 1,
+                        "saturate": 1,
+                        "duration": 300
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[48px] h-[48px] rounded-[12px] bg-orange-600/20 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:sparkles",
+                              "size": 24,
+                              "color": "#fb923c"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[24px] font-bold text-foreground font-semibold text-white"
+                        },
+                        "text": "Rise Fade In"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-400 text-[14px]"
+                        },
+                        "text": "Elements rise from below with a subtle scale and fade for a premium feel."
+                      }
                     ]
                   }
                 ]
@@ -341,55 +777,91 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "id": "section-parallax",
-        "props": { "className": "w-full py-[160px] px-[24px] relative overflow-hidden" },
+        "props": {
+          "className": "w-full py-[160px] px-[24px] relative overflow-hidden"
+        },
         "children": [
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[0px] left-[0px] w-full h-full",
-              "style": { "background": "linear-gradient(180deg, transparent 0%, rgba(139,92,246,0.08) 50%, transparent 100%)" }
+              "style": {
+                "background": "linear-gradient(180deg, transparent 0%, rgba(139,92,246,0.08) 50%, transparent 100%)"
+              }
             }
           },
-
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[-50px] left-[10%] w-[80px] h-[80px] rounded-full bg-violet-500/20",
-              "animation": { "parallax": { "enabled": true, "speed": -0.6, "direction": "vertical" } }
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.6,
+                  "direction": "vertical"
+                }
+              }
             }
           },
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[100px] right-[15%] w-[120px] h-[120px] rounded-[24px] bg-blue-500/15",
-              "style": { "transform": "rotate(45deg)" },
-              "animation": { "parallax": { "enabled": true, "speed": -0.4, "direction": "vertical" } }
+              "style": {
+                "transform": "rotate(45deg)"
+              },
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.4,
+                  "direction": "vertical"
+                }
+              }
             }
           },
           {
             "type": "Box",
             "props": {
               "className": "absolute bottom-[80px] left-[25%] w-[60px] h-[60px] rounded-full bg-pink-500/20",
-              "animation": { "parallax": { "enabled": true, "speed": -0.8, "direction": "vertical" } }
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.8,
+                  "direction": "vertical"
+                }
+              }
             }
           },
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[200px] right-[30%] w-[40px] h-[40px] rounded-full bg-emerald-500/15",
-              "animation": { "parallax": { "enabled": true, "speed": -0.5, "direction": "vertical" } }
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.5,
+                  "direction": "vertical"
+                }
+              }
             }
           },
           {
             "type": "Box",
             "props": {
               "className": "absolute bottom-[150px] right-[10%] w-[100px] h-[100px] rounded-[20px] bg-yellow-500/10",
-              "style": { "transform": "rotate(-15deg)" },
-              "animation": { "parallax": { "enabled": true, "speed": -0.7, "direction": "vertical" } }
+              "style": {
+                "transform": "rotate(-15deg)"
+              },
+              "animation": {
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.7,
+                  "direction": "vertical"
+                }
+              }
             }
           },
           {
@@ -397,75 +869,170 @@
             "props": {
               "className": "absolute top-[50px] left-[50%] w-[50px] h-[50px] rounded-full bg-cyan-500/20",
               "animation": {
-                "parallax": { "enabled": true, "speed": -0.9, "direction": "vertical" },
-                "loop": { "type": "spin", "duration": 8000, "repeatCount": -1 }
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.9,
+                  "direction": "vertical"
+                },
+                "loop": {
+                  "type": "spin",
+                  "duration": 8000,
+                  "repeatCount": -1
+                }
               }
             }
           },
-
           {
             "type": "Box",
-            "props": { "className": "max-w-[800px] mx-auto flex flex-col items-center gap-[32px] relative z-[2]" },
+            "props": {
+              "className": "max-w-[800px] mx-auto flex flex-col items-center gap-[32px] relative z-[2]"
+            },
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-[12px] font-semibold tracking-[4px] uppercase text-blue-400 text-center" },
+                "props": {
+                  "className": "text-[12px] font-semibold tracking-[4px] uppercase text-blue-400 text-center"
+                },
                 "text": "Parallax Layers",
                 "animation": {
-                  "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.2, "once": true }
-                }
-              },
-              {
-                "type": "Heading",
-                "props": { "size": "2xl", "className": "font-bold text-white text-center" },
-                "text": "Floating Geometric Shapes",
-                "animation": {
-                  "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 800 }
+                  "scroll": {
+                    "enabled": true,
+                    "type": "fadeIn",
+                    "threshold": 0.2,
+                    "once": true
+                  }
                 }
               },
               {
                 "type": "Text",
-                "props": { "className": "text-gray-400 text-center max-w-[500px]" },
-                "text": "Scroll and notice the circles, squares, and diamonds moving at different speeds. Each shape has a unique parallax speed creating depth.",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-white text-center"
+                },
+                "text": "Floating Geometric Shapes",
                 "animation": {
-                  "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.15, "once": true, "duration": 600 }
+                  "scroll": {
+                    "enabled": true,
+                    "type": "slideInUp",
+                    "threshold": 0.2,
+                    "once": true,
+                    "duration": 800
+                  }
                 }
               },
-
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-gray-400 text-center max-w-[500px]"
+                },
+                "text": "Scroll and notice the circles, squares, and diamonds moving at different speeds. Each shape has a unique parallax speed creating depth.",
+                "animation": {
+                  "scroll": {
+                    "enabled": true,
+                    "type": "fadeIn",
+                    "threshold": 0.15,
+                    "once": true,
+                    "duration": 600
+                  }
+                }
+              },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row gap-[24px] mt-[24px]" },
+                "props": {
+                  "className": "flex flex-row gap-[24px] mt-[24px]"
+                },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-[200px] h-[200px] rounded-[24px] flex items-center justify-center",
-                      "style": { "background": "linear-gradient(135deg, #8b5cf6, #3b82f6)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, #8b5cf6, #3b82f6)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "zoomIn", "threshold": 0.2, "once": true, "duration": 600 },
-                      "hover": { "scale": 1.1, "duration": 400 },
-                      "loop": { "type": "float", "duration": 3000, "repeatCount": -1, "direction": "alternate" },
-                      "morphShape": { "enabled": true, "steps": ["24px", "50% 24px 24px 50%", "24px 50% 50% 24px", "24px"], "duration": 6000, "loop": true }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "zoomIn",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 600
+                      },
+                      "hover": {
+                        "scale": 1.1,
+                        "duration": 400
+                      },
+                      "loop": {
+                        "type": "float",
+                        "duration": 3000,
+                        "repeatCount": -1,
+                        "direction": "alternate"
+                      },
+                      "morphShape": {
+                        "enabled": true,
+                        "steps": [
+                          "24px",
+                          "50% 24px 24px 50%",
+                          "24px 50% 50% 24px",
+                          "24px"
+                        ],
+                        "duration": 6000,
+                        "loop": true
+                      }
                     },
                     "children": [
-                      { "type": "Icon", "props": { "icon": "lucide:layers", "size": 48, "color": "white" } }
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:layers",
+                          "size": 48,
+                          "color": "white"
+                        }
+                      }
                     ]
                   },
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-[200px] h-[200px] rounded-full flex items-center justify-center",
-                      "style": { "background": "linear-gradient(135deg, #ec4899, #f97316)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, #ec4899, #f97316)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "zoomIn", "threshold": 0.2, "once": true, "duration": 600, "delay": 200 },
-                      "hover": { "scale": 1.1, "duration": 400 },
-                      "loop": { "type": "float", "duration": 4000, "repeatCount": -1, "direction": "alternate" },
-                      "tilt": { "enabled": true, "maxX": 15, "maxY": 15, "perspective": 600 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "zoomIn",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 600,
+                        "delay": 200
+                      },
+                      "hover": {
+                        "scale": 1.1,
+                        "duration": 400
+                      },
+                      "loop": {
+                        "type": "float",
+                        "duration": 4000,
+                        "repeatCount": -1,
+                        "direction": "alternate"
+                      },
+                      "tilt": {
+                        "enabled": true,
+                        "maxX": 15,
+                        "maxY": 15,
+                        "perspective": 600
+                      }
                     },
                     "children": [
-                      { "type": "Icon", "props": { "icon": "lucide:orbit", "size": 48, "color": "white" } }
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:orbit",
+                          "size": 48,
+                          "color": "white"
+                        }
+                      }
                     ]
                   }
                 ]
@@ -474,137 +1041,286 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "id": "section-gallery",
-        "props": { "className": "w-full py-[120px] px-[24px] relative" },
+        "props": {
+          "className": "w-full py-[120px] px-[24px] relative"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px]" },
+            "props": {
+              "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px]"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col items-center gap-[16px]" },
+                "props": {
+                  "className": "flex flex-col items-center gap-[16px]"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[12px] font-semibold tracking-[4px] uppercase text-pink-400 text-center" },
+                    "props": {
+                      "className": "text-[12px] font-semibold tracking-[4px] uppercase text-pink-400 text-center"
+                    },
                     "text": "Scroll Progress",
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.2, "once": true }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.2,
+                        "once": true
+                      }
                     }
                   },
                   {
-                    "type": "Heading",
-                    "props": { "size": "2xl", "className": "font-bold text-white text-center" },
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[24px] text-foreground font-bold text-white text-center"
+                    },
                     "text": "Scroll-Driven Transformations",
                     "animation": {
-                      "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 800 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInUp",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 800
+                      }
                     }
                   }
                 ]
               },
-
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-[48px]" },
+                "props": {
+                  "className": "flex flex-col gap-[48px]"
+                },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-full h-[300px] rounded-[24px] flex items-center justify-center overflow-hidden",
-                      "style": { "background": "linear-gradient(135deg, #1e1b4b, #312e81)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, #1e1b4b, #312e81)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.1, "once": true },
-                      "scrollProgress": { "enabled": true, "property": "scale", "from": 0.7, "to": 1, "start": 0.0, "end": 0.5 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.1,
+                        "once": true
+                      },
+                      "scrollProgress": {
+                        "enabled": true,
+                        "property": "scale",
+                        "from": 0.7,
+                        "to": 1,
+                        "start": 0,
+                        "end": 0.5
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "flex flex-col items-center gap-[12px]" },
+                        "props": {
+                          "className": "flex flex-col items-center gap-[12px]"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:maximize-2", "size": 40, "color": "#c4b5fd" } },
-                          { "type": "Text", "props": { "className": "text-violet-200 text-center font-semibold text-[18px]" }, "text": "Scale on Scroll" },
-                          { "type": "Text", "props": { "className": "text-violet-300/60 text-center text-[14px]" }, "text": "This card scales from 70% to 100% as you scroll through it" }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:maximize-2",
+                              "size": 40,
+                              "color": "#c4b5fd"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-violet-200 text-center font-semibold text-[18px]"
+                            },
+                            "text": "Scale on Scroll"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-violet-300/60 text-center text-[14px]"
+                            },
+                            "text": "This card scales from 70% to 100% as you scroll through it"
+                          }
                         ]
                       }
                     ]
                   },
-
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-full h-[300px] rounded-[24px] flex items-center justify-center overflow-hidden",
-                      "style": { "background": "linear-gradient(135deg, #1e3a5f, #0c4a6e)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, #1e3a5f, #0c4a6e)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.1, "once": true },
-                      "scrollProgress": { "enabled": true, "property": "rotate", "from": -10, "to": 0, "unit": "deg", "start": 0.0, "end": 0.6 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.1,
+                        "once": true
+                      },
+                      "scrollProgress": {
+                        "enabled": true,
+                        "property": "rotate",
+                        "from": -10,
+                        "to": 0,
+                        "unit": "deg",
+                        "start": 0,
+                        "end": 0.6
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "flex flex-col items-center gap-[12px]" },
+                        "props": {
+                          "className": "flex flex-col items-center gap-[12px]"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:rotate-cw", "size": 40, "color": "#7dd3fc" } },
-                          { "type": "Text", "props": { "className": "text-sky-200 text-center font-semibold text-[18px]" }, "text": "Rotate on Scroll" },
-                          { "type": "Text", "props": { "className": "text-sky-300/60 text-center text-[14px]" }, "text": "This card straightens from -10deg to 0deg as you scroll" }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:rotate-cw",
+                              "size": 40,
+                              "color": "#7dd3fc"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sky-200 text-center font-semibold text-[18px]"
+                            },
+                            "text": "Rotate on Scroll"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-sky-300/60 text-center text-[14px]"
+                            },
+                            "text": "This card straightens from -10deg to 0deg as you scroll"
+                          }
                         ]
                       }
                     ]
                   },
-
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-full h-[300px] rounded-[24px] flex items-center justify-center overflow-hidden"
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.1, "once": true },
-                      "scrollProgress": { "enabled": true, "property": "backgroundColor", "from": "rgb(30,27,75)", "to": "rgb(236,72,153)", "start": 0.0, "end": 0.7 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.1,
+                        "once": true
+                      },
+                      "scrollProgress": {
+                        "enabled": true,
+                        "property": "backgroundColor",
+                        "from": "rgb(30,27,75)",
+                        "to": "rgb(236,72,153)",
+                        "start": 0,
+                        "end": 0.7
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "flex flex-col items-center gap-[12px]" },
+                        "props": {
+                          "className": "flex flex-col items-center gap-[12px]"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:paintbrush", "size": 40, "color": "white" } },
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:paintbrush",
+                              "size": 40,
+                              "color": "white"
+                            }
+                          },
                           {
                             "type": "Text",
-                            "props": { "className": "text-white text-center font-semibold text-[18px]" },
+                            "props": {
+                              "className": "text-white text-center font-semibold text-[18px]"
+                            },
                             "text": "Color Morph on Scroll"
                           },
                           {
                             "type": "Text",
-                            "props": { "className": "text-white/60 text-center text-[14px]" },
+                            "props": {
+                              "className": "text-white/60 text-center text-[14px]"
+                            },
                             "text": "Background transitions from deep indigo to hot pink as you scroll"
                           }
                         ]
                       }
                     ]
                   },
-
                   {
                     "type": "Box",
                     "props": {
                       "className": "w-full h-[300px] rounded-[24px] flex items-center justify-center overflow-hidden",
-                      "style": { "background": "linear-gradient(135deg, #064e3b, #065f46)" }
+                      "style": {
+                        "background": "linear-gradient(135deg, #064e3b, #065f46)"
+                      }
                     },
                     "animation": {
-                      "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.1, "once": true },
-                      "scrollProgress": { "enabled": true, "property": "blur", "from": 10, "to": 0, "start": 0.0, "end": 0.5 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.1,
+                        "once": true
+                      },
+                      "scrollProgress": {
+                        "enabled": true,
+                        "property": "blur",
+                        "from": 10,
+                        "to": 0,
+                        "start": 0,
+                        "end": 0.5
+                      }
                     },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "flex flex-col items-center gap-[12px]" },
+                        "props": {
+                          "className": "flex flex-col items-center gap-[12px]"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:eye", "size": 40, "color": "#6ee7b7" } },
-                          { "type": "Text", "props": { "className": "text-emerald-200 text-center font-semibold text-[18px]" }, "text": "Blur Reveal on Scroll" },
-                          { "type": "Text", "props": { "className": "text-emerald-300/60 text-center text-[14px]" }, "text": "Content starts blurry and sharpens as you scroll into view" }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:eye",
+                              "size": 40,
+                              "color": "#6ee7b7"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-emerald-200 text-center font-semibold text-[18px]"
+                            },
+                            "text": "Blur Reveal on Scroll"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-emerald-300/60 text-center text-[14px]"
+                            },
+                            "text": "Content starts blurry and sharpens as you scroll into view"
+                          }
                         ]
                       }
                     ]
@@ -615,133 +1331,256 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "id": "section-stats",
-        "props": { "className": "w-full py-[120px] px-[24px] relative overflow-hidden" },
+        "props": {
+          "className": "w-full py-[120px] px-[24px] relative overflow-hidden"
+        },
         "children": [
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[0px] left-[0px] w-full h-full",
-              "style": { "background": "linear-gradient(180deg, transparent 0%, rgba(59,130,246,0.06) 50%, transparent 100%)" }
+              "style": {
+                "background": "linear-gradient(180deg, transparent 0%, rgba(59,130,246,0.06) 50%, transparent 100%)"
+              }
             }
           },
-
           {
             "type": "Box",
-            "props": { "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px] relative z-[2]" },
+            "props": {
+              "className": "max-w-[1200px] mx-auto flex flex-col gap-[64px] relative z-[2]"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col items-center gap-[16px]" },
+                "props": {
+                  "className": "flex flex-col items-center gap-[16px]"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[12px] font-semibold tracking-[4px] uppercase text-emerald-400 text-center" },
+                    "props": {
+                      "className": "text-[12px] font-semibold tracking-[4px] uppercase text-emerald-400 text-center"
+                    },
                     "text": "Interactive",
-                    "animation": { "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.2, "once": true } }
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "fadeIn",
+                        "threshold": 0.2,
+                        "once": true
+                      }
+                    }
                   },
                   {
-                    "type": "Heading",
-                    "props": { "size": "2xl", "className": "font-bold text-white text-center" },
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[24px] text-foreground font-bold text-white text-center"
+                    },
                     "text": "Flip Cards & Split Text",
-                    "animation": { "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 800 } }
+                    "animation": {
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInUp",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 800
+                      }
+                    }
                   }
                 ]
               },
-
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-[48px]" },
+                "props": {
+                  "className": "flex flex-col gap-[48px]"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-[24px]" },
+                    "props": {
+                      "className": "grid grid-cols-1 md:grid-cols-3 gap-[24px]"
+                    },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
                           "className": "h-[220px] rounded-[20px] flex items-center justify-center cursor-pointer",
-                          "style": { "background": "linear-gradient(135deg, #7c3aed, #4f46e5)" }
+                          "style": {
+                            "background": "linear-gradient(135deg, #7c3aed, #4f46e5)"
+                          }
                         },
                         "animation": {
-                          "scroll": { "enabled": true, "type": "flipInX", "threshold": 0.15, "once": true, "duration": 800 },
-                          "flip": { "trigger": "hover", "duration": 600, "perspective": 1000 },
-                          "hover": { "styles": { "boxShadow": "0 25px 50px rgba(124,58,237,0.3)" } }
+                          "scroll": {
+                            "enabled": true,
+                            "type": "flipInX",
+                            "threshold": 0.15,
+                            "once": true,
+                            "duration": 800
+                          },
+                          "flip": {
+                            "trigger": "hover",
+                            "duration": 600,
+                            "perspective": 1000
+                          },
+                          "hover": {
+                            "styles": {
+                              "boxShadow": "0 25px 50px rgba(124,58,237,0.3)"
+                            }
+                          }
                         },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex flex-col items-center gap-[8px]" },
+                            "props": {
+                              "className": "flex flex-col items-center gap-[8px]"
+                            },
                             "children": [
-                              { "type": "Heading", "props": { "size": "3xl", "className": "font-black text-white text-center" }, "text": "30+" },
-                              { "type": "Text", "props": { "className": "text-violet-200 text-center" }, "text": "Animation Types" }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[24px] font-bold text-foreground font-black text-white text-center"
+                                },
+                                "text": "30+"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-violet-200 text-center"
+                                },
+                                "text": "Animation Types"
+                              }
                             ]
                           }
                         ]
                       },
-
                       {
                         "type": "Box",
                         "props": {
                           "className": "h-[220px] rounded-[20px] flex items-center justify-center cursor-pointer",
-                          "style": { "background": "linear-gradient(135deg, #0891b2, #0e7490)" }
+                          "style": {
+                            "background": "linear-gradient(135deg, #0891b2, #0e7490)"
+                          }
                         },
                         "animation": {
-                          "scroll": { "enabled": true, "type": "flipInX", "threshold": 0.15, "once": true, "duration": 800, "delay": 150 },
-                          "flip": { "trigger": "hover", "duration": 600, "perspective": 1000 },
-                          "hover": { "styles": { "boxShadow": "0 25px 50px rgba(8,145,178,0.3)" } }
+                          "scroll": {
+                            "enabled": true,
+                            "type": "flipInX",
+                            "threshold": 0.15,
+                            "once": true,
+                            "duration": 800,
+                            "delay": 150
+                          },
+                          "flip": {
+                            "trigger": "hover",
+                            "duration": 600,
+                            "perspective": 1000
+                          },
+                          "hover": {
+                            "styles": {
+                              "boxShadow": "0 25px 50px rgba(8,145,178,0.3)"
+                            }
+                          }
                         },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex flex-col items-center gap-[8px]" },
+                            "props": {
+                              "className": "flex flex-col items-center gap-[8px]"
+                            },
                             "children": [
-                              { "type": "Heading", "props": { "size": "3xl", "className": "font-black text-white text-center" }, "text": "60fps" },
-                              { "type": "Text", "props": { "className": "text-cyan-200 text-center" }, "text": "Buttery Smooth" }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[24px] font-bold text-foreground font-black text-white text-center"
+                                },
+                                "text": "60fps"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-cyan-200 text-center"
+                                },
+                                "text": "Buttery Smooth"
+                              }
                             ]
                           }
                         ]
                       },
-
                       {
                         "type": "Box",
                         "props": {
                           "className": "h-[220px] rounded-[20px] flex items-center justify-center cursor-pointer",
-                          "style": { "background": "linear-gradient(135deg, #b45309, #d97706)" }
+                          "style": {
+                            "background": "linear-gradient(135deg, #b45309, #d97706)"
+                          }
                         },
                         "animation": {
-                          "scroll": { "enabled": true, "type": "flipInX", "threshold": 0.15, "once": true, "duration": 800, "delay": 300 },
-                          "flip": { "trigger": "hover", "duration": 600, "perspective": 1000 },
-                          "hover": { "styles": { "boxShadow": "0 25px 50px rgba(180,83,9,0.3)" } }
+                          "scroll": {
+                            "enabled": true,
+                            "type": "flipInX",
+                            "threshold": 0.15,
+                            "once": true,
+                            "duration": 800,
+                            "delay": 300
+                          },
+                          "flip": {
+                            "trigger": "hover",
+                            "duration": 600,
+                            "perspective": 1000
+                          },
+                          "hover": {
+                            "styles": {
+                              "boxShadow": "0 25px 50px rgba(180,83,9,0.3)"
+                            }
+                          }
                         },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex flex-col items-center gap-[8px]" },
+                            "props": {
+                              "className": "flex flex-col items-center gap-[8px]"
+                            },
                             "children": [
-                              { "type": "Heading", "props": { "size": "3xl", "className": "font-black text-white text-center" }, "text": "0kb" },
-                              { "type": "Text", "props": { "className": "text-amber-200 text-center" }, "text": "JS Config Only" }
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[24px] font-bold text-foreground font-black text-white text-center"
+                                },
+                                "text": "0kb"
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-amber-200 text-center"
+                                },
+                                "text": "JS Config Only"
+                              }
                             ]
                           }
                         ]
                       }
                     ]
                   },
-
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col items-center gap-[24px]" },
+                    "props": {
+                      "className": "flex flex-col items-center gap-[24px]"
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "w-full max-w-[700px]" },
+                        "props": {
+                          "className": "w-full max-w-[700px]"
+                        },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex flex-col items-center" },
+                            "props": {
+                              "className": "flex flex-col items-center"
+                            },
                             "animation": {
                               "splitText": {
                                 "text": "Every pixel is animated",
@@ -752,18 +1591,26 @@
                                 "className": "text-[42px] font-black text-transparent bg-clip-text",
                                 "unitClass": "inline-block"
                               },
-                              "scroll": { "enabled": true, "threshold": 0.2, "once": true }
+                              "scroll": {
+                                "enabled": true,
+                                "threshold": 0.2,
+                                "once": true
+                              }
                             }
                           }
                         ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "w-full max-w-[700px]" },
+                        "props": {
+                          "className": "w-full max-w-[700px]"
+                        },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex flex-col items-center" },
+                            "props": {
+                              "className": "flex flex-col items-center"
+                            },
                             "animation": {
                               "splitText": {
                                 "text": "Character by character reveal",
@@ -775,7 +1622,11 @@
                                 "className": "text-[24px] font-medium text-gray-400",
                                 "unitClass": "inline-block"
                               },
-                              "scroll": { "enabled": true, "threshold": 0.15, "once": true }
+                              "scroll": {
+                                "enabled": true,
+                                "threshold": 0.15,
+                                "once": true
+                              }
                             }
                           }
                         ]
@@ -788,7 +1639,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "id": "section-cta",
@@ -800,17 +1650,27 @@
             "type": "Box",
             "props": {
               "className": "absolute top-[0px] left-[0px] w-full h-full",
-              "style": { "background": "linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(236,72,153,0.1) 50%, rgba(59,130,246,0.1) 100%)" }
+              "style": {
+                "background": "linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(236,72,153,0.1) 50%, rgba(59,130,246,0.1) 100%)"
+              }
             }
           },
-
           {
             "type": "Box",
             "props": {
               "className": "absolute top-[20%] left-[5%] w-[200px] h-[200px] rounded-full bg-violet-500/10",
               "animation": {
-                "parallax": { "enabled": true, "speed": -0.5, "direction": "vertical" },
-                "loop": { "type": "pulse", "duration": 4000, "repeatCount": -1, "direction": "alternate" }
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.5,
+                  "direction": "vertical"
+                },
+                "loop": {
+                  "type": "pulse",
+                  "duration": 4000,
+                  "repeatCount": -1,
+                  "direction": "alternate"
+                }
               }
             }
           },
@@ -819,60 +1679,143 @@
             "props": {
               "className": "absolute bottom-[20%] right-[8%] w-[150px] h-[150px] rounded-full bg-pink-500/10",
               "animation": {
-                "parallax": { "enabled": true, "speed": -0.7, "direction": "vertical" },
-                "loop": { "type": "float", "duration": 3000, "repeatCount": -1, "direction": "alternate" }
+                "parallax": {
+                  "enabled": true,
+                  "speed": -0.7,
+                  "direction": "vertical"
+                },
+                "loop": {
+                  "type": "float",
+                  "duration": 3000,
+                  "repeatCount": -1,
+                  "direction": "alternate"
+                }
               }
             }
           },
-
           {
             "type": "Box",
-            "props": { "className": "max-w-[700px] mx-auto flex flex-col items-center gap-[32px] relative z-[2]" },
+            "props": {
+              "className": "max-w-[700px] mx-auto flex flex-col items-center gap-[32px] relative z-[2]"
+            },
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "className": "w-[80px] h-[80px] rounded-full flex items-center justify-center",
-                  "style": { "background": "linear-gradient(135deg, #8b5cf6, #ec4899)" }
+                  "style": {
+                    "background": "linear-gradient(135deg, #8b5cf6, #ec4899)"
+                  }
                 },
                 "animation": {
-                  "scroll": { "enabled": true, "type": "zoomIn", "threshold": 0.2, "once": true, "duration": 600 },
-                  "loop": { "type": "glowPulse", "duration": 2000, "repeatCount": -1, "direction": "alternate", "color": "#8b5cf6", "intensity": 0.6 },
-                  "hover": { "scale": 1.15, "duration": 300 }
+                  "scroll": {
+                    "enabled": true,
+                    "type": "zoomIn",
+                    "threshold": 0.2,
+                    "once": true,
+                    "duration": 600
+                  },
+                  "loop": {
+                    "type": "glowPulse",
+                    "duration": 2000,
+                    "repeatCount": -1,
+                    "direction": "alternate",
+                    "color": "#8b5cf6",
+                    "intensity": 0.6
+                  },
+                  "hover": {
+                    "scale": 1.15,
+                    "duration": 300
+                  }
                 },
                 "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:rocket", "size": 36, "color": "white" } }
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:rocket",
+                      "size": 36,
+                      "color": "white"
+                    }
+                  }
                 ]
               },
               {
-                "type": "Heading",
-                "props": { "size": "2xl", "className": "font-bold text-white text-center" },
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-white text-center"
+                },
                 "text": "Everything is JSON.",
                 "animation": {
-                  "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 800 }
+                  "scroll": {
+                    "enabled": true,
+                    "type": "slideInUp",
+                    "threshold": 0.2,
+                    "once": true,
+                    "duration": 800
+                  }
                 }
               },
               {
                 "type": "Text",
-                "props": { "className": "text-gray-400 text-center text-[18px]" },
+                "props": {
+                  "className": "text-gray-400 text-center text-[18px]"
+                },
                 "text": "No custom React code. No animation libraries to wire up. Just JSON configs that the engine interprets into 60fps animations — parallax, scroll-driven, hover, tilt, morph, gradient, split text, flip, particles, and more.",
                 "animation": {
-                  "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.15, "once": true, "duration": 600 }
+                  "scroll": {
+                    "enabled": true,
+                    "type": "fadeIn",
+                    "threshold": 0.15,
+                    "once": true,
+                    "duration": 600
+                  }
                 }
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row gap-[16px] mt-[16px]" },
+                "props": {
+                  "className": "flex flex-row gap-[16px] mt-[16px]"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "bg-violet-600 rounded-full px-[32px] py-[14px] cursor-pointer" },
-                    "children": [{ "type": "Text", "props": { "className": "text-white font-semibold text-[14px]" }, "text": "Back to Top" }],
-                    "actions": [{ "action": "scrollToFeatures" }],
+                    "props": {
+                      "className": "bg-violet-600 rounded-full px-[32px] py-[14px] cursor-pointer"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-white font-semibold text-[14px]"
+                        },
+                        "text": "Back to Top"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "action": "scrollToFeatures"
+                      }
+                    ],
                     "animation": {
-                      "scroll": { "enabled": true, "type": "slideInUp", "threshold": 0.2, "once": true, "duration": 600 },
-                      "hover": { "y": -4, "scale": 1.05, "duration": 200, "styles": { "boxShadow": "0 20px 40px rgba(139,92,246,0.3)" } },
-                      "press": { "scale": 0.95, "duration": 100 }
+                      "scroll": {
+                        "enabled": true,
+                        "type": "slideInUp",
+                        "threshold": 0.2,
+                        "once": true,
+                        "duration": 600
+                      },
+                      "hover": {
+                        "y": -4,
+                        "scale": 1.05,
+                        "duration": 200,
+                        "styles": {
+                          "boxShadow": "0 20px 40px rgba(139,92,246,0.3)"
+                        }
+                      },
+                      "press": {
+                        "scale": 0.95,
+                        "duration": 100
+                      }
                     }
                   }
                 ]
@@ -881,7 +1824,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -890,10 +1832,17 @@
         "children": [
           {
             "type": "Text",
-            "props": { "className": "text-gray-500 text-center text-[14px]" },
+            "props": {
+              "className": "text-gray-500 text-center text-[14px]"
+            },
             "text": "Built entirely with JSON configuration. Zero custom React components.",
             "animation": {
-              "scroll": { "enabled": true, "type": "fadeIn", "threshold": 0.3, "once": true }
+              "scroll": {
+                "enabled": true,
+                "type": "fadeIn",
+                "threshold": 0.3,
+                "once": true
+              }
             }
           }
         ]

@@ -2101,7 +2101,41 @@
     "wftest-result-1-0000-0000-0000-000000000001": { "label": "Scenario 1 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
     "wftest-result-2-0000-0000-0000-000000000002": { "label": "Scenario 2 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
     "wftest-result-3-0000-0000-0000-000000000003": { "label": "Scenario 3 Result (SC Instance Mirror)", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
-    "wftest-result-4-0000-0000-0000-000000000004": { "label": "Scenario 4 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" }
+    "wftest-result-4-0000-0000-0000-000000000004": { "label": "Scenario 4 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
+
+    "js-demo-0000-0000-0000-000000000001": { "label": "cartCount", "type": "number", "initialValue": 2, "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000002": { "label": "userEmail", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000003": {
+      "label": "users",
+      "type": "array",
+      "initialValue": [
+        { "id": "u1", "name": "Ada Lovelace", "active": true },
+        { "id": "u2", "name": "Grace Hopper", "active": true },
+        { "id": "u3", "name": "Alan Turing", "active": false },
+        { "id": "u4", "name": "Linus Torvalds", "active": true }
+      ],
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000004": { "label": "lastSyncAt", "type": "string", "initialValue": "(never)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000005": { "label": "processedCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000006": { "label": "jsMathResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000007": { "label": "jsApiResult", "type": "string", "initialValue": "(not fetched)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000008": { "label": "jsSyncStatus", "type": "string", "initialValue": "(not synced)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000009": { "label": "jsForEachResult", "type": "string", "initialValue": "(no users processed)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000010": {
+      "label": "productItems",
+      "type": "array",
+      "initialValue": [
+        { "id": "p1", "name": "Tee", "price": 24.5 },
+        { "id": "p2", "name": "Hoodie", "price": 64 },
+        { "id": "p3", "name": "Cap", "price": 18.25 },
+        { "id": "p4", "name": "Sticker Pack", "price": 5.5 }
+      ],
+      "folder": "JavaScript Test"
+    },
+
+    "dpdemo-selected-date-0000-000000000001": { "label": "Picked Date", "type": "string", "initialValue": "(no date picked yet)", "folder": "DatePicker Test" },
+    "dpdemo-event-count-0000-000000000002":   { "label": "Trigger Fire Count", "type": "number", "initialValue": 0,                "folder": "DatePicker Test" }
   },
   "varFolders": [
     {
@@ -2219,6 +2253,14 @@
     {
       "id": "WorkflowTest",
       "label": "WorkflowTest"
+    },
+    {
+      "id": "JavaScript Test",
+      "label": "JavaScript Test"
+    },
+    {
+      "id": "DatePicker Test",
+      "label": "DatePicker Test"
     }
   ]
 }

@@ -40,7 +40,7 @@ async function clearCanvas(page: Page) {
 const DISPLAY_NODES: Record<string, unknown> = {
   Heading: {
     id: 'test-heading',
-    type: 'Heading',
+    type: 'Text',
     text: 'Heading',
     props: { className: 'text-2xl font-bold text-foreground' },
   },
@@ -58,8 +58,13 @@ const DISPLAY_NODES: Record<string, unknown> = {
   },
   Spinner: {
     id: 'test-spinner',
-    type: 'Spinner',
-    props: { size: 'small', color: '#6b7280', style: { width: '24px', height: '24px' } },
+    type: 'Box',
+    props: {
+      className: 'flex items-center justify-center',
+      animation: { loop: { type: 'spin', duration: 1000, repeatCount: -1 } },
+      style: { width: '24px', height: '24px' },
+    },
+    children: [{ id: 'test-spinner-icon', type: 'Icon', props: { icon: 'lucide:loader-2', size: 24, color: '#6b7280' } }],
   },
   Skeleton: {
     id: 'test-skeleton',
@@ -158,11 +163,6 @@ const DISPLAY_NODES: Record<string, unknown> = {
       },
       { id: 'test-accordion-body', type: 'Box', props: { className: 'p-4 bg-muted border-t border-border' }, children: [{ id: 'test-accordion-text', type: 'Text', props: { className: 'text-sm text-foreground' }, text: 'Content' }] },
     ],
-  },
-  JsonViewer: {
-    id: 'test-json-viewer',
-    type: 'JsonViewer',
-    props: { data: { name: 'Alice', age: 30 }, style: { width: '320px', minHeight: '80px' } },
   },
 };
 
@@ -669,11 +669,4 @@ test.describe('PD — Composite Components', () => {
     console.log('✅ Accordion (Box) is container');
   });
 
-  test('PD-26: JsonViewer → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectNodes(sharedPage, [DISPLAY_NODES['JsonViewer'] as unknown as object]);
-    await selectFirstNodeViaLayers(sharedPage);
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ JsonViewer is leaf widget — no Auto Layout');
-  });
 });

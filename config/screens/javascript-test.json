@@ -1,0 +1,438 @@
+{
+  "meta": {
+    "title": "JavaScript Mode Showcase"
+  },
+  "layout": "store",
+  "actions": [
+    { "action": "jsDemoOnPageMount" }
+  ],
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "w-full max-w-3xl mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
+            },
+            "text": "JavaScript Mode Showcase"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400"
+            },
+            "text": "Every binding on this page uses { js: \"...\" } and every workflow uses runJavaScript. Open the right panel on any element to see the WeWeb-style identifiers — variables.cartCount, collections.products.data, context.item.field — that JS mode emits."
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" },
+                "text": "Card 1 — { js } bindings (read-only)"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "Text, style and conditional bindings powered by multi-line JavaScript expressions."
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[16px] py-[12px] flex flex-col gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                "text": "Text via reduce"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "data-testid": "js-binding-total",
+                  "className": "text-[18px] font-medium text-gray-900 dark:text-gray-100"
+                },
+                "text": {
+                  "js": "const items = variables.productItems ?? [];\nconst total = items.reduce((s, p) => s + (p.price ?? 0), 0);\nreturn `Total: $${total.toFixed(2)} across ${items.length} item(s)`;"
+                }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] text-gray-500 dark:text-gray-400 font-mono" },
+                "text": "{ js: \"const items = variables.productItems ?? []; const total = items.reduce((s, p) => s + (p.price ?? 0), 0); return `Total: $${total.toFixed(2)} ...`;\" }"
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[16px] py-[12px] flex flex-col gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                "text": "Style via JS object return"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "data-testid": "js-binding-style-pill",
+                  "className": "px-[16px] py-[8px] rounded-[9999px] inline-flex items-center justify-center self-start",
+                  "style": {
+                    "js": "return { backgroundColor: variables.cartCount > 0 ? '#10b981' : '#6b7280', color: '#ffffff' };"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] font-medium text-white" },
+                    "text": {
+                      "js": "const c = variables.cartCount ?? 0;\nreturn c > 0 ? `${c} item(s) in cart` : 'Cart is empty';"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-incr-cart",
+                      "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoIncrementCart" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "+1 to cartCount",
+                        "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-reset-cart",
+                      "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoResetCart" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Reset cartCount",
+                        "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[16px] py-[12px] flex flex-col gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                "text": "Boolean via regex (live email validation)"
+              },
+              {
+                "type": "Input",
+                "id": "js-email-input",
+                "props": {
+                  "variant": "outline",
+                  "size": "md",
+                  "name": "userEmail",
+                  "placeholder": "you@example.com",
+                  "value": "{{variables['js-demo-0000-0000-0000-000000000002']}}",
+                  "data-testid": "js-email-input",
+                  "className": "!text-gray-900 dark:!text-gray-100"
+                },
+                "children": [],
+                "actions": [
+                  {
+                    "trigger": "change",
+                    "steps": [
+                      {
+                        "id": "syncEmail",
+                        "type": "changeVariableValue",
+                        "config": {
+                          "variableName": "js-demo-0000-0000-0000-000000000002",
+                          "value": { "formula": "globalContext?.event?.value ?? ''" }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "data-testid": "js-email-hint",
+                  "className": "text-[12px] font-medium",
+                  "style": {
+                    "js": "const ok = !!variables.userEmail && /^.+@.+\\..+$/.test(variables.userEmail);\nreturn { color: ok ? '#10b981' : '#ef4444' };"
+                  }
+                },
+                "text": {
+                  "js": "if (!variables.userEmail) return 'Enter your email…';\nconst ok = /^.+@.+\\..+$/.test(variables.userEmail);\nreturn ok ? 'Looks good ✓' : 'Invalid email format';"
+                }
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[16px] py-[12px] flex flex-col gap-[8px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                "text": "Repeater — JS using context.item"
+              },
+              {
+                "type": "Box",
+                "map": "variables['js-demo-0000-0000-0000-000000000010']",
+                "key": "context.item.data.id",
+                "props": { "className": "contents" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center justify-between rounded-[6px] bg-white dark:bg-gray-900 border-[1px] border-gray-200 dark:border-gray-700 px-[12px] py-[8px] mb-[6px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[14px] text-gray-900 dark:text-gray-100" },
+                        "text": {
+                          "js": "return `${context.item.data.name} ($${context.item.data.price.toFixed(2)})`;"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] font-mono text-gray-400"
+                        },
+                        "text": {
+                          "js": "return `index #${context.item.index ?? '?'}`;"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" },
+                "text": "Card 2 — runJavaScript workflow steps"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" },
+                "text": "Each button runs a workflow whose first step is a runJavaScript action. Results land at context.workflow[stepId].result and feed downstream steps."
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[12px]" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[12px] items-center flex-wrap" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-math",
+                      "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoMath" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Run: read variable + math",
+                        "props": { "className": "text-[14px] text-[var(--theme-background)] font-medium" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "data-testid": "js-out-math",
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                    },
+                    "text": "{{variables['js-demo-0000-0000-0000-000000000006']}}"
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[12px] items-center flex-wrap" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-fetch",
+                      "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoFetchAsync" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Run: async fetch + branch",
+                        "props": { "className": "text-[14px] text-[var(--theme-background)] font-medium" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "data-testid": "js-out-fetch",
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                    },
+                    "text": "{{variables['js-demo-0000-0000-0000-000000000007']}}"
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[12px] items-center flex-wrap" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-side-effect",
+                      "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoSideEffect" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Run: refetch + wwLib.variables.set",
+                        "props": { "className": "text-[14px] text-[var(--theme-background)] font-medium" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "data-testid": "js-out-sync",
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                    },
+                    "text": {
+                      "js": "return `lastSyncAt = ${variables.lastSyncAt}\\nstatus = ${variables.jsSyncStatus}`;"
+                    }
+                  }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-[12px] items-center flex-wrap" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": "js-btn-foreach",
+                      "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 active:opacity-80 px-[16px] py-[8px] rounded-[6px]"
+                    },
+                    "actions": [{ "action": "jsDemoForEachUsers" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "Run: forEach + nested runJavaScript",
+                        "props": { "className": "text-[14px] text-[var(--theme-background)] font-medium" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "data-testid": "js-out-foreach",
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                    },
+                    "text": "{{variables['js-demo-0000-0000-0000-000000000009']}}"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[16px] py-[12px] flex flex-col gap-[6px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                "text": "Live state (read via { js })"
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre" },
+                "text": {
+                  "js": "const lines = [\n  `cartCount      = ${variables.cartCount}`,\n  `userEmail      = ${variables.userEmail || '(empty)'}`,\n  `processedCount = ${variables.processedCount}`,\n  `lastSyncAt     = ${variables.lastSyncAt}`,\n  `users.length   = ${(variables.users ?? []).length}`,\n];\nreturn lines.join('\\n');"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

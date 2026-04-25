@@ -284,6 +284,34 @@ function getCascadedStyles(
 }
 
 /**
+ * Collect cascaded animation overrides for a given breakpoint.
+ * Returns a sparse object with the same shape as `ResponsiveOverride['animation']`.
+ * `null` for a leaf means "explicitly removed at this breakpoint".
+ */
+function getCascadedAnimation(
+  responsive: Partial<Record<BreakpointKey, ResponsiveOverride>>,
+  breakpoint: ActiveBreakpoint,
+): { filter?: { blur?: number | null } } {
+  if (breakpoint === 'desktop') return {};
+
+  const bpIndex = BREAKPOINT_CASCADE.indexOf(breakpoint as BreakpointKey);
+  if (bpIndex === -1) return {};
+
+  const merged: { filter?: { blur?: number | null } } = {};
+  for (let i = 0; i <= bpIndex; i++) {
+    const bp = BREAKPOINT_CASCADE[i];
+    const override = responsive[bp];
+    const anim = override?.animation;
+    if (!anim) continue;
+    if (anim.filter !== undefined) {
+      const f = anim.filter ?? {};
+      merged.filter = { ...(merged.filter ?? {}), ...(f as { blur?: number | null }) };
+    }
+  }
+  return merged;
+}
+
+/**
  * Get the cascaded value for a non-style field (condition, text, props, style).
  * Returns undefined if no breakpoint in the cascade overrides this field.
  */
@@ -327,11 +355,15 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
   const propsOverride = getCascadedField(responsive, breakpoint, 'props');
   const styleOverride = getCascadedField(responsive, breakpoint, 'style');
 
+  const cascadedAnim = getCascadedAnimation(responsive, breakpoint);
+  const hasAnimOverrides = Object.keys(cascadedAnim).length > 0;
+
   const hasAnyOverride = hasStyleOverrides
     || conditionOverride !== undefined
     || textOverride !== undefined
     || propsOverride !== undefined
-    || styleOverride !== undefined;
+    || styleOverride !== undefined
+    || hasAnimOverrides;
 
   if (!hasAnyOverride) return node;
 
@@ -389,6 +421,45 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
       ...resolved.props,
       style: { ...baseStyle, ...styleOverride },
     };
+  }
+
+  if (hasAnimOverrides) {
+    // Animation can live at node.animation (top-level alias) or props.animation (canonical).
+    // Merge into whichever exists (and create on canonical if neither does).
+    const propsAnim = (resolved.props as Record<string, unknown> | undefined)?.animation as
+      | Record<string, unknown>
+      | undefined;
+    const topAnim = (resolved as unknown as Record<string, unknown>).animation as
+      | Record<string, unknown>
+      | undefined;
+
+    const mergeAnim = (existing: Record<string, unknown> | undefined): Record<string, unknown> => {
+      const next: Record<string, unknown> = { ...(existing ?? {}) };
+      if (cascadedAnim.filter !== undefined) {
+        const existingFilter = (next.filter ?? {}) as Record<string, unknown>;
+        const filterPatch = { ...existingFilter };
+        if ('blur' in cascadedAnim.filter) {
+          if (cascadedAnim.filter.blur === null) {
+            delete filterPatch.blur;
+          } else {
+            filterPatch.blur = cascadedAnim.filter.blur;
+            // The renderer only composes filter when enabled or has values; ensure it's on.
+            filterPatch.enabled = true;
+          }
+        }
+        next.filter = filterPatch;
+      }
+      return next;
+    };
+
+    if (propsAnim !== undefined) {
+      resolved.props = { ...resolved.props, animation: mergeAnim(propsAnim) };
+    } else if (topAnim !== undefined) {
+      (resolved as unknown as Record<string, unknown>).animation = mergeAnim(topAnim);
+    } else {
+      // No base animation — create one on props (canonical location) so the renderer picks it up.
+      resolved.props = { ...resolved.props, animation: mergeAnim(undefined) };
+    }
   }
 
   return resolved;

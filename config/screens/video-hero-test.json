@@ -1,11 +1,14 @@
 {
-  "meta": { "title": "Landing Page Test" },
+  "meta": {
+    "title": "Landing Page Test"
+  },
   "ui": {
     "type": "Box",
-    "props": { "className": "flex flex-col w-full" },
+    "props": {
+      "className": "flex flex-col w-full"
+    },
     "id": "page-root",
     "children": [
-
       {
         "type": "Box",
         "props": {
@@ -148,7 +151,10 @@
                       "style": {
                         "boxShadow": "0px 8px 24px 0px rgba(255, 255, 255, 0.2)",
                         "shadowColor": "rgb(255,255,255)",
-                        "shadowOffset": { "width": 0, "height": 8 },
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 8
+                        },
                         "shadowRadius": 24,
                         "shadowOpacity": 0.2,
                         "elevation": 8
@@ -171,7 +177,10 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      }
                     }
                   },
                   {
@@ -196,7 +205,10 @@
                       }
                     ],
                     "animation": {
-                      "hover": { "scale": 1.05, "duration": 200 }
+                      "hover": {
+                        "scale": 1.05,
+                        "duration": 200
+                      }
                     }
                   }
                 ],
@@ -228,7 +240,6 @@
           }
         }
       },
-
       {
         "type": "Box",
         "props": {
@@ -327,68 +338,77 @@
                 "id": "collage-inner-wrapper",
                 "name": "CollageInnerWrapper",
                 "children": [
-              {
-                "type": "Image",
-                "props": {
-                  "className": "w-[280px] h-[380px] absolute z-[3] top-[0px] left-[0px] rounded-[12px]",
-                  "alt": "Colorful, 3D shapes arranged in a fun design.",
-                  "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "-8px 12px 24px 0px rgba(124, 58, 237, 0.15)",
-                    "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": -8, "height": 12 },
-                    "shadowRadius": 24,
-                    "shadowOpacity": 0.15,
-                    "elevation": 12,
-                    "transform": "rotate(-8deg)"
+                  {
+                    "type": "Image",
+                    "props": {
+                      "className": "w-[280px] h-[380px] absolute z-[3] top-[0px] left-[0px] rounded-[12px]",
+                      "alt": "Colorful, 3D shapes arranged in a fun design.",
+                      "objectFit": "cover",
+                      "style": {
+                        "boxShadow": "-8px 12px 24px 0px rgba(124, 58, 237, 0.15)",
+                        "shadowColor": "rgb(124,58,237)",
+                        "shadowOffset": {
+                          "width": -8,
+                          "height": 12
+                        },
+                        "shadowRadius": 24,
+                        "shadowOpacity": 0.15,
+                        "elevation": 12,
+                        "transform": "rotate(-8deg)"
+                      }
+                    },
+                    "src": "https://images.unsplash.com/photo-1751644332113-2004a1b143f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGNvbG9yZnVsJTIwY29tcG9zaXRpb258ZW58MHx8fHwxNzc1OTA1Nzk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+                    "id": "ccde9fb7-6786-4ea5-b3b7-76093639e35d",
+                    "name": "LayeredImageOne",
+                    "children": []
+                  },
+                  {
+                    "type": "Image",
+                    "props": {
+                      "className": "w-[280px] h-[380px] absolute z-[2] top-[60px] left-[160px] rounded-[12px]",
+                      "alt": "Concentric circles of pink, blue, and teal abstract pattern",
+                      "objectFit": "cover",
+                      "style": {
+                        "boxShadow": "8px 16px 32px 0px rgba(124, 58, 237, 0.2)",
+                        "shadowColor": "rgb(124,58,237)",
+                        "shadowOffset": {
+                          "width": 8,
+                          "height": 16
+                        },
+                        "shadowRadius": 32,
+                        "shadowOpacity": 0.2,
+                        "elevation": 16,
+                        "transform": "rotate(6deg)"
+                      }
+                    },
+                    "src": "https://images.unsplash.com/photo-1764960661322-59c126ae3cbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHx2aWJyYW50JTIwYXJ0aXN0aWMlMjBicnVzaHN0cm9rZSUyMHBhaW50JTIwdGV4dHVyZXxlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                    "id": "87701be4-3f3a-4035-8789-0de7a7ffca93",
+                    "name": "LayeredImageTwo",
+                    "children": []
+                  },
+                  {
+                    "type": "Image",
+                    "props": {
+                      "className": "w-[280px] h-[380px] absolute z-[1] top-[40px] left-[100px] rounded-[12px]",
+                      "alt": "a group of white pillars",
+                      "objectFit": "cover",
+                      "style": {
+                        "boxShadow": "0px 20px 40px 0px rgba(124, 58, 237, 0.25)",
+                        "shadowColor": "rgb(124,58,237)",
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 20
+                        },
+                        "shadowRadius": 40,
+                        "shadowOpacity": 0.25,
+                        "elevation": 20
+                      }
+                    },
+                    "src": "https://images.unsplash.com/photo-1656862535211-b12ebf76766f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxkeW5hbWljJTIwbWluaW1hbGlzdCUyMGFyY2hpdGVjdHVyYWwlMjBmb3Jtc3xlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+                    "id": "2279f59d-a98b-435c-9674-17352e6bd36b",
+                    "name": "LayeredImageThree",
+                    "children": []
                   }
-                },
-                "src": "https://images.unsplash.com/photo-1751644332113-2004a1b143f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGNvbG9yZnVsJTIwY29tcG9zaXRpb258ZW58MHx8fHwxNzc1OTA1Nzk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-                "id": "ccde9fb7-6786-4ea5-b3b7-76093639e35d",
-                "name": "LayeredImageOne",
-                "children": []
-              },
-              {
-                "type": "Image",
-                "props": {
-                  "className": "w-[280px] h-[380px] absolute z-[2] top-[60px] left-[160px] rounded-[12px]",
-                  "alt": "Concentric circles of pink, blue, and teal abstract pattern",
-                  "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "8px 16px 32px 0px rgba(124, 58, 237, 0.2)",
-                    "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": 8, "height": 16 },
-                    "shadowRadius": 32,
-                    "shadowOpacity": 0.2,
-                    "elevation": 16,
-                    "transform": "rotate(6deg)"
-                  }
-                },
-                "src": "https://images.unsplash.com/photo-1764960661322-59c126ae3cbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHx2aWJyYW50JTIwYXJ0aXN0aWMlMjBicnVzaHN0cm9rZSUyMHBhaW50JTIwdGV4dHVyZXxlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-                "id": "87701be4-3f3a-4035-8789-0de7a7ffca93",
-                "name": "LayeredImageTwo",
-                "children": []
-              },
-              {
-                "type": "Image",
-                "props": {
-                  "className": "w-[280px] h-[380px] absolute z-[1] top-[40px] left-[100px] rounded-[12px]",
-                  "alt": "a group of white pillars",
-                  "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "0px 20px 40px 0px rgba(124, 58, 237, 0.25)",
-                    "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": 0, "height": 20 },
-                    "shadowRadius": 40,
-                    "shadowOpacity": 0.25,
-                    "elevation": 20
-                  }
-                },
-                "src": "https://images.unsplash.com/photo-1656862535211-b12ebf76766f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxkeW5hbWljJTIwbWluaW1hbGlzdCUyMGFyY2hpdGVjdHVyYWwlMjBmb3Jtc3xlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-                "id": "2279f59d-a98b-435c-9674-17352e6bd36b",
-                "name": "LayeredImageThree",
-                "children": []
-              }
                 ]
               }
             ],
@@ -411,7 +431,6 @@
           }
         }
       },
-
       {
         "type": "Box",
         "props": {
@@ -446,7 +465,11 @@
                     "props": {
                       "icon": "lucide:zap",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi01a000-0000-4000-8000-000000000001",
                     "children": []
@@ -473,7 +496,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               },
               {
@@ -492,7 +518,11 @@
                     "props": {
                       "icon": "lucide:shield",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi02a000-0000-4000-8000-000000000002",
                     "children": []
@@ -519,7 +549,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               },
               {
@@ -538,7 +571,11 @@
                     "props": {
                       "icon": "lucide:users",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi03a000-0000-4000-8000-000000000003",
                     "children": []
@@ -565,7 +602,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               },
               {
@@ -584,7 +624,11 @@
                     "props": {
                       "icon": "lucide:trending-up",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi04a000-0000-4000-8000-000000000004",
                     "children": []
@@ -611,7 +655,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               },
               {
@@ -630,7 +677,11 @@
                     "props": {
                       "icon": "lucide:code",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi05a000-0000-4000-8000-000000000005",
                     "children": []
@@ -657,7 +708,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               },
               {
@@ -676,7 +730,11 @@
                     "props": {
                       "icon": "lucide:heart",
                       "className": "mb-[8px]",
-                      "style": { "color": "#7c3aed", "width": 48, "height": 48 }
+                      "style": {
+                        "color": "#7c3aed",
+                        "width": 48,
+                        "height": 48
+                      }
                     },
                     "id": "fi06a000-0000-4000-8000-000000000006",
                     "children": []
@@ -703,7 +761,10 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "y": -4, "duration": 200 }
+                  "hover": {
+                    "y": -4,
+                    "duration": 200
+                  }
                 }
               }
             ],
@@ -725,7 +786,6 @@
           }
         }
       },
-
       {
         "type": "Box",
         "props": {
@@ -761,7 +821,10 @@
               "style": {
                 "boxShadow": "0px 8px 24px 0px rgba(0, 0, 0, 0.15)",
                 "shadowColor": "rgb(0,0,0)",
-                "shadowOffset": { "width": 0, "height": 8 },
+                "shadowOffset": {
+                  "width": 0,
+                  "height": 8
+                },
                 "shadowRadius": 24,
                 "shadowOpacity": 0.15,
                 "elevation": 8
@@ -790,7 +853,10 @@
                 "delay": 100,
                 "easing": "easeOut"
               },
-              "hover": { "scale": 1.05, "duration": 200 }
+              "hover": {
+                "scale": 1.05,
+                "duration": 200
+              }
             }
           }
         ],
@@ -803,7 +869,6 @@
           }
         }
       },
-
       {
         "type": "Box",
         "props": {
@@ -874,7 +939,10 @@
                 "duration": 500,
                 "easing": "easeOut"
               },
-              "hover": { "y": -4, "duration": 200 }
+              "hover": {
+                "y": -4,
+                "duration": 200
+              }
             }
           },
           {
@@ -939,7 +1007,10 @@
                 "delay": 150,
                 "easing": "easeOut"
               },
-              "hover": { "y": -4, "duration": 200 }
+              "hover": {
+                "y": -4,
+                "duration": 200
+              }
             }
           },
           {
@@ -1004,7 +1075,10 @@
                 "delay": 300,
                 "easing": "easeOut"
               },
-              "hover": { "y": -4, "duration": 200 }
+              "hover": {
+                "y": -4,
+                "duration": 200
+              }
             }
           }
         ],
@@ -1017,7 +1091,6 @@
           }
         }
       }
-
     ]
   }
 }

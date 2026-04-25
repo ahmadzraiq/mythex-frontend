@@ -3,7 +3,10 @@
     "title": "Order Details"
   },
   "queryParams": [
-    { "name": "id", "value": "" }
+    {
+      "name": "id",
+      "value": ""
+    }
   ],
   "state": {},
   "layout": "account",
@@ -37,7 +40,7 @@
             ]
           },
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[30px] font-bold"
             },
@@ -67,7 +70,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[18px] font-semibold mb-[16px]"
                 },
@@ -162,7 +165,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[16px] font-semibold mb-[12px]"
                     },
@@ -213,7 +216,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[16px] font-semibold mb-[12px]"
                     },

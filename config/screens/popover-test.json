@@ -22,10 +22,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "2xl",
-                  "className": "font-bold text-gray-900 dark:text-white"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white"
                 },
                 "text": "Popover & Tooltip Showcase"
               },
@@ -45,10 +44,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "1. Click Popover — Dropdown Menu"
               },
@@ -164,10 +162,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "2. Hover Popovers (Tooltip-style)"
               },
@@ -458,10 +455,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "3. Match Trigger Width — Full-Width Dropdown"
               },
@@ -571,10 +567,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "4. Programmatic Control"
               },
@@ -796,10 +791,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "5. Interactive Popover Content"
               },
@@ -993,10 +987,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-800 dark:text-gray-200"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200"
                 },
                 "text": "6. Context Menu Style"
               },
@@ -1204,10 +1197,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "2xl",
-                  "className": "font-bold text-gray-900 dark:text-white"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white"
                 },
                 "text": "Autocomplete Showcase"
               },
@@ -1227,10 +1219,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "7. Basic Autocomplete"
               },
@@ -1417,10 +1408,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "8. Multi-Select Autocomplete"
               },
@@ -1602,10 +1592,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "9. Grouped Autocomplete"
               },
@@ -1932,10 +1921,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "10. Free Solo (Creatable)"
               },
@@ -2132,10 +2120,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "11. Async Autocomplete"
               },
@@ -2297,10 +2284,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "12. Disabled Options"
               },
@@ -2449,10 +2435,9 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
-                  "size": "lg",
-                  "className": "font-semibold text-gray-900 dark:text-white"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-900 dark:text-white"
                 },
                 "text": "13. Custom Rendered Options"
               },
@@ -4198,7 +4183,11 @@
                       "placeholder": "YYYY-MM-DD",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000003']}}"
                     },
-                    "actions": [{ "action": "dp1TypeDate" }]
+                    "actions": [
+                      {
+                        "action": "dp1TypeDate"
+                      }
+                    ]
                   },
                   {
                     "type": "Box",
@@ -4481,7 +4470,11 @@
                       "placeholder": "YYYY-MM-DD",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000013']}}"
                     },
-                    "actions": [{ "action": "dp2TypeDate" }]
+                    "actions": [
+                      {
+                        "action": "dp2TypeDate"
+                      }
+                    ]
                   },
                   {
                     "type": "Box",
@@ -4836,7 +4829,11 @@
                       "placeholder": "HH:MM",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000026']}}"
                     },
-                    "actions": [{ "action": "tpTypeTime" }]
+                    "actions": [
+                      {
+                        "action": "tpTypeTime"
+                      }
+                    ]
                   },
                   {
                     "type": "Box",
@@ -5071,7 +5068,11 @@
                       "placeholder": "YYYY-MM-DD HH:MM",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000038']}}"
                     },
-                    "actions": [{ "action": "dtpTypeDateTime" }]
+                    "actions": [
+                      {
+                        "action": "dtpTypeDateTime"
+                      }
+                    ]
                   },
                   {
                     "type": "Box",
@@ -5472,7 +5473,11 @@
                       "placeholder": "Start date",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000043']}}"
                     },
-                    "actions": [{ "action": "drTypeStart" }]
+                    "actions": [
+                      {
+                        "action": "drTypeStart"
+                      }
+                    ]
                   },
                   {
                     "type": "Text",
@@ -5491,7 +5496,11 @@
                       "placeholder": "End date",
                       "value": "{{variables['dp-test-0000-0000-0000-000000000044']}}"
                     },
-                    "actions": [{ "action": "drTypeEnd" }]
+                    "actions": [
+                      {
+                        "action": "drTypeEnd"
+                      }
+                    ]
                   },
                   {
                     "type": "Box",

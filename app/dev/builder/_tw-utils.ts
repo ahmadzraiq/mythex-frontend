@@ -693,7 +693,7 @@ export function applyBorderRadius(className: string, corners: FourCorners): stri
  * flex-col  main  axis = vertical   → justify-* driven by row
  *           cross axis = horizontal → items-*   driven by col
  */
-function buildAlignCells(isRow: boolean): { items: string; justify: string }[] {
+export function buildAlignCells(isRow: boolean): { items: string; justify: string }[] {
   const POS = ['start', 'center', 'end'] as const;
   return Array.from({ length: 9 }, (_, i) => {
     const row = Math.floor(i / 3);

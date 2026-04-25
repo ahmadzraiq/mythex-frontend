@@ -44,7 +44,7 @@
                 "id": "bed12dd0-3e08-4496-8489-cc111f751e5d",
                 "name": "product-title",
                 "text": "Next Generation Experience",
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "style": {},
                   "className": "text-[56px] font-bold !text-[var(--theme-foreground)]"
@@ -308,130 +308,70 @@
                   "className": "relative w-[500px] max-w-full shrink-0 overflow-visible pb-[80px] pr-[100px]"
                 },
                 "children": [
-              {
-                "id": "0b0a3738-6606-4d99-a971-1927d00ef46a",
-                "name": "glow-highlight-2",
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "opacity": 0.12,
-                    "boxShadow": "0px 4px 60px 15px #7c3aed",
-                    "shadowColor": "#7c3aed",
-                    "shadowOffset": { "width": 0, "height": 4 },
-                    "shadowRadius": 60,
-                    "shadowOpacity": 1,
-                    "elevation": 30
-                  },
-                  "className": "absolute w-[350px] h-[350px] bg-[#7c3aed] bottom-[100px] left-[30px] rounded-[9999px] pointer-events-none z-[0]"
-                },
-                "children": []
-              },
-              {
-                "id": "6e5d8385-e335-4d4f-92e9-d0b096863edc",
-                "name": "glassmorphism-card-main",
-                "type": "Box",
-                "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 40px 0px #7c3aed",
-                    "elevation": 20,
-                    "shadowColor": "#7c3aed",
-                    "shadowOffset": { "width": 0, "height": 4 },
-                    "shadowRadius": 40,
-                    "shadowOpacity": 1
-                  },
-                  "className": "w-[500px] h-[600px] bg-white/10 border-[1px] border-white/20 rounded-[24px] overflow-hidden"
-                },
-                "animation": {
-                  "enter": {
-                    "type": "slideInLeft",
-                    "delay": 150,
-                    "duration": 700
-                  },
-                  "filter": {
-                    "enabled": true,
-                    "backdropBlur": 12
-                  },
-                  "outerStyle": {
-                    "width": 500,
-                    "height": 600,
-                    "borderRadius": 24,
-                    "overflow": "hidden"
-                  }
-                },
-                "children": [
                   {
-                    "id": "a9e88d97-f4ff-4fbc-ae38-ecdc5b52212c",
-                    "src": "https://images.unsplash.com/photo-1730472529229-c139155a7cb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxBJTIwaGVybyUyMHNlY3Rpb24lMjB3aXRoJTIwZnV0dXJpc3RpYyUyMHByb2R1Y3QlMjBzaG93Y2FzZSUyMGZlYXR1cmluZyUyMGxheWVyZWQlMjBwcm9kdWN0JTIwaW1hZ2VzJTJDJTIwYWJzdHJhY3QlMjBncmFkaWVudCUyMHNoYXBlcyUyQyUyMGdsYXNzbW9ycGhpc20lMjBlZmZlY3RzJTJDJTIwZmxvYXRpbmclMjBhbmltYXRpb25zJTJDJTIwYW5kJTIwcGFyYWxsYXglMjBzY3JvbGwlMjBlZmZlY3RzLiUyMEluY2x1ZGVzJTIwbWFpbiUyMHByb2R1Y3QlMjBpbWFnZSUyQyUyMG9mZnNldCUyMGZsb2F0aW5nJTIwc2Vjb25kYXJ5JTIwaW1hZ2UlMkMlMjBhYnN0cmFjdCUyMHNoYXBlcyUyMHdpdGglMjBub2lzZSUyMHRleHR1cmVzJTJDJTIwc29mdCUyMGdsb3clMjBoaWdobGlnaHRzJTJDJTIwYW5kJTIwc3VidGxlJTIwZ3JhaW4lMjB0ZXh0dXJlJTIwZm9yJTIwcHJlbWl1bSUyMGFydGlzdGljJTIwbW9vZC58ZW58MHx8fHwxNzc1MDY1NTI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-                    "name": "main-product-image",
-                    "type": "Image",
-                    "props": {
-                      "alt": "A purple and blue abstract background with circles, balls, and shapes",
-                      "style": {},
-                      "className": "w-full flex-1",
-                      "objectFit": "cover"
-                    },
-                    "children": []
-                  }
-                ]
-              },
-              {
-                "id": "1dfc6587-508b-4978-b603-88e073612f26",
-                "name": "floating-secondary-container",
-                "type": "Box",
-                "props": {
-                  "className": "absolute z-[20]",
-                  "style": {
-                    "right": -60,
-                    "bottom": -40
-                  }
-                },
-                "children": [
-                  {
-                    "id": "57fd51a2-4c12-4709-abec-6b626bff8906",
-                    "name": "glassmorphism-card-secondary",
+                    "id": "0b0a3738-6606-4d99-a971-1927d00ef46a",
+                    "name": "glow-highlight-2",
                     "type": "Box",
                     "props": {
                       "style": {
-                        "boxShadow": "0px 4px 30px 0px #7c3aed",
-                        "elevation": 15,
+                        "opacity": 0.12,
+                        "boxShadow": "0px 4px 60px 15px #7c3aed",
                         "shadowColor": "#7c3aed",
-                        "shadowOffset": { "width": 0, "height": 4 },
-                        "shadowRadius": 30,
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 4
+                        },
+                        "shadowRadius": 60,
+                        "shadowOpacity": 1,
+                        "elevation": 30
+                      },
+                      "className": "absolute w-[350px] h-[350px] bg-[#7c3aed] bottom-[100px] left-[30px] rounded-[9999px] pointer-events-none z-[0]"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "6e5d8385-e335-4d4f-92e9-d0b096863edc",
+                    "name": "glassmorphism-card-main",
+                    "type": "Box",
+                    "props": {
+                      "style": {
+                        "boxShadow": "0px 4px 40px 0px #7c3aed",
+                        "elevation": 20,
+                        "shadowColor": "#7c3aed",
+                        "shadowOffset": {
+                          "width": 0,
+                          "height": 4
+                        },
+                        "shadowRadius": 40,
                         "shadowOpacity": 1
                       },
-                      "className": "w-[300px] h-[360px] bg-white/8 border-[1px] border-white/15 rounded-[20px] overflow-hidden"
+                      "className": "w-[500px] h-[600px] bg-white/10 border-[1px] border-white/20 rounded-[24px] overflow-hidden"
                     },
                     "animation": {
                       "enter": {
-                        "type": "slideInRight",
-                        "delay": 300,
+                        "type": "slideInLeft",
+                        "delay": 150,
                         "duration": 700
-                      },
-                      "loop": {
-                        "type": "float",
-                        "duration": 4000,
-                        "direction": "alternate",
-                        "repeatCount": -1
                       },
                       "filter": {
                         "enabled": true,
-                        "backdropBlur": 10
+                        "backdropBlur": 12
                       },
                       "outerStyle": {
-                        "width": 300,
-                        "height": 360,
-                        "borderRadius": 20,
+                        "width": 500,
+                        "height": 600,
+                        "borderRadius": 24,
                         "overflow": "hidden"
                       }
                     },
                     "children": [
                       {
-                        "id": "c1674f0e-cef8-4607-abc2-0303cc75a720",
-                        "src": "https://images.unsplash.com/photo-1635224734378-4a74684dc6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxBJTIwaGVybyUyMHNlY3Rpb24lMjB3aXRoJTIwZnV0dXJpc3RpYyUyMHByb2R1Y3QlMjBzaG93Y2FzZSUyMGZlYXR1cmluZyUyMGxheWVyZWQlMjBwcm9kdWN0JTIwaW1hZ2VzJTJDJTIwYWJzdHJhY3QlMjBncmFkaWVudCUyMHNoYXBlcyUyQyUyMGdsYXNzbW9ycGhpc20lMjBlZmZlY3RzJTJDJTIwZmxvYXRpbmclMjBhbmltYXRpb25zJTJDJTIwYW5kJTIwcGFyYWxsYXglMjBzY3JvbGwlMjBlZmZlY3RzLiUyMEluY2x1ZGVzJTIwbWFpbiUyMHByb2R1Y3QlMjBpbWFnZSUyQyUyMG9mZnNldCUyMGZsb2F0aW5nJTIwc2Vjb25kYXJ5JTIwaW1hZ2UlMkMlMjBhYnN0cmFjdCUyMHNoYXBlcyUyMHdpdGglMjBub2lzZSUyMHRleHR1cmVzJTJDJTIwc29mdCUyMGdsb3clMjBoaWdobGlnaHRzJTJDJTIwYW5kJTIwc3VidGxlJTIwZ3JhaW4lMjB0ZXh0dXJlJTIwZm9yJTIwcHJlbWl1bSUyMGFydGlzdGljJTIwbW9vZC58ZW58MHx8fHwxNzc1MDY1NTI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-                        "name": "secondary-product-image",
+                        "id": "a9e88d97-f4ff-4fbc-ae38-ecdc5b52212c",
+                        "src": "https://images.unsplash.com/photo-1730472529229-c139155a7cb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxBJTIwaGVybyUyMHNlY3Rpb24lMjB3aXRoJTIwZnV0dXJpc3RpYyUyMHByb2R1Y3QlMjBzaG93Y2FzZSUyMGZlYXR1cmluZyUyMGxheWVyZWQlMjBwcm9kdWN0JTIwaW1hZ2VzJTJDJTIwYWJzdHJhY3QlMjBncmFkaWVudCUyMHNoYXBlcyUyQyUyMGdsYXNzbW9ycGhpc20lMjBlZmZlY3RzJTJDJTIwZmxvYXRpbmclMjBhbmltYXRpb25zJTJDJTIwYW5kJTIwcGFyYWxsYXglMjBzY3JvbGwlMjBlZmZlY3RzLiUyMEluY2x1ZGVzJTIwbWFpbiUyMHByb2R1Y3QlMjBpbWFnZSUyQyUyMG9mZnNldCUyMGZsb2F0aW5nJTIwc2Vjb25kYXJ5JTIwaW1hZ2UlMkMlMjBhYnN0cmFjdCUyMHNoYXBlcyUyMHdpdGglMjBub2lzZSUyMHRleHR1cmVzJTJDJTIwc29mdCUyMGdsb3clMjBoaWdobGlnaHRzJTJDJTIwYW5kJTIwc3VidGxlJTIwZ3JhaW4lMjB0ZXh0dXJlJTIwZm9yJTIwcHJlbWl1bSUyMGFydGlzdGljJTIwbW9vZC58ZW58MHx8fHwxNzc1MDY1NTI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+                        "name": "main-product-image",
                         "type": "Image",
                         "props": {
-                          "alt": "a pink background with a green plant and a blue vase",
+                          "alt": "A purple and blue abstract background with circles, balls, and shapes",
                           "style": {},
                           "className": "w-full flex-1",
                           "objectFit": "cover"
@@ -439,9 +379,78 @@
                         "children": []
                       }
                     ]
+                  },
+                  {
+                    "id": "1dfc6587-508b-4978-b603-88e073612f26",
+                    "name": "floating-secondary-container",
+                    "type": "Box",
+                    "props": {
+                      "className": "absolute z-[20]",
+                      "style": {
+                        "right": -60,
+                        "bottom": -40
+                      }
+                    },
+                    "children": [
+                      {
+                        "id": "57fd51a2-4c12-4709-abec-6b626bff8906",
+                        "name": "glassmorphism-card-secondary",
+                        "type": "Box",
+                        "props": {
+                          "style": {
+                            "boxShadow": "0px 4px 30px 0px #7c3aed",
+                            "elevation": 15,
+                            "shadowColor": "#7c3aed",
+                            "shadowOffset": {
+                              "width": 0,
+                              "height": 4
+                            },
+                            "shadowRadius": 30,
+                            "shadowOpacity": 1
+                          },
+                          "className": "w-[300px] h-[360px] bg-white/8 border-[1px] border-white/15 rounded-[20px] overflow-hidden"
+                        },
+                        "animation": {
+                          "enter": {
+                            "type": "slideInRight",
+                            "delay": 300,
+                            "duration": 700
+                          },
+                          "loop": {
+                            "type": "float",
+                            "duration": 4000,
+                            "direction": "alternate",
+                            "repeatCount": -1
+                          },
+                          "filter": {
+                            "enabled": true,
+                            "backdropBlur": 10
+                          },
+                          "outerStyle": {
+                            "width": 300,
+                            "height": 360,
+                            "borderRadius": 20,
+                            "overflow": "hidden"
+                          }
+                        },
+                        "children": [
+                          {
+                            "id": "c1674f0e-cef8-4607-abc2-0303cc75a720",
+                            "src": "https://images.unsplash.com/photo-1635224734378-4a74684dc6d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxBJTIwaGVybyUyMHNlY3Rpb24lMjB3aXRoJTIwZnV0dXJpc3RpYyUyMHByb2R1Y3QlMjBzaG93Y2FzZSUyMGZlYXR1cmluZyUyMGxheWVyZWQlMjBwcm9kdWN0JTIwaW1hZ2VzJTJDJTIwYWJzdHJhY3QlMjBncmFkaWVudCUyMHNoYXBlcyUyQyUyMGdsYXNzbW9ycGhpc20lMjBlZmZlY3RzJTJDJTIwZmxvYXRpbmclMjBhbmltYXRpb25zJTJDJTIwYW5kJTIwcGFyYWxsYXglMjBzY3JvbGwlMjBlZmZlY3RzLiUyMEluY2x1ZGVzJTIwbWFpbiUyMHByb2R1Y3QlMjBpbWFnZSUyQyUyMG9mZnNldCUyMGZsb2F0aW5nJTIwc2Vjb25kYXJ5JTIwaW1hZ2UlMkMlMjBhYnN0cmFjdCUyMHNoYXBlcyUyMHdpdGglMjBub2lzZSUyMHRleHR1cmVzJTJDJTIwc29mdCUyMGdsb3clMjBoaWdobGlnaHRzJTJDJTIwYW5kJTIwc3VidGxlJTIwZ3JhaW4lMjB0ZXh0dXJlJTIwZm9yJTIwcHJlbWl1bSUyMGFydGlzdGljJTIwbW9vZC58ZW58MHx8fHwxNzc1MDY1NTI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+                            "name": "secondary-product-image",
+                            "type": "Image",
+                            "props": {
+                              "alt": "a pink background with a green plant and a blue vase",
+                              "style": {},
+                              "className": "w-full flex-1",
+                              "objectFit": "cover"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
                   }
-                ]
-              }
                 ]
               }
             ]

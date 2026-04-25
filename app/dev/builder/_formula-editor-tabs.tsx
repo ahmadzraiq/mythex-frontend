@@ -35,6 +35,7 @@ import {
   pathToFormulaAndDisplay,
 } from './_formula-editor-dom';
 import { STANDALONE_VARIABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
+import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 
@@ -396,7 +397,7 @@ const FORM_CC = { bg: '#c2410c', border: '#ea580c', text: '#ffedd5' };
  * Sources: initialFormData keys, then props.name on input-type children. */
 function extractFormFieldNames(formNode: { props?: { initialFormData?: Record<string, unknown> }; children?: Array<{ type?: string; props?: Record<string, unknown>; children?: unknown[] }> }): string[] {
   const fromInitial = formNode.props?.initialFormData ? Object.keys(formNode.props.initialFormData) : [];
-  const INPUT_TYPES = new Set(['InputField', 'TextareaInput', 'Checkbox', 'Select']);
+  const INPUT_TYPES = new Set(['Input', 'TextareaInput', 'Checkbox', 'Select']);
   const fromNames = new Set<string>();
   function walk(nodes: unknown[]) {
     for (const n of nodes || []) {
@@ -1201,6 +1202,7 @@ export function ItemContextGroup({
   const [expanded, setExpanded] = useState<Set<string>>(() => initialOpen ? new Set(['data']) : new Set());
   const [arrayIndices, setArrayIndices] = useState<Map<string, number>>(new Map());
   const selectedIds = useBuilderStore(s => s.selectedIds);
+  const selectedMapIndex = useBuilderStore(s => s.selectedMapIndex);
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const zustandData = useSduiStore(s => s.data);
   const vsData = getGlobalVariableStore()(state => state.data);
@@ -1233,14 +1235,43 @@ export function ItemContextGroup({
   }, [selectedIds, pageNodes]);
 
   // Extract first item from a map binding path (e.g. "collections.UUID.data.search.items").
-  // Handles three cases:
-  // 1. responsePath stripping: when a datasource uses responsePath="data", the stored flat key
+  // Handles four cases (in order):
+  // 1. Generic JS expressions evaluated via evaluateFormula — handles complex map formulas
+  //    like Array.from(...IIFE...) used by the DatePicker day-cell grid.
+  // 2. responsePath stripping: when a datasource uses responsePath="data", the stored flat key
   //    "collections.UUID" already has the inner data; navigating "data.search.items" must skip
   //    the "data" segment since it no longer exists in the stored value.
-  // 2. Variable store paths: "variables['UUID']" uses bracket notation not dot notation.
-  // 3. Context-relative paths: "context.item.data.features" navigates into the parent item.
-  const resolveFirstItem = useCallback((mapBinding: string | null, parentItem?: Record<string, unknown> | null): Record<string, unknown> | null => {
+  // 3. Variable store paths: "variables['UUID']" uses bracket notation not dot notation.
+  // 4. Context-relative paths: "context.item.data.features" navigates into the parent item.
+  // pickIndex: which array element to surface as the previewed item.
+  //   - For the innermost map, pass selectedMapIndex so the preview matches the cell the user
+  //     clicked on the canvas (e.g. picking day 17 in the DatePicker shows that cell's data).
+  //   - For outer maps, pass 0; selectedMapIndex applies to the innermost iteration only.
+  const resolveFirstItem = useCallback((mapBinding: string | null, parentItem?: Record<string, unknown> | null, pickIndex: number = 0): Record<string, unknown> | null => {
     if (!mapBinding) return null;
+
+    // Try evaluateFormula first — this is the same path the SDUI runtime uses, so any expression
+    // that works at runtime (Array.from(...), IIFE-shaped JS, dot/bracket lookups, …) will work
+    // here. We construct a snapshot that mirrors the runtime context so context-relative formulas
+    // (e.g. context.item.data.features) and component-scoped reads also resolve.
+    try {
+      const parentItemCtx = parentItem
+        ? { data: { ...parentItem, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [parentItem] } }
+        : undefined;
+      const snapshot: Record<string, unknown> = {
+        ...zustandData,
+        ...(vsData ?? {}),
+        variables: vsData ?? {},
+        context: parentItemCtx ? { item: parentItemCtx, index: 0 } : {},
+      };
+      const value = evaluateFormula(mapBinding, snapshot).value;
+      if (Array.isArray(value) && value.length > 0) {
+        const target = value[pickIndex] ?? value[0];
+        if (target && typeof target === 'object' && !Array.isArray(target)) return target as Record<string, unknown>;
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+      }
+    } catch { /* fall through to legacy resolvers below */ }
 
     // Handle context-relative paths like "context.item.data.X" or "$item.X"
     // These reference a nested array inside the outer repeat's current item.
@@ -1305,9 +1336,12 @@ export function ItemContextGroup({
     return null;
   }, [zustandData, vsData]);
 
-  // Resolve parent (outer map) first, then pass to inner resolve for context-relative paths
-  const parentData = useMemo(() => resolveFirstItem(outerMap), [resolveFirstItem, outerMap]);
-  const itemData = useMemo(() => resolveFirstItem(innerMap, parentData), [resolveFirstItem, innerMap, parentData]);
+  // Resolve parent (outer map) first, then pass to inner resolve for context-relative paths.
+  // Outer map uses index 0; inner map uses selectedMapIndex so the preview tracks the cell the
+  // user clicked on the canvas.
+  const parentData = useMemo(() => resolveFirstItem(outerMap, null, 0), [resolveFirstItem, outerMap]);
+  const innerPickIdx = typeof selectedMapIndex === 'number' ? selectedMapIndex : 0;
+  const itemData = useMemo(() => resolveFirstItem(innerMap, parentData, innerPickIdx), [resolveFirstItem, innerMap, parentData, innerPickIdx]);
 
   const toggleExpand = (p: string) => setExpanded(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
   const setArrayIndex = (p: string, idx: number) => setArrayIndices(prev => new Map(prev).set(p, idx));
@@ -1335,8 +1369,8 @@ export function ItemContextGroup({
   const fullItemCtx = innerMap ? {
     data: {
       ...(itemData ?? {}),
-      index: 0,
-      repeatIndex: 0,
+      index: innerPickIdx,
+      repeatIndex: innerPickIdx,
       isACopy: false,
       parent: parentCtxValue,
       repeatedItems: itemData ? [itemData] : [],

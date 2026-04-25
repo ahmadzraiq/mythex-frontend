@@ -95,7 +95,7 @@ test.describe('BB – Builder Bug Fixes', () => {
         pages: Array<{ id: string }>;
         currentPageId: string;
       } }>).__builderStore.getState();
-      s._setPageNodes([{ type: 'Button', id, props: { className: 'px-4 py-2' }, children: [{ type: 'ButtonText', id: id + '-txt', text: 'Move Me' }] }]);
+      s._setPageNodes([{ type: 'Box', id, props: { className: 'px-4 py-2' }, children: [{ type: 'Text', id: id + '-txt', text: 'Move Me' }] }]);
     }, nodeId);
     await page.waitForSelector('[data-builder-id]', { timeout: 5_000 });
 

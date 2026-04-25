@@ -1,5 +1,7 @@
 {
-  "meta": { "title": "Calculator" },
+  "meta": {
+    "title": "Calculator"
+  },
   "state": {},
   "layout": "store",
   "content": {
@@ -39,21 +41,31 @@
                 "type": "Box",
                 "map": "variables['ca1c0005-0000-0000-0000-000000000005']",
                 "key": "context.item.data.label",
-                "props": { "className": "contents" },
+                "props": {
+                  "className": "contents"
+                },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
                       "className": "flex flex-col items-center justify-center cursor-pointer rounded-[9999px] h-[64px] hover:opacity-80 active:opacity-70",
-                      "style": { "backgroundColor": "{{context.item.data.bg}}" }
+                      "style": {
+                        "backgroundColor": "{{context.item.data.bg}}"
+                      }
                     },
-                    "actions": [{ "action": "calcButtonPress" }],
+                    "actions": [
+                      {
+                        "action": "calcButtonPress"
+                      }
+                    ],
                     "children": [
                       {
                         "type": "Text",
                         "props": {
                           "className": "text-[20px] font-medium text-center",
-                          "style": { "color": "{{context.item.data.color}}" }
+                          "style": {
+                            "color": "{{context.item.data.color}}"
+                          }
                         },
                         "text": "{{context.item.data.label}}"
                       }

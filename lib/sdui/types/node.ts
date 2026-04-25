@@ -7,64 +7,54 @@ import type { SetStatePayload, FetchPayload, NavigatePayload } from './payloads'
 /** Condition: formula string, e.g. "cart.count > 0" or "{{demo.number}} >= 60" */
 type ConditionValue = string | Record<string, unknown>;
 
-/** All gluestack-ui component types - AI can generate any of these */
+/** Builder-palette component types - AI can generate any of these.
+ *  Keep in sync with `lib/sdui/component-registry.tsx` and `config/component-names.ts`. */
 export type SDUIComponentType =
   | 'Box'
   | 'Text'
-  | 'HStack'
-  | 'VStack'
-  | 'Image'
   | 'Icon'
-  | 'Heading'
-  | 'Center'
-  | 'Grid'
-  | 'GridItem'
-  | 'Spinner'
+  | 'Image'
+  | 'Video'
+  | 'FormContainer'
   | 'Input'
-  | 'Tooltip'
-  | 'TooltipContent'
-  | 'TooltipText'
-  | 'Checkbox'
-  | 'CheckboxGroup'
-  | 'CheckboxIndicator'
-  | 'CheckboxLabel'
-  | 'Switch'
   | 'Textarea'
   | 'TextareaInput'
-  | 'Skeleton'
-  | 'SkeletonText'
-  | 'ScrollView'
-  | 'SafeAreaView'
-  | 'Accordion'
-  | 'AccordionItem'
-  | 'AccordionHeader'
-  | 'AccordionTrigger'
-  | 'AccordionContent'
   | 'Select'
   | 'SelectTrigger'
   | 'SelectInput'
   | 'SelectPortal'
   | 'SelectBackdrop'
   | 'SelectContent'
-  | 'SelectDragIndicator'
-  | 'SelectDragIndicatorWrapper'
   | 'SelectItem'
-  | 'SelectScrollView'
-  | 'SelectVirtualizedList'
-  | 'SelectFlatList'
-  | 'SelectSectionList'
-  | 'SelectSectionHeaderText'
-  | 'Radio'
+  | 'Slider'
+  | 'SliderTrack'
+  | 'SliderFilledTrack'
+  | 'SliderThumb'
   | 'RadioGroup'
+  | 'Radio'
   | 'RadioIndicator'
   | 'RadioLabel'
   | 'Progress'
   | 'ProgressFilledTrack'
-  | 'Slider'
-  | 'SliderThumb'
-  | 'SliderTrack'
-  | 'SliderFilledTrack'
-  | 'WebInput';
+  | 'Switch'
+  | 'Checkbox'
+  | 'CheckboxIndicator'
+  | 'CheckboxLabel'
+  | 'CheckboxGroup'
+  | 'Tooltip'
+  | 'TooltipContent'
+  | 'TooltipText'
+  | 'Skeleton'
+  | 'SkeletonText'
+  | 'FileUpload'
+  | 'Iframe'
+  | 'Chart'
+  | 'QRCodeWidget'
+  | 'MarkdownViewer'
+  | 'GoogleMap'
+  | 'GoogleMapPlaces'
+  | 'LottiePlayer'
+  | 'HtmlContent';
 
 /** Data source - fetch from API and store in state */
 export interface SDUIDataSource {
@@ -115,6 +105,13 @@ export interface ResponsiveOverride {
   props?: Record<string, unknown>;
   /** Merged into props.style at this breakpoint */
   style?: Record<string, unknown>;
+  /** Sparse animation-config overrides. Currently only `filter.blur` is supported.
+   *  null = explicitly remove the value at this breakpoint (do not inherit). */
+  animation?: {
+    filter?: {
+      blur?: number | null;
+    };
+  };
 }
 
 // ─── Popover / Tooltip config ────────────────────────────────────────────────

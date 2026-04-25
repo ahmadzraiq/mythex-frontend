@@ -10,7 +10,7 @@
     "type": "Box",
     "children": [
       {
-        "type": "Heading",
+        "type": "Text",
         "props": {
           "className": "text-[30px] font-bold mb-[24px]"
         },

@@ -1,5 +1,7 @@
 {
-  "meta": { "title": "Workflow Call-Chain Test" },
+  "meta": {
+    "title": "Workflow Call-Chain Test"
+  },
   "state": {},
   "layout": "store",
   "content": {
@@ -9,7 +11,7 @@
     },
     "children": [
       {
-        "type": "Heading",
+        "type": "Text",
         "props": {
           "className": "text-3xl font-bold text-center text-[var(--theme-foreground)]"
         },
@@ -22,7 +24,6 @@
         },
         "text": "Four scenarios exercise parameter passing across every workflow kind: element, pageTrigger, pageWorkflow, globalWorkflow, and componentWorkflow. Each button below triggers a chain; the result variable is displayed beneath."
       },
-
       {
         "type": "Box",
         "props": {
@@ -30,9 +31,9 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
-              "className": "text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
             },
             "text": "Scenario 1 — page workflow with params"
           },
@@ -49,11 +50,17 @@
             "props": {
               "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
             },
-            "actions": [{ "action": "runScenario1" }],
+            "actions": [
+              {
+                "action": "runScenario1"
+              }
+            ],
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-sm font-semibold text-white" },
+                "props": {
+                  "className": "text-sm font-semibold text-white"
+                },
                 "text": "Run Scenario 1"
               }
             ]
@@ -67,7 +74,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -75,9 +81,9 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
-              "className": "text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
             },
             "text": "Scenario 2 — page workflow calls global workflow with params"
           },
@@ -94,11 +100,17 @@
             "props": {
               "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
             },
-            "actions": [{ "action": "runScenario2" }],
+            "actions": [
+              {
+                "action": "runScenario2"
+              }
+            ],
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-sm font-semibold text-white" },
+                "props": {
+                  "className": "text-sm font-semibold text-white"
+                },
                 "text": "Run Scenario 2"
               }
             ]
@@ -112,7 +124,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -120,9 +131,9 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
-              "className": "text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
             },
             "text": "Scenario 3 — SC internal button calls SC workflow with params"
           },
@@ -135,7 +146,10 @@
           },
           {
             "type": "Box",
-            "_shared": { "id": "sc-workflow-caller", "name": "Workflow Caller" },
+            "_shared": {
+              "id": "sc-workflow-caller",
+              "name": "Workflow Caller"
+            },
             "id": "wftest-sc-inst-1",
             "props": {
               "label": "SC Instance A"
@@ -168,7 +182,11 @@
                     "props": {
                       "className": "flex flex-row items-center justify-center px-3 py-2 rounded-md cursor-pointer bg-purple-600 hover:bg-purple-700"
                     },
-                    "actions": [{ "action": "runScWorkflowAInternal" }],
+                    "actions": [
+                      {
+                        "action": "runScWorkflowAInternal"
+                      }
+                    ],
                     "children": [
                       {
                         "type": "Text",
@@ -199,7 +217,6 @@
           }
         ]
       },
-
       {
         "type": "Box",
         "props": {
@@ -207,9 +224,9 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
-              "className": "text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
             },
             "text": "Scenario 4 — nested chain (page → SC instance → global)"
           },
@@ -226,11 +243,17 @@
             "props": {
               "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
             },
-            "actions": [{ "action": "runScenario4" }],
+            "actions": [
+              {
+                "action": "runScenario4"
+              }
+            ],
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-sm font-semibold text-white" },
+                "props": {
+                  "className": "text-sm font-semibold text-white"
+                },
                 "text": "Run Scenario 4"
               }
             ]

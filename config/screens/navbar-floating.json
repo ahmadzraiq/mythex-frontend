@@ -1,9 +1,13 @@
 {
-  "meta": { "title": "Floating Pill Navbar" },
+  "meta": {
+    "title": "Floating Pill Navbar"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950" },
+    "props": {
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+    },
     "children": [
       {
         "type": "Box",
@@ -15,27 +19,86 @@
             "type": "Box",
             "props": {
               "className": "flex flex-row items-center gap-6 bg-white dark:bg-gray-900 rounded-full px-7 py-3 max-w-[680px] pointer-events-auto",
-              "style": { "boxShadow": "0 8px 32px rgba(0,0,0,0.12)" }
+              "style": {
+                "boxShadow": "0 8px 32px rgba(0,0,0,0.12)"
+              }
             },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row items-center gap-2 cursor-pointer" },
-                "actions": [{ "action": "navigateToNavbarTypes" }],
+                "props": {
+                  "className": "flex flex-row items-center gap-2 cursor-pointer"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarTypes"
+                  }
+                ],
                 "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 16, "color": "#6b7280" } },
-                  { "type": "Text", "props": { "className": "font-bold text-gray-900 dark:text-white" }, "text": "Demo" }
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:arrow-left",
+                      "size": 16,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "Demo"
+                  }
                 ]
               },
-              { "type": "Box", "props": { "className": "w-px h-5 bg-gray-200 dark:bg-gray-700" } },
-              { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "Home" },
-              { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "Features" },
-              { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer" }, "text": "About" },
-              { "type": "Box", "props": { "className": "w-px h-5 bg-gray-200 dark:bg-gray-700" } },
               {
                 "type": "Box",
-                "props": { "className": "bg-amber-500 rounded-full px-4 py-1.5 cursor-pointer" },
-                "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-white" }, "text": "Start" }]
+                "props": {
+                  "className": "w-px h-5 bg-gray-200 dark:bg-gray-700"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer"
+                },
+                "text": "Home"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer"
+                },
+                "text": "Features"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-600 dark:text-gray-300 cursor-pointer"
+                },
+                "text": "About"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-px h-5 bg-gray-200 dark:bg-gray-700"
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "bg-amber-500 rounded-full px-4 py-1.5 cursor-pointer"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium text-white"
+                    },
+                    "text": "Start"
+                  }
+                ]
               }
             ]
           }
@@ -43,96 +106,430 @@
       },
       {
         "type": "Box",
-        "props": { "className": "w-full min-h-[80vh] bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6" },
+        "props": {
+          "className": "w-full min-h-[80vh] bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6"
+        },
         "children": [
-          { "type": "Box", "props": { "className": "bg-amber-100 dark:bg-amber-900/30 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-amber-700 dark:text-amber-300" }, "text": "Floating Pill" }] },
-          { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white text-center" }, "text": "Detached Navigation" },
-          { "type": "Text", "props": { "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4" }, "text": "A pill-shaped navbar hovering above the page, detached from all edges. Modern, playful, and eye-catching." },
-          { "type": "Text", "props": { "className": "text-sm text-gray-400 mt-8" }, "text": "The pill floats over the content as you scroll" }
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-amber-100 dark:bg-amber-900/30 rounded-full px-4 py-1 mb-6"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm font-medium text-amber-700 dark:text-amber-300"
+                },
+                "text": "Floating Pill"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+            },
+            "text": "Detached Navigation"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+            },
+            "text": "A pill-shaped navbar hovering above the page, detached from all edges. Modern, playful, and eye-catching."
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-sm text-gray-400 mt-8"
+            },
+            "text": "The pill floats over the content as you scroll"
+          }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full max-w-6xl mx-auto px-6 py-20" },
+        "props": {
+          "className": "w-full max-w-6xl mx-auto px-6 py-20"
+        },
         "children": [
-          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+            },
+            "text": "Features"
+          },
           {
             "type": "Box",
-            "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+            "props": {
+              "className": "grid grid-cols-1 md:grid-cols-3 gap-8"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:move", "size": 24, "color": "#f59e0b" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Free Floating" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Not attached to any edge. Hovers freely above the content." }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:circle", "size": 24, "color": "#f97316" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Pill Shape" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Rounded-full corners give it a distinctive, friendly appearance." }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:sun", "size": 24, "color": "#eab308" } }] },
-                { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Shadow Depth" },
-                { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "A large shadow creates the floating illusion and adds visual depth." }
-              ]}
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:move",
+                          "size": 24,
+                          "color": "#f59e0b"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Free Floating"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "Not attached to any edge. Hovers freely above the content."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:circle",
+                          "size": 24,
+                          "color": "#f97316"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Pill Shape"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "Rounded-full corners give it a distinctive, friendly appearance."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:sun",
+                          "size": 24,
+                          "color": "#eab308"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white text-center"
+                    },
+                    "text": "Shadow Depth"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                    },
+                    "text": "A large shadow creates the floating illusion and adds visual depth."
+                  }
+                ]
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+        "props": {
+          "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+        },
         "children": [
-          { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+            },
+            "text": "Testimonials"
+          },
           {
             "type": "Box",
-            "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+            "props": {
+              "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The floating pill navbar is the most unique pattern. Users notice it immediately.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Kai Nakamura" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "UI Designer" }
-              ]},
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Perfect for portfolio and creative sites where you want to stand out.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Sofia Andersson" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Creative Dev" }
-              ]},
-              { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The pointer-events trick is clever \u2014 the pill captures clicks but the space around it doesn't.\"" },
-                { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Raj Gupta" },
-                { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Frontend Eng" }
-              ]}
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"The floating pill navbar is the most unique pattern. Users notice it immediately.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "Kai Nakamura"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "UI Designer"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"Perfect for portfolio and creative sites where you want to stand out.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "Sofia Andersson"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "Creative Dev"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                    },
+                    "text": "\"The pointer-events trick is clever — the pill captures clicks but the space around it doesn't.\""
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                    },
+                    "text": "Raj Gupta"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-400"
+                    },
+                    "text": "Frontend Eng"
+                  }
+                ]
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+        "props": {
+          "className": "w-full max-w-5xl mx-auto px-6 py-20"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+            "props": {
+              "className": "flex flex-row flex-wrap justify-center gap-12"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-amber-500" }, "text": "680px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Max Width" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-amber-500" }, "text": "20px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Top Offset" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-amber-500" }, "text": "9999" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Border Radius" }] },
-              { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-amber-500" }, "text": "32px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Shadow Spread" }] }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-amber-500"
+                    },
+                    "text": "680px"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Max Width"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-amber-500"
+                    },
+                    "text": "20px"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Top Offset"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-amber-500"
+                    },
+                    "text": "9999"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Border Radius"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col items-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-4xl font-bold text-amber-500"
+                    },
+                    "text": "32px"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "Shadow Spread"
+                  }
+                ]
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+        "props": {
+          "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+            "props": {
+              "className": "max-w-5xl mx-auto flex flex-row items-center justify-between"
+            },
             "children": [
-              { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
-              { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-400"
+                },
+                "text": "NavbarDemo © 2026"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-500 cursor-pointer"
+                },
+                "text": "← Back to all types",
+                "actions": [
+                  {
+                    "action": "navigateToNavbarTypes"
+                  }
+                ]
+              }
             ]
           }
         ]

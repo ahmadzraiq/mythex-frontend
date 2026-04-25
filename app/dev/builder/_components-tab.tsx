@@ -16,8 +16,9 @@
 
 import React, { useState } from 'react';
 import { useBuilderStore } from './_store';
-import type { SDUINode } from '@/lib/sdui/types/node';
 import { PRIMITIVE_COMPONENTS, type PrimitiveComponent } from '@/lib/builder/primitive-components';
+import { getSystemComponents } from '@/lib/builder/system-component-data';
+import { cloneWithFreshIdsKeepSharedKey, stampSharedKeys } from './_store-node-helpers';
 import { Chevron } from './_layers-panel';
 
 // Re-export so existing imports of PRIMITIVE_COMPONENTS from this file keep working
@@ -81,7 +82,29 @@ export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponen
     <div
       draggable
       onDragStart={e => {
-        const data = JSON.stringify(primitive.defaultNode);
+        // System-component-backed palette entries drop as linked instances
+        // (same pattern as Shared Components, but using _system metadata).
+        // Primitives keep the existing builder/defaultNode fall-through.
+        let data: string;
+        if (primitive.systemComponentId) {
+          const model = getSystemComponents()[primitive.systemComponentId];
+          if (model) {
+            // Mirror the Shared Component drop pipeline so each instance gets
+            // fresh descendant ids (avoids DOM `[data-builder-id]` collisions
+            // between two instances) while preserving `_sharedKey` on every
+            // node so `_syncSharedInstances` can pair instance ↔ model.
+            const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
+            stampSharedKeys(modelContent);
+            const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
+            cloned._system = { id: model.id, name: model.name };
+            cloned._overrides = [];
+            data = JSON.stringify(cloned);
+          } else {
+            data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
+          }
+        } else {
+          data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
+        }
         e.dataTransfer.setData('text/primitive-node', data);
         e.dataTransfer.effectAllowed = 'copy';
         // Fallback for CDP-simulated drags (e.g. Playwright headless) where

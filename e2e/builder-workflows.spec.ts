@@ -227,7 +227,7 @@ test.describe('Right panel — Workflows tab with element selected', () => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (store && typeof store.closeWorkflowCanvas === 'function') (store.closeWorkflowCanvas as () => void)();
     });
-    await injectAndSelectNode(sharedPage, { id: 'btn-test', type: 'Button', props: { className: '' }, children: [{ type: 'ButtonText', text: 'Click me' }] });
+    await injectAndSelectNode(sharedPage, { id: 'btn-test', type: 'Box', props: { className: '' }, children: [{ type: 'Text', text: 'Click me' }] });
     await openRightWorkflowsTab(sharedPage);
   });
 
@@ -264,9 +264,9 @@ test.describe('Right panel — Workflows tab with existing action events', () =>
     // Inject a node with actions
     await injectAndSelectNode(sharedPage, {
       id: 'btn-with-actions',
-      type: 'Button',
+      type: 'Box',
       props: { className: '' },
-      children: [{ type: 'ButtonText', text: 'Click' }],
+      children: [{ type: 'Text', text: 'Click' }],
       actions: { click: { action: 'navigate', payload: { path: '/' } } },
     });
     await openRightWorkflowsTab(sharedPage);

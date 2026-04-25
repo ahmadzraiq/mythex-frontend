@@ -82,7 +82,7 @@ function section(title: string, examples: SDUINode[], mobileCols: 1 | 2 = 2): SD
           },
           {
             id: uid(),
-            type: 'Heading',
+            type: 'Text',
             props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' },
             text: title,
           },
@@ -101,10 +101,10 @@ function section(title: string, examples: SDUINode[], mobileCols: 1 | 2 = 2): SD
 // ─── Typography ──────────────────────────────────────────────────────────────
 
 const typographySection = section('Typography', [
-  labeled('Heading 1', { type: 'Heading', props: { className: 'text-3xl font-bold text-[rgb(var(--foreground))]' }, text: 'Heading 1' }),
-  labeled('Heading 2', { type: 'Heading', props: { className: 'text-2xl font-bold text-[rgb(var(--foreground))]' }, text: 'Heading 2' }),
-  labeled('Heading 3', { type: 'Heading', props: { className: 'text-xl font-semibold text-[rgb(var(--foreground))]' }, text: 'Heading 3' }),
-  labeled('Heading 4', { type: 'Heading', props: { className: 'text-lg font-semibold text-[rgb(var(--foreground))]' }, text: 'Heading 4' }),
+  labeled('Heading 1', { type: 'Text', props: { className: 'text-3xl font-bold text-[rgb(var(--foreground))]' }, text: 'Heading 1' }),
+  labeled('Heading 2', { type: 'Text', props: { className: 'text-2xl font-bold text-[rgb(var(--foreground))]' }, text: 'Heading 2' }),
+  labeled('Heading 3', { type: 'Text', props: { className: 'text-xl font-semibold text-[rgb(var(--foreground))]' }, text: 'Heading 3' }),
+  labeled('Heading 4', { type: 'Text', props: { className: 'text-lg font-semibold text-[rgb(var(--foreground))]' }, text: 'Heading 4' }),
   labeled('Body Text', { type: 'Text', props: { className: 'text-base text-[rgb(var(--foreground))]' }, text: 'Body text — readable paragraph copy.' }),
   labeled('Small Text', { type: 'Text', props: { className: 'text-sm text-[rgb(var(--muted-foreground))]' }, text: 'Small text helper copy.' }),
   labeled('Caption', { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'Caption / metadata' }),
@@ -191,7 +191,7 @@ const layoutSection = section('Layout', [
     type: 'Box',
     props: { className: 'flex flex-col gap-2 p-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm w-44' },
     children: [
-      { type: 'Heading', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))]' }, text: 'Card Title' },
+      { type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))]' }, text: 'Card Title' },
       { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))]' }, text: 'A card container with border and shadow.' },
     ],
   }),
@@ -300,25 +300,24 @@ const buttonsSection = section('Buttons', [
 const formSection = section('Form', [
   labeled('Input', {
     type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
-    children: [{ type: 'InputField', props: { placeholder: 'Enter text…', className: '!text-[rgb(var(--foreground))]' } }],
+    props: { variant: 'outline', size: 'md', placeholder: 'Enter text…', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))] !text-[rgb(var(--foreground))]' },
   }),
   labeled('Input Search', {
-    type: 'Input',
-    props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+    type: 'Box',
+    props: { className: 'flex flex-row items-center gap-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3' },
     children: [
-      { type: 'InputSlot', props: { className: 'pl-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:search', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
-      { type: 'InputField', props: { placeholder: 'Search…', className: '!text-[rgb(var(--foreground))]' } },
+      { type: 'Icon', props: { icon: 'lucide:search', size: 15, color: 'rgb(var(--muted-foreground))' } },
+      { type: 'Input', props: { variant: 'outline', size: 'md', placeholder: 'Search…', className: 'flex-1 !border-0 !bg-transparent !text-[rgb(var(--foreground))]' } },
     ],
   }),
   labeled('Input Password', {
     type: 'FormContainer',
     children: [{
-      type: 'Input',
-      props: { variant: 'outline', size: 'md', className: 'w-full !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
+      type: 'Box',
+      props: { className: 'flex flex-row items-center gap-2 w-full rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3' },
       children: [
-        { type: 'InputField', props: { placeholder: 'Password', type: 'password', className: '!text-[rgb(var(--foreground))]' } },
-        { type: 'InputSlot', props: { className: 'pr-3 pointer-events-none' }, children: [{ type: 'Icon', props: { icon: 'lucide:eye', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+        { type: 'Input', props: { variant: 'outline', size: 'md', placeholder: 'Password', type: 'password', className: 'flex-1 !border-0 !bg-transparent !text-[rgb(var(--foreground))]' } },
+        { type: 'Icon', props: { icon: 'lucide:eye', size: 15, color: 'rgb(var(--muted-foreground))' } },
       ],
     }],
   }),
@@ -336,7 +335,7 @@ const formSection = section('Form', [
         props: { className: 'flex flex-row items-center justify-between px-3 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-full' },
         children: [
           { type: 'SelectInput', props: { placeholder: 'Choose option…', className: '!text-[rgb(var(--foreground))]' } },
-          { type: 'SelectIcon', children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 15, color: 'rgb(var(--muted-foreground))' } }] },
+          { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 15, color: 'rgb(var(--muted-foreground))' } },
         ],
       },
       {
@@ -359,7 +358,7 @@ const formSection = section('Form', [
     type: 'Checkbox',
     props: { defaultIsChecked: false },
     children: [
-      { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+      { type: 'CheckboxIndicator' },
       { type: 'CheckboxLabel', text: 'Accept terms' },
     ],
   }),
@@ -367,7 +366,7 @@ const formSection = section('Form', [
     type: 'Checkbox',
     props: { defaultIsChecked: true },
     children: [
-      { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+      { type: 'CheckboxIndicator' },
       { type: 'CheckboxLabel', text: 'Enabled' },
     ],
   }),
@@ -375,9 +374,9 @@ const formSection = section('Form', [
     type: 'CheckboxGroup',
     props: { className: 'flex flex-col gap-2' },
     children: [
-      { type: 'Checkbox', props: { value: 'a' }, children: [{ type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] }, { type: 'CheckboxLabel', text: 'Option A' }] },
-      { type: 'Checkbox', props: { value: 'b', defaultIsChecked: true }, children: [{ type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] }, { type: 'CheckboxLabel', text: 'Option B' }] },
-      { type: 'Checkbox', props: { value: 'c' }, children: [{ type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] }, { type: 'CheckboxLabel', text: 'Option C' }] },
+      { type: 'Checkbox', props: { value: 'a' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option A' }] },
+      { type: 'Checkbox', props: { value: 'b', defaultIsChecked: true }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option B' }] },
+      { type: 'Checkbox', props: { value: 'c' }, children: [{ type: 'CheckboxIndicator' }, { type: 'CheckboxLabel', text: 'Option C' }] },
     ],
   }),
   labeled('Radio Group', {
@@ -466,8 +465,12 @@ const displaySmallItems = [
     children: [{ type: 'Text', props: { className: 'text-xl font-bold text-[rgb(var(--foreground))]' }, text: 'AB' }],
   }),
   labeled('Spinner', {
-    type: 'Spinner',
-    props: { size: 'large', color: 'rgb(var(--primary))' },
+    type: 'Box',
+    props: {
+      className: 'flex items-center justify-center',
+      animation: { loop: { type: 'spin', duration: 1000, repeatCount: -1 } },
+    },
+    children: [{ type: 'Icon', props: { icon: 'lucide:loader-2', size: 24, color: 'rgb(var(--primary))' } }],
   }),
 ];
 
@@ -556,7 +559,7 @@ const displaySection: SDUINode = {
       props: { className: 'flex flex-row items-center gap-3' },
       children: [
         { id: uid(), type: 'Box', props: { className: 'w-1 h-6 rounded-full bg-[rgb(var(--primary))]' } },
-        { id: uid(), type: 'Heading', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' }, text: 'Display & Feedback' },
+        { id: uid(), type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' }, text: 'Display & Feedback' },
       ],
     },
     { id: uid(), type: 'Box', props: { className: 'w-full h-px bg-[rgb(var(--border))]' } },
@@ -725,7 +728,7 @@ const mediaSection: SDUINode = {
       props: { className: 'flex flex-row items-center gap-3' },
       children: [
         { id: uid(), type: 'Box', props: { className: 'w-1 h-6 rounded-full bg-[rgb(var(--primary))]' } },
-        { id: uid(), type: 'Heading', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' }, text: 'Icons  ·  Media' },
+        { id: uid(), type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--foreground))] uppercase tracking-wider' }, text: 'Icons  ·  Media' },
       ],
     },
     { id: uid(), type: 'Box', props: { className: 'w-full h-px bg-[rgb(var(--border))]' } },
@@ -910,14 +913,6 @@ const dataSection = section('Data, Charts & Rich Content', [
       content: '## Hello World\n\nThis is **bold**, _italic_ and `inline code`.\n\n- Item 1\n- Item 2\n- Item 3',
     },
   }),
-  labeled('JSON Viewer', {
-    type: 'JsonViewer',
-    props: {
-      className: 'w-72',
-      data: { user: { name: 'Alice', role: 'admin' }, active: true, score: 42 },
-      collapsed: 1,
-    },
-  }),
   labeled('Iframe', {
     type: 'Iframe',
     props: {
@@ -985,15 +980,15 @@ const patternsSection = section('Common UI Patterns', [
     type: 'FormContainer',
     props: { className: 'flex flex-col gap-4 p-6 w-64 bg-[rgb(var(--card))] rounded-2xl border border-[rgb(var(--border))] shadow-md' },
     children: [
-      { type: 'Heading', props: { className: 'text-lg font-bold text-[rgb(var(--foreground))]' }, text: 'Welcome back' },
+      { type: 'Text', props: { className: 'text-lg font-bold text-[rgb(var(--foreground))]' }, text: 'Welcome back' },
       { type: 'Text', props: { className: 'text-xs text-[rgb(var(--muted-foreground))] -mt-2' }, text: 'Sign in to your account' },
       { type: 'Box', props: { className: 'flex flex-col gap-1' }, children: [
         { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'Email' },
-        { type: 'Input', props: { variant: 'outline', className: 'w-full !rounded-lg !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' }, children: [{ type: 'InputField', props: { placeholder: 'you@example.com', className: '!text-[rgb(var(--foreground))]' } }] },
+        { type: 'Input', props: { variant: 'outline', placeholder: 'you@example.com', className: 'w-full !rounded-lg !border-[rgb(var(--border))] !bg-[rgb(var(--card))] !text-[rgb(var(--foreground))]' } },
       ]},
       { type: 'Box', props: { className: 'flex flex-col gap-1' }, children: [
         { type: 'Text', props: { className: 'text-xs font-medium text-[rgb(var(--foreground))]' }, text: 'Password' },
-        { type: 'Input', props: { variant: 'outline', className: 'w-full !rounded-lg !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' }, children: [{ type: 'InputField', props: { placeholder: '••••••••', type: 'password', className: '!text-[rgb(var(--foreground))]' } }] },
+        { type: 'Input', props: { variant: 'outline', placeholder: '••••••••', type: 'password', className: 'w-full !rounded-lg !border-[rgb(var(--border))] !bg-[rgb(var(--card))] !text-[rgb(var(--foreground))]' } },
       ]},
       { type: 'Box', props: { className: 'flex items-center justify-center py-2.5 rounded-lg bg-[rgb(var(--primary))] w-full' }, children: [{ type: 'Text', props: { className: 'text-sm font-semibold text-[rgb(var(--primary-foreground))]' }, text: 'Sign in' }] },
     ],

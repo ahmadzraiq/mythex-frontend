@@ -1807,6 +1807,27 @@ const formula = await page.evaluate(() => {
 
 ## §39 Formula Editor — Tabs, Data Sections, Context, Variables, Quick Action
 
+### Formula | JavaScript mode toggle
+
+The header includes a `<select data-testid="formula-mode-select">` with two values:
+
+- `formula` (default) — chip-based contenteditable, stored as `{ "formula": "expr" }`.
+- `js` — CodeMirror JavaScript editor (`@codemirror/lang-javascript`), stored as `{ "js": "code" }`.
+
+In **JS mode** the side tabs (Variables / Data / Formulas / Quick) still work but emit **WeWeb-style identifier syntax** (`variables.cartCount`, `collections.products.data`, `context.item.field`) at the caret of the JS editor instead of bracket+UUID chips. The mapping is performed by `buildIdentifierForJs(path, uuidToVarName, uuidToCollectionName)` in `_formula-editor-dom.ts`.
+
+The shared editor component lives at `app/dev/builder/_javascript-editor.tsx`. It's also reused by the workflow `runJavaScript` step config panel.
+
+### Workflow `runJavaScript` step
+
+Defined in `_workflow-types.tsx` under the **Code** category. Stored on the node as:
+
+```json
+{ "id": "step-1", "type": "runJavaScript", "config": { "code": "return wwLib.variables.get('cartCount') * 1.05;" } }
+```
+
+The runtime handler lives inline in `lib/sdui/actions/handlers/workflow-steps-handler.ts` (search for `step.type === 'runJavaScript'`). It evaluates the body with `new AsyncFunction(...)` so `await` is supported and writes `{ result, error }` to `workflowCtx[step.id]` like every other step. The `wwLib` helper API is built in `lib/sdui/javascript-evaluator.ts` (`makeWwLib(ctx)`).
+
 ### Tab system
 
 Four tabs exist; **Quick** only renders when the selected node is inside a repeated context:
@@ -3270,3 +3291,97 @@ Source files:
 - `config/actions/workflow-test.json` — contains `GlobalGreet`, `GlobalFinalize` (with `"global": true`), `pageWorkflowA`, `pageWorkflowB`, `pageWorkflowExtKick`, and the scenario-runner wrappers (`runScenario1`, `runScenario2`, `runScenario4`, `runScWorkflowAInternal`)
 
 When adding a new workflow file, spread it into `config/root.ts` `actions` AND `lib/builder/config-data.ts` `allActions` so the builder's `pageWorkflowMeta` picks up the definitions (see existing imports as a pattern).
+
+## System Components
+
+System Components (SCs) are **built-in editable templates** registered in code, parallel to Shared Components but shipped with the builder. They surface in the Components tab and behave like Shared Component instances on drop.
+
+### File map
+
+- `lib/builder/system-components/` — per-component definitions. Simple SCs use `_make.ts` (e.g. `accordion.ts`, `alert.ts`); complex ones import a sibling `*.data.json` (see `datepicker.ts` + `datepicker.data.json`).
+- `lib/builder/system-components/index.ts` — aggregates everything into `SYSTEM_COMPONENT_DEFAULTS`.
+- `lib/builder/system-component-data.ts` — runtime registry. Merges `SYSTEM_COMPONENT_DEFAULTS` with per-project user overrides and stamps `_sharedKey` on every model node at module init.
+- `lib/builder/system-component-types.ts` — `SystemComponentModel` (mirrors `SharedComponentModel` with `isBuiltIn: true`).
+
+### Instance metadata — parallel to `_shared`
+
+Dropped SC instances carry:
+
+```json
+{
+  "_system": { "modelId": "sys-datepicker", "sharedKey": "<uuid>" },
+  "_overrides": { /* per-instance prop / class / child overrides */ }
+}
+```
+
+The sync engine is **kind-agnostic**: `_syncSharedInstances` in `app/dev/builder/_store.ts` walks both `_shared` and `_system` roots. `findLinkedRoot(node, 'any')` in `app/dev/builder/_store-node-helpers.ts` resolves either kind. Per-instance `_overrides` are preserved when the model is edited.
+
+### Instance operations
+
+- **Edit System Component** — opens the Component Editor for the model; every instance reflects structural/style changes in real time.
+- **Detach from System** — strips `_system` + `_overrides`, instance becomes a plain node tree.
+- **Reset to System** — clears local overrides, snaps back to the model's current content.
+
+### Trigger model — lifecycle vs DOM event
+
+`ScopedWorkflow.trigger` (see `config/shared-component-types.ts`) accepts **both** component lifecycle triggers and DOM event literals:
+
+- **Lifecycle** (`created`, `mounted`, `propertyChange`, `destroyed`, …) — shown in the Component Editor's **Actions tab**. These fire from the engine's component lifecycle.
+- **DOM events** (`click`, `doubleClick`, `keydown`, `change`, `submit`, …) — shown in the **right-panel Workflow tab** when (a) an inner element inside the SC is selected AND (b) the SC is currently being edited (`editingSharedComponentIds` contains its `modelId`). Outside edit mode they stay hidden so SC internals don't leak into the instance's element-workflow surface.
+
+`_component-editor.tsx` `ActionsTab` filters to `LIFECYCLE_TRIGGERS`. `_workflow-canvas.tsx` merges `COMPONENT_TRIGGER_CATEGORIES` with `UNIVERSAL_TRIGGER_CATEGORIES` so the trigger picker offers both sets when the canvas target is a component workflow.
+
+### SC element bindings — bare ref (canonical)
+
+When an inner element of an SC (e.g. a day cell in `sys-datepicker`) invokes one of the SC's own workflows, write the `actions` entry as a **bare ref** — the canonical form:
+
+```json
+"actions": [
+  { "action": "<wfId>" },
+  { "action": "<wfId>", "args": { "paramName": { "formula": "context?.item?.data?.dateStr" } } }
+]
+```
+
+**How it resolves:** `runOne` in `lib/sdui/sdui-engine.tsx` performs an ambient-SC lookup. When the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (i.e. we're rendering inside a `_shared` / `_system` subtree), the engine resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition on the fly. The workflow then dispatches under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely when the target workflow takes no params — the ECA handler tolerates `undefined` args.
+
+**Legacy fallback — do not author new bindings with it.** The inline-workflow wrapper shape (`{ "type": "workflow", "steps": [{ "type": "executeComponentAction", "config": {...} }] }`) still runs correctly and is kept as a fallback for older content, but new bindings should always use the bare ref above.
+
+### Builder parser note — Element Workflows tab
+
+`app/dev/builder/_panel-right-workflows.tsx` (around lines 312-320) resolves bare `{ action: "<wfId>" }` refs via `findLinkedComponentWorkflow` when surfacing SC-owned rows. The legacy inline-wrapper branch (lines 293-311) stays as a harmless fallback for pre-existing wrapped bindings. If you introduce a new nesting pattern, extend this parser or the SC workflow tab will go blank for that binding.
+
+### Custom triggers (component events)
+
+Components declare named events that parent pages can listen to on each instance — WeWeb-parity semantics. Triggers are authored in the Component Editor's **Triggers** section and persisted on the model:
+
+```json
+"triggers": [
+  { "id": "dp-t-on-date-selected", "name": "On date selected", "eventSchema": "{ \"date\": \"2026-01-15\" }" }
+]
+```
+
+**Emitting** — inside an internal workflow, add an `emitComponentTrigger` step:
+
+```json
+{
+  "type": "emitComponentTrigger",
+  "config": {
+    "triggerId": "dp-t-on-date-selected",
+    "payload": { "formula": "{ date: context?.item?.data?.dateStr }" }
+  }
+}
+```
+
+**Listening** — the instance node's `actions` array carries a bare `{ action: "<wfId>" }` ref, and the page workflow's `trigger` equals the trigger id. At emit time the engine locates the instance via `scope.context.component.instanceId` (stamped on the SC root by the renderer), walks `node.actions`, and runs matching listeners with `context.event = payload` in scope. Formulas read `context?.event?.<field>`.
+
+**Runtime plumbing** — `lib/sdui/renderer.tsx` registers an instance-specific `ComponentTriggerDispatcher` (closure over `node.actions` + `actionsConfig` + `runAction` + `effectiveScope`) in `lib/sdui/component-trigger-registry.ts` on mount. The `emitComponentTrigger` step handler (`lib/sdui/actions/handlers/workflow-steps-handler.ts`) invokes the dispatcher for the current instance. Multiple instances stay isolated automatically — an emit only reaches listeners bound to that specific instance.
+
+**Visibility rule** — listener rows are hidden in the right-panel Workflow tab while the owning SC is being edited (`_panel-right-workflows.tsx`). They reappear once edit mode ends. The trigger picker on an SC instance (element or page workflow) surfaces custom triggers under a **Component events** category alongside DOM events.
+
+### Authoring checklist for a new System Component
+
+1. Add `lib/builder/system-components/<name>.ts` (either `makeSystemComponent(...)` for static UI or a thin wrapper importing `<name>.data.json`).
+2. Import + register in `lib/builder/system-components/index.ts`.
+3. For any inner-element workflow binding, use the bare ref shape shown above (`{ "action": "<wfId>", "args": {...} }`).
+4. Do **not** hardcode `id`s on content nodes — `cloneWithFreshIdsKeepSharedKey` mints fresh UUIDs on every drop (`_store-node-helpers.ts:494`). `_sharedKey` is stamped automatically by `_stampSharedKeys` at module init.
+5. Component-scoped variables, formulas, workflows follow the same keying convention as Shared Components (see `config/shared-component-types.ts`).

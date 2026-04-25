@@ -1,9 +1,13 @@
 {
-  "meta": { "title": "Sidebar Navigation" },
+  "meta": {
+    "title": "Sidebar Navigation"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-white dark:bg-gray-950 flex flex-row" },
+    "props": {
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950 flex flex-row"
+    },
     "children": [
       {
         "type": "Box",
@@ -13,149 +17,642 @@
         "children": [
           {
             "type": "Box",
-            "props": { "className": "p-6 flex flex-row items-center gap-3 cursor-pointer" },
-            "actions": [{ "action": "navigateToNavbarTypes" }],
+            "props": {
+              "className": "p-6 flex flex-row items-center gap-3 cursor-pointer"
+            },
+            "actions": [
+              {
+                "action": "navigateToNavbarTypes"
+              }
+            ],
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:arrow-left", "size": 16, "color": "#6b7280" } },
-              { "type": "Text", "props": { "className": "font-bold text-lg text-gray-900 dark:text-white" }, "text": "NavbarDemo" }
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:arrow-left",
+                  "size": 16,
+                  "color": "#6b7280"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "font-bold text-lg text-gray-900 dark:text-white"
+                },
+                "text": "NavbarDemo"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "flex-1 flex flex-col gap-1 px-3" },
+            "props": {
+              "className": "flex-1 flex flex-col gap-1 px-3"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:home", "size": 18, "color": "#6366f1" } },
-                { "type": "Text", "props": { "className": "text-sm font-medium text-indigo-700 dark:text-indigo-300" }, "text": "Dashboard" }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:bar-chart-3", "size": 18, "color": "#6b7280" } },
-                { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "Analytics" }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:users", "size": 18, "color": "#6b7280" } },
-                { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "Team" }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:folder", "size": 18, "color": "#6b7280" } },
-                { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "Projects" }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:calendar", "size": 18, "color": "#6b7280" } },
-                { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "Calendar" }
-              ]},
-              { "type": "Box", "props": { "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg" }, "children": [
-                { "type": "Icon", "props": { "icon": "lucide:settings", "size": 18, "color": "#6b7280" } },
-                { "type": "Text", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "Settings" }
-              ]}
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:home",
+                      "size": 18,
+                      "color": "#6366f1"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                    },
+                    "text": "Dashboard"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:bar-chart-3",
+                      "size": 18,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Analytics"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:users",
+                      "size": 18,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Team"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:folder",
+                      "size": 18,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Projects"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:calendar",
+                      "size": 18,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Calendar"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-3 px-3 py-2.5 rounded-lg"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:settings",
+                      "size": 18,
+                      "color": "#6b7280"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "Settings"
+                  }
+                ]
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "p-4 border-t border-gray-200 dark:border-gray-800 flex flex-row items-center gap-3" },
+            "props": {
+              "className": "p-4 border-t border-gray-200 dark:border-gray-800 flex flex-row items-center gap-3"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-bold text-white" }, "text": "JD" }] },
-              { "type": "Text", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "John Doe" }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-bold text-white"
+                    },
+                    "text": "JD"
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-700 dark:text-gray-300"
+                },
+                "text": "John Doe"
+              }
             ]
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "flex-1 ml-[240px]" },
+        "props": {
+          "className": "flex-1 ml-[240px]"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "w-full min-h-[80vh] bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6" },
+            "props": {
+              "className": "w-full min-h-[80vh] bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center px-6"
+            },
             "children": [
-              { "type": "Box", "props": { "className": "bg-indigo-100 dark:bg-indigo-900/30 rounded-full px-4 py-1 mb-6" }, "children": [{ "type": "Text", "props": { "className": "text-sm font-medium text-indigo-700 dark:text-indigo-300" }, "text": "Sidebar Navigation" }] },
-              { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white text-center" }, "text": "Full-Height Sidebar" },
-              { "type": "Text", "props": { "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4" }, "text": "A vertical left sidebar replaces the top bar entirely. Common in dashboards, admin panels, and SaaS applications." },
-              { "type": "Text", "props": { "className": "text-sm text-gray-400 mt-8" }, "text": "The sidebar stays fixed while content scrolls" }
+              {
+                "type": "Box",
+                "props": {
+                  "className": "bg-indigo-100 dark:bg-indigo-900/30 rounded-full px-4 py-1 mb-6"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-medium text-indigo-700 dark:text-indigo-300"
+                    },
+                    "text": "Sidebar Navigation"
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+                },
+                "text": "Full-Height Sidebar"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+                },
+                "text": "A vertical left sidebar replaces the top bar entirely. Common in dashboards, admin panels, and SaaS applications."
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-sm text-gray-400 mt-8"
+                },
+                "text": "The sidebar stays fixed while content scrolls"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+            "props": {
+              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Features" },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                },
+                "text": "Features"
+              },
               {
                 "type": "Box",
-                "props": { "className": "grid grid-cols-1 md:grid-cols-3 gap-8" },
+                "props": {
+                  "className": "grid grid-cols-1 md:grid-cols-3 gap-8"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:panel-left", "size": 24, "color": "#6366f1" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "More Space" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Vertical layout accommodates more nav items than a horizontal bar." }
-                  ]},
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:layout-dashboard", "size": 24, "color": "#8b5cf6" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Dashboard Native" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "The expected pattern for admin panels and data-heavy applications." }
-                  ]},
-                  { "type": "Box", "props": { "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900" }, "children": [
-                    { "type": "Box", "props": { "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:list", "size": 24, "color": "#a855f7" } }] },
-                    { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white text-center" }, "text": "Hierarchical" },
-                    { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 text-center" }, "text": "Easy to nest sub-menus and collapsible sections in a vertical layout." }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:panel-left",
+                              "size": 24,
+                              "color": "#6366f1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "More Space"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "Vertical layout accommodates more nav items than a horizontal bar."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:layout-dashboard",
+                              "size": 24,
+                              "color": "#8b5cf6"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "Dashboard Native"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "The expected pattern for admin panels and data-heavy applications."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center gap-4 p-6 rounded-xl bg-gray-50 dark:bg-gray-900"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:list",
+                              "size": 24,
+                              "color": "#a855f7"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                        },
+                        "text": "Hierarchical"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "Easy to nest sub-menus and collapsible sections in a vertical layout."
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6" },
+            "props": {
+              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "2xl", "className": "font-bold text-gray-900 dark:text-white text-center mb-12" }, "text": "Testimonials" },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                },
+                "text": "Testimonials"
+              },
               {
                 "type": "Box",
-                "props": { "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6" },
+                "props": {
+                  "className": "max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"Sidebar navigation is essential for our dashboard. Users love the clear hierarchy.\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Lisa Zhang" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "Product Manager" }
-                  ]},
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"We can fit 20+ nav items without it feeling cluttered. Try that with a top bar!\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Omar Farid" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "SaaS Founder" }
-                  ]},
-                  { "type": "Box", "props": { "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" }, "children": [
-                    { "type": "Text", "props": { "className": "text-gray-600 dark:text-gray-300 text-sm italic" }, "text": "\"The active state indicator makes it instantly clear where you are in the app.\"" },
-                    { "type": "Text", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4" }, "text": "Eva Novak" },
-                    { "type": "Text", "props": { "className": "text-xs text-gray-400" }, "text": "UX Lead" }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"Sidebar navigation is essential for our dashboard. Users love the clear hierarchy.\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Lisa Zhang"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "Product Manager"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"We can fit 20+ nav items without it feeling cluttered. Try that with a top bar!\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Omar Farid"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "SaaS Founder"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                        },
+                        "text": "\"The active state indicator makes it instantly clear where you are in the app.\""
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                        },
+                        "text": "Eva Novak"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-xs text-gray-400"
+                        },
+                        "text": "UX Lead"
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full max-w-5xl mx-auto px-6 py-20" },
+            "props": {
+              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-row flex-wrap justify-center gap-12" },
+                "props": {
+                  "className": "flex flex-row flex-wrap justify-center gap-12"
+                },
                 "children": [
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-indigo-500" }, "text": "240px" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Sidebar Width" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-indigo-500" }, "text": "100%" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Viewport Height" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-indigo-500" }, "text": "20+" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Nav Items" }] },
-                  { "type": "Box", "props": { "className": "flex flex-col items-center" }, "children": [{ "type": "Text", "props": { "className": "text-4xl font-bold text-indigo-500" }, "text": "#1" }, { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" }, "text": "Dashboard Choice" }] }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-indigo-500"
+                        },
+                        "text": "240px"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Sidebar Width"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-indigo-500"
+                        },
+                        "text": "100%"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Viewport Height"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-indigo-500"
+                        },
+                        "text": "20+"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Nav Items"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-col items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-4xl font-bold text-indigo-500"
+                        },
+                        "text": "#1"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                        },
+                        "text": "Dashboard Choice"
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6" },
+            "props": {
+              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "max-w-5xl mx-auto flex flex-row items-center justify-between" },
+                "props": {
+                  "className": "max-w-5xl mx-auto flex flex-row items-center justify-between"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-sm text-gray-400" }, "text": "NavbarDemo \u00a9 2026" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 cursor-pointer" }, "text": "\u2190 Back to all types", "actions": [{ "action": "navigateToNavbarTypes" }] }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-400"
+                    },
+                    "text": "NavbarDemo © 2026"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 cursor-pointer"
+                    },
+                    "text": "← Back to all types",
+                    "actions": [
+                      {
+                        "action": "navigateToNavbarTypes"
+                      }
+                    ]
+                  }
                 ]
               }
             ]

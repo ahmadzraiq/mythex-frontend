@@ -25,11 +25,12 @@ import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
 
 const _warnedTypes = new Set<string>();
-const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Select', 'Switch', 'Accordion', 'RadioGroup', 'Slider']);
+const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Select', 'Switch', 'RadioGroup', 'Slider']);
 const _CONTROLLED_VALUE_KEYS = ['value', 'selectedValue', 'defaultValue', 'isChecked', 'isSelected'];
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
-import { useBuilderMode } from './builder-context';
+import { registerInstanceTriggerDispatcher } from './component-trigger-registry';
+import { useBuilderMode, usePopoverShown } from './builder-context';
 import { resolveResponsiveNode } from './responsive-resolver';
 import { InputParentContext, useParentInputId } from './input-parent-context';
 import { PARENT_CONTEXT_PROVIDER_TYPES } from './controlled-component-registry';
@@ -43,6 +44,35 @@ import {
 
 /** Stable empty object for useSyncExternalStore fallback — avoids infinite loop from new {} each call */
 const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
+
+/**
+ * Resolve a linked-component model (shared or system) by kind + id.
+ * Tries the builder data layer first (live, user-editable), then falls back
+ * to the static JSON seed for shared components. System components only have
+ * a builder data layer (defaults + overrides merged).
+ */
+function getLinkedComponentModel(
+  kind: 'shared' | 'system',
+  id: string,
+): unknown {
+  if (kind === 'system') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      return require('@/lib/builder/system-component-data').getSystemComponents()[id];
+    } catch {
+      return undefined;
+    }
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@/lib/builder/shared-component-data').getSharedComponents()[id];
+  } catch { /* noop */ }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@/config/shared-components.json')[id];
+  } catch { /* noop */ }
+  return undefined;
+}
 
 /**
  * Extract arbitrary-value Tailwind classes (e.g. `w-[1228px]`, `pt-[120px]`, `gap-[32px]`)
@@ -373,13 +403,13 @@ interface RendererProps {
 
 const LazyPopoverHost = lazy(() => import('./components/PopoverHost'));
 
-function PopoverHostLazy(props: Omit<PopoverHostProps, 'builderPopoverShown'> & { shownPopovers?: Set<string> }) {
-  const { shownPopovers, ...rest } = props;
+function PopoverHostLazy(props: Omit<PopoverHostProps, 'builderPopoverShown'>) {
+  const shownPopovers = usePopoverShown();
   return (
-    <Suspense fallback={rest.trigger}>
+    <Suspense fallback={props.trigger}>
       <LazyPopoverHost
-        {...rest}
-        builderPopoverShown={shownPopovers?.has(`popover:${rest.nodeId}`)}
+        {...props}
+        builderPopoverShown={shownPopovers?.has(`popover:${props.nodeId}`)}
       />
     </Suspense>
   );
@@ -392,36 +422,38 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // Resolve responsive overrides before any other processing.
   // In builder mode, activeBreakpoint comes from the builder's viewport preset.
   // In production, it comes from the engine's BreakpointContext (window.innerWidth).
-  const node = activeBreakpoint ? resolveResponsiveNode(rawNode, activeBreakpoint) : rawNode;
+  // Memoized so unrelated re-renders (variable-store bumps, hover, preview-state
+  // toggles) skip className tokenization. The resolver is pure and short-circuits
+  // to the same input reference when no responsive field applies, which also keeps
+  // downstream memoization stable when only irrelevant state changed.
+  const node = useMemo(
+    () => (activeBreakpoint ? resolveResponsiveNode(rawNode, activeBreakpoint) : rawNode),
+    [rawNode, activeBreakpoint],
+  );
 
   const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
 
-  // ── _shared scope injection: make context.component.* available to children ──
+  // ── _shared / _system scope injection: make context.component.* available to children ──
   let effectiveScope = scope;
-  const _sharedMeta = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
+  const _rawMeta = node as unknown as Record<string, unknown>;
+  const _sharedMetaRaw = _rawMeta._shared as { id: string; name: string } | undefined;
+  const _systemMetaRaw = _rawMeta._system as { id: string; name: string } | undefined;
+  const _linkedMeta = _sharedMetaRaw ?? _systemMetaRaw;
+  const _linkedKind: 'shared' | 'system' | null =
+    _sharedMetaRaw ? 'shared' : _systemMetaRaw ? 'system' : null;
   // Stable instanceId — uses the node's id so it survives re-renders.
-  const _instanceId = _sharedMeta
-    ? ((node as unknown as Record<string, unknown>).id as string | undefined ?? _sharedMeta.id)
+  const _instanceId = _linkedMeta
+    ? ((_rawMeta.id as string | undefined) ?? _linkedMeta.id)
     : null;
 
-  if (_sharedMeta) {
+  if (_linkedMeta && _linkedKind) {
     let scModel: {
       properties?: Array<{ name: string; defaultValue?: unknown }>;
       variables?: Record<string, { initialValue: unknown }>;
       formulas?: Record<string, { name: string; formula: string; params: unknown[] }>;
       workflows?: Record<string, { trigger: string; steps: unknown[]; params: unknown[] }>;
     } | undefined;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const scData = require('@/lib/builder/shared-component-data');
-      scModel = scData.getSharedComponents()[_sharedMeta.id];
-    } catch { /* builder data not available */ }
-    if (!scModel) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        scModel = require('@/config/shared-components.json')[_sharedMeta.id];
-      } catch { /* static data not available */ }
-    }
+    scModel = getLinkedComponentModel(_linkedKind, _linkedMeta.id) as typeof scModel;
     const nodeProps = (node.props ?? {}) as Record<string, unknown>;
     const resolvedProps: Record<string, unknown> = {};
     for (const prop of (scModel?.properties ?? [])) {
@@ -452,8 +484,8 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         ...((scope?.context as Record<string, unknown>) ?? {}),
         component: {
           props: resolvedProps,
-          id: _sharedMeta.id,
-          name: _sharedMeta.name,
+          id: _linkedMeta.id,
+          name: _linkedMeta.name,
           instanceId: _instanceId,
           model: scModel ?? null,
           // Expose live instance variable values so templates like
@@ -469,8 +501,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   _runActionRef.current = runAction;
   const _effectiveScopeRef = useRef(effectiveScope);
   _effectiveScopeRef.current = effectiveScope;
-  const _sharedMetaRef = useRef(_sharedMeta);
-  _sharedMetaRef.current = _sharedMeta;
+  const _sharedMetaRef = useRef(_linkedMeta);
+  _sharedMetaRef.current = _linkedMeta;
+  const _linkedKindRef = useRef(_linkedKind);
+  _linkedKindRef.current = _linkedKind;
   const _instanceIdRef = useRef(_instanceId);
   _instanceIdRef.current = _instanceId;
 
@@ -512,9 +546,11 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       }
     };
 
-    let scModel: { workflows?: Record<string, { trigger: string }> } | undefined;
-    try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[meta.id]; } catch { /* noop */ }
-    if (!scModel) { try { scModel = require('@/config/shared-components.json')[meta.id]; } catch { /* noop */ } }
+    const kind = _linkedKindRef.current;
+    if (!kind) return;
+    const scModel = getLinkedComponentModel(kind, meta.id) as
+      | { workflows?: Record<string, { trigger: string }> }
+      | undefined;
     if (!scModel?.workflows) return;
 
     for (const [wfId, wf] of Object.entries(scModel.workflows)) {
@@ -558,9 +594,11 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     _prevPropsRef.current = current;
     if (!changed) return;
 
-    let scModel: { workflows?: Record<string, { trigger: string }> } | undefined;
-    try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[meta.id]; } catch { /* noop */ }
-    if (!scModel) { try { scModel = require('@/config/shared-components.json')[meta.id]; } catch { /* noop */ } }
+    const kind = _linkedKindRef.current;
+    if (!kind) return;
+    const scModel = getLinkedComponentModel(kind, meta.id) as
+      | { workflows?: Record<string, { trigger: string }> }
+      | undefined;
     if (!scModel?.workflows) return;
 
     for (const [wfId, wf] of Object.entries(scModel.workflows)) {
@@ -584,6 +622,47 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       }
     }
   });
+
+  // ── Custom-trigger dispatcher registration (SC instances only) ───────────────
+  // Each SC instance registers a dispatcher keyed by its stable `instanceId`
+  // so the `emitComponentTrigger` workflow step (fired from inside the
+  // component) can look this instance up and fan the trigger out to matching
+  // parent-page listener workflows bound on `node.actions`.
+  const _nodeActionsRef = useRef<SDUINode['actions']>(node?.actions);
+  _nodeActionsRef.current = node?.actions;
+  const _actionsConfigRef = useRef(actionsConfig);
+  _actionsConfigRef.current = actionsConfig;
+  useEffect(() => {
+    if (!_instanceId || !_linkedMeta) return;
+    const unregister = registerInstanceTriggerDispatcher(_instanceId, (triggerId, payload) => {
+      const actions = _nodeActionsRef.current;
+      if (!Array.isArray(actions) || actions.length === 0) return;
+      const cfg = _actionsConfigRef.current;
+      const baseScope = _effectiveScopeRef.current ?? {};
+      const listenerScope = {
+        ...baseScope,
+        context: {
+          ...((baseScope.context as Record<string, unknown> | undefined) ?? {}),
+          event: payload,
+        },
+      };
+      for (const item of actions) {
+        if (!item || typeof item !== 'object') continue;
+        const ref = item as unknown as Record<string, unknown>;
+        const wfName = typeof ref.action === 'string' ? ref.action : '';
+        if (!wfName) continue;
+        const wfDef = cfg?.[wfName] as Record<string, unknown> | undefined;
+        const wfTrigger = typeof wfDef?.trigger === 'string' ? wfDef.trigger : null;
+        if (wfTrigger !== triggerId) continue;
+        try {
+          Promise.resolve(
+            _runActionRef.current(item as Parameters<typeof runAction>[0], undefined, listenerScope),
+          ).catch(() => { /* listener errors don't abort siblings */ });
+        } catch { /* non-fatal */ }
+      }
+    });
+    return unregister;
+  }, [_instanceId, _linkedMeta]);
 
   // Both builder and production read merged at render time (not via blanket subscription).
   // useVariablePaths (below) is the sole re-render scheduler — it subscribes to mergedStore
@@ -756,7 +835,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   useExternalFormSync(node, formCtx, parentInputId, externalValue, externalIsChecked);
 
   // Lifecycle triggers: collect actions with trigger "created" or "mounted" and run
-  // them once on mount via useEffect. Skipped in builder mode to avoid side-effects.
+  // them once on mount via useEffect. Fires in both preview and builder mode so that
+  // initializer workflows (state seeding, grid computation, etc.) populate the canvas
+  // the same way they populate preview. Shared/system component lifecycles already
+  // behave this way.
   const lifecycleRefs = useMemo(() => {
     if (!node?.actions || !Array.isArray(node.actions)) return null;
     const out: unknown[] = [];
@@ -774,7 +856,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   const lifecycleRanRef = useRef(false);
   useEffect(() => {
-    if (!lifecycleRefs || builderMode || lifecycleRanRef.current) return;
+    if (!lifecycleRefs || lifecycleRanRef.current) return;
     lifecycleRanRef.current = true;
     for (const a of lifecycleRefs) {
       Promise.resolve(runAction(a as Parameters<typeof runAction>[0], undefined, effectiveScope)).catch(() => {});
@@ -892,31 +974,16 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     effectiveScope
   );
 
-  // If this node is a shared-component root, strip model properties from cleanProps so
-  // they don't leak onto the DOM element (React warns about unknown props like
-  // accentColor, minDate, etc.). The properties are still available to children via
-  // `context.component.props.*`.
+  // If this node is a shared- or system-component root, strip model properties from
+  // cleanProps so they don't leak onto the DOM element (React warns about unknown
+  // props like accentColor, minDate, etc.). The properties are still available to
+  // children via `context.component.props.*`.
   const _scModelPropNames: Set<string> | null = (() => {
-    if (!_sharedMeta) return null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const scData = require('@/lib/builder/shared-component-data');
-      const model = scData.getSharedComponents()[_sharedMeta.id] as
-        | { properties?: Array<{ name: string }> }
-        | undefined;
-      const props = model?.properties ?? [];
-      return new Set(props.map(p => p.name));
-    } catch {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const staticModel = require('@/config/shared-components.json')[_sharedMeta.id] as
-          | { properties?: Array<{ name: string }> }
-          | undefined;
-        return new Set((staticModel?.properties ?? []).map(p => p.name));
-      } catch {
-        return new Set();
-      }
-    }
+    if (!_linkedMeta || !_linkedKind) return null;
+    const model = getLinkedComponentModel(_linkedKind, _linkedMeta.id) as
+      | { properties?: Array<{ name: string }> }
+      | undefined;
+    return new Set((model?.properties ?? []).map(p => p.name));
   })();
   const cleanProps = Object.fromEntries(
     Object.entries(resolvedProps).filter(([k]) =>
@@ -936,14 +1003,6 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         delete cleanProps[ck];
       }
     }
-  }
-
-  // Map data-testid → testID so Gluestack Button surfaces it in the DOM.
-  // React Native uses testID (rendered as data-testid by RN-Web); plain HTML elements
-  // (e.g. Text → span) forward data-* directly, but Gluestack compound components may not.
-  const SHOULD_MAP_TESTID = (node.type as string) === 'Button';
-  if (SHOULD_MAP_TESTID && 'data-testid' in cleanProps && !('testID' in cleanProps)) {
-    cleanProps.testID = cleanProps['data-testid'];
   }
 
   // Apply each concern via named helpers — one function per responsibility.
@@ -1841,7 +1900,6 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         trigger={element}
         renderPopoverContent={renderOverlayContent}
         builderMode={builderMode}
-        shownPopovers={builderCtx.shownPopovers}
         instanceId={popInstanceId}
         openVariableIsComponentScoped={popOpenVarIsScoped}
       />

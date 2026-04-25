@@ -659,7 +659,7 @@ function RepeatSection({ node }: { node: SDUINode }) {
 // ─── 9. FORM & VALIDATION ────────────────────────────────────────────────────
 
 const FORM_TYPES = new Set(['Form']);
-const INPUT_TYPES = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput', 'Select']);
+const INPUT_TYPES = new Set(['Input', 'Textarea', 'TextareaInput', 'Select']);
 
 function FormSection({ node }: { node: SDUINode }) {
   const store = useBuilderStore();

@@ -13,7 +13,7 @@
  *  - PageEngine, InactivePageEngine, AllPagesGrid (formerly InactivePagesGrid)
  */
 
-import React, { useEffect, useRef, memo, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, memo, useMemo, useCallback, useDeferredValue } from 'react';
 import { useBuilderStore } from './_store';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
@@ -240,6 +240,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
         const isFocused = page.id === focusedPageId;
         const wx = (page as { wx?: number }).wx ?? 0;
         const wy = (page as { wy?: number }).wy ?? 0;
+
         return (
           <React.Fragment key={page.id}>
             {/* Label and overlay are rendered by _canvas.tsx for the focused page */}
@@ -279,6 +280,11 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                 overflow: 'hidden',
                 boxShadow: isFocused ? '0 8px 40px rgba(0,0,0,0.6)' : '0 8px 40px rgba(0,0,0,0.5)',
                 transform: 'translateZ(0)',
+                // Let the browser skip layout/paint for offscreen frames entirely.
+                // containIntrinsicSize reserves the correct box so scroll/pan geometry
+                // stays stable without rendering the subtree.
+                contentVisibility: 'auto' as const,
+                containIntrinsicSize: `${vpWidth}px ${VIEWPORT_H}px`,
               }}
             >
               <style>{`
@@ -299,6 +305,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                 previewStates={activePreviewStates}
                 shownPopovers={shownPopovers}
                 queryParams={page.queryParams}
+                isFocused={isFocused}
               />
 
               {/* Inactive capture overlay — only for non-focused pages */}
@@ -398,6 +405,7 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
   previewStates,
   shownPopovers,
   queryParams,
+  isFocused,
 }: {
   pageId: string;
   pageName: string;
@@ -405,11 +413,37 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
   previewStates?: string[];
   shownPopovers?: Set<string>;
   queryParams?: Array<{ name: string; value: string }>;
+  /** True when this page is the focused one in the builder. Focused page sees
+   * the live viewport (instant breakpoint switch); non-focused pages see a
+   * deferred value so React can schedule their SDUI reconciliation at lower
+   * priority instead of blocking the click-handler tick. */
+  isFocused: boolean;
 }) {
   const displayNodes = useMemo(
     () => applyStateTagOverrides(nodes, previewStates ?? ['normal']),
     [nodes, previewStates],
   );
+  // Builder viewport preset — forwarded so the engine resolves responsive
+  // overrides (responsive-resolver.ts) for the breakpoint the user is editing.
+  // Without this, SDUIEngine falls back to 'desktop' and tablet/mobile overrides
+  // never take effect in the builder canvas, even though the right panel shows
+  // the correct override values (it reads activeBreakpoint from the store).
+  //
+  // Why useDeferredValue for non-focused pages:
+  // - zustand uses useSyncExternalStore, so setViewport forces a synchronous
+  //   re-render of every subscribed wrapper. We can't stop that — but we CAN
+  //   feed non-focused wrappers a stale value during the urgent render.
+  // - useDeferredValue returns the previous value in the urgent pass, then
+  //   schedules a low-priority render with the new value. That low-priority
+  //   render is interruptible: React yields to pointer/keyboard input.
+  // - InactivePageEngine is memoized; when viewport prop is stale, the memo
+  //   bails and no SDUI reconciliation happens in the click-handler tick.
+  //   Only the focused page reconciles synchronously; the other 59 ripple
+  //   through over the next frames without blocking the UI.
+  const liveViewport = useBuilderStore(s => s.viewport);
+  const deferredViewport = useDeferredValue(liveViewport);
+  const viewport = isFocused ? liveViewport : deferredViewport;
+
   return (
     <InactivePageEngine
       pageId={pageId}
@@ -418,6 +452,7 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
       previewStates={previewStates}
       shownPopovers={shownPopovers}
       queryParams={queryParams}
+      viewport={viewport}
     />
   );
 });
@@ -475,6 +510,7 @@ export const InactivePageEngine = memo(function InactivePageEngine({
   previewStates,
   shownPopovers,
   queryParams,
+  viewport,
 }: {
   pageId: string;
   configName: string;
@@ -482,6 +518,9 @@ export const InactivePageEngine = memo(function InactivePageEngine({
   previewStates?: string[];
   shownPopovers?: Set<string>;
   queryParams?: Array<{ name: string; value: string }>;
+  /** Current builder viewport preset — forwarded as `builderViewport` so the
+   * engine resolves responsive overrides for the edited breakpoint. */
+  viewport?: 'mobile' | 'tablet' | 'laptop' | 'desktop';
 }) {
   // Apply state-tag overrides inside the memo so this only recomputes when
   // nodes or previewStates change — not on every canvas pan/zoom render.
@@ -520,6 +559,7 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       actionsConfig={app.actions ?? {}}
       routes={app.routes ?? []}
       builderMode
+      builderViewport={viewport}
       previewStates={previewStates}
       shownPopovers={shownPopovers}
       builderQueryParams={queryParams}

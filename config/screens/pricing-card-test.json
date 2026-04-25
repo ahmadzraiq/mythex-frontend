@@ -16,7 +16,10 @@
           "style": {
             "boxShadow": "0px 12px 24px -4px #7c3aed40",
             "shadowColor": "#7c3aed40",
-            "shadowOffset": { "width": 0, "height": 12 },
+            "shadowOffset": {
+              "width": 0,
+              "height": 12
+            },
             "shadowRadius": 24,
             "shadowOpacity": 1,
             "elevation": 12,
@@ -86,7 +89,7 @@
             "id": "c7d247b1-c7ec-493d-ab9f-396c05bdf331",
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "text": "Professional",
                 "props": {
                   "className": "text-[24px] font-bold !text-[var(--theme-foreground)]"
@@ -111,7 +114,7 @@
                 "id": "a95461d3-4e43-4664-9f12-a0d06a53daa1",
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "text": "$79",
                     "props": {
                       "className": "text-[36px] font-bold !text-[var(--theme-primary)]"
@@ -140,19 +143,27 @@
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
                     "id": "f9e81bb1-d894-4e3b-af5b-138a0357a70a",
                     "children": [
                       {
                         "type": "Icon",
-                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "props": {
+                          "icon": "lucide:check",
+                          "size": 16,
+                          "color": "var(--theme-primary)"
+                        },
                         "id": "9c24dadd-49ea-45a6-9654-b3fd7076aa69",
                         "children": []
                       },
                       {
                         "type": "Text",
                         "text": "Unlimited projects",
-                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "props": {
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                        },
                         "id": "56fe13cb-ca78-4666-acd2-a2162d7ee3a8",
                         "children": []
                       }
@@ -160,19 +171,27 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
                     "id": "8da4780c-c536-4555-9ea2-162fe2238050",
                     "children": [
                       {
                         "type": "Icon",
-                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "props": {
+                          "icon": "lucide:check",
+                          "size": 16,
+                          "color": "var(--theme-primary)"
+                        },
                         "id": "97bbd082-984e-4870-b32d-3296ebf844ba",
                         "children": []
                       },
                       {
                         "type": "Text",
                         "text": "Advanced analytics",
-                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "props": {
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                        },
                         "id": "c58c9b91-4138-4e6d-ab8b-2b3e9cb9bd89",
                         "children": []
                       }
@@ -180,19 +199,27 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
                     "id": "71022acf-b336-4df8-89bd-51641768942e",
                     "children": [
                       {
                         "type": "Icon",
-                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "props": {
+                          "icon": "lucide:check",
+                          "size": 16,
+                          "color": "var(--theme-primary)"
+                        },
                         "id": "26322ff4-4394-4b31-8de0-0c88431e7c8e",
                         "children": []
                       },
                       {
                         "type": "Text",
                         "text": "Priority support",
-                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "props": {
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                        },
                         "id": "97b7dc05-5a06-4d86-96bd-104fbf61fac8",
                         "children": []
                       }
@@ -200,19 +227,27 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
                     "id": "5ee46daf-4643-4274-a7d8-e8a47c6c4032",
                     "children": [
                       {
                         "type": "Icon",
-                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "props": {
+                          "icon": "lucide:check",
+                          "size": 16,
+                          "color": "var(--theme-primary)"
+                        },
                         "id": "79bf2c9f-87ac-4472-a253-a82fdd8a5e39",
                         "children": []
                       },
                       {
                         "type": "Text",
                         "text": "Team collaboration",
-                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "props": {
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                        },
                         "id": "9728e22c-0462-4623-b5a1-cd35d6f6b570",
                         "children": []
                       }
@@ -220,19 +255,27 @@
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-row items-center gap-[8px]" },
+                    "props": {
+                      "className": "flex flex-row items-center gap-[8px]"
+                    },
                     "id": "604335e3-5328-43c9-a7d5-d926bb27dbc3",
                     "children": [
                       {
                         "type": "Icon",
-                        "props": { "icon": "lucide:check", "size": 16, "color": "var(--theme-primary)" },
+                        "props": {
+                          "icon": "lucide:check",
+                          "size": 16,
+                          "color": "var(--theme-primary)"
+                        },
                         "id": "48d20ac6-ea8f-4af4-87e1-e9471f81605d",
                         "children": []
                       },
                       {
                         "type": "Text",
                         "text": "Custom integrations",
-                        "props": { "className": "text-[14px] !text-[var(--theme-card-foreground)]" },
+                        "props": {
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                        },
                         "id": "e7e44939-bce8-41ef-9d1d-9456fab0bb21",
                         "children": []
                       }
@@ -247,8 +290,14 @@
                 },
                 "id": "3e8f13c9-2f70-4fb7-8b52-55ea9d15ed36",
                 "animation": {
-                  "hover": { "scale": 1.03, "duration": 200 },
-                  "press": { "scale": 0.97, "duration": 100 }
+                  "hover": {
+                    "scale": 1.03,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.97,
+                    "duration": 100
+                  }
                 },
                 "children": [
                   {

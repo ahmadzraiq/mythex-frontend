@@ -37,6 +37,7 @@ export { FORMULA_FNS } from './formula-functions';
 
 import { resolveVar } from './formula-utils';
 import { FORMULA_FNS } from './formula-functions';
+import { evaluateJsBinding, isJsBinding } from './javascript-evaluator';
 
 // ─── Global Formula Registry ──────────────────────────────────────────────────
 
@@ -94,6 +95,10 @@ export function getRegisteredFormulas(): Record<string, _GlobalFormulaDef> {
  *   - Function calls: "if(variables['UUID'], null, variables['UUID2'])", "sum(1, 2, 3)"
  */
 export function evaluateFormula(formula: string | object, context: Record<string, unknown>, ctxGet?: (path: string) => unknown): EvalResult {
+  // { "js": "<body>" } — JavaScript binding; route to the JS evaluator
+  if (isJsBinding(formula)) {
+    return evaluateJsBinding(formula, context);
+  }
   // { "formula": "expression" } — wrapper for inline formula; evaluate the inner expression
   if (typeof formula === 'object' && formula !== null && 'formula' in formula) {
     const inner = (formula as { formula: string | object }).formula;
@@ -221,6 +226,11 @@ export function isBoundValue(v: FormulaValue): boolean {
   return false;
 }
 
+/** True when a stored value is a JavaScript binding `{ js: "..." }`. */
+export function isJsBoundValue(v: FormulaValue): boolean {
+  return v !== null && typeof v === 'object' && typeof (v as Record<string, unknown>).js === 'string';
+}
+
 /** Convert editable formula string → storage format */
 export function formulaToStoredValue(formula: string): FormulaValue {
   const trimmed = formula.trim();
@@ -247,6 +257,7 @@ export function storedValueToFormula(value: FormulaValue): string {
   }
   if (typeof value === 'object') {
     const v = value as Record<string, unknown>;
+    if (typeof v.js === 'string') return v.js;
     if (typeof v.formula === 'string') return v.formula;
     // Fallback: show raw JSON for JSON Logic or other object conditions so the editor isn't blank
     try { return JSON.stringify(value); } catch { return ''; }

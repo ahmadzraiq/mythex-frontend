@@ -123,6 +123,12 @@
       "layout": "full"
     },
     {
+      "path": "/javascript-test",
+      "config": "javascriptTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
       "path": "/animation-test",
       "config": "animationTest",
       "auth": false,
@@ -357,8 +363,8 @@
       "layout": "full"
     },
     {
-      "path": "/sc-component-showcase",
-      "config": "scComponentShowcase",
+      "path": "/datepicker-test",
+      "config": "datepickerTest",
       "auth": false,
       "layout": "full"
     },

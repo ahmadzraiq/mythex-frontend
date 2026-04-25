@@ -17,7 +17,7 @@
         "id": "hft-heading-group",
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[24px] font-bold !text-[var(--theme-foreground)]"
             },

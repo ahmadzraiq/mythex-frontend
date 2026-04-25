@@ -28,7 +28,7 @@ import { BUILDER_FORM_INPUT_TYPES } from '@/lib/sdui/controlled-component-regist
 
 // ─── Design-tab inline sections (moved from Logic) ────────────────────────────
 
-export const INTERACTIVE_TYPES = new Set(['Input', 'InputField', 'Select', 'SelectTrigger', 'Checkbox', 'Switch', 'RadioGroup', 'TextareaInput']);
+export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'SelectTrigger', 'Checkbox', 'Switch', 'RadioGroup', 'TextareaInput']);
 export const FORM_INPUT_TYPES = BUILDER_FORM_INPUT_TYPES;
 
 export const DESIGN_INLINE_STYLE: React.CSSProperties = {

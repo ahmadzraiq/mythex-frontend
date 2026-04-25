@@ -3,7 +3,10 @@
     "title": "Order Confirmation"
   },
   "queryParams": [
-    { "name": "code", "value": "" }
+    {
+      "name": "code",
+      "value": ""
+    }
   ],
   "state": {},
   "layout": "store",
@@ -59,7 +62,7 @@
                 ]
               },
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold mb-[8px] text-center"
                 },
@@ -103,7 +106,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[18px] font-semibold leading-none"
                     },
@@ -258,7 +261,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[18px] font-semibold leading-none"
                     },

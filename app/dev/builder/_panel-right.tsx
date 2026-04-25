@@ -52,7 +52,7 @@ const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import {
   PANEL_STYLE, SECTION_STYLE, LABEL_STYLE,
   SectionHeader, NumberInput, SelectInput, ColorInput, ToggleBtn, MiniPreview,
-  SliderField, ChangedFieldContext, ChangedLabel,
+  SliderField, ChangedFieldContext, ChangedLabel, ResponsiveDot,
 } from './_panel-primitives';
 import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
@@ -61,10 +61,12 @@ import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput } from '.
 import { useBuilderStore, findParentNode } from './_store';
 import { useShallow } from 'zustand/react/shallow';
 import type { BuilderStore } from './_store-types';
-import { findNode, findSharedRoot } from './_store-node-helpers';
+import { findNode, findLinkedRoot } from './_store-node-helpers';
 import { getOverrides, readPropValue, copyCssProp } from './_shared-overrides';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
-// findSharedRoot and getSharedComponents used in isFieldChanged to detect SC baseline
+import { getSystemComponents } from '@/lib/builder/system-component-data';
+// findLinkedRoot + getSharedComponents/getSystemComponents used in isFieldChanged
+// to detect the model baseline for both Shared and System component instances.
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
 import { AiChatPanel } from './_ai-chat-panel';
@@ -106,6 +108,7 @@ import {
   expandMargin,
   applyMargin,
   applyAlignment,
+  buildAlignCells,
   getAlignCellIndex,
   pxToTw,
   extractColors,
@@ -228,6 +231,28 @@ function twTokenToCss(token: string): { prop: string; value: string } | null {
   return null;
 }
 
+// CSS initial values used by patchCls when a class token is removed at a
+// non-desktop breakpoint. Writing `null` (no override) would leave the base
+// token's CSS value in effect — so e.g. removing `flex-1` at tablet would not
+// actually un-fill. Writing the CSS initial value here forces the responsive
+// override to truly undo the base token. Only included for props where we
+// want "remove token" to mean "reset to initial"; props like width/height/
+// fontSize/padding etc. are left at `null` so the numeric inputs keep showing
+// the base-derived value when no override exists.
+const CSS_REMOVE_DEFAULTS: Record<string, string> = {
+  flex: '0 1 auto',
+  flexDirection: 'row',
+  flexWrap: 'nowrap',
+  alignItems: 'normal',
+  alignSelf: 'auto',
+  justifyContent: 'normal',
+  textAlign: 'start',
+  textDecoration: 'none',
+  textTransform: 'none',
+  cursor: 'auto',
+  borderStyle: 'none',
+};
+
 // ─── Responsive Override Detection ────────────────────────────────────────────
 
 type ActiveBreakpoint = 'desktop' | BreakpointKey;
@@ -249,6 +274,26 @@ const SECTION_CSS_PROPS: Record<string, readonly string[]> = {
   'display':          ['display', 'overflow', 'cursor'],
   'self-alignment':   ['alignSelf'],
 };
+
+
+// ─── Pure-inline CSS props that still participate in responsive overrides ───
+// These aren't class-encoded (so STYLE_TO_CLASS_KEYS filters them out of the
+// class rewriter), but they are read by the renderer from props.style and must
+// cascade through responsive[bp].styles at non-desktop breakpoints.
+const INLINE_STYLE_RESPONSIVE_KEYS = new Set<string>([
+  'transform',           // rotation (e.g. "rotate(45deg)")
+  'translateX',          // custom key the renderer combines into CSS `translate`
+  'translateY',
+  'backgroundImage',     // image URL or gradient string
+  'backgroundSize',      // cover | contain | auto
+  'backgroundPosition',  // center | top | bottom | left | right
+  'backgroundRepeat',    // repeat | no-repeat
+  // Per-side border (not class-encoded, but read by renderer from props.style)
+  'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+  'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+  // Drop shadow — CSS string applied via inline style on web
+  'boxShadow',
+]);
 
 
 // ─── Changed-from-default detection ──────────────────────────────────────────
@@ -458,19 +503,40 @@ function InlineChangedLabel({ text, changed, onReset, style: extraStyle }: {
 
 // ─── FillBackgroundSection — Solid / Gradient / Image ─────────────────────────
 
-function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgColor, patchColorAsThemeVar, patchStyle }: {
+function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgColor, patchColorResponsive, patchStyle, abp, getOverriddenBps, removeResponsive, resetResponsive }: {
   nodeId: string;
   node: SDUINode;
   store: BuilderStore;
   commitHistory: () => void;
   computedBgColor: string;
-  patchColorAsThemeVar: (styleKey: string, propPath: string, twPrefix: string, cssVar: string) => void;
+  patchColorResponsive: (cssProp: 'backgroundColor' | 'color' | 'borderColor', propPath: string, clsPrefix: 'bg' | 'text' | 'border', cssVar: string) => void;
   patchStyle: (patch: Record<string, string>) => void;
+  abp: ActiveBreakpoint;
+  getOverriddenBps: (cssProp: string) => string[];
+  removeResponsive: (bp: string, cssProp: string) => void;
+  resetResponsive: (cssProp: string) => void;
 }) {
   const animCfg     = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
   const outerSt     = (animCfg.outerStyle ?? {}) as Record<string, unknown>;
   const loopCfg     = (animCfg.loop ?? {}) as Record<string, unknown>;
-  const bgImageRaw  = outerSt.backgroundImage;
+  // Responsive-aware gradient source: at non-desktop breakpoints, editing
+  // writes to `node.responsive[bp].styles.backgroundImage` so overrides cascade
+  // the same way every other design property does. Fall back to the base
+  // `animation.outerStyle.backgroundImage` when no responsive value is set.
+  // Cascade laptop → tablet → mobile; the last non-undefined value wins.
+  const respGradientBg = React.useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return undefined;
+    let value: unknown = undefined;
+    for (const bp of BP_ORDER) {
+      const v = node.responsive[bp]?.styles?.backgroundImage;
+      if (v !== undefined) value = v;
+      if (bp === abp) break;
+    }
+    return value;
+  }, [abp, node.responsive]);
+  const bgImageRaw = (typeof respGradientBg === 'string' && respGradientBg)
+    ? respGradientBg
+    : outerSt.backgroundImage;
   const isGradientFormula = isBoundValue(bgImageRaw as FormulaValue);
   const nodeStyleAny = (node.props as { style?: Record<string, string> })?.style ?? {};
   const propsBgImage = nodeStyleAny.backgroundImage ?? '';
@@ -549,6 +615,19 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       ? `radial-gradient(circle at center, ${colorList})`
       : `linear-gradient(${d}, ${colorList})`;
     const bgSize = animate ? '300% 100%' : undefined;
+    // Non-desktop: write to responsive[bp].styles.* so overrides cascade like
+    // every other design property. The renderer merges props.style into the
+    // outer wrapper's outerStyle, so a responsive backgroundImage wins over
+    // the base animation.outerStyle gradient at that breakpoint.
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      store.patchResponsive(nodeId, rbp, 'styles.backgroundImage', gradient);
+      store.patchResponsive(nodeId, rbp, 'styles.backgroundRepeat', 'no-repeat');
+      if (bgSize) store.patchResponsive(nodeId, rbp, 'styles.backgroundSize', bgSize);
+      else        store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundSize');
+      commitHistory();
+      return;
+    }
     const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
     const outerPatch: Record<string, unknown> = {
       ...(existing.outerStyle as Record<string, unknown> ?? {}),
@@ -562,9 +641,17 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     else if ((existing.loop as Record<string, unknown>)?.type === 'gradientDrift') delete nextAnim.loop;
     store.patchNodeField(nodeId, 'animation', nextAnim);
     commitHistory();
-  }, [nodeId, node, store, commitHistory, gradientDir, isRadial]);
+  }, [nodeId, node, store, commitHistory, gradientDir, isRadial, abp]);
 
   const removeGradient = React.useCallback(() => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundImage');
+      store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundRepeat');
+      store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundSize');
+      commitHistory();
+      return;
+    }
     const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
     const nextOuter = { ...(existing.outerStyle as Record<string, unknown> ?? {}) };
     delete nextOuter.backgroundImage; delete nextOuter.backgroundSize; delete nextOuter.backgroundRepeat;
@@ -572,9 +659,11 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     if ((existing.loop as Record<string, unknown>)?.type === 'gradientDrift') delete nextAnim.loop;
     store.patchNodeField(nodeId, 'animation', nextAnim);
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, abp]);
 
   const onGradientBinding = React.useCallback((v: FormulaValue) => {
+    // Formula bindings always live on the base node — formulas are already
+    // dynamic at runtime and shouldn't be duplicated per breakpoint.
     const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
     if (typeof v === 'object' && v !== null) {
       const nextOuter = { ...(existing.outerStyle as Record<string, unknown> ?? {}), backgroundImage: v, backgroundSize: '300% 100%', backgroundRepeat: 'no-repeat' };
@@ -695,7 +784,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
             testId="input-bg-color"
             value={computedBgColor}
             onChange={(color, cssVar) => cssVar
-              ? patchColorAsThemeVar('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
+              ? patchColorResponsive('backgroundColor', 'props.style.backgroundColor', 'bg', cssVar)
               : patchStyle({ backgroundColor: color || '' })
             }
           />
@@ -810,6 +899,10 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           </div>
           <FieldWithBinding
             label="backgroundImage" displayLabel="URL" cssProp="backgroundImage" stackLayout hint="URL or formula returning a URL string"
+            responsiveOverrides={getOverriddenBps('backgroundImage')}
+            onResponsiveRemove={removeResponsive}
+            onResponsiveReset={resetResponsive}
+            responsiveCssProp="backgroundImage"
             value={(nodeStyleAny.backgroundImage as unknown as FormulaValue) ?? ''}
             onChange={v => {
               if (typeof v === 'object' && v !== null) {
@@ -868,21 +961,80 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
 
 // ─── EffectsSection ───────────────────────────────────────────────────────────
 
-function EffectsSection({ nodeId, node, store, commitHistory }: {
+function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverriddenBps, removeResponsive, resetResponsive }: {
   nodeId: string;
   node: SDUINode;
   store: BuilderStore;
   commitHistory: () => void;
+  abp: ActiveBreakpoint;
+  getOverriddenBps: (cssProp: string) => string[];
+  removeResponsive: (bp: string, cssProp: string) => void;
+  resetResponsive: (cssProp: string) => void;
 }) {
   const nodeStyle = (node.props as { style?: Record<string, unknown> })?.style ?? {};
   const animCfg = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
   const filterCfg = (animCfg.filter ?? {}) as Record<string, unknown>;
 
+  // ── Responsive-aware reads (cascade laptop → tablet → mobile) ────────────────
+  const respBoxShadow = React.useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return undefined;
+    let value: unknown;
+    for (const bp of BP_ORDER) {
+      const v = node.responsive[bp]?.styles?.boxShadow;
+      if (v !== undefined) value = v;
+      if (bp === abp) break;
+    }
+    return value;
+  }, [abp, node.responsive]);
+
+  const respFilterBlur = React.useMemo<number | null | undefined>(() => {
+    if (abp === 'desktop' || !node.responsive) return undefined;
+    let value: number | null | undefined;
+    for (const bp of BP_ORDER) {
+      const v = node.responsive[bp]?.animation?.filter?.blur;
+      if (v !== undefined) value = v as number | null;
+      if (bp === abp) break;
+    }
+    return value;
+  }, [abp, node.responsive]);
+
+  // Per-bp animation override detection for the FWB chip strip.
+  const filterBlurOverriddenBps = React.useMemo(() => {
+    if (!node.responsive) return [] as string[];
+    const out: string[] = [];
+    for (const bp of BP_ORDER) {
+      if (node.responsive[bp]?.animation?.filter?.blur !== undefined) out.push(bp);
+    }
+    return out;
+  }, [node.responsive]);
+
+  const removeFilterBlurAtBp = React.useCallback((bp: string) => {
+    store.removeResponsiveOverride(nodeId, bp as 'laptop' | 'tablet' | 'mobile', 'animation.filter.blur');
+    commitHistory();
+  }, [nodeId, store, commitHistory]);
+
+  const resetFilterBlur = React.useCallback(() => {
+    for (const bp of BP_ORDER) {
+      if (node.responsive?.[bp]?.animation?.filter?.blur !== undefined) {
+        store.removeResponsiveOverride(nodeId, bp, 'animation.filter.blur');
+      }
+    }
+    commitHistory();
+  }, [nodeId, node.responsive, store, commitHistory]);
+
   // ── Shadow state ─────────────────────────────────────────────────────────────
+  // Base value (desktop / formula) lives on props.style.boxShadow.
+  // Responsive overrides live on responsive[bp].styles.boxShadow and are
+  // resolved into respBoxShadow above (cascade-aware).
   const boxShadowRaw = nodeStyle.boxShadow;
   const isShadowFormula = isBoundValue(boxShadowRaw as FormulaValue);
+  // At non-desktop breakpoints, the responsive override (if any) wins for
+  // display and "has shadow" detection.
+  const effectiveShadowStr = (typeof respBoxShadow === 'string' && respBoxShadow)
+    ? respBoxShadow
+    : (typeof boxShadowRaw === 'string' ? boxShadowRaw : '');
   const rawBoxShadow = typeof boxShadowRaw === 'string' ? boxShadowRaw : '';
-  const parsed = parseBoxShadow(rawBoxShadow);
+  const parsed = parseBoxShadow(effectiveShadowStr);
   const hasShadow = !!parsed || isShadowFormula;
 
   const [shadowColor,  setShadowColor]  = React.useState(parsed?.color  ?? '#000000');
@@ -895,14 +1047,16 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
   const [shadowEditorOpen, setShadowEditorOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const p = parseBoxShadow(rawBoxShadow);
+    const p = parseBoxShadow(effectiveShadowStr);
     setShadowColor(p?.color  ?? '#000000');
     setShadowBlur(p?.blur    ?? 20);
     setShadowSpread(p?.spread ?? 0);
     setShadowX(p?.x          ?? 0);
     setShadowY(p?.y          ?? 4);
+  // Re-sync local state when switching nodes OR when the active breakpoint
+  // shows a different effective shadow (e.g. a tablet override exists).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId]);
+  }, [nodeId, effectiveShadowStr]);
 
   React.useEffect(() => {
     if (!shadowEditorOpen) return;
@@ -913,27 +1067,42 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
 
   const applyShadow = React.useCallback((color: string, blur: number, spread: number, x: number, y: number) => {
     const boxShadow = `${x}px ${y}px ${blur}px ${spread}px ${color}`;
-    store.patchProp(nodeId, 'props.style', {
-      ...(node.props as { style?: Record<string, unknown> })?.style,
-      boxShadow,
-      shadowColor: color,
-      shadowOffset: { width: x, height: y },
-      shadowRadius: blur,
-      shadowOpacity: 1,
-      elevation: Math.max(0, Math.round(blur / 2)),
-    });
+    if (abp === 'desktop') {
+      // Base write — keep RN-only fields (shadowColor / shadowOffset / etc.)
+      // alongside the CSS string so React Native renderers also work.
+      store.patchProp(nodeId, 'props.style', {
+        ...(node.props as { style?: Record<string, unknown> })?.style,
+        boxShadow,
+        shadowColor: color,
+        shadowOffset: { width: x, height: y },
+        shadowRadius: blur,
+        shadowOpacity: 1,
+        elevation: Math.max(0, Math.round(blur / 2)),
+      });
+    } else {
+      // Responsive write — only the CSS string. Web reads boxShadow; the
+      // RN-only fields stay on the base (desktop) style by design.
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow', boxShadow);
+    }
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, abp]);
 
   const removeShadow = React.useCallback(() => {
-    const s = { ...(node.props as { style?: Record<string, unknown> })?.style };
-    delete s.boxShadow; delete s.shadowColor; delete s.shadowOffset;
-    delete s.shadowRadius; delete s.shadowOpacity; delete s.elevation;
-    store.patchProp(nodeId, 'props.style', s);
+    if (abp === 'desktop') {
+      const s = { ...(node.props as { style?: Record<string, unknown> })?.style };
+      delete s.boxShadow; delete s.shadowColor; delete s.shadowOffset;
+      delete s.shadowRadius; delete s.shadowOpacity; delete s.elevation;
+      store.patchProp(nodeId, 'props.style', s);
+    } else {
+      // Clear the responsive override at this breakpoint only — base stays intact.
+      store.removeResponsiveOverride(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow');
+    }
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, abp]);
 
   const onShadowBinding = React.useCallback((v: FormulaValue) => {
+    // Formulas always live at base (desktop) — same convention as other
+    // bindings in the panel (translate X/Y formulas, etc.).
     if (typeof v === 'object' && v !== null) {
       store.patchProp(nodeId, 'props.style.boxShadow', v);
       commitHistory();
@@ -948,32 +1117,71 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
   // ── Element blur state ────────────────────────────────────────────────────────
   const filterBlurRaw = filterCfg.blur;
   const isBlurFormula = isBoundValue(filterBlurRaw as FormulaValue);
-  const filterBlurVal = typeof filterBlurRaw === 'number' ? filterBlurRaw : 0;
+  // Display value: at non-desktop breakpoints, the cascaded responsive blur
+  // wins (null = explicit removal at this bp; treat as 0 for display).
+  const baseBlurNum = typeof filterBlurRaw === 'number' ? filterBlurRaw : 0;
+  const filterBlurVal = abp === 'desktop'
+    ? baseBlurNum
+    : (respFilterBlur === undefined
+        ? baseBlurNum
+        : (respFilterBlur === null ? 0 : respFilterBlur));
 
   const patchFilterField = React.useCallback((field: string, v: FormulaValue) => {
-    const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
-    const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
-    let nextFilter: Record<string, unknown>;
+    // Formulas always live at base. Numeric writes branch on the active bp:
+    //   desktop      → node.animation.filter.<field>   (legacy / canonical)
+    //   non-desktop  → responsive[bp].animation.filter.<field>
     if (typeof v === 'object' && v !== null) {
-      nextFilter = { ...existingFilter, enabled: true, [field]: v };
-    } else {
-      const numVal = Number(v);
-      nextFilter = { ...existingFilter, enabled: true, [field]: numVal || undefined };
-      const hasValues = Object.entries(nextFilter).some(([k, val]) => k !== 'enabled' && val != null && val !== 0);
-      if (!hasValues) { nextFilter = {}; }
+      const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+      const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
+      const nextFilter = { ...existingFilter, enabled: true, [field]: v };
+      store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: nextFilter });
+      commitHistory();
+      return;
     }
-    store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: Object.keys(nextFilter).length ? nextFilter : undefined });
+    const numVal = Number(v);
+    if (abp === 'desktop') {
+      const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+      const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
+      const nextFilter: Record<string, unknown> = { ...existingFilter, enabled: true, [field]: numVal || undefined };
+      const hasValues = Object.entries(nextFilter).some(([k, val]) => k !== 'enabled' && val != null && val !== 0);
+      const cleaned = hasValues ? nextFilter : {};
+      store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: Object.keys(cleaned).length ? cleaned : undefined });
+      commitHistory();
+      return;
+    }
+    // Non-desktop: only `blur` is supported via the responsive animation channel.
+    if (field !== 'blur') return;
+    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+    if (numVal) {
+      store.patchResponsive(nodeId, rbp, 'animation.filter.blur', numVal);
+    } else {
+      store.removeResponsiveOverride(nodeId, rbp, 'animation.filter.blur');
+    }
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, abp]);
 
   const patchFilter = React.useCallback((patch: Record<string, unknown>) => {
-    const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
-    const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
-    const nextFilter = { ...existingFilter, ...patch, enabled: true };
-    const hasValues = Object.entries(nextFilter).some(([k, v]) => k !== 'enabled' && v != null && (typeof v !== 'number' || v !== 0));
-    store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: hasValues ? nextFilter : undefined });
+    if (abp === 'desktop') {
+      const existingAnim = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+      const existingFilter = (existingAnim.filter ?? {}) as Record<string, unknown>;
+      const nextFilter = { ...existingFilter, ...patch, enabled: true };
+      const hasValues = Object.entries(nextFilter).some(([k, v]) => k !== 'enabled' && v != null && (typeof v !== 'number' || v !== 0));
+      store.patchNodeField(nodeId, 'animation', { ...existingAnim, filter: hasValues ? nextFilter : undefined });
+      commitHistory();
+      return;
+    }
+    // Non-desktop: only `blur` is supported via the responsive animation channel.
+    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+    if ('blur' in patch) {
+      const blurVal = patch.blur;
+      if (typeof blurVal === 'number' && blurVal) {
+        store.patchResponsive(nodeId, rbp, 'animation.filter.blur', blurVal);
+      } else {
+        store.removeResponsiveOverride(nodeId, rbp, 'animation.filter.blur');
+      }
+    }
     commitHistory();
-  }, [nodeId, node, store, commitHistory]);
+  }, [nodeId, node, store, commitHistory, abp]);
 
   const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
   const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
@@ -984,9 +1192,17 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
 
       {/* ── Drop Shadow ── */}
       <div style={{ position: 'relative' }}>
-        {/* Section header row: DROP SHADOW | [preview] | [bind] | [+ Add / Remove] */}
+        {/* Section header row: DROP SHADOW | [resp chip] | [bind] | [+ Add / Remove] */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: hasShadow ? 8 : 0 }}>
           <span style={SUB_HEADER}><ChangedLabel text="Drop shadow" cssProp="boxShadow" /></span>
+          {getOverriddenBps('boxShadow').length > 0 && (
+            <ResponsiveDot
+              cssProp="boxShadow"
+              overriddenBreakpoints={getOverriddenBps('boxShadow')}
+              onRemove={removeResponsive}
+              onResetAll={resetResponsive}
+            />
+          )}
           <BindingIcon isBound={isShadowFormula} onClick={() => { closeAllEditors(); setShadowEditorOpen(true); }} />
           {!isShadowFormula && (parsed ? (
             <button onClick={removeShadow} style={BTN_REMOVE}>Remove</button>
@@ -1048,6 +1264,10 @@ function EffectsSection({ nodeId, node, store, commitHistory }: {
           onChange={v => patchFilterField('blur', v)}
           expectedType="number"
           stackLayout
+          responsiveOverrides={filterBlurOverriddenBps}
+          onResponsiveRemove={removeFilterBlurAtBp}
+          onResponsiveReset={resetFilterBlur}
+          responsiveCssProp="filterBlur"
         >
           <NumberInput
               label=""
@@ -1262,7 +1482,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
       // ── Responsive route: write to node.responsive[bp].styles ──────────
       if (currentBp !== 'desktop') {
         for (const [cssProp, val] of Object.entries(pendingStyleRef.current)) {
-          if (!STYLE_TO_CLASS_KEYS.has(cssProp)) continue;
+          // Allow responsive writes for both class-encoded styles AND pure
+          // inline styles the renderer reads from props.style directly
+          // (rotation + translateX/Y live there, not in className).
+          if (!STYLE_TO_CLASS_KEYS.has(cssProp) && !INLINE_STYLE_RESPONSIVE_KEYS.has(cssProp)) continue;
           const v = val === '' ? null : val;
           store.patchResponsive(id, currentBp as 'laptop' | 'tablet' | 'mobile', `styles.${cssProp}`, v);
         }
@@ -1462,12 +1685,23 @@ export function DesignTab({ node }: { node: SDUINode }) {
       const added   = [...newTokens].filter(t => !oldTokens.has(t));
       const removed = [...oldTokens].filter(t => !newTokens.has(t));
       const cssOverrides: Record<string, string | null> = {};
-      for (const t of [...added, ...removed]) {
+      // Process removed first, then added, so that when a click swaps two tokens
+      // mapping to the same CSS prop (e.g. flex-col → flex-row, items-start →
+      // items-center), the added token's value wins instead of being clobbered
+      // by the removed token's null. Otherwise clicks at non-desktop breakpoints
+      // would write `null` into the responsive override and appear as no-ops.
+      for (const t of removed) {
         const mapping = twTokenToCss(t);
-        if (mapping) {
-          const isAdded = added.includes(t);
-          cssOverrides[mapping.prop] = isAdded ? mapping.value : null;
-        }
+        if (!mapping) continue;
+        // Prefer the CSS initial value so the responsive override actually
+        // undoes the base token (e.g. removing `flex-1` at tablet writes
+        // flex:'0 1 auto' instead of null, which would be ignored and let the
+        // base `flex-1` keep filling).
+        cssOverrides[mapping.prop] = CSS_REMOVE_DEFAULTS[mapping.prop] ?? null;
+      }
+      for (const t of added) {
+        const mapping = twTokenToCss(t);
+        if (mapping) cssOverrides[mapping.prop] = mapping.value;
       }
       if (Object.keys(cssOverrides).length > 0) {
         for (const [prop, val] of Object.entries(cssOverrides)) {
@@ -1736,9 +1970,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
   // per node type to avoid corrupting Gluestack's internal layout.
   // Containers: show Auto Layout + Alignment sections so children can be rearranged.
   // Includes Gluestack compounds whose children ARE real SDUI nodes (Checkbox, Radio, Badge, Avatar, Fab).
-  const isContainer  = ['Box', 'VStack', 'HStack', 'Center', 'Grid', 'GridItem', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Skeleton', 'Tooltip', 'FormContainer'].includes(node.type);
+  const isContainer  = ['Box', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Skeleton', 'Tooltip', 'FormContainer'].includes(node.type);
   // CheckboxLabel / RadioLabel etc. are text nodes — show Typography section when selected
-  const isTextNode   = ['Text', 'Heading', 'CheckboxLabel', 'RadioLabel', 'SkeletonText', 'TooltipText'].includes(node.type);
+  const isTextNode   = ['Text', 'CheckboxLabel', 'RadioLabel', 'SkeletonText', 'TooltipText'].includes(node.type);
   // Padding/border-radius make sense for containers + button-like widgets, not raw text
   const showPadding  = !isTextNode;
   // Auto Layout (flex dir, gap) and Alignment only make sense for flex containers
@@ -1759,7 +1993,160 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const CSS_TO_TW_FLEX: Record<string, string> = { row: 'flex-row', column: 'flex-col', 'row-reverse': 'flex-row-reverse', 'column-reverse': 'flex-col-reverse' };
   const flexDir     = rOvr('flexDirection') ? (CSS_TO_TW_FLEX[rOvr('flexDirection')!] ?? baseFlexDir) : baseFlexDir;
   const isRow       = flexDir === 'flex-row';
-  const activeCell  = getAlignCellIndex(cls, isRow);
+  // Responsive-aware alignment cell detection: overrides for alignItems/
+  // justifyContent at the active breakpoint must beat the base className so the
+  // 9-cell grid highlights what the canvas is actually rendering.
+  const CSS_TO_TW_ALIGN_POS: Record<string, 'start' | 'center' | 'end'> = {
+    'flex-start': 'start', start: 'start',
+    center: 'center',
+    'flex-end': 'end', end: 'end',
+  };
+  const baseItemsTok   = parseTwToken(cls, 'items-')   ?? 'items-start';
+  const baseJustifyTok = parseTwToken(cls, 'justify-') ?? 'justify-start';
+  const itemsTokEff    = (() => {
+    const o = rOvr('alignItems');
+    const pos = o ? CSS_TO_TW_ALIGN_POS[o] : undefined;
+    return pos ? `items-${pos}` : baseItemsTok;
+  })();
+  const justifyTokEff  = (() => {
+    const o = rOvr('justifyContent');
+    const pos = o ? CSS_TO_TW_ALIGN_POS[o] : undefined;
+    return pos ? `justify-${pos}` : baseJustifyTok;
+  })();
+  const activeCell  = getAlignCellIndex(`${itemsTokEff} ${justifyTokEff}`, isRow);
+  // Effective Width / Height mode — responsive-aware so the right-panel mode
+  // buttons highlight what the canvas actually renders at the active
+  // breakpoint. At non-desktop we factor rOvr('width'|'flex') for W and
+  // rOvr('height'|'flex'|'alignSelf') for H, because Fill in a flex-row parent
+  // is governed by `flex`, and H-Fill in a flex-row parent is governed by
+  // `alignSelf`, not by `height`. Without this, clicking Fill writes the
+  // correct override but the active state still reads base `cls` and lights
+  // up Fixed; and clicking Fixed on a base-has-flex-1 node leaves a `null`
+  // flex override (no-op) so base keeps filling and Fill stays lit.
+  const effectiveWMode: 'hug' | 'fill' | 'screen' | 'fixed' = (() => {
+    const fromBase = (): 'hug' | 'fill' | 'screen' | 'fixed' => {
+      if (cls.includes('w-fit')) return 'hug';
+      if (cls.includes('w-screen')) return 'screen';
+      if (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) return 'fill';
+      return 'fixed';
+    };
+    if (abp === 'desktop') return fromBase();
+    const rW = rOvr('width');
+    const rFlex = rOvr('flex');
+    if (rW === 'fit-content') return 'hug';
+    if (rW === '100vw')       return 'screen';
+    if (rW === '100%')        return 'fill';
+    if (parentIsRow && rFlex === '1 1 0%') return 'fill';
+    // Only count axis-owning overrides when deciding whether to fall back to
+    // base. `flex` is W-axis only in a flex-row parent; in a flex-col parent
+    // `flex` belongs to the H axis and must not keep W stuck on 'fixed'.
+    const wHasOverride = parentIsRow
+      ? (rW !== undefined || rFlex !== undefined)
+      : (rW !== undefined);
+    if (!wHasOverride) return fromBase();
+    return 'fixed';
+  })();
+  const effectiveHMode: 'hug' | 'fill' | 'screen' | 'fixed' = (() => {
+    const fromBase = (): 'hug' | 'fill' | 'screen' | 'fixed' => {
+      if (cls.includes('h-fit')) return 'hug';
+      if (cls.includes('h-screen')) return 'screen';
+      if (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) return 'fill';
+      return 'fixed';
+    };
+    if (abp === 'desktop') return fromBase();
+    const rH = rOvr('height');
+    const rFlex = rOvr('flex');
+    const rSelf = rOvr('alignSelf');
+    if (rH === 'fit-content') return 'hug';
+    if (rH === '100vh')       return 'screen';
+    if (parentIsRow && rSelf === 'stretch') return 'fill';
+    if (!parentIsRow && (rFlex === '1 1 0%' || rSelf === 'stretch')) return 'fill';
+    // Axis-owning overrides for H depend on parent direction — `flex` is
+    // H-axis only in a flex-col parent; in a flex-row parent it belongs to W
+    // and must not keep H stuck on 'fixed'.
+    const hHasOverride = parentIsRow
+      ? (rH !== undefined || rSelf !== undefined)
+      : (rH !== undefined || rFlex !== undefined || rSelf !== undefined);
+    if (!hHasOverride) return fromBase();
+    return 'fixed';
+  })();
+  // Intent-based responsive writers for W/H mode. The class-diff inside
+  // patchCls can't reliably swap modes at non-desktop because it only sees
+  // the *base* className — overrides written by a previous click for
+  // different CSS props (e.g. alignSelf for H-Fill) can linger and keep the
+  // button active after a subsequent Fixed click whose diff is empty. Here
+  // we explicitly set/remove every axis-owning responsive prop, so each
+  // click lands exactly the chosen mode at the active breakpoint.
+  const applyWModeResponsive = (mode: 'hug' | 'fill' | 'screen' | 'fixed') => {
+    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+    const setR = (prop: string, val: string | null) => {
+      if (val === null) store.removeResponsiveOverride(nodeId, rbp, `styles.${prop}`);
+      else              store.patchResponsive(nodeId, rbp, `styles.${prop}`, val);
+    };
+    setR('minWidth', null);
+    const baseHasWTok = cls.includes('w-fit') || cls.includes('w-full') || cls.includes('w-screen');
+    if (mode === 'hug') {
+      setR('width', cls.includes('w-fit') ? null : 'fit-content');
+      if (parentIsRow) setR('flex', cls.includes('flex-1') ? '0 1 auto' : null);
+    } else if (mode === 'fill') {
+      if (parentIsRow) {
+        setR('flex', cls.includes('flex-1') ? null : '1 1 0%');
+        // Undo conflicting base w-* (w-fit / w-screen) so flex-1 can fill.
+        setR('width', baseHasWTok ? 'auto' : null);
+      } else {
+        setR('width', cls.includes('w-full') ? null : '100%');
+      }
+    } else if (mode === 'screen') {
+      setR('width', cls.includes('w-screen') ? null : '100vw');
+      if (parentIsRow) setR('flex', cls.includes('flex-1') ? '0 1 auto' : null);
+    } else {
+      // Fixed: force an explicit width override when base has a mode token,
+      // so the button lands on Fixed instead of inheriting the base mode.
+      setR('width', baseHasWTok ? 'auto' : null);
+      if (parentIsRow) setR('flex', cls.includes('flex-1') ? '0 1 auto' : null);
+    }
+    commitHistory();
+  };
+  const applyHModeResponsive = (mode: 'hug' | 'fill' | 'screen' | 'fixed') => {
+    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+    const setR = (prop: string, val: string | null) => {
+      if (val === null) store.removeResponsiveOverride(nodeId, rbp, `styles.${prop}`);
+      else              store.patchResponsive(nodeId, rbp, `styles.${prop}`, val);
+    };
+    setR('minHeight', null);
+    const baseHasHTok = cls.includes('h-fit') || cls.includes('h-screen');
+    if (mode === 'hug') {
+      setR('height', cls.includes('h-fit') ? null : 'fit-content');
+      if (parentIsRow) setR('alignSelf', cls.includes('self-stretch') ? 'auto' : null);
+      else             setR('flex',      cls.includes('flex-1')       ? '0 1 auto' : null);
+    } else if (mode === 'fill') {
+      // Undo conflicting base h-* so fill (alignSelf/flex) takes effect.
+      setR('height', baseHasHTok ? 'auto' : null);
+      if (parentIsRow) setR('alignSelf', cls.includes('self-stretch') ? null : 'stretch');
+      else             setR('flex',      cls.includes('flex-1')       ? null : '1 1 0%');
+    } else if (mode === 'screen') {
+      setR('height', cls.includes('h-screen') ? null : '100vh');
+      if (parentIsRow) setR('alignSelf', cls.includes('self-stretch') ? 'auto' : null);
+      else             setR('flex',      cls.includes('flex-1')       ? '0 1 auto' : null);
+    } else {
+      setR('height', baseHasHTok ? 'auto' : null);
+      if (parentIsRow) setR('alignSelf', cls.includes('self-stretch') ? 'auto' : null);
+      else             setR('flex',      cls.includes('flex-1')       ? '0 1 auto' : null);
+    }
+    commitHistory();
+  };
+  // Route a pure-inline style write (transform / translateX / translateY) to
+  // either props.style (desktop = base) or responsive.<bp>.styles (non-desktop)
+  // so these inputs behave like every other design control across breakpoints.
+  const writeInlineStyle = (cssProp: string, val: string | null) => {
+    if (abp === 'desktop') {
+      store.patchProp(nodeId, `props.style.${cssProp}`, val ?? '');
+      return;
+    }
+    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+    if (val === null || val === '') store.removeResponsiveOverride(nodeId, rbp, `styles.${cssProp}`);
+    else                             store.patchResponsive(nodeId, rbp, `styles.${cssProp}`, val);
+  };
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
   const baseGapPx   = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
   const gapPx       = rOvr('gap') ? parseFloat(rOvr('gap')!) : baseGapPx;
@@ -1789,8 +2176,12 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const baseBorderStyle = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
   const borderStyle   = rOvr('borderStyle') ? (CSS_TO_TW_BORDER_STYLE[rOvr('borderStyle')!] ?? baseBorderStyle) : baseBorderStyle;
   // Rotation stays in props.style.transform (rotation only — no translate mixed in).
+  // Responsive-aware: on non-desktop breakpoints the cascaded override wins over
+  // the base inline style so the input mirrors what's on the canvas.
   // Guard against formula objects: only treat it as a string for parsing.
   const styleTransform = (() => {
+    const rT = rOvr('transform');
+    if (typeof rT === 'string' && rT) return rT;
     const t = (node.props as { style?: Record<string, unknown> })?.style?.transform;
     return typeof t === 'string' ? t : '';
   })();
@@ -1803,14 +2194,17 @@ export function DesignTab({ node }: { node: SDUINode }) {
     return parseInt(clsToken.replace(/-?rotate-\[?/, '').replace('deg]', '') || '0');
   })();
   // Translate X/Y live in separate props.style.translateX / .translateY keys (not mixed into transform).
+  // Responsive-aware: prefer the cascaded override at non-desktop breakpoints.
   const translateXPx = (() => {
-    const t = nodeStyle.translateX;
+    const rTx = rOvr('translateX');
+    const t = (typeof rTx === 'string' && rTx) ? rTx : nodeStyle.translateX;
     if (typeof t !== 'string' || !t) return 0;
     const m = t.match(/^([-\d.]+)/);
     return m ? parseFloat(m[1]) : 0;
   })();
   const translateYPx = (() => {
-    const t = nodeStyle.translateY;
+    const rTy = rOvr('translateY');
+    const t = (typeof rTy === 'string' && rTy) ? rTy : nodeStyle.translateY;
     if (typeof t !== 'string' || !t) return 0;
     const m = t.match(/^([-\d.]+)/);
     return m ? parseFloat(m[1]) : 0;
@@ -1825,11 +2219,45 @@ export function DesignTab({ node }: { node: SDUINode }) {
     'overflow-auto', 'overflow-scroll', 'overflow-hidden',
   ] as const;
   type OverflowTokenType = typeof OVERFLOW_TOKENS_LIST[number] | 'none';
-  const currentOverflow: OverflowTokenType = OVERFLOW_TOKENS_LIST.find(t => cls.split(/\s+/).includes(t)) ?? 'none';
+  // Responsive-aware overflow detection: when a responsive override sets
+  // `overflow`/`overflowX`/`overflowY`, that should drive the active button
+  // even if the base `cls` still carries a different overflow-* token.
+  const baseOverflow: OverflowTokenType = OVERFLOW_TOKENS_LIST.find(t => cls.split(/\s+/).includes(t)) ?? 'none';
+  const currentOverflow: OverflowTokenType = (() => {
+    const rO = rOvr('overflow');
+    const rX = rOvr('overflowX');
+    const rY = rOvr('overflowY');
+    if (rO !== undefined) {
+      if (rO === 'hidden')  return 'overflow-hidden';
+      if (rO === 'auto')    return 'overflow-auto';
+      if (rO === 'scroll')  return 'overflow-scroll';
+      if (rO === 'visible') return 'none';
+    }
+    if (rX === 'auto')   return 'overflow-x-auto';
+    if (rY === 'auto')   return 'overflow-y-auto';
+    if (rX === 'scroll') return 'overflow-x-scroll';
+    if (rY === 'scroll') return 'overflow-y-scroll';
+    if (rX === 'hidden') return 'overflow-x-hidden';
+    if (rY === 'hidden') return 'overflow-y-hidden';
+    return baseOverflow;
+  })();
   const isClipped   = currentOverflow === 'overflow-hidden';
-  const isFlexWrap  = cls.includes('flex-wrap');
-  const isGrid      = cls.includes('grid');
-  const isSpaceBetween = cls.includes('justify-between');
+  // Responsive-aware: at non-desktop breakpoints, display/flexWrap may be set via
+  // responsive.styles overrides rather than the base className. Without checking
+  // rOvr first, the Grid / Row-wrap buttons would not highlight after being
+  // clicked because the base `cls` still reads as `flex flex-row` etc.
+  const respDisplay  = rOvr('display');
+  const respFlexWrap = rOvr('flexWrap');
+  const isFlexWrap  = respFlexWrap !== undefined ? respFlexWrap === 'wrap' : cls.includes('flex-wrap');
+  const isGrid      = respDisplay  !== undefined ? respDisplay === 'grid'  : cls.includes('grid');
+  // Responsive-aware: when override sets justifyContent, that wins over the
+  // base className. Without this, clicking Space-between at tablet writes the
+  // override correctly but the button never highlights.
+  const isSpaceBetween = (() => {
+    const rJC = rOvr('justifyContent');
+    if (rJC !== undefined) return rJC === 'space-between';
+    return cls.includes('justify-between');
+  })();
   // Self-alignment: how this node aligns itself within its parent flex container
   const CSS_TO_TW_SELF: Record<string, string> = { auto: 'self-auto', 'flex-start': 'self-start', 'flex-end': 'self-end', center: 'self-center', stretch: 'self-stretch', baseline: 'self-baseline' };
   const baseSelfToken = parseTwToken(cls, 'self-') ?? 'self-auto';
@@ -1886,10 +2314,16 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const scBaseline = useMemo(():
     | { node: Record<string, unknown>; cls: string; instanceRoot: SDUINode; isRootSelected: boolean; modelId: string }
     | undefined => {
-    const scRoot = findSharedRoot(pageNodes as SDUINode[], nodeId);
-    const scMeta = (scRoot as unknown as Record<string, unknown> | undefined)?._shared as { id: string } | undefined;
-    if (!scMeta || !scRoot) return undefined;
-    const model = getSharedComponents()[scMeta.id];
+    const scRoot = findLinkedRoot(pageNodes as SDUINode[], nodeId, 'any');
+    if (!scRoot) return undefined;
+    const scRec = scRoot as unknown as Record<string, unknown>;
+    const sharedMeta = scRec._shared as { id: string } | undefined;
+    const systemMeta = scRec._system as { id: string } | undefined;
+    const scMeta = sharedMeta ?? systemMeta;
+    if (!scMeta) return undefined;
+    const model = sharedMeta
+      ? getSharedComponents()[scMeta.id]
+      : getSystemComponents()[scMeta.id];
     if (!model?.content) return undefined;
     const content = model.content as unknown as Record<string, unknown>;
 
@@ -1952,6 +2386,18 @@ export function DesignTab({ node }: { node: SDUINode }) {
    * (or from the shared component baseline when scBaselineCls is available).
    */
   const isFieldChanged = useCallback((cssProp: string): boolean => {
+    // Special case: overflow lives in three properties (overflow / overflowX /
+    // overflowY) and may be set via a responsive override at non-desktop.
+    // Without this, picking the `x` or `y` button at tablet writes only to
+    // responsive.styles.overflowX (cls untouched) and the orange "changed"
+    // label / reset-to-default popover never appears.
+    if (cssProp === 'overflow') {
+      if (rOvr('overflow')  !== undefined) return true;
+      if (rOvr('overflowX') !== undefined) return true;
+      if (rOvr('overflowY') !== undefined) return true;
+      return parseTwToken(cls, 'overflow-') != null;
+    }
+
     // Special case: element blur lives in node.animation.filter.blur, not inline style
     if (cssProp === 'filterBlur') {
       const animNode = node as unknown as Record<string, unknown>;
@@ -2081,7 +2527,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
     // Changed if current token differs from known default token
     const defPrefix = def.replace(/-[^-]+$/, '-');
     return (parseTwToken(cls, defPrefix) ?? def) !== def;
-  }, [cls, nodeStyle, scBaselineCls, node]);
+  }, [cls, nodeStyle, scBaselineCls, node, rOvr]);
 
   /**
    * Returns true when the selected node lives inside a shared-component
@@ -2176,6 +2622,25 @@ export function DesignTab({ node }: { node: SDUINode }) {
     // gets put right back). Use `baselineCls` below in place of scBaselineCls
     // for all re-apply branches.
     const baselineCls = isGreenInEditMode ? undefined : scBaselineCls;
+
+    // Special case: overflow — at non-desktop, also clear responsive overrides
+    // for overflow / overflowX / overflowY at the active breakpoint so the
+    // reset-to-default popover actually takes effect when the value comes from
+    // a responsive override (e.g. clicking the `x` or `y` button at tablet).
+    if (cssProp === 'overflow') {
+      if (abp !== 'desktop') {
+        const bp = abp as 'laptop' | 'tablet' | 'mobile';
+        for (const p of ['overflow', 'overflowX', 'overflowY']) {
+          if (rOvr(p) !== undefined) {
+            store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
+          }
+        }
+      }
+      const nextCls = removeTwToken(cls, 'overflow-');
+      if (nextCls !== cls) store.patchProp(nodeId, 'props.className', nextCls);
+      commitHistory();
+      return;
+    }
 
     // Special case: element blur lives in node.animation.filter
     if (cssProp === 'filterBlur') {
@@ -2350,7 +2815,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
       store.patchProp(nodeId, 'props.style', newStyle);
     }
     commitHistory();
-  }, [cls, nodeStyle, nodeId, store, commitHistory, scBaselineCls, node, scBaseline, isEditingThisSC]);
+  }, [cls, nodeStyle, nodeId, store, commitHistory, scBaselineCls, node, scBaseline, isEditingThisSC, abp, rOvr]);
 
   // ── Text content helpers ─────────────────────────────────────────────────────
   // For Text / Heading / ButtonText nodes we expose their `text` prop directly.
@@ -2591,6 +3056,17 @@ export function DesignTab({ node }: { node: SDUINode }) {
         <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
           {/* W mode — headerTitle puts bind icon beside "W" label */}
           <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full/flex-1, screen=w-screen, fixed=''" headerTitle="W" cssProp="width" responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
+            // Non-desktop uses the intent-based applyWModeResponsive so stale
+            // fill-via-flex-1 / width overrides from prior clicks can't leak
+            // through empty class-diffs and keep the wrong button active.
+            if (abp !== 'desktop') {
+              const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
+                evaluated === 'w-fit'    ? 'hug'    :
+                evaluated === 'w-full'   ? 'fill'   :
+                evaluated === 'w-screen' ? 'screen' : 'fixed';
+              applyWModeResponsive(mode);
+              return;
+            }
             if (evaluated === 'w-fit')    { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit'));    patchStyle({ width: '', minWidth: '' }); }
             else if (evaluated === 'w-full') {
               patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
@@ -2601,14 +3077,21 @@ export function DesignTab({ node }: { node: SDUINode }) {
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent flex space (flex-1 in flex-row parent, w-full in flex-col parent)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const rW = rOvr('width');
-                const active = rW !== undefined
-                  ? (token === 'w-fit' ? rW === 'fit-content' : token === 'w-full' ? rW === '100%' : token === 'w-screen' ? rW === '100vw' : !['fit-content','100%','100vw'].includes(rW))
-                  : token
-                    ? (token === 'w-full' ? (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) : cls.includes(token))
-                    : (!cls.includes('w-fit') && !cls.includes('w-full') && !cls.includes('w-screen') && !(parentIsRow && cls.includes('flex-1')));
+                const active =
+                  token === 'w-fit'    ? effectiveWMode === 'hug'    :
+                  token === 'w-full'   ? effectiveWMode === 'fill'   :
+                  token === 'w-screen' ? effectiveWMode === 'screen' :
+                  /* Fixed */            effectiveWMode === 'fixed';
                 return (
                   <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
+                    if (abp !== 'desktop') {
+                      const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
+                        token === 'w-fit'    ? 'hug'    :
+                        token === 'w-full'   ? 'fill'   :
+                        token === 'w-screen' ? 'screen' : 'fixed';
+                      applyWModeResponsive(mode);
+                      return;
+                    }
                     if (token === 'w-full') {
                       patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
                       patchStyle({ width: '', minWidth: '' });
@@ -2629,6 +3112,14 @@ export function DesignTab({ node }: { node: SDUINode }) {
           {/* Fill = flex-1 (grow in flex parent, matches Figma behaviour)       */}
           {/* Screen = h-screen (100vh, always resolves regardless of parent)    */}
           <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1/self-stretch, screen=h-screen, fixed=''" headerTitle="H" cssProp="height" responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
+            if (abp !== 'desktop') {
+              const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
+                evaluated === 'h-fit'    ? 'hug'    :
+                evaluated === 'flex-1'   ? 'fill'   :
+                evaluated === 'h-screen' ? 'screen' : 'fixed';
+              applyHModeResponsive(mode);
+              return;
+            }
             if (evaluated === 'h-fit')    { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit'));    patchStyle({ height: '', minHeight: '' }); }
             else if (evaluated === 'flex-1') {
               const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
@@ -2640,14 +3131,21 @@ export function DesignTab({ node }: { node: SDUINode }) {
           }, v)} expectedType="string">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1 in flex-col parent, self-stretch in flex-row parent)'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const rH = rOvr('height');
-                const active = rH !== undefined
-                  ? (token === 'h-fit' ? rH === 'fit-content' : token === 'flex-1' ? rH === '100%' : token === 'h-screen' ? rH === '100vh' : !['fit-content','100%','100vh'].includes(rH))
-                  : token
-                    ? (token === 'flex-1' ? (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) : cls.includes(token))
-                    : (!cls.includes('h-fit') && !cls.includes('h-screen') && !cls.includes('self-stretch') && (parentIsRow || !cls.includes('flex-1')));
+                const active =
+                  token === 'h-fit'    ? effectiveHMode === 'hug'    :
+                  token === 'flex-1'   ? effectiveHMode === 'fill'   :
+                  token === 'h-screen' ? effectiveHMode === 'screen' :
+                  /* Fixed */            effectiveHMode === 'fixed';
                 return (
                   <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
+                    if (abp !== 'desktop') {
+                      const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
+                        token === 'h-fit'    ? 'hug'    :
+                        token === 'flex-1'   ? 'fill'   :
+                        token === 'h-screen' ? 'screen' : 'fixed';
+                      applyHModeResponsive(mode);
+                      return;
+                    }
                     if (token === 'flex-1') {
                       const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
                       patchCls(`${clearHMode(cls)} ${fillToken}`.trim());
@@ -2789,6 +3287,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
             responsiveOverrides={getOverriddenBps('translateX')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="translateX"
             onChange={v => {
               if (typeof v === 'object' && v !== null) {
+                // Formulas always live on the base node — they resolve at
+                // runtime and don't need per-breakpoint storage.
                 store.patchProp(nodeId, 'props.style.translateX', v);
                 const formulaStr = (v as { formula?: string }).formula;
                 if (formulaStr) {
@@ -2804,7 +3304,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 commitHistory();
               } else {
                 const px = parseFloat((v as string) || '0') || 0;
-                store.patchProp(nodeId, 'props.style.translateX', px !== 0 ? `${px}px` : '');
+                writeInlineStyle('translateX', px !== 0 ? `${px}px` : '');
                 const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
                 if (el) (el.style as unknown as Record<string, string>).translate = `${px}px ${translateYPx}px`;
                 commitHistory();
@@ -2818,7 +3318,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               value={translateXPx}
               min={-1000} max={1000}
               onChange={tx => {
-                store.patchProp(nodeId, 'props.style.translateX', tx !== 0 ? `${tx}px` : '');
+                writeInlineStyle('translateX', tx !== 0 ? `${tx}px` : '');
                 const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
                 if (el) (el.style as unknown as Record<string, string>).translate = `${tx}px ${translateYPx}px`;
                 commitHistory();
@@ -2834,6 +3334,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
             responsiveOverrides={getOverriddenBps('translateY')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="translateY"
             onChange={v => {
               if (typeof v === 'object' && v !== null) {
+                // Formulas always live on the base node — they resolve at
+                // runtime and don't need per-breakpoint storage.
                 store.patchProp(nodeId, 'props.style.translateY', v);
                 const formulaStr = (v as { formula?: string }).formula;
                 if (formulaStr) {
@@ -2849,7 +3351,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 commitHistory();
               } else {
                 const py = parseFloat((v as string) || '0') || 0;
-                store.patchProp(nodeId, 'props.style.translateY', py !== 0 ? `${py}px` : '');
+                writeInlineStyle('translateY', py !== 0 ? `${py}px` : '');
                 const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
                 if (el) (el.style as unknown as Record<string, string>).translate = `${translateXPx}px ${py}px`;
                 commitHistory();
@@ -2863,7 +3365,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               value={translateYPx}
               min={-1000} max={1000}
               onChange={ty => {
-                store.patchProp(nodeId, 'props.style.translateY', ty !== 0 ? `${ty}px` : '');
+                writeInlineStyle('translateY', ty !== 0 ? `${ty}px` : '');
                 const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
                 if (el) (el.style as unknown as Record<string, string>).translate = `${translateXPx}px ${ty}px`;
                 commitHistory();
@@ -2877,7 +3379,12 @@ export function DesignTab({ node }: { node: SDUINode }) {
       {showLayout && (
         <div style={SECTION_STYLE}>
           <SectionHeader title="Alignment" />
-          <FieldWithBinding label="alignment" displayLabel="Align" cssProp="alignItems" hint='e.g. "items-center justify-start"' value={(classFormulas?.['alignment'] as FormulaValue) ?? (() => {
+          <FieldWithBinding label="alignment" displayLabel="Align" cssProp="alignItems" hint='e.g. "items-center justify-start"'
+            responsiveOverrides={Array.from(new Set([...getOverriddenBps('alignItems'), ...getOverriddenBps('justifyContent')]))}
+            onResponsiveRemove={(bp) => { removeResponsive(bp, 'alignItems'); removeResponsive(bp, 'justifyContent'); }}
+            onResponsiveReset={() => { resetResponsive('alignItems'); resetResponsive('justifyContent'); }}
+            responsiveCssProp="alignItems"
+            value={(classFormulas?.['alignment'] as FormulaValue) ?? (() => {
             const items = (parseTwToken(cls, 'items-') ?? '');
             const justify = (parseTwToken(cls, 'justify-') ?? '');
             return [items, justify].filter(Boolean).join(' ');
@@ -2901,7 +3408,38 @@ export function DesignTab({ node }: { node: SDUINode }) {
                     key={i}
                     data-testid="alignment-cell"
                     data-cell-index={i}
-                    onClick={() => patchCls(applyAlignment(cls, i, isRow))}
+                    onClick={() => {
+                      const bp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
+                      if (bp === 'desktop') {
+                        patchCls(applyAlignment(cls, i, isRow));
+                        return;
+                      }
+                      // Responsive breakpoint: write intent directly so the
+                      // click always lands the chosen cell, even when it
+                      // matches the base className on one or both axes. The
+                      // class-diff in patchCls would otherwise be empty on a
+                      // matching axis and leave a stale override from a prior
+                      // click in place (most visible for the center cell when
+                      // base already contains items-center or justify-center).
+                      const cell = buildAlignCells(isRow)[i];
+                      if (!cell) return;
+                      const rbp = bp as 'laptop' | 'tablet' | 'mobile';
+                      const baseItems   = parseTwToken(cls, 'items-')   ?? 'items-start';
+                      const baseJustify = parseTwToken(cls, 'justify-') ?? 'justify-start';
+                      const itemsCss   = twTokenToCss(cell.items)?.value;
+                      const justifyCss = twTokenToCss(cell.justify)?.value;
+                      if (cell.items === baseItems) {
+                        store.removeResponsiveOverride(nodeId, rbp, 'styles.alignItems');
+                      } else if (itemsCss !== undefined) {
+                        store.patchResponsive(nodeId, rbp, 'styles.alignItems', itemsCss);
+                      }
+                      if (cell.justify === baseJustify) {
+                        store.removeResponsiveOverride(nodeId, rbp, 'styles.justifyContent');
+                      } else if (justifyCss !== undefined) {
+                        store.patchResponsive(nodeId, rbp, 'styles.justifyContent', justifyCss);
+                      }
+                      commitHistory();
+                    }}
                     style={{
                       width: 20, height: 20,
                       background: isActive ? '#3b82f6' : '#1f2937',
@@ -2949,6 +3487,30 @@ export function DesignTab({ node }: { node: SDUINode }) {
                   : flexDir === token && !isFlexWrap && !isGrid;
                 return (
                   <ToggleBtn key={token} active={active} title={label} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
+                    // At non-desktop breakpoints we can't rely on patchCls's
+                    // token diffing because `flex` and `grid` aren't in
+                    // TW_TOKEN_MAP — those `display` swaps would be silently
+                    // dropped. Write display/flexDirection/flexWrap overrides
+                    // directly so the canvas reflects the change AND the
+                    // responsive-aware active state lights up.
+                    if (abp !== 'desktop') {
+                      const writes: Array<[string, string]> = [];
+                      if (token === 'flex-row flex-wrap') {
+                        writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'wrap']);
+                      } else if (token === 'grid') {
+                        writes.push(['display', 'grid'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
+                      } else if (token === 'flex-row') {
+                        writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
+                      } else if (token === 'flex-col') {
+                        writes.push(['display', 'flex'], ['flexDirection', 'column'], ['flexWrap', 'nowrap']);
+                      }
+                      const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                      for (const [prop, val] of writes) {
+                        store.patchResponsive(nodeId, bp, `styles.${prop}`, val);
+                      }
+                      commitHistory();
+                      return;
+                    }
                     let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
                     if (token === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
                     else if (token === 'grid')          next = `${next} grid`.trim();
@@ -2979,10 +3541,43 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </FieldWithBinding>
             {/* Gap mode: Fixed vs Space-between */}
             <div>
-              <span style={{ fontSize: 9, display: 'block', marginBottom: 2, color: isSpaceBetween ? '#f97316' : '#9ca3af' }}>Mode</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                <span style={{ fontSize: 9, color: isSpaceBetween ? '#f97316' : '#9ca3af' }}>Mode</span>
+                {getOverriddenBps('justifyContent').length > 0 && (
+                  <ResponsiveDot
+                    cssProp="justifyContent"
+                    overriddenBreakpoints={getOverriddenBps('justifyContent')}
+                    onRemove={removeResponsive}
+                    onResetAll={resetResponsive}
+                  />
+                )}
+              </div>
               <div style={{ display: 'flex', gap: 2 }}>
-                <ToggleBtn active={!isSpaceBetween} onClick={() => patchCls(removeTwToken(cls, 'justify-between'))}>Fixed</ToggleBtn>
-                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => patchCls(replaceTwToken(cls, 'justify-', 'justify-between'))}>
+                <ToggleBtn active={!isSpaceBetween} onClick={() => {
+                  // At non-desktop, "Fixed" should clear any responsive
+                  // justifyContent override so the base value (or its absence)
+                  // takes effect. Going through patchCls misses this when the
+                  // base cls doesn't contain `justify-between` — token diffing
+                  // finds nothing changed and leaves the override in place.
+                  if (abp !== 'desktop') {
+                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                    if (rOvr('justifyContent') !== undefined) {
+                      store.removeResponsiveOverride(nodeId, bp, 'styles.justifyContent');
+                      commitHistory();
+                    }
+                    return;
+                  }
+                  patchCls(removeTwToken(cls, 'justify-between'));
+                }}>Fixed</ToggleBtn>
+                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => {
+                  if (abp !== 'desktop') {
+                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                    store.patchResponsive(nodeId, bp, 'styles.justifyContent', 'space-between');
+                    commitHistory();
+                    return;
+                  }
+                  patchCls(replaceTwToken(cls, 'justify-', 'justify-between'));
+                }}>
                   <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 5h5M3 3l-1.5 2L3 7M11 3l1.5 2L11 7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </ToggleBtn>
               </div>
@@ -3035,7 +3630,12 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 </FieldWithBinding>
               </div>
               {/* Auto flow */}
-              <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense" value={(classFormulas?.['gridFlow'] as FormulaValue) ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row')} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
+              <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense"
+                responsiveOverrides={getOverriddenBps('gridAutoFlow')}
+                onResponsiveRemove={removeResponsive}
+                onResponsiveReset={resetResponsive}
+                responsiveCssProp="gridAutoFlow"
+                value={(classFormulas?.['gridFlow'] as FormulaValue) ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row')} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
                 const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
                 patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
               }, v)} expectedType="string">
@@ -3220,7 +3820,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                   testId="input-text-color"
                   value={computedTextColor}
                   onChange={(hex, cssVar) => cssVar
-                    ? patchColorAsThemeVar('color', 'props.style.color', 'text', cssVar)
+                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
                     : patchStyle({ color: hex || '' })
                   }
                 />
@@ -3310,7 +3910,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
           cssProp="overflow"
           hint='e.g. overflow-hidden, overflow-auto, overflow-x-auto, overflow-y-auto'
           value={(classFormulas?.['overflow'] as FormulaValue) ?? (currentOverflow === 'none' ? '' : currentOverflow)}
-          responsiveOverrides={getOverriddenBps('overflow')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="overflow"
+          responsiveOverrides={Array.from(new Set([...getOverriddenBps('overflow'), ...getOverriddenBps('overflowX'), ...getOverriddenBps('overflowY')]))}
+          onResponsiveRemove={(bp) => { removeResponsive(bp, 'overflow'); removeResponsive(bp, 'overflowX'); removeResponsive(bp, 'overflowY'); }}
+          onResponsiveReset={() => { resetResponsive('overflow'); resetResponsive('overflowX'); resetResponsive('overflowY'); }}
+          responsiveCssProp="overflow"
           onChange={v => bindOrPatchCls('overflow', evaluated => {
             let next = removeTwToken(cls, 'overflow-');
             if (evaluated && evaluated !== 'none') next = `${next} ${evaluated}`.trim();
@@ -3334,6 +3937,29 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 active={currentOverflow === token}
                 style={{ padding: '3px 6px', fontSize: 10 }}
                 onClick={() => {
+                  // Intent-based at non-desktop: clear any existing overflow*
+                  // overrides at this breakpoint, then set the desired one.
+                  // Going only through patchCls would miss two cases:
+                  //   1. Clicking "none" when base has no overflow-* token
+                  //      (token diff is empty → override persists).
+                  //   2. Switching from overflow-x-auto to overflow-hidden
+                  //      leaves a stale overflowX override behind.
+                  if (abp !== 'desktop') {
+                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                    for (const p of ['overflow', 'overflowX', 'overflowY']) {
+                      if (rOvr(p) !== undefined) {
+                        store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
+                      }
+                    }
+                    if (token === 'overflow-hidden')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'hidden');
+                    else if (token === 'overflow-auto')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'auto');
+                    else if (token === 'overflow-scroll') store.patchResponsive(nodeId, bp, 'styles.overflow',  'scroll');
+                    else if (token === 'overflow-x-auto') store.patchResponsive(nodeId, bp, 'styles.overflowX', 'auto');
+                    else if (token === 'overflow-y-auto') store.patchResponsive(nodeId, bp, 'styles.overflowY', 'auto');
+                    // 'none' → just clear, already done above.
+                    commitHistory();
+                    return;
+                  }
                   let next = removeTwToken(cls, 'overflow-');
                   if (token !== 'none') next = `${next} ${token}`.trim();
                   patchCls(next);
@@ -3356,8 +3982,12 @@ export function DesignTab({ node }: { node: SDUINode }) {
             store={store}
             commitHistory={commitHistory}
             computedBgColor={computedBgColor}
-            patchColorAsThemeVar={patchColorAsThemeVar}
+            patchColorResponsive={patchColorResponsive}
             patchStyle={patchStyle as (patch: Record<string, string>) => void}
+            abp={abp}
+            getOverriddenBps={getOverriddenBps}
+            removeResponsive={removeResponsive}
+            resetResponsive={resetResponsive}
           />
         </div>
         {/* Background alpha is now controlled via rgba() in the color picker above */}
@@ -3415,7 +4045,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 testId="input-stroke-color"
                 value={computedBorderColor}
                 onChange={(hex, cssVar) => cssVar
-                  ? patchColorAsThemeVar('borderColor', 'props.style.borderColor', 'border', cssVar)
+                  ? patchColorResponsive('borderColor', 'props.style.borderColor', 'border', cssVar)
                   : patchStyle({ borderColor: hex || '' })
                 }
               />
@@ -3532,12 +4162,18 @@ export function DesignTab({ node }: { node: SDUINode }) {
               Per-side border
             </button>
             {open && (
-              <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '14px 44px 1fr', gap: '5px 6px', alignItems: 'center' }}>
+              <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '14px 44px 1fr 14px', gap: '5px 6px', alignItems: 'center' }}>
                 {sides.map(({ key, label, widthStyle, colorStyle, title }) => {
-                  const widthPx = parseTwArbitraryPx(cls, `border-${key}-`) ?? (parseInt(String((nodeStyle as Record<string, unknown>)[widthStyle] ?? '0')) || 0);
-                  const colorVal = String((nodeStyle as Record<string, unknown>)[colorStyle] ?? '');
+                  const widthFromOvr = rOvr(widthStyle);
+                  const widthPx = parseTwArbitraryPx(cls, `border-${key}-`)
+                    ?? (widthFromOvr != null
+                          ? parseInt(String(widthFromOvr)) || 0
+                          : parseInt(String((nodeStyle as Record<string, unknown>)[widthStyle] ?? '0')) || 0);
+                  const colorVal = String(rOvr(colorStyle) ?? (nodeStyle as Record<string, unknown>)[colorStyle] ?? '');
                   const sideChanged = isFieldChanged(widthStyle) || isFieldChanged(colorStyle);
                   const resetSide = () => { resetField(widthStyle); resetField(colorStyle); };
+                  const sideBps = Array.from(new Set([...getOverriddenBps(widthStyle), ...getOverriddenBps(colorStyle)]));
+                  const sideChipCssProp = `border${title}`;
                   return (
                     <React.Fragment key={key}>
                       <span title={title} style={{ fontSize: 9, fontWeight: 600, lineHeight: '26px' }}>
@@ -3558,6 +4194,16 @@ export function DesignTab({ node }: { node: SDUINode }) {
                           <span style={{ position: 'absolute', top: 2, right: 2, width: 5, height: 5, borderRadius: '50%', background: '#f97316', pointerEvents: 'none' }} />
                         )}
                       </div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 14, width: 14 }}>
+                        {sideBps.length > 0 && (
+                          <ResponsiveDot
+                            cssProp={sideChipCssProp}
+                            overriddenBreakpoints={sideBps}
+                            onRemove={(bp) => { removeResponsive(bp, widthStyle); removeResponsive(bp, colorStyle); }}
+                            onResetAll={() => { resetResponsive(widthStyle); resetResponsive(colorStyle); }}
+                          />
+                        )}
+                      </span>
                     </React.Fragment>
                   );
                 })}
@@ -3568,7 +4214,16 @@ export function DesignTab({ node }: { node: SDUINode }) {
       })()}
 
       {/* ── Effects (Shadow, Blur, Backdrop) ── */}
-      <EffectsSection nodeId={nodeId} node={node} store={store} commitHistory={commitHistory} />
+      <EffectsSection
+        nodeId={nodeId}
+        node={node}
+        store={store}
+        commitHistory={commitHistory}
+        abp={abp}
+        getOverriddenBps={getOverriddenBps}
+        removeResponsive={removeResponsive}
+        resetResponsive={resetResponsive}
+      />
 
       {/* ── Animation ── */}
       <AnimationInDesign

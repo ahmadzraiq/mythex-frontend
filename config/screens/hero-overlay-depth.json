@@ -17,7 +17,10 @@
           "style": {
             "boxShadow": "0px 20px 60px 0px rgba(124, 58, 237, 0.15)",
             "shadowColor": "rgb(124,58,237)",
-            "shadowOffset": { "width": 0, "height": 20 },
+            "shadowOffset": {
+              "width": 0,
+              "height": 20
+            },
             "shadowRadius": 60,
             "shadowOpacity": 0.15,
             "elevation": 30
@@ -56,7 +59,10 @@
           "style": {
             "boxShadow": "-8px 24px 48px 0px rgba(124, 58, 237, 0.2)",
             "shadowColor": "rgb(124,58,237)",
-            "shadowOffset": { "width": -8, "height": 24 },
+            "shadowOffset": {
+              "width": -8,
+              "height": 24
+            },
             "shadowRadius": 48,
             "shadowOpacity": 0.2,
             "elevation": 24
@@ -165,7 +171,10 @@
                   "style": {
                     "boxShadow": "0px 8px 24px 0px rgba(124, 58, 237, 0.35)",
                     "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": 0, "height": 8 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 8
+                    },
                     "shadowRadius": 24,
                     "shadowOpacity": 0.35,
                     "elevation": 12
@@ -187,8 +196,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               },
               {
@@ -214,8 +229,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               }
             ],
@@ -245,7 +266,10 @@
             "backgroundColor": "rgba(124, 58, 237, 0.08)",
             "boxShadow": "0px 40px 80px -20px rgba(124, 58, 237, 0.25)",
             "shadowColor": "rgb(124,58,237)",
-            "shadowOffset": { "width": 0, "height": 40 },
+            "shadowOffset": {
+              "width": 0,
+              "height": 40
+            },
             "shadowRadius": 80,
             "shadowOpacity": 0.25,
             "elevation": 40,

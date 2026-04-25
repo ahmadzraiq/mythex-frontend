@@ -22,7 +22,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold text-center"
                 },
@@ -80,34 +80,28 @@
                         "id": "6d49365f-789e-417c-bdd6-263a14a54f68",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "email",
+                          "placeholder": "you@example.com",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "email",
+                          "name": "emailAddress"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "email",
-                                  "message": "Please enter a valid email address"
-                                }
-                              ]
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
                             },
-                            "props": {
-                              "className": "!text-[var(--theme-foreground)]",
+                            {
                               "type": "email",
-                              "placeholder": "you@example.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "email",
-                              "name": "emailAddress"
+                              "message": "Please enter a valid email address"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -151,34 +145,28 @@
                             "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
                             "props": {
                               "variant": "outline",
-                              "size": "sm"
+                              "size": "sm",
+                              "className": "!text-[var(--theme-foreground)]",
+                              "placeholder": "John",
+                              "placeholderTextColor": "#9ca3af",
+                              "autoComplete": "given-name",
+                              "name": "firstName"
                             },
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "_validation": {
-                                  "trigger": "submit",
-                                  "rules": [
-                                    {
-                                      "type": "required",
-                                      "message": "First name is required"
-                                    },
-                                    {
-                                      "type": "minLength",
-                                      "value": "2",
-                                      "message": "Must be at least 2 characters"
-                                    }
-                                  ]
+                            "children": [],
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                {
+                                  "type": "required",
+                                  "message": "First name is required"
                                 },
-                                "props": {
-                                  "className": "!text-[var(--theme-foreground)]",
-                                  "placeholder": "John",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "autoComplete": "given-name",
-                                  "name": "firstName"
+                                {
+                                  "type": "minLength",
+                                  "value": "2",
+                                  "message": "Must be at least 2 characters"
                                 }
-                              }
-                            ]
+                              ]
+                            }
                           },
                           {
                             "type": "Box",
@@ -216,34 +204,28 @@
                             "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
                             "props": {
                               "variant": "outline",
-                              "size": "sm"
+                              "size": "sm",
+                              "className": "!text-[var(--theme-foreground)]",
+                              "placeholder": "Doe",
+                              "placeholderTextColor": "#9ca3af",
+                              "autoComplete": "family-name",
+                              "name": "lastName"
                             },
-                            "children": [
-                              {
-                                "type": "InputField",
-                                "_validation": {
-                                  "trigger": "submit",
-                                  "rules": [
-                                    {
-                                      "type": "required",
-                                      "message": "Last name is required"
-                                    },
-                                    {
-                                      "type": "minLength",
-                                      "value": "2",
-                                      "message": "Must be at least 2 characters"
-                                    }
-                                  ]
+                            "children": [],
+                            "_validation": {
+                              "trigger": "submit",
+                              "rules": [
+                                {
+                                  "type": "required",
+                                  "message": "Last name is required"
                                 },
-                                "props": {
-                                  "className": "!text-[var(--theme-foreground)]",
-                                  "placeholder": "Doe",
-                                  "placeholderTextColor": "#9ca3af",
-                                  "autoComplete": "family-name",
-                                  "name": "lastName"
+                                {
+                                  "type": "minLength",
+                                  "value": "2",
+                                  "message": "Must be at least 2 characters"
                                 }
-                              }
-                            ]
+                              ]
+                            }
                           },
                           {
                             "type": "Box",
@@ -283,33 +265,27 @@
                         "id": "957459a9-0326-4fae-ad84-e92d95254897",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "tel",
+                          "placeholder": "+1 234 567 8900",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "tel",
+                          "name": "phoneNumber"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "change",
-                              "rules": [
-                                {
-                                  "type": "phone",
-                                  "message": "Please enter a valid phone number"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "className": "!text-[var(--theme-foreground)]",
-                              "type": "tel",
-                              "placeholder": "+1 234 567 8900",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "tel",
-                              "name": "phoneNumber"
-                            }
-                          }
-                        ],
+                        "children": [],
                         "_debounce": {
                           "enabled": true,
                           "delay": 600
+                        },
+                        "_validation": {
+                          "trigger": "change",
+                          "rules": [
+                            {
+                              "type": "phone",
+                              "message": "Please enter a valid phone number"
+                            }
+                          ]
                         }
                       },
                       {
@@ -348,35 +324,29 @@
                         "id": "65068b99-5d5c-433a-b271-bafc413527ba",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "new-password",
+                          "name": "password",
+                          "secureTextEntry": true
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Password is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "8",
-                                  "message": "Password must be at least 8 characters"
-                                }
-                              ]
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Password is required"
                             },
-                            "props": {
-                              "className": "!text-[var(--theme-foreground)]",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "new-password",
-                              "name": "password",
-                              "secureTextEntry": true
+                            {
+                              "type": "minLength",
+                              "value": "8",
+                              "message": "Password must be at least 8 characters"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -414,37 +384,31 @@
                         "id": "cca7f8b8-c894-451f-b08e-1f467d7f7f16",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "new-password",
+                          "name": "confirmPassword",
+                          "secureTextEntry": true
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Please confirm your password"
-                                },
-                                {
-                                  "type": "formula",
-                                  "formula": {
-                                    "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
-                                  },
-                                  "message": "Passwords do not match"
-                                }
-                              ]
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Please confirm your password"
                             },
-                            "props": {
-                              "className": "!text-[var(--theme-foreground)]",
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "new-password",
-                              "name": "confirmPassword",
-                              "secureTextEntry": true
+                            {
+                              "type": "formula",
+                              "formula": {
+                                "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
+                              },
+                              "message": "Passwords do not match"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",

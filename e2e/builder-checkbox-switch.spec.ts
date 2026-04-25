@@ -142,7 +142,7 @@ test.describe('CS — Checkbox & Switch (WeWeb-style variables) live-watch', () 
       id: cbId,
       props: { value: cbId, style: {} },
       children: [
-        { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+        { type: 'CheckboxIndicator' },
         { type: 'CheckboxLabel', text: 'Accept terms' },
       ],
     });
@@ -162,7 +162,7 @@ test.describe('CS — Checkbox & Switch (WeWeb-style variables) live-watch', () 
       id: cbId,
       props: { value: cbId, style: {} },
       children: [
-        { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+        { type: 'CheckboxIndicator' },
         { type: 'CheckboxLabel', text: 'Accept terms' },
       ],
     });
@@ -188,7 +188,7 @@ test.describe('CS — Checkbox & Switch (WeWeb-style variables) live-watch', () 
       id: cbId,
       props: { value: cbId, style: {} },
       children: [
-        { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+        { type: 'CheckboxIndicator' },
         { type: 'CheckboxLabel', text: 'Subscribe' },
       ],
     });
@@ -297,7 +297,7 @@ test.describe('CS — Checkbox & Switch (WeWeb-style variables) live-watch', () 
         id: cbId,
         props: { value: cbId, name: 'acceptTerms', style: {} },
         children: [
-          { type: 'CheckboxIndicator', children: [{ type: 'CheckboxIcon' }] },
+          { type: 'CheckboxIndicator' },
           { type: 'CheckboxLabel', text: 'Accept' },
         ],
       }],

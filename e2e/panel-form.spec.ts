@@ -103,7 +103,7 @@ const FORM_NODES: Record<string, unknown> = {
     type: 'Checkbox',
     props: { defaultIsChecked: false },
     children: [
-      { id: 'test-checkbox-indicator', type: 'CheckboxIndicator', children: [{ id: 'test-checkbox-icon', type: 'CheckboxIcon' }] },
+      { id: 'test-checkbox-indicator', type: 'CheckboxIndicator' },
       { id: 'test-checkbox-label', type: 'CheckboxLabel', text: 'Label' },
     ],
   },
@@ -112,26 +112,6 @@ const FORM_NODES: Record<string, unknown> = {
     type: 'Pressable',
     props: { className: 'w-12 h-6 rounded-full flex items-center px-1 bg-gray-300' },
     children: [{ id: 'test-toggle-thumb', type: 'Box', props: { className: 'w-5 h-5 rounded-full bg-white shadow-sm' } }],
-  },
-  DatePicker: {
-    id: 'test-date-picker',
-    type: 'DatePicker',
-    props: { label: 'Date', style: { width: '220px', height: '60px' } },
-  },
-  TimePicker: {
-    id: 'test-time-picker',
-    type: 'TimePicker',
-    props: { label: 'Time', style: { width: '220px', height: '60px' } },
-  },
-  DateTimePicker: {
-    id: 'test-datetime-picker',
-    type: 'DateTimePicker',
-    props: { label: 'Date & Time', style: { width: '260px', height: '60px' } },
-  },
-  ColorPicker: {
-    id: 'test-color-picker',
-    type: 'ColorPicker',
-    props: { label: 'Color', value: '#6366f1', style: { width: '220px', height: '60px' } },
   },
   FileUpload: {
     id: 'test-file-upload',
@@ -697,51 +677,12 @@ test.describe('PF — Tier 3 HTML Input Wrappers', () => {
   test.afterAll(async () => { await sharedPage.context().close(); });
   test.beforeEach(async () => { await clearCanvas(sharedPage); });
 
-  test('PF-25: Drop DatePicker → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['DatePicker'] as unknown as object]);
-    await selectFirstNodeViaLayers(sharedPage);
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for DatePicker (leaf widget)');
-  });
-
-  test('PF-26: Drop TimePicker → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['TimePicker'] as unknown as object]);
-    await selectFirstNodeViaLayers(sharedPage);
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for TimePicker (leaf widget)');
-  });
-
-  test('PF-27: Drop DateTimePicker → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['DateTimePicker'] as unknown as object]);
-    await selectFirstNodeViaLayers(sharedPage);
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for DateTimePicker (leaf widget)');
-  });
-
-  test('PF-28: Drop ColorPicker → isLeafWidget → Auto Layout HIDDEN', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['ColorPicker'] as unknown as object]);
-    await selectFirstNodeViaLayers(sharedPage);
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for ColorPicker (leaf widget)');
-  });
-
   test('PF-29: Drop FileUpload → isLeafWidget → Auto Layout HIDDEN', async () => {
     await injectNodes(sharedPage, [FORM_NODES['FileUpload'] as unknown as object]);
     await selectFirstNodeViaLayers(sharedPage);
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).not.toBeVisible();
     console.log('✅ Auto Layout hidden for FileUpload (leaf widget)');
-  });
-
-  test('PF-30: DatePicker renders visible in canvas', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['DatePicker'] as unknown as object]);
-    const el = sharedPage.locator('[data-builder-id="test-date-picker"]');
-    await expect(el).toBeVisible({ timeout: 5_000 });
-    console.log('✅ DatePicker renders in canvas');
   });
 
   test('PF-31: Switch (primitive) → isContainer → Auto Layout IS shown', async () => {

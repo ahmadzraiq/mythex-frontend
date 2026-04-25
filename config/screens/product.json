@@ -20,7 +20,7 @@
       },
       "children": [
         {
-          "type": "Heading",
+          "type": "Text",
           "props": {
             "className": "text-[24px] font-bold mb-[16px]"
           },
@@ -319,7 +319,7 @@
                           "type": "Box",
                           "children": [
                             {
-                              "type": "Heading",
+                              "type": "Text",
                               "props": {
                                 "className": "text-[30px] font-bold"
                               },
@@ -549,7 +549,7 @@
               },
               "children": [
                 {
-                  "type": "Heading",
+                  "type": "Text",
                   "props": {
                     "className": "text-[24px] font-bold text-center mb-[32px]"
                   },
@@ -583,7 +583,7 @@
                           ]
                         },
                         {
-                          "type": "Heading",
+                          "type": "Text",
                           "props": {
                             "className": "text-[20px] font-semibold text-center"
                           },
@@ -620,7 +620,7 @@
                           ]
                         },
                         {
-                          "type": "Heading",
+                          "type": "Text",
                           "props": {
                             "className": "text-[20px] font-semibold text-center"
                           },
@@ -657,7 +657,7 @@
                           ]
                         },
                         {
-                          "type": "Heading",
+                          "type": "Text",
                           "props": {
                             "className": "text-[20px] font-semibold text-center"
                           },
@@ -691,40 +691,37 @@
               },
               "children": [
                 {
-                  "type": "Heading",
+                  "type": "Text",
                   "props": {
                     "className": "text-[24px] font-bold text-center mb-[32px]"
                   },
                   "text": "Frequently Asked Questions"
                 },
                 {
-                  "type": "Accordion",
+                  "type": "Box",
                   "props": {
-                    "type": "single",
-                    "variant": "unfilled",
                     "className": "w-full"
                   },
                   "children": [
                     {
-                      "type": "AccordionItem",
+                      "type": "Box",
                       "props": {
-                        "value": "shipping",
                         "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
-                          "type": "AccordionHeader",
+                          "type": "Box",
                           "children": [
                             {
-                              "type": "AccordionTrigger",
+                              "type": "Box",
                               "props": {
                                 "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
-                                  "type": "Heading",
+                                  "type": "Text",
                                   "props": {
-                                    "className": "!font-normal"
+                                    "className": "text-[24px] font-bold text-foreground !font-normal"
                                   },
                                   "text": "What are your shipping options?"
                                 },
@@ -736,10 +733,11 @@
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "props": {}
                         },
                         {
-                          "type": "AccordionContent",
+                          "type": "Box",
                           "props": {
                             "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
@@ -756,25 +754,24 @@
                       ]
                     },
                     {
-                      "type": "AccordionItem",
+                      "type": "Box",
                       "props": {
-                        "value": "returns",
                         "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
-                          "type": "AccordionHeader",
+                          "type": "Box",
                           "children": [
                             {
-                              "type": "AccordionTrigger",
+                              "type": "Box",
                               "props": {
                                 "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
-                                  "type": "Heading",
+                                  "type": "Text",
                                   "props": {
-                                    "className": "!font-normal"
+                                    "className": "text-[24px] font-bold text-foreground !font-normal"
                                   },
                                   "text": "What is your return policy?"
                                 },
@@ -786,10 +783,11 @@
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "props": {}
                         },
                         {
-                          "type": "AccordionContent",
+                          "type": "Box",
                           "props": {
                             "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
@@ -806,25 +804,24 @@
                       ]
                     },
                     {
-                      "type": "AccordionItem",
+                      "type": "Box",
                       "props": {
-                        "value": "tracking",
                         "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
-                          "type": "AccordionHeader",
+                          "type": "Box",
                           "children": [
                             {
-                              "type": "AccordionTrigger",
+                              "type": "Box",
                               "props": {
                                 "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
-                                  "type": "Heading",
+                                  "type": "Text",
                                   "props": {
-                                    "className": "!font-normal"
+                                    "className": "text-[24px] font-bold text-foreground !font-normal"
                                   },
                                   "text": "How can I track my order?"
                                 },
@@ -836,10 +833,11 @@
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "props": {}
                         },
                         {
-                          "type": "AccordionContent",
+                          "type": "Box",
                           "props": {
                             "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
@@ -856,25 +854,24 @@
                       ]
                     },
                     {
-                      "type": "AccordionItem",
+                      "type": "Box",
                       "props": {
-                        "value": "international",
                         "className": "border-b border-[var(--theme-border)] last:border-b-0"
                       },
                       "children": [
                         {
-                          "type": "AccordionHeader",
+                          "type": "Box",
                           "children": [
                             {
-                              "type": "AccordionTrigger",
+                              "type": "Box",
                               "props": {
                                 "className": "flex flex-row justify-between items-center w-full py-[16px] text-left text-[14px] font-medium hover:underline"
                               },
                               "children": [
                                 {
-                                  "type": "Heading",
+                                  "type": "Text",
                                   "props": {
-                                    "className": "!font-normal"
+                                    "className": "text-[24px] font-bold text-foreground !font-normal"
                                   },
                                   "text": "Do you offer international shipping?"
                                 },
@@ -886,10 +883,11 @@
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "props": {}
                         },
                         {
-                          "type": "AccordionContent",
+                          "type": "Box",
                           "props": {
                             "className": "pt-0 pb-[16px] overflow-hidden text-[14px]"
                           },
@@ -927,29 +925,32 @@
               },
               "children": [
                 {
-                  "type": "Heading",
+                  "type": "Text",
                   "props": {
                     "className": "text-[30px] md:text-[36px] font-bold mb-[32px]"
                   },
                   "text": "Related Products"
                 },
                 {
-                  "type": "Carousel",
+                  "type": "Box",
                   "props": {
-                    "className": "w-full",
-                    "loop": true,
-                    "align": "start",
-                    "showArrows": true
+                    "className": "w-full overflow-hidden"
                   },
                   "children": [
                     {
-                      "type": "CarouselSlide",
+                      "type": "Box",
+                      "props": {
+                        "className": "flex flex-row gap-[16px] overflow-x-auto snap-x snap-mandatory scroll-smooth pb-[8px] -mx-[16px] px-[16px]"
+                      },
+                      "children": [
+                    {
+                      "type": "Box",
                       "map": {
                         "formula": "filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)"
                       },
                       "key": "relatedProduct",
                       "props": {
-                        "className": "basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                        "className": "snap-start shrink-0 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                       },
                       "children": [
                         {
@@ -1024,6 +1025,8 @@
                             "name": "Product Card"
                           }
                         }
+                      ]
+                    }
                       ]
                     }
                   ]

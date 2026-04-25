@@ -10,7 +10,7 @@
     },
     "children": [
       {
-        "type": "Heading",
+        "type": "Text",
         "props": {
           "className": "text-[30px] font-bold mb-[32px]"
         },
@@ -24,7 +24,7 @@
         "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[30px] font-bold mb-[16px]"
             },
@@ -329,7 +329,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[20px] font-bold mb-[16px]"
                     },
@@ -503,7 +503,7 @@
                         }
                       },
                       {
-                        "type": "Heading",
+                        "type": "Text",
                         "props": {
                           "className": "text-[18px]"
                         },
@@ -600,18 +600,12 @@
                         "id": "835d52a6-ac9f-4c42-90ef-90f286617010",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "placeholder": "Enter code",
+                          "name": "couponCode"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "props": {
-                              "className": "!text-[var(--theme-foreground)]",
-                              "placeholder": "Enter code",
-                              "name": "couponCode"
-                            }
-                          }
-                        ]
+                        "children": []
                       },
                       {
                         "type": "Box",

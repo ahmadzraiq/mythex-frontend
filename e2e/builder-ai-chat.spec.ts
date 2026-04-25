@@ -311,7 +311,7 @@ test.describe('AI Chat Panel', () => {
       const nodes = store?.pageNodes as Array<Record<string, unknown>>;
       return nodes?.[nodes.length - 1]?.type ?? null;
     });
-    expect(lastType).toBe('Heading');
+    expect(lastType).toBe('Text');
   });
 
   // ── AC-09: set_text tool ──────────────────────────────────────────────────
@@ -320,7 +320,7 @@ test.describe('AI Chat Panel', () => {
     await gotoBuilder(page);
     await mockThreadAPI(page);
 
-    const nodeId = await addNodeToCanvas(page, 'Heading', 'Original Text');
+    const nodeId = await addNodeToCanvas(page, 'Text', 'Original Text');
 
     await mockBuilderChat(page, [
       { type: 'text_delta', content: 'Updated the text.' },
@@ -344,7 +344,7 @@ test.describe('AI Chat Panel', () => {
     await gotoBuilder(page);
     await mockThreadAPI(page);
 
-    const nodeId = await addNodeToCanvas(page, 'Heading', 'Styled Heading');
+    const nodeId = await addNodeToCanvas(page, 'Text', 'Styled Heading');
 
     await mockBuilderChat(page, [
       { type: 'text_delta', content: 'Changed the color.' },
@@ -369,7 +369,7 @@ test.describe('AI Chat Panel', () => {
     await gotoBuilder(page);
     await mockThreadAPI(page);
 
-    const nodeId = await addNodeToCanvas(page, 'Heading', 'Click Me');
+    const nodeId = await addNodeToCanvas(page, 'Text', 'Click Me');
 
     await openAiMode(page);
 
@@ -456,7 +456,7 @@ test.describe('AI Chat Panel', () => {
     await gotoBuilder(page);
     await mockThreadAPI(page);
 
-    const nodeId = await addNodeToCanvas(page, 'Heading', 'Multi-tool test');
+    const nodeId = await addNodeToCanvas(page, 'Text', 'Multi-tool test');
 
     await mockBuilderChat(page, [
       { type: 'text_delta', content: 'Reading page then updating.' },
@@ -484,7 +484,7 @@ test.describe('AI Chat Panel', () => {
     await mockThreadAPI(page);
 
     // Pre-create a heading node with a known ID so set_text / add_class can reference it
-    const headingId = await addNodeToCanvas(page, 'Heading', 'Old Title');
+    const headingId = await addNodeToCanvas(page, 'Text', 'Old Title');
 
     const nodesBefore = await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();

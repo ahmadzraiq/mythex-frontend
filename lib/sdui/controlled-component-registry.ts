@@ -3,7 +3,7 @@
  *
  * Instead of maintaining 6+ hardcoded Sets across form-field-tracker.ts and builder files,
  * every consumer derives its list from this config. Adding a new controlled component type
- * (e.g. DatePicker, ColorPicker) only requires a single edit here.
+ * only requires a single edit here.
  *
  * valueType        — the kind of value the component holds ('text' | 'boolean' | 'number')
  * writesOwnId      — true when trackFormFieldProps writes to `{nodeId}-value` directly
@@ -36,8 +36,6 @@ export const CONTROLLED_COMPONENT_CONFIG: Record<string, ControlledComponentConf
   RadioGroup:    { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
   Select:        { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
   Slider:        { valueType: 'number',  writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  DatePicker:    { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  ColorPicker:   { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
 };
 
 /** All registered controlled component type names */
@@ -108,7 +106,7 @@ export const INPUT_FIELD_TYPES = new Set(
 );
 
 /** Types that need browser autofill suppression in builder mode (Input wrapper + InputField child) */
-export const AUTOFILL_SUPPRESS_TYPES = new Set(['Input', 'InputField']);
+export const AUTOFILL_SUPPRESS_TYPES = new Set(['Input']);
 
 /** Types that provide InputParentContext to their children so descendant InputField nodes
  *  can look up their parent Input ID for the `{parentId}-value` store slot.

@@ -15,6 +15,7 @@ import accountActions from '@/config/actions/account.json';
 import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
 import workflowTestActions from '@/config/actions/workflow-test.json';
+import javascriptTestActions from '@/config/actions/javascript-test.json';
 import animationTestActions from '@/config/actions/animation-test.json';
 import dsActionsJson from '@/config/actions/datasource-actions.json';
 import calculatorActions from '@/config/actions/calculator.json';
@@ -26,6 +27,7 @@ import popoverTestActions from '@/config/actions/popover-test.json';
 import animationShowcaseActions from '@/config/actions/animation-showcase.json';
 import triggersTestActions from '@/config/actions/triggers-test.json';
 import scComponentShowcaseActions from '@/config/actions/sc-component-showcase.json';
+import datepickerTestActions from '@/config/actions/datepicker-test.json';
 import sharedComponentsJson from '@/config/shared-components.json';
 import formulasJson from '@/config/formulas.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
@@ -152,6 +154,7 @@ export function getBuilderConfig() {
     ...(productsActions as Record<string, Record<string, unknown>>),
     ...(layoutActions as Record<string, Record<string, unknown>>),
     ...(workflowTestActions as Record<string, Record<string, unknown>>),
+    ...(javascriptTestActions as Record<string, Record<string, unknown>>),
     ...(animationTestActions as Record<string, Record<string, unknown>>),
     ...(calculatorActions as Record<string, Record<string, unknown>>),
     ...(counterExampleActions as Record<string, Record<string, unknown>>),
@@ -162,6 +165,7 @@ export function getBuilderConfig() {
     ...(animationShowcaseActions as Record<string, Record<string, unknown>>),
     ...(triggersTestActions as Record<string, Record<string, unknown>>),
     ...(scComponentShowcaseActions as Record<string, Record<string, unknown>>),
+    ...(datepickerTestActions as Record<string, Record<string, unknown>>),
   };
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)

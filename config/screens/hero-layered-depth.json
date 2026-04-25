@@ -72,7 +72,10 @@
                   "style": {
                     "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.25)",
                     "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": { "width": 0, "height": 4 },
+                    "shadowOffset": {
+                      "width": 0,
+                      "height": 4
+                    },
                     "shadowRadius": 12,
                     "shadowOpacity": 0.25,
                     "elevation": 6
@@ -94,8 +97,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               },
               {
@@ -119,8 +128,14 @@
                   }
                 ],
                 "animation": {
-                  "hover": { "scale": 1.05, "duration": 200 },
-                  "press": { "scale": 0.95, "duration": 100 }
+                  "hover": {
+                    "scale": 1.05,
+                    "duration": 200
+                  },
+                  "press": {
+                    "scale": 0.95,
+                    "duration": 100
+                  }
                 }
               }
             ],
@@ -150,7 +165,10 @@
               "style": {
                 "boxShadow": "8px 12px 32px 0px rgba(60, 7, 100, 0.18)",
                 "shadowColor": "rgb(60,7,100)",
-                "shadowOffset": { "width": 8, "height": 12 },
+                "shadowOffset": {
+                  "width": 8,
+                  "height": 12
+                },
                 "shadowRadius": 32,
                 "shadowOpacity": 0.18,
                 "elevation": 16
@@ -188,7 +206,10 @@
               "style": {
                 "boxShadow": "-4px 8px 24px 0px rgba(60, 7, 100, 0.12)",
                 "shadowColor": "rgb(60,7,100)",
-                "shadowOffset": { "width": -4, "height": 8 },
+                "shadowOffset": {
+                  "width": -4,
+                  "height": 8
+                },
                 "shadowRadius": 24,
                 "shadowOpacity": 0.12,
                 "elevation": 12

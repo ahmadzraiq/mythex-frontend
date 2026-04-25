@@ -25,7 +25,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold text-center"
                 },
@@ -80,34 +80,28 @@
                         "id": "4af26db4-61b8-4336-892d-a193e367247d",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "username",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "type": "email",
+                          "placeholder": "you@example.com",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "email"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Email is required"
-                                },
-                                {
-                                  "type": "email",
-                                  "message": "Please enter a valid email address"
-                                }
-                              ]
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Email is required"
                             },
-                            "props": {
-                              "name": "username",
-                              "className": "!text-[var(--theme-foreground)]",
+                            {
                               "type": "email",
-                              "placeholder": "you@example.com",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "email"
+                              "message": "Please enter a valid email address"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",
@@ -170,30 +164,24 @@
                         "id": "98eec7ff-2cc7-4b03-b19f-47a47e96ef77",
                         "props": {
                           "variant": "outline",
-                          "size": "sm"
+                          "size": "sm",
+                          "name": "password",
+                          "className": "!text-[var(--theme-foreground)]",
+                          "secureTextEntry": true,
+                          "placeholder": "••••••••",
+                          "placeholderTextColor": "#9ca3af",
+                          "autoComplete": "current-password"
                         },
-                        "children": [
-                          {
-                            "type": "InputField",
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Password is required"
-                                }
-                              ]
-                            },
-                            "props": {
-                              "name": "password",
-                              "className": "!text-[var(--theme-foreground)]",
-                              "secureTextEntry": true,
-                              "placeholder": "••••••••",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "current-password"
+                        "children": [],
+                        "_validation": {
+                          "trigger": "submit",
+                          "rules": [
+                            {
+                              "type": "required",
+                              "message": "Password is required"
                             }
-                          }
-                        ]
+                          ]
+                        }
                       },
                       {
                         "type": "Box",

@@ -1,5 +1,7 @@
 {
-  "meta": { "title": "Counter Example" },
+  "meta": {
+    "title": "Counter Example"
+  },
   "state": {},
   "layout": "store",
   "content": {
@@ -9,7 +11,7 @@
     },
     "children": [
       {
-        "type": "Heading",
+        "type": "Text",
         "props": {
           "className": "text-[28px] font-bold text-center text-[var(--theme-foreground)]"
         },
@@ -19,7 +21,9 @@
         "type": "Text",
         "props": {
           "className": "text-[13px] text-center mt-[6px] mb-[48px]",
-          "style": { "color": "#6b7280" }
+          "style": {
+            "color": "#6b7280"
+          }
         },
         "text": "Increment, decrement, or reset. Value is saved to localStorage."
       },
@@ -27,7 +31,9 @@
         "type": "Box",
         "props": {
           "className": "w-full max-w-[360px] rounded-[20px] flex flex-col items-center gap-[32px] py-[48px] px-[32px]",
-          "style": { "background": "#111827" }
+          "style": {
+            "background": "#111827"
+          }
         },
         "children": [
           {
@@ -47,9 +53,15 @@
                 "type": "Box",
                 "props": {
                   "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60",
-                  "style": { "background": "#374151" }
+                  "style": {
+                    "background": "#374151"
+                  }
                 },
-                "actions": [{ "action": "counterDecrement" }],
+                "actions": [
+                  {
+                    "action": "counterDecrement"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
@@ -64,9 +76,15 @@
                 "type": "Box",
                 "props": {
                   "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60",
-                  "style": { "background": "#3b82f6" }
+                  "style": {
+                    "background": "#3b82f6"
+                  }
                 },
-                "actions": [{ "action": "counterIncrement" }],
+                "actions": [
+                  {
+                    "action": "counterIncrement"
+                  }
+                ],
                 "children": [
                   {
                     "type": "Text",
@@ -84,13 +102,19 @@
             "props": {
               "className": "flex flex-col items-center gap-[4px] cursor-pointer"
             },
-            "actions": [{ "action": "counterReset" }],
+            "actions": [
+              {
+                "action": "counterReset"
+              }
+            ],
             "children": [
               {
                 "type": "Text",
                 "props": {
                   "className": "text-[12px] font-medium hover:opacity-80",
-                  "style": { "color": "#6b7280" }
+                  "style": {
+                    "color": "#6b7280"
+                  }
                 },
                 "text": "Reset to 0"
               }
@@ -102,14 +126,19 @@
         "type": "Box",
         "props": {
           "className": "mt-[32px] w-full max-w-[360px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px]",
-          "style": { "background": "#0f172a", "border": "1px solid #1e293b" }
+          "style": {
+            "background": "#0f172a",
+            "border": "1px solid #1e293b"
+          }
         },
         "children": [
           {
             "type": "Text",
             "props": {
               "className": "text-[11px] font-semibold",
-              "style": { "color": "#3b82f6" }
+              "style": {
+                "color": "#3b82f6"
+              }
             },
             "text": "localStorage active"
           },
@@ -117,7 +146,9 @@
             "type": "Text",
             "props": {
               "className": "text-[11px]",
-              "style": { "color": "#4b5563" }
+              "style": {
+                "color": "#4b5563"
+              }
             },
             "text": "This counter uses saveInLocalStorage: true. Change the value, refresh the page — it restores automatically. Reverts to 0 (default) only clears the stored key."
           }
@@ -130,7 +161,7 @@
         },
         "children": [
           {
-            "type": "Heading",
+            "type": "Text",
             "props": {
               "className": "text-[22px] font-bold text-center text-[var(--theme-foreground)]"
             },
@@ -140,7 +171,9 @@
             "type": "Text",
             "props": {
               "className": "text-[13px] text-center max-w-[480px]",
-              "style": { "color": "#6b7280" }
+              "style": {
+                "color": "#6b7280"
+              }
             },
             "text": "Each CounterCard below is an instance of the same shared component. They share the same UI definition but each has an independent counter — demonstrating per-instance variable isolation."
           },
@@ -152,7 +185,10 @@
             "children": [
               {
                 "type": "Box",
-                "_shared": { "id": "sc-counter-card", "name": "Counter Card" },
+                "_shared": {
+                  "id": "sc-counter-card",
+                  "name": "Counter Card"
+                },
                 "id": "counter-card-instance-a",
                 "props": {
                   "title": "Counter A",
@@ -195,26 +231,46 @@
                         },
                         "children": [
                           {
-                            "type": "Button",
+                            "type": "Box",
                             "id": "sc-counter-increment-btn",
                             "props": {
-                              "action": "primary",
-                              "size": "sm",
-                              "className": "!rounded-lg"
+                              "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] bg-[var(--theme-primary)] hover:opacity-90 !rounded-lg"
                             },
-                            "actions": [{ "action": "cc-do-increment" }],
-                            "children": [{ "type": "ButtonText", "text": "+ Add" }]
+                            "actions": [
+                              {
+                                "action": "cc-do-increment"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "+ Add",
+                                "props": {
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                }
+                              }
+                            ]
                           },
                           {
-                            "type": "Button",
+                            "type": "Box",
                             "id": "sc-counter-reset-btn",
                             "props": {
-                              "action": "outline",
-                              "size": "sm",
-                              "className": "!rounded-lg"
+                              "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 !rounded-lg"
                             },
-                            "actions": [{ "action": "cc-do-reset" }],
-                            "children": [{ "type": "ButtonText", "text": "Reset" }]
+                            "actions": [
+                              {
+                                "action": "cc-do-reset"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "Reset",
+                                "props": {
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                }
+                              }
+                            ]
                           }
                         ]
                       }
@@ -224,7 +280,10 @@
               },
               {
                 "type": "Box",
-                "_shared": { "id": "sc-counter-card", "name": "Counter Card" },
+                "_shared": {
+                  "id": "sc-counter-card",
+                  "name": "Counter Card"
+                },
                 "id": "counter-card-instance-b",
                 "props": {
                   "title": "Counter B",
@@ -267,26 +326,46 @@
                         },
                         "children": [
                           {
-                            "type": "Button",
+                            "type": "Box",
                             "id": "sc-counter-increment-btn",
                             "props": {
-                              "action": "primary",
-                              "size": "sm",
-                              "className": "!rounded-lg"
+                              "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] bg-[var(--theme-primary)] hover:opacity-90 !rounded-lg"
                             },
-                            "actions": [{ "action": "cc-do-increment" }],
-                            "children": [{ "type": "ButtonText", "text": "+ Add" }]
+                            "actions": [
+                              {
+                                "action": "cc-do-increment"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "+ Add",
+                                "props": {
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                }
+                              }
+                            ]
                           },
                           {
-                            "type": "Button",
+                            "type": "Box",
                             "id": "sc-counter-reset-btn",
                             "props": {
-                              "action": "outline",
-                              "size": "sm",
-                              "className": "!rounded-lg"
+                              "className": "flex flex-row items-center justify-center px-[20px] py-[10px] rounded-[6px] border border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 !rounded-lg"
                             },
-                            "actions": [{ "action": "cc-do-reset" }],
-                            "children": [{ "type": "ButtonText", "text": "Reset" }]
+                            "actions": [
+                              {
+                                "action": "cc-do-reset"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "Reset",
+                                "props": {
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                }
+                              }
+                            ]
                           }
                         ]
                       }
@@ -300,14 +379,19 @@
             "type": "Box",
             "props": {
               "className": "mt-4 w-full max-w-[540px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px]",
-              "style": { "background": "#0f172a", "border": "1px solid #1e293b" }
+              "style": {
+                "background": "#0f172a",
+                "border": "1px solid #1e293b"
+              }
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
                   "className": "text-[11px] font-semibold",
-                  "style": { "color": "#a78bfa" }
+                  "style": {
+                    "color": "#a78bfa"
+                  }
                 },
                 "text": "Instance isolation"
               },
@@ -315,7 +399,9 @@
                 "type": "Text",
                 "props": {
                   "className": "text-[11px]",
-                  "style": { "color": "#4b5563" }
+                  "style": {
+                    "color": "#4b5563"
+                  }
                 },
                 "text": "Counter A and Counter B share the same component definition (sc-counter-card) but each maintains its own count via per-instance variable slots. Clicking Add on one card does not affect the other."
               }

@@ -49,7 +49,7 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
     let value: unknown;
     if (rawValue != null && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
       const obj = rawValue as Record<string, unknown>;
-      if (typeof obj.formula === 'string') {
+      if (typeof obj.formula === 'string' || typeof obj.js === 'string') {
         // FormulaValue { formula: "..." } — evaluate with full state + normalized event
         const sduiData = ((ctx.useSduiStore?.getState() as Record<string, unknown> | undefined)?.data ?? {}) as Record<string, unknown>;
         const storeState = ctx.store?.getState?.() as { getFullState?: () => Record<string, unknown>; data?: Record<string, unknown> } | undefined;
@@ -89,7 +89,9 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
             scopeKeys: Object.keys(ctx.scope ?? {}),
           });
         }
-        value = evaluateFormula(obj.formula, evalCtx, ctx.get).value ?? null;
+        // Pass the wrapper object so evaluateFormula auto-routes between
+        // { formula } and { js } bindings.
+        value = evaluateFormula(obj as object, evalCtx, ctx.get).value ?? null;
       } else {
         value = resolvePayload(obj, ctx.get, ctx.scope);
       }
@@ -106,8 +108,15 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
       ? (componentCtx.component as Record<string, unknown>).id as string | undefined
       : undefined;
     const scModel = modelId ? (() => {
-      try { return require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
-      try { return require('@/config/shared-components.json')[modelId]; } catch { /* noop */ }
+      try {
+        const m = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId];
+        if (m) return m;
+      } catch { /* noop */ }
+      try {
+        const m = require('@/config/shared-components.json')[modelId];
+        if (m) return m;
+      } catch { /* noop */ }
+      try { return require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ }
       return undefined;
     })() : undefined;
     const isComponentVar = instanceId && scModel?.variables && path in scModel.variables;

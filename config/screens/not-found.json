@@ -22,14 +22,14 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[96px] font-bold text-[var(--theme-muted-foreground)]"
                 },
                 "text": "404"
               },
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold"
                 },

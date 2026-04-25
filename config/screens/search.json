@@ -135,7 +135,7 @@
             },
             "children": [
               {
-                "type": "Heading",
+                "type": "Text",
                 "props": {
                   "className": "text-[30px] font-bold"
                 },
@@ -164,7 +164,7 @@
                     },
                     "children": [
                       {
-                        "type": "Heading",
+                        "type": "Text",
                         "props": {
                           "className": "font-semibold text-[18px] text-[var(--theme-foreground)]"
                         },

@@ -1,114 +1,433 @@
 {
-  "meta": { "title": "Navbar Types Showcase" },
+  "meta": {
+    "title": "Navbar Types Showcase"
+  },
   "state": {},
   "ui": {
     "type": "Box",
-    "props": { "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950" },
+    "props": {
+      "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950"
+    },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "w-full max-w-5xl mx-auto px-6 py-16 flex flex-col gap-10" },
+        "props": {
+          "className": "w-full max-w-5xl mx-auto px-6 py-16 flex flex-col gap-10"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex flex-col gap-3" },
+            "props": {
+              "className": "flex flex-col gap-3"
+            },
             "children": [
-              { "type": "Heading", "props": { "size": "3xl", "className": "font-bold text-gray-900 dark:text-white" }, "text": "Navbar Types Showcase" },
-              { "type": "Text", "props": { "className": "text-lg text-gray-500 dark:text-gray-400" }, "text": "Explore 9 different navigation patterns. Each page has enough scrollable content to demonstrate the navbar behavior." }
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white"
+                },
+                "text": "Navbar Types Showcase"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-lg text-gray-500 dark:text-gray-400"
+                },
+                "text": "Explore 9 different navigation patterns. Each page has enough scrollable content to demonstrate the navbar behavior."
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" },
+            "props": {
+              "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarFixed" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarFixed"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:pin", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Fixed Navbar" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Always visible, anchored to the viewport top. Classic pattern for most websites." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:pin",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Fixed Navbar"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Always visible, anchored to the viewport top. Classic pattern for most websites."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarSticky" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarSticky"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:sticky-note", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Sticky Navbar" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Flows with the page until it hits the top, then sticks. Pure CSS, no JavaScript." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:sticky-note",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Sticky Navbar"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Flows with the page until it hits the top, then sticks. Pure CSS, no JavaScript."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarTransparent" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarTransparent"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:eye", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Transparent \u2192 Solid" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Starts fully transparent over a hero image, background fades in as you scroll." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:eye",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Transparent → Solid"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Starts fully transparent over a hero image, background fades in as you scroll."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarBlur" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarBlur"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:sparkles", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Frosted Glass" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Semi-transparent with backdrop blur. Classic macOS/iOS style." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:sparkles",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Frosted Glass"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Semi-transparent with backdrop blur. Classic macOS/iOS style."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarFloating" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarFloating"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:circle", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Floating Pill" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Detached, pill-shaped bar hovering above the page content." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:circle",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Floating Pill"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Detached, pill-shaped bar hovering above the page content."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarCentered" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarCentered"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:align-center", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Centered Logo" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Logo in the exact center, nav links split left and right. Fashion/editorial style." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:align-center",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Centered Logo"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Logo in the exact center, nav links split left and right. Fashion/editorial style."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarSidebar" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarSidebar"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:panel-left", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Vertical Sidebar" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Full-height left sidebar replaces the top bar. Common in dashboards." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:panel-left",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Vertical Sidebar"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Full-height left sidebar replaces the top bar. Common in dashboards."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarBottom" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarBottom"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:smartphone", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Bottom Tab Bar" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Mobile-native bottom navigation. No top bar at all." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:smartphone",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Bottom Tab Bar"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Mobile-native bottom navigation. No top bar at all."
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg" },
-                "actions": [{ "action": "navigateToNavbarScrollAware" }],
+                "props": {
+                  "className": "flex flex-col gap-3 p-6 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer hover:shadow-lg"
+                },
+                "actions": [
+                  {
+                    "action": "navigateToNavbarScrollAware"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center" }, "children": [{ "type": "Icon", "props": { "icon": "lucide:arrow-up-down", "size": 20, "color": "#ffffff" } }] },
-                  { "type": "Text", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "Scroll-Aware (Auto-hide)" },
-                  { "type": "Text", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "Hides on scroll down, reappears on scroll up. Uses live scroll tracking engine." }
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:arrow-up-down",
+                          "size": 20,
+                          "color": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "Scroll-Aware (Auto-hide)"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "Hides on scroll down, reappears on scroll up. Uses live scroll tracking engine."
+                  }
                 ]
               }
             ]

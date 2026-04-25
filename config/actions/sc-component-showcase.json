@@ -28,12 +28,7 @@
       {
         "id": "s1",
         "type": "executeComponentAction",
-        "config": {
-          "action": "cal-wf-select-day",
-          "args": {
-            "date": { "formula": "context?.item?.data?.dateStr" }
-          }
-        }
+        "config": { "action": "cal-wf-select-day" }
       }
     ]
   },

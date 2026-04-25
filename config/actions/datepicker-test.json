@@ -1,0 +1,24 @@
+{
+  "wfOnDatePickerDateSelected": {
+    "name": "On DatePicker date selected",
+    "trigger": "dp-t-on-date-selected",
+    "steps": [
+      {
+        "id": "store-date",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dpdemo-selected-date-0000-000000000001",
+          "value": { "formula": "context?.event?.date" }
+        }
+      },
+      {
+        "id": "bump-count",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dpdemo-event-count-0000-000000000002",
+          "value": { "formula": "(variables['dpdemo-event-count-0000-000000000002'] ?? 0) + 1" }
+        }
+      }
+    ]
+  }
+}

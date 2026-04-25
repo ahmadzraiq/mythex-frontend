@@ -28,6 +28,7 @@ import accountProfile from './screens/account-profile.json';
 import orderConfirmation from './screens/order-confirmation.json';
 import notFound from './screens/not-found.json';
 import workflowTest from './screens/workflow-test.json';
+import javascriptTest from './screens/javascript-test.json';
 import animationTest from './screens/animation-test.json';
 import heroShowcase from './screens/hero-showcase.json';
 import pricingCardTest from './screens/pricing-card-test.json';
@@ -67,8 +68,8 @@ import navbarScrollAware from './screens/navbar-scroll-aware.json';
 import popoverTest from './screens/popover-test.json';
 import animationShowcase from './screens/animation-showcase.json';
 import triggersTest from './screens/triggers-test.json';
-import scComponentShowcase from './screens/sc-component-showcase.json';
 import workflowCallTest from './screens/workflow-call-test.json';
+import datepickerTest from './screens/datepicker-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -85,6 +86,7 @@ import productsActions from './actions/products.json';
 import layoutActions from './actions/layout.json';
 import dataSourceActions from './actions/datasource-actions.json';
 import workflowTestActions from './actions/workflow-test.json';
+import javascriptTestActions from './actions/javascript-test.json';
 import animationTestActions from './actions/animation-test.json';
 import controlsShowcaseActions from './actions/controls-showcase.json';
 import calculatorActions from './actions/calculator.json';
@@ -96,6 +98,7 @@ import popoverTestActions from './actions/popover-test.json';
 import animationShowcaseActions from './actions/animation-showcase.json';
 import triggersTestActions from './actions/triggers-test.json';
 import scComponentShowcaseActions from './actions/sc-component-showcase.json';
+import datepickerTestActions from './actions/datepicker-test.json';
 
 const screens = {
   home,
@@ -117,6 +120,7 @@ const screens = {
   orderConfirmation,
   notFound,
   workflowTest,
+  javascriptTest,
   animationTest,
   heroShowcase,
   pricingCardTest,
@@ -156,8 +160,8 @@ const screens = {
   popoverTest,
   animationShowcase,
   triggersTest,
-  scComponentShowcase,
   workflowCallTest,
+  datepickerTest,
 };
 
 const layouts = {
@@ -177,6 +181,7 @@ const actions = {
   ...layoutActions,
   ...dataSourceActions,
   ...workflowTestActions,
+  ...javascriptTestActions,
   ...animationTestActions,
   ...controlsShowcaseActions,
   ...calculatorActions,
@@ -188,6 +193,7 @@ const actions = {
   ...animationShowcaseActions,
   ...triggersTestActions,
   ...scComponentShowcaseActions,
+  ...datepickerTestActions,
 };
 
 const actionsByFile = {
@@ -199,6 +205,7 @@ const actionsByFile = {
   layout: layoutActions,
   dataSources: dataSourceActions,
   workflowTest: workflowTestActions,
+  javascriptTest: javascriptTestActions,
   animationTest: animationTestActions,
   controlsShowcase: controlsShowcaseActions,
   calculator: calculatorActions,
@@ -210,6 +217,7 @@ const actionsByFile = {
   animationShowcase: animationShowcaseActions,
   triggersTest: triggersTestActions,
   scComponentShowcase: scComponentShowcaseActions,
+  datepickerTest: datepickerTestActions,
 };
 
 export const root = {

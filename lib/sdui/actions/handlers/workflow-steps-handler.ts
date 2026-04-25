@@ -15,6 +15,7 @@
 
 import type { ActionHandlerContext, ActionDef } from './types';
 import { evaluateFormula } from '../../formula-evaluator';
+import { evaluateJsAsync } from '../../javascript-evaluator';
 import { getGlobalVariableStore } from '../../global-variable-store';
 import { setNestedValue } from '../../nested-utils';
 import { buildAuthHeaders, clearStoredToken, setStoredToken, setStoredAuthSnapshot, clearStoredAuthSnapshot, getStoredAuthSnapshot } from '../../auth-token-storage';
@@ -207,6 +208,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'breakLoop':
     case 'continueLoop':
     case 'passThroughCondition':
+    case 'runJavaScript':
     case 'unconfigured':
       return null;
 
@@ -220,6 +222,34 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
  * Accepts a plain string, a { formula: "..." } object, or a JSON-stringified
  * version of the formula object — all three are normalised to the formula string.
  */
+/**
+ * Evaluate a condition / value field that may be a `{ formula }` binding,
+ * a `{ js }` binding, a plain formula string, or a JSON-stringified version.
+ * Returns the resolved value or `undefined` when nothing is configured.
+ */
+function evaluateBindingValue(raw: unknown, ctx: Record<string, unknown>): unknown {
+  if (raw == null) return undefined;
+  // Object binding — { formula } or { js }
+  if (typeof raw === 'object') {
+    return evaluateFormula(raw as object, ctx).value;
+  }
+  // String binding — try JSON-wrapped object first, else treat as a formula string
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (!t) return undefined;
+    if (t.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(t);
+        if (typeof parsed === 'object' && parsed !== null && ('formula' in parsed || 'js' in parsed)) {
+          return evaluateFormula(parsed as object, ctx).value;
+        }
+      } catch { /* not JSON — treat as plain formula string */ }
+    }
+    return evaluateFormula(t, ctx).value;
+  }
+  return raw;
+}
+
 function resolveFormulaToString(raw: unknown): string | undefined {
   if (!raw) return undefined;
   if (typeof raw === 'object' && raw !== null) {
@@ -302,12 +332,19 @@ function buildFormulaCtx(
       };
     } catch { /* non-fatal */ }
   }
+  // Merge scopeCtx OVER vsState.context so callers that supply per-component
+  // scope still win, while still falling back to runtime values flushed into
+  // the global state by `flushWorkflowCtx` (e.g. context.workflow[stepId].result)
+  // and the forEach handler (context.item.data). Without this fallback, JS
+  // bindings like `context.workflow.calc.result` evaluate to undefined inside
+  // workflow steps even though formulas read them correctly.
+  const stateContext = (vsState['context'] as Record<string, unknown> | undefined) ?? {};
   return {
     ...vsState,
     variables: vsState,
     ...(ctx.scope ?? {}),
     ...(parameters ? { parameters } : {}),
-    context: scopeCtx,
+    context: { ...stateContext, ...scopeCtx },
   };
 }
 
@@ -331,13 +368,13 @@ async function runSteps(
     // can reference context.workflow['prevStepId'].result — no "on error" or
     // "default" branches; the formula itself handles error cases.
     if (step.type === 'branch') {
-      const condFormula = resolveFormulaToString(step.config?.condition);
+      const rawCond = step.config?.condition;
       const condPath    = step.config?.conditionPath as string | undefined;
       let condResult: unknown;
-      if (condFormula) {
+      if (rawCond != null && rawCond !== '') {
         const vsState = getGlobalVariableStore().getState().getFullState();
         const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
-        condResult = evaluateFormula(condFormula, formulaCtx).value;
+        condResult = evaluateBindingValue(rawCond, formulaCtx);
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
       }
@@ -360,10 +397,10 @@ async function runSteps(
       if (rawItems !== undefined && rawItems !== null && rawItems !== '') {
         if (Array.isArray(rawItems)) {
           items = rawItems;
-        } else if (typeof rawItems === 'object' && 'formula' in (rawItems as object)) {
+        } else if (typeof rawItems === 'object' && ('formula' in (rawItems as object) || 'js' in (rawItems as object))) {
           const fullState = getGlobalVariableStore().getState().getFullState();
           const resolved = evaluateFormula(rawItems as Record<string, unknown>, fullState);
-          items = Array.isArray(resolved) ? resolved : [];
+          items = Array.isArray(resolved.value) ? (resolved.value as unknown[]) : [];
         } else if (typeof rawItems === 'string') {
           // Try as a variable UUID / state path first, then as JSON literal
           const fromState = ctx.get(rawItems) as unknown;
@@ -404,13 +441,13 @@ async function runSteps(
     // ── Structural: While loop ────────────────────────────────────────────────
     if (step.type === 'whileLoop') {
       const condPath = (step.config?.conditionPath as string) ?? '';
-      const condFormula = resolveFormulaToString(step.config?.condition);
+      const rawCond = step.config?.condition;
       let guard = 0; // safety limit
       const checkCond = () => {
-        if (condFormula) {
+        if (rawCond != null && rawCond !== '') {
           const vsState = getGlobalVariableStore().getState().getFullState();
           const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
-          return Boolean(evaluateFormula(condFormula, formulaCtx).value);
+          return Boolean(evaluateBindingValue(rawCond, formulaCtx));
         }
         return condPath ? Boolean(ctx.get(condPath)) : false;
       };
@@ -440,13 +477,13 @@ async function runSteps(
     // If the condition is false, stop executing further steps in the current
     // sequence (return from runSteps). If true, continue to next step.
     if (step.type === 'passThroughCondition') {
-      const condFormula = resolveFormulaToString(step.config?.condition);
+      const rawCond = step.config?.condition;
       const condPath = step.config?.conditionPath as string | undefined;
       let condResult: unknown;
-      if (condFormula) {
+      if (rawCond != null && rawCond !== '') {
         const vsState = getGlobalVariableStore().getState().getFullState();
         const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
-        condResult = evaluateFormula(condFormula, formulaCtx).value;
+        condResult = evaluateBindingValue(rawCond, formulaCtx);
       } else {
         condResult = condPath ? ctx.get(condPath) : false;
       }
@@ -459,12 +496,12 @@ async function runSteps(
     // each branch's label, runs the matched branch or defaultBranch.
     if (step.type === 'multiOptionBranch') {
       const conditionPath = step.config?.conditionPath as string | undefined;
-      const conditionFormula = resolveFormulaToString(step.config?.condition);
+      const rawCond = step.config?.condition;
       let value: unknown;
-      if (conditionFormula) {
+      if (rawCond != null && rawCond !== '') {
         const vsState = getGlobalVariableStore().getState().getFullState();
         const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
-        value = evaluateFormula(conditionFormula, formulaCtx).value;
+        value = evaluateBindingValue(rawCond, formulaCtx);
       } else if (conditionPath) {
         value = ctx.get(conditionPath);
       }
@@ -791,6 +828,7 @@ async function runSteps(
         let scModel: { workflows?: Record<string, { steps: WorkflowStep[]; params?: Array<{ name: string }> }> } | undefined;
         try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
         if (!scModel) { try { scModel = require('@/config/shared-components.json')[modelId]; } catch { /* noop */ } }
+        if (!scModel) { try { scModel = require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ } }
 
         const wf = scModel?.workflows?.[workflowId];
         if (typeof window !== 'undefined') {
@@ -887,6 +925,100 @@ async function runSteps(
       continue;
     }
 
+    // ── emitComponentTrigger: fire a custom component trigger ───────────────
+    // WeWeb-parity custom triggers. The step runs from inside a component's
+    // own workflow; it looks up the SC instance via scope.context.component.instanceId
+    // and hands (triggerId, payload) to the registered dispatcher. The dispatcher
+    // (installed by the renderer on the matching instance) walks node.actions,
+    // resolves each workflow via actionsConfig, and runs those whose trigger
+    // matches with context.event = payload in scope.
+    //
+    // Payload source: the trigger declaration on the ambient component model
+    // owns the payload template (`trigger.payload` — literal JSON or a bound
+    // formula). Emit sites are parameter-free — they just name the trigger;
+    // the handler evaluates `trigger.payload` against the current workflow
+    // scope so the listener receives the real runtime value (e.g. the actual
+    // clicked date, not a docs sample).
+    if (step.type === 'emitComponentTrigger') {
+      const cfg = (step.config ?? {}) as Record<string, unknown>;
+      const triggerId = cfg.triggerId as string | undefined;
+      const componentCtx = (ctx.scope?.context as Record<string, unknown> | undefined) ?? {};
+      const compInfo = (componentCtx.component ?? {}) as Record<string, unknown>;
+      const instanceId = (cfg.instanceId as string | undefined) ?? (compInfo.instanceId as string | undefined);
+      const modelId = compInfo.id as string | undefined;
+
+      if (!triggerId || !instanceId) {
+        if (typeof window !== 'undefined') {
+          console.warn('[emitComponentTrigger] missing triggerId or instanceId', { triggerId, instanceId });
+        }
+        if (step.id) {
+          workflowCtx[step.id] = { result: null, error: null };
+          flushWorkflowCtx(workflowCtx);
+        }
+        continue;
+      }
+
+      // Locate the trigger declaration on the ambient model so we can read
+      // its payload template. Fall back to any legacy `cfg.payload` override
+      // so existing authored content keeps working.
+      let triggerPayload: unknown = undefined;
+      if (modelId) {
+        let model: { triggers?: Array<{ id: string; payload?: unknown }> } | undefined;
+        try { model = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
+        if (!model) { try { model = require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ } }
+        const t = model?.triggers?.find(x => x.id === triggerId);
+        if (t && 'payload' in t) triggerPayload = t.payload;
+      }
+      const rawPayload = triggerPayload !== undefined ? triggerPayload : cfg.payload;
+
+      let resolvedPayload: unknown = null;
+      if (rawPayload !== undefined) {
+        if (rawPayload && typeof rawPayload === 'object' && 'formula' in (rawPayload as Record<string, unknown>)) {
+          const vsState = getGlobalVariableStore().getState().getFullState();
+          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+          resolvedPayload = evaluateFormula((rawPayload as { formula: string }).formula, formulaCtx).value;
+        } else if (typeof rawPayload === 'string') {
+          // Trigger.payload can be a literal JSON string (authored in the
+          // code editor when the user hasn't bound a formula). Parse it if
+          // possible so listeners receive a real object, not a string blob.
+          const trimmed = rawPayload.trim();
+          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+            try { resolvedPayload = JSON.parse(trimmed); }
+            catch { resolvedPayload = rawPayload; }
+          } else {
+            resolvedPayload = rawPayload;
+          }
+        } else if (rawPayload && typeof rawPayload === 'object') {
+          const vsState = getGlobalVariableStore().getState().getFullState();
+          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+          const out: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(rawPayload as Record<string, unknown>)) {
+            out[k] = v && typeof v === 'object' && 'formula' in (v as object)
+              ? evaluateFormula((v as { formula: string }).formula, formulaCtx).value
+              : v;
+          }
+          resolvedPayload = out;
+        } else {
+          resolvedPayload = rawPayload;
+        }
+      }
+
+      try {
+        const { emitComponentTriggerToInstance } = require('@/lib/sdui/component-trigger-registry') as typeof import('@/lib/sdui/component-trigger-registry');
+        emitComponentTriggerToInstance(instanceId, triggerId, resolvedPayload);
+      } catch (err) {
+        if (typeof window !== 'undefined') {
+          console.warn('[emitComponentTrigger] dispatch failed', err);
+        }
+      }
+
+      if (step.id) {
+        workflowCtx[step.id] = { result: resolvedPayload ?? null, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
     // ── Raw ActionRef (serialized runNamedAction: { action: "name" }) ─────────
     if (!step.type && (step as unknown as Record<string, unknown>).action) {
       const result = await ctx.runOne(step as unknown as unknown as import('../../types').SDUIAction);
@@ -895,6 +1027,46 @@ async function runSteps(
         flushWorkflowCtx(workflowCtx);
       }
       if (result != null) lastResult = result;
+      continue;
+    }
+
+    // ── runJavaScript: execute the user's async JS body with wwLib helpers ───
+    // The body sees a writable `variables` Proxy (sets go through the global
+    // variable store) and the full `wwLib` API (variables/collections/workflow/
+    // parameters + navigateTo). Result is stored at context.workflow[stepId].
+    if (step.type === 'runJavaScript') {
+      const code = (step.config?.code as string | undefined) ?? '';
+      let stepResult: unknown = undefined;
+      let stepError: unknown = null;
+      try {
+        const vsState = getGlobalVariableStore().getState().getFullState();
+        const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+        const wwLibCtx = {
+          workflow: workflowCtx,
+          parameters,
+          refetchCollection: async (uuid: string) => {
+            // Re-use the existing fetchCollection action for refetches by UUID.
+            try {
+              return await ctx.runOne({ type: 'fetchCollection', collectionId: uuid } as unknown as import('../../types').SDUIAction);
+            } catch {
+              return undefined;
+            }
+          },
+        };
+        const out = await evaluateJsAsync(code, formulaCtx, wwLibCtx);
+        if (out.error) {
+          stepError = out.error;
+          if (typeof window !== 'undefined') console.error('[runJavaScript] step error:', out.error);
+        } else {
+          stepResult = out.value;
+        }
+      } catch (err) {
+        stepError = err instanceof Error ? err.message : String(err);
+        if (typeof window !== 'undefined') console.error('[runJavaScript] step threw:', err);
+      }
+      workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
+      flushWorkflowCtx(workflowCtx);
+      if (stepResult != null && !stepError) lastResult = stepResult;
       continue;
     }
 

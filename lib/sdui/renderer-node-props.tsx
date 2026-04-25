@@ -24,15 +24,15 @@ import { AUTOFILL_SUPPRESS_TYPES } from './controlled-component-registry';
 export const PRESS_ONLY_TYPES = new Set(['MenuItem', 'MenuItemLabel']);
 
 /** Components that natively handle their own press/click (no transparent wrapper needed) */
-export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box', 'HStack', 'VStack', 'Center']);
+export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box']);
 
 /** Interactive components that receive a `disabled` prop for preview-state dimming */
-export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'InputField']);
+export const INTERACTIVE_TYPES = new Set(['Input', 'Select']);
 
 /** Components that legitimately accept onChangeText (React Native TextInput-based).
  *  All other components strip it to avoid React's "Unknown event handler property" warning
  *  when they render as <div> on web. */
-export const CHANGE_TEXT_TYPES = new Set(['Input', 'InputField', 'TextareaInput']);
+export const CHANGE_TEXT_TYPES = new Set(['Input', 'TextareaInput']);
 
 /** Components that are already clickable — no transparent click-wrapper div needed */
 export const ALREADY_CLICKABLE = new Set([
@@ -42,9 +42,6 @@ export const ALREADY_CLICKABLE = new Set([
   // Layout primitives render as div (web) / View — they receive bubbled clicks directly.
   // Wrapping them duplicates onClick on an outer display:contents div → double workflow runs.
   'Box',
-  'HStack',
-  'VStack',
-  'Center',
 ]);
 
 // ── Standalone React component ────────────────────────────────────────────────

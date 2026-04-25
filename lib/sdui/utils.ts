@@ -46,6 +46,16 @@ export function resolveText(
       if (suffix || prefix) return prefix + str + suffix;
       return str;
     }
+    if ('js' in text) {
+      // JavaScript binding — evaluate via evaluateFormula which auto-routes
+      // { js } objects to the JS evaluator.
+      const { suffix = '', prefix = '', template } = text as { suffix?: string; prefix?: string; template?: string };
+      const evalResult = evaluateFormula(text as object, context.state ?? {});
+      const str = String(evalResult.value ?? '');
+      if (template != null) return template.replace('{0}', str);
+      if (suffix || prefix) return prefix + str + suffix;
+      return str;
+    }
     if ('var' in text) {
       const v = text.var;
       const path = Array.isArray(v) ? String(v[0]) : String(v);
@@ -130,11 +140,12 @@ export function resolveProps(
         const val = context.get(String(path), scope);
         const finalVal = val !== undefined && val !== null ? val : fallback;
         resolved[key] = coerceValue(finalVal);
-      } else if ('formula' in obj) {
+      } else if ('formula' in obj || 'js' in obj) {
         try {
-          const f = obj.formula;
+          // evaluateFormula auto-detects { js } vs { formula }; pass the wrapper
+          // object directly so JavaScript bindings get routed to the JS evaluator.
           const evalResult = evaluateFormula(
-            (typeof f === 'string' ? f : f) as string | object,
+            obj as unknown as string | object,
             context.state ?? {}
           );
           if (evalResult.value != null && typeof evalResult.value !== 'object') {
@@ -146,7 +157,9 @@ export function resolveProps(
         } catch {
           // CSS expressions like calc(100% - 24px) are not valid JS but are valid CSS.
           // Return the formula string as-is so the browser CSS engine can handle it.
-          resolved[key] = (value as { formula?: string }).formula ?? value;
+          resolved[key] = (value as { formula?: string; js?: string }).formula
+            ?? (value as { formula?: string; js?: string }).js
+            ?? value;
         }
       } else if ('action' in obj && runAction) {
         resolved[key] = () => runAction(obj);

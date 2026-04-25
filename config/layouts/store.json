@@ -634,14 +634,17 @@
         ]
       },
       {
-        "type": "Drawer",
+        "type": "Box",
         "props": {
-          "anchor": "right"
+          "className": "fixed inset-0 z-[50] flex flex-row justify-end"
         },
         "condition": "variables['c2d3e4f5-a6b7-8901-cdef-012345678901']",
         "children": [
           {
-            "type": "DrawerBackdrop",
+            "type": "Box",
+            "props": {
+              "className": "absolute inset-0 bg-black/50"
+            },
             "actions": [
               {
                 "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
@@ -649,13 +652,14 @@
             ]
           },
           {
-            "type": "DrawerContent",
+            "type": "Box",
             "props": {
-              "className": "w-full max-w-[384px]"
+              "className": "relative z-[1] w-full max-w-[384px] h-full bg-[var(--theme-background)] flex flex-col p-[24px] gap-[16px]",
+              "animation": { "enter": { "type": "slideInRight", "duration": 300 } }
             },
             "children": [
               {
-                "type": "DrawerHeader",
+                "type": "Box",
                 "props": {
                   "className": "border-b border-[var(--theme-border)] pb-[16px]"
                 },
@@ -667,20 +671,26 @@
                     },
                     "children": [
                       {
-                        "type": "Heading",
+                        "type": "Text",
                         "props": {
                           "className": "text-[18px] font-bold"
                         },
                         "text": "Shopping Cart"
                       },
                       {
-                        "type": "DrawerCloseButton",
+                        "type": "Box",
                         "props": {
-                          "className": "h-[32px] w-[32px] rounded-[6px] border-[0px] bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center"
+                          "className": "h-[32px] w-[32px] rounded-[6px] bg-transparent hover:bg-[var(--theme-muted)] flex items-center justify-center cursor-pointer"
                         },
                         "actions": [
                           {
                             "action": "90ca7f64-f883-45db-95b6-b2bb3c46033e"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": { "icon": "lucide:x", "size": 16, "color": "var(--theme-foreground)" }
                           }
                         ]
                       }
@@ -689,7 +699,7 @@
                 ]
               },
               {
-                "type": "DrawerBody",
+                "type": "Box",
                 "props": {
                   "className": "overflow-y-auto flex-1 py-[16px]"
                 },
@@ -815,9 +825,9 @@
                 ]
               },
               {
-                "type": "DrawerFooter",
+                "type": "Box",
                 "props": {
-                  "className": "border-t border-[var(--theme-border)] pt-[16px] space-y-[12px]"
+                  "className": "flex flex-col border-t border-[var(--theme-border)] pt-[16px] gap-[12px]"
                 },
                 "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
                 "children": [

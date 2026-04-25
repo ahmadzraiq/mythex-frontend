@@ -792,7 +792,7 @@ export function ActionBuilder({ value, onChange, availableEvents, inMapContext, 
 
 export function eventsForNodeType(type: string): EventTrigger[] {
   const clickable = new Set(['Box', 'Card', 'Image', 'Fab']);
-  const inputlike = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput', 'Select', 'Switch', 'Checkbox', 'Radio', 'Slider']);
+  const inputlike = new Set(['Input', 'Textarea', 'TextareaInput', 'Select', 'Switch', 'Checkbox', 'Radio', 'Slider']);
   const formlike  = new Set(['Form']);
 
   const events: EventTrigger[] = ['mount'];

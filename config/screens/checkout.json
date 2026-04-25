@@ -30,7 +30,7 @@
     },
     "children": [
       {
-        "type": "Heading",
+        "type": "Text",
         "props": {
           "className": "text-[30px] font-bold mb-[32px]"
         },
@@ -205,19 +205,15 @@
                               {
                                 "type": "Input",
                                 "id": "b95d1c1c-ee10-486d-87a6-7a0377f89c3c",
-                                "children": [
+                                "children": [],
+                                "props": {
+                                  "type": "email",
+                                  "placeholder": "you@example.com",
+                                  "name": "emailAddress"
+                                },
+                                "actions": [
                                   {
-                                    "type": "InputField",
-                                    "props": {
-                                      "type": "email",
-                                      "placeholder": "you@example.com",
-                                      "name": "emailAddress"
-                                    },
-                                    "actions": [
-                                      {
-                                        "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
-                                      }
-                                    ]
+                                    "action": "5c58aa71-3ce1-41d2-bb5a-843420fd1f64"
                                   }
                                 ]
                               },
@@ -261,18 +257,14 @@
                                   {
                                     "type": "Input",
                                     "id": "f8b58a4e-cc33-4251-b011-03d9cbd2731f",
-                                    "children": [
+                                    "children": [],
+                                    "props": {
+                                      "placeholder": "Jane",
+                                      "name": "firstName"
+                                    },
+                                    "actions": [
                                       {
-                                        "type": "InputField",
-                                        "props": {
-                                          "placeholder": "Jane",
-                                          "name": "firstName"
-                                        },
-                                        "actions": [
-                                          {
-                                            "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
-                                          }
-                                        ]
+                                        "action": "c0a77baf-974c-4d07-b006-4f4b4f5a6a15"
                                       }
                                     ]
                                   },
@@ -310,18 +302,14 @@
                                   {
                                     "type": "Input",
                                     "id": "b98e947e-6d8b-4bf4-8c1b-50150981624b",
-                                    "children": [
+                                    "children": [],
+                                    "props": {
+                                      "placeholder": "Doe",
+                                      "name": "lastName"
+                                    },
+                                    "actions": [
                                       {
-                                        "type": "InputField",
-                                        "props": {
-                                          "placeholder": "Doe",
-                                          "name": "lastName"
-                                        },
-                                        "actions": [
-                                          {
-                                            "action": "a6836452-b059-47c2-932c-c60504eef105"
-                                          }
-                                        ]
+                                        "action": "a6836452-b059-47c2-932c-c60504eef105"
                                       }
                                     ]
                                   },
@@ -501,15 +489,11 @@
                               {
                                 "type": "Input",
                                 "id": "379f02f5-a9a2-42a5-a780-2fdca8210bc1",
-                                "children": [
-                                  {
-                                    "type": "InputField",
-                                    "props": {
-                                      "placeholder": "Jane Doe",
-                                      "name": "fullName"
-                                    }
-                                  }
-                                ]
+                                "children": [],
+                                "props": {
+                                  "placeholder": "Jane Doe",
+                                  "name": "fullName"
+                                }
                               }
                             ]
                           },
@@ -529,15 +513,11 @@
                               {
                                 "type": "Input",
                                 "id": "31551507-b134-461a-846c-079bace012b0",
-                                "children": [
-                                  {
-                                    "type": "InputField",
-                                    "props": {
-                                      "placeholder": "Acme Inc",
-                                      "name": "company"
-                                    }
-                                  }
-                                ]
+                                "children": [],
+                                "props": {
+                                  "placeholder": "Acme Inc",
+                                  "name": "company"
+                                }
                               }
                             ]
                           },
@@ -557,18 +537,14 @@
                               {
                                 "type": "Input",
                                 "id": "5f7d8425-4db0-4694-93e7-307c4bf93c2d",
-                                "children": [
+                                "children": [],
+                                "props": {
+                                  "placeholder": "123 Main St",
+                                  "name": "streetLine1"
+                                },
+                                "actions": [
                                   {
-                                    "type": "InputField",
-                                    "props": {
-                                      "placeholder": "123 Main St",
-                                      "name": "streetLine1"
-                                    },
-                                    "actions": [
-                                      {
-                                        "action": "26539321-c80d-450d-b20b-14b4692d412e"
-                                      }
-                                    ]
+                                    "action": "26539321-c80d-450d-b20b-14b4692d412e"
                                   }
                                 ]
                               },
@@ -606,15 +582,11 @@
                               {
                                 "type": "Input",
                                 "id": "8c526473-7985-459b-8ba3-b5ff1c99fed3",
-                                "children": [
-                                  {
-                                    "type": "InputField",
-                                    "props": {
-                                      "placeholder": "Apt 4",
-                                      "name": "streetLine2"
-                                    }
-                                  }
-                                ]
+                                "children": [],
+                                "props": {
+                                  "placeholder": "Apt 4",
+                                  "name": "streetLine2"
+                                }
                               }
                             ]
                           },
@@ -640,15 +612,11 @@
                                   {
                                     "type": "Input",
                                     "id": "932e9e98-56ad-4c53-bb33-0d715bdd159e",
-                                    "children": [
-                                      {
-                                        "type": "InputField",
-                                        "props": {
-                                          "placeholder": "New York",
-                                          "name": "city"
-                                        }
-                                      }
-                                    ]
+                                    "children": [],
+                                    "props": {
+                                      "placeholder": "New York",
+                                      "name": "city"
+                                    }
                                   }
                                 ]
                               },
@@ -668,15 +636,11 @@
                                   {
                                     "type": "Input",
                                     "id": "15dcd140-b650-4076-9571-fab69accc117",
-                                    "children": [
-                                      {
-                                        "type": "InputField",
-                                        "props": {
-                                          "placeholder": "NY",
-                                          "name": "province"
-                                        }
-                                      }
-                                    ]
+                                    "children": [],
+                                    "props": {
+                                      "placeholder": "NY",
+                                      "name": "province"
+                                    }
                                   }
                                 ]
                               },
@@ -696,15 +660,11 @@
                                   {
                                     "type": "Input",
                                     "id": "6cf558a1-49b0-4ab7-a798-957d50884588",
-                                    "children": [
-                                      {
-                                        "type": "InputField",
-                                        "props": {
-                                          "placeholder": "10001",
-                                          "name": "postalCode"
-                                        }
-                                      }
-                                    ]
+                                    "children": [],
+                                    "props": {
+                                      "placeholder": "10001",
+                                      "name": "postalCode"
+                                    }
                                   }
                                 ]
                               },
@@ -722,85 +682,25 @@
                                     "text": "Country *"
                                   },
                                   {
-                                    "type": "Select",
+                                    "type": "Box",
                                     "props": {
-                                      "selectedValue": "{{local.data.form.formData.countryCode}}",
-                                      "className": "w-full"
+                                      "className": "flex flex-row items-center justify-between gap-[8px] px-[12px] py-[8px] rounded-[6px] border border-border bg-background min-w-[200px]"
                                     },
-                                    "actions": [
-                                      {
-                                        "action": "20fabfae-065c-4391-8b6d-93e530a608e8"
-                                      }
-                                    ],
                                     "children": [
                                       {
-                                        "type": "SelectTrigger",
+                                        "type": "Text",
                                         "props": {
-                                          "className": "w-full !rounded-[6px] !border-[var(--theme-border)] !bg-[var(--theme-card)] min-h-[40px]"
+                                          "className": "text-[14px] text-muted-foreground"
                                         },
-                                        "children": [
-                                          {
-                                            "type": "SelectInput",
-                                            "props": {
-                                              "placeholder": "Select country...",
-                                              "className": "!text-[var(--theme-foreground)]"
-                                            }
-                                          },
-                                          {
-                                            "type": "Icon",
-                                            "children": [
-                                              {
-                                                "type": "Icon",
-                                                "props": {
-                                                  "icon": "lucide:chevron-down",
-                                                  "size": 16,
-                                                  "color": "#6b7280"
-                                                }
-                                              }
-                                            ]
-                                          }
-                                        ]
+                                        "text": "Select placeholder"
                                       },
                                       {
-                                        "type": "SelectPortal",
-                                        "children": [
-                                          {
-                                            "type": "SelectBackdrop"
-                                          },
-                                          {
-                                            "type": "SelectContent",
-                                            "props": {
-                                              "className": "max-h-[300px]"
-                                            },
-                                            "children": [
-                                              {
-                                                "type": "SelectDragIndicatorWrapper",
-                                                "children": [
-                                                  {
-                                                    "type": "SelectDragIndicator"
-                                                  }
-                                                ]
-                                              },
-                                              {
-                                                "type": "Box",
-                                                "map": "checkout.countries",
-                                                "key": "country",
-                                                "props": {
-                                                  "className": "contents"
-                                                },
-                                                "children": [
-                                                  {
-                                                    "type": "SelectItem",
-                                                    "props": {
-                                                      "label": "{{context.item.data.name}}",
-                                                      "value": "{{context.item.data.code}}"
-                                                    }
-                                                  }
-                                                ]
-                                              }
-                                            ]
-                                          }
-                                        ]
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:chevron-down",
+                                          "size": 16,
+                                          "color": "#6b7280"
+                                        }
                                       }
                                     ]
                                   },
@@ -840,16 +740,12 @@
                               {
                                 "type": "Input",
                                 "id": "4513c0cd-5d4a-43c3-b804-ef8278843021",
-                                "children": [
-                                  {
-                                    "type": "InputField",
-                                    "props": {
-                                      "type": "tel",
-                                      "placeholder": "+1 234 567 8900",
-                                      "name": "phoneNumber"
-                                    }
-                                  }
-                                ]
+                                "children": [],
+                                "props": {
+                                  "type": "tel",
+                                  "placeholder": "+1 234 567 8900",
+                                  "name": "phoneNumber"
+                                }
                               }
                             ]
                           },
@@ -1747,7 +1643,7 @@
                 },
                 "children": [
                   {
-                    "type": "Heading",
+                    "type": "Text",
                     "props": {
                       "className": "text-[18px] font-bold"
                     },

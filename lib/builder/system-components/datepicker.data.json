@@ -1,0 +1,468 @@
+{
+  "id": "sys-datepicker",
+  "name": "DatePicker",
+  "description": "Date picker with popover-style month grid. Each instance keeps its own year, month and selected date. Supports initialDate / minDate / maxDate props. Grid is derived from current state on every render, no rebuild workflow.",
+  "properties": [
+    { "id": "prop-dp-initial-date", "name": "initialDate", "type": "text", "defaultValue": "" },
+    { "id": "prop-dp-min-date",     "name": "minDate",     "type": "text", "defaultValue": "" },
+    { "id": "prop-dp-max-date",     "name": "maxDate",     "type": "text", "defaultValue": "" }
+  ],
+  "triggers": [
+    {
+      "id": "dp-t-on-date-selected",
+      "name": "On date selected",
+      "payload": { "formula": "{ date: context?.item?.data?.dateStr }" }
+    }
+  ],
+  "variables": {
+    "dp-v-year-uuid": {
+      "label": "year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "DatePicker"
+    },
+    "dp-v-month-uuid": {
+      "label": "month (0-11)",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "DatePicker"
+    },
+    "dp-v-selected-date-uuid": {
+      "label": "selectedDate",
+      "type": "string",
+      "initialValue": "",
+      "folder": "DatePicker"
+    },
+    "dp-v-is-open-uuid": {
+      "label": "isOpen",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "DatePicker"
+    }
+  },
+  "workflows": {
+    "dp-wf-init": {
+      "id": "dp-wf-init",
+      "name": "Init",
+      "trigger": "created",
+      "steps": [
+        {
+          "id": "init-year",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-year-uuid",
+            "value": { "formula": "context?.component?.props?.initialDate ? Number(String(context.component.props.initialDate).slice(0,4)) : new Date().getFullYear()" }
+          }
+        },
+        {
+          "id": "init-month",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-month-uuid",
+            "value": { "formula": "context?.component?.props?.initialDate ? Number(String(context.component.props.initialDate).slice(5,7)) - 1 : new Date().getMonth()" }
+          }
+        },
+        {
+          "id": "init-selected",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-selected-date-uuid",
+            "value": { "formula": "context?.component?.props?.initialDate || ''" }
+          }
+        }
+      ]
+    },
+    "dp-wf-prop-change": {
+      "id": "dp-wf-prop-change",
+      "name": "On initialDate change",
+      "trigger": "propertyChange",
+      "steps": [
+        {
+          "id": "sync-selected",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-selected-date-uuid",
+            "value": { "formula": "context?.component?.props?.initialDate" }
+          }
+        },
+        {
+          "id": "sync-year",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-year-uuid",
+            "value": { "formula": "Number(String(context.component.props.initialDate).slice(0,4))" }
+          }
+        },
+        {
+          "id": "sync-month",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-month-uuid",
+            "value": { "formula": "Number(String(context.component.props.initialDate).slice(5,7)) - 1" }
+          }
+        }
+      ]
+    },
+    "dp-wf-prev-month": {
+      "id": "dp-wf-prev-month",
+      "name": "Previous Month",
+      "trigger": "click",
+      "steps": [
+        {
+          "id": "wrap-year-check",
+          "type": "branch",
+          "config": { "condition": "(context?.component?.variables?.['dp-v-month-uuid'] ?? 0) === 0" },
+          "trueBranch": [
+            {
+              "id": "dec-year",
+              "type": "changeVariableValue",
+              "config": {
+                "variableName": "dp-v-year-uuid",
+                "value": { "formula": "(context?.component?.variables?.['dp-v-year-uuid'] ?? new Date().getFullYear()) - 1" }
+              }
+            },
+            {
+              "id": "set-month-11",
+              "type": "changeVariableValue",
+              "config": { "variableName": "dp-v-month-uuid", "value": 11 }
+            }
+          ],
+          "falseBranch": [
+            {
+              "id": "dec-month",
+              "type": "changeVariableValue",
+              "config": {
+                "variableName": "dp-v-month-uuid",
+                "value": { "formula": "(context?.component?.variables?.['dp-v-month-uuid'] ?? 0) - 1" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "dp-wf-next-month": {
+      "id": "dp-wf-next-month",
+      "name": "Next Month",
+      "trigger": "click",
+      "steps": [
+        {
+          "id": "wrap-year-check",
+          "type": "branch",
+          "config": { "condition": "(context?.component?.variables?.['dp-v-month-uuid'] ?? 0) === 11" },
+          "trueBranch": [
+            {
+              "id": "inc-year",
+              "type": "changeVariableValue",
+              "config": {
+                "variableName": "dp-v-year-uuid",
+                "value": { "formula": "(context?.component?.variables?.['dp-v-year-uuid'] ?? new Date().getFullYear()) + 1" }
+              }
+            },
+            {
+              "id": "set-month-0",
+              "type": "changeVariableValue",
+              "config": { "variableName": "dp-v-month-uuid", "value": 0 }
+            }
+          ],
+          "falseBranch": [
+            {
+              "id": "inc-month",
+              "type": "changeVariableValue",
+              "config": {
+                "variableName": "dp-v-month-uuid",
+                "value": { "formula": "(context?.component?.variables?.['dp-v-month-uuid'] ?? 0) + 1" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "dp-wf-select-day": {
+      "id": "dp-wf-select-day",
+      "name": "Select Day",
+      "trigger": "click",
+      "description": "Store the clicked day cell's date and close the popover. Out-of-range dates are gated at the cell level (non-clickable).",
+      "steps": [
+        {
+          "id": "store-selected",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-selected-date-uuid",
+            "value": { "formula": "context?.item?.data?.dateStr" }
+          }
+        },
+        {
+          "id": "close-popover",
+          "type": "changeVariableValue",
+          "config": { "variableName": "dp-v-is-open-uuid", "value": false }
+        },
+        {
+          "id": "emit-date-selected",
+          "type": "emitComponentTrigger",
+          "config": { "triggerId": "dp-t-on-date-selected" }
+        }
+      ]
+    },
+    "dp-wf-go-today": {
+      "id": "dp-wf-go-today",
+      "name": "Go To Today",
+      "trigger": "click",
+      "steps": [
+        {
+          "id": "year-today",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-year-uuid",
+            "value": { "formula": "new Date().getFullYear()" }
+          }
+        },
+        {
+          "id": "month-today",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-month-uuid",
+            "value": { "formula": "new Date().getMonth()" }
+          }
+        },
+        {
+          "id": "select-today",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "dp-v-selected-date-uuid",
+            "value": { "formula": "new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0')" }
+          }
+        }
+      ]
+    },
+    "dp-wf-clear": {
+      "id": "dp-wf-clear",
+      "name": "Clear Selection",
+      "trigger": "click",
+      "steps": [
+        {
+          "id": "reset-selected",
+          "type": "resetVariableValue",
+          "config": { "variableName": "dp-v-selected-date-uuid", "defaultValue": "" }
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "inline-flex flex-row items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md cursor-pointer hover:border-blue-400 bg-white dark:bg-gray-900"
+    },
+    "popover": {
+      "trigger": "click",
+      "placement": "bottom-start",
+      "offset": 6,
+      "openVariable": "dp-v-is-open-uuid"
+    },
+    "children": [
+      {
+        "type": "Icon",
+        "props": {
+          "icon": "lucide:calendar",
+          "size": 16
+        }
+      },
+      {
+        "type": "Text",
+        "props": {
+          "className": "text-sm text-gray-700 dark:text-gray-200 flex-1"
+        },
+        "text": {
+          "formula": "context?.component?.variables?.['dp-v-selected-date-uuid'] || context?.component?.props?.initialDate || '(select a date)'"
+        }
+      },
+      {
+        "type": "Box",
+        "_popoverContent": true,
+        "props": {
+          "className": "min-w-[280px] bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-lg"
+        },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center justify-between px-1 pb-2" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                    },
+                    "actions": [{ "action": "dp-wf-prev-month" }],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:chevron-left",
+                          "size": 16,
+                          "color": "#6b7280"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-sm font-semibold text-gray-800 dark:text-gray-200" },
+                    "text": {
+                      "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['dp-v-month-uuid'] ?? 0] + ' ' + (context?.component?.variables?.['dp-v-year-uuid'] ?? new Date().getFullYear())"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-7 h-7 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                    },
+                    "actions": [{ "action": "dp-wf-next-month" }],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:chevron-right",
+                          "size": 16,
+                          "color": "#6b7280"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-7" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Su" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Mo" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Tu" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "We" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Th" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Fr" },
+                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center py-1" }, "text": "Sa" }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-7" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "map": { "formula": "Array.from({length:42},(_,i)=>{const yr=context?.component?.variables?.['dp-v-year-uuid']??new Date().getFullYear();const mo=context?.component?.variables?.['dp-v-month-uuid']??0;const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';const today=new Date();const tStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');const sel=context?.component?.variables?.['dp-v-selected-date-uuid']||'';const minD=context?.component?.props?.minDate||'';const maxD=context?.component?.props?.maxDate||'';const isDisabled=inM&&((minD&&ds<minD)||(maxD&&ds>maxD));return{day:d,inMonth:inM,dateStr:ds,isToday:ds===tStr,isSelected:ds===sel&&ds.length>0,isDisabled:isDisabled,idx:i}})" },
+                    "key": "context.item.data.idx",
+                    "props": { "className": "contents" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isDisabled && context?.item?.data?.isSelected",
+                        "props": {
+                          "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full bg-blue-600"
+                        },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[13px] text-white font-semibold" },
+                            "text": "{{context.item.data.day}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isDisabled && !context?.item?.data?.isSelected && context?.item?.data?.isToday",
+                        "props": {
+                          "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full border-2 border-blue-600"
+                        },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[13px] font-semibold text-gray-800 dark:text-gray-200" },
+                            "text": "{{context.item.data.day}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isDisabled && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",
+                        "props": {
+                          "className": "flex items-center justify-center w-9 h-9 cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                        },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[13px] text-gray-700 dark:text-gray-300" },
+                            "text": "{{context.item.data.day}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && context?.item?.data?.isDisabled",
+                        "props": { "className": "flex items-center justify-center w-9 h-9 cursor-not-allowed" },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[13px] text-gray-300 dark:text-gray-600" },
+                            "text": "{{context.item.data.day}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "!context?.item?.data?.inMonth",
+                        "props": { "className": "flex items-center justify-center w-9 h-9" },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[13px] text-gray-300 dark:text-gray-600" },
+                            "text": "{{context.item.data.day}}"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row gap-1.5 pt-3 border-t border-gray-100 dark:border-gray-800" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                    },
+                    "actions": [{ "action": "dp-wf-go-today" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200" },
+                        "text": "Today"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                    },
+                    "actions": [{ "action": "dp-wf-clear" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200" },
+                        "text": "Clear"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+  },
+  "isBuiltIn": true,
+  "icon": "📅"
+}

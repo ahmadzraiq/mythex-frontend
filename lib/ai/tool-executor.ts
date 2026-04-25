@@ -138,7 +138,7 @@ function getTemplate(label: string): SDUINode | null {
         primitive.aiStrip === 'all'
           ? []
           : (templateNode.children as SDUINode[]).filter(
-              (c: SDUINode) => c.type !== 'Heading' && c.type !== 'Text'
+              (c: SDUINode) => c.type !== 'Text'
             );
       (templateNode as unknown as Record<string, unknown>).children = stripped;
     }
@@ -3337,11 +3337,11 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       base.children = [];
     }
 
-    // Propagate node.text to the first Text/Heading child when the parent has children
+    // Propagate node.text to the first Text child when the parent has children
     // (e.g. Badge Box with text: "Most Popular" should pass that text to its inner Text node).
     if (node.text && Array.isArray(base.children)) {
       const textChild = (base.children as Record<string, unknown>[]).find(c =>
-        c.type === 'Text' || c.type === 'Heading'
+        c.type === 'Text'
       );
       if (textChild) {
         const textVal = toTextValue(node.text as string);
