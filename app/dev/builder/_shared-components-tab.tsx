@@ -152,8 +152,8 @@ function DefaultValueInput({ type, value, onChange }: { type: string; value: unk
 
   if (type === 'color') return <FigmaColorPicker value={s || '#000000'} onChange={c => onChange(c)} />;
 
-  if (type === 'any') {
-  return (
+  if (type === 'any' || type === 'list') {
+    return (
       <div style={{ borderRadius: 5, overflow: 'hidden', border: '1px solid #374151' }}>
         <Suspense fallback={<textarea value={s} onChange={e => onChange(e.target.value)} rows={4} style={{ ...INPUT_BASE, border: 'none', fontFamily: 'monospace', resize: 'vertical' }} />}>
           <CodeMirror value={s} height="110px" extensions={[cmJson()]} theme={oneDark}
@@ -162,12 +162,44 @@ function DefaultValueInput({ type, value, onChange }: { type: string; value: unk
             style={{ fontSize: 12 }}
           />
         </Suspense>
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
   if (type === 'number') return <input type="number" value={s} onChange={e => onChange(e.target.value)} placeholder="0" style={INPUT_BASE} />;
-  return <input value={s} onChange={e => onChange(e.target.value)} placeholder="Default value…" style={INPUT_BASE} />;
+
+  if (type === 'size') {
+    const match = s.match(/^([\d.]+)(.*)$/);
+    const num = match ? match[1] : '';
+    const unit = match ? match[2] : 'px';
+    return (
+      <div style={{ display: 'flex', gap: 4 }}>
+        <input
+          type="number"
+          value={num}
+          onChange={e => onChange(`${e.target.value}${unit || 'px'}`)}
+          placeholder="0"
+          style={{ ...INPUT_BASE, flex: 1 }}
+        />
+        <select
+          value={unit || 'px'}
+          onChange={e => onChange(`${num}${e.target.value}`)}
+          style={{ ...INPUT_BASE, width: 52 }}
+        >
+          {['px', '%', 'vh', 'vw'].map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </div>
+    );
+  }
+
+  return (
+    <input
+      value={s}
+      onChange={e => onChange(e.target.value)}
+      placeholder={type === 'icon' ? 'lucide:check' : type === 'link' ? 'https://…' : 'Default value…'}
+      style={INPUT_BASE}
+    />
+  );
 }
 
 // ─── Type badge ───────────────────────────────────────────────────────────────
@@ -178,6 +210,10 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   boolean: { bg: '#6d28d9', color: '#ede9fe' },
   color:   { bg: '#b45309', color: '#fef3c7' },
   any:     { bg: '#065f46', color: '#d1fae5' },
+  size:    { bg: '#0c4a6e', color: '#bae6fd' },
+  select:  { bg: '#3b0764', color: '#e9d5ff' },
+  icon:    { bg: '#292524', color: '#d6d3d1' },
+  list:    { bg: '#14532d', color: '#bbf7d0' },
 };
 
 function TypeBadge({ type }: { type: string }) {
@@ -274,15 +310,69 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
         {/* Type */}
         <div>
           <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Type</label>
-          <select value={prop.type} onChange={e => onUpdate('type', e.target.value)}
-            style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}>
+          <select
+            value={prop.type}
+            onChange={e => {
+              onUpdate('type', e.target.value);
+              if (e.target.value === 'select' && !prop.options?.length) {
+                onUpdate('options', [{ label: 'Option 1', value: 'option-1' }]);
+              }
+            }}
+            style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
+          >
             <option value="text">text</option>
             <option value="number">number</option>
+            <option value="size">size</option>
             <option value="boolean">boolean</option>
+            <option value="select">select</option>
+            <option value="icon">icon</option>
             <option value="color">color</option>
+            <option value="list">list</option>
             <option value="any">any (JSON)</option>
           </select>
         </div>
+
+        {/* Select options editor */}
+        {prop.type === 'select' && (
+          <div>
+            <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Options</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {(prop.options ?? []).map((opt, i) => (
+                <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <input
+                    value={opt.label}
+                    onChange={e => {
+                      const next = [...(prop.options ?? [])];
+                      next[i] = { ...next[i], label: e.target.value };
+                      onUpdate('options', next);
+                    }}
+                    placeholder="Label"
+                    style={{ ...INPUT_BASE, padding: '3px 6px', fontSize: 10, flex: 1 }}
+                  />
+                  <input
+                    value={opt.value}
+                    onChange={e => {
+                      const next = [...(prop.options ?? [])];
+                      next[i] = { ...next[i], value: e.target.value };
+                      onUpdate('options', next);
+                    }}
+                    placeholder="value"
+                    style={{ ...INPUT_BASE, padding: '3px 6px', fontSize: 10, flex: 1, fontFamily: 'monospace' }}
+                  />
+                  <button
+                    onClick={() => onUpdate('options', (prop.options ?? []).filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                  >×</button>
+                </div>
+              ))}
+              <button
+                onClick={() => onUpdate('options', [...(prop.options ?? []), { label: '', value: '' }])}
+                style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: '1px dashed #374151', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
+              >+ Add option</button>
+            </div>
+          </div>
+        )}
+
         {/* Default value — color gets controlled picker to suppress outside-click */}
         <div>
           <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Default value</label>
@@ -293,6 +383,15 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
               open={colorPickerOpen}
               onOpenChange={setColorPickerOpen}
             />
+          ) : prop.type === 'select' && prop.options?.length ? (
+            <select
+              value={String(prop.defaultValue ?? '')}
+              onChange={e => onUpdate('defaultValue', e.target.value)}
+              style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
+            >
+              <option value="">— none —</option>
+              {prop.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           ) : (
             <DefaultValueInput type={prop.type} value={prop.defaultValue} onChange={v => onUpdate('defaultValue', v as string)} />
           )}

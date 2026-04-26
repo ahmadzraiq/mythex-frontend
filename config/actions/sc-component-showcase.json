@@ -145,11 +145,11 @@
       { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-update-collection", "args": {} } }
     ]
   },
-  "zoo-do-upload-file": {
-    "name": "Zoo — uploadFile",
+  "zoo-do-pick-file": {
+    "name": "Zoo — pickFile",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-upload-file", "args": {} } }
+      { "id": "s1", "type": "executeComponentAction", "config": { "action": "zoo-wf-pick-file", "args": {} } }
     ]
   },
   "zoo-do-download-file": {

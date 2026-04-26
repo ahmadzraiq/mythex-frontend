@@ -1,0 +1,110 @@
+{
+  "meta": { "title": "Stepper System Component Demo" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "max-w-[640px] mx-auto flex flex-col gap-[24px] py-[48px] px-[24px]" },
+        "children": [
+          { "type": "Text", "props": { "className": "text-[24px] font-bold text-gray-900 dark:text-white" }, "text": "Stepper — Custom Trigger Demo" },
+
+          {
+            "type": "Box",
+            "_system": { "id": "sys-stepper", "name": "Stepper" },
+            "_overrides": [],
+            "props": {
+              "steps": [
+                { "label": "Step 1" },
+                { "label": "Step 2" },
+                { "label": "Step 3" }
+              ],
+              "activeStep": { "formula": "Number(variables['stepper-test-index']) || 1" },
+              "orientation": "horizontal",
+              "data-testid": "stepper-strip",
+              "className": "flex w-full",
+              "style": {
+                "flexDirection": "row",
+                "alignItems": "center",
+                "gap": "0px"
+              }
+            },
+            "actions": [{ "action": "wfOnStepClick" }],
+            "children": [
+              {
+                "type": "Box",
+                "map": { "formula": "(()=>{const steps=Array.isArray(context?.component?.props?.steps)?context.component.props.steps:[];const active=Number(context?.component?.props?.activeStep)||1;return steps.map((s,i)=>{const idx=i+1;const state=idx<active?'done':idx===active?'current':'upcoming';return{step:idx,label:s?.label||('Step '+idx),state:state,isLast:i===steps.length-1}})})()" },
+                "key": "context.item.data.step",
+                "props": { "className": "contents" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": { "formula": "'stepper-step-' + (context?.item?.data?.step || '')" },
+                      "className": "flex flex-col items-center gap-[4px] cursor-pointer"
+                    },
+                    "actions": [{ "action": "stepper-wf-step-click" }],
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[32px] h-[32px] rounded-[9999px] flex items-center justify-center",
+                          "style": {
+                            "backgroundColor": { "formula": "context?.item?.data?.state==='upcoming'?'transparent':'var(--theme-primary)'" },
+                            "borderWidth": { "formula": "context?.item?.data?.state==='upcoming'?'2px':'0'" },
+                            "borderStyle": { "formula": "context?.item?.data?.state==='upcoming'?'solid':'none'" },
+                            "borderColor": { "formula": "context?.item?.data?.state==='upcoming'?'var(--border)':'transparent'" }
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[14px] font-bold",
+                              "style": {
+                                "color": { "formula": "context?.item?.data?.state==='upcoming'?'var(--theme-muted-foreground)':'var(--theme-primary-foreground)'" }
+                              }
+                            },
+                            "text": "{{context.item.data.step}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[12px]",
+                          "style": {
+                            "color": { "formula": "context?.item?.data?.state==='upcoming'?'var(--theme-muted-foreground)':'var(--theme-primary)'" }
+                          }
+                        },
+                        "text": "{{context.item.data.label}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "condition": "!context?.item?.data?.isLast && context?.component?.props?.orientation !== 'vertical'",
+                    "props": {
+                      "className": "flex-1 h-px mx-[8px]",
+                      "style": {
+                        "backgroundColor": { "formula": "context?.item?.data?.state==='done'?'var(--theme-primary)':'var(--border)'" }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-gray-700 dark:text-gray-300", "data-testid": "out-stepper-index" },
+            "text": { "formula": "'Step: ' + (variables['stepper-test-index'] || 1)" }
+          }
+        ]
+      }
+    ]
+  }
+}

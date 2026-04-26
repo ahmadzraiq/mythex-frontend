@@ -56,7 +56,7 @@ function main() {
     !TOOL_DESCRIPTIONS.set_text.includes('nearest Text child'),
     'set_text description must not claim auto-targeting nearest Text child'
   );
-  assert.ok(phaseW.static.includes('uploadFile'), 'Phase W prompt should document uploadFile');
+  assert.ok(phaseW.static.includes('pickFile'), 'Phase W prompt should document pickFile');
   assert.ok(phaseW.static.includes('printPdf'), 'Phase W prompt should document printPdf');
   assert.ok(phaseW.static.includes('downloadFileFromUrl'), 'Phase W prompt should document downloadFileFromUrl');
   assert.ok(phaseW.static.includes('deleteSharedComponent'), 'Phase W prompt should document deleteSharedComponent');

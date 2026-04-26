@@ -39,6 +39,7 @@ interface BuilderLiveConfig {
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
+  customColors?: Array<{ name: string; light?: string; dark?: string }>;
 }
 
 function hexToRgbTriplet(hex: string): string {
@@ -83,7 +84,11 @@ function injectLiveFontIfNeeded(fontValue: string): void {
   document.head.appendChild(link);
 }
 
-function applyBuilderTheme(light: Record<string, string>, dark: Record<string, string>) {
+function applyBuilderTheme(
+  light: Record<string, string>,
+  dark: Record<string, string>,
+  customColors: Array<{ name: string; light?: string; dark?: string }> = [],
+) {
   const getOrCreate = (id: string) => {
     let el = document.getElementById(id) as HTMLStyleElement | null;
     if (!el) {
@@ -96,13 +101,27 @@ function applyBuilderTheme(light: Record<string, string>, dark: Record<string, s
     return el;
   };
 
+  // Merge customColors first; explicit theme overrides take precedence so the
+  // user can still shadow a custom color with a theme-tab override.
+  const mergedLight: Record<string, string> = {};
+  const mergedDark:  Record<string, string> = {};
+  for (const c of customColors) {
+    if (!c?.name) continue;
+    if (typeof c.light === 'string' && c.light) mergedLight[c.name] = c.light;
+    if (typeof c.dark  === 'string' && c.dark)  mergedDark[c.name]  = c.dark;
+  }
+  for (const [k, v] of Object.entries(light)) mergedLight[k] = v;
+  for (const [k, v] of Object.entries(dark))  mergedDark[k]  = v;
+
   const colorLines: string[] = [];
   const fontLines:  string[] = [];
   const baseLines:  string[] = [];
 
-  for (const [k, v] of Object.entries(light)) {
+  for (const [k, v] of Object.entries(mergedLight)) {
     if (v.startsWith('#')) {
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
+      // Keep --theme-${k} (hex) in sync so var(--theme-X) lookups resolve.
+      colorLines.push(`  --theme-${k}: ${v};`);
     } else if (k === 'font-heading' || k === 'font-body') {
       fontLines.push(`  --${k}: ${v};`);
       injectLiveFontIfNeeded(v);
@@ -117,13 +136,17 @@ function applyBuilderTheme(light: Record<string, string>, dark: Record<string, s
   if (colorLines.length) parts.push(`html:not(.dark) {\n${colorLines.join('\n')}\n}`);
   getOrCreate('builder-live-light').textContent = parts.join('\n\n');
 
-  const darkVars = Object.entries(dark).map(([k, v]) => `  --${k}: ${hexToRgbTriplet(v)};`).join('\n');
+  const darkVars = Object.entries(mergedDark).map(([k, v]) => {
+    const isHex = v.startsWith('#');
+    const triplet = `  --${k}: ${isHex ? hexToRgbTriplet(v) : v};`;
+    return isHex ? `${triplet}\n  --theme-${k}: ${v};` : triplet;
+  }).join('\n');
   getOrCreate('builder-live-dark').textContent = darkVars ? `html.dark {\n${darkVars}\n}` : '';
 
   // Keep THEME_OBJ.colors in sync so formula expressions like
   // theme?.['colors']?.['primary-foreground'] resolve to the server-loaded hex value.
-  patchThemeColors(light, 'light');
-  patchThemeColors(dark, 'dark');
+  patchThemeColors(mergedLight, 'light');
+  patchThemeColors(mergedDark, 'dark');
 }
 
 function buildLiveActionsConfig(cfg: BuilderLiveConfig): ActionsConfig {
@@ -165,8 +188,8 @@ export default function DynamicRoutePage() {
       if (e.data?.type !== 'BUILDER_LIVE_CONFIG') return;
       const cfg = e.data.config as BuilderLiveConfig;
       setBuilderLive(cfg);
-      if (cfg.themeOverrides || cfg.themeDarkOverrides) {
-        applyBuilderTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+      if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
+        applyBuilderTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
       }
       // Seed UI-created custom variables into the global store so
       // formulas like variables['uuid'] resolve in the preview.

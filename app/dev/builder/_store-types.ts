@@ -180,6 +180,32 @@ export interface CustomVar {
   fields?: Array<{ name: string; type?: string; initialValue?: unknown; validation?: Record<string, unknown> }>;
 }
 
+/**
+ * A user-defined theme color. Behaves identically to system colors:
+ * - written to the DOM as `--<name>` (rgb triplet) and `--theme-<name>` (hex)
+ * - exposed as a swatch in FigmaColorPicker
+ * - resolvable in formulas via `theme?.['colors']?.[name]`
+ *
+ * `name` must be CSS-variable-safe (lowercase letters, digits, hyphens) and
+ * must NOT collide with system color names.
+ */
+export interface CustomColor {
+  /** Stable UUID — used as React key and for edit/remove lookups */
+  id: string;
+  /** CSS-var-safe identifier (no leading "--"); also the formula key under theme.colors */
+  name: string;
+  /** Optional human-readable label shown in the panel and color picker */
+  label?: string;
+  /** Hex color used in light mode (e.g. "#7c3aed") */
+  light: string;
+  /** Hex color used in dark mode */
+  dark: string;
+  /** Folder this color belongs to (matches a Folder id in `colorFolders`) */
+  folderId?: string;
+  /** Optional description shown in the edit form */
+  description?: string;
+}
+
 export interface DataSourceConfig {
   id: string;
   name: string;
@@ -635,6 +661,8 @@ export interface BuilderStore {
   removePage: (pageId: string) => void;
   /** Update the free-canvas position of a page frame. Pushes history. */
   movePagePosition: (pageId: string, wx: number, wy: number) => void;
+  /** Rescale all page wx positions when the viewport preset changes, preventing overlap or giant gaps. */
+  rescalePagePositions: (oldVp: ViewportSize, newVp: ViewportSize) => void;
   /** Auto-focus the page that contains a given node (for layers panel). No-op if not found. */
   focusPageForNode: (nodeId: string) => void;
 
@@ -772,6 +800,18 @@ export interface BuilderStore {
   addDsFolder: (f: Folder) => void;
   updateDsFolder: (id: string, name: string) => void;
   removeDsFolder: (id: string) => void;
+  /** Folders for organising custom theme colors */
+  colorFolders: Folder[];
+  addColorFolder: (f: Folder) => void;
+  updateColorFolder: (id: string, name: string) => void;
+  removeColorFolder: (id: string) => void;
+
+  // ── Custom Theme Colors ──────────────────────────────────────────────────────
+  /** User-defined theme colors (light + dark hex values) */
+  customColors: CustomColor[];
+  addCustomColor: (c: CustomColor) => void;
+  updateCustomColor: (id: string, patch: Partial<CustomColor>) => void;
+  removeCustomColor: (id: string) => void;
 
   // ── Custom Variables ─────────────────────────────────────────────────────────
   /** User-defined variables with an initial value and type */

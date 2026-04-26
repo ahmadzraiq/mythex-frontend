@@ -37,6 +37,15 @@ const VAR = {
   jsSyncStatus: 'js-demo-0000-0000-0000-000000000008',
   jsForEachResult: 'js-demo-0000-0000-0000-000000000009',
   productItems: 'js-demo-0000-0000-0000-000000000010',
+  jsNavStatus: 'js-demo-0000-0000-0000-000000000011',
+  jsCollectionRowCount: 'js-demo-0000-0000-0000-000000000012',
+  jsPopoverState: 'js-demo-0000-0000-0000-000000000014',
+  jsAuthEmail: 'js-demo-0000-0000-0000-000000000018',
+  jsBrowserStatus: 'js-demo-0000-0000-0000-000000000019',
+  jsWorkflowReturn: 'js-demo-0000-0000-0000-000000000020',
+  jsEscapeHatchInput: 'js-demo-0000-0000-0000-000000000021',
+  jsEscapeHatchResult: 'js-demo-0000-0000-0000-000000000022',
+  jsInnerClickCount: 'js-demo-0000-0000-0000-000000000024',
 } as const;
 
 async function gotoPage(page: Page) {
@@ -199,5 +208,97 @@ test.describe('JavaScript Mode Showcase', () => {
 
     const out = page.getByTestId('js-out-foreach');
     await expect(out).toHaveText(/Processed 3 active user\(s\) out of 4\./);
+  });
+
+  // ── Action parity tests (Cards 3–12) ──────────────────────────────────────
+  // These exercise the typed wwLib helpers (navigate, popovers, auth,
+  // workflows, escape hatch, stopPropagation) end-to-end: each button fires a
+  // runJavaScript step that calls wwLib.<group>.<call>(...), which routes
+  // through the canvas dispatcher and writes back into a state variable.
+
+  test('JS-10: wwLib.popovers — open/toggle/close updates jsPopoverState', async ({ page }) => {
+    await gotoPage(page);
+    await page.getByTestId('js-btn-pop-open').scrollIntoViewIfNeeded();
+
+    expect(await readVar(page, VAR.jsPopoverState)).toBe('closed');
+
+    await page.getByTestId('js-btn-pop-open').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsPopoverState)).toBe('open');
+    await expect(page.getByTestId('js-popover-mock')).toBeVisible();
+
+    await page.getByTestId('js-btn-pop-toggle').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsPopoverState)).toBe('closed');
+
+    await page.getByTestId('js-btn-pop-toggle').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsPopoverState)).toBe('open');
+
+    await page.getByTestId('js-btn-pop-close').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsPopoverState)).toBe('closed');
+  });
+
+  test('JS-11: wwLib.auth — setUser then clearSession round-trip', async ({ page }) => {
+    await gotoPage(page);
+    await page.getByTestId('js-btn-auth-set').scrollIntoViewIfNeeded();
+
+    expect(await readVar(page, VAR.jsAuthEmail)).toBe('guest');
+
+    await page.getByTestId('js-btn-auth-set').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsAuthEmail)).toBe('override@example.com');
+
+    await page.getByTestId('js-btn-auth-clear').click();
+    await page.waitForTimeout(250);
+    expect(await readVar(page, VAR.jsAuthEmail)).toBe('guest');
+  });
+
+  test('JS-12: wwLib.workflows.run drives jsDemoIncrementCart and observes return', async ({ page }) => {
+    await gotoPage(page);
+    await page.getByTestId('js-btn-sub-workflow').scrollIntoViewIfNeeded();
+
+    await setVar(page, VAR.cartCount, 1);
+    await page.waitForTimeout(100);
+
+    await page.getByTestId('js-btn-sub-workflow').click();
+    await page.waitForTimeout(500);
+
+    expect(await readVar(page, VAR.cartCount)).toBe(2);
+    const summary = String(await readVar(page, VAR.jsWorkflowReturn) ?? '');
+    expect(summary).toMatch(/before=1/);
+    expect(summary).toMatch(/after=2/);
+    expect(summary).toMatch(/returned=/);
+  });
+
+  test('JS-13: wwLib.actions.run (escape hatch) dispatches the configured step', async ({ page }) => {
+    await gotoPage(page);
+    await page.getByTestId('js-btn-escape').scrollIntoViewIfNeeded();
+
+    // Default input is { type: "copyToClipboard", config: { text: "..." } }.
+    // We don't assert clipboard contents (browser permission), only that the
+    // escape hatch routed through the dispatcher without throwing and wrote
+    // its own status back via wwLib.variables.set.
+    await page.getByTestId('js-btn-escape').click();
+    await page.waitForTimeout(400);
+
+    const result = String(await readVar(page, VAR.jsEscapeHatchResult) ?? '');
+    expect(result).toMatch(/^ran copyToClipboard:/);
+  });
+
+  test('JS-14: wwLib.event.stopPropagation prevents outer handler from firing', async ({ page }) => {
+    await gotoPage(page);
+    await page.getByTestId('js-btn-stop-prop').scrollIntoViewIfNeeded();
+
+    const before = (await readVar(page, 'js-demo-0000-0000-0000-000000000023')) ?? 0;
+
+    // Click the inner button — should bump inner only.
+    await page.getByTestId('js-btn-stop-prop').click();
+    await page.waitForTimeout(300);
+
+    expect(await readVar(page, VAR.jsInnerClickCount)).toBe(1);
+    // Outer count must remain unchanged because stopPropagation bailed out.
+    expect((await readVar(page, 'js-demo-0000-0000-0000-000000000023')) ?? 0).toBe(before);
   });
 });

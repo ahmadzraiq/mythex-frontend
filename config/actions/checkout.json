@@ -356,14 +356,14 @@
   },
   "20fabfae-065c-4391-8b6d-93e530a608e8": {
     "name": "changeShippingCountry",
-    "trigger": "change",
+    "trigger": "sel-t-on-change",
     "steps": [
       {
         "id": "step-1",
         "type": "changeVariableValue",
         "config": {
           "variableName": "b0c1d2e3-f4a5-6789-bcde-890123456789",
-          "value": ""
+          "value": { "formula": "context?.event?.value" }
         }
       }
     ]

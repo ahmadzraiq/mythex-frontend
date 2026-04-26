@@ -297,7 +297,7 @@ function assignDefaultPagePositions(pages: BuilderPage[], vpWidth: number): Buil
 export type {
   GridOverlayConfig, ViewportSize,
   DataSourceHeader, DataSourceParam, DataSourceAuth,
-  Folder, CustomVar, DataSourceConfig,
+  Folder, CustomVar, CustomColor, DataSourceConfig,
   PageMeta, BuilderPage, HistorySnapshot, CanvasNode,
   WorkflowMeta, WorkflowParam, WorkflowCanvasTarget,
   BuilderStore,
@@ -307,7 +307,7 @@ export { VIEWPORT_WIDTHS } from './_store-types';
 
 // Local alias used by the implementation below (avoids re-importing each name)
 import type {
-  GridOverlayConfig, ViewportSize, DataSourceConfig, CustomVar,
+  GridOverlayConfig, ViewportSize, DataSourceConfig, CustomVar, CustomColor,
   Folder, WorkflowMeta, WorkflowCanvasTarget, BuilderStore,
   BuilderPage, PageMeta, HistorySnapshot, CanvasNode,
 } from './_store-types';
@@ -615,7 +615,9 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   workflowCanvasTarget: null,
   varFolders: [],
   dsFolders: [],
+  colorFolders: [],
   customVars: [],
+  customColors: [],
   pageDataSources: [],
   dsActionsMap: {} as Record<string, string>,
   engineConventions: {},
@@ -1659,6 +1661,42 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         p.id === pageId ? { ...p, wx, wy } : p
       ),
     }));
+  },
+
+  rescalePagePositions: (oldVp, newVp) => {
+    const oldW = VIEWPORT_WIDTHS[oldVp];
+    const newW = VIEWPORT_WIDTHS[newVp];
+    if (oldW === newW) return;
+    set(s => {
+      // Sort pages left-to-right by their current wx.
+      const sorted = [...(s.pages as BuilderPage[])].sort(
+        (a, b) => (a.wx ?? 0) - (b.wx ?? 0),
+      );
+
+      // Walk left-to-right: the leftmost page keeps its wx anchor; each
+      // subsequent page is placed so the *absolute pixel gap* between the
+      // right edge of its predecessor and its own left edge is preserved
+      // exactly as the user set it. Page widths grow/shrink around the gap.
+      // If pages were already overlapping at the old viewport, we clamp the
+      // gap to 0 (touching edges) rather than carrying the overlap forward.
+      const newWx: number[] = [sorted[0].wx ?? 0];
+      for (let i = 1; i < sorted.length; i++) {
+        const prevOldWx = sorted[i - 1].wx ?? 0;
+        const curOldWx  = sorted[i].wx ?? 0;
+        const gap = curOldWx - (prevOldWx + oldW); // negative if overlapping
+        newWx.push(newWx[i - 1] + newW + Math.max(0, gap));
+      }
+
+      const wxById = new Map(sorted.map((p, i) => [p.id, newWx[i]]));
+
+      return {
+        pages: (s.pages as BuilderPage[]).map(p => ({
+          ...p,
+          wx: wxById.get(p.id) ?? (p.wx ?? 0),
+          // wy intentionally unchanged — vertical arrangement is unaffected
+        })),
+      };
+    });
   },
 
   // ── Page focus ────────────────────────────────────────────────────────────────
@@ -3298,27 +3336,29 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   initTheme: () => {
     // Install bridge style tags immediately so Gluestack components respect
     // the active --primary even before the user picks a preset.
-    const { themeOverrides, themeDarkOverrides } = get();
-    _applyLightOverrides(themeOverrides);
-    _applyDarkOverrides(themeDarkOverrides);
+    const { themeOverrides, themeDarkOverrides, customColors } = get();
+    _applyLightOverrides(themeOverrides, customColors);
+    _applyDarkOverrides(themeDarkOverrides, customColors);
   },
 
   patchTheme: (cssVar, value, mode = 'light') => {
+    const { customColors } = get();
     if (mode === 'light') {
       // Read current state first, then apply DOM change, then commit to store
       const next = { ...get().themeOverrides, [cssVar]: value };
-      _applyLightOverrides(next);
+      _applyLightOverrides(next, customColors);
       set({ themeOverrides: next });
     } else {
       const next = { ...get().themeDarkOverrides, [cssVar]: value };
-      _applyDarkOverrides(next);
+      _applyDarkOverrides(next, customColors);
       set({ themeDarkOverrides: next });
     }
   },
 
   resetTheme: () => {
-    _applyLightOverrides({});
-    _applyDarkOverrides({});
+    const { customColors } = get();
+    _applyLightOverrides({}, customColors);
+    _applyDarkOverrides({}, customColors);
     set({ themeOverrides: {}, themeDarkOverrides: {} });
   },
 
@@ -3596,6 +3636,53 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     };
   }),
 
+  addColorFolder: (f) => set(s => ({ colorFolders: [...s.colorFolders.filter(x => x.id !== f.id), f] })),
+  updateColorFolder: (id, name) => set(s => ({ colorFolders: s.colorFolders.map(f => f.id === id ? { ...f, name } : f) })),
+  removeColorFolder: (id) => set(s => {
+    const toRemove = new Set<string>([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const f of s.colorFolders) {
+        if (f.parentId && toRemove.has(f.parentId) && !toRemove.has(f.id)) { toRemove.add(f.id); changed = true; }
+      }
+    }
+    const nextColors = s.customColors.map(c => c.folderId && toRemove.has(c.folderId) ? { ...c, folderId: undefined } : c);
+    // Re-apply theme so any orphaned custom colors stay valid (no var-name change here, just folder cleanup).
+    _applyLightOverrides(s.themeOverrides, nextColors);
+    _applyDarkOverrides(s.themeDarkOverrides, nextColors);
+    return {
+      colorFolders: s.colorFolders.filter(f => !toRemove.has(f.id)),
+      customColors: nextColors,
+    };
+  }),
+
+  addCustomColor: (c) => {
+    set(s => {
+      const id = c.id ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `cc-${Date.now()}`);
+      const next = [...s.customColors.filter(x => x.id !== id && x.name !== c.name), { ...c, id }];
+      _applyLightOverrides(s.themeOverrides, next);
+      _applyDarkOverrides(s.themeDarkOverrides, next);
+      return { customColors: next };
+    });
+  },
+  updateCustomColor: (id, patch) => {
+    set(s => {
+      const next = s.customColors.map(c => c.id === id ? { ...c, ...patch, id: c.id } : c);
+      _applyLightOverrides(s.themeOverrides, next);
+      _applyDarkOverrides(s.themeDarkOverrides, next);
+      return { customColors: next };
+    });
+  },
+  removeCustomColor: (id) => {
+    set(s => {
+      const next = s.customColors.filter(c => c.id !== id);
+      _applyLightOverrides(s.themeOverrides, next);
+      _applyDarkOverrides(s.themeDarkOverrides, next);
+      return { customColors: next };
+    });
+  },
+
   addCustomVar: (v) => {
     const id = v.id ?? crypto.randomUUID();
     const varWithId: CustomVar = { ...v, id };
@@ -3738,6 +3825,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             if (Array.isArray(saved?.varFolders)) next.varFolders = saved!.varFolders as typeof s.varFolders;
             if (Array.isArray(saved?.pageDataSources)) next.pageDataSources = saved!.pageDataSources as typeof s.pageDataSources;
             if (Array.isArray(saved?.dsFolders)) next.dsFolders = saved!.dsFolders as typeof s.dsFolders;
+            if (Array.isArray(saved?.customColors)) next.customColors = saved!.customColors as typeof s.customColors;
+            if (Array.isArray(saved?.colorFolders)) next.colorFolders = saved!.colorFolders as typeof s.colorFolders;
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
             if (saved?.authConfig && typeof saved.authConfig === 'object') next.authConfig = saved.authConfig as typeof s.authConfig;
@@ -3755,13 +3844,22 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
           // Apply saved theme overrides to the DOM — initTheme() ran at mount time before
           // loadFromConfig completed, so the CSS vars need a second pass here.
+          // Also include any saved customColors so their --<name> CSS vars are written.
+          const savedCustomColors = Array.isArray(saved?.customColors)
+            ? (saved!.customColors as CustomColor[])
+            : [];
           if (saved?.themeOverrides && typeof saved.themeOverrides === 'object') {
             const lightOv = saved.themeOverrides as Record<string, string>;
-            _applyLightOverrides(lightOv);
+            _applyLightOverrides(lightOv, savedCustomColors);
             injectFontsFromOverrides(lightOv);
+          } else if (savedCustomColors.length > 0) {
+            // No theme overrides, but custom colors must still be injected.
+            _applyLightOverrides({}, savedCustomColors);
           }
           if (saved?.themeDarkOverrides && typeof saved.themeDarkOverrides === 'object') {
-            _applyDarkOverrides(saved.themeDarkOverrides as Record<string, string>);
+            _applyDarkOverrides(saved.themeDarkOverrides as Record<string, string>, savedCustomColors);
+          } else if (savedCustomColors.length > 0) {
+            _applyDarkOverrides({}, savedCustomColors);
           }
 
           // Seed loaded custom variables into the global variable store so
@@ -3810,6 +3908,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             varFolders: [],
             pageDataSources: [],
             dsFolders: [],
+            customColors: [],
+            colorFolders: [],
             themeOverrides: {},
             themeDarkOverrides: {},
           }));
@@ -3871,6 +3971,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         formulas?: Record<string, import('./_store-types').GlobalFormulaDef>;
         sharedComponents?: Record<string, unknown>;
         systemComponentOverrides?: Record<string, unknown>;
+        customColors?: CustomColor[];
+        colorFolders?: Folder[];
       };
 
       set(s => {
@@ -4020,6 +4122,28 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         return next;
       });
 
+      // ── Custom colors from config/custom-colors.json ──────────────────────────
+      // Seed the store with config-defined colors. User-added colors (in-memory
+      // only in admin mode) take precedence so they're never overwritten.
+      if (Array.isArray(json.customColors) && json.customColors.length > 0) {
+        const configColorIds = new Set(json.customColors.map(c => c.id));
+        const configColorNames = new Set(json.customColors.map(c => c.name));
+        set(s => {
+          const userColors = s.customColors.filter(c => !configColorIds.has(c.id) && !configColorNames.has(c.name));
+          const merged = [...json.customColors!, ...userColors];
+          const { themeOverrides, themeDarkOverrides } = s;
+          _applyLightOverrides(themeOverrides, merged);
+          _applyDarkOverrides(themeDarkOverrides, merged);
+          const userFolders = Array.isArray(json.colorFolders)
+            ? s.colorFolders.filter(f => !json.colorFolders!.some(cf => cf.id === f.id))
+            : s.colorFolders;
+          return {
+            customColors: merged,
+            colorFolders: [...(json.colorFolders ?? []), ...userFolders],
+          };
+        });
+      }
+
       // Seed the formula evaluator registry + editor tokenizer with config formulas
       try {
         const formulas = useBuilderStore.getState().globalFormulas;
@@ -4044,8 +4168,9 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       ...(fonts?.heading ? { 'font-heading': fonts.heading } : {}),
       ...(fonts?.body    ? { 'font-body':    fonts.body    } : {}),
     };
-    _applyLightOverrides(fullLight);
-    _applyDarkOverrides(dark);
+    const { customColors } = get();
+    _applyLightOverrides(fullLight, customColors);
+    _applyDarkOverrides(dark, customColors);
     injectFontsFromOverrides(fullLight);
     set({ themeOverrides: fullLight, themeDarkOverrides: dark });
   },

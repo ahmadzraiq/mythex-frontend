@@ -19,13 +19,6 @@ export type SDUIComponentType =
   | 'Input'
   | 'Textarea'
   | 'TextareaInput'
-  | 'Select'
-  | 'SelectTrigger'
-  | 'SelectInput'
-  | 'SelectPortal'
-  | 'SelectBackdrop'
-  | 'SelectContent'
-  | 'SelectItem'
   | 'Slider'
   | 'SliderTrack'
   | 'SliderFilledTrack'
@@ -41,12 +34,8 @@ export type SDUIComponentType =
   | 'CheckboxIndicator'
   | 'CheckboxLabel'
   | 'CheckboxGroup'
-  | 'Tooltip'
-  | 'TooltipContent'
-  | 'TooltipText'
   | 'Skeleton'
   | 'SkeletonText'
-  | 'FileUpload'
   | 'Iframe'
   | 'Chart'
   | 'QRCodeWidget'
@@ -105,6 +94,13 @@ export interface ResponsiveOverride {
   props?: Record<string, unknown>;
   /** Merged into props.style at this breakpoint */
   style?: Record<string, unknown>;
+  /** Responsive disabled-overlay overrides. Each field cascades independently.
+   *  null = explicitly remove that field at this breakpoint (reset to base). */
+  _disabledOverlay?: {
+    color?: string | null;
+    opacity?: number | null;
+    blur?: number | null;
+  };
   /** Sparse animation-config overrides. Currently only `filter.blur` is supported.
    *  null = explicitly remove the value at this breakpoint (do not inherit). */
   animation?: {

@@ -30,6 +30,7 @@ import appConfig from '@/config/app';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { useSduiStore } from '@/store/sdui-store';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
+import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -66,6 +67,7 @@ interface ProjectConfig {
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
+  customColors?: Array<{ name: string; light?: string; dark?: string }>;
   authConfig?: AuthConfig;
 }
 
@@ -152,13 +154,29 @@ function injectGoogleFontIfNeeded(fontValue: string): void {
   document.head.appendChild(link);
 }
 
-function applyTheme(light: Record<string, string>, dark: Record<string, string>) {
+function applyTheme(
+  light: Record<string, string>,
+  dark: Record<string, string>,
+  customColors: Array<{ name: string; light?: string; dark?: string }> = [],
+) {
+  // Merge customColors first — explicit theme overrides take precedence so a
+  // theme-tab override of a custom-named color still wins.
+  const mergedLight: Record<string, string> = {};
+  const mergedDark:  Record<string, string> = {};
+  for (const c of customColors) {
+    if (!c?.name) continue;
+    if (typeof c.light === 'string' && c.light) mergedLight[c.name] = c.light;
+    if (typeof c.dark  === 'string' && c.dark)  mergedDark[c.name]  = c.dark;
+  }
+  for (const [k, v] of Object.entries(light)) mergedLight[k] = v;
+  for (const [k, v] of Object.entries(dark))  mergedDark[k]  = v;
+
   const lightEl = getOrCreateStyle('preview-light-overrides');
   const colorLines: string[] = [];
   const fontLines:  string[] = [];
   const baseLines:  string[] = [];
 
-  for (const [k, v] of Object.entries(light)) {
+  for (const [k, v] of Object.entries(mergedLight)) {
     if (v.startsWith('#')) {
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
       // Keep --theme-${k} (hex) in sync so var(--theme-background) etc. resolve correctly
@@ -181,7 +199,7 @@ function applyTheme(light: Record<string, string>, dark: Record<string, string>)
   lightEl.textContent = parts.join('\n\n');
 
   const darkEl = getOrCreateStyle('preview-dark-overrides');
-  const darkVars = Object.entries(dark).map(([k, v]) => {
+  const darkVars = Object.entries(mergedDark).map(([k, v]) => {
     const isHex = v.startsWith('#');
     const rgbLine = `  --${k}: ${isHex ? hexToRgbTriplet(v) : v};`;
     // Keep --theme-${k} (hex) in sync for dark mode too
@@ -189,6 +207,13 @@ function applyTheme(light: Record<string, string>, dark: Record<string, string>)
     return rgbLine + themeLine;
   }).join('\n');
   darkEl.textContent = `html.dark {\n${darkVars ? darkVars + '\n' : ''}${GLUESTACK_PRIMARY_BRIDGE}\n}`;
+
+  // Keep THEME_OBJ.colors in sync so formulas like theme?.['colors']?.['brand']
+  // resolve to live custom-color hex values (the SDUIEngine listens for the
+  // `sdui:theme-colors-patched` event dispatched by patchThemeColors and
+  // re-injects merged.theme on every render).
+  patchThemeColors(mergedLight, 'light');
+  patchThemeColors(mergedDark, 'dark');
 }
 
 /** Seed UI-created custom variables into the global store so formulas resolve. */
@@ -260,8 +285,8 @@ export default function AppPreviewPage() {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const cfg = JSON.parse(cached) as ProjectConfig;
-          if (cfg.themeOverrides || cfg.themeDarkOverrides) {
-            applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+          if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
+            applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
           }
           seedCustomVars(cfg);
           setProjectConfig(cfg);
@@ -290,9 +315,11 @@ export default function AppPreviewPage() {
       // Cache in sessionStorage — valid for this tab's lifetime (1 hour token)
       try { sessionStorage.setItem(cacheKey, JSON.stringify(cfg)); } catch { /* quota */ }
 
-      // Apply theme overrides
-      if (cfg.themeOverrides || cfg.themeDarkOverrides) {
-        applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {});
+      // Apply theme overrides + custom colors (custom colors are user-defined
+      // theme tokens; they need both the CSS vars and THEME_OBJ patched so
+      // formulas like theme?.['colors']?.['brand'] resolve in preview).
+      if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
+        applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
       }
 
       // Seed UI-created custom variables into the global store

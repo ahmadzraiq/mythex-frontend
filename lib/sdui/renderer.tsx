@@ -25,7 +25,7 @@ import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
 
 const _warnedTypes = new Set<string>();
-const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Select', 'Switch', 'RadioGroup', 'Slider']);
+const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Switch', 'RadioGroup', 'Slider']);
 const _CONTROLLED_VALUE_KEYS = ['value', 'selectedValue', 'defaultValue', 'isChecked', 'isSelected'];
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
@@ -1010,7 +1010,20 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   applyClassFormulas(node, cleanProps, sduiContext);
   applyAutofill(node, cleanProps, builderMode);
 
-  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, actionsConfig, effectiveScope, node.type));
+  // When this node is an SC root, merge the model's workflow definitions into a
+  // local actionsConfig so that bindActionsToProps can resolve the correct trigger
+  // type for SC-internal workflow IDs (e.g. "rg-wf-on-change" → trigger "valueChange").
+  // Without this, any SC workflow not present in the screen-level actionsConfig would
+  // fall back to the "click" default and bind to onClick instead of onValueChange etc.
+  const _localActionsConfig: Record<string, unknown> = (_linkedKind && _linkedMeta)
+    ? {
+        ...actionsConfig,
+        ...(getLinkedComponentModel(_linkedKind, _linkedMeta.id) as
+          | { workflows?: Record<string, unknown> }
+          | undefined)?.workflows,
+      }
+    : actionsConfig as Record<string, unknown>;
+  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, _localActionsConfig, effectiveScope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
   trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
   injectControlledProps(cleanProps, externalValue, externalIsChecked);
@@ -1034,6 +1047,16 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     delete cleanProps.pointerEvents;
     if (pe && typeof pe === 'string') {
       cleanProps.style = { ...(cleanProps.style as Record<string, unknown> ?? {}), pointerEvents: pe };
+    }
+  }
+
+  // In builder mode every node must remain selectable regardless of its runtime
+  // pointer-events value (e.g. disabled buttons get pointerEvents:'none' which
+  // would prevent the builder's click-to-select from working).
+  if (builderMode) {
+    const _s = cleanProps.style as Record<string, unknown> | undefined;
+    if (_s?.pointerEvents === 'none') {
+      cleanProps.style = { ..._s, pointerEvents: 'auto' };
     }
   }
 

@@ -1,0 +1,102 @@
+{
+  "id": "sys-tabs",
+  "name": "Tabs",
+  "description": "Tab strip with internal `activeTab` state. `tabs` is an array of `{ label, value }`. The active tab is mirrored on the per-instance `tabs-v-active-uuid` variable (initialised from `defaultTab` on `created`). Clicking a tab updates the variable and emits `On change` with `{ value, label }`. The component renders only the tab strip — listeners decide what content to render externally based on the active value.",
+  "properties": [
+    { "id": "prop-tabs-tabs",        "name": "tabs",        "type": "list", "defaultValue": [{ "label": "Tab 1", "value": "tab1" }, { "label": "Tab 2", "value": "tab2" }, { "label": "Tab 3", "value": "tab3" }] },
+    { "id": "prop-tabs-default-tab", "name": "defaultTab",  "type": "text", "defaultValue": "tab1" }
+  ],
+  "triggers": [
+    {
+      "id": "tabs-t-on-change",
+      "name": "On change",
+      "payload": { "formula": "{ value: context?.item?.data?.value, label: context?.item?.data?.label }" }
+    }
+  ],
+  "variables": {
+    "tabs-v-active-uuid": {
+      "label": "activeTab",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Tabs"
+    }
+  },
+  "workflows": {
+    "tabs-wf-init": {
+      "id": "tabs-wf-init",
+      "name": "Init",
+      "trigger": "created",
+      "steps": [
+        {
+          "id": "init-active",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "tabs-v-active-uuid",
+            "value": { "formula": "context?.component?.props?.defaultTab || (Array.isArray(context?.component?.props?.tabs) && context.component.props.tabs[0]?.value) || ''" }
+          }
+        }
+      ]
+    },
+    "tabs-wf-select-tab": {
+      "id": "tabs-wf-select-tab",
+      "name": "Select Tab",
+      "trigger": "click",
+      "description": "Update activeTab to the clicked tab's value and emit the public On change trigger.",
+      "steps": [
+        {
+          "id": "store-active",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "tabs-v-active-uuid",
+            "value": { "formula": "context?.item?.data?.value" }
+          }
+        },
+        {
+          "id": "emit-change",
+          "type": "emitComponentTrigger",
+          "config": { "triggerId": "tabs-t-on-change" }
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": { "className": "flex flex-row border-b border-border w-full" },
+    "children": [
+      {
+        "type": "Box",
+        "map": { "formula": "Array.isArray(context?.component?.props?.tabs) ? context.component.props.tabs : []" },
+        "key": "context.item.data.value",
+        "props": { "className": "contents" },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "px-[16px] py-[8px] cursor-pointer",
+              "style": {
+                "borderBottomWidth": "2px",
+                "borderBottomStyle": "solid",
+                "borderBottomColor": { "formula": "context?.item?.data?.value===context?.component?.variables?.['tabs-v-active-uuid']?'var(--theme-primary)':'transparent'" }
+              }
+            },
+            "actions": [{ "action": "tabs-wf-select-tab" }],
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] font-medium",
+                  "style": {
+                    "color": { "formula": "context?.item?.data?.value===context?.component?.variables?.['tabs-v-active-uuid']?'var(--theme-primary)':'var(--theme-muted-foreground)'" }
+                  }
+                },
+                "text": "{{context.item.data.label}}"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "⬜"
+}

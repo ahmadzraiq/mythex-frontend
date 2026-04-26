@@ -539,7 +539,27 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     : outerSt.backgroundImage;
   const isGradientFormula = isBoundValue(bgImageRaw as FormulaValue);
   const nodeStyleAny = (node.props as { style?: Record<string, string> })?.style ?? {};
-  const propsBgImage = nodeStyleAny.backgroundImage ?? '';
+  // Responsive-aware bg image source for the URL input. At non-desktop the
+  // user's typed value lands in `responsive[bp].styles.backgroundImage` (via
+  // patchStyle's responsive route) — base props.style stays untouched. Without
+  // reading the cascade here, the sync effect below would reset
+  // `localImageUrl` to '' on every store update, wiping what the user typed.
+  const propsBgImage = (typeof respGradientBg === 'string' && respGradientBg)
+    ? respGradientBg
+    : (nodeStyleAny.backgroundImage ?? '');
+
+  // Responsive-aware reads for size / position / repeat so the active toggle
+  // button highlights what the canvas is actually showing at this breakpoint.
+  const respStyleVal = React.useCallback((cssProp: string): string | undefined => {
+    if (abp === 'desktop' || !node.responsive) return undefined;
+    let v: string | undefined;
+    for (const bp of BP_ORDER) {
+      const sv = node.responsive[bp]?.styles?.[cssProp];
+      if (typeof sv === 'string') v = sv;
+      if (bp === abp) break;
+    }
+    return v;
+  }, [abp, node.responsive]);
 
   const existingGradientColors = React.useMemo(() => {
     const bg = typeof bgImageRaw === 'string' ? bgImageRaw : '';
@@ -618,13 +638,26 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     // Non-desktop: write to responsive[bp].styles.* so overrides cascade like
     // every other design property. The renderer merges props.style into the
     // outer wrapper's outerStyle, so a responsive backgroundImage wins over
-    // the base animation.outerStyle gradient at that breakpoint.
+    // the base animation.outerStyle gradient at that breakpoint. The
+    // gradient-drift loop is a global animation (not per-breakpoint) so we
+    // toggle it on the base node regardless of `abp` — without this, the
+    // Animate checkbox at tablet/mobile is a no-op.
     if (abp !== 'desktop') {
       const rbp = abp as 'laptop' | 'tablet' | 'mobile';
       store.patchResponsive(nodeId, rbp, 'styles.backgroundImage', gradient);
       store.patchResponsive(nodeId, rbp, 'styles.backgroundRepeat', 'no-repeat');
       if (bgSize) store.patchResponsive(nodeId, rbp, 'styles.backgroundSize', bgSize);
       else        store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundSize');
+      const existing = ((node as unknown as Record<string, unknown>).animation ?? {}) as Record<string, unknown>;
+      const nextAnim: Record<string, unknown> = { ...existing };
+      if (animate) {
+        nextAnim.loop = { type: 'gradientDrift', duration: 3000, repeatCount: -1, direction: 'alternate' };
+      } else if ((existing.loop as Record<string, unknown> | undefined)?.type === 'gradientDrift') {
+        delete nextAnim.loop;
+      }
+      if (JSON.stringify(nextAnim) !== JSON.stringify(existing)) {
+        store.patchNodeField(nodeId, 'animation', nextAnim);
+      }
       commitHistory();
       return;
     }
@@ -676,7 +709,8 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
 
   // Helper: extract the current bg class token from className (e.g. 'bg-[#ff0]' or 'bg-[var(--theme-primary)]')
   const extractBgClassToken = () => {
-    const cls = ((node.props as { className?: string })?.className ?? '');
+    const _raw = (node.props as { className?: unknown })?.className;
+    const cls = typeof _raw === 'string' ? _raw : '';
     return [...cls.matchAll(/\bbg-\[[^\]]+\]/g)].pop()?.[0] ?? '';
   };
 
@@ -686,7 +720,8 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     // Restore saved solid color — could be a className token or an inline style value
     if (savedSolidClsRef.current) {
       // Restore className bg token
-      const cls = (node.props as { className?: string })?.className ?? '';
+      const _rc = (node.props as { className?: unknown })?.className;
+      const cls = typeof _rc === 'string' ? _rc : '';
       const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
       store.patchProp(nodeId, 'props.className', [cleanCls, savedSolidClsRef.current].filter(Boolean).join(' '));
       store.patchProp(nodeId, 'props.style', restStyle);
@@ -709,7 +744,8 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       savedSolidClsRef.current = extractBgClassToken();
     }
     // Remove any existing bg class token
-    const cls = (node.props as { className?: string })?.className ?? '';
+    const _rg = (node.props as { className?: unknown })?.className;
+    const cls = typeof _rg === 'string' ? _rg : '';
     const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
     if (cleanCls !== cls) store.patchProp(nodeId, 'props.className', cleanCls);
     const { backgroundImage: _i, backgroundSize: _s, backgroundPosition: _p, backgroundRepeat: _r, ...restStyle } = style;
@@ -726,7 +762,8 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       savedSolidClsRef.current = extractBgClassToken();
     }
     // Remove any existing bg class token
-    const cls = (node.props as { className?: string })?.className ?? '';
+    const _ri = (node.props as { className?: unknown })?.className;
+    const cls = typeof _ri === 'string' ? _ri : '';
     const cleanCls = cls.replace(/\bbg-\[[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
     if (cleanCls !== cls) store.patchProp(nodeId, 'props.className', cleanCls);
     removeGradient();
@@ -752,9 +789,9 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
   const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
   const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
 
-  const bgSizeVal = nodeStyleAny.backgroundSize ?? 'cover';
-  const bgPosVal  = nodeStyleAny.backgroundPosition ?? 'center';
-  const bgRepeatVal = nodeStyleAny.backgroundRepeat ?? 'no-repeat';
+  const bgSizeVal   = respStyleVal('backgroundSize')      ?? nodeStyleAny.backgroundSize     ?? 'cover';
+  const bgPosVal    = respStyleVal('backgroundPosition')  ?? nodeStyleAny.backgroundPosition ?? 'center';
+  const bgRepeatVal = respStyleVal('backgroundRepeat')    ?? nodeStyleAny.backgroundRepeat   ?? 'no-repeat';
 
   return (
     <div>
@@ -772,7 +809,12 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
 
       {/* ── Solid mode ── */}
       {mode === 'solid' && (
-        <FieldWithBinding label="backgroundColor" displayLabel="Color" cssProp="backgroundColor" stackLayout hint="CSS color: e.g. #ff0000, rgba(0,0,0,0.5)" value={(((node.props as { style?: Record<string, unknown> })?.style ?? {}).backgroundColor as unknown as FormulaValue) ?? ''} onChange={v => {
+        <FieldWithBinding label="backgroundColor" displayLabel="Color" cssProp="backgroundColor" stackLayout hint="CSS color: e.g. #ff0000, rgba(0,0,0,0.5)"
+          responsiveOverrides={getOverriddenBps('backgroundColor')}
+          onResponsiveRemove={removeResponsive}
+          onResponsiveReset={resetResponsive}
+          responsiveCssProp="backgroundColor"
+          value={(((node.props as { style?: Record<string, unknown> })?.style ?? {}).backgroundColor as unknown as FormulaValue) ?? ''} onChange={v => {
           if (typeof v === 'object' && v !== null) {
             store.patchProp(nodeId, 'props.style.backgroundColor', v);
             commitHistory();
@@ -807,11 +849,27 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-            <span style={{ flex: 1, fontSize: 9 }}>
+            <span style={{ flex: 1, fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <ChangedLabel
                 text={isGradientFormula ? 'Formula bound' : `${gradientColors.length} stops`}
                 cssProp="gradientColors"
               />
+              {getOverriddenBps('backgroundImage').length > 0 && (
+                <ResponsiveDot
+                  cssProp="backgroundImage"
+                  overriddenBreakpoints={getOverriddenBps('backgroundImage')}
+                  onRemove={(bp) => {
+                    removeResponsive(bp, 'backgroundImage');
+                    removeResponsive(bp, 'backgroundSize');
+                    removeResponsive(bp, 'backgroundRepeat');
+                  }}
+                  onResetAll={() => {
+                    resetResponsive('backgroundImage');
+                    resetResponsive('backgroundSize');
+                    resetResponsive('backgroundRepeat');
+                  }}
+                />
+              )}
             </span>
             <BindingIcon isBound={isGradientFormula} onClick={() => { closeAllEditors(); setGradientEditorOpen(true); }} />
             <button onClick={switchToSolid} style={BTN_REMOVE}>Remove</button>
@@ -928,7 +986,17 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
 
           <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 9, display: 'block', marginBottom: 3 }}><ChangedLabel text="Size" cssProp="backgroundSize" /></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                <span style={{ fontSize: 9 }}><ChangedLabel text="Size" cssProp="backgroundSize" /></span>
+                {getOverriddenBps('backgroundSize').length > 0 && (
+                  <ResponsiveDot
+                    cssProp="backgroundSize"
+                    overriddenBreakpoints={getOverriddenBps('backgroundSize')}
+                    onRemove={removeResponsive}
+                    onResetAll={resetResponsive}
+                  />
+                )}
+              </div>
               <div style={{ display: 'flex', gap: 2 }}>
                 {(['cover', 'contain', 'auto'] as const).map(v => (
                   <ToggleBtn key={v} active={bgSizeVal === v} style={{ fontSize: 9, padding: '2px 5px' }}
@@ -937,7 +1005,17 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
               </div>
             </div>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 9, display: 'block', marginBottom: 3 }}><ChangedLabel text="Position" cssProp="backgroundPosition" /></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                <span style={{ fontSize: 9 }}><ChangedLabel text="Position" cssProp="backgroundPosition" /></span>
+                {getOverriddenBps('backgroundPosition').length > 0 && (
+                  <ResponsiveDot
+                    cssProp="backgroundPosition"
+                    overriddenBreakpoints={getOverriddenBps('backgroundPosition')}
+                    onRemove={removeResponsive}
+                    onResetAll={resetResponsive}
+                  />
+                )}
+              </div>
               <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 {(['center', 'top', 'bottom', 'left', 'right'] as const).map(v => (
                   <ToggleBtn key={v} active={bgPosVal === v} style={{ fontSize: 9, padding: '2px 5px' }}
@@ -948,7 +1026,17 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-            <span style={{ fontSize: 9, flex: 1 }}><ChangedLabel text="Repeat" cssProp="backgroundRepeat" /></span>
+            <span style={{ fontSize: 9, flex: 1, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <ChangedLabel text="Repeat" cssProp="backgroundRepeat" />
+              {getOverriddenBps('backgroundRepeat').length > 0 && (
+                <ResponsiveDot
+                  cssProp="backgroundRepeat"
+                  overriddenBreakpoints={getOverriddenBps('backgroundRepeat')}
+                  onRemove={removeResponsive}
+                  onResetAll={resetResponsive}
+                />
+              )}
+            </span>
             <ToggleBtn active={bgRepeatVal === 'repeat'} onClick={() => patchStyle({ backgroundRepeat: bgRepeatVal === 'repeat' ? 'no-repeat' : 'repeat' })}>
               {bgRepeatVal === 'repeat' ? 'On' : 'Off'}
             </ToggleBtn>
@@ -1037,6 +1125,31 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
   const parsed = parseBoxShadow(effectiveShadowStr);
   const hasShadow = !!parsed || isShadowFormula;
 
+  // Parse the BASE (desktop) shadow so we can compare individual fields.
+  const baseShadowParsed = React.useMemo(
+    () => (typeof boxShadowRaw === 'string' ? parseBoxShadow(boxShadowRaw) : null),
+    [boxShadowRaw],
+  );
+
+  // For each shadow field: collect the breakpoints where that field's value in
+  // the override differs from the base. Only those breakpoints get a chip.
+  const shadowFieldOverriddenBps = React.useMemo(() => {
+    const result = { blur: [] as string[], spread: [] as string[], x: [] as string[], y: [] as string[], color: [] as string[] };
+    if (!node.responsive) return result;
+    for (const bp of (['laptop', 'tablet', 'mobile'] as const)) {
+      const bsStr = node.responsive[bp]?.styles?.boxShadow;
+      if (typeof bsStr !== 'string') continue;
+      const bsParsed = parseBoxShadow(bsStr);
+      if (!bsParsed) continue;
+      if (bsParsed.blur   !== (baseShadowParsed?.blur   ?? 20)) result.blur.push(bp);
+      if (bsParsed.spread !== (baseShadowParsed?.spread ?? 0))  result.spread.push(bp);
+      if (bsParsed.x      !== (baseShadowParsed?.x      ?? 0))  result.x.push(bp);
+      if (bsParsed.y      !== (baseShadowParsed?.y      ?? 4))  result.y.push(bp);
+      if (bsParsed.color  !== (baseShadowParsed?.color  ?? '#000000')) result.color.push(bp);
+    }
+    return result;
+  }, [node.responsive, baseShadowParsed]);
+
   const [shadowColor,  setShadowColor]  = React.useState(parsed?.color  ?? '#000000');
   const [shadowBlur,   setShadowBlur]   = React.useState(parsed?.blur   ?? 20);
   const [shadowSpread, setShadowSpread] = React.useState(parsed?.spread ?? 0);
@@ -1094,8 +1207,9 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
       delete s.shadowRadius; delete s.shadowOpacity; delete s.elevation;
       store.patchProp(nodeId, 'props.style', s);
     } else {
-      // Clear the responsive override at this breakpoint only — base stays intact.
-      store.removeResponsiveOverride(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow');
+      // Write 'none' explicitly so the desktop shadow doesn't cascade through.
+      // Simply removing the override would let the base boxShadow inherit again.
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow', 'none');
     }
     commitHistory();
   }, [nodeId, node, store, commitHistory, abp]);
@@ -1235,20 +1349,58 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
         {/* Shadow controls (not formula) */}
         {!isShadowFormula && hasShadow && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontSize: 9, minWidth: 36, color: '#6b7280' }}>Color</span>
-              <FigmaColorPicker
-                testId="input-shadow-color"
-                value={shadowColor}
-                onChange={hex => { const c = hex || '#000000'; setShadowColor(c); if (parsed) applyShadow(c, shadowBlur, shadowSpread, shadowX, shadowY); }}
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              <NumberInput label="Blur"   testId="input-shadow-blur"   value={shadowBlur}   onChange={v => { setShadowBlur(v);   if (parsed) applyShadow(shadowColor, v, shadowSpread, shadowX, shadowY); }} changedOverride={shadowBlur !== 20}   onResetOverride={() => { setShadowBlur(20);  if (parsed) applyShadow(shadowColor, 20, shadowSpread, shadowX, shadowY); }} />
-              <NumberInput label="Spread" testId="input-shadow-spread" value={shadowSpread} onChange={v => { setShadowSpread(v); if (parsed) applyShadow(shadowColor, shadowBlur, v, shadowX, shadowY); }} changedOverride={shadowSpread !== 0}  onResetOverride={() => { setShadowSpread(0); if (parsed) applyShadow(shadowColor, shadowBlur, 0, shadowX, shadowY); }} />
-              <NumberInput label="X"      testId="input-shadow-x"      value={shadowX}      onChange={v => { setShadowX(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, v, shadowY); }} changedOverride={shadowX !== 0}      onResetOverride={() => { setShadowX(0);     if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, 0, shadowY); }} />
-              <NumberInput label="Y"      testId="input-shadow-y"      value={shadowY}      onChange={v => { setShadowY(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, v); }} changedOverride={shadowY !== 4}      onResetOverride={() => { setShadowY(4);     if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, 4); }} />
-            </div>
+            {(() => {
+              // Base field values (desktop shadow) — "reset" restores to these.
+              const baseBlur   = baseShadowParsed?.blur   ?? 20;
+              const baseSpread = baseShadowParsed?.spread ?? 0;
+              const baseX      = baseShadowParsed?.x      ?? 0;
+              const baseY      = baseShadowParsed?.y      ?? 4;
+              const baseColor  = baseShadowParsed?.color  ?? '#000000';
+
+              // Build a chip for a specific field: only shows when that field
+              // differs from base at ≥1 breakpoint. "Remove at bp" re-applies
+              // the shadow with just that field restored to its base value.
+              const shadowChip = (
+                bps: string[],
+                resetFor: { blur?: number; spread?: number; x?: number; y?: number; color?: string },
+              ) =>
+                bps.length > 0 ? (
+                  <ResponsiveDot
+                    cssProp="boxShadow"
+                    overriddenBreakpoints={bps}
+                    onRemove={bp => {
+                      const b = resetFor.blur   ?? shadowBlur;
+                      const s = resetFor.spread ?? shadowSpread;
+                      const x = resetFor.x      ?? shadowX;
+                      const y = resetFor.y      ?? shadowY;
+                      const c = resetFor.color  ?? shadowColor;
+                      store.patchResponsive(nodeId, bp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow', `${x}px ${y}px ${b}px ${s}px ${c}`);
+                      commitHistory();
+                    }}
+                    onResetAll={() => resetResponsive('boxShadow')}
+                  />
+                ) : null;
+
+              return (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 9, minWidth: 36, color: '#6b7280' }}>Color</span>
+                    {shadowChip(shadowFieldOverriddenBps.color, { color: baseColor })}
+                    <FigmaColorPicker
+                      testId="input-shadow-color"
+                      value={shadowColor}
+                      onChange={hex => { const c = hex || '#000000'; setShadowColor(c); if (parsed) applyShadow(c, shadowBlur, shadowSpread, shadowX, shadowY); }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                    <NumberInput label="Blur"   testId="input-shadow-blur"   value={shadowBlur}   onChange={v => { setShadowBlur(v);   if (parsed) applyShadow(shadowColor, v, shadowSpread, shadowX, shadowY); }} changedOverride={shadowBlur !== baseBlur}     onResetOverride={() => { setShadowBlur(baseBlur);     if (parsed) applyShadow(shadowColor, baseBlur, shadowSpread, shadowX, shadowY); }} afterLabel={shadowChip(shadowFieldOverriddenBps.blur,   { blur: baseBlur })} />
+                    <NumberInput label="Spread" testId="input-shadow-spread" value={shadowSpread} onChange={v => { setShadowSpread(v); if (parsed) applyShadow(shadowColor, shadowBlur, v, shadowX, shadowY); }} changedOverride={shadowSpread !== baseSpread} onResetOverride={() => { setShadowSpread(baseSpread); if (parsed) applyShadow(shadowColor, shadowBlur, baseSpread, shadowX, shadowY); }} afterLabel={shadowChip(shadowFieldOverriddenBps.spread, { spread: baseSpread })} />
+                    <NumberInput label="X"      testId="input-shadow-x"      value={shadowX}      onChange={v => { setShadowX(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, v, shadowY); }} changedOverride={shadowX !== baseX}           onResetOverride={() => { setShadowX(baseX);           if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, baseX, shadowY); }} afterLabel={shadowChip(shadowFieldOverriddenBps.x,      { x: baseX })} />
+                    <NumberInput label="Y"      testId="input-shadow-y"      value={shadowY}      onChange={v => { setShadowY(v);      if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, v); }} changedOverride={shadowY !== baseY}           onResetOverride={() => { setShadowY(baseY);           if (parsed) applyShadow(shadowColor, shadowBlur, shadowSpread, shadowX, baseY); }} afterLabel={shadowChip(shadowFieldOverriddenBps.y,      { y: baseY })} />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -1293,7 +1445,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const store = useBuilderStore.getState() as BuilderStore;
   const nodeId = (node as { id?: string }).id ?? '';
   const abp = activeBreakpoint as ActiveBreakpoint;
-  const cls: string = (node.props as { className?: string })?.className ?? '';
+  const _clsRaw = (node.props as { className?: unknown })?.className;
+  const cls: string = typeof _clsRaw === 'string' ? _clsRaw : '';
   // Sidecar map that stores formula bindings for class-based fields (selfAlignment, textAlign, etc.)
   const classFormulas = (node.props as { classFormulas?: Record<string, FormulaValue> })?.classFormulas;
   // Parent flex-direction — used for axis-aware Fill tokens (W/H mode buttons)
@@ -1899,7 +2052,13 @@ export function DesignTab({ node }: { node: SDUINode }) {
     };
 
     const bgVal = nodeStyle.backgroundColor as unknown;
-    if (!bgVal || isColorBound(bgVal)) {
+    // `var(--…)` references should flow through to the picker untouched so it
+    // can display the design-token name (e.g. "brand-2") instead of the
+    // resolved hex. Formulas and the legacy "[object Object]" string still get
+    // the live-DOM fallback below.
+    if (typeof bgVal === 'string' && bgVal.trim().startsWith('var(--')) {
+      setComputedBgColor(bgVal);
+    } else if (!bgVal || isColorBound(bgVal)) {
       // Check className first — bg-[rgba(...)] or bg-[#hex] preserves original format
       // Use last match in case of duplicates (most recently written wins)
       const bgToken = [...cls.matchAll(/\bbg-\[([^\]]+)\]/g)].pop()?.[1];
@@ -1937,7 +2096,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
     };
 
     const colorVal = nodeStyle.color as unknown;
-    if (!colorVal || isColorBound(colorVal)) {
+    if (typeof colorVal === 'string' && colorVal.trim().startsWith('var(--')) {
+      setComputedTextColor(colorVal);
+    } else if (!colorVal || isColorBound(colorVal)) {
       // Check className for text-[#...] or text-[rgba(...)] — distinguish from font-size text-[14px]
       // Use last match in case of duplicates (most recently written wins)
       const textToken = [...cls.matchAll(/\btext-\[([^\]]+)\]/g)].pop()?.[1];
@@ -1951,7 +2112,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
     }
 
     const borderVal = nodeStyle.borderColor as unknown;
-    if (!borderVal || isColorBound(borderVal)) {
+    if (typeof borderVal === 'string' && borderVal.trim().startsWith('var(--')) {
+      setComputedBorderColor(borderVal);
+    } else if (!borderVal || isColorBound(borderVal)) {
       // Check className for border-[#...] or border-[rgba(...)] — distinguish from border-width border-[2px]
       const borderToken = [...cls.matchAll(/\bborder-\[([^\]]+)\]/g)].pop()?.[1];
       if (borderToken && (borderToken.startsWith('#') || borderToken.startsWith('rgb'))) {
@@ -2329,7 +2492,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
 
     // Root selection → baseline is the model content root.
     if (scRoot.id === nodeId) {
-      const bcls = ((content.props as { className?: string } | undefined)?.className ?? '');
+      const _bclsRaw = (content.props as { className?: unknown } | undefined)?.className;
+      const bcls = typeof _bclsRaw === 'string' ? _bclsRaw : '';
       return {
         node: content,
         cls: bcls,
@@ -2386,6 +2550,21 @@ export function DesignTab({ node }: { node: SDUINode }) {
    * (or from the shared component baseline when scBaselineCls is available).
    */
   const isFieldChanged = useCallback((cssProp: string): boolean => {
+    // Special case: alignment (the 9-cell grid) bundles alignItems and
+    // justifyContent into a single field. The reset-to-default popover should
+    // appear when EITHER axis differs from default, including responsive
+    // overrides at non-desktop breakpoints (which never touch base cls).
+    if (cssProp === 'alignItems') {
+      if (rOvr('alignItems') !== undefined) return true;
+      if (rOvr('justifyContent') !== undefined) return true;
+      const items   = parseTwToken(cls, 'items-');
+      const justify = parseTwToken(cls, 'justify-');
+      if (items && items !== 'items-start') return true;
+      // justify-between is the Mode toggle, not a real alignment override
+      if (justify && justify !== 'justify-start' && justify !== 'justify-between') return true;
+      return false;
+    }
+
     // Special case: overflow lives in three properties (overflow / overflowX /
     // overflowY) and may be set via a responsive override at non-desktop.
     // Without this, picking the `x` or `y` button at tablet writes only to
@@ -2432,6 +2611,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
 
     // Opacity: class is opacity-* / opacity-[n]; default = fully opaque (100% / 1), not "any token"
     if (cssProp === 'opacity') {
+      // Responsive override at non-desktop breakpoint always counts as changed.
+      if (rOvr('opacity') !== undefined) return true;
       const v = (nodeStyle as Record<string, unknown>).opacity;
       if (typeof v === 'object' && v !== null) return true;
       if (v !== undefined && v !== null && String(v).trim() !== '') {
@@ -2681,6 +2862,26 @@ export function DesignTab({ node }: { node: SDUINode }) {
       return;
     }
 
+    // Opacity — at non-desktop, clear the responsive override; at desktop,
+    // strip the opacity class token and any inline style.opacity.
+    if (cssProp === 'opacity') {
+      if (abp !== 'desktop') {
+        const bp = abp as 'laptop' | 'tablet' | 'mobile';
+        if (rOvr('opacity') !== undefined) {
+          store.removeResponsiveOverride(nodeId, bp, 'styles.opacity');
+          commitHistory();
+          return;
+        }
+      }
+      // Desktop: remove class token and inline style
+      const nextCls = removeTwToken(cls, 'opacity-');
+      if (nextCls !== cls) store.patchProp(nodeId, 'props.className', nextCls);
+      const ns = { ...nodeStyle } as Record<string, unknown>;
+      if ('opacity' in ns) { delete ns.opacity; store.patchProp(nodeId, 'props.style', ns); }
+      commitHistory();
+      return;
+    }
+
     // Box shadow — clear all shadow-related inline style keys
     if (cssProp === 'boxShadow') {
       const ns = { ...nodeStyle } as Record<string, unknown>;
@@ -2754,8 +2955,28 @@ export function DesignTab({ node }: { node: SDUINode }) {
       return;
     }
 
-    // Alignment: remove both items-* AND justify-* (except justify-between which is the Mode toggle)
+    // Alignment: remove both items-* AND justify-* (except justify-between which is the Mode toggle).
+    // Also clear any responsive overrides for alignItems / justifyContent at
+    // the active non-desktop breakpoint — otherwise resetting at tablet only
+    // touches base cls and the overrides written by the 9-cell grid keep
+    // winning the cascade, so the click looks like a no-op.
     if (cssProp === 'alignItems') {
+      console.log('[align-reset] start', {
+        abp,
+        cls,
+        baselineCls,
+        rOvrAlignItems: rOvr('alignItems'),
+        rOvrJustifyContent: rOvr('justifyContent'),
+      });
+      if (abp !== 'desktop') {
+        const bp = abp as 'laptop' | 'tablet' | 'mobile';
+        for (const p of ['alignItems', 'justifyContent']) {
+          if (rOvr(p) !== undefined) {
+            console.log('[align-reset] removing override', { bp, prop: p });
+            store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
+          }
+        }
+      }
       let next = removeTwToken(cls, 'items-');
       // Only clear justify-* if it's not the space-between "mode" setting
       const curJustify = parseTwToken(next, 'justify-');
@@ -2768,7 +2989,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
         if (baseItems)   next = `${next} ${baseItems}`.trim();
         if (baseJustify) next = `${next} ${baseJustify}`.trim();
       }
-      store.patchProp(nodeId, 'props.className', next);
+      console.log('[align-reset] cls patch', { from: cls, to: next });
+      if (next !== cls) store.patchProp(nodeId, 'props.className', next);
       commitHistory();
       return;
     }
@@ -4277,7 +4499,12 @@ import {
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
-export default function PanelRight() {
+export interface PanelRightProps {
+  /** Open the right-side slide panel for adding/editing a custom theme color. */
+  onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
+}
+
+export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
   const [tab, setTab] = useState<'design' | 'theme' | 'workflows' | 'json'>('design');
   const {
     selectedIds, pageNodes, activePreviewStates,
@@ -4405,7 +4632,7 @@ export default function PanelRight() {
         ))}
       </div>
 
-      {tab === 'theme' && <ThemePanel />}
+      {tab === 'theme' && <ThemePanel onOpenColorSlide={onOpenColorSlide} />}
 
       {tab === 'workflows' && <ElementWorkflowsTab node={selectedNode} />}
 

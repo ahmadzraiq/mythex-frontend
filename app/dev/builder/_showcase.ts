@@ -326,34 +326,6 @@ const formSection = section('Form', [
     props: { className: 'w-full h-20 !rounded-md !border-[rgb(var(--border))] !bg-[rgb(var(--card))]' },
     children: [{ type: 'TextareaInput', props: { placeholder: 'Write something…', className: '!text-[rgb(var(--foreground))]' } }],
   }),
-  labeled('Select', {
-    type: 'Select',
-    props: {},
-    children: [
-      {
-        type: 'SelectTrigger',
-        props: { className: 'flex flex-row items-center justify-between px-3 py-2 rounded-md border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-full' },
-        children: [
-          { type: 'SelectInput', props: { placeholder: 'Choose option…', className: '!text-[rgb(var(--foreground))]' } },
-          { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 15, color: 'rgb(var(--muted-foreground))' } },
-        ],
-      },
-      {
-        type: 'SelectPortal',
-        children: [
-          { type: 'SelectBackdrop' },
-          {
-            type: 'SelectContent',
-            children: [
-              { type: 'SelectItem', props: { label: 'Option 1', value: 'a' } },
-              { type: 'SelectItem', props: { label: 'Option 2', value: 'b' } },
-              { type: 'SelectItem', props: { label: 'Option 3', value: 'c' } },
-            ],
-          },
-        ],
-      },
-    ],
-  }),
   labeled('Checkbox', {
     type: 'Checkbox',
     props: { defaultIsChecked: false },

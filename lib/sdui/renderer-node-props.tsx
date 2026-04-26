@@ -27,7 +27,7 @@ export const PRESS_ONLY_TYPES = new Set(['MenuItem', 'MenuItemLabel']);
 export const SUBMIT_BUTTON_TYPES = new Set<string>(['Box']);
 
 /** Interactive components that receive a `disabled` prop for preview-state dimming */
-export const INTERACTIVE_TYPES = new Set(['Input', 'Select']);
+export const INTERACTIVE_TYPES = new Set(['Input']);
 
 /** Components that legitimately accept onChangeText (React Native TextInput-based).
  *  All other components strip it to avoid React's "Unknown event handler property" warning

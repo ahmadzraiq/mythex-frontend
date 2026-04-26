@@ -1828,6 +1828,31 @@ Defined in `_workflow-types.tsx` under the **Code** category. Stored on the node
 
 The runtime handler lives inline in `lib/sdui/actions/handlers/workflow-steps-handler.ts` (search for `step.type === 'runJavaScript'`). It evaluates the body with `new AsyncFunction(...)` so `await` is supported and writes `{ result, error }` to `workflowCtx[step.id]` like every other step. The `wwLib` helper API is built in `lib/sdui/javascript-evaluator.ts` (`makeWwLib(ctx)`).
 
+#### `wwLib` API surface (full action parity)
+
+`runJavaScript` can drive every `ActionStepType` via typed helpers — internally the handler injects a `runStep` closure into `wwLibCtx` that synthesizes a one-step workflow and reuses `runSteps` so behavior matches a regular canvas step exactly.
+
+| Group | Helpers | Underlying ActionStepType |
+| --- | --- | --- |
+| `wwLib.variables` | `get/set/reset/uuid/name` | (direct store) |
+| `wwLib.collections` | `get`, `refetch(name)`, `update(name, mode, item, key?)` | `fetchCollection` / `updateCollection` |
+| `wwLib.navigate` | `to({ path \| externalUrl, queryParams, newTab, replace })`, `prev(defaultPath?)` | `navigateTo`, `navigatePrev` |
+| `wwLib.workflows` | `run(workflowId, params?)`, `return(value)` | `runProjectWorkflow`, `returnValue` |
+| `wwLib.components` | `run(instanceId, workflowId, params?)`, `emit(instanceId, triggerName, payload?)` | `executeComponentAction`, `emitComponentTrigger` |
+| `wwLib.shared` | `add(typeId, props?)`, `delete(instanceId)`, `deleteAll(typeId?)` | `addSharedComponent`, `deleteSharedComponent`, `deleteAllSharedComponents` |
+| `wwLib.popovers` | `open/close/toggle(id)` | `openPopover`/`closePopover`/`togglePopover` |
+| `wwLib.forms` | `setState(formId, state)`, `reset(formId)` | `setFormState`, `resetForm` |
+| `wwLib.auth` | `authenticate({...})`, `setUser`, `restoreSession`, `clearSession` | `authenticate`, `setUser`, `restoreSession`, `clearSession` |
+| `wwLib.files` | `upload({...})`, `download(url, filename?)`, `encodeBase64(file)`, `fromBase64(b64, mime, filename?)` | `uploadFile`, `downloadFileFromUrl`, `encodeFileAsBase64`, `createUrlFromBase64` |
+| `wwLib.clipboard` | `copy(text)` | `copyToClipboard` |
+| `wwLib.scroll` | `to(elementId, { behavior, block }?)` | `scrollToElement` |
+| `wwLib.print` | `pdf({ elementId?, filename? })` | `printPdf` |
+| `wwLib.event` | `stopPropagation()` | `stopPropagation` |
+| `wwLib.timing` | `delay(ms)` | `timeDelay` |
+| `wwLib.actions` | `run({ type, config })`, `runRaw(action)` | any (escape hatch) |
+
+Inside sync `{ js }` bindings, action helpers throw a clear error — bindings stay pure-read by design. Use `runJavaScript` for any side effect.
+
 ### Tab system
 
 Four tabs exist; **Quick** only renders when the selected node is inside a repeated context:
@@ -3385,3 +3410,15 @@ Components declare named events that parent pages can listen to on each instance
 3. For any inner-element workflow binding, use the bare ref shape shown above (`{ "action": "<wfId>", "args": {...} }`).
 4. Do **not** hardcode `id`s on content nodes — `cloneWithFreshIdsKeepSharedKey` mints fresh UUIDs on every drop (`_store-node-helpers.ts:494`). `_sharedKey` is stamped automatically by `_stampSharedKeys` at module init.
 5. Component-scoped variables, formulas, workflows follow the same keying convention as Shared Components (see `config/shared-component-types.ts`).
+
+### Built-in System Component catalog
+
+The following System Components ship in `lib/builder/system-components/`:
+
+- **Overlays / surfaces** — `sys-modal`, `sys-drawer`, `sys-bottom-sheet`, `sys-toast`, `sys-snackbar`, `sys-alert`.
+- **Data input** — `sys-select`, `sys-datepicker`, `sys-autocomplete`, `sys-file-upload`, `sys-radio-group`.
+- **Data display** — `sys-badge`, `sys-avatar`, `sys-accordion`, `sys-table`.
+- **Buttons** — `sys-button` (variant: `solid|destructive|outline|ghost|link`, size: `sm|md|lg`, optional iconLeft / iconRight, disabled gate), `sys-icon-button` (variant: `ghost|solid|outline`, shape: `square|round`, size: `sm|md|lg`), `sys-fab` (icon + optional label).
+- **Composite navigation / feedback** — `sys-tabs` (internal `activeTab` variable, `On change`), `sys-pagination` (stateless prev/next/jump, `On page change`), `sys-rating` (1-indexed `On change`), `sys-stepper` (`done | current | upcoming` driven by `activeStep`, `On step click`), `sys-breadcrumbs` (`On item click`), `sys-chip` (body click + remove icon click with `stopPropagation`).
+
+The full registration list lives in `lib/builder/system-components/index.ts`; each palette tile that drops a linked instance points at one of these via `systemComponentId` in `lib/builder/primitive-components.ts`. Per-tile prop overrides (e.g. `Btn Solid` vs `Btn Destructive`) are merged from the tile's `defaultNode.props` onto the cloned SC root at drop time (`app/dev/builder/_components-tab.tsx`).

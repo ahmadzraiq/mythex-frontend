@@ -921,6 +921,17 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // When the user is typing in an input / textarea / contenteditable
+      // surface (e.g. the formula editor or a CodeMirror JS editor opened
+      // from a runJavaScript step) defer to native browser behavior. Without
+      // this, Cmd+X / Cmd+C / Cmd+D / Cmd+V would treat the selected step as
+      // the target and e.g. delete the step instead of cutting the editor's
+      // text selection. We DO still let `Escape` close the canvas overlay
+      // since users expect that.
+      const t = e.target as HTMLElement | null;
+      const isInput = !!t?.closest?.('input, textarea, [contenteditable="true"], .cm-editor');
+      if (isInput && e.key !== 'Escape') return;
+
       // Always stop propagation so the builder's window listener never sees keys
       // that the canvas has handled (or is about to handle).
       e.stopImmediatePropagation();
@@ -948,8 +959,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
           if (e.key === 'x') { e.preventDefault(); setCopiedStep({ ...selectedStep }); deleteStep(selectedPath); }
         }
       }
-      const isInput = (e.target as HTMLElement).closest('input, textarea, [contenteditable]');
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPath && !isInput) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPath) {
         e.preventDefault();
         deleteStep(selectedPath);
       }

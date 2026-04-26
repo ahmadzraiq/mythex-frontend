@@ -22,6 +22,8 @@
  *   varFolders:         Folder[]
  *   pageDataSources:    DataSourceConfig[]
  *   dsFolders:          Folder[]
+ *   customColors:       CustomColor[]
+ *   colorFolders:       Folder[]
  *   themeOverrides:     Record<string, string>
  *   themeDarkOverrides: Record<string, string>
  * }
@@ -63,6 +65,8 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
     varFolders: store.varFolders,
     pageDataSources: store.pageDataSources,
     dsFolders: store.dsFolders,
+    customColors: store.customColors,
+    colorFolders: store.colorFolders,
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getSharedComponents(),
@@ -85,6 +89,8 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
     varFolders: store.varFolders,
     pageDataSources: store.pageDataSources,
     dsFolders: store.dsFolders,
+    customColors: store.customColors,
+    colorFolders: store.colorFolders,
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getSharedComponents(),
@@ -204,6 +210,7 @@ export function useBuilderAutosave(
       s.globalWorkflows, s.globalWorkflowMeta,
       s.customVars, s.varFolders,
       s.pageDataSources, s.dsFolders,
+      s.customColors, s.colorFolders,
       s.themeOverrides, s.themeDarkOverrides,
     ];
     prevSliceRef.current = selectSlice(useBuilderStore.getState() as BuilderStore);

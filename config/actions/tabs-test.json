@@ -1,0 +1,16 @@
+{
+  "wfOnTabsChange": {
+    "name": "On Tabs change",
+    "trigger": "tabs-t-on-change",
+    "steps": [
+      {
+        "id": "store-value",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "tabs-test-value",
+          "value": { "formula": "context?.event?.value || ''" }
+        }
+      }
+    ]
+  }
+}

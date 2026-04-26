@@ -47,7 +47,7 @@ export type ActionStepType =
   | 'emitComponentTrigger'
   | 'returnValue'
   | 'timeDelay'
-  | 'uploadFile'
+  | 'pickFile'
   // Advanced
   | 'stopPropagation'
   | 'printPdf'
@@ -453,7 +453,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'emitComponentTrigger', label: 'Emit component trigger', icon: '⚡' },
       { type: 'returnValue', label: 'Return a value', icon: '⚡' },
       { type: 'timeDelay', label: 'Time delay', icon: '⏱' },
-      { type: 'uploadFile', label: 'Upload file', icon: '⬆' },
+      { type: 'pickFile', label: 'Pick file', icon: '⬆' },
     ],
   },
   // "Project workflows" is injected dynamically in AddActionPopover (not a fixed category)
@@ -706,6 +706,8 @@ export function isStepComplete(step: ActionStep): boolean {
       return Boolean(typeof cfg.code === 'string' && (cfg.code as string).trim().length > 0);
     case 'timeDelay':
       return Boolean(cfg.time ?? cfg.delay ?? cfg.ms);
+    case 'pickFile':
+      return Boolean(cfg.storeIn);
     case 'copyToClipboard':
       return Boolean(cfg.value);
     case 'scrollToElement':
@@ -738,7 +740,6 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'printPdf':
     case 'deleteAllSharedComponents':
     case 'resetForm':
-    case 'uploadFile':
     case 'encodeFileAsBase64':
     case 'createUrlFromBase64':
       return true;

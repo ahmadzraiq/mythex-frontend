@@ -153,7 +153,7 @@ Dynamic route slugs from map scope use `{ "formula": "context?.item?.data?.slug"
 | | `executeComponentAction` | Execute component action |
 | | `returnValue` | Return a value |
 | | `timeDelay` | Time delay |
-| | `uploadFile` | Upload file |
+| | `pickFile` | Pick file (open OS picker) |
 | **GraphQL** | `graphql` | GraphQL Request |
 | **REST API** | `fetchData` | REST API Request |
 | **Advanced** | `stopPropagation` | Stop click propagation |
@@ -175,6 +175,8 @@ Dynamic route slugs from map scope use `{ "formula": "context?.item?.data?.slug"
 **`createUrlFromBase64` config:** `{ "base64": "<base64string>", "mimeType": "image/png", "storeIn": "myVar" }` — result URL is written to the variable store at `storeIn` and also to `context.workflow[stepId].result`.
 
 **`encodeFileAsBase64` config:** `{ "dataUrl": "<data:...;base64,...>", "storeIn": "myVar" }` — strips the data URL prefix and writes the raw base64 string to `storeIn`.
+
+**`pickFile` config:** `{ "accept": "image/*", "multiple": false, "storeIn": "myVar" }` — opens the OS file picker, then writes an array of `{ name, size, type, lastModified, file }` to `storeIn` (the original `File` is kept on `.file` so downstream `encodeFileAsBase64` / `runJavaScript` / `fetchData` steps can upload it). MUST run inside a click-triggered workflow — browsers require a real user gesture to open the picker.
 
 **`forEach` config keys:**
 - `listPath` (or `itemsPath`): variable UUID or state path; reads the array at runtime from the variable store

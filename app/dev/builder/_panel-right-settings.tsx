@@ -954,8 +954,113 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             {(scModel.properties as SharedComponentProperty[]).map(prop => {
               const rawVal = rootProps[prop.name] ?? prop.defaultValue;
               const patchProp = (v: unknown) => { if (linkedRoot?.id) store.patchProp(linkedRoot.id, `props.${prop.name}`, v); };
-              const isAny = prop.type === 'any';
+              const isAny = prop.type === 'any' || prop.type === 'list';
               const strVal = isAny ? (typeof rawVal === 'string' ? rawVal : (rawVal !== undefined ? JSON.stringify(rawVal, null, 2) : '')) : '';
+
+              const inputStyle: React.CSSProperties = { width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const };
+
+              let editor: React.ReactNode;
+
+              if (isAny) {
+                editor = <AnyPropEditor value={strVal} onChange={v => patchProp(v)} />;
+              } else if (prop.type === 'boolean') {
+                editor = (
+                  <div style={{ display: 'flex', border: '1px solid #374151', borderRadius: 6, overflow: 'hidden', width: 130, boxSizing: 'border-box' as const }}>
+                    {[{ label: 'On', val: true }, { label: 'Off', val: false }].map(({ label, val }) => {
+                      const active = (!!rawVal) === val;
+                      return (
+                        <button key={label}
+                          style={{ flex: 1, padding: '5px 0', background: active ? '#1f2937' : 'transparent', border: 'none', fontSize: 12, color: active ? '#f3f4f6' : '#6b7280', cursor: 'pointer', fontWeight: active ? 600 : 400 }}
+                          onClick={() => patchProp(val)}
+                        >{label}</button>
+                      );
+                    })}
+                  </div>
+                );
+              } else if (prop.type === 'color') {
+                editor = (
+                  <div style={{ width: 130, boxSizing: 'border-box' as const }}>
+                    <FigmaColorPicker value={String(rawVal ?? '#000000')} onChange={c => patchProp(c)} />
+                  </div>
+                );
+              } else if (prop.type === 'number') {
+                editor = (
+                  <input type="number" value={rawVal !== undefined ? Number(rawVal) : ''}
+                    onChange={e => patchProp(e.target.value === '' ? undefined : Number(e.target.value))}
+                    placeholder={String(prop.defaultValue ?? '')}
+                    style={inputStyle}
+                  />
+                );
+              } else if (prop.type === 'select') {
+                editor = (
+                  <select
+                    value={String(rawVal ?? '')}
+                    onChange={e => patchProp(e.target.value)}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    {(prop.options ?? []).map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                    {!(prop.options ?? []).length && (
+                      <option value={String(rawVal ?? '')}>{String(rawVal ?? '(no options)')}</option>
+                    )}
+                  </select>
+                );
+              } else if (prop.type === 'icon') {
+                const iconStr = String(rawVal ?? '');
+                const parts = iconStr.split(':');
+                const svgUrl = parts.length === 2
+                  ? `https://api.iconify.design/${parts[0]}/${parts[1]}.svg?color=%23d1d5db`
+                  : null;
+                editor = (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 130, boxSizing: 'border-box' as const }}>
+                    {svgUrl && (
+                      <div style={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={svgUrl} alt="" style={{ width: 16, height: 16 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
+                    <input
+                      value={iconStr}
+                      onChange={e => patchProp(e.target.value)}
+                      placeholder="lucide:check"
+                      style={{ ...inputStyle, width: undefined, flex: 1 }}
+                    />
+                  </div>
+                );
+              } else if (prop.type === 'size') {
+                const sizeStr = String(rawVal ?? '');
+                const match = sizeStr.match(/^([\d.]+)(.*)$/);
+                const num = match ? match[1] : '';
+                const unit = match ? match[2] : 'px';
+                editor = (
+                  <div style={{ display: 'flex', gap: 3, width: 130, boxSizing: 'border-box' as const }}>
+                    <input
+                      type="number"
+                      value={num}
+                      onChange={e => patchProp(`${e.target.value}${unit || 'px'}`)}
+                      placeholder="0"
+                      style={{ ...inputStyle, width: undefined, flex: 1 }}
+                    />
+                    <select
+                      value={unit || 'px'}
+                      onChange={e => patchProp(`${num}${e.target.value}`)}
+                      style={{ ...inputStyle, width: 48, padding: '3px 3px' }}
+                    >
+                      {['px', '%', 'vh', 'vw'].map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                );
+              } else {
+                editor = (
+                  <input
+                    value={String(rawVal ?? '')}
+                    onChange={e => patchProp(e.target.value)}
+                    placeholder={String(prop.defaultValue ?? '')}
+                    style={inputStyle}
+                  />
+                );
+              }
+
               return (
                 <SpecificRow
                   key={prop.id}
@@ -965,44 +1070,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                   onChange={v => patchProp(v)}
                   expectedType={isAny ? 'any' : prop.type === 'number' ? 'number' : prop.type === 'boolean' ? 'boolean' : 'string'}
                 >
-                  {isAny ? (
-                    <AnyPropEditor value={strVal} onChange={v => patchProp(v)} />
-                  ) : prop.type === 'boolean' ? (
-                    <div style={{ display: 'flex', border: '1px solid #374151', borderRadius: 6, overflow: 'hidden', width: 130, boxSizing: 'border-box' as const }}>
-                      {[{ label: 'On', val: true }, { label: 'Off', val: false }].map(({ label, val }) => {
-                        const active = (!!rawVal) === val;
-                        return (
-                          <button
-                            key={label}
-                            style={{ flex: 1, padding: '5px 0', background: active ? '#1f2937' : 'transparent', border: 'none', fontSize: 12, color: active ? '#f3f4f6' : '#6b7280', cursor: 'pointer', fontWeight: active ? 600 : 400 }}
-                            onClick={() => patchProp(val)}
-                          >{label}</button>
-                        );
-                      })}
-                    </div>
-                  ) : prop.type === 'color' ? (
-                    <div style={{ width: 130, boxSizing: 'border-box' as const }}>
-                      <FigmaColorPicker
-                        value={String(rawVal ?? '#000000')}
-                        onChange={c => patchProp(c)}
-                      />
-                    </div>
-                  ) : prop.type === 'number' ? (
-                    <input
-                      type="number"
-                      value={rawVal !== undefined ? Number(rawVal) : ''}
-                      onChange={e => patchProp(e.target.value === '' ? undefined : Number(e.target.value))}
-                      placeholder={String(prop.defaultValue ?? '')}
-                      style={{ width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
-                    />
-                  ) : (
-                    <input
-                      value={String(rawVal ?? '')}
-                      onChange={e => patchProp(e.target.value)}
-                      placeholder={String(prop.defaultValue ?? '')}
-                      style={{ width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
-                    />
-                  )}
+                  {editor}
                 </SpecificRow>
               );
             })}

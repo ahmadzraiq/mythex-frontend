@@ -1,8 +1,15 @@
 /**
- * SDUI Component Registry — the trimmed builder-palette keep-list plus a few
- * user-approved escape hatches (LottiePlayer, HtmlContent). Everything here
- * has a corresponding entry in the builder palette (see
- * `lib/builder/primitive-components.ts`) or is an approved leaf widget.
+ * SDUI Component Registry — runtime types referenced by JSON `type` fields.
+ *
+ * The list is deliberately small. Anything that can be expressed as a System
+ * Component (built from the primitives below) lives in
+ * `lib/builder/system-components/` instead — `Select`, `Tooltip`, the old
+ * `FileUpload`, and the `FileInput` primitive (replaced by the `pickFile`
+ * workflow step) were removed for that reason.
+ *
+ * Every entry here has a corresponding palette row in
+ * `lib/builder/primitive-components.ts` (or is reachable through one of the
+ * System Components built on top of these primitives).
  */
 
 // Layout + Typography
@@ -12,11 +19,7 @@ import { Text } from '@/components/ui/text';
 // Feedback
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
-// Overlay
-import { Tooltip, TooltipContent, TooltipText } from '@/components/ui/tooltip';
-
 // Form
-import { Input } from '@/components/ui/input';
 import { Checkbox, CheckboxGroup, CheckboxIndicator, CheckboxLabel } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Textarea, TextareaInput } from '@/components/ui/textarea';
@@ -27,24 +30,12 @@ import IconifyIcon from './components/IconifyIcon';
 import LottiePlayer from './components/LottiePlayer';
 import Video from './components/Video';
 import { FormContainer } from './components/FormContainer';
-import FileUpload from './components/FileUpload';
 import Iframe from './components/Iframe';
 import Chart from './components/Chart';
 import QRCodeWidget from './components/QRCodeWidget';
 import MarkdownViewer from './components/MarkdownViewer';
 import GoogleMap from './components/GoogleMap';
 import GoogleMapPlaces from './components/GoogleMapPlaces';
-
-// Select
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 
 // Radio
 import { Radio, RadioGroup, RadioIndicator, RadioLabel } from '@/components/ui/radio';
@@ -73,13 +64,6 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   Input: InputWithField,
   Textarea,
   TextareaInput,
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectItem,
   Slider,
   SliderTrack,
   SliderFilledTrack,
@@ -95,14 +79,10 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   CheckboxIndicator,
   CheckboxLabel,
   CheckboxGroup,
-  // Feedback / Overlay
-  Tooltip,
-  TooltipContent,
-  TooltipText,
+  // Feedback
   Skeleton,
   SkeletonText,
   // Tier 3 — HTML input wrappers
-  FileUpload,
   Iframe,
   // Tier 4 — Library-dependent
   Chart,

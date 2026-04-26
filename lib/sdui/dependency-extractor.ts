@@ -32,6 +32,18 @@ function extractFormulaVarPaths(expr: string): string[] {
   while ((gc = gcRe.exec(expr)) !== null) {
     paths.push(`globalContext.${gc[1].replace(/\?\./g, '.')}`);
   }
+  // Extract `theme` references so formulas like
+  //   theme?.['colors']?.['brand']
+  //   theme.colors.primary
+  //   theme['fonts'].body
+  // re-render when patchThemeColors() replaces merged.theme. We subscribe to the
+  // entire theme object (single key in merged state) — getNestedValue stringifies
+  // it for snapshot comparison so per-color changes are detected without needing
+  // to enumerate every individual color path.
+  const themeRe = /\btheme\s*(?:\?\.|\.|\?\.\[|\[)/;
+  if (themeRe.test(expr)) {
+    paths.push('theme');
+  }
   // Extract shared-component instance variable references so formulas/text
   // templates re-render when the underlying variable changes:
   //   context?.component?.variables?.['UUID']   → context.component.variables.UUID

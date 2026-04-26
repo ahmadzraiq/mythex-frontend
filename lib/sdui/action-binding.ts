@@ -125,7 +125,11 @@ function bindEventHandler(
     } else {
       result.onSubmit = handler;
     }
-  } else {
+  } else if (!event.includes('-')) {
+    // Only map pure camelCase event names (no hyphens) to DOM props.
+    // SC custom trigger IDs (e.g. "btn-t-on-click") contain hyphens and are
+    // handled exclusively by the ComponentTriggerDispatcher — they must never
+    // become DOM event props or React will warn and silently drop them.
     const propName = `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
     result[propName] = handler;
   }

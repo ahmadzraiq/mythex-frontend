@@ -284,6 +284,29 @@ function getCascadedStyles(
 }
 
 /**
+ * Collect cascaded _disabledOverlay overrides for a given breakpoint.
+ * Each field (color, opacity, blur) cascades independently.
+ * null for a field means "explicitly removed at this breakpoint".
+ */
+function getCascadedDisabledOverlay(
+  responsive: Partial<Record<BreakpointKey, ResponsiveOverride>>,
+  breakpoint: ActiveBreakpoint,
+): { color?: string | null; opacity?: number | null; blur?: number | null } {
+  if (breakpoint === 'desktop') return {};
+  const bpIndex = BREAKPOINT_CASCADE.indexOf(breakpoint as BreakpointKey);
+  if (bpIndex === -1) return {};
+  const merged: { color?: string | null; opacity?: number | null; blur?: number | null } = {};
+  for (let i = 0; i <= bpIndex; i++) {
+    const bp = BREAKPOINT_CASCADE[i];
+    const override = responsive[bp];
+    if (override?._disabledOverlay) {
+      Object.assign(merged, override._disabledOverlay);
+    }
+  }
+  return merged;
+}
+
+/**
  * Collect cascaded animation overrides for a given breakpoint.
  * Returns a sparse object with the same shape as `ResponsiveOverride['animation']`.
  * `null` for a leaf means "explicitly removed at this breakpoint".
@@ -358,12 +381,16 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
   const cascadedAnim = getCascadedAnimation(responsive, breakpoint);
   const hasAnimOverrides = Object.keys(cascadedAnim).length > 0;
 
+  const cascadedDisabledOverlay = getCascadedDisabledOverlay(responsive, breakpoint);
+  const hasDisabledOverlayOverrides = Object.keys(cascadedDisabledOverlay).length > 0;
+
   const hasAnyOverride = hasStyleOverrides
     || conditionOverride !== undefined
     || textOverride !== undefined
     || propsOverride !== undefined
     || styleOverride !== undefined
-    || hasAnimOverrides;
+    || hasAnimOverrides
+    || hasDisabledOverlayOverrides;
 
   if (!hasAnyOverride) return node;
 
@@ -460,6 +487,18 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
       // No base animation — create one on props (canonical location) so the renderer picks it up.
       resolved.props = { ...resolved.props, animation: mergeAnim(undefined) };
     }
+  }
+
+  if (hasDisabledOverlayOverrides) {
+    const base = (resolved as unknown as Record<string, unknown>)._disabledOverlay as
+      | { color?: string; opacity?: number; blur?: number }
+      | undefined;
+    const next = { ...(base ?? {}) } as Record<string, unknown>;
+    for (const [k, v] of Object.entries(cascadedDisabledOverlay)) {
+      if (v === null) delete next[k];
+      else next[k] = v;
+    }
+    (resolved as unknown as Record<string, unknown>)._disabledOverlay = next;
   }
 
   return resolved;

@@ -1,0 +1,19 @@
+{
+  "customColors": [
+    {
+      "id": "cc-brand-7c3aed",
+      "name": "brand",
+      "label": "Brand",
+      "light": "#7c3aed",
+      "dark": "#a78bfa"
+    },
+    {
+      "id": "cc-brand2-06b6d4",
+      "name": "brand-2",
+      "label": "Brand 2",
+      "light": "#06b6d4",
+      "dark": "#22d3ee"
+    }
+  ],
+  "colorFolders": []
+}

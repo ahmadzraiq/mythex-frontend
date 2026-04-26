@@ -1,0 +1,16 @@
+{
+  "wfOnSelectChange": {
+    "name": "On Select change",
+    "trigger": "sel-t-on-change",
+    "steps": [
+      {
+        "id": "store-value",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "sel-test-value",
+          "value": { "formula": "context?.event?.value" }
+        }
+      }
+    ]
+  }
+}

@@ -3226,10 +3226,19 @@
                           "text": "Country *"
                         },
                         {
-                          "type": "Select",
+                          "type": "Box",
+                          "_system": { "id": "sys-select", "name": "Select" },
+                          "_overrides": [],
                           "props": {
-                            "selectedValue": "{{local.data.form.formData.countryCode}}",
-                            "className": "w-full"
+                            "className": "flex flex-row items-center justify-between gap-[8px] px-[12px] py-[8px] rounded-[6px] border border-border bg-background cursor-pointer hover:border-primary w-full",
+                            "options": { "formula": "(checkout?.countries ?? []).map(c => ({ label: c.name, value: c.code }))" },
+                            "value": { "formula": "local?.data?.form?.formData?.countryCode" }
+                          },
+                          "popover": {
+                            "trigger": "click",
+                            "placement": "bottom-start",
+                            "offset": 4,
+                            "openVariable": "sel-v-is-open-uuid"
                           },
                           "actions": [
                             {
@@ -3238,73 +3247,40 @@
                           ],
                           "children": [
                             {
-                              "type": "SelectTrigger",
+                              "type": "Text",
+                              "props": { "className": "flex-1 text-[14px] text-foreground" },
+                              "text": {
+                                "formula": "(()=>{const v=context?.component?.props?.value;const opts=Array.isArray(context?.component?.props?.options)?context.component.props.options:[];const m=opts.find(o=>o?.value===v);return m?.label||'Select...'})()"
+                              }
+                            },
+                            {
+                              "type": "Icon",
+                              "props": { "icon": "lucide:chevron-down", "size": 16, "color": "#6b7280" }
+                            },
+                            {
+                              "type": "Box",
+                              "_popoverContent": true,
                               "props": {
-                                "className": "w-full !rounded-[6px] !border-[var(--theme-border)] !bg-[var(--theme-card)] min-h-[40px]"
+                                "className": "min-w-[200px] max-h-[300px] overflow-auto bg-background border border-border rounded-[6px] shadow-md py-[4px]"
                               },
                               "children": [
                                 {
-                                  "type": "SelectInput",
-                                  "props": {
-                                    "placeholder": "Select country...",
-                                    "className": "!text-[var(--theme-foreground)]"
-                                  }
-                                },
-                                {
-                                  "type": "Icon",
-                                  "children": [
-                                    {
-                                      "type": "Icon",
-                                      "props": {
-                                        "icon": "lucide:chevron-down",
-                                        "size": 16,
-                                        "color": "#6b7280"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "SelectPortal",
-                              "children": [
-                                {
-                                  "type": "SelectBackdrop"
-                                },
-                                {
-                                  "type": "SelectContent",
-                                  "props": {
-                                    "className": "max-h-[300px]"
-                                  },
+                                  "type": "Box",
+                                  "map": { "formula": "Array.isArray(context?.component?.props?.options) ? context.component.props.options : []" },
+                                  "key": "context.item.data.value",
+                                  "props": { "className": "contents" },
                                   "children": [
                                     {
                                       "type": "Box",
-                                      "children": [
-                                        {
-                                          "type": "Box",
-                                          "props": {
-                                            "className": "w-[40px] h-[4px] rounded-full bg-border"
-                                          }
-                                        }
-                                      ],
                                       "props": {
-                                        "className": "flex items-center justify-center py-[8px]"
-                                      }
-                                    },
-                                    {
-                                      "type": "Box",
-                                      "map": "checkout.countries",
-                                      "key": "country",
-                                      "props": {
-                                        "className": "contents"
+                                        "className": "flex flex-row items-center px-[12px] py-[8px] cursor-pointer hover:bg-muted"
                                       },
+                                      "actions": [{ "action": "sel-wf-select-item" }],
                                       "children": [
                                         {
-                                          "type": "SelectItem",
-                                          "props": {
-                                            "label": "{{context.item.data.name}}",
-                                            "value": "{{context.item.data.code}}"
-                                          }
+                                          "type": "Text",
+                                          "props": { "className": "text-[14px] text-foreground" },
+                                          "text": "{{context.item.data.label}}"
                                         }
                                       ]
                                     }
@@ -5709,17 +5685,18 @@
           }
         ]
       },
-      "zoo-wf-upload-file": {
-        "id": "zoo-wf-upload-file",
-        "name": "uploadFile",
+      "zoo-wf-pick-file": {
+        "id": "zoo-wf-pick-file",
+        "name": "pickFile",
         "trigger": "execution",
         "params": [],
         "steps": [
           {
-            "id": "s-upload",
-            "type": "uploadFile",
+            "id": "s-pick",
+            "type": "pickFile",
             "config": {
-              "accept": "image/*"
+              "accept": "image/*",
+              "storeIn": "zoo-v-last-action-uuid"
             }
           },
           {
@@ -5727,7 +5704,7 @@
             "type": "changeVariableValue",
             "config": {
               "variableName": "zoo-v-last-action-uuid",
-              "value": "uploadFile: prompted"
+              "value": "pickFile: prompted"
             }
           }
         ]
@@ -6257,7 +6234,7 @@
                   },
                   "actions": [
                     {
-                      "action": "zoo-do-upload-file"
+                      "action": "zoo-do-pick-file"
                     }
                   ],
                   "children": [
@@ -6266,7 +6243,7 @@
                       "props": {
                         "className": "text-[11px] font-semibold text-gray-700 dark:text-gray-200"
                       },
-                      "text": "uploadFile",
+                      "text": "pickFile",
                       "_sharedKey": "cffc9956-f1f8-46aa-84e1-ca9cb0908f15"
                     }
                   ],

@@ -196,8 +196,8 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: '__encodeBase64', ...cfg };
     case 'createUrlFromBase64':
       return { type: '__createUrlFromBase64', ...cfg };
-    case 'uploadFile':
-      return { type: '__uploadFile', ...cfg };
+    case 'pickFile':
+      return null; // handled inline in runSteps (opens OS file picker)
     case 'scrollToElement':
       return null; // handled inline in runSteps
 
@@ -621,6 +621,100 @@ async function runSteps(
       continue;
     }
 
+    // ── pickFile: open the OS file picker and write selected files to a variable.
+    // Must run inside a click-triggered workflow (browsers require a real user
+    // gesture to open the picker). Selected files are normalised to plain objects
+    // {name,size,type,lastModified,file} so formulas can read primitives without
+    // touching the live FileList. The original File is kept on `.file` for downstream
+    // encode/upload steps.
+    if (step.type === 'pickFile') {
+      const cfg = step.config ?? {};
+      const vsState = getGlobalVariableStore().getState().getFullState();
+      const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+      const acceptVal = evaluateBindingValue(cfg.accept, formulaCtx);
+      const multipleVal = evaluateBindingValue(cfg.multiple, formulaCtx);
+      const accept = acceptVal == null ? '' : String(acceptVal);
+      const multiple = Boolean(multipleVal);
+      const storeIn = cfg.storeIn as string | undefined;
+
+      const files = await new Promise<Array<{
+        name: string; size: number; type: string; lastModified: number; file: File;
+      }>>((resolve) => {
+        if (typeof document === 'undefined') return resolve([]);
+        const input = document.createElement('input');
+        input.type = 'file';
+        if (accept) input.accept = accept;
+        if (multiple) input.multiple = true;
+        input.style.display = 'none';
+        let settled = false;
+        const cleanup = () => {
+          if (input.parentNode) input.parentNode.removeChild(input);
+        };
+        input.onchange = () => {
+          if (settled) return;
+          settled = true;
+          const list = input.files
+            ? Array.from(input.files).map(f => ({
+                name: f.name, size: f.size, type: f.type,
+                lastModified: f.lastModified, file: f,
+              }))
+            : [];
+          cleanup();
+          resolve(list);
+        };
+        input.oncancel = () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve([]);
+        };
+        document.body.appendChild(input);
+        input.click();
+      });
+
+      if (storeIn) {
+        // Mirror setVarHandler: when the storeIn name matches a per-instance
+        // variable on the ambient SC model, write to the instance slot instead
+        // of the global store so later workflow steps + the renderer see the
+        // up-to-date value via context.component.variables[storeIn].
+        const componentCtx = ctx.scope?.context as Record<string, unknown> | undefined;
+        const instanceId = componentCtx?.component
+          ? (componentCtx.component as Record<string, unknown>).instanceId as string | undefined
+          : undefined;
+        const modelId = componentCtx?.component
+          ? (componentCtx.component as Record<string, unknown>).id as string | undefined
+          : undefined;
+        const scModel = modelId ? (() => {
+          try {
+            const m = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId];
+            if (m) return m;
+          } catch { /* noop */ }
+          try {
+            const m = require('@/config/shared-components.json')[modelId];
+            if (m) return m;
+          } catch { /* noop */ }
+          try { return require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ }
+          return undefined;
+        })() : undefined;
+        const isComponentVar = instanceId && scModel?.variables && storeIn in scModel.variables;
+        if (isComponentVar) {
+          try {
+            const { setComponentInstanceVar } = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+            setComponentInstanceVar(instanceId, storeIn, files);
+          } catch {
+            getGlobalVariableStore().getState().setState(prev => ({ ...prev, [storeIn]: files }));
+          }
+        } else {
+          getGlobalVariableStore().getState().setState(prev => ({ ...prev, [storeIn]: files }));
+        }
+      }
+      if (step.id) {
+        workflowCtx[step.id] = { result: files, error: null };
+        flushWorkflowCtx(workflowCtx);
+      }
+      continue;
+    }
+
     // ── Scroll to element by selector or data-builder-id ────────────────────
     if (step.type === 'scrollToElement') {
       const targetId = String(step.config?.elementId ?? step.config?.targetId ?? '');
@@ -891,6 +985,12 @@ async function runSteps(
               ...componentCtx,
               params: resolvedArgs,
               component: { ...compInfo, id: modelId, instanceId, variables: liveInstanceVars },
+              // Propagate ctx.event into context.event so SC internal workflow
+              // formulas using `context?.event?.value` (e.g. onValueChange
+              // handlers that read the newly selected value) resolve correctly.
+              // ctx.event is set by the action-binding layer from the DOM event
+              // but is NOT automatically placed in scope.context without this line.
+              ...(ctx.event !== undefined ? { event: ctx.event } : {}),
             },
           };
           const subCtx = { ...ctx, scope: componentScope };
@@ -971,11 +1071,37 @@ async function runSteps(
       }
       const rawPayload = triggerPayload !== undefined ? triggerPayload : cfg.payload;
 
+      // Refresh live per-instance variables before resolving the trigger
+      // payload so formulas referencing context.component.variables['UUID']
+      // see the value AFTER any preceding changeVariableValue steps in the
+      // same workflow (e.g. radio-group's `rg-wf-on-change` sets the
+      // selectedValue var and then emits with `{ value: <var> }`).
+      let ctxForPayload: ActionHandlerContext = ctx;
+      if (instanceId) {
+        try {
+          const { getComponentInstanceVars } = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+          const liveVars = getComponentInstanceVars(instanceId) ?? {};
+          ctxForPayload = {
+            ...ctx,
+            scope: {
+              ...(ctx.scope ?? {}),
+              context: {
+                ...componentCtx,
+                component: {
+                  ...(compInfo ?? {}),
+                  variables: liveVars,
+                },
+              },
+            },
+          };
+        } catch { /* non-fatal */ }
+      }
+
       let resolvedPayload: unknown = null;
       if (rawPayload !== undefined) {
         if (rawPayload && typeof rawPayload === 'object' && 'formula' in (rawPayload as Record<string, unknown>)) {
           const vsState = getGlobalVariableStore().getState().getFullState();
-          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+          const formulaCtx = buildFormulaCtx(vsState, ctxForPayload, parameters);
           resolvedPayload = evaluateFormula((rawPayload as { formula: string }).formula, formulaCtx).value;
         } else if (typeof rawPayload === 'string') {
           // Trigger.payload can be a literal JSON string (authored in the
@@ -990,7 +1116,7 @@ async function runSteps(
           }
         } else if (rawPayload && typeof rawPayload === 'object') {
           const vsState = getGlobalVariableStore().getState().getFullState();
-          const formulaCtx = buildFormulaCtx(vsState, ctx, parameters);
+          const formulaCtx = buildFormulaCtx(vsState, ctxForPayload, parameters);
           const out: Record<string, unknown> = {};
           for (const [k, v] of Object.entries(rawPayload as Record<string, unknown>)) {
             out[k] = v && typeof v === 'object' && 'formula' in (v as object)
@@ -1051,6 +1177,32 @@ async function runSteps(
             } catch {
               return undefined;
             }
+          },
+          /**
+           * Single-step dispatcher used by typed wwLib helpers (popovers, auth,
+           * components, shared, scroll, etc.). We synthesize a workflow step
+           * with a unique id and reuse runSteps so every ActionStepType — both
+           * the inline-handled ones and those routed via stepToSdui — works
+           * uniformly. The resulting step's `result`/`error` is also written
+           * to context.workflow[<synthId>] just like a normal canvas step.
+           */
+          runStep: async (s: { id?: string; type: string; config?: Record<string, unknown> }) => {
+            const synth: WorkflowStep = {
+              id: s.id ?? `js-${step.id}-${Math.random().toString(36).slice(2, 8)}`,
+              type: s.type,
+              config: s.config ?? {},
+            };
+            const last = await runSteps([synth], ctx, workflowCtx, parameters);
+            // Prefer the explicit per-step result entry; fall back to runSteps' lastResult.
+            const entry = workflowCtx[synth.id];
+            if (entry) {
+              if (entry.error) throw new Error(typeof entry.error === 'string' ? entry.error : 'wwLib step failed');
+              return entry.result;
+            }
+            return last;
+          },
+          runOne: async (action: Record<string, unknown>) => {
+            return await ctx.runOne(action as unknown as import('../../types').SDUIAction);
           },
         };
         const out = await evaluateJsAsync(code, formulaCtx, wwLibCtx);

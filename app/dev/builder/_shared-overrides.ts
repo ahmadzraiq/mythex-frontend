@@ -142,7 +142,8 @@ type NodePropsLike = {
 };
 
 function readClassName(n: NodePropsLike): string {
-  return (n.props?.className as string | undefined) ?? '';
+  const v = n.props?.className;
+  return typeof v === 'string' ? v : '';
 }
 function readStyle(n: NodePropsLike): Record<string, unknown> {
   return (n.props?.style as Record<string, unknown> | undefined) ?? {};

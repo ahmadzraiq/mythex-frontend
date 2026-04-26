@@ -119,7 +119,9 @@ function inferFormat(value: string): ColorFormat {
  * Returns the short name without 'theme-' prefix (e.g. 'primary', 'ring').
  */
 function parseCssVarName(value: string): string | null {
-  const m = value.match(/var\(--([^)]+)\)/);
+  // Stop at first comma (CSS-var fallback) or closing paren so values like
+  // `var(--theme-brand-2, #d1d5db)` resolve to `brand-2`, not the whole tail.
+  const m = value.match(/var\(--([^,)\s]+)/);
   if (!m) return null;
   // Strip 'theme-' prefix — element colors are stored as var(--theme-X)
   // but swatch identifiers use the short design-system name (e.g. 'primary')
@@ -413,11 +415,13 @@ interface PopoverProps {
   selectedCssVar: string | null;
   editingCssVar?: string | null;
   editingDefaultHex?: string | null;
+  /** Extra swatches appended after the system theme palette. */
+  customSwatches?: ThemeSwatch[];
 }
 
 function ColorPopover({
   anchorRect, onClose, value, onSelect, themeOverrides, selectedCssVar,
-  editingCssVar, editingDefaultHex,
+  editingCssVar, editingDefaultHex, customSwatches,
 }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -528,11 +532,15 @@ function ColorPopover({
   const top = spaceBelow >= POPOVER_HEIGHT ? anchorRect.bottom + 6 : anchorRect.top - POPOVER_HEIGHT - 6;
   const left = Math.min(anchorRect.left, window.innerWidth - POPOVER_WIDTH - 8);
 
-  // Find singleMatchCssVar for swatches
+  // Find singleMatchCssVar for swatches (system + custom, custom take precedence on tie)
+  const allSwatches = useMemo(
+    () => [...GLOBAL_SWATCHES, ...(customSwatches ?? [])],
+    [customSwatches],
+  );
   const singleMatchCssVar = (() => {
     if (editingCssVar != null) return null;
     const hexVal = rgbToHex(r, g, b).toLowerCase();
-    const match = GLOBAL_SWATCHES.find(s => {
+    const match = allSwatches.find(s => {
       const resolved = themeOverrides[s.cssVar] ?? resolveCssVar(s.cssVar) ?? s.defaultHex;
       return hexVal === resolved.toLowerCase();
     });
@@ -660,6 +668,27 @@ function ColorPopover({
           ))}
         </div>
       </div>
+
+      {/* Custom swatches — user-defined theme colors, behave identically to system swatches */}
+      {customSwatches && customSwatches.length > 0 && (
+        <div>
+          <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Custom Colors</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
+            {customSwatches.map(s => (
+              <Swatch
+                key={`custom:${s.cssVar}`} {...s}
+                currentValue={value}
+                onSelect={handleSwatchSelect}
+                overrides={themeOverrides}
+                selectedCssVar={selectedCssVar}
+                editingCssVar={editingCssVar}
+                editingDefaultHex={editingDefaultHex}
+                singleMatchCssVar={singleMatchCssVar}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
@@ -690,6 +719,15 @@ export function FigmaColorPicker({
   const [selectedCssVar, setSelectedCssVar] = useState<string | null>(() => parseCssVarName(value));
   const triggerRef = useRef<HTMLDivElement>(null);
   const themeOverrides = useBuilderStore(s => s.themeOverrides);
+  const customColors = useBuilderStore(s => s.customColors);
+  const customSwatches = useMemo<ThemeSwatch[]>(
+    () => customColors.map(c => ({
+      label: c.label?.trim() || c.name,
+      cssVar: c.name,
+      defaultHex: c.light,
+    })),
+    [customColors],
+  );
   const isInternalChangeRef = useRef(false);
   const onCommitRef = useRef(onCommit);
   useEffect(() => { onCommitRef.current = onCommit; }, [onCommit]);
@@ -777,6 +815,7 @@ export function FigmaColorPicker({
           selectedCssVar={selectedCssVar}
           editingCssVar={editingCssVar}
           editingDefaultHex={editingDefaultHex}
+          customSwatches={customSwatches}
         />
       )}
     </div>

@@ -1,0 +1,97 @@
+{
+  "id": "sys-button",
+  "name": "Button",
+  "description": "Click-to-act button built from primitives. Variant (`solid|destructive|outline|ghost|link`) + size (`sm|md|lg`) drive individual style properties via formulas. Optional iconLeft / iconRight icons render only when their prop is non-empty (gated by `condition`). When `disabled` is true, the click workflow short-circuits and never emits the public `On click` trigger so listeners stay quiet.",
+  "properties": [
+    { "id": "prop-btn-variant",    "name": "variant",    "type": "select",  "defaultValue": "solid",   "options": [{ "label": "Solid", "value": "solid" }, { "label": "Outline", "value": "outline" }, { "label": "Ghost", "value": "ghost" }, { "label": "Destructive", "value": "destructive" }, { "label": "Link", "value": "link" }] },
+    { "id": "prop-btn-size",       "name": "size",       "type": "select",  "defaultValue": "md",      "options": [{ "label": "Small", "value": "sm" }, { "label": "Medium", "value": "md" }, { "label": "Large", "value": "lg" }] },
+    { "id": "prop-btn-label",      "name": "label",      "type": "text",    "defaultValue": "Button" },
+    { "id": "prop-btn-icon-left",  "name": "iconLeft",   "type": "icon",    "defaultValue": "" },
+    { "id": "prop-btn-icon-right", "name": "iconRight",  "type": "icon",    "defaultValue": "" },
+    { "id": "prop-btn-disabled",   "name": "disabled",   "type": "boolean", "defaultValue": false }
+  ],
+  "triggers": [
+    {
+      "id": "btn-t-on-click",
+      "name": "On click",
+      "payload": { "formula": "{ label: context?.component?.props?.label, variant: context?.component?.props?.variant }" }
+    }
+  ],
+  "variables": {},
+  "workflows": {
+    "btn-wf-on-click": {
+      "id": "btn-wf-on-click",
+      "name": "On click",
+      "trigger": "click",
+      "description": "Short-circuit if `disabled` is true, otherwise emit the public On click trigger so the parent page can react.",
+      "steps": [
+        {
+          "id": "guard-disabled",
+          "type": "branch",
+          "config": { "condition": "!context?.component?.props?.disabled" },
+          "trueBranch": [
+            {
+              "id": "emit-click",
+              "type": "emitComponentTrigger",
+              "config": { "triggerId": "btn-t-on-click" }
+            }
+          ],
+          "falseBranch": []
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-row items-center justify-center gap-[8px] rounded-[6px] hover:opacity-90 active:opacity-80 transition-opacity",
+      "style": {
+        "backgroundColor": { "formula": "context?.component?.props?.variant==='destructive'?'#dc2626':(context?.component?.props?.variant==='outline'||context?.component?.props?.variant==='ghost'||context?.component?.props?.variant==='link')?'transparent':'var(--theme-primary)'" },
+        "borderWidth": { "formula": "context?.component?.props?.variant==='outline'?'1px':'0'" },
+        "borderStyle": { "formula": "context?.component?.props?.variant==='outline'?'solid':'none'" },
+        "borderColor": { "formula": "context?.component?.props?.variant==='outline'?'var(--theme-foreground)':'transparent'" },
+        "paddingLeft": { "formula": "context?.component?.props?.size==='sm'?'12px':context?.component?.props?.size==='lg'?'28px':'20px'" },
+        "paddingRight": { "formula": "context?.component?.props?.size==='sm'?'12px':context?.component?.props?.size==='lg'?'28px':'20px'" },
+        "paddingTop": { "formula": "context?.component?.props?.size==='sm'?'6px':context?.component?.props?.size==='lg'?'14px':'10px'" },
+        "paddingBottom": { "formula": "context?.component?.props?.size==='sm'?'6px':context?.component?.props?.size==='lg'?'14px':'10px'" },
+        "opacity": { "formula": "context?.component?.props?.disabled?'0.5':'1'" },
+        "cursor": { "formula": "context?.component?.props?.disabled?'not-allowed':'pointer'" },
+        "pointerEvents": { "formula": "context?.component?.props?.disabled?'none':'auto'" }
+      }
+    },
+    "actions": [{ "action": "btn-wf-on-click" }],
+    "children": [
+      {
+        "type": "Icon",
+        "condition": "!!context?.component?.props?.iconLeft",
+        "props": {
+          "icon": { "formula": "context?.component?.props?.iconLeft || 'lucide:star'" },
+          "size": { "formula": "context?.component?.props?.size==='sm'?14:context?.component?.props?.size==='lg'?18:16" },
+          "color": { "formula": "context?.component?.props?.variant==='solid'?'var(--theme-primary-foreground)':context?.component?.props?.variant==='destructive'?'#ffffff':context?.component?.props?.variant==='link'?'var(--theme-primary)':'currentColor'" }
+        }
+      },
+      {
+        "type": "Text",
+        "props": {
+          "className": "font-medium",
+          "style": {
+            "fontSize": { "formula": "context?.component?.props?.size==='sm'?'12px':context?.component?.props?.size==='lg'?'16px':'14px'" },
+            "color": { "formula": "context?.component?.props?.variant==='destructive'?'#ffffff':context?.component?.props?.variant==='link'?'var(--theme-primary)':(context?.component?.props?.variant==='outline'||context?.component?.props?.variant==='ghost')?'var(--theme-foreground)':'var(--theme-primary-foreground)'" }
+          }
+        },
+        "text": { "formula": "context?.component?.props?.label || ''" }
+      },
+      {
+        "type": "Icon",
+        "condition": "!!context?.component?.props?.iconRight",
+        "props": {
+          "icon": { "formula": "context?.component?.props?.iconRight || 'lucide:arrow-right'" },
+          "size": { "formula": "context?.component?.props?.size==='sm'?14:context?.component?.props?.size==='lg'?18:16" },
+          "color": { "formula": "context?.component?.props?.variant==='solid'?'var(--theme-primary-foreground)':context?.component?.props?.variant==='destructive'?'#ffffff':context?.component?.props?.variant==='link'?'var(--theme-primary)':'currentColor'" }
+        }
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "◼"
+}

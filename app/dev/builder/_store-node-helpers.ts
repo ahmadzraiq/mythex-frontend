@@ -18,6 +18,7 @@
  */
 
 import type { SDUINode } from '@/lib/sdui/types/node';
+import type { CustomColor } from './_store-types';
 import { FORM_REGISTERABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 
@@ -144,14 +145,28 @@ export const GLUESTACK_PRIMARY_BRIDGE = [
   '  --color-primary-800: var(--primary) !important;',
 ].join('\n');
 
-export function _applyLightOverrides(overrides: Record<string, string>) {
+export function _applyLightOverrides(
+  overrides: Record<string, string>,
+  customColors: CustomColor[] = [],
+) {
   const el = _getManagedStyle('builder-light-overrides');
 
   const colorLines: string[] = [];
   const fontLines: string[]  = [];
   const baseLines: string[]  = [];
 
+  // Build the merged color map first — overrides take precedence over custom colors
+  // so the user can still override a theme variable that happens to share a name.
+  const merged: Record<string, string> = {};
+  for (const c of customColors) {
+    if (!c?.name) continue;
+    if (typeof c.light === 'string' && c.light) merged[c.name] = c.light;
+  }
   for (const [k, v] of Object.entries(overrides)) {
+    merged[k] = v;
+  }
+
+  for (const [k, v] of Object.entries(merged)) {
     if (v.startsWith('#')) {
       // hex color → convert to RGB triplet for the design-system var, scope to light mode only
       colorLines.push(`  --${k}: ${hexToRgbTriplet(v)};`);
@@ -193,7 +208,7 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
   }
   // Keep THEME_OBJ.colors in sync so formula expressions like
   // theme?.['colors']?.['primary-foreground'] resolve to the live hex value.
-  patchThemeColors(overrides, 'light');
+  patchThemeColors(merged, 'light');
 }
 
 /**
@@ -201,9 +216,23 @@ export function _applyLightOverrides(overrides: Record<string, string>) {
  * beat ThemeStyles's `.dark { }` (specificity 0,1,0) without relying on DOM order.
  * Also bridges Gluestack's internal primary tokens to `--primary` with !important.
  */
-export function _applyDarkOverrides(overrides: Record<string, string>) {
+export function _applyDarkOverrides(
+  overrides: Record<string, string>,
+  customColors: CustomColor[] = [],
+) {
   const el = _getManagedStyle('builder-dark-overrides');
-  const vars = Object.entries(overrides)
+
+  // Merge custom colors (dark value) under their `name` first, then layer overrides on top.
+  const merged: Record<string, string> = {};
+  for (const c of customColors) {
+    if (!c?.name) continue;
+    if (typeof c.dark === 'string' && c.dark) merged[c.name] = c.dark;
+  }
+  for (const [k, v] of Object.entries(overrides)) {
+    merged[k] = v;
+  }
+
+  const vars = Object.entries(merged)
     .map(([k, v]) => {
       const isHex = v.startsWith('#');
       const isRgb = v.startsWith('rgb(') || v.startsWith('rgba(');
@@ -232,7 +261,7 @@ export function _applyDarkOverrides(overrides: Record<string, string>) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('builder:css-vars-updated'));
   }
-  patchThemeColors(overrides, 'dark');
+  patchThemeColors(merged, 'dark');
 }
 
 /**

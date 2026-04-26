@@ -30,6 +30,7 @@ import scComponentShowcaseActions from '@/config/actions/sc-component-showcase.j
 import datepickerTestActions from '@/config/actions/datepicker-test.json';
 import sharedComponentsJson from '@/config/shared-components.json';
 import formulasJson from '@/config/formulas.json';
+import customColorsJson from '@/config/custom-colors.json';
 import type { NamedDataSourceDef } from '@/config/datasource-types';
 
 // ── In-memory variable additions (lost on reload) ─────────────────────────────
@@ -220,7 +221,10 @@ export function getBuilderConfig() {
 
   const formulas = formulasJson as Record<string, import('@/app/dev/builder/_store-types').GlobalFormulaDef>;
 
-  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap, formulas };
+  const customColors = (customColorsJson as { customColors?: unknown[]; colorFolders?: unknown[] }).customColors ?? [];
+  const colorFolders = (customColorsJson as { customColors?: unknown[]; colorFolders?: unknown[] }).colorFolders ?? [];
+
+  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap, formulas, customColors, colorFolders };
 }
 
 // ── Backend project config load / save ────────────────────────────────────────

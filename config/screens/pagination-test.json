@@ -1,0 +1,111 @@
+{
+  "meta": { "title": "Pagination System Component Demo" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "max-w-[640px] mx-auto flex flex-col gap-[24px] py-[48px] px-[24px]" },
+        "children": [
+          { "type": "Text", "props": { "className": "text-[24px] font-bold text-gray-900 dark:text-white" }, "text": "Pagination — Custom Trigger Demo" },
+
+          {
+            "type": "Box",
+            "_system": { "id": "sys-pagination", "name": "Pagination" },
+            "_overrides": [],
+            "props": {
+              "currentPage": { "formula": "Number(variables['pg-test-page']) || 1" },
+              "totalPages": 5,
+              "siblingCount": 1,
+              "data-testid": "pagination-strip",
+              "className": "flex flex-row gap-[4px] items-center"
+            },
+            "actions": [{ "action": "wfOnPaginationChange" }],
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "data-testid": "pagination-prev",
+                  "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center hover:bg-[var(--theme-muted)]",
+                  "style": {
+                    "borderWidth": "1px",
+                    "borderStyle": "solid",
+                    "borderColor": "var(--border)",
+                    "opacity": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'0.5':'1'" },
+                    "cursor": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'not-allowed':'pointer'" },
+                    "pointerEvents": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'none':'auto'" }
+                  }
+                },
+                "actions": [{ "action": "pg-wf-prev" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-left", "size": 14, "color": "#6b7280" } }
+                ]
+              },
+              {
+                "type": "Box",
+                "map": { "formula": "(()=>{const cp=Number(context?.component?.props?.currentPage)||1;const tp=Number(context?.component?.props?.totalPages)||1;const sib=Number(context?.component?.props?.siblingCount)||1;const start=Math.max(1,cp-sib);const end=Math.min(tp,cp+sib);const out=[];for(let i=start;i<=end;i++)out.push({page:i,isActive:i===cp});return out})()" },
+                "key": "context.item.data.page",
+                "props": { "className": "contents" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "data-testid": { "formula": "'pagination-page-' + (context?.item?.data?.page || '')" },
+                      "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center cursor-pointer",
+                      "style": {
+                        "backgroundColor": { "formula": "context?.item?.data?.isActive?'var(--theme-primary)':'transparent'" },
+                        "borderWidth": { "formula": "context?.item?.data?.isActive?'0':'1px'" },
+                        "borderStyle": { "formula": "context?.item?.data?.isActive?'none':'solid'" },
+                        "borderColor": { "formula": "context?.item?.data?.isActive?'transparent':'var(--border)'" }
+                      }
+                    },
+                    "actions": [{ "action": "pg-wf-jump" }],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium",
+                          "style": {
+                            "color": { "formula": "context?.item?.data?.isActive?'var(--theme-primary-foreground)':'var(--theme-foreground)'" }
+                          }
+                        },
+                        "text": "{{context.item.data.page}}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "data-testid": "pagination-next",
+                  "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center hover:bg-[var(--theme-muted)]",
+                  "style": {
+                    "borderWidth": "1px",
+                    "borderStyle": "solid",
+                    "borderColor": "var(--border)",
+                    "opacity": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'0.5':'1'" },
+                    "cursor": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'not-allowed':'pointer'" },
+                    "pointerEvents": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'none':'auto'" }
+                  }
+                },
+                "actions": [{ "action": "pg-wf-next" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 14, "color": "#6b7280" } }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-gray-700 dark:text-gray-300", "data-testid": "out-pagination-page" },
+            "text": { "formula": "'Page: ' + (variables['pg-test-page'] || 1)" }
+          }
+        ]
+      }
+    ]
+  }
+}

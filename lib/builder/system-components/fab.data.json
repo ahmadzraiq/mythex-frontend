@@ -1,0 +1,79 @@
+{
+  "id": "sys-fab",
+  "name": "FAB",
+  "description": "Floating action button — pill-shaped clickable Box with a primary background, drop shadow, an icon, and an optional label that hides itself when empty (gated by `condition`). When `disabled` is true the click workflow short-circuits and never emits the public `On click` trigger.",
+  "properties": [
+    { "id": "prop-fab-icon",     "name": "icon",     "type": "icon",    "defaultValue": "lucide:plus" },
+    { "id": "prop-fab-label",    "name": "label",    "type": "text",    "defaultValue": "Add" },
+    { "id": "prop-fab-disabled", "name": "disabled", "type": "boolean", "defaultValue": false }
+  ],
+  "triggers": [
+    {
+      "id": "fab-t-on-click",
+      "name": "On click",
+      "payload": { "formula": "{ label: context?.component?.props?.label, icon: context?.component?.props?.icon }" }
+    }
+  ],
+  "variables": {},
+  "workflows": {
+    "fab-wf-on-click": {
+      "id": "fab-wf-on-click",
+      "name": "On click",
+      "trigger": "click",
+      "description": "Short-circuit if `disabled` is true, otherwise emit the public On click trigger.",
+      "steps": [
+        {
+          "id": "guard-disabled",
+          "type": "branch",
+          "config": { "condition": "!context?.component?.props?.disabled" },
+          "trueBranch": [
+            {
+              "id": "emit-click",
+              "type": "emitComponentTrigger",
+              "config": { "triggerId": "fab-t-on-click" }
+            }
+          ],
+          "falseBranch": []
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-row items-center justify-center gap-[8px] rounded-[9999px] shadow-lg hover:opacity-90 active:opacity-80 transition-opacity",
+      "style": {
+        "backgroundColor": "var(--theme-primary)",
+        "paddingLeft": "20px",
+        "paddingRight": "20px",
+        "paddingTop": "12px",
+        "paddingBottom": "12px",
+        "opacity": { "formula": "context?.component?.props?.disabled?'0.5':'1'" },
+        "cursor": { "formula": "context?.component?.props?.disabled?'not-allowed':'pointer'" },
+        "pointerEvents": { "formula": "context?.component?.props?.disabled?'none':'auto'" }
+      }
+    },
+    "actions": [{ "action": "fab-wf-on-click" }],
+    "children": [
+      {
+        "type": "Icon",
+        "props": {
+          "icon": { "formula": "context?.component?.props?.icon || 'lucide:plus'" },
+          "size": 20,
+          "color": "var(--theme-primary-foreground)"
+        }
+      },
+      {
+        "type": "Text",
+        "condition": "!!context?.component?.props?.label",
+        "props": {
+          "className": "text-[14px] font-medium",
+          "style": { "color": "var(--theme-primary-foreground)" }
+        },
+        "text": { "formula": "context?.component?.props?.label || ''" }
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "⊕"
+}

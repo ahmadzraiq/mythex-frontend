@@ -98,6 +98,25 @@ export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponen
             const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
             cloned._system = { id: model.id, name: model.name };
             cloned._overrides = [];
+            // Per-tile prop overrides: when the palette tile's defaultNode carries a
+            // `props` bag, merge it onto the cloned SC root so e.g. `Btn Solid` and
+            // `Btn Destructive` both drop a `sys-button` instance with different
+            // initial `variant` / `label` / `iconLeft` / etc. SC-specific overrides
+            // (anything that's a declared SC property) live on `cloned.props`; pure
+            // styling props like `className` are deliberately not merged because the
+            // SC content template owns its className via formula.
+            const tileProps = (primitive.defaultNode as { props?: Record<string, unknown> } | undefined)?.props;
+            if (tileProps && typeof tileProps === 'object') {
+              const declared = new Set((model.properties ?? []).map(p => p.name));
+              const incoming: Record<string, unknown> = {};
+              for (const [key, value] of Object.entries(tileProps)) {
+                if (declared.has(key)) incoming[key] = value;
+              }
+              if (Object.keys(incoming).length > 0) {
+                const existing = (cloned.props as Record<string, unknown> | undefined) ?? {};
+                cloned.props = { ...existing, ...incoming };
+              }
+            }
             data = JSON.stringify(cloned);
           } else {
             data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);

@@ -189,7 +189,7 @@
                         "type": "changeVariableValue",
                         "config": {
                           "variableName": "js-demo-0000-0000-0000-000000000002",
-                          "value": { "formula": "globalContext?.event?.value ?? ''" }
+                          "value": { "formula": "event?.value ?? ''" }
                         }
                       }
                     ]
@@ -431,6 +431,347 @@
               }
             ]
           }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "id": "jsTopAnchor",
+        "props": { "className": "h-[1px] w-full" },
+        "children": []
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 3 — Navigation (wwLib.navigate)" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.navigate.to({ path, queryParams }), wwLib.navigate.to({ linkType:'external', externalUrl, newTab }), wwLib.navigate.prev(defaultPath)." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-nav-internal", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActNavigateInternal" }], "children": [{ "type": "Text", "text": "navigate.to('/home', { from: 'js' })", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-nav-external", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActNavigateExternal" }], "children": [{ "type": "Text", "text": "navigate.to(external, newTab)", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-nav-prev", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActNavigatePrev" }], "children": [{ "type": "Text", "text": "navigate.prev('/javascript-test')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-nav", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": "{{variables['js-demo-0000-0000-0000-000000000011']}}" }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 4 — Data / Collections" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.collections.update(name, mode, item, key) and wwLib.collections.refetch(name)." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-col-add", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActUpdateCollection" }], "children": [{ "type": "Text", "text": "collections.update('add')", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-col-refetch", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActRefetchCollection" }], "children": [{ "type": "Text", "text": "collections.refetch('Featured Products')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-col-count", "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300" }, "text": { "js": "return `productItems rows = ${(variables.productItems ?? []).length}`;" } }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 5 — Component actions / triggers" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.components.run(instanceId, workflowId, parameters?) and wwLib.components.emit(instanceId, triggerName, payload?)." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-comp-run", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActComponentRun" }], "children": [{ "type": "Text", "text": "components.run(instanceId, workflowId)", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-comp-emit", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActComponentEmit" }], "children": [{ "type": "Text", "text": "components.emit(instanceId, 'demoTrigger')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-comp", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": "{{variables['js-demo-0000-0000-0000-000000000013']}}" }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 6 — Popovers" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.popovers.open(id), .close(id), .toggle(id)." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-pop-open", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActPopoverOpen" }], "children": [{ "type": "Text", "text": "popovers.open('demo')", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-pop-close", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActPopoverClose" }], "children": [{ "type": "Text", "text": "popovers.close('demo')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-pop-toggle", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActPopoverToggle" }], "children": [{ "type": "Text", "text": "popovers.toggle('demo')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "data-testid": "js-popover-mock",
+              "className": "rounded-[8px] border-[1px] border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-[16px] py-[12px]",
+              "style": { "js": "return { display: variables.jsPopoverState === 'open' ? 'block' : 'none' };" }
+            },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[12px] text-amber-900 dark:text-amber-200 font-medium" }, "text": "Popover content (visible when jsPopoverState === 'open')." }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-popover", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": { "js": "return `state = ${variables.jsPopoverState}`;" } }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 7 — Shared components dynamic CRUD" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.shared.add(typeId, props), .delete(instanceId), .deleteAll(typeId?)." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-shared-add", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActSharedAdd" }], "children": [{ "type": "Text", "text": "shared.add('toast', {...})", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-shared-clear", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActSharedDeleteAll" }], "children": [{ "type": "Text", "text": "shared.deleteAll()", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "map": "variables['js-demo-0000-0000-0000-000000000015']",
+            "props": { "className": "contents" },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "rounded-[6px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[12px] py-[6px] mb-[4px]" },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": { "js": "return `instance #${(context.item.index ?? 0) + 1}: ${context.item.data}`;" } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 8 — Forms" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.forms.setState(formId, state) and wwLib.forms.reset(formId)." }
+            ]
+          },
+          {
+            "type": "Input",
+            "id": "js-form-name-input",
+            "props": {
+              "variant": "outline",
+              "size": "md",
+              "name": "jsFormName",
+              "placeholder": "Type a name…",
+              "value": "{{variables['js-demo-0000-0000-0000-000000000017']}}",
+              "data-testid": "js-form-name",
+              "className": "!text-gray-900 dark:!text-gray-100"
+            },
+            "children": [],
+            "actions": [
+              { "trigger": "change", "steps": [ { "id": "syncFormName", "type": "changeVariableValue", "config": { "variableName": "js-demo-0000-0000-0000-000000000017", "value": { "formula": "event?.value ?? ''" } } } ] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-form-set", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActFormSetState" }], "children": [{ "type": "Text", "text": "forms.setState({ valid:true, name })", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-form-reset", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActFormReset" }], "children": [{ "type": "Text", "text": "forms.reset()", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-form", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": "{{variables['js-demo-0000-0000-0000-000000000016']}}" }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 9 — Auth" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.auth.authenticate, .setUser, .restoreSession, .clearSession." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-auth-authn", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActAuthAuthenticate" }], "children": [{ "type": "Text", "text": "auth.authenticate()", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-auth-set", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActAuthSetUser" }], "children": [{ "type": "Text", "text": "auth.setUser({ id, email })", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-auth-restore", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActAuthRestore" }], "children": [{ "type": "Text", "text": "auth.restoreSession()", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-auth-clear", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActAuthClear" }], "children": [{ "type": "Text", "text": "auth.clearSession()", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-auth", "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300" }, "text": { "js": "return `auth.email = ${variables.jsAuthEmail ?? 'guest'}`;" } }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 10 — Files / browser" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "clipboard.copy, files.download, files.fromBase64, scroll.to, print.pdf, timing.delay, event.stopPropagation." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-clip", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActClipboardCopy" }], "children": [{ "type": "Text", "text": "clipboard.copy", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-download", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActFileDownload" }], "children": [{ "type": "Text", "text": "files.download(...)", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-b64", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActFromBase64" }], "children": [{ "type": "Text", "text": "files.fromBase64(...)", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-scroll", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActScrollTop" }], "children": [{ "type": "Text", "text": "scroll.to('jsTopAnchor')", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-print", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActPrintPdf" }], "children": [{ "type": "Text", "text": "print.pdf()", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] },
+              { "type": "Box", "props": { "data-testid": "js-btn-delay", "className": "flex flex-row items-center justify-center cursor-pointer border-[1px] border-[var(--theme-foreground)] hover:bg-[var(--theme-foreground)]/10 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActDelay" }], "children": [{ "type": "Text", "text": "timing.delay(800)", "props": { "className": "text-[12px] text-[var(--theme-foreground)] font-medium" } }] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "data-testid": "js-stop-prop-outer",
+              "className": "rounded-[8px] border-[1px] border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 px-[16px] py-[12px] flex flex-col gap-[8px] cursor-pointer"
+            },
+            "actions": [{ "action": "jsActOuterClick" }],
+            "children": [
+              { "type": "Text", "props": { "className": "text-[12px] text-blue-900 dark:text-blue-200" }, "text": "Outer container — clicking anywhere here increments outer count. The button below calls wwLib.event.stopPropagation() so only inner increments." },
+              {
+                "type": "Box",
+                "props": {
+                  "data-testid": "js-btn-stop-prop",
+                  "className": "self-start cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]"
+                },
+                "actions": [{ "action": "jsActStopPropagation" }],
+                "children": [
+                  { "type": "Text", "text": "inner button (stopPropagation)", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }
+                ]
+              },
+              { "type": "Text", "props": { "data-testid": "js-out-stop-prop", "className": "text-[12px] font-mono text-blue-900 dark:text-blue-200" }, "text": { "js": "return `outer=${variables.jsOuterClickCount ?? 0} inner=${variables.jsInnerClickCount ?? 0}`;" } }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "rounded-[8px] bg-gray-50 dark:bg-gray-800 px-[12px] py-[8px] flex flex-col gap-[6px]" },
+            "children": [
+              { "type": "Text", "props": { "data-testid": "js-out-browser", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300" }, "text": { "js": "return `status   = ${variables.jsBrowserStatus}\\ndelay    = ${variables.jsDelayStatus}`;" } },
+              { "type": "Text", "props": { "data-testid": "js-out-b64-url", "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 break-all" }, "text": { "js": "const url = variables.jsB64Url ?? '';\nreturn url ? `b64 url: ${url.slice(0, 80)}${url.length > 80 ? '…' : ''}` : '(no data url yet)';" } }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 11 — Project workflows (sub-routine)" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "await wwLib.workflows.run('jsDemoIncrementCart') — runs a real existing workflow and observes its return value." }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-sub-workflow", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActRunSubWorkflow" }], "children": [{ "type": "Text", "text": "workflows.run('jsDemoIncrementCart')", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-sub-workflow", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre" }, "text": "{{variables['js-demo-0000-0000-0000-000000000020']}}" }
+        ]
+      },
+
+      {
+        "type": "Box",
+        "props": { "className": "w-full rounded-[16px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[24px] flex flex-col gap-[16px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-col gap-[4px]" },
+            "children": [
+              { "type": "Text", "props": { "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100" }, "text": "Card 12 — Generic escape hatch" },
+              { "type": "Text", "props": { "className": "text-[14px] text-gray-500 dark:text-gray-400" }, "text": "wwLib.actions.run({ type, config }) dispatches any ActionStepType — ideal for actions that don't have a typed wrapper." }
+            ]
+          },
+          {
+            "type": "Input",
+            "id": "js-escape-input",
+            "props": {
+              "variant": "outline",
+              "size": "md",
+              "name": "jsEscapeHatchInput",
+              "placeholder": "{ \"type\": \"copyToClipboard\", \"config\": { \"text\": \"hi\" } }",
+              "value": "{{variables['js-demo-0000-0000-0000-000000000021']}}",
+              "data-testid": "js-escape-input",
+              "className": "!text-gray-900 dark:!text-gray-100 font-mono"
+            },
+            "children": [],
+            "actions": [
+              { "trigger": "change", "steps": [ { "id": "syncEscape", "type": "changeVariableValue", "config": { "variableName": "js-demo-0000-0000-0000-000000000021", "value": { "formula": "event?.value ?? ''" } } } ] }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+            "children": [
+              { "type": "Box", "props": { "data-testid": "js-btn-escape", "className": "flex flex-row items-center justify-center cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]" }, "actions": [{ "action": "jsActEscapeHatch" }], "children": [{ "type": "Text", "text": "actions.run(JSON.parse(input))", "props": { "className": "text-[12px] text-[var(--theme-background)] font-medium" } }] }
+            ]
+          },
+          { "type": "Text", "props": { "data-testid": "js-out-escape", "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre" }, "text": "{{variables['js-demo-0000-0000-0000-000000000022']}}" }
         ]
       }
     ]

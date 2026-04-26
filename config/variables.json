@@ -2134,8 +2134,40 @@
       "folder": "JavaScript Test"
     },
 
+    "js-demo-0000-0000-0000-000000000011": { "label": "jsNavStatus", "type": "string", "initialValue": "(no navigation yet)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000012": { "label": "jsCollectionRowCount", "type": "number", "initialValue": 4, "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000013": { "label": "jsComponentResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000014": { "label": "jsPopoverState", "type": "string", "initialValue": "closed", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000015": { "label": "jsSharedAddedIds", "type": "array", "initialValue": [], "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000016": { "label": "jsFormState", "type": "string", "initialValue": "(unset)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000017": { "label": "jsFormName", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000018": { "label": "jsAuthEmail", "type": "string", "initialValue": "guest", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000019": { "label": "jsBrowserStatus", "type": "string", "initialValue": "(idle)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000020": { "label": "jsWorkflowReturn", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000021": { "label": "jsEscapeHatchInput", "type": "string", "initialValue": "{\"type\":\"copyToClipboard\",\"config\":{\"text\":\"hi from wwLib.actions.run\"}}", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000022": { "label": "jsEscapeHatchResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000023": { "label": "jsOuterClickCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000024": { "label": "jsInnerClickCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000025": { "label": "jsB64Url", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000026": { "label": "jsDelayStatus", "type": "string", "initialValue": "(idle)", "folder": "JavaScript Test" },
+
     "dpdemo-selected-date-0000-000000000001": { "label": "Picked Date", "type": "string", "initialValue": "(no date picked yet)", "folder": "DatePicker Test" },
-    "dpdemo-event-count-0000-000000000002":   { "label": "Trigger Fire Count", "type": "number", "initialValue": 0,                "folder": "DatePicker Test" }
+    "dpdemo-event-count-0000-000000000002":   { "label": "Trigger Fire Count", "type": "number", "initialValue": 0,                "folder": "DatePicker Test" },
+
+    "sel-test-value":  { "label": "Selected Value",   "type": "string", "initialValue": "",  "folder": "Select Test" },
+    "fu-test-name":    { "label": "Picked Filename",  "type": "string", "initialValue": "",  "folder": "FileUpload Test" },
+    "fu-test-files":   { "label": "Picked Files",     "type": "array",  "initialValue": [],  "folder": "FileUpload Test" },
+
+    "btn-test-count":         { "label": "Button click count",   "type": "number", "initialValue": 0,  "folder": "Button Test" },
+    "btn-test-label":         { "label": "Button last label",    "type": "string", "initialValue": "", "folder": "Button Test" },
+    "tabs-test-value":        { "label": "Active tab",            "type": "string", "initialValue": "", "folder": "Tabs Test" },
+    "pg-test-page":           { "label": "Pagination page",       "type": "number", "initialValue": 1,  "folder": "Pagination Test" },
+    "rating-test-value":      { "label": "Rating value",          "type": "number", "initialValue": 0,  "folder": "Rating Test" },
+    "stepper-test-index":     { "label": "Active step",           "type": "number", "initialValue": 1,  "folder": "Stepper Test" },
+    "breadcrumbs-test-label": { "label": "Breadcrumb last label", "type": "string", "initialValue": "", "folder": "Breadcrumbs Test" },
+    "rg-test-value":          { "label": "Radio Group value",     "type": "string", "initialValue": "", "folder": "RadioGroup Test" },
+    "chip-test-clicks":       { "label": "Chip click count",      "type": "number", "initialValue": 0,  "folder": "Chip Test" },
+    "chip-test-removes":      { "label": "Chip remove count",     "type": "number", "initialValue": 0,  "folder": "Chip Test" }
   },
   "varFolders": [
     {
@@ -2261,6 +2293,14 @@
     {
       "id": "DatePicker Test",
       "label": "DatePicker Test"
+    },
+    {
+      "id": "Select Test",
+      "label": "Select Test"
+    },
+    {
+      "id": "FileUpload Test",
+      "label": "FileUpload Test"
     }
   ]
 }

@@ -8,9 +8,9 @@
  * document.documentElement and stored in the builder Zustand store.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import themeConfig from '@/config/theme.json';
-import { useBuilderStore } from './_store';
+import { useBuilderStore, type CustomColor } from './_store';
 import { FigmaColorPicker } from './_color-picker';
 
 // ─── Shared styles ─────────────────────────────────────────────────────────────
@@ -130,6 +130,120 @@ function ColorRow({
         editingDefaultHex={themeDefaultHex}
         open={isOpen}
         onOpenChange={open => onOpenColorPickerChange(open ? cssVar : null)}
+      />
+    </div>
+  );
+}
+
+// ─── ColorGroupHeader component ───────────────────────────────────────────────
+
+function ColorGroupHeader({
+  groupKey,
+  label,
+  count,
+  expanded,
+  onToggle,
+}: {
+  groupKey: string;
+  label: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      data-testid={`color-group-${groupKey}`}
+      onClick={onToggle}
+      style={{
+        width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '4px 0', marginBottom: expanded ? 6 : 0,
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#9ca3af', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded ? '▾' : '▸'}</span>
+        {label}
+        <span style={{ color: '#4b5563', fontWeight: 400 }}>{count}</span>
+      </span>
+    </button>
+  );
+}
+
+// ─── CustomColorRow component ─────────────────────────────────────────────────
+
+function CustomColorRow({
+  color,
+  mode,
+  openColorPickerCssVar,
+  onOpenColorPickerChange,
+  onEdit,
+  onDelete,
+}: {
+  color: CustomColor;
+  mode: 'light' | 'dark';
+  openColorPickerCssVar: string | null;
+  onOpenColorPickerChange: (cssVar: string | null) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const updateCustomColor = useBuilderStore(s => s.updateCustomColor);
+  const [hovering, setHovering] = useState(false);
+  const currentHex = mode === 'dark' ? color.dark : color.light;
+  const pickerKey = `__custom__:${color.id}`;
+  const isOpen = openColorPickerCssVar === pickerKey;
+  const display = color.label?.trim() || color.name;
+
+  return (
+    <div
+      data-testid={`custom-color-row-${color.name}`}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center', marginBottom: 6 }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+        <span
+          title={`${display}  •  --${color.name}`}
+          style={{ fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
+        >
+          {display}
+        </span>
+        {hovering && (
+          <>
+            <button
+              onClick={onEdit}
+              title="Edit color"
+              data-testid={`custom-color-edit-${color.name}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#a78bfa')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+            >
+              ✎
+            </button>
+            <button
+              onClick={() => {
+                if (confirm(`Delete custom color "${display}"?`)) onDelete();
+              }}
+              title="Delete color"
+              data-testid={`custom-color-delete-${color.name}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+            >
+              ×
+            </button>
+          </>
+        )}
+      </div>
+      <FigmaColorPicker
+        value={currentHex}
+        onChange={hex => {
+          if (mode === 'dark') updateCustomColor(color.id, { dark: hex });
+          else                 updateCustomColor(color.id, { light: hex });
+        }}
+        editingCssVar={color.name}
+        editingDefaultHex={currentHex}
+        open={isOpen}
+        onOpenChange={open => onOpenColorPickerChange(open ? pickerKey : null)}
       />
     </div>
   );
@@ -375,12 +489,20 @@ const COLOR_VARS: { label: string; cssVar: string }[] = [
 
 // ─── ThemePanel ────────────────────────────────────────────────────────────────
 
-export function ThemePanel() {
+export interface ThemePanelProps {
+  /** Open the right-side slide panel for adding or editing a custom theme color. */
+  onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
+}
+
+export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
   const resetTheme        = useBuilderStore(s => s.resetTheme);
   const patchTheme        = useBuilderStore(s => s.patchTheme);
   const applyThemePreset  = useBuilderStore(s => s.applyThemePreset);
   const themeOverrides     = useBuilderStore(s => s.themeOverrides);
   const themeDarkOverrides = useBuilderStore(s => s.themeDarkOverrides);
+  const customColors       = useBuilderStore(s => s.customColors);
+  const colorFolders       = useBuilderStore(s => s.colorFolders);
+  const removeCustomColor  = useBuilderStore(s => s.removeCustomColor);
 
   /** 'light' | 'dark' tab inside the Theme panel */
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
@@ -389,7 +511,25 @@ export function ThemePanel() {
   /** Only one theme color picker open at a time — prevents wrong variable being patched when multiple popovers overlap */
   const [openColorPickerCssVar, setOpenColorPickerCssVar] = useState<string | null>(null);
 
+  /** Per-group expanded state for the Colors section (System, custom folders, Ungrouped). */
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ system: true });
+
   const toggle = (key: string) => setOpenSection(v => (v === key ? null : key));
+  const toggleGroup = (key: string) => setExpandedGroups(g => ({ ...g, [key]: !g[key] }));
+
+  // Group customColors by folderId for rendering
+  const customColorsByFolder = useMemo(() => {
+    const grouped = new Map<string | undefined, CustomColor[]>();
+    for (const c of customColors) {
+      const key = c.folderId;
+      const arr = grouped.get(key) ?? [];
+      arr.push(c);
+      grouped.set(key, arr);
+    }
+    return grouped;
+  }, [customColors]);
+
+  const ungroupedCustom = customColorsByFolder.get(undefined) ?? [];
 
   // Close color picker when collapsing Colors section
   useEffect(() => {
@@ -491,13 +631,32 @@ export function ThemePanel() {
 
       {/* ── Colors section ── */}
       <div style={SECTION}>
-        <button
-          onClick={() => toggle('colors')}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'colors' ? 10 : 0 }}
-        >
-          <span style={LABEL}>Colors</span>
-          <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'colors' ? '▲' : '▼'}</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openSection === 'colors' ? 10 : 0 }}>
+          <button
+            onClick={() => toggle('colors')}
+            style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0 }}
+          >
+            <span style={LABEL}>Colors</span>
+            <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'colors' ? '▲' : '▼'}</span>
+          </button>
+          {openSection === 'colors' && onOpenColorSlide && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenColorSlide({ kind: 'addColor' }); }}
+              title="Add custom color"
+              data-testid="add-custom-color"
+              style={{
+                marginLeft: 8, width: 22, height: 22, borderRadius: 4,
+                background: '#1f2937', border: '1px solid #374151', color: '#a78bfa',
+                cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#374151'; e.currentTarget.style.color = '#c4b5fd'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = '#a78bfa'; }}
+            >
+              +
+            </button>
+          )}
+        </div>
 
         {openSection === 'colors' && (
           <div>
@@ -525,27 +684,107 @@ export function ThemePanel() {
               ))}
             </div>
 
-            {/* Color rows for current mode */}
-            {COLOR_VARS.map(({ label, cssVar }) => {
-              const rawDefault = colorMode === 'light'
-                ? LIGHT[`--${cssVar}`]
-                : DARK[`--${cssVar}`];
-              // Light defaults are stored as "#hex"; DARK too in theme.json
-              const themeDefaultHex = rawDefault ?? '#ffffff';
-              const overrides = colorMode === 'light' ? themeOverrides : themeDarkOverrides;
+            {/* ── System folder (built-in, non-editable) ── */}
+            <ColorGroupHeader
+              groupKey="system"
+              label="System"
+              count={COLOR_VARS.length}
+              expanded={expandedGroups.system !== false}
+              onToggle={() => toggleGroup('system')}
+            />
+            {expandedGroups.system !== false && (
+              <div style={{ marginBottom: 10 }}>
+                {COLOR_VARS.map(({ label, cssVar }) => {
+                  const rawDefault = colorMode === 'light'
+                    ? LIGHT[`--${cssVar}`]
+                    : DARK[`--${cssVar}`];
+                  const themeDefaultHex = rawDefault ?? '#ffffff';
+                  const overrides = colorMode === 'light' ? themeOverrides : themeDarkOverrides;
+                  return (
+                    <ColorRow
+                      key={`${colorMode}-${cssVar}`}
+                      label={label}
+                      cssVar={cssVar}
+                      defaultHex={overrides[cssVar] ?? themeDefaultHex}
+                      themeDefaultHex={themeDefaultHex}
+                      mode={colorMode}
+                      openColorPickerCssVar={openColorPickerCssVar}
+                      onOpenColorPickerChange={setOpenColorPickerCssVar}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── User folders ── */}
+            {colorFolders.map(folder => {
+              const folderColors = customColorsByFolder.get(folder.id) ?? [];
+              const groupKey = `folder:${folder.id}`;
+              const isExpanded = expandedGroups[groupKey] !== false;
               return (
-                <ColorRow
-                  key={`${colorMode}-${cssVar}`}
-                  label={label}
-                  cssVar={cssVar}
-                  defaultHex={overrides[cssVar] ?? themeDefaultHex}
-                  themeDefaultHex={themeDefaultHex}
-                  mode={colorMode}
-                  openColorPickerCssVar={openColorPickerCssVar}
-                  onOpenColorPickerChange={setOpenColorPickerCssVar}
-                />
+                <React.Fragment key={folder.id}>
+                  <ColorGroupHeader
+                    groupKey={groupKey}
+                    label={folder.name}
+                    count={folderColors.length}
+                    expanded={isExpanded}
+                    onToggle={() => toggleGroup(groupKey)}
+                  />
+                  {isExpanded && (
+                    <div style={{ marginBottom: 10 }}>
+                      {folderColors.length === 0 && (
+                        <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic', padding: '4px 0' }}>
+                          No colors in this folder.
+                        </div>
+                      )}
+                      {folderColors.map(c => (
+                        <CustomColorRow
+                          key={c.id}
+                          color={c}
+                          mode={colorMode}
+                          openColorPickerCssVar={openColorPickerCssVar}
+                          onOpenColorPickerChange={setOpenColorPickerCssVar}
+                          onEdit={() => onOpenColorSlide?.({ kind: 'editColor', id: c.id })}
+                          onDelete={() => removeCustomColor(c.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
+
+            {/* ── Ungrouped custom colors ── */}
+            {ungroupedCustom.length > 0 && (() => {
+              const groupKey = 'ungrouped';
+              const isExpanded = expandedGroups[groupKey] !== false;
+              return (
+                <>
+                  <ColorGroupHeader
+                    groupKey={groupKey}
+                    label="Ungrouped"
+                    count={ungroupedCustom.length}
+                    expanded={isExpanded}
+                    onToggle={() => toggleGroup(groupKey)}
+                  />
+                  {isExpanded && (
+                    <div style={{ marginBottom: 10 }}>
+                      {ungroupedCustom.map(c => (
+                        <CustomColorRow
+                          key={c.id}
+                          color={c}
+                          mode={colorMode}
+                          openColorPickerCssVar={openColorPickerCssVar}
+                          onOpenColorPickerChange={setOpenColorPickerCssVar}
+                          onEdit={() => onOpenColorSlide?.({ kind: 'editColor', id: c.id })}
+                          onDelete={() => removeCustomColor(c.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>

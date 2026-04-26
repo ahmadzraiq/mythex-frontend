@@ -1,0 +1,16 @@
+{
+  "wfOnRatingChange": {
+    "name": "On Rating change",
+    "trigger": "rating-t-on-change",
+    "steps": [
+      {
+        "id": "store-value",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "rating-test-value",
+          "value": { "formula": "Number(context?.event?.value) || 0" }
+        }
+      }
+    ]
+  }
+}

@@ -467,9 +467,15 @@ export function SDUIEngine({
             }
           }
         }
-        // Fall back to treating the action object itself as the definition when no named action found
-        // This allows inline types like { "type": "increment", "path": "..." } inside runMultiple
-        if (!actionDef && 'type' in (a as object)) {
+        // Fall back to treating the action object itself as the definition when no named action found.
+        // Accepts either:
+        //   - inline step-typed actions: { "type": "increment", "path": "..." } inside runMultiple
+        //   - inline workflows: { "trigger": "change", "steps": [ ... ] } produced by element actions arrays
+        //     (dispatchToHandler auto-routes any def with `steps` to workflowStepsHandler).
+        if (!actionDef && (
+          'type' in (a as object) ||
+          Array.isArray((a as Record<string, unknown>).steps)
+        )) {
           actionDef = a as typeof actionDef;
         }
         if (actionDef && 'action' in actionDef && typeof (actionDef as { action?: string }).action === 'string') {

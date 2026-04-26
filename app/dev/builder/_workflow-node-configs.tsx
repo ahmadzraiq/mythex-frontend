@@ -1495,6 +1495,69 @@ function SCPropInput({ prop, value, onChange, onFormulaClick, formulaOpen }: {
     );
   }
 
+  if (prop.type === 'select') {
+    const opts = (prop.options ?? []) as Array<{ label: string; value: string }>;
+    return (
+      <select
+        style={{ ...S.fieldInput, flex: 1, cursor: 'pointer' }}
+        value={String(value ?? prop.defaultValue ?? '')}
+        onChange={e => onChange(e.target.value)}
+      >
+        {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {!opts.length && <option value={String(value ?? '')}>{String(value ?? '(no options)')}</option>}
+      </select>
+    );
+  }
+
+  if (prop.type === 'size') {
+    const sizeStr = String(value ?? prop.defaultValue ?? '');
+    const match = sizeStr.match(/^([\d.]+)(.*)$/);
+    const num = match ? match[1] : '';
+    const unit = match ? match[2] : 'px';
+    return (
+      <div style={{ display: 'flex', gap: 3, flex: 1 }}>
+        <input
+          type="number"
+          style={{ ...S.fieldInput, flex: 1 }}
+          value={num}
+          onChange={e => onChange(`${e.target.value}${unit || 'px'}`)}
+          placeholder="0"
+        />
+        <select
+          style={{ ...S.fieldInput, width: 52 }}
+          value={unit || 'px'}
+          onChange={e => onChange(`${num}${e.target.value}`)}
+        >
+          {['px', '%', 'vh', 'vw'].map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </div>
+    );
+  }
+
+  if (prop.type === 'icon') {
+    const iconStr = String(value ?? prop.defaultValue ?? '');
+    return (
+      <input
+        style={{ ...S.fieldInput, flex: 1 }}
+        placeholder="lucide:check"
+        value={iconStr}
+        onChange={e => onChange(e.target.value)}
+      />
+    );
+  }
+
+  if (prop.type === 'list' || prop.type === 'any') {
+    const jsonStr = typeof value === 'string' ? value : (value !== undefined ? JSON.stringify(value, null, 2) : '');
+    return (
+      <input
+        style={{ ...S.fieldInput, flex: 1, fontFamily: 'monospace' }}
+        placeholder="[]"
+        value={jsonStr}
+        onChange={e => onChange(e.target.value)}
+      />
+    );
+  }
+
   return (
     <input
       style={{ ...S.fieldInput, flex: 1 }}
@@ -2791,6 +2854,64 @@ function ResetVariableValueConfig({
           </div>
         );
       })}
+    </>
+  );
+}
+
+// ─── PickFileConfig ──────────────────────────────────────────────────────────
+// Step config for `pickFile`: opens the OS file picker and writes selected files
+// into a target variable. Must run inside a click-triggered workflow (browser
+// gesture requirement). The step writes an array of `{ name, size, type, lastModified, file }`
+// — same shape FileList produces — so downstream formulas can read primitive fields
+// directly (e.g. `<storeIn>[0]?.name`).
+
+function PickFileConfig({
+  cfg,
+  setCfg,
+  workflowTrigger,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+  workflowTrigger?: string;
+}) {
+  const { customVars } = useBuilderStore();
+  const storeIn = (cfg.storeIn as string | undefined) ?? '';
+
+  return (
+    <>
+      <BoundField
+        label="Accept"
+        value={cfg.accept as FormulaValue | undefined}
+        onChange={v => setCfg('accept', v)}
+        placeholder='e.g. "image/*" or ".pdf,.csv"'
+        workflowTrigger={workflowTrigger}
+      />
+      <BoundField
+        label="Multiple"
+        value={cfg.multiple as FormulaValue | undefined}
+        onChange={v => setCfg('multiple', v)}
+        placeholder="false"
+        workflowTrigger={workflowTrigger}
+        expectedType="boolean"
+      />
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Store files in *</label>
+      <select
+        style={S.fieldSelect}
+        value={storeIn}
+        onChange={e => setCfg('storeIn', e.target.value || undefined)}
+      >
+        <option value="">Choose a variable…</option>
+        {customVars.map(v => (
+          <option key={v.id ?? v.name} value={(v.id ?? v.name) as string}>
+            {(v.label ?? v.name) as string}
+          </option>
+        ))}
+      </select>
+      <div style={{ ...S.infoBox, marginTop: 8 }}>
+        Opens the OS file picker. Must be invoked from a user click (browser gesture
+        requirement). The selected files are written to the chosen variable as an
+        array of {`{ name, size, type, lastModified, file }`}.
+      </div>
     </>
   );
 }
@@ -4401,13 +4522,8 @@ export function NodePropsPanel({
         />
       )}
 
-      {step.type === 'uploadFile' && (
-        <>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Select upload element from this page *</label>
-          <select style={S.fieldSelect}><option value="">Select an upload element</option></select>
-          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Tag for this file</label>
-          <input style={S.fieldInput} placeholder="Enter a value" value={(cfg.tag as string) ?? ''} onChange={e => setCfg('tag', e.target.value)} />
-        </>
+      {step.type === 'pickFile' && (
+        <PickFileConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
 
       {step.type === 'stopPropagation' && (

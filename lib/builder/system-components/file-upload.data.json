@@ -1,0 +1,89 @@
+{
+  "id": "sys-file-upload",
+  "name": "File upload",
+  "description": "Click-to-pick file upload zone built from primitives. The dropzone visuals (icon, label, dashed border) are composed in JSON. The Box click runs an internal workflow whose first step is the `pickFile` action — it programmatically opens the OS file picker, so no hidden <input type=\"file\"> lives in the tree. After the picker resolves, the SC stores the file list, updates a friendly filename for display, and emits the `On files selected` trigger.",
+  "properties": [
+    { "id": "prop-fu-label",    "name": "label",    "type": "text",    "defaultValue": "Click to upload" },
+    { "id": "prop-fu-accept",   "name": "accept",   "type": "text",    "defaultValue": "" },
+    { "id": "prop-fu-multiple", "name": "multiple", "type": "boolean", "defaultValue": false }
+  ],
+  "triggers": [
+    {
+      "id": "fu-t-on-files-selected",
+      "name": "On files selected",
+      "payload": { "formula": "{ files: context?.component?.variables?.['fu-v-files-uuid'] }" }
+    }
+  ],
+  "variables": {
+    "fu-v-files-uuid": {
+      "label": "files",
+      "type": "array",
+      "initialValue": [],
+      "folder": "FileUpload"
+    },
+    "fu-v-filename-uuid": {
+      "label": "filename",
+      "type": "string",
+      "initialValue": "",
+      "folder": "FileUpload"
+    }
+  },
+  "workflows": {
+    "fu-wf-on-click": {
+      "id": "fu-wf-on-click",
+      "name": "On click",
+      "trigger": "click",
+      "description": "Open the OS file picker, store the picked files, refresh the displayed filename summary, then emit the public On files selected trigger.",
+      "steps": [
+        {
+          "id": "pick-files",
+          "type": "pickFile",
+          "config": {
+            "accept": { "formula": "context?.component?.props?.accept || ''" },
+            "multiple": { "formula": "!!context?.component?.props?.multiple" },
+            "storeIn": "fu-v-files-uuid"
+          }
+        },
+        {
+          "id": "store-filename",
+          "type": "changeVariableValue",
+          "config": {
+            "variableName": "fu-v-filename-uuid",
+            "value": { "formula": "(()=>{const fs=context?.component?.variables?.['fu-v-files-uuid']||[];if(fs.length===0)return '';if(fs.length===1)return fs[0]?.name||'';return fs.length+' files selected'})()" }
+          }
+        },
+        {
+          "id": "emit-files-selected",
+          "type": "emitComponentTrigger",
+          "config": { "triggerId": "fu-t-on-files-selected" }
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "relative flex flex-col items-center justify-center gap-[8px] w-full px-[16px] py-[24px] rounded-[8px] border-2 border-dashed border-border bg-muted/40 hover:border-primary hover:bg-primary/5 cursor-pointer"
+    },
+    "actions": [{ "action": "fu-wf-on-click" }],
+    "children": [
+      { "type": "Icon", "props": { "icon": "lucide:upload-cloud", "size": 28, "color": "#6b7280" } },
+      {
+        "type": "Text",
+        "props": { "className": "text-[14px] font-medium text-foreground" },
+        "text": {
+          "formula": "context?.component?.variables?.['fu-v-filename-uuid'] || context?.component?.props?.label || 'Click to upload'"
+        }
+      },
+      {
+        "type": "Text",
+        "props": { "className": "text-[12px] text-muted-foreground" },
+        "text": {
+          "formula": "context?.component?.props?.accept ? 'Accepted: ' + context.component.props.accept : 'Any file type'"
+        }
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "📎"
+}

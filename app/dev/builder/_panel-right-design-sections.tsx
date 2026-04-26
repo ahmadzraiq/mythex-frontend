@@ -22,8 +22,10 @@ import { useBuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
-import { PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, SectionHeader, NumberInput, SelectInput, ToggleBtn } from './_panel-primitives';
+import { PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, SectionHeader, NumberInput, SelectInput, ToggleBtn, DirectChangedLabel, ResponsiveDot } from './_panel-primitives';
 import { FigmaColorPicker } from './_color-picker';
+import { BREAKPOINT_CASCADE } from '@/lib/sdui/types/node';
+import type { BreakpointKey } from '@/lib/sdui/types/node';
 import { BUILDER_FORM_INPUT_TYPES } from '@/lib/sdui/controlled-component-registry';
 
 // ─── Design-tab inline sections (moved from Logic) ────────────────────────────
@@ -287,44 +289,100 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
 export function DisableInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
+  const abp = useBuilderStore(s => s.activeBreakpoint);
   const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
   const isBound = isBoundValue(disabled as FormulaValue);
   const isDisabled = !isBound && !!disabled;
   const showOverlay = isDisabled || isBound;
 
-  const overlay = ((node as Record<string, unknown>)._disabledOverlay ?? {}) as {
+  // Base overlay (desktop)
+  const baseOverlay = ((node as Record<string, unknown>)._disabledOverlay ?? {}) as {
     color?: string; opacity?: number; blur?: number;
   };
+
+  // Cascade responsive _disabledOverlay fields on top of base for the active breakpoint.
+  const effectiveOverlay = useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return baseOverlay;
+    const merged = { ...baseOverlay };
+    for (const bp of BREAKPOINT_CASCADE) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as
+        | { _disabledOverlay?: { color?: string | null; opacity?: number | null; blur?: number | null } }
+        | undefined;
+      if (ov?._disabledOverlay) {
+        for (const [k, v] of Object.entries(ov._disabledOverlay)) {
+          if (v === null) delete (merged as Record<string, unknown>)[k];
+          else (merged as Record<string, unknown>)[k] = v;
+        }
+      }
+      if (bp === abp) break;
+    }
+    return merged;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abp, node.responsive, baseOverlay]);
+
+  // Per-field: which breakpoints have that field overridden vs base?
+  const fieldOverriddenBps = useMemo(() => {
+    const result = { color: [] as string[], opacity: [] as string[], blur: [] as string[] };
+    if (!node.responsive) return result;
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as
+        | { _disabledOverlay?: { color?: string | null; opacity?: number | null; blur?: number | null } }
+        | undefined;
+      const d = ov?._disabledOverlay;
+      if (!d) continue;
+      if ('color'   in d && d.color   !== baseOverlay.color)                              result.color.push(bp);
+      if ('opacity' in d && d.opacity !== baseOverlay.opacity)                            result.opacity.push(bp);
+      if ('blur'    in d && d.blur    !== baseOverlay.blur)                               result.blur.push(bp);
+    }
+    return result;
+  }, [node.responsive, baseOverlay]);
+
   const forceShow = !!(node as Record<string, unknown>)._forceDisabledInEditor;
 
-  const patchOverlay = (patch: Partial<typeof overlay>) =>
-    store.patchNodeField(nodeId, '_disabledOverlay', { ...overlay, ...patch });
+  // Write a single field to the right channel (responsive or base).
+  const writeField = useCallback((field: 'color' | 'opacity' | 'blur', value: string | number | null) => {
+    if (abp !== 'desktop') {
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', `_disabledOverlay.${field}`, value);
+    } else {
+      store.patchNodeField(nodeId, '_disabledOverlay', { ...baseOverlay, [field]: value });
+    }
+  }, [abp, nodeId, store, baseOverlay]);
 
-  // Local state keeps the slider/number inputs responsive while rAF batches
-  // the store writes (live, no history) so the canvas gets a live update every
-  // animation frame. A single history snapshot is pushed only when the gesture ends.
-  const [localOpacity, setLocalOpacity] = useState(Math.round((overlay.opacity ?? 0.3) * 100));
-  const [localBlur, setLocalBlur] = useState(overlay.blur ?? 0);
+  // Reset a field at the active bp back to base (remove the responsive override).
+  const resetField = useCallback((field: 'color' | 'opacity' | 'blur') => {
+    if (abp !== 'desktop') {
+      store.removeResponsiveOverride(nodeId, abp as 'laptop' | 'tablet' | 'mobile', `_disabledOverlay.${field}`);
+    } else {
+      const next = { ...baseOverlay };
+      delete (next as Record<string, unknown>)[field];
+      store.patchNodeField(nodeId, '_disabledOverlay', next);
+    }
+    store._pushHistory();
+  }, [abp, nodeId, store, baseOverlay]);
+
+  // Local state for live slider updates.
+  const [localOpacity, setLocalOpacity] = useState(Math.round((effectiveOverlay.opacity ?? 0.3) * 100));
+  const [localBlur, setLocalBlur] = useState(effectiveOverlay.blur ?? 0);
   const opacityRaf = useRef<number | null>(null);
   const blurRaf    = useRef<number | null>(null);
-  const colorRaf   = useRef<number | null>(null);
 
-  // Sync local state when the selected node changes.
+  // Sync local state on node or breakpoint change.
   useEffect(() => {
-    setLocalOpacity(Math.round((overlay.opacity ?? 0.3) * 100));
-    setLocalBlur(overlay.blur ?? 0);
+    setLocalOpacity(Math.round((effectiveOverlay.opacity ?? 0.3) * 100));
+    setLocalBlur(effectiveOverlay.blur ?? 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId]);
+  }, [nodeId, abp]);
 
-  // Snapshot the overlay at the start of each gesture so the rAF spread is accurate.
-  const overlayRef = useRef(overlay);
-  overlayRef.current = overlay;
+  const effectiveRef = useRef(effectiveOverlay);
+  effectiveRef.current = effectiveOverlay;
+
+  const commitHistory = () => store._pushHistory();
 
   const patchOpacityLive = (pct: number) => {
     setLocalOpacity(pct);
     if (opacityRaf.current !== null) cancelAnimationFrame(opacityRaf.current);
     opacityRaf.current = requestAnimationFrame(() => {
-      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, opacity: pct / 100 });
+      writeField('opacity', pct / 100);
       opacityRaf.current = null;
     });
   };
@@ -333,18 +391,35 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
     setLocalBlur(px);
     if (blurRaf.current !== null) cancelAnimationFrame(blurRaf.current);
     blurRaf.current = requestAnimationFrame(() => {
-      store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, blur: px });
+      writeField('blur', px);
       blurRaf.current = null;
     });
   };
 
-  // ColorPopover already rAF-throttles its onSelect call, so no second rAF needed here —
-  // a double rAF doubles the latency and makes the picker feel laggy.
-  const patchColorLive = (hex: string) => {
-    store.patchNodeFieldLive(nodeId, '_disabledOverlay', { ...overlayRef.current, color: hex });
-  };
+  const patchColorLive = (hex: string) => writeField('color', hex);
 
-  const commitHistory = () => store._pushHistory();
+  const DEF_COLOR   = '#000000';
+  const DEF_OPACITY = 0.3;
+  const DEF_BLUR    = 0;
+
+  // Helper: build a ResponsiveDot for a field with field-specific reset.
+  const fieldChip = (field: 'color' | 'opacity' | 'blur', bps: string[]) =>
+    bps.length > 0 ? (
+      <ResponsiveDot
+        cssProp={`disabledOverlay-${field}`}
+        overriddenBreakpoints={bps}
+        onRemove={bp => {
+          store.removeResponsiveOverride(nodeId, bp as 'laptop' | 'tablet' | 'mobile', `_disabledOverlay.${field}`);
+          commitHistory();
+        }}
+        onResetAll={() => {
+          for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+            store.removeResponsiveOverride(nodeId, bp, `_disabledOverlay.${field}`);
+          }
+          commitHistory();
+        }}
+      />
+    ) : null;
 
   return (
     <>
@@ -365,19 +440,33 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
         <div style={{ borderTop: '1px solid #1f2937', padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span style={{ ...DESIGN_LABEL, marginBottom: 0 }}>Overlay</span>
 
-          {/* Color — full row */}
+          {/* Color */}
           <div>
-            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+              <DirectChangedLabel
+                text="Color"
+                changed={effectiveOverlay.color !== undefined && effectiveOverlay.color !== DEF_COLOR}
+                onReset={() => resetField('color')}
+              />
+              {fieldChip('color', fieldOverriddenBps.color)}
+            </div>
             <FigmaColorPicker
-              value={overlay.color?.startsWith('#') ? overlay.color : '#000000'}
+              value={effectiveOverlay.color?.startsWith('#') ? effectiveOverlay.color : DEF_COLOR}
               onChange={hex => patchColorLive(hex)}
               onCommit={commitHistory}
             />
           </div>
 
-          {/* Opacity — own row so slider has full width and never overflows */}
+          {/* Opacity */}
           <div>
-            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Opacity %</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+              <DirectChangedLabel
+                text="Opacity %"
+                changed={effectiveOverlay.opacity !== undefined && Math.abs((effectiveOverlay.opacity ?? DEF_OPACITY) - DEF_OPACITY) > 0.005}
+                onReset={() => resetField('opacity')}
+              />
+              {fieldChip('opacity', fieldOverriddenBps.opacity)}
+            </div>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="number" min={0} max={100} step={5}
@@ -398,7 +487,14 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
 
           {/* Blur */}
           <div>
-            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Blur px</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+              <DirectChangedLabel
+                text="Blur px"
+                changed={(effectiveOverlay.blur ?? DEF_BLUR) !== DEF_BLUR}
+                onReset={() => resetField('blur')}
+              />
+              {fieldChip('blur', fieldOverriddenBps.blur)}
+            </div>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="number" min={0} max={40} step={1}

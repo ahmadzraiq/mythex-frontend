@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "Select System Component Demo"
+  },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "max-w-[640px] mx-auto flex flex-col gap-[24px] py-[48px] px-[24px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] font-bold text-gray-900 dark:text-white"
+            },
+            "text": "Select — Custom Trigger Demo"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Click the trigger below, pick an option from the popover. The Select fires its `On change` custom trigger with payload `{ value, label }`. A page-level workflow listens for that trigger and writes the value into a variable shown at the bottom."
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px] p-[20px] rounded-[12px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[12px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                },
+                "text": "1. The Select (system component instance)"
+              },
+              {
+                "type": "Box",
+                "_system": { "id": "sys-select", "name": "Select" },
+                "_overrides": [],
+                "props": {
+                  "className": "flex flex-row items-center justify-between gap-[8px] px-[12px] py-[8px] rounded-[6px] border border-border bg-background cursor-pointer hover:border-primary w-full",
+                  "options": [
+                    { "label": "Apple",  "value": "apple"  },
+                    { "label": "Banana", "value": "banana" },
+                    { "label": "Cherry", "value": "cherry" }
+                  ],
+                  "value": { "formula": "variables['sel-test-value']" },
+                  "data-testid": "select-trigger"
+                },
+                "popover": {
+                  "trigger": "click",
+                  "placement": "bottom-start",
+                  "offset": 4,
+                  "openVariable": "sel-v-is-open-uuid"
+                },
+                "actions": [
+                  { "action": "wfOnSelectChange" }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "flex-1 text-[14px] text-foreground" },
+                    "text": {
+                      "formula": "(()=>{const v=context?.component?.props?.value;const opts=Array.isArray(context?.component?.props?.options)?context.component.props.options:[];const m=opts.find(o=>o?.value===v);return m?.label||'Select...'})()"
+                    }
+                  },
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:chevron-down", "size": 16, "color": "#6b7280" }
+                  },
+                  {
+                    "type": "Box",
+                    "_popoverContent": true,
+                    "props": {
+                      "className": "min-w-[200px] max-h-[300px] overflow-auto bg-background border border-border rounded-[6px] shadow-md py-[4px]",
+                      "data-testid": "select-popover"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "map": { "formula": "Array.isArray(context?.component?.props?.options) ? context.component.props.options : []" },
+                        "key": "context.item.data.value",
+                        "props": { "className": "contents" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex flex-row items-center px-[12px] py-[8px] cursor-pointer hover:bg-muted"
+                            },
+                            "actions": [{ "action": "sel-wf-select-item" }],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": { "className": "text-[14px] text-foreground" },
+                                "text": "{{context.item.data.label}}"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px] p-[20px] rounded-[12px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[12px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                },
+                "text": "2. Page-level listener output"
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[8px]" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider" },
+                    "text": "context.event.value →"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[14px] font-medium text-gray-900 dark:text-gray-100",
+                      "data-testid": "out-selected-value"
+                    },
+                    "text": {
+                      "formula": "'Selected: ' + (variables['sel-test-value'] || '(none)')"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

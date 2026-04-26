@@ -1,0 +1,74 @@
+{
+  "meta": { "title": "Chip System Component Demo" },
+  "state": {},
+  "ui": {
+    "type": "Box",
+    "props": { "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950" },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "max-w-[640px] mx-auto flex flex-col gap-[24px] py-[48px] px-[24px]" },
+        "children": [
+          { "type": "Text", "props": { "className": "text-[24px] font-bold text-gray-900 dark:text-white" }, "text": "Chip — Custom Trigger Demo" },
+
+          {
+            "type": "Box",
+            "_system": { "id": "sys-chip", "name": "Chip" },
+            "_overrides": [],
+            "props": {
+              "label": "Hello Chip",
+              "variant": "primary",
+              "removable": true,
+              "iconLeft": "",
+              "data-testid": "chip-body"
+            },
+            "actions": [
+              { "action": "chip-wf-on-click" },
+              { "action": "wfOnChipClick" },
+              { "action": "wfOnChipRemove" }
+            ],
+            "children": [
+              {
+                "type": "Icon",
+                "condition": "!!context?.component?.props?.iconLeft",
+                "props": {
+                  "icon": { "formula": "context?.component?.props?.iconLeft || 'lucide:tag'" },
+                  "size": 12,
+                  "color": "currentColor"
+                }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[12px] font-medium" },
+                "text": { "formula": "context?.component?.props?.label || ''" }
+              },
+              {
+                "type": "Box",
+                "condition": "!!context?.component?.props?.removable",
+                "props": {
+                  "className": "ml-[2px] flex items-center justify-center cursor-pointer hover:opacity-70",
+                  "data-testid": "chip-remove"
+                },
+                "actions": [{ "action": "chip-wf-remove", "stopPropagation": true }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:x", "size": 12, "color": "currentColor" } }
+                ]
+              }
+            ]
+          },
+
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-gray-700 dark:text-gray-300", "data-testid": "out-chip-clicks" },
+            "text": { "formula": "'Clicks: ' + (variables['chip-test-clicks'] || 0)" }
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-gray-700 dark:text-gray-300", "data-testid": "out-chip-removes" },
+            "text": { "formula": "'Removes: ' + (variables['chip-test-removes'] || 0)" }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -3,13 +3,24 @@
  * Used by config/root.ts and lib/sdui/components/SharedComponentNode.tsx.
  */
 
-export type SharedComponentPropertyType = 'text' | 'number' | 'boolean' | 'color' | 'any';
+export type SharedComponentPropertyType =
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'color'
+  | 'any'
+  | 'size'
+  | 'select'
+  | 'icon'
+  | 'list';
 
 export interface SharedComponentProperty {
   id: string;
   name: string;
   type: SharedComponentPropertyType;
   defaultValue?: unknown;
+  /** Option list for properties whose type is 'select'. */
+  options?: Array<{ label: string; value: string }>;
 }
 
 /** A variable scoped to a shared component model instance. */

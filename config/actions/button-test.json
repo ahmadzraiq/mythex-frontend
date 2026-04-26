@@ -1,0 +1,24 @@
+{
+  "wfOnButtonClick": {
+    "name": "On Button click",
+    "trigger": "btn-t-on-click",
+    "steps": [
+      {
+        "id": "incr-count",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "btn-test-count",
+          "value": { "formula": "(Number(variables['btn-test-count']) || 0) + 1" }
+        }
+      },
+      {
+        "id": "store-label",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "btn-test-label",
+          "value": { "formula": "context?.event?.label || ''" }
+        }
+      }
+    ]
+  }
+}

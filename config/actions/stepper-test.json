@@ -1,0 +1,16 @@
+{
+  "wfOnStepClick": {
+    "name": "On Stepper step click",
+    "trigger": "stepper-t-on-step-click",
+    "steps": [
+      {
+        "id": "store-index",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "stepper-test-index",
+          "value": { "formula": "Number(context?.event?.index) || 1" }
+        }
+      }
+    ]
+  }
+}

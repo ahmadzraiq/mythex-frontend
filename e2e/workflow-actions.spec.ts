@@ -1,7 +1,8 @@
 /**
  * Workflow Actions E2E Tests (WA series)
  *
- * Tests all workflow action types (excluding uploadFile)
+ * Tests all workflow action types (excluding pickFile, which requires a
+ * real OS file picker and is covered separately by file-upload-test.spec.ts)
  * across all relevant triggers, on /workflow-test.
  *
  * Cards on /workflow-test:

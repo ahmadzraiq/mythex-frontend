@@ -100,21 +100,28 @@ export function buildIdentifierForJs(
 ): string {
   if (!path) return '';
 
-  // 1) Strip `?.` optional-chaining (cosmetic in JS bindings — wwLib proxy handles missing keys).
-  let p = path.replace(/\?\./g, '.');
-
-  // 2) Replace `variables['UUID']` and `collections['UUID']` with their named forms.
-  p = p.replace(/^(variables|collections)\['([^']+)'\]/, (_m, root: string, uuid: string) => {
+  // 1) Map UUID-keyed roots to their named forms first, while the original
+  //    `variables['UUID']` shape is still intact (no leading `?.`).
+  let p = path.replace(/^(variables|collections)\['([^']+)'\]/, (_m, root: string, uuid: string) => {
     const map = root === 'variables' ? uuidToVarName : uuidToCollectionName;
     const name = map.get(uuid);
     if (!name) return `${root}['${uuid}']`;
     return isSafeJsIdent(name) ? `${root}.${name}` : `${root}[${JSON.stringify(name)}]`;
   });
 
-  // 3) Convert subsequent `['key']` segments to `.key` when the key is a safe identifier.
-  p = p.replace(/\['([^']+)'\]/g, (_m, key: string) => (isSafeJsIdent(key) ? `.${key}` : `[${JSON.stringify(key)}]`));
+  // 2) Collapse all bracket segments. Eat any leading `?.` / `.` so there's
+  //    never a leftover dot before the rewritten segment (which is what
+  //    produced `auth..accessToken` previously).
+  //    String keys → `.key` (or `["key"]` if not a safe identifier).
+  p = p.replace(/(?:\?\.|\.)?\['([^']+)'\]/g, (_m, key: string) =>
+    isSafeJsIdent(key) ? `.${key}` : `[${JSON.stringify(key)}]`,
+  );
+  //    Numeric indexes stay as `[n]`.
+  p = p.replace(/(?:\?\.|\.)?\[(\d+)\]/g, (_m, n: string) => `[${n}]`);
 
-  // 4) Numeric indexes stay as `[n]`.
+  // 3) Strip remaining `?.` (cosmetic optional chaining before plain idents).
+  p = p.replace(/\?\./g, '.');
+
   return p;
 }
 

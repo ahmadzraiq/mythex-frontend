@@ -103,9 +103,6 @@ export const COMPONENT_CAPABILITIES: Record<string, ToolGroup[]> = {
   Input: ['size', 'border', 'spacing', 'input-props', 'disabled'],
   Textarea: ['size', 'border', 'spacing', 'input-props', 'disabled'],
 
-  // Select is a composite — style the trigger/content children directly.
-  Select: ['size', 'border', 'spacing', 'disabled'],
-
   // ── Toggle / check controls ───────────────────────────────────────────────
   Checkbox:      ['disabled'],
   CheckboxGroup: ['layout', 'size', 'spacing', 'disabled'],
@@ -117,15 +114,11 @@ export const COMPONENT_CAPABILITIES: Record<string, ToolGroup[]> = {
   Slider:   ['size', 'disabled'],
   Progress: ['size', 'border'],
 
-  // ── Overlays ──────────────────────────────────────────────────────────────
-  Tooltip: ['layout'],
-
   // ── Skeleton ──────────────────────────────────────────────────────────────
   Skeleton: ['size', 'border'],
 
   // ── Data & Media widgets ──────────────────────────────────────────────────
   // These are mostly opaque components — only size makes sense externally.
-  FileUpload:      ['size', 'border', 'disabled'],
   Iframe:          ['size'],
   Chart:           ['size'],
   QRCodeWidget:    ['size'],

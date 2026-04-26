@@ -1,0 +1,144 @@
+{
+  "id": "sys-pagination",
+  "name": "Pagination",
+  "description": "Page-number pagination strip. The component does **not** own state — it reads `currentPage` / `totalPages` / `siblingCount` from props and emits `On page change` with the new page index for prev / next / page-click. Parents own the page index and re-render the list.",
+  "properties": [
+    { "id": "prop-pg-current",  "name": "currentPage",  "type": "number", "defaultValue": 1 },
+    { "id": "prop-pg-total",    "name": "totalPages",   "type": "number", "defaultValue": 5 },
+    { "id": "prop-pg-siblings", "name": "siblingCount", "type": "number", "defaultValue": 1 }
+  ],
+  "triggers": [
+    {
+      "id": "pg-t-on-change",
+      "name": "On page change"
+    }
+  ],
+  "variables": {},
+  "workflows": {
+    "pg-wf-prev": {
+      "id": "pg-wf-prev",
+      "name": "Previous Page",
+      "trigger": "click",
+      "description": "Emit On page change with currentPage - 1, clamped to 1.",
+      "steps": [
+        {
+          "id": "emit-change",
+          "type": "emitComponentTrigger",
+          "config": {
+            "triggerId": "pg-t-on-change",
+            "payload": { "formula": "{ page: Math.max(1, (Number(context?.component?.props?.currentPage) || 1) - 1) }" }
+          }
+        }
+      ]
+    },
+    "pg-wf-next": {
+      "id": "pg-wf-next",
+      "name": "Next Page",
+      "trigger": "click",
+      "description": "Emit On page change with currentPage + 1, clamped to totalPages.",
+      "steps": [
+        {
+          "id": "emit-change",
+          "type": "emitComponentTrigger",
+          "config": {
+            "triggerId": "pg-t-on-change",
+            "payload": { "formula": "{ page: Math.min(Number(context?.component?.props?.totalPages) || 1, (Number(context?.component?.props?.currentPage) || 1) + 1) }" }
+          }
+        }
+      ]
+    },
+    "pg-wf-jump": {
+      "id": "pg-wf-jump",
+      "name": "Jump to Page",
+      "trigger": "click",
+      "description": "Emit On page change with the clicked page number from the mapped item.",
+      "steps": [
+        {
+          "id": "emit-change",
+          "type": "emitComponentTrigger",
+          "config": {
+            "triggerId": "pg-t-on-change",
+            "payload": { "formula": "{ page: context?.item?.data?.page }" }
+          }
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": { "className": "flex flex-row gap-[4px] items-center" },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center hover:bg-[var(--theme-muted)]",
+          "style": {
+            "borderWidth": "1px",
+            "borderStyle": "solid",
+            "borderColor": "var(--border)",
+            "opacity": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'0.5':'1'" },
+            "cursor": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'not-allowed':'pointer'" },
+            "pointerEvents": { "formula": "(Number(context?.component?.props?.currentPage)||1)<=1?'none':'auto'" }
+          }
+        },
+        "actions": [{ "action": "pg-wf-prev" }],
+        "children": [
+          { "type": "Icon", "props": { "icon": "lucide:chevron-left", "size": 14, "color": "#6b7280" } }
+        ]
+      },
+      {
+        "type": "Box",
+        "map": { "formula": "(()=>{const cp=Number(context?.component?.props?.currentPage)||1;const tp=Number(context?.component?.props?.totalPages)||1;const sib=Number(context?.component?.props?.siblingCount)||1;const start=Math.max(1,cp-sib);const end=Math.min(tp,cp+sib);const out=[];for(let i=start;i<=end;i++)out.push({page:i,isActive:i===cp});return out})()" },
+        "key": "context.item.data.page",
+        "props": { "className": "contents" },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center cursor-pointer",
+              "style": {
+                "backgroundColor": { "formula": "context?.item?.data?.isActive?'var(--theme-primary)':'transparent'" },
+                "borderWidth": { "formula": "context?.item?.data?.isActive?'0':'1px'" },
+                "borderStyle": { "formula": "context?.item?.data?.isActive?'none':'solid'" },
+                "borderColor": { "formula": "context?.item?.data?.isActive?'transparent':'var(--border)'" }
+              }
+            },
+            "actions": [{ "action": "pg-wf-jump" }],
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] font-medium",
+                  "style": {
+                    "color": { "formula": "context?.item?.data?.isActive?'var(--theme-primary-foreground)':'var(--theme-foreground)'" }
+                  }
+                },
+                "text": "{{context.item.data.page}}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "w-[32px] h-[32px] rounded-[6px] flex items-center justify-center hover:bg-[var(--theme-muted)]",
+          "style": {
+            "borderWidth": "1px",
+            "borderStyle": "solid",
+            "borderColor": "var(--border)",
+            "opacity": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'0.5':'1'" },
+            "cursor": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'not-allowed':'pointer'" },
+            "pointerEvents": { "formula": "(Number(context?.component?.props?.currentPage)||1)>=(Number(context?.component?.props?.totalPages)||1)?'none':'auto'" }
+          }
+        },
+        "actions": [{ "action": "pg-wf-next" }],
+        "children": [
+          { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 14, "color": "#6b7280" } }
+        ]
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "⟨⟩"
+}

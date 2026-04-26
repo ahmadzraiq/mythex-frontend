@@ -109,7 +109,7 @@ ${SHARED_FORMULA_SYNTAX}
 - \`returnValue\` — config: \`path\` (state path), \`value\`.
 - \`copyToClipboard\` — config: \`value\` (string).
 - \`executeComponentAction\` — config: \`action\` (workflow name).
-- \`uploadFile\` — config: upload settings (provider-specific).
+- \`pickFile\` — config: \`accept\` (string, e.g. "image/*" or ".pdf,.csv"; optional), \`multiple\` (boolean; optional), \`storeIn\` (variable id; required). Opens the OS file picker and writes the picked files (\`Array<{name,size,type,lastModified,file}>\`) into the chosen variable. Must run inside a click-triggered workflow (browser gesture requirement).
 - \`printPdf\` — triggers browser print/PDF flow.
 - \`downloadFileFromUrl\` — config: \`url\` (+ optional filename fields).
 - \`createUrlFromBase64\` — config: \`base64\`, \`mimeType\`, \`storeIn\`.

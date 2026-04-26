@@ -1,0 +1,16 @@
+{
+  "wfOnRadioGroupChange": {
+    "name": "On Radio Group change",
+    "trigger": "rg-t-on-change",
+    "steps": [
+      {
+        "id": "store-value",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "rg-test-value",
+          "value": { "formula": "context?.event?.value || ''" }
+        }
+      }
+    ]
+  }
+}

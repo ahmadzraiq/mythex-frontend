@@ -150,6 +150,10 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   boolean: { bg: '#6d28d9', text: '#ede9fe' },
   color:   { bg: '#b45309', text: '#fef3c7' },
   any:     { bg: '#065f46', text: '#d1fae5' },
+  size:    { bg: '#0c4a6e', text: '#bae6fd' },
+  select:  { bg: '#3b0764', text: '#e9d5ff' },
+  icon:    { bg: '#292524', text: '#d6d3d1' },
+  list:    { bg: '#14532d', text: '#bbf7d0' },
   string:  { bg: '#374151', text: '#f9fafb' },
   object:  { bg: '#7c3aed', text: '#ede9fe' },
   array:   { bg: '#be185d', text: '#fce7f3' },
@@ -1060,16 +1064,67 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
           <label style={SECTION_LABEL}>Type</label>
           <select
             value={prop.type}
-            onChange={e => onUpdate('type', e.target.value)}
+            onChange={e => {
+              onUpdate('type', e.target.value);
+              if (e.target.value === 'select' && !prop.options?.length) {
+                onUpdate('options', [{ label: 'Option 1', value: 'option-1' }]);
+              }
+            }}
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
           >
             <option value="text">text</option>
             <option value="number">number</option>
+            <option value="size">size</option>
             <option value="boolean">boolean</option>
+            <option value="select">select</option>
+            <option value="icon">icon</option>
             <option value="color">color</option>
+            <option value="list">list</option>
             <option value="any">any (JSON)</option>
           </select>
         </div>
+
+        {/* Select options editor */}
+        {prop.type === 'select' && (
+          <div>
+            <label style={SECTION_LABEL}>Options</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {(prop.options ?? []).map((opt, i) => (
+                <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <input
+                    value={opt.label}
+                    onChange={e => {
+                      const next = [...(prop.options ?? [])];
+                      next[i] = { ...next[i], label: e.target.value };
+                      onUpdate('options', next);
+                    }}
+                    placeholder="Label"
+                    style={{ ...INPUT_BASE, padding: '3px 6px', fontSize: 10, flex: 1 }}
+                  />
+                  <input
+                    value={opt.value}
+                    onChange={e => {
+                      const next = [...(prop.options ?? [])];
+                      next[i] = { ...next[i], value: e.target.value };
+                      onUpdate('options', next);
+                    }}
+                    placeholder="value"
+                    style={{ ...INPUT_BASE, padding: '3px 6px', fontSize: 10, flex: 1, fontFamily: 'monospace' }}
+                  />
+                  <button
+                    onClick={() => onUpdate('options', (prop.options ?? []).filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                  >×</button>
+                </div>
+              ))}
+              <button
+                onClick={() => onUpdate('options', [...(prop.options ?? []), { label: '', value: '' }])}
+                style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: '1px dashed #374151', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
+              >+ Add option</button>
+            </div>
+          </div>
+        )}
+
         {/* Default value */}
         <div>
           <label style={SECTION_LABEL}>Default value</label>
@@ -1093,12 +1148,46 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
               value={String(prop.defaultValue ?? '#000000')}
               onChange={c => onUpdate('defaultValue', c)}
             />
+          ) : prop.type === 'select' && prop.options?.length ? (
+            <select
+              value={String(prop.defaultValue ?? '')}
+              onChange={e => onUpdate('defaultValue', e.target.value)}
+              style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
+            >
+              <option value="">— none —</option>
+              {prop.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          ) : prop.type === 'size' ? (
+            (() => {
+              const raw = String(prop.defaultValue ?? '');
+              const match = raw.match(/^([\d.]+)(.*)$/);
+              const num = match ? match[1] : '';
+              const unit = match ? match[2] : 'px';
+              return (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <input
+                    type="number"
+                    value={num}
+                    onChange={e => onUpdate('defaultValue', `${e.target.value}${unit || 'px'}`)}
+                    placeholder="0"
+                    style={{ ...INPUT_BASE, padding: '5px 6px', fontSize: 11, flex: 1 }}
+                  />
+                  <select
+                    value={unit || 'px'}
+                    onChange={e => onUpdate('defaultValue', `${num}${e.target.value}`)}
+                    style={{ ...INPUT_BASE, padding: '5px 4px', fontSize: 11, width: 52 }}
+                  >
+                    {['px', '%', 'vh', 'vw'].map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+              );
+            })()
           ) : (
             <input
               type={prop.type === 'number' ? 'number' : 'text'}
               value={String(prop.defaultValue ?? '')}
               onChange={e => onUpdate('defaultValue', prop.type === 'number' ? Number(e.target.value) : e.target.value)}
-              placeholder="Default value…"
+              placeholder={prop.type === 'icon' ? 'lucide:check' : prop.type === 'link' ? 'https://…' : 'Default value…'}
               style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
               onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
               onBlur={e => (e.currentTarget.style.borderColor = '#374151')}

@@ -151,7 +151,7 @@ export default function BuilderCanvas() {
   // ── Pan / Zoom hook ───────────────────────────────────────────────────────
   const {
     worldRef, gridPatternRef,
-    zoomRef, panXRef, panYRef,
+    syncTimerRef, zoomRef, panXRef, panYRef,
     dragRef,
     applyWorldTransform, scheduleStoreSync, fitToCanvas,
   } = useCanvasPanZoom(
@@ -159,42 +159,55 @@ export default function BuilderCanvas() {
     { zoom, panX, panY, setZoom, setPan, pendingFitToPage, clearPendingFit, pageNodes },
   );
 
-  // Adjust zoom & pan when viewport breakpoint changes — keeps the same
-  // visual center instead of jumping to the active/selected page.
+  // On breakpoint switch: rescale page wx positions so pages don't overlap
+  // or leave giant gaps, then reposition the camera so the user's view
+  // stays anchored at the same FRACTION of the focused page's width.
+  //
+  // Example: looking at 50% across a 1280 px desktop page → after switching
+  // to 390 px mobile, still looking at 50% of the 390 px page. This handles
+  // both pages at wx=0 (where there is no wx delta to compensate) and
+  // multi-page layouts where wx shifts significantly.
   const prevViewportRef = useRef(viewport);
   useEffect(() => {
     if (viewport === prevViewportRef.current) return;
     const oldVp = prevViewportRef.current;
     prevViewportRef.current = viewport;
 
-    const c = canvasRef.current;
-    if (!c) return;
-
     const oldW = VIEWPORT_WIDTHS[oldVp];
     const newW = VIEWPORT_WIDTHS[viewport];
-    const oldZ = zoomRef.current;
-    const curPX = panXRef.current;
-    const curPY = panYRef.current;
-    const cW = c.clientWidth;
-    const cH = c.clientHeight;
 
-    const newZ = Math.min(cW / newW, cH / VIEWPORT_H) * 0.85;
+    // Flush any pending debounced pan/zoom sync to prevent the timer from
+    // overwriting the camera position we're about to set.
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+      setZoom(zoomRef.current);
+      setPan(panXRef.current, panYRef.current);
+    }
 
-    // World-space center the user is currently looking at
-    const worldCX = (cW / 2 - curPX) / oldZ;
-    const worldCY = (cH / 2 - curPY) / oldZ;
+    // Measure the user's current view center as a fraction across the
+    // focused page's width so the same relative position stays visible
+    // after the page resizes (handles wx=0 pages and multi-page layouts).
+    const storeState = useBuilderStore.getState();
+    const focusedId = storeState.focusedPageId || storeState.currentPageId;
+    const oldFocusedWx = storeState.pages.find(p => p.id === focusedId)?.wx ?? 0;
+    const c = canvasRef.current;
+    const canvasCenterX = c ? c.clientWidth / 2 : 0;
+    const worldCenterX = (canvasCenterX - panXRef.current) / zoomRef.current;
+    const fractionX = oldW > 0 ? (worldCenterX - oldFocusedWx) / oldW : 0;
 
-    // Pages are laid out horizontally; scale X proportionally for the width change
-    const slotRatio = (newW + PAGE_GAP) / (oldW + PAGE_GAP);
-    const newWorldCX = worldCX * slotRatio;
+    // Rescale all page wx values.
+    useBuilderStore.getState().rescalePagePositions(oldVp, viewport);
 
-    const newPX = cW / 2 - newWorldCX * newZ;
-    const newPY = cH / 2 - worldCY * newZ;
+    // Reposition the camera so the same fraction of the focused page is
+    // centered on screen.
+    const newFocusedWx = useBuilderStore.getState().pages.find(p => p.id === focusedId)?.wx ?? oldFocusedWx;
+    const newWorldCenterX = newFocusedWx + fractionX * newW;
+    const newPanX = canvasCenterX - newWorldCenterX * zoomRef.current;
 
-    requestAnimationFrame(() => {
-      setPan(newPX, newPY);
-      setZoom(newZ);
-    });
+    panXRef.current = newPanX;
+    applyWorldTransform(newPanX, panYRef.current, zoomRef.current);
+    setPan(newPanX, panYRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewport]);
 
@@ -803,9 +816,24 @@ export default function BuilderCanvas() {
     }
 
     if (d.active && !d.moved) {
-      const insideAnyPage = (e.target as Element).closest('[data-builder-page-id]');
       const insideToolbar = (e.target as Element).closest('[data-floating-toolbar]') ||
                             (e.target as Element).closest('[data-more-menu]');
+      if (insideToolbar) {
+        dragRef.current.active = false;
+        return;
+      }
+
+      // Use the physical DOM target to decide whether the click landed inside a page.
+      // BUT: if the pointer was released over a builder overlay element (e.g. a resize
+      // handle that appeared mid-click after pointerdown pre-selected the element),
+      // e.target points into the overlay rather than the page — use hitTest instead.
+      const targetEl = e.target as Element;
+      const targetIsOverlay = targetEl.hasAttribute('data-builder-overlay') ||
+                              !!targetEl.closest('[data-builder-overlay]');
+      const insideAnyPage = targetIsOverlay
+        ? true   // treat overlay-target pointerups as "inside the page" and let hitTest decide
+        : targetEl.closest('[data-builder-page-id]');
+
       if (insideAnyPage) {
         const hit = hitTest(e.clientX, e.clientY);
         if (hit.kind === 'node') {
@@ -819,17 +847,19 @@ export default function BuilderCanvas() {
           select(hit.id, e.shiftKey || e.metaKey, hit.mapIndex);
         } else {
           // Clicked empty space inside any page → just switch focus if needed
-          const clickedPageEl = (e.target as Element).closest('[data-builder-page-id]') as HTMLElement | null;
+          const clickedPageEl = targetIsOverlay
+            ? null
+            : targetEl.closest('[data-builder-page-id]') as HTMLElement | null;
           const pageId = clickedPageEl?.dataset.builderPageId;
           if (pageId && pageId !== (useBuilderStore.getState().focusedPageId || useBuilderStore.getState().currentPageId)) {
             focusPage(pageId);
           }
           select(null);
         }
-      } else if (!insideToolbar) {
-        const insideCanvasNode = (e.target as Element).closest('[data-builder-canvas-node]');
+      } else {
+        const insideCanvasNode = targetEl.closest('[data-builder-canvas-node]');
         if (!insideCanvasNode) {
-        select(null);
+          select(null);
         }
       }
     }
@@ -2241,8 +2271,15 @@ export default function BuilderCanvas() {
     // Track final committed size for the onUp handler
     let lastW = startW;
     let lastH = startH;
+    // Track whether the pointer moved enough to constitute an actual resize drag.
+    // If released without real movement the interaction was a mis-click on the handle
+    // (user tried to click an element behind the handle), so we fall through to selection.
+    let hasDragged = false;
 
     const onMove = (ev: PointerEvent) => {
+      if (!hasDragged && Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return;
+      hasDragged = true;
+
       const dx = (ev.clientX - startX) / z;
       const dy = (ev.clientY - startY) / z;
 
@@ -2298,10 +2335,15 @@ export default function BuilderCanvas() {
       overlayNotifyRef.current?.();
     };
 
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup',   onUp);
       setSnapGuides([]);
+
+      // If the pointer never moved past the drag threshold the user accidentally
+      // clicked the resize handle instead of dragging. Keep the current selection
+      // so a mis-click on a handle doesn't commit a spurious zero-size resize.
+      if (!hasDragged) return;
 
       // Guard: if the node has a formula expression binding on width/height, bail out.
       // Expressions (calc(), variables, etc.) cannot be represented as pixel Tailwind classes.

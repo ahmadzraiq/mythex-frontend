@@ -1,0 +1,80 @@
+{
+  "id": "sys-rating",
+  "name": "Star Rating",
+  "description": "Star rating row. The component is stateless — `value` and `max` come from props. Clicking a star emits `On change` with `{ value }` (1-indexed). Read-only mode disables clicks. Filled stars use `color`, empty stars use `emptyColor`.",
+  "properties": [
+    { "id": "prop-rating-value",       "name": "value",      "type": "number",  "defaultValue": 0 },
+    { "id": "prop-rating-max",         "name": "max",        "type": "number",  "defaultValue": 5 },
+    { "id": "prop-rating-readonly",    "name": "readOnly",   "type": "boolean", "defaultValue": false },
+    { "id": "prop-rating-color",       "name": "color",      "type": "color",   "defaultValue": "#f59e0b" },
+    { "id": "prop-rating-empty-color", "name": "emptyColor", "type": "color",   "defaultValue": "#d1d5db" }
+  ],
+  "triggers": [
+    {
+      "id": "rating-t-on-change",
+      "name": "On change",
+      "payload": { "formula": "{ value: context?.item?.data?.value }" }
+    }
+  ],
+  "variables": {},
+  "workflows": {
+    "rating-wf-set": {
+      "id": "rating-wf-set",
+      "name": "Set Rating",
+      "trigger": "click",
+      "description": "Emit On change with the clicked star's 1-indexed value, unless readOnly is true.",
+      "steps": [
+        {
+          "id": "guard-readonly",
+          "type": "branch",
+          "config": { "condition": "!context?.component?.props?.readOnly" },
+          "trueBranch": [
+            {
+              "id": "emit-change",
+              "type": "emitComponentTrigger",
+              "config": { "triggerId": "rating-t-on-change" }
+            }
+          ],
+          "falseBranch": []
+        }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "props": { "className": "flex flex-row gap-[4px] items-center" },
+    "children": [
+      {
+        "type": "Box",
+        "map": { "formula": "(()=>{const max=Number(context?.component?.props?.max)||5;const cur=Number(context?.component?.props?.value)||0;const out=[];for(let i=1;i<=max;i++)out.push({value:i,isFilled:i<=cur});return out})()" },
+        "key": "context.item.data.value",
+        "props": { "className": "contents" },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "style": {
+                "cursor": { "formula": "context?.component?.props?.readOnly?'default':'pointer'" }
+              }
+            },
+            "actions": [{ "action": "rating-wf-set" }],
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:star",
+                  "size": 20,
+                  "color": {
+                    "formula": "context?.item?.data?.isFilled ? (context?.component?.props?.color || '#f59e0b') : (context?.component?.props?.emptyColor || '#d1d5db')"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "isBuiltIn": true,
+  "icon": "★"
+}

@@ -965,16 +965,69 @@ Two places accept user-written JavaScript:
 
 ### `wwLib` helper API
 
+`wwLib` exposes typed wrappers around every workflow `ActionStepType` so a single `runJavaScript` step can do everything the canvas can. Each typed helper synthesizes a one-step workflow internally and routes through the canvas dispatcher (`runSteps`), so behavior matches a regular step exactly (including `context.workflow[id]` being populated).
+
 ```js
-wwLib.variables.get('cartCount')                // read variable by name
-wwLib.variables.set('cartCount', 5)             // write variable (runJavaScript only)
-wwLib.variables.reset('cartCount')              // reset to null
-wwLib.collections.get('products')               // returns { data, error, isFetching }
-await wwLib.collections.refetch('products')     // triggers a refetch via fetchCollection
-wwLib.workflow['stepId'].result                 // prior step results
-wwLib.parameters.someParam                      // current workflow's parameters
-wwLib.navigateTo('/path')                       // window.location.href = '/path'
+// ── State ────────────────────────────────────────────────────────────
+wwLib.variables.get('cartCount')                  // read by human name
+wwLib.variables.set('cartCount', 5)               // write (runJavaScript only)
+wwLib.variables.reset('cartCount')                // reset to null
+wwLib.collections.get('products')                 // { data, error, isFetching }
+await wwLib.collections.refetch('products')       // refetchDataSource
+await wwLib.collections.update('products', 'add', { id, name }, 'id') // updateCollection
+
+// ── Navigation ───────────────────────────────────────────────────────
+await wwLib.navigate.to({ path: '/home', queryParams: { from: 'js' } })
+await wwLib.navigate.to({ linkType: 'external', externalUrl: 'https://x.com', newTab: true })
+await wwLib.navigate.prev('/fallback')            // navigatePrev
+
+// ── Workflows ────────────────────────────────────────────────────────
+const out = await wwLib.workflows.run('jsDemoIncrementCart', { delta: 5 })
+await wwLib.workflows.return(out)                 // returnValue (early-return host workflow)
+
+// ── Component actions / triggers ─────────────────────────────────────
+await wwLib.components.run(instanceId, workflowId, { foo: 1 })   // executeComponentAction
+await wwLib.components.emit(instanceId, 'onClick', { x, y })      // emitComponentTrigger
+
+// ── Shared component dynamic CRUD ────────────────────────────────────
+await wwLib.shared.add('toast', { title: 'Hi' })  // addSharedComponent
+await wwLib.shared.delete(instanceId)             // deleteSharedComponent
+await wwLib.shared.deleteAll('toast')             // deleteAllSharedComponents
+
+// ── Popovers ─────────────────────────────────────────────────────────
+await wwLib.popovers.open('id') / .close('id') / .toggle('id')
+
+// ── Forms ────────────────────────────────────────────────────────────
+await wwLib.forms.setState(formId, { valid: true })
+await wwLib.forms.reset(formId)
+
+// ── Auth ─────────────────────────────────────────────────────────────
+await wwLib.auth.authenticate({ url, method, body, tokenPath, userPath, persist })
+await wwLib.auth.setUser({ id, email })
+await wwLib.auth.restoreSession()
+await wwLib.auth.clearSession()
+
+// ── Files / browser ──────────────────────────────────────────────────
+await wwLib.files.upload({ url, file, fieldName, headers })
+await wwLib.files.download('https://…/foo.pdf', 'foo.pdf')
+await wwLib.files.encodeBase64(file)
+await wwLib.files.fromBase64(base64, 'image/png', 'pixel.png')
+await wwLib.clipboard.copy('text')
+await wwLib.scroll.to(elementId, { behavior: 'smooth' })
+await wwLib.print.pdf({ elementId, filename })
+await wwLib.event.stopPropagation()
+await wwLib.timing.delay(800)
+
+// ── Generic escape hatch (any ActionStepType) ────────────────────────
+await wwLib.actions.run({ type: 'copyToClipboard', config: { text: 'hi' } })
+await wwLib.actions.runRaw({ type: 'graphql', query: '…' })   // raw SDUI action
+
+// ── Read-only ────────────────────────────────────────────────────────
+wwLib.workflow['stepId'].result    // prior step results
+wwLib.parameters.someParam         // current workflow parameters
 ```
+
+**Sync `{ js }` bindings** see the same `wwLib` object but `wwLib.<group>.<call>(...)` for action helpers throws `wwLib.<type>() is only available inside runJavaScript workflow steps, not in { js } bindings.` Bindings should remain pure reads (text/style/condition) — use `runJavaScript` for any side effect.
 
 ### Workflow step shape
 

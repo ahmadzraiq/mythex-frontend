@@ -1,0 +1,16 @@
+{
+  "wfOnPaginationChange": {
+    "name": "On Pagination change",
+    "trigger": "pg-t-on-change",
+    "steps": [
+      {
+        "id": "store-page",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "pg-test-page",
+          "value": { "formula": "Number(context?.event?.page) || 1" }
+        }
+      }
+    ]
+  }
+}

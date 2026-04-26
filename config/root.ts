@@ -70,6 +70,17 @@ import animationShowcase from './screens/animation-showcase.json';
 import triggersTest from './screens/triggers-test.json';
 import workflowCallTest from './screens/workflow-call-test.json';
 import datepickerTest from './screens/datepicker-test.json';
+import selectTest from './screens/select-test.json';
+import fileUploadTest from './screens/file-upload-test.json';
+import buttonTest from './screens/button-test.json';
+import tabsTest from './screens/tabs-test.json';
+import paginationTest from './screens/pagination-test.json';
+import ratingTest from './screens/rating-test.json';
+import stepperTest from './screens/stepper-test.json';
+import breadcrumbsTest from './screens/breadcrumbs-test.json';
+import radioGroupTest from './screens/radio-group-test.json';
+import chipTest from './screens/chip-test.json';
+import themeCustomColorsTest from './screens/theme-custom-colors-test.json';
 
 // Layouts
 import storeLayout from './layouts/store.json';
@@ -99,6 +110,16 @@ import animationShowcaseActions from './actions/animation-showcase.json';
 import triggersTestActions from './actions/triggers-test.json';
 import scComponentShowcaseActions from './actions/sc-component-showcase.json';
 import datepickerTestActions from './actions/datepicker-test.json';
+import selectTestActions from './actions/select-test.json';
+import fileUploadTestActions from './actions/file-upload-test.json';
+import buttonTestActions from './actions/button-test.json';
+import tabsTestActions from './actions/tabs-test.json';
+import paginationTestActions from './actions/pagination-test.json';
+import ratingTestActions from './actions/rating-test.json';
+import stepperTestActions from './actions/stepper-test.json';
+import breadcrumbsTestActions from './actions/breadcrumbs-test.json';
+import radioGroupTestActions from './actions/radio-group-test.json';
+import chipTestActions from './actions/chip-test.json';
 
 const screens = {
   home,
@@ -162,6 +183,17 @@ const screens = {
   triggersTest,
   workflowCallTest,
   datepickerTest,
+  selectTest,
+  fileUploadTest,
+  buttonTest,
+  tabsTest,
+  paginationTest,
+  ratingTest,
+  stepperTest,
+  breadcrumbsTest,
+  radioGroupTest,
+  chipTest,
+  themeCustomColorsTest,
 };
 
 const layouts = {
@@ -194,6 +226,16 @@ const actions = {
   ...triggersTestActions,
   ...scComponentShowcaseActions,
   ...datepickerTestActions,
+  ...selectTestActions,
+  ...fileUploadTestActions,
+  ...buttonTestActions,
+  ...tabsTestActions,
+  ...paginationTestActions,
+  ...ratingTestActions,
+  ...stepperTestActions,
+  ...breadcrumbsTestActions,
+  ...radioGroupTestActions,
+  ...chipTestActions,
 };
 
 const actionsByFile = {
@@ -218,6 +260,16 @@ const actionsByFile = {
   triggersTest: triggersTestActions,
   scComponentShowcase: scComponentShowcaseActions,
   datepickerTest: datepickerTestActions,
+  selectTest: selectTestActions,
+  fileUploadTest: fileUploadTestActions,
+  buttonTest: buttonTestActions,
+  tabsTest: tabsTestActions,
+  paginationTest: paginationTestActions,
+  ratingTest: ratingTestActions,
+  stepperTest: stepperTestActions,
+  breadcrumbsTest: breadcrumbsTestActions,
+  radioGroupTest: radioGroupTestActions,
+  chipTest: chipTestActions,
 };
 
 export const root = {

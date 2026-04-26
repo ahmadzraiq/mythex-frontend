@@ -320,7 +320,7 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
 
 // ─── DirectChangedLabel ───────────────────────────────────────────────────────
 /** Like ChangedLabel but takes `changed` + `onReset` directly — no context needed. */
-function DirectChangedLabel({ text, changed, onReset }: { text: string; changed: boolean; onReset: () => void }) {
+export function DirectChangedLabel({ text, changed, onReset }: { text: string; changed: boolean; onReset: () => void }) {
   const [popupPos, setPopupPos] = React.useState<{ top: number; left: number } | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const spanRef   = useRef<HTMLSpanElement | null>(null);

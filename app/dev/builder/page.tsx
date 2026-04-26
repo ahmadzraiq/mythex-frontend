@@ -55,6 +55,8 @@ import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
 import { SlidePanel } from './_slide-panel';
+import { CustomColorSlideContent } from './_custom-color-form';
+import type { CustomColor } from './_store';
 import {
   DataSlidePanelContent,
   getDataSlideTitle,
@@ -74,6 +76,7 @@ void useRef; void useState; // suppress unused-import lint
 
 /** localStorage key used to hand off page data to the preview tab. */
 export const BUILDER_PREVIEW_KEY = 'builder_preview';
+
 
 // ─── Dark/Light mode toggle ───────────────────────────────────────────────────
 
@@ -1028,6 +1031,18 @@ function leftSlideTitle(state: LeftSlideState): string {
   return '';
 }
 
+type RightSlideState =
+  | { kind: 'addColor' }
+  | { kind: 'editColor'; id: string }
+  | null;
+
+function rightSlideTitle(state: RightSlideState): string {
+  if (!state) return '';
+  if (state.kind === 'addColor') return 'New Custom Color';
+  if (state.kind === 'editColor') return 'Edit Custom Color';
+  return '';
+}
+
 export default function BuilderPage() {
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
@@ -1039,6 +1054,8 @@ export default function BuilderPage() {
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
+  const [rightSlide, setRightSlide] = useState<RightSlideState>(null);
+  const rightSlideWidth = 320;
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   // True while loadFromConfig is in-flight — shows a full-screen loader so the
   // user never sees an empty canvas flash while the project config is loading.
@@ -1190,6 +1207,21 @@ export default function BuilderPage() {
 
   // __builderStore is exposed at module level in _store.ts for E2E tests
 
+  // Re-apply custom-color CSS vars + THEME_OBJ once the project config has
+  // loaded. loadFromConfig already calls _applyLightOverrides, but the
+  // SDUIEngine event listener may not be registered yet at that point.
+  // Calling initTheme() here guarantees all active and inactive page engines
+  // receive the `sdui:theme-colors-patched` event after they have mounted.
+  // Re-apply CSS vars + THEME_OBJ after the project config loads, and again
+  // whenever the user adds/edits/removes a custom color so all page engines
+  // (active and inactive) immediately reflect the change.
+  const customColors = useBuilderStore(s => s.customColors);
+  useEffect(() => {
+    if (configLoading) return;
+    useBuilderStore.getState().initTheme();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configLoading, customColors]);
+
   /**
    * Open preview.
    *
@@ -1204,7 +1236,7 @@ export default function BuilderPage() {
    *   static config/app.ts without any auth or backend dependency.
    */
   const openPreview = useCallback(async () => {
-    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta, customVars } = useBuilderStore.getState();
+    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta, customVars, customColors } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
 
     // Always save to localStorage so the standalone preview (/dev/builder/preview) still works
@@ -1220,6 +1252,7 @@ export default function BuilderPage() {
       globalWorkflows,
       globalWorkflowMeta,
       customVars,
+      customColors,
     }));
 
     if (projectId) {
@@ -1496,7 +1529,40 @@ export default function BuilderPage() {
         )}
 
         <BuilderCanvas />
-        <PanelRight />
+
+        {/* Right SlidePanel — slides in between canvas and right panel (mirrors left side) */}
+        {rightSlide && (
+          <SlidePanel
+            title={rightSlideTitle(rightSlide)}
+            side="right"
+            onClose={() => setRightSlide(null)}
+            width={rightSlideWidth}
+            testId="right-slide-panel"
+          >
+            {(rightSlide.kind === 'addColor' || rightSlide.kind === 'editColor') && (() => {
+              const editing = rightSlide.kind === 'editColor'
+                ? useBuilderStore.getState().customColors.find(c => c.id === rightSlide.id) ?? null
+                : null;
+              const initial = rightSlide.kind === 'addColor'
+                ? { isNew: true } as Partial<CustomColor> & { isNew?: boolean }
+                : (editing ?? { isNew: true });
+              return (
+                <CustomColorSlideContent
+                  initial={initial}
+                  onSave={(c) => {
+                    const store = useBuilderStore.getState();
+                    if (rightSlide.kind === 'addColor') store.addCustomColor(c);
+                    else store.updateCustomColor(c.id, c);
+                    setRightSlide(null);
+                  }}
+                  onClose={() => setRightSlide(null)}
+                />
+              );
+            })()}
+          </SlidePanel>
+        )}
+
+        <PanelRight onOpenColorSlide={setRightSlide} />
       </div>
 
       {/* Workflow canvas overlay — full-screen, mounts above everything */}

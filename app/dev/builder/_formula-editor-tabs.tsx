@@ -1919,11 +1919,30 @@ export function ColorsDataSection({
   const tc = themeConfig as Record<string, unknown>;
   const colors = (tc.colors ?? {}) as Record<string, string>;
 
+  // Custom theme colors live in the builder store (not in config/theme.json),
+  // so pull them in separately and render a "Custom" subgroup. We use the
+  // light-mode hex for the swatch preview to match the System rows.
+  const customColors   = useBuilderStore(s => s.customColors);
+  const colorFolders   = useBuilderStore(s => s.colorFolders);
+  const totalCount     = Object.keys(colors).length + customColors.length;
+
+  // Group custom colors by folder for nicer browsing
+  const grouped = useMemo(() => {
+    const byFolder = new Map<string | undefined, typeof customColors>();
+    for (const c of customColors) {
+      const arr = byFolder.get(c.folderId) ?? [];
+      arr.push(c);
+      byFolder.set(c.folderId, arr);
+    }
+    return byFolder;
+  }, [customColors]);
+
   return (
     <div style={{ borderTop: '1px solid #1f2937' }}>
-      <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Colors" count={Object.keys(colors).length} />
+      <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Colors" count={totalCount} />
       {open && (
         <div>
+          {/* System tokens (from config/theme.json) */}
           {Object.entries(colors).map(([k, v]) => (
             <ThemeRow
               key={k} swatch label={k} value={v}
@@ -1932,6 +1951,44 @@ export function ColorsDataSection({
               onInsert={onInsert}
             />
           ))}
+
+          {/* Custom colors grouped by folder */}
+          {colorFolders.map(folder => {
+            const items = grouped.get(folder.id);
+            if (!items?.length) return null;
+            return (
+              <div key={folder.id} style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 9, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+                  {folder.name}
+                </div>
+                {items.map(c => (
+                  <ThemeRow
+                    key={c.id} swatch label={c.name} value={c.light}
+                    formulaPath={`theme?.['colors']?.['${c.name}']`}
+                    displayLabel={`Color - ${c.name}`}
+                    onInsert={onInsert}
+                  />
+                ))}
+              </div>
+            );
+          })}
+
+          {/* Ungrouped custom colors */}
+          {(grouped.get(undefined)?.length ?? 0) > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: 9, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+                Custom
+              </div>
+              {grouped.get(undefined)!.map(c => (
+                <ThemeRow
+                  key={c.id} swatch label={c.name} value={c.light}
+                  formulaPath={`theme?.['colors']?.['${c.name}']`}
+                  displayLabel={`Color - ${c.name}`}
+                  onInsert={onInsert}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

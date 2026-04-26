@@ -1,0 +1,24 @@
+{
+  "wfOnFilesSelected": {
+    "name": "On FileUpload files selected",
+    "trigger": "fu-t-on-files-selected",
+    "steps": [
+      {
+        "id": "store-name",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "fu-test-name",
+          "value": { "formula": "context?.event?.files?.[0]?.name || ''" }
+        }
+      },
+      {
+        "id": "store-files",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "fu-test-files",
+          "value": { "formula": "context?.event?.files || []" }
+        }
+      }
+    ]
+  }
+}

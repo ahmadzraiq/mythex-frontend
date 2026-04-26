@@ -1276,15 +1276,27 @@ export function DataSourceSlideContent({ initial, onSave, onClose, onWidthChange
 export interface FolderPickerProps {
   value: string | undefined;        // selected folderId
   onChange: (id: string | undefined) => void;
-  scope: 'var' | 'ds';
+  scope: 'var' | 'ds' | 'color';
 }
 
 export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
   const store = useBuilderStore();
-  const folders     = scope === 'var' ? store.varFolders     : store.dsFolders;
-  const addFolder    = scope === 'var' ? store.addVarFolder    : store.addDsFolder;
-  const updateFolder = scope === 'var' ? store.updateVarFolder : store.updateDsFolder;
-  const removeFolder = scope === 'var' ? store.removeVarFolder : store.removeDsFolder;
+  const folders =
+    scope === 'var'   ? store.varFolders :
+    scope === 'color' ? store.colorFolders :
+                        store.dsFolders;
+  const addFolder =
+    scope === 'var'   ? store.addVarFolder :
+    scope === 'color' ? store.addColorFolder :
+                        store.addDsFolder;
+  const updateFolder =
+    scope === 'var'   ? store.updateVarFolder :
+    scope === 'color' ? store.updateColorFolder :
+                        store.updateDsFolder;
+  const removeFolder =
+    scope === 'var'   ? store.removeVarFolder :
+    scope === 'color' ? store.removeColorFolder :
+                        store.removeDsFolder;
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null); // inline rename

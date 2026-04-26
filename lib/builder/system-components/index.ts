@@ -27,6 +27,18 @@ import snackbar from './snackbar';
 import alert from './alert';
 import badge from './badge';
 import avatar from './avatar';
+import select from './select';
+import fileUpload from './file-upload';
+import button from './button';
+import iconButton from './icon-button';
+import fab from './fab';
+import tabs from './tabs';
+import pagination from './pagination';
+import rating from './rating';
+import stepper from './stepper';
+import breadcrumbs from './breadcrumbs';
+import radioGroup from './radio-group';
+import chip from './chip';
 
 export const SYSTEM_COMPONENT_DEFAULTS: Record<string, SystemComponentModel> = {
   [datepicker.id]: datepicker,
@@ -41,4 +53,16 @@ export const SYSTEM_COMPONENT_DEFAULTS: Record<string, SystemComponentModel> = {
   [alert.id]: alert,
   [badge.id]: badge,
   [avatar.id]: avatar,
+  [select.id]: select,
+  [fileUpload.id]: fileUpload,
+  [button.id]: button,
+  [iconButton.id]: iconButton,
+  [fab.id]: fab,
+  [tabs.id]: tabs,
+  [pagination.id]: pagination,
+  [rating.id]: rating,
+  [stepper.id]: stepper,
+  [breadcrumbs.id]: breadcrumbs,
+  [radioGroup.id]: radioGroup,
+  [chip.id]: chip,
 };
