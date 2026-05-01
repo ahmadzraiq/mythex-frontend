@@ -78,6 +78,8 @@ function detectWorkflowStepType(
   const has = (steps: unknown[]) =>
     (steps as Array<{ type?: string }>).some(s => s.type === stepType);
   for (const item of actions as Array<Record<string, unknown>>) {
+    // Direct type on the action item: { trigger: "click", type: "submitForm" }
+    if (item.type === stepType) return true;
     // Inline element-workflow: item has a steps array directly
     if (Array.isArray(item.steps) && has(item.steps)) return true;
     if (typeof item.action === 'string' && item.action) {

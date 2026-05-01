@@ -17,34 +17,14 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
 import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
-import { getSystemComponents, updateSystemComponent } from '@/lib/builder/system-component-data';
 import type { SharedComponentModel } from '@/config/shared-component-types';
-import type { SystemComponentModel } from '@/lib/builder/system-component-types';
 import { useSduiStore } from '@/store/sdui-store';
 
-/**
- * Kind-aware model accessors for `componentWorkflow` targets.
- *
- * `editingKindMap[modelId]` discriminates shared vs system SCs — mirrors the
- * `getEditingModel` / `updateEditingModel` helpers in `_component-editor.tsx`
- * so loading/saving a System Component's workflow hits its own store instead
- * of silently no-op'ing against the shared map.
- */
 function getLinkedModel(modelId: string): SharedComponentModel | undefined {
-  const s = useBuilderStore.getState();
-  const kind = s.editingKindMap[modelId] ?? s.editingKind;
-  return kind === 'system'
-    ? (getSystemComponents()[modelId] as SharedComponentModel | undefined)
-    : getSharedComponents()[modelId];
+  return getSharedComponents()[modelId];
 }
 function updateLinkedModel(patch: Partial<SharedComponentModel> & { id: string }): void {
-  const s = useBuilderStore.getState();
-  const kind = s.editingKindMap[patch.id] ?? s.editingKind;
-  if (kind === 'system') {
-    updateSystemComponent(patch as Partial<SystemComponentModel> & { id: string });
-  } else {
-    updateSharedComponent(patch);
-  }
+  updateSharedComponent(patch);
 }
 
 /** Derives a stable ID that uniquely identifies the open workflow, used to scope test results. */
@@ -629,8 +609,8 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     if (target.kind === 'pageWorkflow' && target.nodeId) return findNode(store.pageNodes, target.nodeId)?.type as string | undefined;
     return undefined;
   })();
-  // When the workflow is bound to an SC instance (node has `_shared` or
-  // `_system`), surface that component model's custom triggers in the picker
+  // When the workflow is bound to an SC instance (node has `_shared`),
+  // surface that component model's custom triggers in the picker
   // so a listener workflow can subscribe to events like "On date selected".
   const targetCustomTriggers = (() => {
     if (target.kind !== 'element' && target.kind !== 'pageWorkflow') return undefined;
@@ -639,8 +619,7 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     const n = findNode(store.pageNodes, nodeId) as unknown as Record<string, unknown> | undefined;
     if (!n) return undefined;
     const shared = n._shared as { id: string } | undefined;
-    const system = n._system as { id: string } | undefined;
-    const meta = shared ?? system;
+    const meta = shared;
     if (!meta) return undefined;
     const model = getLinkedModel(meta.id);
     const triggers = model?.triggers ?? [];

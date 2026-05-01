@@ -4,11 +4,12 @@
  * Covers right-panel behavior for form-related components:
  *   PF-01..07  Input    — resize, section visibility, styling, REQUIRED_PARENT guard
  *   PF-08..09  Textarea — resize, REQUIRED_PARENT guard
- *   PF-10..13  Checkbox — container layout controls, CheckboxLabel typography
  *   PF-14..16  Toggle   — track/thumb sub-selection and independent bg color
+ *   PF-22      Select   — leaf widget (Auto Layout hidden)
+ *   PF-25..31  Tier 3 HTML Input Wrappers — FileUpload, Switch (primitive)
  *
  * Each describe block shares ONE browser page (opened in beforeAll) and
- * resets the canvas in beforeEach — eliminates 16 redundant page.goto calls.
+ * resets the canvas in beforeEach — eliminates redundant page.goto calls.
  */
 import { test, expect, type Page, type Browser } from '@playwright/test';
 
@@ -48,38 +49,6 @@ const FORM_NODES: Record<string, unknown> = {
     props: { className: 'w-full !rounded-md !border-border !bg-background', style: { width: '256px', height: '80px' } },
     children: [{ id: 'test-textarea-input', type: 'TextareaInput', props: { placeholder: 'Enter text…', className: '!text-foreground' } }],
   },
-  Slider: {
-    id: 'test-slider',
-    type: 'Slider',
-    props: { defaultValue: 50, minValue: 0, maxValue: 100, className: 'w-full', style: { width: '200px' } },
-    children: [
-      { id: 'test-slider-track', type: 'SliderTrack', children: [{ id: 'test-slider-filled', type: 'SliderFilledTrack' }] },
-      { id: 'test-slider-thumb', type: 'SliderThumb' },
-    ],
-  },
-  Radio: {
-    id: 'test-radio',
-    type: 'RadioGroup',
-    props: { className: 'flex flex-col gap-2', style: { width: '160px', height: '60px' } },
-    children: [{
-      id: 'test-radio-inner',
-      type: 'Radio',
-      props: { value: 'option', className: 'flex flex-row items-center gap-2' },
-      children: [
-        { id: 'test-radio-indicator', type: 'RadioIndicator' },
-        { id: 'test-radio-label', type: 'RadioLabel', text: 'Option' },
-      ],
-    }],
-  },
-  RadioGroup: {
-    id: 'test-radio-group',
-    type: 'RadioGroup',
-    props: { className: 'flex flex-col gap-3', style: { width: '160px', height: '80px' } },
-    children: [
-      { id: 'test-radio-a', type: 'Radio', props: { value: 'a' }, children: [{ id: 'test-radio-a-ind', type: 'RadioIndicator' }, { id: 'test-radio-a-lbl', type: 'RadioLabel', text: 'Option A' }] },
-      { id: 'test-radio-b', type: 'Radio', props: { value: 'b' }, children: [{ id: 'test-radio-b-ind', type: 'RadioIndicator' }, { id: 'test-radio-b-lbl', type: 'RadioLabel', text: 'Option B' }] },
-    ],
-  },
   Select: {
     id: 'test-select',
     type: 'Select',
@@ -90,21 +59,6 @@ const FORM_NODES: Record<string, unknown> = {
       { id: 'test-select-portal', type: 'SelectPortal',
         children: [{ id: 'test-select-backdrop', type: 'SelectBackdrop' }, { id: 'test-select-content', type: 'SelectContent',
           children: [{ id: 'test-select-item1', type: 'SelectItem', props: { label: 'Option 1', value: 'option1' } }] }] },
-    ],
-  },
-  Progress: {
-    id: 'test-progress',
-    type: 'Progress',
-    props: { value: 60, className: 'w-full h-2 rounded-full bg-muted', style: { width: '200px', height: '8px' } },
-    children: [{ id: 'test-progress-fill', type: 'ProgressFilledTrack', props: { className: 'h-full rounded-full bg-primary' } }],
-  },
-  Checkbox: {
-    id: 'test-checkbox',
-    type: 'Checkbox',
-    props: { defaultIsChecked: false },
-    children: [
-      { id: 'test-checkbox-indicator', type: 'CheckboxIndicator' },
-      { id: 'test-checkbox-label', type: 'CheckboxLabel', text: 'Label' },
     ],
   },
   Toggle: {
@@ -368,75 +322,6 @@ test.describe('PF — Textarea', () => {
   });
 });
 
-// ─── PF-10..13 — Checkbox (container) ────────────────────────────────────────
-
-test.describe('PF — Checkbox', () => {
-  test.setTimeout(120_000);
-
-  let sharedPage: Page;
-  test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    const ctx = await browser.newContext();
-    sharedPage = await ctx.newPage();
-    await gotoBuilder(sharedPage);
-  });
-  test.afterAll(async () => { await sharedPage.context().close(); });
-  test.beforeEach(async () => { await clearCanvas(sharedPage); });
-
-  test('PF-10: Drop Checkbox → Auto Layout section IS shown (Checkbox is a container)', async () => {
-    await dropComponent(sharedPage, 'Checkbox');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout section shown for Checkbox (container)');
-  });
-
-  test('PF-11: Gap value 4 applies as style.gap on Checkbox', async () => {
-    await dropComponent(sharedPage, 'Checkbox');
-    const nodeId = await getFirstNodeId(sharedPage);
-
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    await gapInput.fill('4');
-    await gapInput.press('Tab');
-    await sharedPage.waitForTimeout(200);
-
-    // gap is stored as style.gap (patchStyle), not className
-    const style = await getNodeStyle(sharedPage, nodeId);
-    expect(style.gap).toBe('4px');
-    console.log('✅ gap=4px applied to Checkbox style.gap');
-  });
-
-  test('PF-12: Select CheckboxLabel child → Typography section IS shown', async () => {
-    await injectNodes(sharedPage, [
-      {
-        type: 'Checkbox', id: 'cbx-01', props: { className: 'flex flex-row items-center gap-2', style: { width: '200px', height: '40px' } },
-        children: [
-          { type: 'CheckboxIndicator', id: 'cbx-ind', props: {} },
-          { type: 'CheckboxLabel',     id: 'cbx-lbl', props: { className: 'text-sm' }, text: 'Accept terms' },
-        ],
-      },
-    ]);
-    await sharedPage.waitForSelector('[data-builder-id="cbx-lbl"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { select: (id: string, additive: boolean) => void } }>).__builderStore
-        .getState().select('cbx-lbl', false);
-    });
-    await sharedPage.getByTestId('tab-right-design').click();
-    await sharedPage.waitForTimeout(200);
-
-    const textColorInput = sharedPage.locator('[data-testid="input-text-color"]');
-    await expect(textColorInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Typography section shown when CheckboxLabel is selected');
-  });
-
-  test('PF-13: Alignment grid shown for Checkbox (container)', async () => {
-    await dropComponent(sharedPage, 'Checkbox');
-    const alignCell = sharedPage.locator('[data-testid="alignment-cell"]').first();
-    await expect(alignCell).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Alignment grid shown for Checkbox');
-  });
-});
-
 // ─── PF-14..16 — Toggle (primitive Pressable-based) ──────────────────────────
 
 test.describe('PF — Toggle', () => {
@@ -529,95 +414,9 @@ test.describe('PF — Toggle', () => {
   });
 });
 
-// ─── PF-17..18 — Slider (leaf widget) ────────────────────────────────────────
+// ─── PF-22 — Select (leaf widget) ────────────────────────────────────────────
 
-test.describe('PF — Slider', () => {
-  test.setTimeout(120_000);
-
-  let sharedPage: Page;
-  test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    const ctx = await browser.newContext();
-    sharedPage = await ctx.newPage();
-    await gotoBuilder(sharedPage);
-  });
-  test.afterAll(async () => { await sharedPage.context().close(); });
-  test.beforeEach(async () => { await clearCanvas(sharedPage); });
-
-  test('PF-17: Drop Slider → isLeafWidget → Auto Layout section HIDDEN', async () => {
-    await dropComponent(sharedPage, 'Slider');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for Slider (leaf widget)');
-  });
-
-  test('PF-18: REQUIRED_PARENT — SliderThumb blocked from canvas root', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['Slider'] as unknown as object]);
-    await sharedPage.waitForSelector('[data-builder-id="test-slider"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { moveNode: (id: string, parent: string | null, idx: number) => void } }>).__builderStore
-        .getState().moveNode('test-slider-thumb', null, 0);
-    });
-    await sharedPage.waitForTimeout(200);
-
-    const rootTypes = await sharedPage.evaluate(() => {
-      const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ type: string }> } }>).__builderStore.getState();
-      return store.pageNodes.map(n => n.type);
-    });
-    expect(rootTypes).not.toContain('SliderThumb');
-    expect(rootTypes).toContain('Slider');
-    console.log('✅ SliderThumb blocked from moving to root — stays inside Slider');
-  });
-});
-
-// ─── PF-19..21 — Radio / RadioGroup (containers) ─────────────────────────────
-
-test.describe('PF — Radio / RadioGroup', () => {
-  test.setTimeout(120_000);
-
-  let sharedPage: Page;
-  test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    const ctx = await browser.newContext();
-    sharedPage = await ctx.newPage();
-    await gotoBuilder(sharedPage);
-  });
-  test.afterAll(async () => { await sharedPage.context().close(); });
-  test.beforeEach(async () => { await clearCanvas(sharedPage); });
-
-  test('PF-19: Drop Radio → isContainer → Auto Layout section IS shown', async () => {
-    await dropComponent(sharedPage, 'Radio');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout shown for Radio (container)');
-  });
-
-  test('PF-20: Drop RadioGroup → isContainer → Auto Layout section IS shown', async () => {
-    await dropComponent(sharedPage, 'RadioGroup');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Auto Layout shown for RadioGroup (container)');
-  });
-
-  test('PF-21: Select RadioLabel child → Typography section IS shown', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['Radio'] as unknown as object]);
-    await sharedPage.waitForSelector('[data-builder-id="test-radio-label"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { select: (id: string, additive: boolean) => void } }>).__builderStore
-        .getState().select('test-radio-label', false);
-    });
-    await sharedPage.getByTestId('tab-right-design').click();
-    await sharedPage.waitForTimeout(200);
-
-    const textColorInput = sharedPage.locator('[data-testid="input-text-color"]');
-    await expect(textColorInput).toBeVisible({ timeout: 5_000 });
-    console.log('✅ Typography section shown when RadioLabel is selected');
-  });
-});
-
-// ─── PF-22..23 — Select & Progress (leaf widgets) ────────────────────────────
-
-test.describe('PF — Select & Progress', () => {
+test.describe('PF — Select', () => {
   test.setTimeout(120_000);
 
   let sharedPage: Page;
@@ -634,32 +433,6 @@ test.describe('PF — Select & Progress', () => {
     const gapInput = sharedPage.locator('[data-testid="input-gap"]');
     await expect(gapInput).not.toBeVisible();
     console.log('✅ Auto Layout hidden for Select (leaf widget)');
-  });
-
-  test('PF-23: Drop Progress → isLeafWidget → Auto Layout section HIDDEN', async () => {
-    await dropComponent(sharedPage, 'Progress');
-    const gapInput = sharedPage.locator('[data-testid="input-gap"]');
-    await expect(gapInput).not.toBeVisible();
-    console.log('✅ Auto Layout hidden for Progress (leaf widget)');
-  });
-
-  test('PF-24: REQUIRED_PARENT — ProgressFilledTrack blocked from canvas root', async () => {
-    await injectNodes(sharedPage, [FORM_NODES['Progress'] as unknown as object]);
-    await sharedPage.waitForSelector('[data-builder-id="test-progress"]', { timeout: 5_000 });
-
-    await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, { getState: () => { moveNode: (id: string, parent: string | null, idx: number) => void } }>).__builderStore
-        .getState().moveNode('test-progress-fill', null, 0);
-    });
-    await sharedPage.waitForTimeout(200);
-
-    const rootTypes = await sharedPage.evaluate(() => {
-      const store = (window as unknown as Record<string, { getState: () => { pageNodes: Array<{ type: string }> } }>).__builderStore.getState();
-      return store.pageNodes.map(n => n.type);
-    });
-    expect(rootTypes).not.toContain('ProgressFilledTrack');
-    expect(rootTypes).toContain('Progress');
-    console.log('✅ ProgressFilledTrack blocked from moving to root — stays inside Progress');
   });
 });
 

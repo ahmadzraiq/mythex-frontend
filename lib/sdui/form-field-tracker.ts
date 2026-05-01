@@ -29,6 +29,7 @@ import {
   EXT_TEXT_SYNC_TYPES,
   EXT_BOOL_SYNC_TYPES,
   INPUT_FIELD_TYPES,
+  PARENT_CONTEXT_PROVIDER_TYPES,
 } from './controlled-component-registry';
 
 // ── Field name resolution ──────────────────────────────────────────────────────
@@ -117,6 +118,22 @@ function wrapChangeProps(
  *   - Input wrapper (skipExternalSync): writes nodeId-value, returns early — its InputField child
  *     handles FormContainer tracking independently
  */
+// Module-level debounce timer map — keyed by node ID so rapid changes are coalesced.
+const _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** Returns a debounced writer for `directWriteField` when `_debounce.enabled` is set on the node. */
+function makeDebounced(nodeId: string, node: SDUINode, write: () => void): () => void {
+  const debounceCfg = (node as unknown as { _debounce?: { enabled?: boolean; delay?: number } })._debounce;
+  const ms = debounceCfg?.enabled ? (debounceCfg.delay ?? 500) : 0;
+  if (ms > 0 && nodeId) {
+    return () => {
+      clearTimeout(_debounceTimers.get(nodeId));
+      _debounceTimers.set(nodeId, setTimeout(write, ms));
+    };
+  }
+  return write;
+}
+
 export function trackFormFieldProps(
   node: SDUINode,
   cleanProps: Record<string, unknown>,
@@ -126,6 +143,7 @@ export function trackFormFieldProps(
   const nodeType = node.type as string;
   const cfg = CONTROLLED_COMPONENT_CONFIG[nodeType];
   const store = getGlobalVariableStore().getState();
+  const nodeId = node.id ?? '';
 
   // Convert readOnly → editable for InputField regardless of FormContainer context
   // (React Native TextInput uses `editable={false}` for read-only, not `readOnly`).
@@ -158,12 +176,21 @@ export function trackFormFieldProps(
     // inside FormContainer: fall through to write local.data.form.formData.{name}
   }
 
-  // Input wrapper (skipExternalSync=true) — covers the no-explicit-children case where
-  // InputWithField auto-injects an InputField that reads onChange/onChangeText from the
-  // wrapper's props. Returns early — no FormContainer tracking (the InputField child handles that).
+  // Input wrapper (skipExternalSync=true) — write to {id}-value for external bindings.
+  // Also write to FormContainer when the node has a name prop and is inside a FormContainer.
+  // Without this, Input nodes used directly in a FormContainer (no explicit InputField children)
+  // never update formData because the auto-injected InputField inside InputWithField is a React
+  // component, not an SDUI node, so trackFormFieldProps never runs for it.
   if (cfg?.skipExternalSync && node.id) {
     const id = node.id;
-    wrapChangeProps(cleanProps, (val) => store.set(`${id}-value`, val));
+    const wrapperName = resolveFieldName(node);
+    wrapChangeProps(cleanProps, (val) => {
+      store.set(`${id}-value`, val);
+      if (formCtx && wrapperName) {
+        const writeField = () => formCtx.directWriteField(wrapperName, val);
+        makeDebounced(id, node, writeField)();
+      }
+    });
     return;
   }
 
@@ -177,9 +204,8 @@ export function trackFormFieldProps(
   wrapChangeProps(cleanProps, (val) => {
     // Single atomic write: updates both local.data.form.formData.{name} AND
     // variables['{formStoreKey}'].formData.{name} without a React re-render cycle.
-    // Zero-latency fast path — one store write, one subscription trigger,
-    // one re-render pass for all bound nodes.
-    ctx.directWriteField(name, val);
+    const writeField = () => ctx.directWriteField(name, val);
+    makeDebounced(nodeId, node, writeField)();
   });
 }
 
@@ -227,6 +253,11 @@ export function useFormFieldRegistration(
   formCtx: FormContextValue | null,
   parentInputId?: string | null,
 ): void {
+  // Must re-run registration when _validation changes. It is omitted from the historical
+  // dependency list (node.actions, node.id, …) so toggling trigger/rules in the builder
+  // left fieldValidationsRef empty — directWriteField then saw validationConfig: none.
+  const validationSig = JSON.stringify((node as { _validation?: unknown })._validation ?? null);
+
   useEffect(() => {
     if (formCtx) {
       let cleanup: (() => void) | undefined;
@@ -258,7 +289,11 @@ export function useFormFieldRegistration(
       // ── Validation registration ───────────────────────────────────────────
       // Use resolveFieldName so that name in node.props.name is found too
       const nodeName      = resolveFieldName(node);
-      const nodeValidation = (node as { _validation?: unknown })._validation as FieldValidationConfig | undefined;
+      let rawValidation = (node as { _validation?: unknown })._validation;
+      if (Array.isArray(rawValidation)) {
+        rawValidation = { trigger: 'submit', rules: rawValidation };
+      }
+      const nodeValidation = rawValidation as FieldValidationConfig | undefined;
       if (nodeName && nodeValidation?.rules?.length) {
         formCtx.registerFieldValidation(nodeName, nodeValidation);
         const prev = cleanup;
@@ -318,6 +353,43 @@ export function useFormFieldRegistration(
         }
       }
 
+      // ── Strategy C: Input wrapper registration ───────────────────────────
+      // Input (skipExternalSync) has formRegisterable:false because the original intent was for
+      // the auto-injected InputField child to handle FormContainer registration. However that
+      // InputField is instantiated inside InputWithField as a plain React component — not an SDUI
+      // node — so useFormFieldRegistration never runs for it. Register here so doSubmit finds the field.
+      // registerField guards against duplicates internally, so this is safe when explicit InputField
+      // children are present (they would have already registered via Strategy B).
+      if (PARENT_CONTEXT_PROVIDER_TYPES.has(node.type as string) && fieldName) {
+        const initVal = (node as { _initialValue?: unknown })._initialValue ?? '';
+        formCtx.registerField(fieldName, initVal);
+        const prev = cleanup;
+        cleanup = () => { prev?.(); formCtx.unregisterField(fieldName); };
+      }
+
+      // ── Strategy D: controlled component ─────────────────────────────────
+      // Any node with _controlled present and a field name — not necessarily
+      // an SC. Input/Textarea are covered by Strategy C; everything else that
+      // uses the controlled toggle (SC-built checkbox, switch, datepicker, etc.)
+      // lands here. Registers the field so doSubmit can validate and read it.
+      // Page-level variable key is always ${node.id}-value — no globalId in JSON.
+      const scControlledMeta = (node as { _controlled?: { variable?: string } })._controlled;
+      const scGlobalId = scControlledMeta != null && node.id ? `${node.id}-value` : null;
+      if (scGlobalId && fieldName) {
+        const nodeInitVal = (node as { _initialValue?: unknown })._initialValue;
+        const initVal = nodeInitVal
+          ?? getGlobalVariableStore().getState().getFullState()[scGlobalId]
+          ?? null;
+        formCtx.registerField(fieldName, initVal);
+        // Seed the global store so formulas reading variables['nodeId-value'] see the init value
+        if (nodeInitVal !== undefined && nodeInitVal !== null &&
+            getGlobalVariableStore().getState().getFullState()[scGlobalId] === undefined) {
+          getGlobalVariableStore().getState().set(scGlobalId, nodeInitVal);
+        }
+        const prev = cleanup;
+        cleanup = () => { prev?.(); formCtx.unregisterField(fieldName); };
+      }
+
       // ── Per-node variable for all controlled types inside FormContainer ─────
       // Store at TOP LEVEL of the variable store as `{nodeId}-value`.
       // finalizeMergedWithVariableStore sets merged.variables = vs (entire store data),
@@ -326,8 +398,10 @@ export function useFormFieldRegistration(
       if (SLOT_REGISTER_TYPES.has(node.type as string) && node.id) {
         const nodeId = node.id;
         const nodePropsObj = (node.props as Record<string, unknown> | undefined) ?? {};
+        const nodeInitial = (node as { _initialValue?: unknown })._initialValue;
         const initForForm = BOOL_CONTROLLED_TYPES.has(node.type as string)
-          ? (nodePropsObj.isChecked ?? false) : '';
+          ? (nodeInitial ?? nodePropsObj.isChecked ?? false)
+          : (nodeInitial ?? '');
         getGlobalVariableStore().getState().set(`${nodeId}-value`, initForForm);
         const prev = cleanup;
         cleanup = () => {
@@ -352,11 +426,12 @@ export function useFormFieldRegistration(
     if (SLOT_REGISTER_TYPES.has(node.type as string) && node.id) {
       const nodeId = node.id;
       const propsObj = (node.props as Record<string, unknown> | undefined) ?? {};
+      const nodeInitial = (node as { _initialValue?: unknown })._initialValue;
       // For Checkbox/Switch: use isChecked (boolean state), NOT `value` (form-submission string).
-      // For text inputs: use empty string.
+      // For text inputs: prefer _initialValue, fall back to empty string.
       const initVal = BOOL_CONTROLLED_TYPES.has(node.type as string)
-        ? (propsObj.isChecked ?? false)
-        : '';
+        ? (nodeInitial ?? propsObj.isChecked ?? false)
+        : (nodeInitial ?? '');
       getGlobalVariableStore().getState().set(`${nodeId}-value`, initVal);
       return () => {
         getGlobalVariableStore().getState().setState((prev) => {
@@ -367,7 +442,7 @@ export function useFormFieldRegistration(
       };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.actions, node.id, node.type, parentInputId, formCtx?.registerField, formCtx?.unregisterField, formCtx?.registerFieldSlot, formCtx?.unregisterFieldSlot, formCtx?.registerFieldValidation, formCtx?.unregisterFieldValidation]);
+  }, [node.actions, node.id, node.type, parentInputId, validationSig, formCtx?.registerField, formCtx?.unregisterField, formCtx?.registerFieldSlot, formCtx?.unregisterFieldSlot, formCtx?.registerFieldValidation, formCtx?.unregisterFieldValidation]);
 }
 
 // ── External value sync ────────────────────────────────────────────────────────
@@ -611,4 +686,28 @@ export function useExternalFormSync(
     // Sync the new variable value into the form data so doSubmit reads it correctly.
     formCtx.directWriteField(fieldName, namedVarValue ?? '');
   }, [namedVarValue, formCtx, fieldName, namedVarUuid]);
+
+  // ── Controlled variable sync ──────────────────────────────────────────────
+  // Any _controlled node has a page-level variable at ${node.id}-value.
+  // Subscribe to that global slot and mirror the value into FormContainer.formData
+  // so doSubmit and validation always read the latest value.
+  const controlledMeta = (node as { _controlled?: { variable?: string } })._controlled;
+  const controlledSyncGlobalId = (formCtx && fieldName && controlledMeta != null && node.id) ? `${node.id}-value` : null;
+
+  const controlledGlobalValue = useSyncExternalStore(
+    controlledSyncGlobalId ? getKeySubscribe(controlledSyncGlobalId) : NOOP_SUBSCRIBE,
+    () => controlledSyncGlobalId ? getGlobalVariableStore().getState().getFullState()[controlledSyncGlobalId] : undefined,
+    () => undefined,
+  );
+
+  const prevControlledRef = useRef<unknown>(controlledGlobalValue);
+
+  useEffect(() => {
+    if (!formCtx || !fieldName || !controlledSyncGlobalId) return;
+    if (controlledGlobalValue === prevControlledRef.current) return; // skip initial mount
+    prevControlledRef.current = controlledGlobalValue;
+    if (controlledGlobalValue !== undefined) {
+      formCtx.directWriteField(fieldName, controlledGlobalValue);
+    }
+  }, [controlledGlobalValue, formCtx, fieldName, controlledSyncGlobalId]);
 }

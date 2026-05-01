@@ -228,7 +228,9 @@ export const LayerRow = memo(function LayerRow_({
   onLayerDragOver,
   onLayerDrop,
 }: LayerRowProps) {
-  const nodeId = (node as { id?: string }).id ?? node.type;
+  const nodeId = (node as { id?: string; _sharedKey?: string }).id
+    ?? (node as { _sharedKey?: string })._sharedKey
+    ?? node.type;
   const nodeName = (node as { name?: string }).name;
   const displayLabel = nodeName || (node._popoverContent ? 'PopoverContent' : node.type);
   const [editing, setEditing] = useState(false);
@@ -484,7 +486,9 @@ export function LayerTree({
   return (
     <>
       {nodes.map(node => {
-        const nodeId = (node as { id?: string }).id ?? node.type;
+        const nodeId = (node as { id?: string; _sharedKey?: string }).id
+          ?? (node as { _sharedKey?: string })._sharedKey
+          ?? node.type;
         const allChildren = (node.children ?? []) as SDUINode[];
         const hasChildren = allChildren.length > 0;
         const isExpanded = store.expandedIds.has(nodeId);

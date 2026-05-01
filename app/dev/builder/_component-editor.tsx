@@ -33,11 +33,6 @@ import {
   createSharedComponent,
   updateSharedComponent,
 } from '@/lib/builder/shared-component-data';
-import {
-  getSystemComponents,
-  updateSystemComponent,
-  resetSystemComponent,
-} from '@/lib/builder/system-component-data';
 import type {
   SharedComponentModel,
   SharedComponentProperty,
@@ -58,24 +53,13 @@ import type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 import type { CustomVar } from './_store';
 import type { GlobalFormulaParam } from './_store-types';
 
-// ─── Store helpers (kind-aware) ───────────────────────────────────────────────
+// ─── Store helpers ────────────────────────────────────────────────────────────
 
-/**
- * Read the current `editingKind` from the builder store and return the right
- * model-getter / updater. The component editor treats shared and system
- * components identically except for which in-memory store they read/write.
- */
 function getEditingModel(modelId: string): SharedComponentModel | null {
-  const kind = useBuilderStore.getState().editingKindMap[modelId]
-    ?? useBuilderStore.getState().editingKind;
-  if (kind === 'system') return (getSystemComponents()[modelId] as SharedComponentModel | undefined) ?? null;
   return (getSharedComponents()[modelId] as SharedComponentModel | undefined) ?? null;
 }
 
 function updateEditingModel(patch: Partial<SharedComponentModel> & { id: string }) {
-  const kind = useBuilderStore.getState().editingKindMap[patch.id]
-    ?? useBuilderStore.getState().editingKind;
-  if (kind === 'system') return updateSystemComponent(patch as Partial<SharedComponentModel> & { id: string }) as unknown as SharedComponentModel | null;
   return updateSharedComponent(patch);
 }
 
@@ -438,14 +422,11 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
   const [tick, setTick] = useState(0);
   const forceUpdate = useCallback(() => setTick(t => t + 1), []);
 
-  // Subscribe to BOTH shared-component and system-component stores so the
-  // editor repaints regardless of which data layer the model lives in.
+  // Subscribe to the shared-component store so the editor repaints when model data changes.
   useEffect(() => {
     const sc = require('@/lib/builder/shared-component-data') as typeof import('@/lib/builder/shared-component-data');
-    const sys = require('@/lib/builder/system-component-data') as typeof import('@/lib/builder/system-component-data');
     const unsubSc = sc.subscribeSharedComponents(forceUpdate);
-    const unsubSys = sys.subscribeSystemComponents(forceUpdate);
-    return () => { unsubSc(); unsubSys(); };
+    return () => { unsubSc(); };
   }, [forceUpdate]);
 
   // Include `tick` so the model refreshes whenever the model data store updates
@@ -663,8 +644,6 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
   const { updateSharedComponent: _u } = { updateSharedComponent }; void _u;
 
   const exitSharedComponentEdit = useBuilderStore(s => s.exitSharedComponentEdit);
-  const editingKind = useBuilderStore(s => s.editingKindMap[model.id] ?? s.editingKind);
-  const isSystem = editingKind === 'system';
 
   const [showDescEditor, setShowDescEditor] = useState(false);
   const [desc, setDesc] = useState(model.description ?? '');
@@ -728,20 +707,6 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
       >
         <IconEdit /> Edit description
       </button>
-      {isSystem && (
-        <button style={{ ...itemStyle, color: '#f59e0b' }}
-          onClick={() => {
-            if (!window.confirm(`Reset "${model.name}" to the built-in default? All your edits to this system component will be lost.`)) return;
-            resetSystemComponent(model.id);
-            onClose();
-            exitSharedComponentEdit(model.id);
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-        >
-          <IconEdit /> Reset to default
-        </button>
-      )}
     </div>
   );
 }
@@ -2304,54 +2269,34 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
   const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const existingShared = (selectedNode as unknown as Record<string, unknown>)?._shared as { id: string; name: string } | undefined;
-  const existingSystem = (selectedNode as unknown as Record<string, unknown>)?._system as { id: string; name: string } | undefined;
-  const { enterSharedComponentEdit, enterSystemComponentEdit, detachInstance, resetInstanceToSystem } = useBuilderStore(
+  const { enterSharedComponentEdit, detachInstance } = useBuilderStore(
     useShallow(s => ({
       enterSharedComponentEdit: s.enterSharedComponentEdit,
-      enterSystemComponentEdit: s.enterSystemComponentEdit,
       detachInstance: s.detachInstance,
-      resetInstanceToSystem: s.resetInstanceToSystem,
     }))
   );
   const nodeId = (selectedNode as unknown as { id?: string })?.id;
 
   if (!selectedNode) return null;
 
-  // If this node is a shared or system component instance, show Edit / Detach / Reset buttons.
-  if (existingShared || existingSystem) {
-    const meta = (existingShared ?? existingSystem)!;
-    const isSystem = !!existingSystem;
+  // If this node is a shared component instance, show Edit / Detach buttons.
+  if (existingShared) {
+    const meta = existingShared;
     const handleEdit = () => {
-      const m = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
+      const m = getSharedComponents()[meta.id];
       if (!m) return;
-      if (isSystem) {
-        enterSystemComponentEdit(
-          meta.id,
-          m.content as unknown as import('@/lib/sdui/types/node').SDUINode,
-          m as unknown as Record<string, unknown>,
-          nodeId,
-          true,
-        );
-      } else {
-        enterSharedComponentEdit(
-          meta.id,
-          m.content as unknown as import('@/lib/sdui/types/node').SDUINode,
-          m as unknown as Record<string, unknown>,
-          nodeId,
-          true,
-        );
-      }
+      enterSharedComponentEdit(
+        meta.id,
+        m.content as unknown as import('@/lib/sdui/types/node').SDUINode,
+        m as unknown as Record<string, unknown>,
+        nodeId,
+        true,
+      );
     };
     const handleDetach = () => {
       if (!nodeId) return;
-      const label = isSystem ? `system component "${meta.name}"` : `instance of "${meta.name}"`;
-      if (!window.confirm(`Detach from ${label}? The definition and other instances will remain intact.`)) return;
+      if (!window.confirm(`Detach from instance of "${meta.name}"? The definition and other instances will remain intact.`)) return;
       detachInstance(nodeId);
-    };
-    const handleResetToSystem = () => {
-      if (!nodeId) return;
-      if (!window.confirm(`Reset this "${meta.name}" instance to the system default? Any per-instance overrides will be lost.`)) return;
-      resetInstanceToSystem(nodeId);
     };
     const baseBtn: React.CSSProperties = {
       display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
@@ -2364,7 +2309,7 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
         <button
           data-testid="panel-right-edit-component"
           onClick={e => { e.stopPropagation(); handleEdit(); }}
-          title={isSystem ? 'Edit system component' : 'Edit component'}
+          title="Edit component"
           style={baseBtn}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6';
@@ -2378,44 +2323,24 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
           }}
         >
           <IconEdit />
-          <span>{isSystem ? 'Edit System' : 'Edit'}</span>
+          <span>Edit</span>
         </button>
-        {isSystem && (
-          <>
-            <button
-              data-testid="panel-right-reset-to-system"
-              onClick={e => { e.stopPropagation(); handleResetToSystem(); }}
-              title="Reset to system default"
-              style={baseBtn}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#f59e0b';
-                (e.currentTarget as HTMLElement).style.color = '#fbbf24';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-                (e.currentTarget as HTMLElement).style.color = '#9ca3af';
-              }}
-            >
-              <span>Reset</span>
-            </button>
-            <button
-              data-testid="panel-right-detach-system"
-              onClick={e => { e.stopPropagation(); handleDetach(); }}
-              title="Detach from system"
-              style={baseBtn}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#ef4444';
-                (e.currentTarget as HTMLElement).style.color = '#f87171';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-                (e.currentTarget as HTMLElement).style.color = '#9ca3af';
-              }}
-            >
-              <span>Detach</span>
-            </button>
-          </>
-        )}
+        <button
+          data-testid="panel-right-detach-instance"
+          onClick={e => { e.stopPropagation(); handleDetach(); }}
+          title="Detach from component"
+          style={baseBtn}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#ef4444';
+            (e.currentTarget as HTMLElement).style.color = '#f87171';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#374151';
+            (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+          }}
+        >
+          <span>Detach</span>
+        </button>
       </div>
     );
   }

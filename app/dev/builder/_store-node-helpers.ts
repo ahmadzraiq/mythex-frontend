@@ -27,23 +27,13 @@ import { patchThemeColors } from '@/lib/sdui/engine-static-data';
  * Exported so _canvas.tsx can use the same source of truth for drag escalation.
  */
 export const REQUIRED_PARENT: Record<string, string> = {
-  CheckboxIndicator:  'Checkbox',
-  CheckboxLabel:      'Checkbox',
-  RadioIndicator:     'Radio',
-  RadioLabel:         'Radio',
   SelectInput:        'Select',
   SelectTrigger:      'Select',
   SelectItem:         'Select',
   SelectContent:      'Select',
   SelectPortal:       'Select',
   SelectBackdrop:     'Select',
-  SliderThumb:        'Slider',
-  SliderTrack:        'Slider',
-  SliderFilledTrack:  'Slider',
-  ProgressFilledTrack: 'Progress',
   TextareaInput:      'Textarea',
-  SkeletonText:       'Skeleton',
-  Radio:              'RadioGroup',
   TooltipContent:     'Tooltip',
   TooltipText:        'TooltipContent',
 };
@@ -61,16 +51,9 @@ export function isNonDraggable(node: SDUINode | null | undefined): boolean {
  * Exported so _canvas.tsx can pre-check before routing a drag "inside".
  */
 export const ALLOWED_CHILDREN: Record<string, Set<string>> = {
-  Checkbox:      new Set(['CheckboxIndicator', 'CheckboxLabel']),
-  Radio:         new Set(['RadioIndicator', 'RadioLabel']),
-  Select:        new Set(['SelectTrigger', 'SelectInput', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
-  Slider:        new Set(['SliderTrack', 'SliderThumb', 'SliderFilledTrack']),
-  Progress:      new Set(['ProgressFilledTrack']),
-  Textarea:      new Set(['TextareaInput']),
-  Skeleton:      new Set(['SkeletonText']),
-  RadioGroup:    new Set(['Radio']),
-  CheckboxGroup: new Set(['Checkbox']),
-  Tooltip:       new Set(['TooltipContent', 'Box', 'Text']),
+  Select:         new Set(['SelectTrigger', 'SelectInput', 'SelectPortal', 'SelectBackdrop', 'SelectContent', 'SelectItem']),
+  Textarea:       new Set(['TextareaInput']),
+  Tooltip:        new Set(['TooltipContent', 'Box', 'Text']),
   TooltipContent: new Set(['TooltipText']),
 };
 
@@ -326,7 +309,8 @@ export function getNodeSubtrees(node: SDUINode): SDUINode[][] {
 
 export function findNode(nodes: SDUINode[], targetId: string): SDUINode | null {
   for (const node of nodes) {
-    if (node.id === targetId) return node;
+    const nodeSharedKey = (node as unknown as { _sharedKey?: string })._sharedKey;
+    if (node.id === targetId || nodeSharedKey === targetId) return node;
     for (const sub of getNodeSubtrees(node)) {
       const found = findNode(sub, targetId);
       if (found) return found;
@@ -457,18 +441,13 @@ export function insertNode(
 
 /**
  * Walk up from `nodeId` through the parent chain looking for the nearest
- * ancestor (or self) that is a *linked instance root* — i.e. carries either
- * `_shared` (shared component) or `_system` (system component) metadata.
- *
- * Pass `kind` to restrict the search:
- *   - 'shared' — only `_shared` roots (legacy SC behaviour, still the default)
- *   - 'system' — only `_system` roots
- *   - 'any'    — whichever is encountered first walking upward
+ * ancestor (or self) that is a *shared component instance root* — i.e. carries
+ * `_shared` metadata.
  */
 export function findLinkedRoot(
   nodes: SDUINode[],
   nodeId: string,
-  kind: 'shared' | 'system' | 'any' = 'shared',
+  kind: 'shared' | 'any' = 'shared',
 ): SDUINode | null {
   let current: string | undefined = nodeId;
   while (current) {
@@ -476,10 +455,7 @@ export function findLinkedRoot(
     if (node) {
       const rec = node as unknown as Record<string, unknown>;
       const hasShared = !!rec._shared;
-      const hasSystem = !!rec._system;
-      if (kind === 'shared' && hasShared) return node;
-      if (kind === 'system' && hasSystem) return node;
-      if (kind === 'any' && (hasShared || hasSystem)) return node;
+      if (hasShared) return node;
     }
     const parent = findParentNode(nodes, current);
     if (parent === null || parent === undefined) break;
@@ -489,9 +465,7 @@ export function findLinkedRoot(
 }
 
 /**
- * Backwards-compatible alias — previously only matched `_shared`. Callers that
- * need to also recognise system-component roots should use `findLinkedRoot`
- * with `kind: 'system'` or `kind: 'any'`.
+ * Alias for `findLinkedRoot` — matches `_shared` roots.
  */
 export function findSharedRoot(nodes: SDUINode[], nodeId: string): SDUINode | null {
   return findLinkedRoot(nodes, nodeId, 'shared');

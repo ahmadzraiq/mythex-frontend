@@ -319,8 +319,6 @@ export interface HistorySnapshot {
   canvasNodes: SDUINode[];
   /** Snapshot of all shared component models so rename/delete/property changes are undoable */
   sharedComponents?: Record<string, unknown>;
-  /** Snapshot of system-component user overrides (built-in defaults never change) */
-  systemComponentOverrides?: Record<string, unknown>;
 }
 
 /**
@@ -448,14 +446,10 @@ export interface BuilderStore {
   editingSharedComponentContent: SDUINode | null;
   /** Convenience alias: model of the most-recently-opened shared component */
   editingSharedComponentModel: Record<string, unknown> | null;
-  /**
-   * Kind of the most-recently-opened component being edited. 'shared' for SCs
-   * (stored in `shared-component-data.ts`), 'system' for code-defined system
-   * components (stored via overrides in `system-component-data.ts`).
-   */
-  editingKind: 'shared' | 'system';
-  /** Per-modelId kind map so concurrent SC + system edits can coexist cleanly. */
-  editingKindMap: Record<string, 'shared' | 'system'>;
+  /** Kind of the component being edited — always 'shared'. */
+  editingKind: 'shared';
+  /** Per-modelId kind map for concurrent SC edits. */
+  editingKindMap: Record<string, 'shared'>;
   /**
    * Pre-edit snapshot for SIMPLE edit mode (keyed by modelId).
    *
@@ -522,14 +516,11 @@ export interface BuilderStore {
    *  Pass `entryNodeId` to record which instance the user came from (for Back to instance).
    *  Pass `simple: true` to open the panel without inserting a backdrop/overlay into the canvas
    *  (the component stays in its normal position — used by the right-panel Edit button). */
-  enterSharedComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>, entryNodeId?: string, simple?: boolean, kind?: 'shared' | 'system') => void;
+  enterSharedComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>, entryNodeId?: string, simple?: boolean, kind?: 'shared') => void;
   /** Exit shared-component-edit mode for a specific model (or the last opened if omitted) */
   exitSharedComponentEdit: (modelId?: string) => void;
   /** Save the current live state of a shared component being edited without exiting */
   saveEditingSharedComponent: (modelId: string) => void;
-  /** Thin wrapper that enters edit mode for a SYSTEM component (kind='system'). */
-  enterSystemComponentEdit: (modelId: string, content: SDUINode, model: Record<string, unknown>, entryNodeId?: string, simple?: boolean) => void;
-
   // ── Selection ───────────────────────────────────────────────────────────────
   selectedIds: string[];
   /** When the selected node is a map/repeat template, which instance (0-based) is
@@ -702,12 +693,6 @@ export interface BuilderStore {
    */
   detachInstance: (id: string) => void;
   /**
-   * Reset a `_system`-linked instance back to the built-in default content of
-   * its system component definition. Drops any per-instance overrides and
-   * re-clones the current definition's content into the tree, preserving the
-   * node's `id` and re-stamping `_system` metadata.
-   */
-  resetInstanceToSystem: (id: string) => void;
   /** Same as patchNodeField but does NOT push to history — use for live drag updates.
    *  Call _pushHistory() once when the gesture ends (mouseup / blur / picker close). */
   patchNodeFieldLive: (id: string, field: string, value: unknown) => void;

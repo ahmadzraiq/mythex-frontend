@@ -37,7 +37,6 @@ import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps
 import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab } from './_components-tab';
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
 import { AssetsTab } from './_assets-tab';
-import { SharedComponentsTab } from './_shared-components-tab';
 import { TriggersTab } from './_triggers-tab';
 
 
@@ -1405,7 +1404,7 @@ export default function PanelLeft({
   onOpenAuthConfig,
   onWidthChange,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'shared'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
@@ -1557,7 +1556,7 @@ export default function PanelLeft({
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic', 'triggers', 'shared', 'assets'] as const).map(t => (
+        {(['layers', 'components', 'data', 'logic', 'triggers', 'assets'] as const).map(t => (
           <button
             key={t}
             data-testid={`tab-${t}`}
@@ -1647,8 +1646,6 @@ export default function PanelLeft({
       {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
 
       {tab === 'triggers' && <TriggersTab />}
-
-      {tab === 'shared' && <SharedComponentsTab />}
 
       {tab === 'assets' && <AssetsTab />}
 

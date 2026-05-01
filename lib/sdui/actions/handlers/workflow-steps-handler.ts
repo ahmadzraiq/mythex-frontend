@@ -20,6 +20,7 @@ import { getGlobalVariableStore } from '../../global-variable-store';
 import { setNestedValue } from '../../nested-utils';
 import { buildAuthHeaders, clearStoredToken, setStoredToken, setStoredAuthSnapshot, clearStoredAuthSnapshot, getStoredAuthSnapshot } from '../../auth-token-storage';
 import { SUPPORTED_WORKFLOW_STEP_TYPES } from '@/app/dev/builder/_workflow-types';
+import { submitFormStepHandler } from './form-variable-handler';
 
 interface WorkflowStep {
   id: string;
@@ -118,8 +119,9 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
 
     // ── Variables ────────────────────────────────────────────────────────────
     case 'changeVariableValue':
-      // Visual builder's primary variable-change step
-      return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as string, value: unwrapFormulaValue(cfg.value) };
+      // Visual builder's primary variable-change step.
+      // variableName may be a formula object { formula: "..." } — setVarHandler will evaluate it.
+      return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as unknown as string, value: unwrapFormulaValue(cfg.value) };
     case 'resetVariableValue':
     case 'resetVariable':
       return { type: 'setVar', path: (cfg.variableName ?? cfg.path) as string, value: cfg.defaultValue ?? null };
@@ -693,7 +695,6 @@ async function runSteps(
             const m = require('@/config/shared-components.json')[modelId];
             if (m) return m;
           } catch { /* noop */ }
-          try { return require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ }
           return undefined;
         })() : undefined;
         const isComponentVar = instanceId && scModel?.variables && storeIn in scModel.variables;
@@ -725,6 +726,12 @@ async function runSteps(
           ?? document.querySelector(`[data-section-id="${targetId}"]`) as HTMLElement | null;
         if (el) el.scrollIntoView({ behavior, block });
       }
+      continue;
+    }
+
+    // ── Form submit: validate _validation rules via FormContainer.doSubmit() ──
+    if (step.type === 'submitForm') {
+      submitFormStepHandler(ctx)();
       continue;
     }
 
@@ -922,8 +929,6 @@ async function runSteps(
         let scModel: { workflows?: Record<string, { steps: WorkflowStep[]; params?: Array<{ name: string }> }> } | undefined;
         try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
         if (!scModel) { try { scModel = require('@/config/shared-components.json')[modelId]; } catch { /* noop */ } }
-        if (!scModel) { try { scModel = require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ } }
-
         const wf = scModel?.workflows?.[workflowId];
         if (typeof window !== 'undefined') {
           console.log('[executeComponentAction] model lookup:', {
@@ -1065,7 +1070,6 @@ async function runSteps(
       if (modelId) {
         let model: { triggers?: Array<{ id: string; payload?: unknown }> } | undefined;
         try { model = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
-        if (!model) { try { model = require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ } }
         const t = model?.triggers?.find(x => x.id === triggerId);
         if (t && 'payload' in t) triggerPayload = t.payload;
       }
@@ -1254,7 +1258,8 @@ export const workflowStepsHandler =
   (ctx: ActionHandlerContext) =>
   async (actionDef: ActionDef): Promise<void> => {
     const steps = (actionDef.steps ?? []) as WorkflowStep[];
-    if (typeof window !== 'undefined') {
+    // Skip verbose logging for high-frequency drag-update actions
+    if (typeof window !== 'undefined' && (actionDef as Record<string, unknown>).trigger !== 'drag') {
       console.log('[workflowStepsHandler] invoked:', {
         action: (actionDef as Record<string, unknown>).name ?? (actionDef as Record<string, unknown>).id,
         trigger: (actionDef as Record<string, unknown>).trigger,

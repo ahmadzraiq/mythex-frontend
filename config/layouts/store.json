@@ -2,7 +2,7 @@
   "structure": {
     "type": "Box",
     "props": {
-      "className": "w-full flex flex-col min-h-screen !bg-[rgb(var(--background)/1)]"
+      "className": "w-full flex flex-col min-h-screen !bg-[var(--theme-background)]"
     },
     "children": [
       {

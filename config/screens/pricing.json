@@ -67,15 +67,6 @@
                 "id": "66892f8b-d278-4516-84be-f32e4d76bae3"
               },
               {
-                "type": "Switch",
-                "props": {
-                  "defaultIsChecked": false,
-                  "size": "md"
-                },
-                "id": "8d5af389-4ebd-40fc-bbbc-482969883b03",
-                "name": "Billing Toggle"
-              },
-              {
                 "type": "Text",
                 "text": "Yearly",
                 "props": {

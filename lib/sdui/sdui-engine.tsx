@@ -438,10 +438,10 @@ export function SDUIEngine({
           storeErrorsIn?: string;
           actions?: Array<{ action: string; payload?: Record<string, unknown> }>;
         } | undefined;
-        // Ambient Shared/System Component lookup: when the action name isn't a
+        // Ambient Shared Component lookup: when the action name isn't a
         // known top-level actionsConfig entry AND we're rendering inside an SC
-        // subtree (scope.context.component.id set by the renderer on `_shared` /
-        // `_system` roots), try resolving the name as a component-scoped workflow
+        // subtree (scope.context.component.id set by the renderer on `_shared`
+        // roots), try resolving the name as a component-scoped workflow
         // on the ambient model. If found, synthesize an `executeComponentAction`
         // actionDef so element bindings can be written as plain
         //   `{ action: "<scWfId>", args: {...} }`
@@ -452,9 +452,6 @@ export function SDUIEngine({
           if (ambientModelId) {
             let scModel: { workflows?: Record<string, unknown> } | undefined;
             try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[ambientModelId]; } catch { /* noop */ }
-            if (!scModel) {
-              try { scModel = require('@/lib/builder/system-component-data').getSystemComponents()[ambientModelId]; } catch { /* noop */ }
-            }
             if (!scModel) {
               try { scModel = require('@/config/shared-components.json')[ambientModelId]; } catch { /* noop */ }
             }

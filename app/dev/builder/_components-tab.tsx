@@ -14,12 +14,11 @@
  *  - ComponentsTab         — full components tab panel
  */
 
-import React, { useState } from 'react';
-import { useBuilderStore } from './_store';
+import React, { useState, Suspense } from 'react';
 import { PRIMITIVE_COMPONENTS, type PrimitiveComponent } from '@/lib/builder/primitive-components';
-import { getSystemComponents } from '@/lib/builder/system-component-data';
-import { cloneWithFreshIdsKeepSharedKey, stampSharedKeys } from './_store-node-helpers';
 import { Chevron } from './_layers-panel';
+import { SharedComponentsTab } from './_shared-components-tab';
+import { TemplateLibraryModal } from './_template-library-modal';
 
 // Re-export so existing imports of PRIMITIVE_COMPONENTS from this file keep working
 export { PRIMITIVE_COMPONENTS };
@@ -28,7 +27,11 @@ export { PRIMITIVE_COMPONENTS };
 
 export function ComponentsTab() {
   const [search, setSearch] = useState('');
+  const [templatesOpen, setTemplatesOpen] = useState(true);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const q = search.toLowerCase();
+
+  const flatPrimitives = Object.values(PRIMITIVE_COMPONENTS).flat();
 
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
@@ -42,25 +45,48 @@ export function ComponentsTab() {
         />
       </div>
 
-      {/* ── Primitive components ── */}
+      {/* ── Primitive components — flat, no group headers ── */}
       <SectionHeader label="Primitives" />
-      {Object.entries(PRIMITIVE_COMPONENTS).map(([group, items]) => {
-        const filtered = items.filter(
-          it => !q || it.label.toLowerCase().includes(q) || it.type.toLowerCase().includes(q)
-        );
-        if (!filtered.length) return null;
-        return (
-          <div key={group} style={{ marginBottom: 4 }}>
-            <div style={{ padding: '4px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-              {group}
-            </div>
-            {filtered.map(p => (
-              <DraggablePrimitive key={p.label} primitive={p} />
-            ))}
-          </div>
-        );
-      })}
+      {flatPrimitives
+        .filter(p => !q || p.label.toLowerCase().includes(q) || p.type.toLowerCase().includes(q))
+        .map(p => (
+          <DraggablePrimitive key={p.label} primitive={p} />
+        ))
+      }
 
+      {/* ── Templates ── */}
+      <SectionHeader
+        label="Templates"
+        collapsible
+        collapsed={!templatesOpen}
+        onToggle={() => setTemplatesOpen(v => !v)}
+      />
+      {templatesOpen && (
+        <div>
+          {/* Import from Library */}
+          <div style={{ padding: '6px 10px 2px' }}>
+            <button
+              onClick={() => setShowTemplateLibrary(true)}
+              style={{
+                width: '100%', padding: '6px 10px', background: 'none',
+                border: '1px dashed #374151', borderRadius: 5,
+                color: '#9ca3af', fontSize: 11, cursor: 'pointer', textAlign: 'left',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#60a5fa'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#374151'; e.currentTarget.style.color = '#9ca3af'; }}
+            >
+              + Import from Library
+            </button>
+          </div>
+
+          {/* Shared components list (includes its own New button + draggable rows) */}
+          <SharedComponentsTab />
+        </div>
+      )}
+
+      {showTemplateLibrary && (
+        <TemplateLibraryModal open={showTemplateLibrary} onClose={() => setShowTemplateLibrary(false)} />
+      )}
     </div>
   );
 }
@@ -82,48 +108,7 @@ export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponen
     <div
       draggable
       onDragStart={e => {
-        // System-component-backed palette entries drop as linked instances
-        // (same pattern as Shared Components, but using _system metadata).
-        // Primitives keep the existing builder/defaultNode fall-through.
-        let data: string;
-        if (primitive.systemComponentId) {
-          const model = getSystemComponents()[primitive.systemComponentId];
-          if (model) {
-            // Mirror the Shared Component drop pipeline so each instance gets
-            // fresh descendant ids (avoids DOM `[data-builder-id]` collisions
-            // between two instances) while preserving `_sharedKey` on every
-            // node so `_syncSharedInstances` can pair instance ↔ model.
-            const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
-            stampSharedKeys(modelContent);
-            const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
-            cloned._system = { id: model.id, name: model.name };
-            cloned._overrides = [];
-            // Per-tile prop overrides: when the palette tile's defaultNode carries a
-            // `props` bag, merge it onto the cloned SC root so e.g. `Btn Solid` and
-            // `Btn Destructive` both drop a `sys-button` instance with different
-            // initial `variant` / `label` / `iconLeft` / etc. SC-specific overrides
-            // (anything that's a declared SC property) live on `cloned.props`; pure
-            // styling props like `className` are deliberately not merged because the
-            // SC content template owns its className via formula.
-            const tileProps = (primitive.defaultNode as { props?: Record<string, unknown> } | undefined)?.props;
-            if (tileProps && typeof tileProps === 'object') {
-              const declared = new Set((model.properties ?? []).map(p => p.name));
-              const incoming: Record<string, unknown> = {};
-              for (const [key, value] of Object.entries(tileProps)) {
-                if (declared.has(key)) incoming[key] = value;
-              }
-              if (Object.keys(incoming).length > 0) {
-                const existing = (cloned.props as Record<string, unknown> | undefined) ?? {};
-                cloned.props = { ...existing, ...incoming };
-              }
-            }
-            data = JSON.stringify(cloned);
-          } else {
-            data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
-          }
-        } else {
-          data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
-        }
+        const data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
         e.dataTransfer.setData('text/primitive-node', data);
         e.dataTransfer.effectAllowed = 'copy';
         // Fallback for CDP-simulated drags (e.g. Playwright headless) where

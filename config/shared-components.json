@@ -2632,9 +2632,8 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": {
-                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
-                    }
+                    "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                    "style": { "backgroundColor": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'" } }
                   },
                   "children": [
                     {
@@ -2923,9 +2922,8 @@
         {
           "type": "Box",
           "props": {
-            "className": {
-              "formula": "'flex flex-row items-center justify-between w-full py-[16px] ' + ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
-            }
+            "className": "flex flex-row items-center justify-between w-full py-[16px]",
+            "style": { "opacity": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 1 : 0.5" }, "pointerEvents": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'" }, "cursor": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'" } }
           },
           "actions": [
             {
@@ -2942,9 +2940,8 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": {
-                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
-                    }
+                    "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                    "style": { "backgroundColor": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'white' : 'var(--theme-muted-foreground)'" } }
                   },
                   "children": [
                     {
@@ -3227,7 +3224,7 @@
                         },
                         {
                           "type": "Box",
-                          "_system": { "id": "sys-select", "name": "Select" },
+                          "_shared": { "id": "sc-select", "name": "Select" },
                           "_overrides": [],
                           "props": {
                             "className": "flex flex-row items-center justify-between gap-[8px] px-[12px] py-[8px] rounded-[6px] border border-border bg-background cursor-pointer hover:border-primary w-full",
@@ -3410,9 +3407,8 @@
         {
           "type": "Box",
           "props": {
-            "className": {
-              "formula": "'flex flex-row items-center justify-between w-full py-[16px] ' + ((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '' : 'opacity-50 pointer-events-none cursor-not-allowed')"
-            }
+            "className": "flex flex-row items-center justify-between w-full py-[16px]",
+            "style": { "opacity": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 1 : 0.5" }, "pointerEvents": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'auto' : 'none'" }, "cursor": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'pointer' : 'not-allowed'" } }
           },
           "children": [
             {
@@ -3424,9 +3420,8 @@
                 {
                   "type": "Box",
                   "props": {
-                    "className": {
-                      "formula": "'flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 ' + (variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'bg-green-500 !text-white' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'bg-[var(--theme-primary)] !text-white' : 'bg-[var(--theme-muted)] !text-[var(--theme-muted-foreground)]'))"
-                    }
+                    "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                    "style": { "backgroundColor": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'white' : 'var(--theme-muted-foreground)'" } }
                   },
                   "children": [
                     {
@@ -4039,7 +4034,7 @@
       "cc-wf-increment": {
         "id": "cc-wf-increment",
         "name": "Increment Counter",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4057,7 +4052,7 @@
       "cc-wf-reset": {
         "id": "cc-wf-reset",
         "name": "Reset Counter",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4116,11 +4111,11 @@
               "type": "Box",
               "id": "sc-counter-increment-btn",
               "props": {
-                "className": "flex flex-row items-center justify-center px-3 py-1.5 rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-700"
+                "className": "flex flex-row items-center justify-center px-3 py-1.5 rounded-lg cursor-pointer bg-emerald-600 hover:bg-emerald-700"
               },
               "actions": [
                 {
-                  "action": "cc-do-increment"
+                  "action": "cc-wf-increment"
                 }
               ],
               "children": [
@@ -4141,7 +4136,7 @@
               },
               "actions": [
                 {
-                  "action": "cc-do-reset"
+                  "action": "cc-wf-reset"
                 }
               ],
               "children": [
@@ -4452,7 +4447,7 @@
       "cal-wf-prev-month": {
         "id": "cal-wf-prev-month",
         "name": "Previous Month",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4515,7 +4510,7 @@
       "cal-wf-next-month": {
         "id": "cal-wf-next-month",
         "name": "Next Month",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4648,7 +4643,7 @@
       "cal-wf-select-day": {
         "id": "cal-wf-select-day",
         "name": "Select Day",
-        "trigger": "execution",
+        "trigger": "click",
         "description": "Select the clicked day cell's date. passThroughCondition enforces minDate/maxDate; timeDelay gives visual feedback; returnValue surfaces the chosen date to the caller.",
         "steps": [
           {
@@ -4722,7 +4717,7 @@
       "cal-wf-go-today": {
         "id": "cal-wf-go-today",
         "name": "Go Today",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4776,7 +4771,7 @@
       "cal-wf-clear": {
         "id": "cal-wf-clear",
         "name": "Clear Selection",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -4808,7 +4803,7 @@
       "cal-wf-find-next-workday": {
         "id": "cal-wf-find-next-workday",
         "name": "Find Next Workday",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "description": "Advance the selected date by whole days, skipping Saturdays/Sundays. Uses whileLoop + branch + continueLoop/breakLoop to demonstrate loop-control step types.",
         "steps": [
@@ -4910,7 +4905,7 @@
       "cal-wf-classify-date": {
         "id": "cal-wf-classify-date",
         "name": "Classify Selected Weekday",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "description": "Read the weekday (0-6) of the selected date and branch to a different log message per weekday group.",
         "steps": [
@@ -4990,7 +4985,7 @@
       "cal-wf-goto-booking": {
         "id": "cal-wf-goto-booking",
         "name": "Go To Booking Page",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5018,7 +5013,7 @@
       "cal-wf-go-back": {
         "id": "cal-wf-go-back",
         "name": "Go Back (History)",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5444,7 +5439,7 @@
                       "type": "Box",
                       "id": "sc-calendar-book-btn",
                       "props": {
-                        "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                        "className": "flex flex-row items-center justify-center px-2.5 py-1 rounded-md cursor-pointer bg-emerald-600 hover:bg-emerald-700"
                       },
                       "actions": [
                         {
@@ -5565,7 +5560,7 @@
       "zoo-wf-fetch-rest": {
         "id": "zoo-wf-fetch-rest",
         "name": "fetchData (REST)",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5590,7 +5585,7 @@
       "zoo-wf-graphql": {
         "id": "zoo-wf-graphql",
         "name": "graphql",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5615,7 +5610,7 @@
       "zoo-wf-fetch-collection": {
         "id": "zoo-wf-fetch-collection",
         "name": "fetchCollection",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5638,7 +5633,7 @@
       "zoo-wf-fetch-parallel": {
         "id": "zoo-wf-fetch-parallel",
         "name": "fetchCollectionsParallel",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5664,7 +5659,7 @@
       "zoo-wf-update-collection": {
         "id": "zoo-wf-update-collection",
         "name": "updateCollection",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5688,7 +5683,7 @@
       "zoo-wf-pick-file": {
         "id": "zoo-wf-pick-file",
         "name": "pickFile",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5712,7 +5707,7 @@
       "zoo-wf-download-file": {
         "id": "zoo-wf-download-file",
         "name": "downloadFileFromUrl",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5736,7 +5731,7 @@
       "zoo-wf-copy-clipboard": {
         "id": "zoo-wf-copy-clipboard",
         "name": "copyToClipboard",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5761,7 +5756,7 @@
       "zoo-wf-print-pdf": {
         "id": "zoo-wf-print-pdf",
         "name": "printPdf",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5782,7 +5777,7 @@
       "zoo-wf-create-url-b64": {
         "id": "zoo-wf-create-url-b64",
         "name": "createUrlFromBase64",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5807,7 +5802,7 @@
       "zoo-wf-encode-b64": {
         "id": "zoo-wf-encode-b64",
         "name": "encodeFileAsBase64",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5831,7 +5826,7 @@
       "zoo-wf-custom-js": {
         "id": "zoo-wf-custom-js",
         "name": "customJavaScript",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5854,7 +5849,7 @@
       "zoo-wf-open-popup": {
         "id": "zoo-wf-open-popup",
         "name": "openPopup",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5885,7 +5880,7 @@
       "zoo-wf-close-popups": {
         "id": "zoo-wf-close-popups",
         "name": "closeAllPopups",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5914,7 +5909,7 @@
       "zoo-wf-change-language": {
         "id": "zoo-wf-change-language",
         "name": "changeLanguage",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5937,7 +5932,7 @@
       "zoo-wf-page-loader": {
         "id": "zoo-wf-page-loader",
         "name": "pageLoader",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -5974,7 +5969,7 @@
       "zoo-wf-stop-propagation": {
         "id": "zoo-wf-stop-propagation",
         "name": "stopPropagation",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -6011,7 +6006,7 @@
       "zoo-wf-run-sub": {
         "id": "zoo-wf-run-sub",
         "name": "runProjectWorkflow",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -6026,7 +6021,7 @@
       "zoo-wf-set-form-state": {
         "id": "zoo-wf-set-form-state",
         "name": "setFormState",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -6064,7 +6059,7 @@
       "zoo-wf-reset-form": {
         "id": "zoo-wf-reset-form",
         "name": "resetForm",
-        "trigger": "execution",
+        "trigger": "click",
         "params": [],
         "steps": [
           {
@@ -6723,6 +6718,1507 @@
           },
           "text": "scResult: {{context.component.variables['sc-caller-scresult-0000-0000-0000-000000000010']}}"
         }
+      ]
+    }
+  },
+
+  "sc-input-field": {
+    "id": "sc-input-field",
+    "name": "Input Field",
+    "description": "Text input with label.",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-if-label", "name": "label", "type": "text", "defaultValue": "Email" },
+      { "id": "p-if-placeholder", "name": "placeholder", "type": "text", "defaultValue": "Enter your email" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] w-full" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+        { "type": "Input", "props": { "placeholder": "{{context.component.props.placeholder}}", "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-textarea-field": {
+    "id": "sc-textarea-field",
+    "name": "Textarea Field",
+    "description": "Multi-line textarea with label.",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-ta-label", "name": "label", "type": "text", "defaultValue": "Message" },
+      { "id": "p-ta-placeholder", "name": "placeholder", "type": "text", "defaultValue": "Write your message…" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] w-full" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+        { "type": "Textarea", "props": { "placeholder": "{{context.component.props.placeholder}}", "className": "w-full min-h-[100px] px-[12px] py-[10px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)] resize-none" } }
+      ]
+    }
+  },
+
+  "sc-checkbox": {
+    "id": "sc-checkbox",
+    "name": "Checkbox",
+    "description": "Checkbox with label.",
+    "valueVariable": "cb-checked",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-cb-label", "name": "label", "type": "text", "defaultValue": "Accept terms" }
+    ],
+    "variables": {
+      "cb-checked": { "label": "Checked", "type": "boolean", "initialValue": false }
+    },
+    "workflows": {
+      "cb-wf-toggle": {
+        "id": "cb-wf-toggle",
+        "name": "Toggle Checkbox",
+        "trigger": "click",
+        "params": [],
+        "steps": [
+          {
+            "id": "cb-step-1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "cb-checked",
+              "value": { "formula": "!(context?.component?.variables?.['cb-checked'] ?? false)" }
+            }
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+      "actions": [{ "action": "cb-wf-toggle" }],
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "className": "w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0",
+            "style": { "borderColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" }, "backgroundColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" } }
+          },
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:check",
+                "size": 12,
+                "color": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary-foreground)' : 'transparent'" }
+              }
+            }
+          ]
+        },
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-switch": {
+    "id": "sc-switch",
+    "name": "Switch",
+    "description": "Toggle switch with label.",
+    "valueVariable": "sw-on",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-sw-label", "name": "label", "type": "text", "defaultValue": "Enable notifications" }
+    ],
+    "variables": {
+      "sw-on": { "label": "On", "type": "boolean", "initialValue": false }
+    },
+    "workflows": {
+      "sw-wf-toggle": {
+        "id": "sw-wf-toggle",
+        "name": "Toggle Switch",
+        "trigger": "click",
+        "params": [],
+        "steps": [
+          {
+            "id": "sw-step-1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "sw-on",
+              "value": { "formula": "!(context?.component?.variables?.['sw-on'] ?? false)" }
+            }
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[10px]" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } },
+        {
+          "type": "Box",
+          "props": {
+            "className": "relative w-[48px] h-[26px] rounded-[13px] cursor-pointer flex-shrink-0",
+            "style": { "backgroundColor": { "formula": "context?.component?.variables?.['sw-on'] ? 'var(--theme-primary)' : 'var(--theme-muted)'" } }
+          },
+          "actions": [{ "action": "sw-wf-toggle" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm transition-transform duration-150",
+                "style": { "transform": { "formula": "context?.component?.variables?.['sw-on'] ? 'translateX(22px)' : 'translateX(0px)'" } }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-radio-group": {
+    "id": "sc-radio-group",
+    "name": "Radio Group",
+    "description": "Radio button group with 3 options.",
+    "valueVariable": "rg-value",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-rg-a", "name": "optionA", "type": "text", "defaultValue": "Option A" },
+      { "id": "p-rg-b", "name": "optionB", "type": "text", "defaultValue": "Option B" },
+      { "id": "p-rg-c", "name": "optionC", "type": "text", "defaultValue": "Option C" }
+    ],
+    "variables": {
+      "rg-value": { "label": "Selected value", "type": "string", "initialValue": "option-a" }
+    },
+    "workflows": {
+      "rg-wf-select-a": {
+        "id": "rg-wf-select-a", "name": "Select Option A", "trigger": "click", "params": [],
+        "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "rg-value", "value": "option-a" } }]
+      },
+      "rg-wf-select-b": {
+        "id": "rg-wf-select-b", "name": "Select Option B", "trigger": "click", "params": [],
+        "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "rg-value", "value": "option-b" } }]
+      },
+      "rg-wf-select-c": {
+        "id": "rg-wf-select-c", "name": "Select Option C", "trigger": "click", "params": [],
+        "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "rg-value", "value": "option-c" } }]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[10px] w-full" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+          "actions": [{ "action": "rg-wf-select-a" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0", "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-a' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Box", "condition": "context?.component?.variables?.['rg-value'] === 'option-a'", "props": { "className": "w-[8px] h-[8px] rounded-[4px] bg-[var(--theme-primary)]" } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.optionA}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['rg-value'] === 'option-a' ? '500' : '400'" } } } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+          "actions": [{ "action": "rg-wf-select-b" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0", "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-b' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Box", "condition": "context?.component?.variables?.['rg-value'] === 'option-b'", "props": { "className": "w-[8px] h-[8px] rounded-[4px] bg-[var(--theme-primary)]" } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.optionB}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['rg-value'] === 'option-b' ? '500' : '400'" } } } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center gap-[10px] cursor-pointer" },
+          "actions": [{ "action": "rg-wf-select-c" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0", "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-c' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Box", "condition": "context?.component?.variables?.['rg-value'] === 'option-c'", "props": { "className": "w-[8px] h-[8px] rounded-[4px] bg-[var(--theme-primary)]" } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.optionC}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['rg-value'] === 'option-c' ? '500' : '400'" } } } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-select": {
+    "id": "sc-select",
+    "name": "Select",
+    "description": "Dropdown select with popover option list.",
+    "valueVariable": "sel-value",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-sel-label", "name": "label", "type": "text", "defaultValue": "Country" },
+      { "id": "p-sel-placeholder", "name": "placeholder", "type": "text", "defaultValue": "Select an option" },
+      { "id": "p-sel-options", "name": "options", "type": "text", "defaultValue": "Option 1,Option 2,Option 3" }
+    ],
+    "variables": {
+      "sel-open": { "label": "Open", "type": "boolean", "initialValue": false },
+      "sel-value": { "label": "Selected value", "type": "string", "initialValue": "" }
+    },
+    "triggers": [
+      {
+        "id": "sel-t-on-change",
+        "name": "On change",
+        "payload": { "formula": "{ value: context?.component?.variables?.['sel-value'] ?? '' }" }
+      }
+    ],
+    "workflows": {
+      "sel-wf-pick-option": {
+        "id": "sel-wf-pick-option", "name": "Pick Option", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "sv", "type": "changeVariableValue", "config": { "variableName": "sel-value", "value": { "formula": "context?.item?.data?.value ?? context?.item?.data?.label" } } },
+          { "id": "cl", "type": "changeVariableValue", "config": { "variableName": "sel-open", "value": false } },
+          { "id": "emit", "type": "emitComponentTrigger", "config": { "triggerId": "sel-t-on-change" } }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] w-full" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+        {
+          "type": "Box",
+          "popover": { "trigger": "click", "placement": "bottom-start", "offset": 4, "openVariable": "sel-open", "matchTriggerWidth": true },
+          "props": { "className": "flex flex-row items-center justify-between w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer" },
+          "children": [
+            { "type": "Text", "text": { "formula": "(()=>{ const v=context?.component?.variables?.['sel-value']; if(!v) return context?.component?.props?.placeholder||'Select an option'; const opts=context?.component?.props?.options; if(Array.isArray(opts)){const m=opts.find(o=>o?.value===v||o?.label===v);if(m)return m.label;} return v; })()" }, "props": { "className": "text-[14px]", "style": { "color": { "formula": "context?.component?.variables?.['sel-value'] ? 'var(--theme-foreground)' : 'var(--theme-muted-foreground)'" } } } },
+            { "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 16, "color": "var(--theme-muted-foreground)" } },
+            {
+              "type": "Box",
+              "_popoverContent": true,
+              "props": { "className": "w-full min-w-0 bg-[var(--theme-card)] rounded-[8px] border border-[var(--theme-border-[1px])] py-[4px] shadow-lg overflow-hidden" },
+              "children": [
+                {
+                  "type": "Box",
+                  "map": { "formula": "(()=>{ const opts=context?.component?.props?.options; if(Array.isArray(opts)) return opts.map((o,i)=>({...o,idx:i})); return (typeof opts==='string'?opts:'Option 1,Option 2,Option 3').split(',').map((o,i)=>({label:o.trim(),value:o.trim(),idx:i})); })()" },
+                  "key": "context.item.data.idx",
+                  "props": { "className": "contents" },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex flex-row items-center gap-[8px] px-[12px] h-[36px] cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['sel-value'] === (context?.item?.data?.value??context?.item?.data?.label)) ? 'color-mix(in_srgb, var(--theme-primary) 10%, transparent)' : 'transparent'" } } },
+                      "actions": [{ "action": "sel-wf-pick-option" }],
+                      "children": [
+                        { "type": "Text", "text": "{{context.item.data.label}}", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-datepicker": {
+    "id": "sc-datepicker",
+    "name": "Date Picker",
+    "description": "Calendar popover date picker with month navigation.",
+    "valueVariable": "dp-v-selected",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-dp-label",  "name": "label",  "type": "text", "defaultValue": "Date" },
+      { "id": "p-dp-format", "name": "format", "type": "text", "defaultValue": "####-##-##" }
+    ],
+    "variables": {
+      "dp-v-year": { "label": "year", "type": "number", "initialValue": 2026 },
+      "dp-v-month": { "label": "month (0-11)", "type": "number", "initialValue": 3 },
+      "dp-v-selected": { "label": "selectedDate", "type": "string", "initialValue": "" },
+      "dp-v-open": { "label": "isOpen", "type": "boolean", "initialValue": false }
+    },
+    "triggers": [
+      {
+        "id": "dp-t-on-date-selected",
+        "name": "On date selected",
+        "payload": { "formula": "{ date: context?.component?.variables?.['dp-v-selected'] ?? '' }" }
+      }
+    ],
+    "workflows": {
+      "dp-wf-prev-month": {
+        "id": "dp-wf-prev-month", "name": "Previous Month", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "py", "type": "changeVariableValue", "config": { "variableName": "dp-v-year", "value": { "formula": "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) - 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
+          { "id": "pm", "type": "changeVariableValue", "config": { "variableName": "dp-v-month", "value": { "formula": "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? 11 : (context?.component?.variables?.['dp-v-month'] ?? 0) - 1" } } }
+        ]
+      },
+      "dp-wf-next-month": {
+        "id": "dp-wf-next-month", "name": "Next Month", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "ny", "type": "changeVariableValue", "config": { "variableName": "dp-v-year", "value": { "formula": "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) + 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
+          { "id": "nm", "type": "changeVariableValue", "config": { "variableName": "dp-v-month", "value": { "formula": "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? 0 : (context?.component?.variables?.['dp-v-month'] ?? 0) + 1" } } }
+        ]
+      },
+      "dp-wf-select-day": {
+        "id": "dp-wf-select-day", "name": "Select Day", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "sd",   "type": "changeVariableValue", "config": { "variableName": "dp-v-selected", "value": { "formula": "context?.item?.data?.dateStr" } } },
+          { "id": "cl",   "type": "changeVariableValue", "config": { "variableName": "dp-v-open", "value": false } },
+          { "id": "emit",     "type": "emitComponentTrigger", "config": { "triggerId": "dp-t-on-date-selected" } }
+        ]
+      },
+      "dp-wf-today": {
+        "id": "dp-wf-today", "name": "Go To Today", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "ty", "type": "changeVariableValue", "config": { "variableName": "dp-v-year", "value": { "formula": "new Date().getFullYear()" } } },
+          { "id": "tm", "type": "changeVariableValue", "config": { "variableName": "dp-v-month", "value": { "formula": "new Date().getMonth()" } } },
+          { "id": "ts", "type": "changeVariableValue", "config": { "variableName": "dp-v-selected", "value": { "formula": "new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0')" } } }
+        ]
+      },
+      "dp-wf-clear": {
+        "id": "dp-wf-clear", "name": "Clear Selection", "trigger": "click", "params": [],
+        "steps": [
+          { "id": "cs", "type": "changeVariableValue", "config": { "variableName": "dp-v-selected", "value": "" } }
+        ]
+      },
+      "dp-wf-set-typed": {
+        "id": "dp-wf-set-typed", "name": "Set typed date", "trigger": "change", "params": [],
+        "steps": [
+          { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-v-selected", "value": { "formula": "event?.value ?? event?.text ?? (typeof event === 'string' ? event : '')" } } }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] w-full" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+        {
+          "type": "Box",
+          "popover": { "trigger": "click", "placement": "bottom-start", "offset": 6, "openVariable": "dp-v-open" },
+          "props": { "className": "inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer w-full" },
+          "children": [
+            { "type": "Icon", "props": { "icon": "lucide:calendar", "size": 16, "color": "var(--theme-muted-foreground)" } },
+            {
+              "type": "Input",
+              "props": {
+                "value": { "formula": "context?.component?.variables?.['dp-v-selected'] ?? ''" },
+                "format": "{{context.component.props.format}}",
+                "placeholder": "{{context.component.props.format}}",
+                "className": "flex-1 border-0 bg-transparent outline-none shadow-none text-[14px] h-auto p-0 min-h-0"
+              },
+              "actions": [{ "trigger": "change", "action": "dp-wf-set-typed" }]
+            },
+            {
+              "type": "Box",
+              "_popoverContent": true,
+              "props": { "className": "w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border-[1px])] p-[12px] shadow-lg" },
+              "children": [
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row items-center justify-between px-[4px] pb-[8px]" },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[var(--theme-muted)]" },
+                      "actions": [{ "action": "dp-wf-prev-month" }],
+                      "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-left", "size": 14, "color": "var(--theme-muted-foreground)" } }]
+                    },
+                    {
+                      "type": "Text",
+                      "text": { "formula": "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['dp-v-month'] ?? 0] + ' ' + (context?.component?.variables?.['dp-v-year'] ?? 2026)" },
+                      "props": { "className": "text-[13px] font-semibold text-[var(--theme-foreground)]" }
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[var(--theme-muted)]" },
+                      "actions": [{ "action": "dp-wf-next-month" }],
+                      "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 14, "color": "var(--theme-muted-foreground)" } }]
+                    }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "grid grid-cols-7 mb-[4px]" },
+                  "children": [
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Su" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Mo" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Tu" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "We" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Th" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Fr" },
+                    { "type": "Text", "props": { "className": "text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]" }, "text": "Sa" }
+                  ]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "grid grid-cols-7" },
+                  "children": [{
+                    "type": "Box",
+                    "map": { "formula": "Array.from({length:42},(_,i)=>{const yr=context?.component?.variables?.['dp-v-year']??2026;const mo=context?.component?.variables?.['dp-v-month']??0;const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';const today=new Date();const tStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');const sel=context?.component?.variables?.['dp-v-selected']||'';return{day:d,inMonth:inM,dateStr:ds,isToday:ds===tStr,isSelected:ds===sel&&ds.length>0,idx:i}})" },
+                    "key": "context.item.data.idx",
+                    "props": { "className": "contents" },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && context?.item?.data?.isSelected",
+                        "props": { "className": "flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full bg-[var(--theme-primary)]" },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [{ "type": "Text", "text": "{{context.item.data.day}}", "props": { "className": "text-[12px] text-[var(--theme-primary-foreground)] font-semibold" } }]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday",
+                        "props": { "className": "flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full border-2 border-[var(--theme-primary)]" },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [{ "type": "Text", "text": "{{context.item.data.day}}", "props": { "className": "text-[12px] font-semibold text-[var(--theme-foreground)]" } }]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",
+                        "props": { "className": "flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full hover:bg-[var(--theme-muted)]" },
+                        "actions": [{ "action": "dp-wf-select-day" }],
+                        "children": [{ "type": "Text", "text": "{{context.item.data.day}}", "props": { "className": "text-[12px] text-[var(--theme-foreground)]" } }]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "!context?.item?.data?.inMonth",
+                        "props": { "className": "flex items-center justify-center w-[36px] h-[36px]" },
+                        "children": [{ "type": "Text", "text": "{{context.item.data.day}}", "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)] opacity-30" } }]
+                      }
+                    ]
+                  }]
+                },
+                {
+                  "type": "Box",
+                  "props": { "className": "flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border-[1px])]" },
+                  "children": [
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]" },
+                      "actions": [{ "action": "dp-wf-today" }],
+                      "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Today" }]
+                    },
+                    {
+                      "type": "Box",
+                      "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]" },
+                      "actions": [{ "action": "dp-wf-clear" }],
+                      "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Clear" }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-file-upload": {
+    "id": "sc-file-upload",
+    "name": "File Upload",
+    "description": "File upload drop zone.",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-fu-hint",     "name": "hint",     "type": "text",    "defaultValue": "Drag & drop or click to upload" },
+      { "id": "p-fu-accept",   "name": "accept",   "type": "text",    "defaultValue": "" },
+      { "id": "p-fu-multiple", "name": "multiple", "type": "boolean", "defaultValue": false }
+    ],
+    "variables": {
+      "fu-v-files": { "label": "Picked files", "type": "array", "initialValue": [] }
+    },
+    "triggers": [
+      {
+        "id": "fu-t-on-files-selected",
+        "name": "On files selected",
+        "payload": { "formula": "{ files: context?.component?.variables?.['fu-v-files'] ?? [] }" }
+      }
+    ],
+    "workflows": {
+      "fu-wf-on-click": {
+        "id": "fu-wf-on-click", "name": "On click", "trigger": "click", "params": [],
+        "steps": [
+          {
+            "id": "pick",
+            "type": "pickFile",
+            "config": {
+              "accept":   { "formula": "context?.component?.props?.accept   ?? ''" },
+              "multiple": { "formula": "Boolean(context?.component?.props?.multiple)" },
+              "storeIn":  "fu-v-files"
+            }
+          },
+          {
+            "id": "emit",
+            "type": "emitComponentTrigger",
+            "config": { "triggerId": "fu-t-on-files-selected" }
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "actions": [{ "action": "fu-wf-on-click" }],
+      "props": { "className": "flex flex-col items-center justify-center gap-[8px] w-full py-[32px] px-[16px] rounded-[10px] border-2 border-dashed border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer" },
+      "children": [
+        { "type": "Icon", "props": { "icon": "lucide:upload-cloud", "size": 32, "color": "var(--theme-muted-foreground)" } },
+        {
+          "type": "Text",
+          "text": { "formula": "(context?.component?.variables?.['fu-v-files']?.[0]?.name) || context?.component?.props?.hint || 'Drag & drop or click to upload'" },
+          "props": { "className": "text-[14px] font-medium text-[var(--theme-foreground)] text-center" }
+        },
+        { "type": "Text", "text": "{{context.component.props.accept}}", "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)] text-center" } }
+      ]
+    }
+  },
+
+  "sc-slider": {
+    "id": "sc-slider",
+    "name": "Slider",
+    "description": "Custom drag slider built from Box primitives.",
+    "valueVariable": "sl-value",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-sl-label", "name": "label", "type": "text", "defaultValue": "Volume" },
+      { "id": "p-sl-min", "name": "min", "type": "number", "defaultValue": 0 },
+      { "id": "p-sl-max", "name": "max", "type": "number", "defaultValue": 100 },
+      { "id": "p-sl-step", "name": "step", "type": "number", "defaultValue": 1 }
+    ],
+    "variables": {
+      "sl-value": { "label": "Value", "type": "number", "initialValue": 60 }
+    },
+    "workflows": {
+      "sl-wf-update": {
+        "id": "sl-wf-update",
+        "name": "Update value",
+        "trigger": "drag",
+        "params": [],
+        "steps": [
+          {
+            "id": "s1",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "sl-value",
+              "value": { "formula": "(()=>{ const mn=context?.component?.props?.min??0; const mx=context?.component?.props?.max??100; const st=context?.component?.props?.step??1; const raw=mn+(event?.percentX??0)*(mx-mn); return Math.max(mn,Math.min(mx,st>0?Math.round(raw/st)*st:raw)); })()" }
+            }
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[10px] w-full select-none" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center justify-between" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+            { "type": "Text", "text": { "formula": "String(context?.component?.variables?.['sl-value'] ?? 0)" }, "props": { "className": "text-[13px] font-medium text-[var(--theme-primary)]" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "relative w-full h-[20px] flex items-center cursor-pointer touch-none" },
+          "animation": {
+            "drag": {
+              "enabled": true,
+              "axis": "x",
+              "noVisualMove": true,
+              "onDragStart": "sl-wf-update",
+              "onDragUpdate": "sl-wf-update",
+              "onDragEnd": "sl-wf-update"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "absolute inset-x-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-muted)] pointer-events-none" }
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-primary)] pointer-events-none",
+                "style": { "width": { "formula": "(()=>{ const mn=context?.component?.props?.min??0; const mx=context?.component?.props?.max??100; const v=context?.component?.variables?.['sl-value']??mn; return Math.max(0,Math.min(100,((v-mn)/(mx-mn||1))*100))+'%'; })()" } }
+              }
+            },
+            {
+              "type": "Box",
+              "props": {
+                "className": "absolute top-1/2 w-[18px] h-[18px] rounded-full bg-[var(--theme-primary)] border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                "style": { "left": { "formula": "(()=>{ const mn=context?.component?.props?.min??0; const mx=context?.component?.props?.max??100; const v=context?.component?.variables?.['sl-value']??mn; return Math.max(0,Math.min(100,((v-mn)/(mx-mn||1))*100))+'%'; })()" } }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-progress-bar": {
+    "id": "sc-progress-bar",
+    "name": "Progress Bar",
+    "description": "Horizontal progress indicator.",
+    "folder": "Feedback",
+    "properties": [
+      { "id": "p-pb-label", "name": "label", "type": "text", "defaultValue": "Loading…" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] w-full" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center justify-between" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[13px] text-[var(--theme-muted-foreground)]" } },
+            { "type": "Text", "text": "75%", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "w-full h-[8px] rounded-[4px] bg-[var(--theme-muted)]" },
+          "children": [{ "type": "Box", "props": { "className": "h-full w-[75%] rounded-[4px] bg-[var(--theme-primary)]" } }]
+        }
+      ]
+    }
+  },
+
+  "sc-tabs": {
+    "id": "sc-tabs",
+    "name": "Tabs",
+    "description": "Horizontal tab bar with 3 tabs.",
+    "folder": "Navigation",
+    "properties": [
+      { "id": "p-tabs-1", "name": "tab1", "type": "text", "defaultValue": "Overview" },
+      { "id": "p-tabs-2", "name": "tab2", "type": "text", "defaultValue": "Details" },
+      { "id": "p-tabs-3", "name": "tab3", "type": "text", "defaultValue": "Reviews" }
+    ],
+    "variables": {
+      "tabs-active": { "label": "Active tab", "type": "string", "initialValue": "tab1" }
+    },
+    "workflows": {
+      "tabs-wf-1": { "id": "tabs-wf-1", "name": "Activate Tab 1", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "tabs-active", "value": "tab1" } }] },
+      "tabs-wf-2": { "id": "tabs-wf-2", "name": "Activate Tab 2", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "tabs-active", "value": "tab2" } }] },
+      "tabs-wf-3": { "id": "tabs-wf-3", "name": "Activate Tab 3", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "tabs-active", "value": "tab3" } }] }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row border-b border-[var(--theme-border-[1px])] w-full" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center px-[16px] py-[10px] border-b-2 cursor-pointer", "style": { "borderBottomColor": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'var(--theme-primary)' : 'transparent'" } } },
+          "actions": [{ "action": "tabs-wf-1" }],
+          "children": [{ "type": "Text", "text": "{{context.component.props.tab1}}", "props": { "className": "text-[14px]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab1' ? '600' : '400'" }, "color": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center px-[16px] py-[10px] border-b-2 cursor-pointer", "style": { "borderBottomColor": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'var(--theme-primary)' : 'transparent'" } } },
+          "actions": [{ "action": "tabs-wf-2" }],
+          "children": [{ "type": "Text", "text": "{{context.component.props.tab2}}", "props": { "className": "text-[14px]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab2' ? '600' : '400'" }, "color": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center px-[16px] py-[10px] border-b-2 cursor-pointer", "style": { "borderBottomColor": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'var(--theme-primary)' : 'transparent'" } } },
+          "actions": [{ "action": "tabs-wf-3" }],
+          "children": [{ "type": "Text", "text": "{{context.component.props.tab3}}", "props": { "className": "text-[14px]", "style": { "fontWeight": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab3' ? '600' : '400'" }, "color": { "formula": "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }]
+        }
+      ]
+    }
+  },
+
+  "sc-chip": {
+    "id": "sc-chip",
+    "name": "Chip",
+    "description": "Tag / chip pill.",
+    "folder": "Navigation",
+    "properties": [
+      { "id": "p-chip-label", "name": "label", "type": "text", "defaultValue": "Design" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] w-fit" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" } },
+        { "type": "Icon", "props": { "icon": "lucide:x", "size": 12, "color": "var(--theme-muted-foreground)" } }
+      ]
+    }
+  },
+
+  "sc-stepper": {
+    "id": "sc-stepper",
+    "name": "Stepper",
+    "description": "Clickable multi-step progress indicator with dashed connectors.",
+    "folder": "Navigation",
+    "properties": [
+      { "id": "p-stp-1", "name": "step1", "type": "text", "defaultValue": "Account" },
+      { "id": "p-stp-2", "name": "step2", "type": "text", "defaultValue": "Details" },
+      { "id": "p-stp-3", "name": "step3", "type": "text", "defaultValue": "Confirm" }
+    ],
+    "variables": {
+      "stp-active": { "label": "Active step (1-3)", "type": "number", "initialValue": 1 }
+    },
+    "workflows": {
+      "stp-wf-go-1": { "id": "stp-wf-go-1", "name": "Go to Step 1", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "stp-active", "value": 1 } }] },
+      "stp-wf-go-2": { "id": "stp-wf-go-2", "name": "Go to Step 2", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "stp-active", "value": 2 } }] },
+      "stp-wf-go-3": { "id": "stp-wf-go-3", "name": "Go to Step 3", "trigger": "click", "params": [], "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "stp-active", "value": 3 } }] }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-start w-full" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col items-center gap-[8px]" },
+          "actions": [{ "action": "stp-wf-go-1" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Icon", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) > 1", "props": { "icon": "lucide:check", "size": 14, "color": "var(--theme-primary-foreground)" } },
+                { "type": "Text", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) <= 1", "text": "1", "props": { "className": "text-[13px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) === 1 ? '700' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) === 1 ? 'var(--theme-primary-foreground)' : 'var(--theme-muted-foreground)'" } } } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.step1}}", "props": { "className": "text-[12px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? '600' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }
+          ]
+        },
+        { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 1 ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } } },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col items-center gap-[8px]" },
+          "actions": [{ "action": "stp-wf-go-2" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Icon", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) > 2", "props": { "icon": "lucide:check", "size": 14, "color": "var(--theme-primary-foreground)" } },
+                { "type": "Text", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) <= 2", "text": "2", "props": { "className": "text-[13px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) === 2 ? '700' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) === 2 ? 'var(--theme-primary-foreground)' : 'var(--theme-muted-foreground)'" } } } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.step2}}", "props": { "className": "text-[12px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? '600' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }
+          ]
+        },
+        { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 2 ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } } },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col items-center gap-[8px]" },
+          "actions": [{ "action": "stp-wf-go-3" }],
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+              "children": [
+                { "type": "Icon", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3", "props": { "icon": "lucide:check", "size": 14, "color": "var(--theme-primary-foreground)" } },
+                { "type": "Text", "condition": "(context?.component?.variables?.['stp-active'] ?? 1) < 3", "text": "3", "props": { "className": "text-[13px] text-[var(--theme-muted-foreground)]" } }
+              ]
+            },
+            { "type": "Text", "text": "{{context.component.props.step3}}", "props": { "className": "text-[12px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? '600' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-pagination": {
+    "id": "sc-pagination",
+    "name": "Pagination",
+    "description": "Prev / page numbers / Next controls — click to navigate.",
+    "folder": "Navigation",
+    "properties": [
+      { "id": "p-pg-total", "name": "total", "type": "text", "defaultValue": "5" }
+    ],
+    "variables": {
+      "pg-current": { "label": "Current page", "type": "number", "initialValue": 1 }
+    },
+    "workflows": {
+      "pg-wf-prev": {
+        "id": "pg-wf-prev", "name": "Previous Page", "trigger": "click", "params": [],
+        "steps": [{ "id": "prev", "type": "changeVariableValue", "config": { "variableName": "pg-current", "value": { "formula": "Math.max(1, (context?.component?.variables?.['pg-current'] ?? 1) - 1)" } } }]
+      },
+      "pg-wf-go-page": {
+        "id": "pg-wf-go-page", "name": "Go to Page", "trigger": "click", "params": [],
+        "steps": [{ "id": "pg", "type": "changeVariableValue", "config": { "variableName": "pg-current", "value": { "formula": "context?.item?.data?.n" } } }]
+      },
+      "pg-wf-next": {
+        "id": "pg-wf-next", "name": "Next Page", "trigger": "click", "params": [],
+        "steps": [{ "id": "next", "type": "changeVariableValue", "config": { "variableName": "pg-current", "value": { "formula": "Math.min(Number(context?.component?.props?.total ?? 5), (context?.component?.variables?.['pg-current'] ?? 1) + 1)" } } }]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[4px]" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
+          "actions": [{ "action": "pg-wf-prev" }],
+          "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-left", "size": 16, "color": "var(--theme-foreground)" } }]
+        },
+        {
+          "type": "Box",
+          "map": { "formula": "Array.from({ length: Number(context?.component?.props?.total ?? 5) }, (_, i) => ({ n: i + 1 }))" },
+          "key": "context.item.data.n",
+          "props": { "className": "contents" },
+          "children": [
+            {
+              "type": "Box",
+              "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] cursor-pointer", "style": { "backgroundColor": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'none' : '1px solid var(--theme-border-[1px])'" } } },
+              "actions": [{ "action": "pg-wf-go-page" }],
+              "children": [{ "type": "Text", "text": "{{context.item.data.n}}", "props": { "className": "text-[14px]", "style": { "fontWeight": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? '600' : '400'" }, "color": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'var(--theme-primary-foreground)' : 'var(--theme-muted-foreground)'" } } } }]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
+          "actions": [{ "action": "pg-wf-next" }],
+          "children": [{ "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 16, "color": "var(--theme-foreground)" } }]
+        }
+      ]
+    }
+  },
+
+  "sc-spinner": {
+    "id": "sc-spinner",
+    "name": "Spinner",
+    "description": "Animated loading spinner.",
+    "folder": "Feedback",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex items-center justify-center w-fit" },
+      "children": [
+        { "type": "Icon", "props": { "icon": "lucide:loader-2", "size": 24, "color": "var(--theme-primary)", "className": "animate-spin" } }
+      ]
+    }
+  },
+
+  "sc-skeleton": {
+    "id": "sc-skeleton",
+    "name": "Skeleton",
+    "description": "Animated loading skeleton.",
+    "folder": "Feedback",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[10px] w-full" },
+      "children": [
+        { "type": "Box", "props": { "className": "w-full h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse" } },
+        { "type": "Box", "props": { "className": "w-[80%] h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse" } },
+        { "type": "Box", "props": { "className": "w-[60%] h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse" } }
+      ]
+    }
+  },
+
+  "sc-star-rating": {
+    "id": "sc-star-rating",
+    "name": "Star Rating",
+    "description": "Interactive 5-star rating.",
+    "valueVariable": "sr-rating",
+    "folder": "Feedback",
+    "properties": [
+      { "id": "p-sr-count", "name": "count", "type": "text", "defaultValue": "128 reviews" }
+    ],
+    "variables": {
+      "sr-rating": { "label": "Rating", "type": "number", "initialValue": 4 }
+    },
+    "workflows": {
+      "sr-wf-set-rating": {
+        "id": "sr-wf-set-rating", "name": "Set Rating", "trigger": "click", "params": [],
+        "steps": [{ "id": "sr", "type": "changeVariableValue", "config": { "variableName": "sr-rating", "value": { "formula": "context?.item?.data?.n" } } }]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[8px]" },
+      "children": [
+        {
+          "type": "Box",
+          "map": { "formula": "[1,2,3,4,5].map(n => ({ n }))" },
+          "key": "context.item.data.n",
+          "props": { "className": "flex flex-row items-center gap-[2px]" },
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "mdi:star",
+                "size": 22,
+                "color": { "formula": "context?.item?.data?.n <= (context?.component?.variables?.['sr-rating'] ?? 0) ? '#f59e0b' : '#d1d5db'" },
+                "className": "cursor-pointer"
+              },
+              "actions": [{ "action": "sr-wf-set-rating" }]
+            }
+          ]
+        },
+        { "type": "Text", "text": { "formula": "(context?.component?.variables?.['sr-rating'] ?? 0) + ' / 5 — ' + (context?.component?.props?.count || '')" }, "props": { "className": "text-[13px] text-[var(--theme-muted-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-avatar": {
+    "id": "sc-avatar",
+    "name": "Avatar",
+    "description": "Circular avatar with initials.",
+    "folder": "Composite",
+    "properties": [
+      { "id": "p-av-initials", "name": "initials", "type": "text", "defaultValue": "JD" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex items-center justify-center w-[40px] h-[40px] rounded-[20px] overflow-hidden bg-[var(--theme-primary)] flex-shrink-0" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.initials}}", "props": { "className": "text-[15px] font-semibold text-[var(--theme-primary-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-avatar-group": {
+    "id": "sc-avatar-group",
+    "name": "Avatar Group",
+    "description": "Row of overlapping avatars.",
+    "folder": "Composite",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center" },
+      "children": [
+        { "type": "Box", "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[#6366f1] border-2 border-white z-[3]" },
+          "children": [{ "type": "Text", "text": "JD", "props": { "className": "text-[12px] font-semibold text-white" } }] },
+        { "type": "Box", "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[#ec4899] border-2 border-white -ml-[10px] z-[2]" },
+          "children": [{ "type": "Text", "text": "AB", "props": { "className": "text-[12px] font-semibold text-white" } }] },
+        { "type": "Box", "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[#14b8a6] border-2 border-white -ml-[10px] z-[1]" },
+          "children": [{ "type": "Text", "text": "TK", "props": { "className": "text-[12px] font-semibold text-white" } }] },
+        { "type": "Box", "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[var(--theme-muted)] border-2 border-white -ml-[10px] z-0" },
+          "children": [{ "type": "Text", "text": "+5", "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)]" } }] }
+      ]
+    }
+  },
+
+  "sc-table": {
+    "id": "sc-table",
+    "name": "Table",
+    "description": "Data table with header and 3 rows.",
+    "folder": "Composite",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": { "className": "w-full rounded-[10px] border border-[var(--theme-border-[1px])] overflow-hidden" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row bg-[var(--theme-muted)]" },
+          "children": [
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Name", "props": { "className": "text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Status", "props": { "className": "text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[10px]" },
+              "children": [{ "type": "Text", "text": "Amount", "props": { "className": "text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide" } }] }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row border-t border-[var(--theme-border-[1px])]" },
+          "children": [
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Alice Chen", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Active", "props": { "className": "text-[13px] font-medium text-green-600" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px]" },
+              "children": [{ "type": "Text", "text": "$240.00", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row border-t border-[var(--theme-border-[1px])]" },
+          "children": [
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Bob Smith", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Pending", "props": { "className": "text-[13px] font-medium text-amber-600" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px]" },
+              "children": [{ "type": "Text", "text": "$85.00", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row border-t border-[var(--theme-border-[1px])]" },
+          "children": [
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Carol Lee", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]" },
+              "children": [{ "type": "Text", "text": "Inactive", "props": { "className": "text-[13px] font-medium text-[var(--theme-muted-foreground)]" } }] },
+            { "type": "Box", "props": { "className": "flex-1 px-[14px] py-[12px]" },
+              "children": [{ "type": "Text", "text": "$0.00", "props": { "className": "text-[14px] text-[var(--theme-foreground)]" } }] }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-accordion-item": {
+    "id": "sc-accordion-item",
+    "name": "Accordion Item",
+    "description": "Collapsible accordion item.",
+    "folder": "Composite",
+    "properties": [
+      { "id": "p-acc-title", "name": "title", "type": "text", "defaultValue": "Can I get a refund?" },
+      { "id": "p-acc-body", "name": "body", "type": "text", "defaultValue": "Yes, we offer full refunds within 30 days of purchase." }
+    ],
+    "variables": {
+      "acc-open": { "label": "Open", "type": "boolean", "initialValue": true }
+    },
+    "workflows": {
+      "acc-wf-toggle": {
+        "id": "acc-wf-toggle", "name": "Toggle Accordion", "trigger": "click", "params": [],
+        "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "acc-open", "value": { "formula": "!(context?.component?.variables?.['acc-open'] ?? false)" } } }]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col w-full border border-[var(--theme-border-[1px])] rounded-[10px] overflow-hidden" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-row items-center justify-between px-[16px] py-[14px] cursor-pointer bg-[var(--theme-card)]" },
+          "actions": [{ "action": "acc-wf-toggle" }],
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.title}}", "props": { "className": "text-[14px] font-semibold text-[var(--theme-foreground)] flex-1" } },
+            { "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 18, "color": "var(--theme-muted-foreground)", "className": "transition-transform", "style": { "transform": { "formula": "context?.component?.variables?.['acc-open'] ? 'rotate(180deg)' : 'rotate(0deg)'" } } } }
+          ]
+        },
+        {
+          "type": "Box",
+          "condition": "context?.component?.variables?.['acc-open']",
+          "props": { "className": "px-[16px] py-[14px] border-t border-[var(--theme-border-[1px])] bg-[var(--theme-background)]" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.body}}", "props": { "className": "text-[14px] text-[var(--theme-muted-foreground)] leading-relaxed" } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-popover": {
+    "id": "sc-popover",
+    "name": "Popover",
+    "description": "Trigger button with a click-to-open floating content panel.",
+    "folder": "Overlays",
+    "properties": [
+      { "id": "p-pop-trigger", "name": "triggerLabel", "type": "text", "defaultValue": "Open" },
+      { "id": "p-pop-content", "name": "content", "type": "text", "defaultValue": "Popover content goes here." }
+    ],
+    "variables": {
+      "pop-open": { "label": "Open", "type": "boolean", "initialValue": false }
+    },
+    "content": {
+      "type": "Box",
+      "popover": { "trigger": "click", "placement": "bottom-start", "offset": 6, "openVariable": "pop-open" },
+      "props": { "className": "inline-flex" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex items-center justify-center px-[14px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.triggerLabel}}", "props": { "className": "text-[14px] font-medium text-[var(--theme-foreground)]" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "_popoverContent": true,
+          "props": { "className": "min-w-[200px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] shadow-lg" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.content}}", "props": { "className": "text-[13px] text-[var(--theme-foreground)]" } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-button": {
+    "id": "sc-button",
+    "name": "Button",
+    "description": "Primary action button.",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-btn-label", "name": "label", "type": "text", "defaultValue": "Click Me" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "inline-flex items-center justify-center px-[16px] h-[40px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer select-none" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[14px] font-semibold text-[var(--theme-primary-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-heading": {
+    "id": "sc-heading",
+    "name": "Heading",
+    "description": "Bold section heading.",
+    "folder": "Typography",
+    "properties": [
+      { "id": "p-heading-text", "name": "text", "type": "text", "defaultValue": "Section Heading" }
+    ],
+    "content": {
+      "type": "Text",
+      "text": "{{context.component.props.text}}",
+      "props": { "className": "text-[28px] font-bold text-[var(--theme-foreground)] leading-tight" }
+    }
+  },
+
+  "sc-label": {
+    "id": "sc-label",
+    "name": "Label",
+    "description": "Small all-caps label.",
+    "folder": "Typography",
+    "properties": [
+      { "id": "p-label-text", "name": "text", "type": "text", "defaultValue": "Label" }
+    ],
+    "content": {
+      "type": "Text",
+      "text": "{{context.component.props.text}}",
+      "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+    }
+  },
+
+  "sc-paragraph": {
+    "id": "sc-paragraph",
+    "name": "Paragraph",
+    "description": "Body text block.",
+    "folder": "Typography",
+    "properties": [
+      { "id": "p-para-text", "name": "text", "type": "text", "defaultValue": "This is a paragraph of body text with relaxed line height for comfortable reading." }
+    ],
+    "content": {
+      "type": "Text",
+      "text": "{{context.component.props.text}}",
+      "props": { "className": "text-[14px] text-[var(--theme-muted-foreground)] leading-relaxed" }
+    }
+  },
+
+  "sc-card": {
+    "id": "sc-card",
+    "name": "Card",
+    "description": "Content card container with title and body.",
+    "folder": "Layout",
+    "properties": [
+      { "id": "p-card-title", "name": "title", "type": "text", "defaultValue": "Card Title" },
+      { "id": "p-card-body", "name": "body", "type": "text", "defaultValue": "Card body text goes here." }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[10px] p-[20px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] w-full" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.title}}", "props": { "className": "text-[16px] font-semibold text-[var(--theme-foreground)]" } },
+        { "type": "Text", "text": "{{context.component.props.body}}", "props": { "className": "text-[14px] text-[var(--theme-muted-foreground)] leading-relaxed" } }
+      ]
+    }
+  },
+
+  "sc-divider": {
+    "id": "sc-divider",
+    "name": "Divider",
+    "description": "Horizontal separator line.",
+    "folder": "Layout",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": { "className": "w-full h-px bg-[var(--theme-border-[1px])] my-[8px]" }
+    }
+  },
+
+  "sc-badge": {
+    "id": "sc-badge",
+    "name": "Badge",
+    "description": "Pill badge with configurable text.",
+    "folder": "Feedback",
+    "properties": [
+      { "id": "p-badge-text", "name": "text", "type": "text", "defaultValue": "Badge" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "inline-flex items-center px-[10px] py-[2px] rounded-[9999px] bg-[color-mix(in_srgb,var(--theme-primary)_10%,transparent)] w-fit" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.text}}", "props": { "className": "text-[12px] font-semibold text-[var(--theme-primary)]" } }
+      ]
+    }
+  },
+
+  "sc-alert": {
+    "id": "sc-alert",
+    "name": "Alert",
+    "description": "Inline informational banner.",
+    "folder": "Feedback",
+    "properties": [
+      { "id": "p-alert-title", "name": "title", "type": "text", "defaultValue": "Heads up!" },
+      { "id": "p-alert-message", "name": "message", "type": "text", "defaultValue": "Something important happened." }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-start gap-[12px] p-[14px] rounded-[10px] bg-blue-50 border border-blue-200 w-full" },
+      "children": [
+        { "type": "Icon", "props": { "icon": "lucide:info", "size": 18, "color": "#3b82f6" } },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-[2px] flex-1" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.title}}", "props": { "className": "text-[13px] font-semibold text-blue-800" } },
+            { "type": "Text", "text": "{{context.component.props.message}}", "props": { "className": "text-[13px] text-blue-700" } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-list-item": {
+    "id": "sc-list-item",
+    "name": "List Item",
+    "description": "Row with icon, title, and subtitle.",
+    "folder": "Composite",
+    "properties": [
+      { "id": "p-li-icon", "name": "icon", "type": "text", "defaultValue": "lucide:user" },
+      { "id": "p-li-title", "name": "title", "type": "text", "defaultValue": "Item Title" },
+      { "id": "p-li-subtitle", "name": "subtitle", "type": "text", "defaultValue": "Secondary text" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[12px] px-[16px] py-[12px] w-full border-b border-[var(--theme-border-[1px])]" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[var(--theme-muted)] flex-shrink-0" },
+          "children": [
+            { "type": "Icon", "props": { "icon": "{{context.component.props.icon}}", "size": 16, "color": "var(--theme-muted-foreground)" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-[2px] flex-1 min-w-0" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.title}}", "props": { "className": "text-[14px] font-medium text-[var(--theme-foreground)] truncate" } },
+            { "type": "Text", "text": "{{context.component.props.subtitle}}", "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)] truncate" } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-stat-card": {
+    "id": "sc-stat-card",
+    "name": "Stat Card",
+    "description": "Metric display with label and value.",
+    "folder": "Composite",
+    "properties": [
+      { "id": "p-stat-label", "name": "label", "type": "text", "defaultValue": "Total Users" },
+      { "id": "p-stat-value", "name": "value", "type": "text", "defaultValue": "12,345" },
+      { "id": "p-stat-change", "name": "change", "type": "text", "defaultValue": "+12%" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[6px] p-[20px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.label}}", "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wider" } },
+        { "type": "Text", "text": "{{context.component.props.value}}", "props": { "className": "text-[32px] font-bold text-[var(--theme-foreground)]" } },
+        { "type": "Text", "text": "{{context.component.props.change}}", "props": { "className": "text-[13px] font-medium text-green-600" } }
+      ]
+    }
+  },
+
+  "sc-tooltip": {
+    "id": "sc-tooltip",
+    "name": "Tooltip",
+    "description": "Hover trigger with floating tooltip bubble.",
+    "folder": "Overlays",
+    "properties": [
+      { "id": "p-tooltip-trigger", "name": "triggerLabel", "type": "text", "defaultValue": "Hover me" },
+      { "id": "p-tooltip-text", "name": "text", "type": "text", "defaultValue": "Tooltip text" }
+    ],
+    "variables": {
+      "tip-open": { "label": "Visible", "type": "boolean", "initialValue": false }
+    },
+    "content": {
+      "type": "Box",
+      "popover": { "trigger": "hover", "placement": "top", "offset": 6, "openVariable": "tip-open" },
+      "props": { "className": "inline-flex" },
+      "children": [
+        {
+          "type": "Box",
+          "props": { "className": "inline-flex items-center justify-center px-[12px] h-[34px] rounded-[6px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-default select-none" },
+          "children": [{ "type": "Text", "text": "{{context.component.props.triggerLabel}}", "props": { "className": "text-[13px] text-[var(--theme-foreground)]" } }]
+        },
+        {
+          "type": "Box",
+          "_popoverContent": true,
+          "props": { "className": "inline-flex items-center px-[10px] py-[5px] rounded-[6px] bg-[var(--theme-foreground)] shadow-lg" },
+          "children": [{ "type": "Text", "text": "{{context.component.props.text}}", "props": { "className": "text-[12px] text-[var(--theme-background)] whitespace-nowrap" } }]
+        }
+      ]
+    }
+  },
+
+  "sc-breadcrumb": {
+    "id": "sc-breadcrumb",
+    "name": "Breadcrumb",
+    "description": "Two-level breadcrumb navigation trail.",
+    "folder": "Navigation",
+    "properties": [
+      { "id": "p-bc-parent", "name": "parent", "type": "text", "defaultValue": "Home" },
+      { "id": "p-bc-current", "name": "current", "type": "text", "defaultValue": "Current Page" }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[6px]" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.parent}}", "props": { "className": "text-[13px] text-[var(--theme-primary)] cursor-pointer" } },
+        { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 14, "color": "var(--theme-muted-foreground)" } },
+        { "type": "Text", "text": "{{context.component.props.current}}", "props": { "className": "text-[13px] text-[var(--theme-muted-foreground)]" } }
+      ]
+    }
+  },
+
+  "sc-form": {
+    "id": "sc-form",
+    "name": "Form",
+    "description": "Form container with two fields and a submit button.",
+    "folder": "Form",
+    "properties": [
+      { "id": "p-form-title", "name": "title", "type": "text", "defaultValue": "Contact Us" },
+      { "id": "p-form-submit", "name": "submitLabel", "type": "text", "defaultValue": "Send" }
+    ],
+    "content": {
+      "type": "FormContainer",
+      "props": { "className": "flex flex-col gap-[16px] w-full p-[24px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]" },
+      "children": [
+        { "type": "Text", "text": "{{context.component.props.title}}", "props": { "className": "text-[18px] font-bold text-[var(--theme-foreground)]" } },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-[6px] w-full" },
+          "children": [
+            { "type": "Text", "text": "Name", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+            { "type": "Input", "props": { "placeholder": "Your name", "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px]" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex flex-col gap-[6px] w-full" },
+          "children": [
+            { "type": "Text", "text": "Email", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+            { "type": "Input", "props": { "placeholder": "your@email.com", "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px]" } }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": { "className": "flex items-center justify-center h-[42px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer" },
+          "children": [
+            { "type": "Text", "text": "{{context.component.props.submitLabel}}", "props": { "className": "text-[14px] font-semibold text-[var(--theme-primary-foreground)]" } }
+          ]
+        }
+      ]
+    }
+  },
+
+  "sc-row": {
+    "id": "sc-row",
+    "name": "Row",
+    "description": "Horizontal flex container with configurable gap.",
+    "folder": "Layout",
+    "properties": [
+      {
+        "id": "p-row-gap",
+        "name": "gap",
+        "type": "select",
+        "defaultValue": "2",
+        "options": [
+          { "label": "None", "value": "0" },
+          { "label": "XS (1)", "value": "1" },
+          { "label": "SM (2)", "value": "2" },
+          { "label": "MD (4)", "value": "4" },
+          { "label": "LG (6)", "value": "6" },
+          { "label": "XL (8)", "value": "8" }
+        ]
+      }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-row items-center gap-[8px] w-full" },
+      "children": [
+        { "type": "Box", "props": { "className": "flex-1 h-[48px] rounded-[6px] bg-[#dbeafe]" } },
+        { "type": "Box", "props": { "className": "flex-1 h-[48px] rounded-[6px] bg-[#dcfce7]" } },
+        { "type": "Box", "props": { "className": "flex-1 h-[48px] rounded-[6px] bg-[#fef9c3]" } }
+      ]
+    }
+  },
+
+  "sc-stack": {
+    "id": "sc-stack",
+    "name": "Stack",
+    "description": "Vertical flex stack with configurable gap.",
+    "folder": "Layout",
+    "properties": [
+      {
+        "id": "p-stack-gap",
+        "name": "gap",
+        "type": "select",
+        "defaultValue": "4",
+        "options": [
+          { "label": "None", "value": "0" },
+          { "label": "XS (1)", "value": "1" },
+          { "label": "SM (2)", "value": "2" },
+          { "label": "MD (4)", "value": "4" },
+          { "label": "LG (6)", "value": "6" }
+        ]
+      }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex flex-col gap-[8px] w-full" },
+      "children": [
+        { "type": "Box", "props": { "className": "w-full h-[20px] rounded-[4px] bg-[#dbeafe]" } },
+        { "type": "Box", "props": { "className": "w-full h-[20px] rounded-[4px] bg-[#dcfce7]" } },
+        { "type": "Box", "props": { "className": "w-full h-[20px] rounded-[4px] bg-[#fef9c3]" } }
+      ]
+    }
+  },
+
+  "sc-icon-button": {
+    "id": "sc-icon-button",
+    "name": "Icon Button",
+    "description": "Square button with an icon.",
+    "folder": "Actions",
+    "properties": [
+      {
+        "id": "p-ibtn-icon",
+        "name": "icon",
+        "type": "text",
+        "defaultValue": "mdi:plus"
+      },
+      {
+        "id": "p-ibtn-size",
+        "name": "size",
+        "type": "select",
+        "defaultValue": "md",
+        "options": [
+          { "label": "SM", "value": "sm" },
+          { "label": "MD", "value": "md" },
+          { "label": "LG", "value": "lg" }
+        ]
+      }
+    ],
+    "content": {
+      "type": "Box",
+      "props": { "className": "flex items-center justify-center w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer" },
+      "children": [
+        { "type": "Icon", "props": { "icon": "{{context.component.props.icon}}", "size": 20, "color": "var(--theme-primary-foreground)" } }
       ]
     }
   }

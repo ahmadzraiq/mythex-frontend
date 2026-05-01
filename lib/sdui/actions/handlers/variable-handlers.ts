@@ -70,7 +70,7 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
           };
         }
 
-        const evalCtx = {
+        const evalCtx: Record<string, unknown> = {
           ...mergedState,
           ...sduiData,
           ...vsData,
@@ -80,15 +80,6 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
           context: ctxForFormula,
           event: (ctx.event as Record<string, unknown> | undefined) ?? {},
         };
-        if (typeof window !== 'undefined' && String(obj.formula ?? '').includes("parameters?.['")) {
-          console.log('[setVarHandler] evaluating formula with parameters:', {
-            path,
-            formula: obj.formula,
-            parameters: evalCtx.parameters,
-            hasScope: !!ctx.scope,
-            scopeKeys: Object.keys(ctx.scope ?? {}),
-          });
-        }
         // Pass the wrapper object so evaluateFormula auto-routes between
         // { formula } and { js } bindings.
         value = evaluateFormula(obj as object, evalCtx, ctx.get).value ?? null;
@@ -116,18 +107,40 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
         const m = require('@/config/shared-components.json')[modelId];
         if (m) return m;
       } catch { /* noop */ }
-      try { return require('@/lib/builder/system-component-data').getSystemComponents()[modelId]; } catch { /* noop */ }
       return undefined;
     })() : undefined;
     const isComponentVar = instanceId && scModel?.variables && path in scModel.variables;
     if (isComponentVar) {
-      // Write to per-instance slot instead of global
       try {
         const { setComponentInstanceVar } = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
         setComponentInstanceVar(instanceId, path, value);
       } catch { /* fallback to global */ }
       return;
     }
+    // ── Deduplication: skip Zustand write when value hasn't changed ────────────
+    // onDragUpdate fires at ~60fps. Without this check every pointer-move would
+    // call setState, batching React re-renders for all subscribed components even
+    // when targetIndex/targetCol hasn't crossed a slot boundary.
+    if (typeof value === 'object' && value !== null) {
+      try {
+        const prevValue = ctx.get(path);
+        if (typeof prevValue === 'object' && prevValue !== null &&
+            JSON.stringify(prevValue) === JSON.stringify(value)) {
+          return; // identical — skip setState, no re-render
+        }
+      } catch { /* ignore serialization errors */ }
+    }
+
+    // ── Dev logs ───────────────────────────────────────────────────────────────
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      if (path === 'showcase-kanban-drag') {
+        const v = value as Record<string, unknown>;
+        console.log('[kanban-drag] col:', v?.targetCol, '| idx:', v?.targetIndex, '| card:', v?.cardId);
+      } else if (path === 'showcase-kanban-cards') {
+        console.log('[kanban-cards] updated, count:', Array.isArray(value) ? value.length : '?');
+      }
+    }
+
     ctx.store.getState().setState((prev) => setNestedValue(prev, path, value));
     if (!path.startsWith('screens.')) {
       ctx.useSduiStore?.getState().setData(path, value);

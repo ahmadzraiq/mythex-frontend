@@ -1,22 +1,21 @@
 /**
  * Controlled Component Registry — single source of truth for all component type classifications.
  *
- * Instead of maintaining 6+ hardcoded Sets across form-field-tracker.ts and builder files,
- * every consumer derives its list from this config. Adding a new controlled component type
- * only requires a single edit here.
+ * Covers only the SDUI node types that appear in the component registry (component-registry.tsx).
+ * Adding a new controlled component type only requires a single edit here.
  *
  * valueType        — the kind of value the component holds ('text' | 'boolean' | 'number')
  * writesOwnId      — true when trackFormFieldProps writes to `{nodeId}-value` directly
- *                    (false for InputField, which writes to `{parentInputId}-value` instead)
- * isInputField     — true only for InputField: store key is the parent Input's ID, not own ID
- * skipOwnSlot      — true for InputField: do NOT register a `{nodeId}-value` store slot because
- *                    trackFormFieldProps never writes to it (always writes to parent's slot instead)
- * skipExternalSync — true for Input: do NOT inject `value` via useExternalNodeValueSync on the
- *                    wrapper node. Input's actual text control is the InputField child, which
- *                    subscribes via parentInputId. Injecting `value` on the wrapper too is a no-op
- *                    (InputWithField ignores it when explicit children are present) and wastes a
- *                    useSyncExternalStore subscription.
- * formRegisterable — true when the component should be registered in a FormContainer's formData
+ * isInputField     — reserved; currently unused (no inner-field SDUI types exist)
+ * skipOwnSlot      — true when the type should NOT register its own `{nodeId}-value` store slot
+ * skipExternalSync — true for wrapper types (Input, Textarea): the inner component injected by
+ *                    InputWithField / TextareaWithInput is the actual text control.
+ *                    Do NOT inject a `value` prop via useExternalNodeValueSync on the wrapper —
+ *                    it is a no-op and wastes a subscription. The wrapper writes `{id}-value` on
+ *                    change and calls directWriteField when inside a FormContainer.
+ * formRegisterable — true when the component should be registered in a FormContainer's formData.
+ *                    Wrapper types (Input, Textarea) use false because Strategy C in
+ *                    useFormFieldRegistration handles their registration via PARENT_CONTEXT_PROVIDER_TYPES.
  */
 export type ControlledComponentConfig = {
   valueType: 'text' | 'boolean' | 'number';
@@ -28,14 +27,9 @@ export type ControlledComponentConfig = {
 };
 
 export const CONTROLLED_COMPONENT_CONFIG: Record<string, ControlledComponentConfig> = {
-  Input:         { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, skipExternalSync: true, formRegisterable: false },
-  InputField:    { valueType: 'text',    writesOwnId: false, isInputField: true,  skipOwnSlot: true,  formRegisterable: true  },
-  TextareaInput: { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  Checkbox:      { valueType: 'boolean', writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  Switch:        { valueType: 'boolean', writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  RadioGroup:    { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  Select:        { valueType: 'text',    writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
-  Slider:        { valueType: 'number',  writesOwnId: true,  isInputField: false, skipOwnSlot: false, formRegisterable: true  },
+  // Text input wrappers — auto-inject their inner field component (InputWithField / TextareaWithInput)
+  Input:    { valueType: 'text', writesOwnId: true, isInputField: false, skipOwnSlot: false, skipExternalSync: true, formRegisterable: false },
+  Textarea: { valueType: 'text', writesOwnId: true, isInputField: false, skipOwnSlot: false, skipExternalSync: true, formRegisterable: false },
 };
 
 /** All registered controlled component type names */
@@ -48,7 +42,7 @@ export const DIRECT_WRITE_TYPES = new Set(
     .map(([k]) => k)
 );
 
-/** Types that are boolean-valued (Checkbox, Switch) */
+/** Types that are boolean-valued (e.g. Checkbox, Switch — add here when introduced) */
 export const BOOL_CONTROLLED_TYPES = new Set(
   Object.entries(CONTROLLED_COMPONENT_CONFIG)
     .filter(([, c]) => c.valueType === 'boolean')
@@ -56,8 +50,7 @@ export const BOOL_CONTROLLED_TYPES = new Set(
 );
 
 /** Types that are text-valued and sync an external value prop (for useSyncExternalStore).
- *  Input is excluded (skipExternalSync=true) — its text control is the InputField child,
- *  which subscribes via parentInputId; injecting value on the wrapper is a no-op. */
+ *  Wrapper types (skipExternalSync=true) are excluded — their inner control handles sync. */
 export const EXT_TEXT_SYNC_TYPES = new Set(
   Object.entries(CONTROLLED_COMPONENT_CONFIG)
     .filter(([, c]) => c.writesOwnId && c.valueType === 'text' && !c.skipExternalSync)
@@ -71,7 +64,8 @@ export const EXT_BOOL_SYNC_TYPES = new Set(
     .map(([k]) => k)
 );
 
-/** Types that should be registered in a FormContainer's formData */
+/** Types that should be registered in a FormContainer's formData via Strategy B.
+ *  Wrapper types (Input, Textarea) are registered via Strategy C instead. */
 export const FORM_REGISTERABLE_TYPES = new Set(
   Object.entries(CONTROLLED_COMPONENT_CONFIG)
     .filter(([, c]) => c.formRegisterable)
@@ -95,22 +89,23 @@ export const STANDALONE_VARIABLE_TYPES = new Set(
 /** Types that are form-registerable AND builder should show as form input fields */
 export const BUILDER_FORM_INPUT_TYPES = new Set([
   ...FORM_REGISTERABLE_TYPES,
-  'Input', // Input wrapper is shown in form panels even though it delegates to InputField
+  'Input',
+  'Textarea',
 ]);
 
-/** Types that are InputField variants — store key is the parent Input's ID, not own ID */
+/** Types that are inner-field variants (store key is the parent wrapper's ID, not own ID).
+ *  Currently empty — no inner-field SDUI types exist (they are React-only, not SDUI nodes). */
 export const INPUT_FIELD_TYPES = new Set(
   Object.entries(CONTROLLED_COMPONENT_CONFIG)
     .filter(([, c]) => c.isInputField)
     .map(([k]) => k)
 );
 
-/** Types that need browser autofill suppression in builder mode (Input wrapper + InputField child) */
-export const AUTOFILL_SUPPRESS_TYPES = new Set(['Input']);
+/** Types that need browser autofill suppression in builder mode */
+export const AUTOFILL_SUPPRESS_TYPES = new Set(['Input', 'Textarea']);
 
-/** Types that provide InputParentContext to their children so descendant InputField nodes
- *  can look up their parent Input ID for the `{parentId}-value` store slot.
- *  Derived from skipExternalSync — Input is the only type that wraps children this way. */
+/** Types that wrap an inner React field component and should skip external value sync on the wrapper.
+ *  These types also register with FormContainer via Strategy C in useFormFieldRegistration. */
 export const PARENT_CONTEXT_PROVIDER_TYPES = new Set(
   Object.entries(CONTROLLED_COMPONENT_CONFIG)
     .filter(([, c]) => c.skipExternalSync)

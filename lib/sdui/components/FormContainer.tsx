@@ -28,6 +28,7 @@ import { FormContext, FormScopeContext, EMPTY_FORM_STATE, type FormState, type F
 import { getGlobalVariableStore } from '../global-variable-store';
 import { useBuilderMode } from '../builder-context';
 import { applyFieldRules } from '../validation-utils';
+import { formSubmitRegistry } from '../form-submit-registry';
 
 interface FormContainerProps {
   children?: React.ReactNode;
@@ -392,8 +393,8 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
    * with type="submit" is pressed (Gluestack Button is a <div>, not <button>,
    * so the HTML form's onSubmit never fires naturally from a button click).
    */
-  const doSubmit = useCallback((onSuccess?: () => void) => {
-    if (builderMode) return;
+  const doSubmit = useCallback((onSuccess?: () => void): boolean => {
+    if (builderMode) return false;
 
     const key = formStoreKey;
 
@@ -450,7 +451,7 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
       });
       setFormState(nextForm);
       onValidationErrorAction?.();
-      return;
+      return false;
     }
 
     // All fields valid — clear any stale isValid errors so inline error nodes hide.
@@ -471,6 +472,7 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
 
     if (onSuccess) onSuccess();
     else if (onSubmitAction) onSubmitAction();
+    return true;
   }, [onSubmitAction, builderMode, formStoreKey]);
 
   const handleSubmit = useCallback(
@@ -480,6 +482,14 @@ export function FormContainer({ children, className, style, onSubmitAction, onVa
     },
     [doSubmit]
   );
+
+  // Register this FormContainer's doSubmit in the global registry so the
+  // "submitForm" workflow step can trigger validation without needing FormContext.
+  useEffect(() => {
+    const key = formStoreKey;
+    formSubmitRegistry.register(key, () => doSubmit());
+    return () => formSubmitRegistry.unregister(key);
+  }, [formStoreKey, doSubmit]);
 
   // Filter out SDUI-specific props that shouldn't reach the DOM
   const { onSubmitAction: _osa, onValidationErrorAction: _ovea, initialFormData: _ifd, ...domRest } = { onSubmitAction, onValidationErrorAction, initialFormData, ...rest };

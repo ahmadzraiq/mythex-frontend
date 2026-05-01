@@ -260,5 +260,141 @@
         "config": { "action": "zoo-wf-sub-helper", "args": {} }
       }
     ]
+  },
+  "form-demo-submit": {
+    "name": "Form Demo — Submit",
+    "trigger": "click",
+    "steps": [
+      { "id": "form-demo-s1", "type": "submitForm" }
+    ]
+  },
+
+  "form-demo-priority-low": {
+    "name": "Set Priority Low",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "form-demo-priority-value", "value": "low" } }]
+  },
+  "form-demo-priority-medium": {
+    "name": "Set Priority Medium",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "form-demo-priority-value", "value": "medium" } }]
+  },
+  "form-demo-priority-high": {
+    "name": "Set Priority High",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "form-demo-priority-value", "value": "high" } }]
+  },
+
+  "carousel-prev": {
+    "id": "carousel-prev",
+    "name": "Carousel: Previous",
+    "trigger": "click",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-carousel",
+        "value": { "formula": "{ slide: Math.max(0, (variables['showcase-carousel']?.slide ?? 0) - 1), offset: 0 }" }
+      }
+    }]
+  },
+
+  "carousel-next": {
+    "id": "carousel-next",
+    "name": "Carousel: Next",
+    "trigger": "click",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-carousel",
+        "value": { "formula": "{ slide: Math.min(2, (variables['showcase-carousel']?.slide ?? 0) + 1), offset: 0 }" }
+      }
+    }]
+  },
+
+  "carousel-drag-update": {
+    "id": "carousel-drag-update",
+    "name": "Carousel: Drag update",
+    "trigger": "drag",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-carousel",
+        "value": { "formula": "{ slide: variables['showcase-carousel']?.slide ?? 0, offset: event?.translationX ?? 0 }" }
+      }
+    }]
+  },
+
+  "carousel-drag-end": {
+    "id": "carousel-drag-end",
+    "name": "Carousel: Drag end",
+    "trigger": "drag",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-carousel",
+        "value": { "formula": "(()=>{ const tx=event?.translationX??0; const cur=variables['showcase-carousel']?.slide??0; const s=tx<-30&&cur<2?cur+1:tx>30&&cur>0?cur-1:cur; return {slide:s,offset:0}; })()" }
+      }
+    }]
+  },
+
+  "kanban-drag-start": {
+    "id": "kanban-drag-start",
+    "name": "Kanban: Drag start",
+    "trigger": "drag",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-kanban-drag",
+        "value": { "formula": "{ cardId: context?.item?.data?.id, sourceCol: context?.item?.data?.col, targetCol: context?.item?.data?.col, targetIndex: 0 }" }
+      }
+    }]
+  },
+
+  "kanban-drag-update": {
+    "id": "kanban-drag-update",
+    "name": "Kanban: Drag update",
+    "trigger": "drag",
+    "steps": [{
+      "id": "s1",
+      "type": "changeVariableValue",
+      "config": {
+        "variableName": "showcase-kanban-drag",
+        "value": {
+          "formula": "(()=>{ const cols=['todo','doing','done']; const src=variables['showcase-kanban-drag']?.sourceCol??'todo'; const ci=cols.indexOf(src); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,ci+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; const srcCards=allCards.filter(c=>c.col===src); const srcIdx=srcCards.findIndex(c=>c.id===variables['showcase-kanban-drag']?.cardId); const slotH=84; let ti; if(targetCol===src){ ti=Math.max(0,Math.min(srcCards.length-1,srcIdx+Math.round(ty/slotH))); } else { const tgtCards=allCards.filter(c=>c.col===targetCol); ti=Math.max(0,Math.min(tgtCards.length,srcIdx+Math.round(ty/slotH))); } return { cardId: variables['showcase-kanban-drag']?.cardId, sourceCol: src, targetCol, targetIndex: ti }; })()"
+        }
+      }
+    }]
+  },
+
+  "kanban-drag-end": {
+    "id": "kanban-drag-end",
+    "name": "Kanban: Drag end",
+    "trigger": "drag",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "showcase-kanban-cards",
+          "value": {
+            "formula": "(()=>{ const cols=['todo','doing','done']; const cardId=context?.item?.data?.id; const sourceCol=context?.item?.data?.col; const si=cols.indexOf(sourceCol??'todo'); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,si+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; if(!cardId) return allCards; if(targetCol!==sourceCol){ const srcCards=allCards.filter(c=>c.col===sourceCol); const srcIdx=srcCards.findIndex(c=>c.id===cardId); const slotH=84; const ti=Math.max(0,Math.min(allCards.filter(c=>c.col===targetCol).length,srcIdx+Math.round(ty/slotH))); const without=allCards.filter(c=>c.id!==cardId); const newTgt=without.filter(c=>c.col===targetCol); const updated={...allCards.find(c=>c.id===cardId),col:targetCol}; newTgt.splice(ti,0,updated); return [...without.filter(c=>c.col!==targetCol),...newTgt]; } const colCards=allCards.filter(c=>c.col===sourceCol); const curIdx=colCards.findIndex(c=>c.id===cardId); const slotH=84; const idxDelta=Math.round(ty/slotH); const newIdx=Math.max(0,Math.min(colCards.length-1,curIdx+idxDelta)); if(curIdx===newIdx) return allCards; const reordered=[...colCards]; const [moved]=reordered.splice(curIdx,1); reordered.splice(newIdx,0,moved); return [...allCards.filter(c=>c.col!==sourceCol),...reordered]; })()"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "showcase-kanban-drag",
+          "value": { "formula": "{ cardId: null, sourceCol: null, targetCol: null }" }
+        }
+      }
+    ]
   }
+
 }

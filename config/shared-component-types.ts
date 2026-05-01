@@ -130,5 +130,12 @@ export interface SharedComponentModel {
    * listened to by parent-page workflows bound on an instance.
    */
   triggers?: ComponentTrigger[];
+  /**
+   * The key of the internal variable that holds the component's primary value
+   * (e.g. "sel-value" for sc-select). When set, turning on the "Controlled"
+   * toggle in the builder will expose this value as a global page variable
+   * `variables['<instanceId>-value']` via `_controlled` metadata.
+   */
+  valueVariable?: string;
   content: Record<string, unknown>;
 }

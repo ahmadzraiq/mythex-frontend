@@ -192,6 +192,24 @@ export interface DragConfig {
   bounds?: { top?: number | null; bottom?: number | null; left?: number | null; right?: number | null };
   snapBack?: boolean;
   springBack?: boolean;
+  /**
+   * When set, the snap-back animation pre-adjusts the drag offset by the nearest
+   * multiple of slotHeight before animating to zero. This keeps the card visually
+   * in place after React reorders the list (layout position changes by N * slotHeight)
+   * so withTiming only needs to cover the small sub-slot remainder, not the full drag distance.
+   * Set to the rendered height of one list slot (card height + gap). e.g. 84 for a 76px card with gap-2.
+   */
+  slotHeight?: number;
+  /** Same as slotHeight but for horizontal lists. */
+  slotWidth?: number;
+  /** Action/workflow ID to fire when the gesture begins. Event payload: { x, y, translationX, translationY, percentX, percentY, containerWidth, containerHeight } */
+  onDragStart?: string;
+  /** Action/workflow ID to fire on every drag update (continuous, use for sliders). */
+  onDragUpdate?: string;
+  /** Action/workflow ID to fire when the gesture ends (use for Kanban card drops). */
+  onDragEnd?: string;
+  /** When true the element does not move visually — the action drives state instead (slider mode). */
+  noVisualMove?: boolean;
 }
 
 export interface ColorConfig {
@@ -476,6 +494,9 @@ interface AnimatedNodeProps {
   componentProps?: Record<string, unknown>;
   componentChildren?: React.ReactNode;
   children?: React.ReactNode;
+  /** Renderer scope passed down so drag action dispatches can resolve SC-internal workflows
+   *  via the ambient SC lookup in sdui-engine (requires scope.context.component). */
+  actionScope?: Record<string, unknown>;
 }
 
 // ─── DOM element extraction ───────────────────────────────────────────────────
@@ -888,6 +909,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   componentProps,
   componentChildren,
   children,
+  actionScope,
 }: AnimatedNodeProps) {
   const {
     enter, exit, loop, press, hover, scroll, parallax, drag, color, layout,
@@ -987,6 +1009,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // Drag
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
+  // rAF throttle for onDragUpdate — stores the pending frame id and the latest event
+  const dragUpdateRafRef  = useRef<number | null>(null);
+  const dragUpdateEventRef = useRef<{ x: number; y: number; translationX: number; translationY: number } | null>(null);
 
   // Gesture / swipe dragFeedback + statesMachine
   const gestureTranslateX  = useSharedValue(0);
@@ -2423,7 +2448,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const handleLayout = useCallback((e: { nativeEvent: { layout: { width: number; height: number } } }) => {
     const { width, height } = e.nativeEvent.layout;
     nodeSizeRef.current = { width, height };
-    if (gesture?.dragFeedback && width > 0) containerWidthSv.value = width;
+    if ((gesture?.dragFeedback || drag?.onDragStart || drag?.onDragUpdate || drag?.onDragEnd) && width > 0) containerWidthSv.value = width;
     if (!layout?.enabled || Platform.OS === 'web') return;
     const prevH = prevLayoutHeight.current;
     if (prevH === null) {
@@ -2466,14 +2491,145 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     );
   }, []);
 
+  // Action dispatchers used by drag and swipe gestures.
+  // Declared before dragGesture so they can be captured in the useMemo closure.
+  const safeRunAction = useCallback((actions: Array<{ action: string }>) => {
+    if (runAction) runAction(actions);
+  }, [runAction]);
+
+  /** Passes drag event payload + SC scope so ambient workflow lookup resolves internal SC workflows. */
+  const safeRunActionWithEvent = useCallback(
+    (actions: Array<{ action: string }>, event?: unknown) => {
+      if (runAction) runAction(actions, event, actionScope ?? undefined);
+    },
+    [runAction, actionScope],
+  );
+
+  // Stable ref so dragGesture never needs to be recreated due to scope/callback changes.
+  // Without this, every drag-induced re-render would recreate the gesture and interrupt
+  // the ongoing pan interaction (the most common cause of "drag stops mid-way" bugs).
+  const safeRunActionWithEventRef = useRef(safeRunActionWithEvent);
+  safeRunActionWithEventRef.current = safeRunActionWithEvent;
+
   const dragGesture = useMemo(() => {
     if (!drag?.enabled) return Gesture.Pan().runOnJS(true).enabled(false);
-    const axis   = drag.axis ?? 'both';
-    const bounds = drag.bounds;
+    const axis         = drag.axis ?? 'both';
+    const bounds       = drag.bounds;
+    const onStart      = drag.onDragStart;
+    const onUpdate     = drag.onDragUpdate;
+    const onEnd        = drag.onDragEnd;
+    const noVisual     = drag.noVisualMove ?? false;
+
+    if (onStart || onUpdate || onEnd) {
+      // Generic action-firing mode.
+      // Builds a rich event payload from the Pan gesture and fires the configured action.
+      // containerWidthSv may be 0 on web (onLayout doesn't always fire) — fall back to
+      // reading directly from the DOM element via animatedRef.
+      const getSize = (): { w: number; h: number } => {
+        let w = containerWidthSv.value;
+        let h = 0;
+        if ((w <= 0 || h <= 0) && typeof document !== 'undefined') {
+          const el = animatedRef.current as unknown as HTMLElement | null;
+          const rect = el?.getBoundingClientRect?.();
+          if (rect) {
+            if (w <= 0 && rect.width  > 0) { containerWidthSv.value = rect.width;  w = rect.width; }
+            if (h <= 0 && rect.height > 0) { h = rect.height; }
+          }
+        }
+        return { w: w || 1, h: h || 1 };
+      };
+
+      const buildPayload = (e: { x: number; y: number; translationX: number; translationY: number }) => {
+        const { w, h } = getSize();
+        return {
+          x: e.x, y: e.y,
+          translationX: e.translationX, translationY: e.translationY,
+          percentX: Math.max(0, Math.min(1, e.x / w)),
+          percentY: Math.max(0, Math.min(1, e.y / h)),
+          containerWidth: w, containerHeight: h,
+        };
+      };
+
+      // Use ref-based dispatch: the gesture object is only recreated when the action IDs
+      // or noVisualMove flag change — NOT when runAction/actionScope update on re-render.
+      return Gesture.Pan()
+        .runOnJS(true)
+        .minDistance(8)
+        .onBegin(() => {
+          // Cancel any pending rAF from a previous gesture
+          if (dragUpdateRafRef.current !== null) {
+            cancelAnimationFrame(dragUpdateRafRef.current);
+            dragUpdateRafRef.current = null;
+          }
+          dragUpdateEventRef.current = null;
+        })
+        .onStart((e: GestureStateChangeEvent<PanGestureHandlerEventPayload>) => {
+          // Only fires when the user has actually moved (minDistance met) — not on plain clicks.
+          if (!noVisual) { dragging.value = true; dragStartX.value = dragX.value; dragStartY.value = dragY.value; }
+          if (onStart) safeRunActionWithEventRef.current([{ action: onStart }], buildPayload(e));
+        })
+        .onUpdate((e: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
+          if (!noVisual) {
+            if (axis !== 'y') dragX.value = clamp(dragStartX.value + e.translationX, bounds?.left, bounds?.right);
+            if (axis !== 'x') dragY.value = clamp(dragStartY.value + e.translationY, bounds?.top, bounds?.bottom);
+          }
+          if (onUpdate) {
+            // Throttle action dispatch to one call per animation frame.
+            // Visual movement (dragX/dragY) still updates every event for smoothness;
+            // only the expensive action pipeline (formula eval → Zustand) is capped at ~60fps.
+            dragUpdateEventRef.current = e;
+            if (dragUpdateRafRef.current === null) {
+              dragUpdateRafRef.current = requestAnimationFrame(() => {
+                dragUpdateRafRef.current = null;
+                const latestE = dragUpdateEventRef.current;
+                if (latestE) safeRunActionWithEventRef.current([{ action: onUpdate }], buildPayload(latestE));
+              });
+            }
+          }
+        })
+        .onEnd((e: GestureStateChangeEvent<PanGestureHandlerEventPayload>) => {
+          // Cancel any buffered onUpdate rAF — the drop position is final
+          if (dragUpdateRafRef.current !== null) {
+            cancelAnimationFrame(dragUpdateRafRef.current);
+            dragUpdateRafRef.current = null;
+          }
+          if (onEnd) safeRunActionWithEventRef.current([{ action: onEnd }], buildPayload(e));
+          if (!noVisual) {
+            if (drag.snapBack || drag.springBack) {
+              // Defer snap-back one frame: by the time the RAF fires, React will have
+              // committed any DOM reorders from the onEnd action. The card is already
+              // at its new slot position in the layout.
+              //
+              // If slotHeight/slotWidth are provided, pre-adjust the drag offset to
+              // account for the layout delta (card moved N slots → layout shifted by
+              // N * slotHeight). Without this adjustment, dragY=88 with the card now
+              // 84px lower in the DOM would place the card 88px below its new slot
+              // and require an 88px animation back — this reduces it to ~4px.
+              requestAnimationFrame(() => {
+                if (drag.slotHeight) {
+                  const slots = Math.round(dragY.value / drag.slotHeight);
+                  dragY.value -= slots * drag.slotHeight;
+                }
+                if (drag.slotWidth) {
+                  const slots = Math.round(dragX.value / drag.slotWidth);
+                  dragX.value -= slots * drag.slotWidth;
+                }
+                dragging.value = false;
+                const snapEase = ReanimatedEasing.out(ReanimatedEasing.quad);
+                dragX.value = withTiming(0, { duration: 150, easing: snapEase });
+                dragY.value = withTiming(0, { duration: 150, easing: snapEase });
+              });
+            } else {
+              dragging.value = false;
+            }
+          }
+        });
+    }
 
     return Gesture.Pan()
       .runOnJS(true)
-      .onBegin(() => {
+      .minDistance(8)
+      .onStart(() => {
         dragging.value = true;
         dragStartX.value = dragX.value;
         dragStartY.value = dragY.value;
@@ -2485,18 +2641,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
       .onEnd(() => {
         dragging.value = false;
         if (drag.snapBack || drag.springBack) {
-          dragX.value = withSpring(0, { damping: 20, stiffness: 200 });
-          dragY.value = withSpring(0, { damping: 20, stiffness: 200 });
+          const snapEase = ReanimatedEasing.out(ReanimatedEasing.quad);
+          dragX.value = withTiming(0, { duration: 250, easing: snapEase });
+          dragY.value = withTiming(0, { duration: 250, easing: snapEase });
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag?.enabled, drag?.axis, drag?.snapBack, drag?.springBack, JSON.stringify(drag?.bounds)]);
+  }, [drag?.enabled, drag?.axis, drag?.snapBack, drag?.springBack, JSON.stringify(drag?.bounds),
+      drag?.onDragStart, drag?.onDragUpdate, drag?.onDragEnd, drag?.noVisualMove]);
 
   // ── Gesture Handler — Pan for swipe ───────────────────────────────────────
-  const safeRunAction = useCallback((actions: Array<{ action: string }>) => {
-    if (runAction) runAction(actions);
-  }, [runAction]);
-
   const swipeGesture = useMemo(() => {
     if (!gesture?.enabled || !gesture.swipe) return Gesture.Pan().runOnJS(true).enabled(false);
     const thr  = gesture.swipeThreshold    ?? 40;
@@ -2516,7 +2670,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
         const dist = Math.sqrt(dx*dx + dy*dy);
         const vel  = Math.sqrt(e.velocityX*e.velocityX + e.velocityY*e.velocityY) / 1000;
 
-        if (dist < thr || vel < vthr) {
+        // Navigate if EITHER distance OR velocity meets threshold — a slow deliberate
+        // drag (low velocity but large distance) should still navigate. Only snap back
+        // if BOTH are below threshold (tiny accidental touch with no momentum).
+        const meetsThreshold = dist >= thr || vel >= vthr;
+        if (!meetsThreshold) {
           if (gesture.dragFeedback) {
             const snapDur = gesture.animationDuration ?? 400;
             gestureTranslateX.value = withTiming(lastSmTransform.value, { duration: snapDur, easing: rnEase('easeOut') });
@@ -2788,6 +2946,7 @@ export const AnimatedNode = React.memo(function AnimatedNode({
 
     return {
       opacity: enterOpacity.value * pressOpacity.value * hoverOpacity.value * smOpacity.value * timelineOpacity.value * loopOpac.value,
+      ...(dragging.value ? { zIndex: 9999, position: 'relative' } : {}),
       ...(transforms.length ? { transform: transforms } : {}),
       ...(enterFilterParts.length ? { filter: enterFilterParts.join(' ') } as object : {}),
       ...(smBg ? { backgroundColor: smBg } : {}),

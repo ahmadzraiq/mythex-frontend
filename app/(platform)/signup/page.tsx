@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/platform/api-client';
@@ -38,29 +38,132 @@ export default function SignupPage() {
     boxSizing: 'border-box' as const, transition: 'border-color 150ms',
   };
 
+  const heroGradientText: CSSProperties = {
+    background: 'linear-gradient(135deg, #93c5fd 0%, #c4b5fd 100%)',
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', fontFamily: 'system-ui, -apple-system, sans-serif', background: '#0b1120' }}>
-      <div style={{ width: '100%', maxWidth: 360 }}>
-        {/* Logo */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 20px',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        backgroundColor: '#070b14',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '-15%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'min(100vw, 640px)',
+            height: 360,
+            background: 'radial-gradient(ellipse 65% 55% at 50% 40%, rgba(59, 130, 246, 0.2), transparent 72%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '-8%',
+            right: '-12%',
+            width: 340,
+            height: 340,
+            background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.14), transparent 68%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '35%',
+            left: '-15%',
+            width: 260,
+            height: 260,
+            background: 'radial-gradient(circle at center, rgba(56, 189, 248, 0.08), transparent 68%)',
+          }}
+        />
+      </div>
+
+      <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1 }}>
+        {/* Hero */}
+        <header style={{ textAlign: 'center', marginBottom: 36 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              margin: '0 auto 20px',
+              background: 'linear-gradient(145deg, #2563eb 0%, #4f46e5 55%, #7c3aed 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 18px 50px -12px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255,255,255,0.15)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
               <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
             </svg>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#f9fafb', margin: 0 }}>Create account</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>Start building with Builder Platform</p>
-        </div>
+          <p
+            style={{
+              margin: '0 0 10px',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#64748b',
+            }}
+          >
+            Builder Platform
+          </p>
+          <h1
+            style={{
+              fontSize: 'clamp(1.65rem, 4.2vw, 2.125rem)',
+              fontWeight: 700,
+              letterSpacing: '-0.035em',
+              lineHeight: 1.18,
+              margin: 0,
+              color: '#f8fafc',
+            }}
+          >
+            Create your <span style={heroGradientText}>account</span>
+          </h1>
+          <p
+            style={{
+              fontSize: 15,
+              lineHeight: 1.55,
+              color: '#94a3b8',
+              margin: '14px auto 0',
+              maxWidth: 340,
+            }}
+          >
+            Start building faster—visual screens, workflows, and shared components in one workspace.
+          </p>
+        </header>
 
-        {/* Card */}
-        <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 14, padding: '28px 24px' }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Card */}
+          <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 14, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#9ca3af', marginBottom: 6 }}>Full name</label>
               <input
-                type="text" autoComplete="name" required value={name}
-                onChange={e => setName(e.target.value)} placeholder="Ahmad"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ahmad Zraiq"
+                className="signup-fullname-input"
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
                 onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
@@ -92,17 +195,17 @@ export default function SignupPage() {
                 {error}
               </div>
             )}
+          </div>
 
-            <button
-              type="submit" disabled={loading}
-              style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13.5, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, marginTop: 4, transition: 'background 150ms' }}
-              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#1d4ed8'; }}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#2563eb'}
-            >
-              {loading ? 'Creating account…' : 'Create account'}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit" disabled={loading}
+            style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13.5, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, transition: 'background 150ms' }}
+            onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#1d4ed8'; }}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#2563eb'}
+          >
+            {loading ? 'Creating account…' : 'Create account'}
+          </button>
+        </form>
 
         <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#6b7280' }}>
           Already have an account?{' '}

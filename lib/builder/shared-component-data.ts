@@ -79,6 +79,7 @@ export function normaliseSharedComponentModel(raw: Record<string, unknown>): Sha
     formulas: (raw.formulas ?? {}) as Record<string, ScopedFormulaDef>,
     workflows: (raw.workflows ?? {}) as Record<string, ScopedWorkflow>,
     content: (raw.content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
+    ...(raw.valueVariable != null ? { valueVariable: String(raw.valueVariable) } : {}),
   };
 }
 

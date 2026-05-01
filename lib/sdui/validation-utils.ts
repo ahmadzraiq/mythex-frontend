@@ -18,11 +18,14 @@ export function applyFieldRules(
   value: unknown,
   formulaCtx: Record<string, unknown>,
 ): string {
+  // Inject `value` so formula rules can reference it directly (e.g. `value === true`).
+  formulaCtx = { ...formulaCtx, value };
   const str = String(value ?? '').trim();
   for (const rule of rules) {
     const msg = rule.message || 'Invalid value';
     let isValid = true;
-    switch (rule.type) {
+    const ruleKey = (rule as Record<string, unknown>).rule as string | undefined ?? rule.type;
+    switch (ruleKey) {
       case 'required':  isValid = !!str; break;
       case 'email':     isValid = !str || !!(FORMULA_FNS.isEmail as (v: unknown) => boolean)(value); break;
       case 'phone':     isValid = !str || !!(FORMULA_FNS.isPhone as (v: unknown) => boolean)(value); break;

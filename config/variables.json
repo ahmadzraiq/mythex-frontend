@@ -2167,7 +2167,33 @@
     "breadcrumbs-test-label": { "label": "Breadcrumb last label", "type": "string", "initialValue": "", "folder": "Breadcrumbs Test" },
     "rg-test-value":          { "label": "Radio Group value",     "type": "string", "initialValue": "", "folder": "RadioGroup Test" },
     "chip-test-clicks":       { "label": "Chip click count",      "type": "number", "initialValue": 0,  "folder": "Chip Test" },
-    "chip-test-removes":      { "label": "Chip remove count",     "type": "number", "initialValue": 0,  "folder": "Chip Test" }
+    "chip-test-removes":      { "label": "Chip remove count",     "type": "number", "initialValue": 0,  "folder": "Chip Test" },
+
+    "showcase-carousel": {
+      "label": "Showcase Carousel",
+      "type": "object",
+      "initialValue": { "slide": 0, "offset": 0 },
+      "folder": "Component Showcase"
+    },
+    "showcase-kanban-cards": {
+      "label": "Showcase Kanban Cards",
+      "type": "array",
+      "initialValue": [
+        { "id": "k1", "title": "Design mockups",   "col": "todo" },
+        { "id": "k2", "title": "Write unit tests",  "col": "todo" },
+        { "id": "k3", "title": "Implement auth",    "col": "doing" },
+        { "id": "k4", "title": "Review PR",         "col": "doing" },
+        { "id": "k5", "title": "Deploy to staging", "col": "done" },
+        { "id": "k6", "title": "Update docs",       "col": "done" }
+      ],
+      "folder": "Component Showcase"
+    },
+    "showcase-kanban-drag": {
+      "label": "Showcase Kanban Drag State",
+      "type": "object",
+      "initialValue": { "cardId": null, "sourceCol": null, "targetCol": null, "targetIndex": 0 },
+      "folder": "Component Showcase"
+    }
   },
   "varFolders": [
     {
@@ -2301,6 +2327,10 @@
     {
       "id": "FileUpload Test",
       "label": "FileUpload Test"
+    },
+    {
+      "id": "Component Showcase",
+      "label": "Component Showcase"
     }
   ]
 }

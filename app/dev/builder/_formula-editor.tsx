@@ -512,7 +512,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     const { standalones, formContainers, pageFormFields: pff } = collectPageComponents(pageNodes, false);
     return {
       controlledInputVarEntries: standalones.map(({ node, insideForm }) => {
-        const name = (node as { name?: string }).name || node.type;
+        const name = (node as { name?: string }).name
+          || (node as { _shared?: { name?: string } })._shared?.name
+          || node.type;
         return {
           id: `${node.id!}-value`,
           label: insideForm ? `Form - ${name}` : name,

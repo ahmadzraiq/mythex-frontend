@@ -35,6 +35,7 @@ export type ActionStepType =
   | 'navigateTo'
   | 'navigatePrev'
   // Form (shown only when inside a FormContainer)
+  | 'submitForm'
   | 'setFormState'
   | 'resetForm'
   // Actions category
@@ -45,6 +46,7 @@ export type ActionStepType =
   | 'resetVariableValue'
   | 'executeComponentAction'
   | 'emitComponentTrigger'
+
   | 'returnValue'
   | 'timeDelay'
   | 'pickFile'
@@ -56,6 +58,7 @@ export type ActionStepType =
   | 'createUrlFromBase64'
   | 'encodeFileAsBase64'
   | 'scrollToElement'
+  | 'animate'
   // Shared Component
   | 'addSharedComponent'
   | 'deleteSharedComponent'
@@ -451,6 +454,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'resetVariableValue', label: 'Reset variable value', icon: '⇄' },
       { type: 'executeComponentAction', label: 'Execute component action', icon: '⚡' },
       { type: 'emitComponentTrigger', label: 'Emit component trigger', icon: '⚡' },
+
       { type: 'returnValue', label: 'Return a value', icon: '⚡' },
       { type: 'timeDelay', label: 'Time delay', icon: '⏱' },
       { type: 'pickFile', label: 'Pick file', icon: '⬆' },
@@ -520,6 +524,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
 export const FORM_ACTION_CATEGORY: { category: string; items: ActionTypeDef[] } = {
   category: 'Other',
   items: [
+    { type: 'submitForm',   label: 'Submit form',   icon: '⊡' },
     { type: 'setFormState', label: 'Set form state', icon: '⊟' },
     { type: 'resetForm',    label: 'Reset form',    icon: '⊟' },
   ],
@@ -732,6 +737,7 @@ export function isStepComplete(step: ActionStep): boolean {
       // complete when at least one flag is explicitly set (false is a valid value)
       return cfg.isSubmitting !== undefined || cfg.isSubmitted !== undefined;
     // These are self-contained — no config needed
+    case 'submitForm':
     case 'navigatePrev':
     case 'breakLoop':
     case 'continueLoop':
@@ -775,7 +781,12 @@ export function getStepSummary(
   const cfg = step.config ?? {};
   switch (step.type) {
     case 'changeVariableValue': {
-      const vId = cfg.variableName as string | undefined;
+      const rawVId = cfg.variableName;
+      // Formula variableName (e.g. SC writing to its own instance page slot)
+      if (rawVId != null && typeof rawVId === 'object' && 'formula' in (rawVId as object)) {
+        return 'instance variable';
+      }
+      const vId = rawVId as string | undefined;
       if (!vId) return null;
       const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
       return varLabels?.[vId] ?? (uuidRe.test(vId) ? '(unknown variable)' : vId.split('.').pop() ?? vId);

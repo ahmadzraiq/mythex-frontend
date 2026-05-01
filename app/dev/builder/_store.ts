@@ -17,17 +17,9 @@ import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
 export type { SDUINode };
 import routesConfig from '@/config/routes.json';
-import { showcaseNodes } from './_showcase';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updateSharedComponent, getSharedComponents, loadSharedComponents } from '@/lib/builder/shared-component-data';
-import {
-  updateSystemComponent,
-  getSystemComponents,
-  getSystemComponentOverrides,
-  loadSystemComponentOverrides,
-  resetSystemComponent,
-} from '@/lib/builder/system-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
 import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
@@ -172,13 +164,11 @@ function _flushHistoryIfPending(set: SetFn): void {
 
 /**
  * Snapshot the linked-component ROOT that contains a given node id (deep clone).
- * Matches both `_shared` and `_system` roots so system-component instances get
- * the same override/structural-divergence tracking as Shared Components.
  * Used to diff pre- vs. post-edit state for per-instance override tracking.
  * Returns null when `id` is not inside any linked-component subtree.
  */
 function _snapshotSharedRoot(s: { pageNodes: SDUINode[] }, id: string): SDUINode | null {
-  const root = findLinkedRoot(s.pageNodes as SDUINode[], id, 'any');
+  const root = findLinkedRoot(s.pageNodes as SDUINode[], id, 'shared');
   if (!root) return null;
   return JSON.parse(JSON.stringify(root)) as SDUINode;
 }
@@ -270,7 +260,6 @@ function makeSnapshot(
     pages: pagesSnap,
     canvasNodes: [...canvasNodes],
     sharedComponents: JSON.parse(JSON.stringify(getSharedComponents())),
-    systemComponentOverrides: JSON.parse(JSON.stringify(getSystemComponentOverrides())),
   };
 }
 
@@ -390,15 +379,6 @@ export function restoreWorkflowTestResults(): Record<string, import('./_store-ty
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-// Component Showcase — builder-internal canvas only, not an app route.
-const SHOWCASE_PAGE: BuilderPage = {
-  id: 'page-showcase',
-  name: '✦ Component Showcase',
-  nodes: showcaseNodes,
-  wx: 0,
-  wy: 0,
-};
-
 // Registry for resolveScreenConfig — layouts used for $slot injection.
 // fragments is empty: all reusable content is now in shared-components.json.
 const _fragmentRegistry: ConfigRegistry = {
@@ -485,12 +465,12 @@ const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: stri
       route: r.path,
       nodes: _extractPageNodes(r.config),
       ...(screen?.queryParams ? { queryParams: screen.queryParams } : {}),
-      wx: (i + 1) * (1280 + 80),  // +1 because SHOWCASE_PAGE is at 0
+      wx: i * (1280 + 80),
       wy: 0,
     };
   });
 
-const INITIAL_PAGES: BuilderPage[] = [SHOWCASE_PAGE, ...ROUTE_PAGES];
+const INITIAL_PAGES: BuilderPage[] = ROUTE_PAGES;
 
 // ─── Auto-sync middleware: keeps pageNodes ↔ pages[focusedIdx].nodes in sync ──
 // Three cases:
@@ -1047,24 +1027,14 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       // move OUT of the SC on another page), we update the model directly.
       const rec = postRoot as unknown as Record<string, unknown>;
       const sharedMeta = rec._shared as { id?: string } | undefined;
-      const systemMeta = rec._system as { id?: string } | undefined;
-      const linkedKind: 'shared' | 'system' = sharedMeta ? 'shared' : 'system';
-      const linkedMetaKey: '_shared' | '_system' = linkedKind === 'shared' ? '_shared' : '_system';
-      const meta = sharedMeta ?? systemMeta;
+      const meta = sharedMeta;
       if (!meta?.id) continue;
-      const prevModel = linkedKind === 'shared'
-        ? getSharedComponents()[meta.id]
-        : getSystemComponents()[meta.id];
+      const prevModel = getSharedComponents()[meta.id];
       if (!prevModel) continue;
       const content = JSON.parse(JSON.stringify(postRoot)) as Record<string, unknown>;
       delete content._shared;
-      delete content._system;
       delete content._overrides;
-      if (linkedKind === 'shared') {
-        updateSharedComponent({ ...(prevModel as Parameters<typeof updateSharedComponent>[0]), content });
-      } else {
-        updateSystemComponent({ ...(prevModel as Parameters<typeof updateSystemComponent>[0]), content });
-      }
+      updateSharedComponent({ ...(prevModel as Parameters<typeof updateSharedComponent>[0]), content });
       // Propagate to other pages/instances via a normal sync on one
       // representative instance id if any exist anywhere.
       let repInstanceId: string | null = null;
@@ -1072,7 +1042,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         (function walk(nodes: SDUINode[]) {
           if (repInstanceId) return;
           for (const n of nodes) {
-            const sm = (n as unknown as Record<string, unknown>)[linkedMetaKey] as { id: string } | undefined;
+            const sm = (n as unknown as Record<string, unknown>)._shared as { id: string } | undefined;
             if (sm?.id === meta.id && n.id) { repInstanceId = n.id; return; }
             if (n.children?.length) walk(n.children as SDUINode[]);
           }
@@ -1907,24 +1877,17 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   _syncSharedInstances: (editedNodeId: string, opts?: { prevEditedNode?: SDUINode | null }) => {
     const { pageNodes, focusedPageId, editingSharedComponentIds } = get();
-    // Accept either `_shared` or `_system` roots — system-component instances
-    // reuse the same override-preserving sync engine as Shared Components.
-    const sharedRoot = findLinkedRoot(pageNodes as SDUINode[], editedNodeId, 'any');
+    const sharedRoot = findLinkedRoot(pageNodes as SDUINode[], editedNodeId, 'shared');
     if (!sharedRoot) return;
 
     const rootRec = sharedRoot as unknown as Record<string, unknown>;
     const sharedMeta = rootRec._shared as { id: string; name: string } | undefined;
-    const systemMeta = rootRec._system as { id: string; name: string } | undefined;
-    const kind: 'shared' | 'system' = sharedMeta ? 'shared' : 'system';
-    const meta = (sharedMeta ?? systemMeta) as { id: string; name: string } | undefined;
+    const meta = sharedMeta;
     if (!meta?.id) return;
-    const metaKey: '_shared' | '_system' = kind === 'shared' ? '_shared' : '_system';
-    const getModel = (id: string) => (kind === 'shared'
-      ? getSharedComponents()[id]
-      : getSystemComponents()[id]);
+    const metaKey: '_shared' = '_shared';
+    const getModel = (id: string) => getSharedComponents()[id];
     const writeModel = (payload: { id: string } & Record<string, unknown>) => {
-      if (kind === 'shared') updateSharedComponent(payload as Parameters<typeof updateSharedComponent>[0]);
-      else updateSystemComponent(payload as Parameters<typeof updateSystemComponent>[0]);
+      updateSharedComponent(payload as Parameters<typeof updateSharedComponent>[0]);
     };
 
     const isEditingModel = editingSharedComponentIds.includes(meta.id);
@@ -2154,7 +2117,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     // ── Model-edit mode ───────────────────────────────────────────────────────
     const content = JSON.parse(JSON.stringify(sharedRoot)) as Record<string, unknown>;
     delete content._shared;
-    delete content._system;
     delete content._overrides;
     delete content._descendantOverrides;
     delete content._removedKeys;
@@ -2465,7 +2427,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
       });
       if (snap.sharedComponents) loadSharedComponents(snap.sharedComponents);
-      if (snap.systemComponentOverrides) loadSystemComponentOverrides(snap.systemComponentOverrides);
       return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
@@ -2482,7 +2443,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         return { ...p, nodes: pg.nodes, wx: pg.wx, wy: pg.wy };
       });
       if (snap.sharedComponents) loadSharedComponents(snap.sharedComponents);
-      if (snap.systemComponentOverrides) loadSystemComponentOverrides(snap.systemComponentOverrides);
       return { historyIdx: idx, selectedIds: [], pages, canvasNodes: snap.canvasNodes as CanvasNode[] };
     });
   },
@@ -2605,7 +2565,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   // ── Shared Component edit mode ───────────────────────────────────────────────
 
-  enterSharedComponentEdit: (modelId, content, model, entryNodeId?, simple?, kind = 'shared') => {
+  enterSharedComponentEdit: (modelId, content, model, entryNodeId?, simple?, kind: 'shared' = 'shared') => {
     set(s => {
       const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
       if (s.editingSharedComponentIds.includes(modelId)) return s;
@@ -2927,8 +2887,13 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         };
       }
 
-      // Full mode: insert backdrop + repositioned content into the canvas
-      const contentNode = clone(content) as SDUINode;
+      // Full mode: insert backdrop + repositioned content into the canvas.
+      // Use cloneWithFreshIdsKeepSharedKey so every inner node gets a unique id —
+      // this is required for findNode to locate them and for the right panel
+      // (Workflows, Design tabs) to reflect the correct node when selected in the layer tree.
+      const contentNode = cloneWithFreshIdsKeepSharedKey(
+        JSON.parse(JSON.stringify(content)) as Record<string, unknown>
+      ) as unknown as SDUINode;
       const baseZ = 50 + s.editingSharedComponentIds.length;
 
       const dimBackdrop: SDUINode = {
@@ -2981,17 +2946,10 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     get()._pushHistory();
   },
 
-  enterSystemComponentEdit: (modelId, content, model, entryNodeId?, simple?) => {
-    get().enterSharedComponentEdit(modelId, content, model, entryNodeId, simple, 'system');
-  },
-
   saveEditingSharedComponent: (modelId) => {
-    const { editingSharedComponentContentsMap, editingSharedComponentModelsMap, editingKindMap, pageNodes } = get();
-    const kind = editingKindMap[modelId] ?? 'shared';
+    const { editingSharedComponentContentsMap, editingSharedComponentModelsMap, pageNodes } = get();
     const targetContent = editingSharedComponentContentsMap[modelId];
-    const targetModel = kind === 'system'
-      ? (getSystemComponents()[modelId] ?? editingSharedComponentModelsMap[modelId])
-      : (getSharedComponents()[modelId] ?? editingSharedComponentModelsMap[modelId]);
+    const targetModel = getSharedComponents()[modelId] ?? editingSharedComponentModelsMap[modelId];
     if (!targetContent || !targetModel) return;
 
     const contentRootId = (targetContent as unknown as { id?: string }).id;
@@ -3012,8 +2970,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       // Full mode uses a synthetic `builderContent` node with NO `_shared`,
       // so this guard lets it through unchanged.
       const liveShared = (liveNode as unknown as Record<string, unknown>)._shared;
-      const liveSystem = (liveNode as unknown as Record<string, unknown>)._system;
-      if (liveShared || liveSystem) return;
+      if (liveShared) return;
 
       const BUILDER_KEYS = new Set(['position', 'top', 'left', 'right', 'zIndex']);
       const rawStyle = ((liveNode.props as Record<string, unknown>)?.style ?? {}) as Record<string, unknown>;
@@ -3040,16 +2997,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           stripNested(c);
         }
       })(savedNode);
-      if (kind === 'system') {
-        // System components are entered exclusively in simple mode from the
-        // selection panel, so this branch (synthetic full-mode wrapper) is
-        // unreachable in practice. Mirror the Shared full-mode semantics —
-        // write the model, let per-instance patches during edit drive
-        // propagation via `_syncSharedInstances`.
-        updateSystemComponent({ ...(targetModel as { id: string }), content: savedNode });
-      } else {
-        updateSharedComponent({ ...(targetModel as { id: string }), content: savedNode });
-      }
+      updateSharedComponent({ ...(targetModel as { id: string }), content: savedNode });
     }
   },
 
@@ -3426,7 +3374,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   detachInstance: (id) => {
     const STRIP_KEYS = new Set([
       '_shared',
-      '_system',
       '_overrides',
       '_descendantOverrides',
       '_removedKeys',
@@ -3449,44 +3396,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
       id,
       node => strip(node as unknown as Record<string, unknown>) as unknown as SDUINode,
-    ));
-    get()._pushHistory();
-  },
-
-  resetInstanceToSystem: (nodeId) => {
-    const { pageNodes, canvasNodes } = get();
-    const roots: SDUINode[] = [...(pageNodes as SDUINode[]), ...(canvasNodes as SDUINode[])];
-    const sysRoot = findLinkedRoot(roots, nodeId, 'system');
-    if (!sysRoot) return;
-    const meta = (sysRoot as unknown as Record<string, unknown>)._system as { id: string; name?: string } | undefined;
-    if (!meta?.id) return;
-    const model = getSystemComponents()[meta.id];
-    if (!model) return;
-
-    // Mint fresh descendant ids (no DOM `data-builder-id` collisions between
-    // instances) while preserving `_sharedKey` on every node so the unified
-    // SC sync engine can still pair this instance to the model.
-    const fresh = cloneWithFreshIdsKeepSharedKey(
-      JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>,
-    ) as Record<string, unknown>;
-    const replacement: Record<string, unknown> = {
-      ...fresh,
-      id: sysRoot.id,
-      _system: { id: model.id, name: model.name },
-      _overrides: [],
-    };
-    // Defensive: ensure NO instance-only tracking metadata survives a reset.
-    // These should never be present on a fresh model clone, but stripping them
-    // explicitly keeps the invariant `_syncSharedInstances` relies on (a
-    // reset instance carries no per-instance divergences).
-    delete replacement._descendantOverrides;
-    delete replacement._removedKeys;
-    delete replacement._localInsertions;
-
-    set(s => patchAnyNode(
-      s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
-      nodeId,
-      () => replacement as unknown as SDUINode,
     ));
     get()._pushHistory();
   },
@@ -3948,13 +3857,16 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
     // ── Admin / dev mode (no projectId or projectId === 'admin') ──────────────
     {
+      const showcaseRoutePage = INITIAL_PAGES.find(p => p.route === '/sc-component-showcase');
+      const defaultPageId = showcaseRoutePage?.id ?? INITIAL_PAGES[0]?.id ?? 'page-home';
+      const defaultNodes = INITIAL_PAGES.find(p => p.id === defaultPageId)?.nodes ?? [];
       set(() => ({
         pages: INITIAL_PAGES,
-        focusedPageId: SHOWCASE_PAGE.id,
-        currentPageId: SHOWCASE_PAGE.id,  // keep deprecated alias in sync
+        focusedPageId: defaultPageId,
+        currentPageId: defaultPageId,
         canvasNodes: [],
-        pageNodes: clone(showcaseNodes),
-        history: [makeSnapshot(INITIAL_PAGES, SHOWCASE_PAGE.id, clone(showcaseNodes), [])],
+        pageNodes: clone(defaultNodes),
+        history: [makeSnapshot(INITIAL_PAGES, defaultPageId, clone(defaultNodes), [])],
         historyIdx: 0,
       }));
     }
@@ -3970,7 +3882,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         dsActionsMap?: Record<string, string>;
         formulas?: Record<string, import('./_store-types').GlobalFormulaDef>;
         sharedComponents?: Record<string, unknown>;
-        systemComponentOverrides?: Record<string, unknown>;
         customColors?: CustomColor[];
         colorFolders?: Folder[];
       };
@@ -4112,11 +4023,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         // ── Shared components persisted with the project ──────────────────────
         if (json.sharedComponents && typeof json.sharedComponents === 'object') {
           loadSharedComponents(json.sharedComponents as Record<string, unknown>);
-        }
-
-        // ── System component overrides persisted with the project ────────────
-        if (json.systemComponentOverrides && typeof json.systemComponentOverrides === 'object') {
-          loadSystemComponentOverrides(json.systemComponentOverrides as Record<string, unknown>);
         }
 
         return next;

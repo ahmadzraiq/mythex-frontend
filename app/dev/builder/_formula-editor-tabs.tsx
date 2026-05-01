@@ -446,6 +446,13 @@ export function collectPageComponents(
       pageFormFields.push(...fields);
     } else if (isStandaloneControlled(nodeType)) {
       standalones.push({ node, insideForm: parentInsideForm });
+    } else {
+      // Any node with _controlled present — SC instances (have _shared) and plain
+      // controlled nodes (no _shared) alike. Page key is always ${node.id}-value.
+      const _ctrl = (node as { _controlled?: unknown })._controlled;
+      if (_ctrl != null) {
+        standalones.push({ node, insideForm: parentInsideForm });
+      }
     }
     if (node.children?.length) {
       const sub = collectPageComponents(node.children as SDUINode[], insideForm);
@@ -654,19 +661,25 @@ export function PageComponentsSection({
             );
           })}
 
-          {/* Standalone controlled inputs — insert variables['{id}-value'] */}
+          {/* Standalone controlled inputs — insert variables['{globalId}'] */}
           {standalones.map(({ node, insideForm }) => {
             const nodeId = (node as { id?: string }).id;
             if (!nodeId) return null;
-            const name = ((node as { name?: string }).name || node.type).trim() || 'Input';
+            const name = (
+              (node as { name?: string }).name ||
+              (node as { _shared?: { name?: string } })._shared?.name ||
+              node.type
+            ).trim() || 'Input';
             const chipLabel = insideForm ? `Form - ${name}` : name;
             if (!matchesSearch(chipLabel)) return null;
-            const val = vsData[`${nodeId}-value`];
+            // Page-level variable key is always ${nodeId}-value — no globalId stored in JSON.
+            const globalId = `${nodeId}-value`;
+            const val = vsData[globalId];
             const displayVal = val === undefined ? '""' : JSON.stringify(val);
             return (
               <div
                 key={nodeId}
-                onClick={() => onInsert(`variables['${nodeId}-value']`, chipLabel, 'variable')}
+                onClick={() => onInsert(`variables['${globalId}']`, chipLabel, 'variable')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}

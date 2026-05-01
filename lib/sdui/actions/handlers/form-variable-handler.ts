@@ -16,6 +16,7 @@
 
 import type { ActionDef, ActionHandlerContext } from './types';
 import { getGlobalVariableStore } from '../../global-variable-store';
+import { formSubmitRegistry } from '../../form-submit-registry';
 import { evaluateFormula, storedValueToFormula, type FormulaValue } from '../../formula-evaluator';
 import { applyFieldRules } from '../../validation-utils';
 import type { FieldValidationRule } from '../../form-context';
@@ -108,8 +109,7 @@ export const resetFormHandler: (ctx: ActionHandlerContext) => (actionDef: Action
     });
   };
 
-/** submitForm — superseded by FormContainer.doSubmit; kept as no-op for backward compat with
- * any JSON that still references "type": "submitForm" directly in a workflow step. */
+/** submitForm — runs validation and calls onSuccess steps, then marks isSubmitted=true. */
 export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
   (ctx) => async (actionDef) => {
     await setFormStateHandler(ctx)({ type: 'setFormState', isSubmitting: true });
@@ -124,9 +124,16 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
       };
       const fieldValidations = actionDef.fieldValidations as Record<string, FieldDef> | undefined;
 
+      const vs = getGlobalVariableStore().getState().getFullState();
+      const activeKey = vs['_activeFormKey'] as string | undefined;
+      const storedVarForm = activeKey ? ((vs[activeKey] as Record<string, unknown> | undefined) ?? {}) : {};
+      const localCurrent = getFormState(vs);
+      // Prefer per-container store (kept up-to-date by directWriteField) over the
+      // shared local.data.form slot which lags on multi-FormContainer pages.
+      const current = Object.keys(storedVarForm).length > 0
+        ? (storedVarForm as typeof localCurrent)
+        : localCurrent;
       if (fieldValidations && Object.keys(fieldValidations).length > 0) {
-        const vs = getGlobalVariableStore().getState().getFullState();
-        const current = getFormState(vs);
         const newFields = { ...current.fields } as Record<string, { value: unknown; isValid: unknown }>;
         let hasErrors = false;
 
@@ -144,10 +151,8 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
           let fieldIsValid = '';
 
           if (def.validationRules && def.validationRules.length > 0) {
-            // New rules-array path
             fieldIsValid = applyFieldRules(def.validationRules, value, formulaCtx);
           } else {
-            // Legacy path: required + formula
             const str = String(value).trim();
             if (def.required && !str) {
               fieldIsValid = def.requiredMessage ?? def.message ?? 'This field is required';
@@ -170,7 +175,19 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
             (f) => !(f as { isValid?: unknown }).isValid || (f as { isValid?: unknown }).isValid === true
           );
           const nextForm = { ...current, fields: newFields, isValid: allValid };
-          getGlobalVariableStore().getState().setState((prev) => writeFormState(prev, nextForm));
+          getGlobalVariableStore().getState().setState((prev) => {
+            const result = writeFormState(prev, nextForm);
+            // Sync validation errors to the active FormContainer's per-container key
+            const activeKey = prev['_activeFormKey'] as string | undefined;
+            if (activeKey && typeof prev[activeKey] === 'object' && prev[activeKey] !== null) {
+              (result as Record<string, unknown>)[activeKey] = {
+                ...(prev[activeKey] as Record<string, unknown>),
+                fields: newFields,
+                isValid: allValid,
+              };
+            }
+            return result;
+          });
           ctx.store.getState().setState((prev) => writeFormState(prev, nextForm));
           const err = new Error('Validation failed') as Error & { __validationError?: boolean };
           err.__validationError = true;
@@ -191,6 +208,26 @@ export const submitFormHandler: (ctx: ActionHandlerContext) => (actionDef: Actio
       await setFormStateHandler(ctx)({ type: 'setFormState', isSubmitting: false });
       const err = e as { __validationError?: boolean };
       if (!err.__validationError) throw e;
-      // Validation errors: field-level messages already written to local.data.form.fields.*.isValid
+    }
+  };
+
+/**
+ * submitFormStep — calls the active FormContainer's doSubmit() via the registry.
+ *
+ * This is the handler for the "submitForm" step type added to FORM_ACTION_CATEGORY.
+ * It reads _activeFormKey from the global store (set by scopedRunAction before the
+ * workflow runs), finds the matching FormContainer in the registry, and calls its
+ * doSubmit(). If validation fails (doSubmit returns false), it throws a
+ * __validationError so the workflow stops and subsequent steps are skipped.
+ * If validation passes, the workflow continues to the next step.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const submitFormStepHandler: (_ctx: ActionHandlerContext) => () => void =
+  (_ctx) => () => {
+    const vs = getGlobalVariableStore().getState().getFullState();
+    const activeKey = (vs['_activeFormKey'] as string | undefined) ?? formSubmitRegistry.firstKey();
+    const valid = activeKey ? formSubmitRegistry.submit(activeKey) : true;
+    if (!valid) {
+      throw Object.assign(new Error('Form validation failed'), { __validationError: true });
     }
   };

@@ -25,7 +25,7 @@ import type { SDUINode, SDUIContext } from './types';
 import { isScreenScopedPath } from './path-utils';
 
 const _warnedTypes = new Set<string>();
-const _ACCEPTS_ON_VALUE_CHANGE = new Set(['Switch', 'RadioGroup', 'Slider']);
+const _ACCEPTS_ON_VALUE_CHANGE = new Set<string>([]);
 const _CONTROLLED_VALUE_KEYS = ['value', 'selectedValue', 'defaultValue', 'isChecked', 'isSelected'];
 import { createGet } from './create-get';
 import { bindActionsToProps } from './action-binding';
@@ -46,23 +46,14 @@ import {
 const STABLE_EMPTY_OBJECT: Record<string, unknown> = {};
 
 /**
- * Resolve a linked-component model (shared or system) by kind + id.
+ * Resolve a shared-component model by id.
  * Tries the builder data layer first (live, user-editable), then falls back
- * to the static JSON seed for shared components. System components only have
- * a builder data layer (defaults + overrides merged).
+ * to the static JSON seed.
  */
 function getLinkedComponentModel(
-  kind: 'shared' | 'system',
+  _kind: 'shared',
   id: string,
 ): unknown {
-  if (kind === 'system') {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      return require('@/lib/builder/system-component-data').getSystemComponents()[id];
-    } catch {
-      return undefined;
-    }
-  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require('@/lib/builder/shared-component-data').getSharedComponents()[id];
@@ -433,18 +424,20 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   const { store, mergedStore, mergedState, runAction, fetchData, actionsConfig, screenName, screenScopedAliases = [], previewState } = context;
 
-  // ── _shared / _system scope injection: make context.component.* available to children ──
+  // ── _shared scope injection: make context.component.* available to children ──
   let effectiveScope = scope;
   const _rawMeta = node as unknown as Record<string, unknown>;
   const _sharedMetaRaw = _rawMeta._shared as { id: string; name: string } | undefined;
-  const _systemMetaRaw = _rawMeta._system as { id: string; name: string } | undefined;
-  const _linkedMeta = _sharedMetaRaw ?? _systemMetaRaw;
-  const _linkedKind: 'shared' | 'system' | null =
-    _sharedMetaRaw ? 'shared' : _systemMetaRaw ? 'system' : null;
+  const _linkedMeta = _sharedMetaRaw;
+  const _linkedKind: 'shared' | null = _sharedMetaRaw ? 'shared' : null;
   // Stable instanceId — uses the node's id so it survives re-renders.
   const _instanceId = _linkedMeta
     ? ((_rawMeta.id as string | undefined) ?? _linkedMeta.id)
     : null;
+
+  // Hoisted so the sync useEffect and useSyncExternalStore below can use them without recomputing.
+  let _scControlledVar: string | null = null;
+  let _scControlledPageKey: string | null = null;
 
   if (_linkedMeta && _linkedKind) {
     let scModel: {
@@ -478,6 +471,33 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       } catch { /* non-fatal */ }
     }
 
+    // _controlled remap: if this SC instance is marked controlled, override the
+    // valueVariable's slot with the global page variable value so formulas that
+    // read context.component.variables[<valueVariable>] see the global value.
+    const _controlled = _rawMeta._controlled as { variable?: string } | undefined;
+    // Page-level variable key is always ${instanceId}-value — no globalId stored in JSON.
+    const _controlledPageKey = _controlled?.variable && _instanceId ? `${_instanceId}-value` : null;
+    // Hoist to outer scope for the sync hooks.
+    _scControlledVar = _controlled?.variable ?? null;
+    _scControlledPageKey = _controlledPageKey;
+    if (_controlled?.variable && _controlledPageKey) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const vs = require('@/lib/sdui/global-variable-store');
+        const gStore = vs.getGlobalVariableStore();
+        const gState = gStore.getState().data as Record<string, unknown>;
+        // Seed global slot with initialValue if still undefined.
+        if (gState[_controlledPageKey] === undefined && _instanceVars[_controlled.variable] !== undefined) {
+          const initVal = (_instanceVars[_controlled.variable] as { initialValue?: unknown }).initialValue;
+          // Use .getState().set() — correct API (same as form-field-tracker.ts).
+          gStore.getState().set(_controlledPageKey, initVal ?? null);
+        }
+        // Inject global value into instance vars snapshot so effectiveScope is correct.
+        const globalVal = gStore.getState().data[_controlledPageKey];
+        _currentInstanceVarValues = { ..._currentInstanceVarValues, [_controlled.variable]: globalVal };
+      } catch { /* non-fatal */ }
+    }
+
     effectiveScope = {
       ...scope,
       context: {
@@ -491,6 +511,8 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
           // Expose live instance variable values so templates like
           // {{context.component.variables['uuid']}} resolve correctly.
           variables: _currentInstanceVarValues,
+          // Expose _controlled so action handlers can detect the remap.
+          _controlled: _controlled ?? null,
         },
       },
     };
@@ -696,8 +718,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const LOCAL_FORM = 'local.data.form';
   const formMappedDeps = activeFormKey
     ? screenMappedDeps.map(p => {
-        if (p === LOCAL_FORM) return `variables['${activeFormKey}']`;
-        if (p.startsWith(LOCAL_FORM + '.')) return `variables['${activeFormKey}'].${p.slice(LOCAL_FORM.length + 1)}`;
+        // Normalize optional-chaining dots so paths like "local?.data?.form?.fields?.x"
+        // match the LOCAL_FORM prefix check. Return the normalized path (without ?.) so
+        // getNestedValue can split on plain dots and navigate correctly in the snapshot.
+        const pn = p.replace(/\?\./g, '.');
+        if (pn === LOCAL_FORM) return `variables['${activeFormKey}']`;
+        if (pn.startsWith(LOCAL_FORM + '.')) return `variables['${activeFormKey}'].${pn.slice(LOCAL_FORM.length + 1)}`;
         return p;
       })
     : screenMappedDeps;
@@ -711,23 +737,42 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const currentInstanceId = effectiveScope?.context
     ? ((((effectiveScope.context as Record<string, unknown>).component as Record<string, unknown> | undefined)?.instanceId) as string | undefined)
     : undefined;
+  // Extract _controlled metadata from the active SC context so read/write remap is applied to children too.
+  // (Must be derived before deps mapping so we can redirect controlled-key deps to global slot.)
+  const _ctxControlledForDeps = currentInstanceId
+    ? ((((effectiveScope?.context as Record<string, unknown> | undefined)?.component as Record<string, unknown> | undefined)?._controlled) as { variable?: string } | null | undefined)
+    : undefined;
+
   const deps = currentInstanceId
     ? formMappedDeps.map(p => {
         if (typeof p !== 'string') return p;
+        // Normalize optional-chaining so context?.component?.variables?.['x'] matches the same as context.component.variables['x']
+        const pn = p.replace(/\?\./g, '.');
         // Match both bracket and dot forms: context.component.variables['UUID'] or context.component.variables.UUID
-        const mBracket = p.match(/^context\.component\.variables\s*\[\s*['"]([^'"]+)['"]\s*\](.*)$/);
+        const mBracket = pn.match(/^context\.component\.variables\s*\[\s*['"]([^'"]+)['"]\s*\](.*)$/);
         if (mBracket) {
           const uuid = mBracket[1];
           const rest = mBracket[2] ?? '';
+          // Controlled remap: watch global slot so re-renders fire when global var changes.
+          if (_ctxControlledForDeps?.variable === uuid && currentInstanceId) {
+            return `variables.${currentInstanceId}-value${rest}`;
+          }
           return `_componentInstances.${currentInstanceId}.${uuid}${rest}`;
         }
-        const mDot = p.match(/^context\.component\.variables\.([A-Za-z0-9_-]+)(.*)$/);
+        const mDot = pn.match(/^context\.component\.variables\.([A-Za-z0-9_-]+)(.*)$/);
         if (mDot) {
-          return `_componentInstances.${currentInstanceId}.${mDot[1]}${mDot[2] ?? ''}`;
+          const varKey = mDot[1];
+          const rest = mDot[2] ?? '';
+          if (_ctxControlledForDeps?.variable === varKey && currentInstanceId) {
+            return `variables.${currentInstanceId}-value${rest}`;
+          }
+          return `_componentInstances.${currentInstanceId}.${varKey}${rest}`;
         }
         return p;
       })
     : formMappedDeps;
+
+  const _ctxControlled = _ctxControlledForDeps;
 
   useVariablePaths(store, deps, effectiveScope, mergedStore);
   // When inside an SC instance scope, replace the stale `context.component.variables` snapshot
@@ -738,7 +783,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const vsMod = require('@/lib/sdui/global-variable-store');
-      const liveVars = vsMod.getComponentInstanceVars?.(currentInstanceId) ?? {};
+      let liveVars = vsMod.getComponentInstanceVars?.(currentInstanceId) ?? {};
+      // Apply _controlled override: inject global value for the controlled variable key.
+      if (_ctxControlled?.variable && currentInstanceId) {
+        const globalVal = vsMod.getGlobalVariableStore().getState().data[`${currentInstanceId}-value`];
+        liveVars = { ...liveVars, [_ctxControlled.variable]: globalVal };
+      }
       const ctx = effectiveScope.context as Record<string, unknown>;
       const comp = ctx.component as Record<string, unknown> | undefined;
       if (comp && comp.variables !== liveVars) {
@@ -758,17 +808,30 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // snapshot that was placed on `scope` at the SC root render. Without this, nodes that
   // re-render due to `_componentInstances.*` subscription would still read the frozen snapshot
   // from their `scope` prop and display stale values (e.g. empty calendar grid).
+  // If the variable is the _controlled key, redirect to the global store instead.
   const get: typeof rawGet = currentInstanceId
     ? (path: string, s?: Record<string, unknown>) => {
         if (typeof path === 'string' && path.includes('context.component.variables')) {
           const mBracket = path.match(/^context\.component\.variables\s*\[\s*['"]([^'"]+)['"]\s*\](.*)$/);
           if (mBracket) {
-            const redirected = `_componentInstances.${currentInstanceId}.${mBracket[1]}${mBracket[2] ?? ''}`;
+            const varKey = mBracket[1];
+            const rest = mBracket[2] ?? '';
+            // Controlled remap: redirect to global slot.
+            if (_ctxControlled?.variable === varKey && currentInstanceId) {
+              return rawGet(`variables.${currentInstanceId}-value${rest}`, s);
+            }
+            const redirected = `_componentInstances.${currentInstanceId}.${varKey}${rest}`;
             return rawGet(redirected, s);
           }
           const mDot = path.match(/^context\.component\.variables\.([A-Za-z0-9_-]+)(.*)$/);
           if (mDot) {
-            const redirected = `_componentInstances.${currentInstanceId}.${mDot[1]}${mDot[2] ?? ''}`;
+            const varKey = mDot[1];
+            const rest = mDot[2] ?? '';
+            // Controlled remap: redirect to global slot.
+            if (_ctxControlled?.variable === varKey && currentInstanceId) {
+              return rawGet(`variables.${currentInstanceId}-value${rest}`, s);
+            }
+            const redirected = `_componentInstances.${currentInstanceId}.${varKey}${rest}`;
             return rawGet(redirected, s);
           }
         }
@@ -795,8 +858,14 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // Inject per-FormContainer local scope: override state.local so that any formula
   // or template expression using local.data.form.* resolves against THIS container's
   // isolated store (variables[formKey]) rather than the shared singleton.
+  //
+  // Read DIRECTLY from the current global store (not from the rAF-batched mergedStore).
+  // doSubmit() writes validation errors to the global store synchronously before calling
+  // setFormState(), which triggers this render. Reading from mergedStore here would use
+  // stale pre-error values because the rAF hasn't fired yet, causing the inside-card
+  // error nodes to show nothing on the first submit click.
   const formStateForScope = activeFormKey
-    ? ((state.variables as Record<string, unknown> | undefined)?.[activeFormKey] as Record<string, unknown> | undefined) ?? null
+    ? (store.getState().getFullState()[activeFormKey] as Record<string, unknown> | undefined) ?? null
     : null;
   const stateWithScope = formStateForScope
     ? { ...stateBase, local: { data: { form: formStateForScope } } }
@@ -812,11 +881,23 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       }
     : get;
 
+  // When inside a FormContainer, pre-set _activeFormKey before any action runs so
+  // setFormStateHandler writes state to the correct per-container isolated store
+  // (variables[formKey]) — not only to the shared local.data.form slot.
+  const scopedRunAction: SDUIContext['runAction'] = activeFormKey
+    ? (action, event, actionScope) => {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const vsm = require('@/lib/sdui/global-variable-store') as { getGlobalVariableStore: () => { getState: () => { setState: (fn: (prev: Record<string,unknown>) => Record<string,unknown>) => void } } };
+        vsm.getGlobalVariableStore().getState().setState(prev => ({ ...prev, _activeFormKey: activeFormKey }));
+        return runAction(action, event, actionScope);
+      }
+    : runAction;
+
   const sduiContext: SDUIContext = {
     state: stateWithScope,
     setState: (updater) => store.getState().setState(updater),
     get: scopedGet,
-    runAction,
+    runAction: scopedRunAction,
     fetchData,
   };
 
@@ -864,6 +945,80 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // mount-once: lifecycle triggers fire exactly once when the node mounts
 
+  // Seed the global variable store for non-SC controlled nodes that have _initialValue.
+  // Unlike Input/Textarea (which inject value/defaultValue into cleanProps), these nodes
+  // (e.g. a plain Box controlled by a page variable) rely on formulas that read
+  // variables['globalId'] — so the store must be seeded for those formulas to resolve.
+  const _nonScControlledGlobalId = !_linkedKind && (node as { _controlled?: unknown })._controlled
+    ? `${(node as { id?: string }).id ?? ''}-value`
+    : null;
+  const _nodeInitVal = (node as { _initialValue?: unknown })._initialValue;
+  const _nodeInitValKey = _nodeInitVal != null && typeof _nodeInitVal === 'object'
+    ? JSON.stringify(_nodeInitVal)
+    : (_nodeInitVal as string | boolean | undefined);
+  useEffect(() => {
+    if (!_nonScControlledGlobalId || _nodeInitVal === undefined) return;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const vs = require('@/lib/sdui/global-variable-store') as { getGlobalVariableStore: () => { getState: () => { data: Record<string, unknown>; set: (k: string, v: unknown) => void } } };
+    const gStore = vs.getGlobalVariableStore().getState();
+    let resolved: unknown;
+    if (_nodeInitVal != null && typeof _nodeInitVal === 'object' && 'formula' in (_nodeInitVal as object)) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { evaluateFormula: ef } = require('@/lib/sdui/formula-evaluator') as { evaluateFormula: (f: object, ctx: Record<string, unknown>) => { value: unknown } };
+        resolved = ef(_nodeInitVal as object, stateWithScope).value;
+      } catch { resolved = undefined; }
+    } else {
+      resolved = _nodeInitVal;
+    }
+    if (resolved !== undefined && resolved !== gStore.data[_nonScControlledGlobalId]) {
+      gStore.set(_nonScControlledGlobalId, resolved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_nonScControlledGlobalId, _nodeInitValKey]); // re-seed when globalId or initVal changes
+
+  // For controlled SC instances: the sync from internal variable → instanceId-value is driven
+  // ONLY by _initialValue. If the user sets _initialValue to a formula that reads the SC's
+  // internal variable (e.g. context.component.variables['sw-on']), that formula is evaluated
+  // on every re-render and the result is written to instanceId-value.
+  // useSyncExternalStore subscribes to the internal variable so this node re-renders when it
+  // Subscribe to the raw per-instance slot (_componentInstances[instanceId][sw-on]).
+  // This gives us the freshly-written internal value BEFORE any controlled-override
+  // can inject the (stale) instanceId-value into liveVars — avoiding the circular dep.
+  const _scInternalValue = useSyncExternalStore(
+    (_instanceId && _scControlledVar)
+      ? (cb) => {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const gvs = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+          return gvs.getGlobalVariableStore().subscribe(
+            (state) => ((state.data as Record<string, unknown>)['_componentInstances'] as Record<string, Record<string, unknown>> | undefined)?.[_instanceId!]?.[_scControlledVar!],
+            () => cb(),
+          );
+        }
+      : NOOP_SUBSCRIBE_FN,
+    () => {
+      if (!_instanceId || !_scControlledVar) return undefined;
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const gvs = require('@/lib/sdui/global-variable-store') as typeof import('@/lib/sdui/global-variable-store');
+      return gvs.getComponentInstanceVar(_instanceId, _scControlledVar);
+    },
+    () => undefined,
+  );
+  // Write to instanceId-value ONLY when the user has set _initialValue on the instance.
+  // _initialValue presence = user's explicit opt-in to sync. The raw per-instance value
+  // is used (not the formula result) to avoid the controlled-override circular dependency.
+  const _scHasInitVal = !!_nodeInitVal;
+  useEffect(() => {
+    if (!_scControlledPageKey || !_scHasInitVal || _scInternalValue === undefined) return;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const vs = require('@/lib/sdui/global-variable-store') as { getGlobalVariableStore: () => { getState: () => { data: Record<string, unknown>; set: (k: string, v: unknown) => void } } };
+    const gStore = vs.getGlobalVariableStore().getState();
+    if (_scInternalValue !== gStore.data[_scControlledPageKey]) {
+      gStore.set(_scControlledPageKey, _scInternalValue);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_scControlledPageKey, _scInternalValue, _scHasInitVal]);
+
   if (!node) return null;
 
   // In builder mode, _forceShowInEditor bypasses any condition so the node is
@@ -885,7 +1040,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       const mapStr = node.map;
       arr = (get(mapStr) as unknown[]) ?? [];
     } else if (node.map && typeof node.map === 'object' && 'formula' in node.map) {
-      const m = node.map as { formula: string | object };
+      const m = node.map as { formula: string | object; keyField?: string };
       arr = (evaluateFormula(m.formula, stateWithScope).value as unknown[]) ?? [];
     } else {
       arr = [];
@@ -923,10 +1078,17 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
             isACopy: false,
             repeatedItems: arr,
           };
+          const mapCfg = node.map ?? {};
+          const mapKeyField = (typeof mapCfg === 'object' && 'keyField' in mapCfg)
+            ? (mapCfg as { keyField?: string }).keyField
+            : undefined;
+          const itemKey = mapKeyField && typeof item === 'object' && item !== null
+            ? String((item as Record<string, unknown>)[mapKeyField] ?? index)
+            : (node.key ? `${node.key}-${index}` : index);
           return (
             <SDURendererInner
-              key={node.key ? `${node.key}-${index}` : index}
-              node={{ ...node, map: undefined, key: node.key ? `${node.key}-${index}` : String(index) }}
+              key={itemKey}
+              node={{ ...node, map: undefined, key: String(itemKey) }}
               context={context}
               scope={{
                 ...effectiveScope,
@@ -974,7 +1136,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     effectiveScope
   );
 
-  // If this node is a shared- or system-component root, strip model properties from
+  // If this node is a shared-component root, strip model properties from
   // cleanProps so they don't leak onto the DOM element (React warns about unknown
   // props like accentColor, minDate, etc.). The properties are still available to
   // children via `context.component.props.*`.
@@ -1023,10 +1185,35 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
           | undefined)?.workflows,
       }
     : actionsConfig as Record<string, unknown>;
-  Object.assign(cleanProps, bindActionsToProps(node.actions, runAction, _localActionsConfig, effectiveScope, node.type));
+  Object.assign(cleanProps, bindActionsToProps(node.actions, scopedRunAction, _localActionsConfig, effectiveScope, node.type));
   applyFormContextBindings(node, cleanProps, formCtx, actionsConfig);
   trackFormFieldProps(node, cleanProps, formCtx, parentInputId);
   injectControlledProps(cleanProps, externalValue, externalIsChecked);
+
+  // For Input/Textarea nodes with _initialValue: inject the resolved value so the
+  // inner InputField starts with the correct text.
+  // In builder mode: use controlled `value` directly — inputs are non-interactive on
+  // the canvas so we can safely override with the freshly-evaluated init value on
+  // every render. This makes formula init values and settings-panel changes reflect
+  // immediately without any store reads/writes during render.
+  // In preview mode: use uncontrolled `defaultValue` — the standard React pattern.
+  const _initVal = (node as { _initialValue?: unknown })._initialValue;
+  if (_initVal !== undefined && cleanProps.value == null && cleanProps.defaultValue == null) {
+    // Evaluate formula bindings on _initialValue.
+    const resolvedInitVal =
+      _initVal != null && typeof _initVal === 'object' && 'formula' in (_initVal as object)
+        ? evaluateFormula(_initVal as object, stateWithScope).value
+        : _initVal;
+
+    if (builderMode) {
+      // In builder mode always inject as controlled `value` — including empty string —
+      // so the canvas immediately reflects any change (set or clear) from the settings panel.
+      cleanProps.value = resolvedInitVal ?? '';
+    } else if (resolvedInitVal !== undefined && resolvedInitVal !== null && resolvedInitVal !== '') {
+      cleanProps.defaultValue = resolvedInitVal;
+    }
+  }
+
   if ('onValueChange' in cleanProps && !_ACCEPTS_ON_VALUE_CHANGE.has(node.type as string)) {
     delete cleanProps.onValueChange;
   }
@@ -1647,6 +1834,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
           componentProps={{ ...cleanProps }}
           componentChildren={children}
           children={null}
+          actionScope={effectiveScope as Record<string, unknown>}
         />
       );
     }
@@ -1867,6 +2055,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
         nodeType={node.type as string | undefined}
         builderMode={builderMode}
         nodeMapIndex={builderMapIndex}
+        actionScope={effectiveScope as Record<string, unknown>}
       >
         {element}
       </AnimatedNode>

@@ -131,6 +131,13 @@ export function resolveProps(
     if (typeof value === 'string') {
       const val = interpolate(value, context, scope);
       resolved[key] = coerceValue(val);
+    } else if (Array.isArray(value)) {
+      // Recursively resolve arrays so nested formula objects (e.g. inside style.transform) are evaluated.
+      resolved[key] = value.map((item) =>
+        item != null && typeof item === 'object' && !Array.isArray(item)
+          ? resolveProps(item as Record<string, unknown>, context, runAction, scope)
+          : item
+      );
     } else if (value != null && typeof value === 'object' && !Array.isArray(value)) {
       const obj = value as Record<string, unknown>;
       if ('var' in obj) {

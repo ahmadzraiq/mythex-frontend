@@ -107,17 +107,16 @@ Key nodes in reusable sections should carry a stable `id` attribute so the build
 
 ### Linked instance markers
 
-The builder writes a small set of metadata keys onto nodes that are instances of a Shared or System Component. **These are builder-managed — AI and hand-authored JSON should never produce them.**
+The builder writes a small set of metadata keys onto nodes that are instances of a Shared Component. **These are builder-managed — AI and hand-authored JSON should never produce them.**
 
 | Field | Type | Meaning |
 |-------|------|---------|
 | `_shared` | `{ id, name }` | Marks the root of a Shared Component instance. `id` is the model id in `config/shared-components.json`. |
-| `_system` | `{ modelId, sharedKey }` | Marks the root of a System Component instance (built-in template). `modelId` matches a key in `SYSTEM_COMPONENT_DEFAULTS`. |
 | `_sharedKey` | `string (uuid)` | Stable per-node identity inside a linked subtree. Stamped on every node of the model content at module init; cloned verbatim to instances so the sync engine can pair instance nodes to model nodes even after the user edits local copies. |
 | `_overrides` | `object` | Per-instance overrides (props, classNames, deleted/added descendants) applied on top of the model's current content. Preserved across model edits by `_syncSharedInstances` in `app/dev/builder/_store.ts`. |
 | `_popoverContent` | `boolean` | On a Box inside a node whose parent declares `popover`, marks that Box as the popover's content subtree. |
 
-Only `_shared`, `_system`, and `_overrides` ever appear at a subtree root. `_sharedKey` appears on every node inside a linked subtree.
+Only `_shared` and `_overrides` ever appear at a subtree root. `_sharedKey` appears on every node inside a linked subtree.
 
 ### Interpolation & inline formula
 
@@ -249,37 +248,9 @@ The `_shared` marker is for the builder only — the runtime renders the inline 
 
 ---
 
-## 5A. System Component Schema
-
-System components are **built-in editable templates** shipped with the builder, parallel to Shared Components. JSON lives in `lib/builder/system-components/*.data.json` (or is constructed via `makeSystemComponent()` in TypeScript for static cases).
-
-**Model format** — mirrors Shared Component plus an `isBuiltIn` marker:
-
-```json
-{
-  "id": "sys-datepicker",
-  "name": "DatePicker",
-  "isBuiltIn": true,
-  "properties": [...],
-  "variables": { ... },
-  "workflows": { ... },
-  "content": { "type": "Box", "children": [...] }
-}
-```
-
-**Usage (inline at the usage site, written by the builder on drop):**
-
-```json
-{
-  "type": "Box",
-  "_system": { "modelId": "sys-datepicker", "sharedKey": "<uuid>" },
-  "children": [...]
-}
-```
-
 **Inner-element action bindings — bare ref (canonical):**
 
-When an inner element of an SC invokes one of the SC's own workflows, write the `actions` entry as a bare ref:
+When an inner element of an SC (e.g. a day cell in `sc-datepicker`) invokes one of the SC's own workflows, write the `actions` entry as a bare ref:
 
 ```json
 "actions": [
@@ -288,7 +259,7 @@ When an inner element of an SC invokes one of the SC's own workflows, write the 
 ]
 ```
 
-The engine's `runOne` (`lib/sdui/sdui-engine.tsx`) performs an ambient-SC lookup: when the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (rendering inside a `_shared` / `_system` subtree), it resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition so dispatch runs under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely for parameterless workflows.
+The engine's `runOne` (`lib/sdui/sdui-engine.tsx`) performs an ambient-SC lookup: when the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (rendering inside a `_shared` subtree), it resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition so dispatch runs under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely for parameterless workflows.
 
 **Legacy fallback (do not author):** the inline-workflow wrapper shape `{ "type": "workflow", "steps": [{ "type": "executeComponentAction", "config": {...} }] }` still resolves correctly and is kept for older content, but new bindings should always use the bare ref above.
 
@@ -316,9 +287,7 @@ Fire from an internal workflow with an `emitComponentTrigger` step:
 
 Parent-page listener workflows bind on a specific instance with `trigger: "<triggerId>"` and read the payload via `context?.event?.<field>`. See the "Custom triggers" subsection in `.cursor/rules/visual-builder.mdc` for runtime plumbing and visibility rules.
 
-**Register:** Add to `lib/builder/system-components/index.ts` so the entry is picked up by `SYSTEM_COMPONENT_DEFAULTS`.
-
-For full implementation details (sync engine, instance operations, parser unwrap logic) see the `## System Components` section in `.cursor/rules/visual-builder.mdc` and `docs/BUILDER-ARCHITECTURE.md`.
+For full implementation details (sync engine, instance operations, parser unwrap logic) see the Shared Components section in `.cursor/rules/visual-builder.mdc` and `docs/BUILDER-ARCHITECTURE.md`.
 
 ---
 

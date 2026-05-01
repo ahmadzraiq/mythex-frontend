@@ -12,7 +12,6 @@
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { BuilderStore, CustomVar, DataSourceConfig } from '@/app/dev/builder/_store-types';
 import { COMPONENT_SCHEMA } from './sdui-component-schema';
-import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
 import { validateWorkflowFormulas, findProhibitedStep } from './workflow-validator';
 import { replaceTwToken, removeTwToken } from '@/app/dev/builder/_tw-utils';
 import {
@@ -130,18 +129,6 @@ function getTemplate(label: string): SDUINode | null {
   try {
     const node = JSON.parse(schema) as Record<string, unknown>;
     const templateNode = assignIds(node) as unknown as SDUINode;
-
-    // Strip behaviour is declared on the component itself via `aiStrip` — no hardcoded lists here.
-    const primitive = ALL_PRIMITIVES.find(c => c.label === label);
-    if (primitive?.aiStrip && templateNode.children?.length) {
-      const stripped =
-        primitive.aiStrip === 'all'
-          ? []
-          : (templateNode.children as SDUINode[]).filter(
-              (c: SDUINode) => c.type !== 'Text'
-            );
-      (templateNode as unknown as Record<string, unknown>).children = stripped;
-    }
 
     return templateNode;
   } catch {

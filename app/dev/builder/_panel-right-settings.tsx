@@ -9,13 +9,14 @@
  * Exports: SettingsTab, AlignDistributePanel
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { json as cmJson } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import { useBuilderStore, findParentNode } from './_store';
 import type { SDUINode, PopoverConfig } from '@/lib/sdui/types/node';
 import { SECTION_STYLE, LABEL_STYLE, SectionHeader, ToggleBtn } from './_panel-primitives';
+import type { CustomVar } from './_store-types';
 import { FieldWithBinding, BindingIcon, isBoundValue, type FormulaValue, closeAllEditors, registerEditorClose } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
@@ -24,13 +25,350 @@ import {
   updateSharedComponent as updateSCData,
   getSharedComponents,
 } from '@/lib/builder/shared-component-data';
-import { getSystemComponents } from '@/lib/builder/system-component-data';
 import type { SharedComponentProperty } from '@/lib/builder/shared-component-data';
 import { findSharedRoot, findLinkedRoot } from './_store-node-helpers';
+import { STANDALONE_VARIABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
+
+// ─── Controlled Toggle ────────────────────────────────────────────────────────
+
+function ControlledToggleRow({ node }: { node: SDUINode }) {
+  const nodeId = (node as unknown as { id?: string }).id ?? '';
+  const nodeType = node.type as string;
+  const customVars = useBuilderStore(s => s.customVars) as CustomVar[];
+  const addCustomVar = useBuilderStore(s => s.addCustomVar);
+  const isInsideScEdit = useBuilderStore(s => !!s.editingSharedComponentId);
+  const removeCustomVar = useBuilderStore(s => s.removeCustomVar);
+  const patchNodeField = useBuilderStore(s => s.patchNodeField);
+
+  // Read pre-stamped _controlled FIRST so we can use it to derive varId/scValueVariable
+  // when the SC model lookup fails (e.g. store not hydrated yet on first render).
+  // globalId is no longer stored in JSON — page slot is always ${nodeId}-value.
+  const _preStampedControlled = (node as unknown as { _controlled?: { variable?: string } })._controlled;
+
+  // Detect if this is a shared component instance with a declared valueVariable.
+  const sharedId = (node as unknown as { _shared?: { id: string } })._shared?.id;
+  const scModel = sharedId ? getSharedComponents()[sharedId] : undefined;
+  // Fall back to pre-stamped variable name if the model doesn't carry valueVariable yet.
+  const scValueVariable = (scModel?.valueVariable ?? _preStampedControlled?.variable) as string | undefined;
+
+  // Input/Textarea always auto-write to `${nodeId}-value` — no toggle needed.
+  const isAutoTracked = STANDALONE_VARIABLE_TYPES.has(nodeType);
+  // SC nodes that declare a valueVariable can be controlled.
+  const isScWithValue = Boolean(scValueVariable);
+  const usesValueSlot = isAutoTracked || isScWithValue;
+  // Page slot is always ${nodeId}-value for SC/value-bearing nodes, else nodeId.
+  const varId = usesValueSlot ? `${nodeId}-value` : nodeId;
+
+  // SC type of the value variable (boolean for checkbox/switch, text otherwise)
+  const scVarDef = isScWithValue && scModel?.variables
+    ? (scModel.variables as Record<string, { type?: string; initialValue?: unknown }>)[scValueVariable!]
+    : undefined;
+  // Explicit type stored in _controlled.type takes priority; SC model type is the fallback.
+  const controlledType = (_preStampedControlled as { variable?: string; type?: string } | undefined)?.type;
+  const inferredType = scVarDef?.type ?? 'text';
+  const resolvedType = controlledType ?? inferredType;
+  const isBool = resolvedType === 'boolean';
+
+  // A node is "controlled" when a customVar is registered OR when _controlled metadata
+  // is present (pre-stamped in JSON or set by a prior toggle-on).
+  const isControlled = customVars.some(v => v.id === varId) || _preStampedControlled != null;
+
+  // If the node has a pre-stamped _controlled but the variable isn't in customVars yet
+  // (e.g. showcase JSON was hand-authored), auto-register it so it appears in the formula picker.
+  const varInStore = customVars.some(v => v.id === varId);
+  useEffect(() => {
+    if (_preStampedControlled != null && !varInStore && isScWithValue) {
+      const displayName = (scModel as { name?: string } | undefined)?.name
+        ?? (node as unknown as { name?: string }).name
+        ?? nodeType;
+      const varName = `${displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nodeId.slice(0, 6)}`;
+      const varType = scVarDef?.type ?? 'text';
+      const varInitial = scVarDef?.initialValue ?? (varType === 'boolean' ? false : varType === 'number' ? 0 : '');
+      addCustomVar({ id: varId, name: varName, label: displayName, type: varType as CustomVar['type'], initialValue: varInitial } as CustomVar);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [varId, _preStampedControlled != null]);
+
+  // Debounce config stored on the node
+  const nodeExtra = node as unknown as Record<string, unknown>;
+  const debounce = nodeExtra._debounce as { enabled?: boolean; delay?: number } | undefined;
+  const debounceEnabled = debounce?.enabled ?? false;
+  const debounceDelay = debounce?.delay ?? 500;
+  const initValueRaw = (nodeExtra._initialValue ?? '') as string | boolean | { formula: string };
+  const isInitFormula = initValueRaw !== null && typeof initValueRaw === 'object' && 'formula' in (initValueRaw as object);
+
+  // Live value — subscribes to the global variable store so it updates on every change.
+  const liveValue = useSyncExternalStore(
+    cb => getGlobalVariableStore().subscribe(cb),
+    () => getGlobalVariableStore().getState().data[varId],
+  );
+
+  const patchDebounce = (patch: Partial<{ enabled: boolean; delay: number }>) => {
+    patchNodeField(nodeId, '_debounce' as keyof SDUINode, { ...(debounce ?? {}), ...patch });
+  };
+
+  const toggle = () => {
+    if (isControlled) {
+      const existing = customVars.find(v => v.id === varId);
+      if (existing) removeCustomVar(existing.name);
+      if (!isAutoTracked) {
+        // Clear _controlled for both SC and non-SC nodes
+        patchNodeField(nodeId, '_controlled' as keyof SDUINode, undefined);
+        if (!isScWithValue) {
+          // For non-SC nodes also remove the injected props.value binding
+          const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+          const cleanedProps = { ...nodeProps };
+          delete cleanedProps['value'];
+          patchNodeField(nodeId, 'props', cleanedProps);
+        }
+      }
+    } else {
+      const displayName = (scModel as { name?: string } | undefined)?.name
+        ?? (node as unknown as { name?: string }).name
+        ?? nodeType;
+      const varName = `${displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nodeId.slice(0, 6)}`;
+      const varType = resolvedType;
+      const varInitial = scVarDef?.initialValue ?? (varType === 'boolean' ? false : varType === 'number' ? 0 : varType === 'array' ? [] : varType === 'object' ? {} : '');
+
+      addCustomVar({ id: varId, name: varName, label: displayName, type: varType, initialValue: varInitial } as CustomVar);
+
+      if (isScWithValue) {
+        // For SC nodes: store which internal variable is the value variable + explicit type.
+        // Page slot is ${nodeId}-value — derived at runtime, not stored in JSON.
+        patchNodeField(nodeId, '_controlled' as keyof SDUINode, { variable: scValueVariable, type: varType });
+      } else if (!isAutoTracked) {
+        // For non-SC controlled nodes: _controlled: { type } marks the node as controlled.
+        // Page slot is ${nodeId}-value — derived at runtime, not stored in JSON.
+        // Keep the props.value formula binding so the node's rendering reads the variable.
+        patchNodeField(nodeId, '_controlled' as keyof SDUINode, { type: varType });
+        const nodeProps = (node.props ?? {}) as Record<string, unknown>;
+        patchNodeField(nodeId, 'props', { ...nodeProps, value: { formula: `variables['${varId}']` } });
+      }
+    }
+  };
+
+  // ── SC instance with a declared valueVariable: hide when NOT in SC edit mode ──
+  // Outside edit mode, controlled behaviour for SCs is handled through valueVariable + _controlled
+  // set in JSON — showing the toggle would be confusing. Inside SC edit mode the user may
+  // need to mark internal nodes as controlled, so the toggle is always shown there.
+  if (isScWithValue && !isInsideScEdit) return null;
+
+  // ── Auto-tracked (Input / Textarea): always controlled, show read-only badge ──
+  if (isAutoTracked) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span style={{ fontSize: 11, color: '#f3f4f6', fontWeight: 500 }}>Controlled</span>
+            <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{`variables['${varId}']`}</span>
+          </div>
+          <span style={{ fontSize: 10, color: '#34d399', background: '#064e3b', borderRadius: 3, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Auto</span>
+        </div>
+        <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 4, alignItems: 'center' }}>
+          <span style={{ color: '#818cf8' }}>Live:</span>
+          <span style={{ color: '#f3f4f6', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            {liveValue === undefined || liveValue === null ? '—' : String(liveValue)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+      {/* Toggle row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 11, color: '#f3f4f6', fontWeight: 500 }}>Controlled</span>
+        <button
+          onClick={toggle}
+          style={{
+            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+            background: isControlled ? '#3b82f6' : '#374151',
+            position: 'relative', transition: 'background 0.15s',
+          }}
+          title={isControlled ? 'Disable controlled mode' : 'Enable controlled mode — creates a page variable'}
+        >
+          <span style={{
+            position: 'absolute', top: 2, left: isControlled ? 18 : 2, width: 16, height: 16,
+            borderRadius: 8, background: 'white', transition: 'left 0.15s',
+          }} />
+        </button>
+      </div>
+
+      {/* Extra rows when controlled is ON — shown for SC nodes and plain controlled nodes alike */}
+      {isControlled && !isAutoTracked && (
+        <>
+          {/* Type selector — full width */}
+          <select
+            value={resolvedType}
+            onChange={e => {
+              const t = e.target.value as 'text' | 'boolean' | 'number' | 'array' | 'object';
+              const existing = customVars.find(v => v.id === varId);
+              if (existing) {
+                const newInitial = t === 'boolean' ? false : t === 'number' ? 0 : t === 'array' ? [] : t === 'object' ? {} : '';
+                addCustomVar({ ...existing, type: t, initialValue: newInitial } as CustomVar);
+              }
+              const base = isScWithValue
+                ? { variable: scValueVariable, type: t }
+                : { type: t };
+              patchNodeField(nodeId, '_controlled' as keyof SDUINode, base);
+              patchNodeField(nodeId, '_initialValue' as keyof SDUINode,
+                t === 'boolean' ? false : t === 'number' ? 0 : t === 'array' ? '[]' : t === 'object' ? '{}' : '');
+            }}
+            style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+          >
+            <option value="text">Text</option>
+            <option value="boolean">Boolean</option>
+            <option value="number">Number</option>
+            <option value="array">Array</option>
+            <option value="object">Object</option>
+          </select>
+
+          {/* Init value — all types have a bind button via FieldWithBinding */}
+          {isBool ? (
+            <FieldWithBinding
+              label="Init value"
+              value={initValueRaw as import('./_formula-panel').FormulaValue}
+              onChange={v => {
+                patchNodeField(nodeId, '_initialValue' as keyof SDUINode, v);
+                getGlobalVariableStore().getState().set(varId, typeof v === 'boolean' ? v : false);
+              }}
+              expectedType="boolean"
+            >
+              <button
+                onClick={() => {
+                  const next = !initValueRaw;
+                  patchNodeField(nodeId, '_initialValue' as keyof SDUINode, next);
+                  getGlobalVariableStore().getState().set(varId, next);
+                }}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                  background: initValueRaw ? '#3b82f6' : '#374151', position: 'relative', transition: 'background 0.15s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: initValueRaw ? 18 : 2, width: 16, height: 16,
+                  borderRadius: 8, background: 'white', transition: 'left 0.15s',
+                }} />
+              </button>
+            </FieldWithBinding>
+          ) : resolvedType === 'number' ? (
+            <FieldWithBinding
+              label="Init value"
+              value={initValueRaw as import('./_formula-panel').FormulaValue}
+              onChange={v => {
+                patchNodeField(nodeId, '_initialValue' as keyof SDUINode, v);
+                if (typeof v === 'number') getGlobalVariableStore().getState().set(varId, v);
+              }}
+              expectedType="number"
+            >
+              <input
+                type="number"
+                value={isInitFormula ? '' : String(initValueRaw ?? 0)}
+                onChange={e => {
+                  const n = Number(e.target.value);
+                  patchNodeField(nodeId, '_initialValue' as keyof SDUINode, n);
+                  getGlobalVariableStore().getState().set(varId, n);
+                }}
+                placeholder="0"
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+              />
+            </FieldWithBinding>
+          ) : resolvedType === 'array' || resolvedType === 'object' ? (
+            <FieldWithBinding
+              label="Init value"
+              value={initValueRaw as import('./_formula-panel').FormulaValue}
+              onChange={v => {
+                patchNodeField(nodeId, '_initialValue' as keyof SDUINode, v);
+                if (typeof v === 'string') { try { getGlobalVariableStore().getState().set(varId, JSON.parse(v)); } catch { /* noop */ } }
+              }}
+              expectedType="string"
+            >
+              <Suspense fallback={<div style={{ height: 60, background: '#1f2937', borderRadius: 4 }} />}>
+                <div style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #374151', width: '100%' }}>
+                  <CodeMirror
+                    value={isInitFormula ? '' : (typeof initValueRaw === 'string' ? initValueRaw : JSON.stringify(initValueRaw ?? (resolvedType === 'array' ? [] : {}), null, 2))}
+                    height="80px"
+                    extensions={[cmJson()]}
+                    theme={oneDark}
+                    basicSetup={{ lineNumbers: false, foldGutter: false }}
+                    onChange={v => {
+                      patchNodeField(nodeId, '_initialValue' as keyof SDUINode, v);
+                      try { getGlobalVariableStore().getState().set(varId, JSON.parse(v)); } catch { /* noop */ }
+                    }}
+                  />
+                </div>
+              </Suspense>
+            </FieldWithBinding>
+          ) : (
+            <FieldWithBinding
+              label="Init value"
+              value={initValueRaw as import('./_formula-panel').FormulaValue}
+              onChange={v => {
+                patchNodeField(nodeId, '_initialValue' as keyof SDUINode, v);
+                if (typeof v === 'string') getGlobalVariableStore().getState().set(varId, v);
+              }}
+              expectedType="string"
+            >
+              <input
+                value={isInitFormula ? '' : String(initValueRaw ?? '')}
+                onChange={e => {
+                  patchNodeField(nodeId, '_initialValue' as keyof SDUINode, e.target.value);
+                  getGlobalVariableStore().getState().set(varId, e.target.value);
+                }}
+                placeholder="Initial value"
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+              />
+            </FieldWithBinding>
+          )}
+
+          {/* Debounce toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>Debounce</span>
+            <button
+              onClick={() => patchDebounce({ enabled: !debounceEnabled })}
+              style={{
+                width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+                background: debounceEnabled ? '#3b82f6' : '#374151', position: 'relative', transition: 'background 0.15s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 2, left: debounceEnabled ? 18 : 2, width: 16, height: 16,
+                borderRadius: 8, background: 'white', transition: 'left 0.15s',
+              }} />
+            </button>
+          </div>
+
+          {/* Delay (only when debounce on) */}
+          {debounceEnabled && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>Delay</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
+                <input
+                  type="number"
+                  value={debounceDelay}
+                  min={0} max={5000} step={50}
+                  onChange={e => patchDebounce({ delay: Math.max(0, Number(e.target.value)) })}
+                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' }}
+                />
+                <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>ms</span>
+                <input
+                  type="range" min={0} max={2000} step={50} value={debounceDelay}
+                  onChange={e => patchDebounce({ delay: Number(e.target.value) })}
+                  style={{ flex: 1, accentColor: '#3b82f6', width: 60 }}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
-const SETTINGS_INPUT_TYPES = new Set(['Input', 'Select', 'Textarea', 'Checkbox', 'Radio', 'Switch']);
+const SETTINGS_INPUT_TYPES = new Set(['Input', 'Textarea']);
 
 const INPUT_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'Email',    value: 'email' },
@@ -693,7 +1031,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   // Video nodes from the assets tab store src in props.src; Image nodes use node.src.
   // Read from both, preferring the top-level node.src.
   const nodeSrc = (nodeExtra.src as string | undefined) ?? (nodeProps.src as string | undefined) ?? '';
-  const validation = nodeExtra._validation as NodeValidation | undefined;
+  // Normalize bare-array _validation (legacy format) to { trigger, rules } object
+  // so all reads below (validation?.rules, validation?.trigger) work correctly.
+  const _rawValidation = nodeExtra._validation;
+  const validation: NodeValidation | undefined = Array.isArray(_rawValidation)
+    ? { trigger: 'submit', rules: _rawValidation as ValidationRule[] }
+    : (_rawValidation as NodeValidation | undefined);
   const debounce = nodeExtra._debounce as NodeDebounce | undefined;
 
   // Extract field name from node.props.name
@@ -760,7 +1103,13 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   };
 
   const patchValidation = (patch: Partial<NodeValidation>) => {
-    const next = { ...(validation ?? {}), ...patch } as NodeValidation;
+    // Normalize: if the stored _validation is a bare array (legacy format), convert it
+    // to { trigger, rules } first so spreading patch doesn't turn array indices into
+    // numeric object keys (which would lose the rules array).
+    const base: NodeValidation = Array.isArray(validation)
+      ? { trigger: 'submit', rules: validation as ValidationRule[] }
+      : (validation ?? {});
+    const next = { ...base, ...patch } as NodeValidation;
     store.patchNodeField(nodeId, '_validation', next);
     syncValidationToAction(next);
   };
@@ -795,6 +1144,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
   const patchInitialValue = (value: unknown) => {
     store.patchNodeField(nodeId, '_initialValue', value);
+    // Immediately reflect in the global variable store so the live preview updates.
+    if (typeof value === 'string') {
+      getGlobalVariableStore().getState().set(`${nodeId}-value`, value);
+    }
     // Sync to FormContainer's initialFormData so the field is pre-populated on mount
     if (formContainerAncestor && fieldName) {
       const fcId = (formContainerAncestor as { id?: string }).id ?? '';
@@ -881,7 +1234,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   const isReadOnly = !!(nodeProps.readOnly ?? nodeProps.isReadOnly);
   const autocomplete = nodeProps.autoComplete as string | undefined;
   const placeholder = (nodeProps.placeholder as string | undefined) ?? '';
-  const initValue = ((node as unknown as Record<string, unknown>)._initialValue as string | undefined) ?? '';
+  const formatMask   = (nodeProps.format     as string | undefined) ?? '';
+  const _initValueRaw = (node as unknown as Record<string, unknown>)._initialValue;
+  const _initIsFormula = _initValueRaw != null && typeof _initValueRaw === 'object' && 'formula' in (_initValueRaw as object);
+  const initValue = (_initIsFormula ? _initValueRaw : (_initValueRaw as string | undefined) ?? '') as string | { formula: string };
   const debounceEnabled = debounce?.enabled ?? false;
   const debounceDelay = debounce?.delay ?? 500;
 
@@ -902,10 +1258,16 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
   // Keep nodeShared for the Component Properties section below
   const nodeShared = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
 
+  // True when an SC instance with valueVariable has controlled turned on (_controlled present).
+  // Used to show the Form Container section (field name + validation) for SC form inputs
+  // like sc-checkbox, sc-switch, sc-datepicker when dropped inside a FormContainer.
+  const isScControlled = (node as unknown as { _controlled?: unknown })._controlled != null;
+
   // Determine if there is anything specific to show for this node type
   const hasSpecific = nodeType === 'Icon' || nodeType === 'Image' || nodeType === 'Video'
     || nodeType === 'FormContainer'
-    || SETTINGS_INPUT_TYPES.has(nodeType);
+    || SETTINGS_INPUT_TYPES.has(nodeType)
+    || isScControlled;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', borderBottom: hasSpecific ? '1px solid #374151' : undefined }}>
@@ -927,17 +1289,18 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         </div>
       )}
 
-      {/* ── Component Properties — shown when inside a _shared or _system tree ── */}
+      {/* ── Controlled toggle (all node types) ── */}
+      <ControlledToggleRow node={node} />
+
+      {/* ── Component Properties — shown when inside a _shared tree ── */}
       {(() => {
-        const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'any');
+        const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'shared');
         if (!linkedRoot) return null;
         const rootRec = linkedRoot as unknown as Record<string, unknown>;
         const sharedMeta = rootRec._shared as { id: string; name: string } | undefined;
-        const systemMeta = rootRec._system as { id: string; name: string } | undefined;
-        const meta = sharedMeta ?? systemMeta;
+        const meta = sharedMeta;
         if (!meta) return null;
-        const isSystem = !!systemMeta;
-        const scModel = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
+        const scModel = getSharedComponents()[meta.id];
         if (!scModel || !scModel.properties?.length) return null;
         const rootProps = (linkedRoot.props ?? {}) as Record<string, unknown>;
         return (
@@ -945,11 +1308,11 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             <div style={{ padding: '6px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{
                 fontSize: 9,
-                color: isSystem ? '#fbbf24' : '#60a5fa',
-                background: isSystem ? '#3f2a0b' : '#1e3a5f',
+                color: '#60a5fa',
+                background: '#1e3a5f',
                 borderRadius: 3, padding: '1px 4px', fontWeight: 700,
-              }}>{isSystem ? 'SYS' : 'SC'}</span>
-              {isSystem ? 'System Component' : 'Component Properties'}
+              }}>SC</span>
+              Component Properties
             </div>
             {(scModel.properties as SharedComponentProperty[]).map(prop => {
               const rawVal = rootProps[prop.name] ?? prop.defaultValue;
@@ -1108,7 +1471,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
 
       {/* ── Form Container Section (input types only) ────────────────────────── */}
-      {SETTINGS_INPUT_TYPES.has(nodeType) && formContainerAncestor && (
+      {(SETTINGS_INPUT_TYPES.has(nodeType) || isScControlled) && formContainerAncestor && (
         <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
           <div style={{ padding: '0 12px 4px', display: 'flex', alignItems: 'center', gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1119,17 +1482,30 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
           {/* Field name */}
           <SettingsRow label="Field name">
-            <BindingIcon isBound={false} onClick={() => {}} />
-            <input
-              data-testid="settings-field-name-input"
-              value={fieldNameDraft}
-              onFocus={() => { fieldEditRef.current = { nodeId, nodeProps, formContainerAncestor, fieldName, draftValue: fieldNameDraft }; }}
-              onChange={e => { setFieldNameDraft(e.target.value); if (fieldEditRef.current) fieldEditRef.current.draftValue = e.target.value; }}
-              onBlur={() => commitFieldName()}
-              onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(); (e.target as HTMLInputElement).blur(); } }}
-              placeholder="e.g. email"
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
-            />
+            <FieldWithBinding
+              label="Field name"
+              value={(nodeProps.name as FormulaValue) ?? fieldNameDraft}
+              onChange={v => {
+                if (isBoundValue(v)) {
+                  patchProp('name', v);
+                } else {
+                  setFieldNameDraft(v as string);
+                  patchProp('name', v as string);
+                }
+              }}
+              expectedType="string"
+            >
+              <input
+                data-testid="settings-field-name-input"
+                value={fieldNameDraft}
+                onFocus={() => { fieldEditRef.current = { nodeId, nodeProps, formContainerAncestor, fieldName, draftValue: fieldNameDraft }; }}
+                onChange={e => { setFieldNameDraft(e.target.value); if (fieldEditRef.current) fieldEditRef.current.draftValue = e.target.value; }}
+                onBlur={() => commitFieldName()}
+                onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(); (e.target as HTMLInputElement).blur(); } }}
+                placeholder="e.g. email"
+                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
+              />
+            </FieldWithBinding>
           </SettingsRow>
 
           {/* Validation trigger */}
@@ -1276,7 +1652,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
               expectedType="string"
             >
               <input
-                value={initValue}
+                value={_initIsFormula ? '' : (initValue as string)}
                 onChange={e => patchInitialValue(e.target.value)}
                 placeholder=""
                 style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
@@ -1301,10 +1677,45 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             </FieldWithBinding>
           </SettingsRow>
 
+          {/* Format mask — Input only (Textarea has no masking implementation) */}
+          {nodeType === 'Input' && (
+            <SettingsRow label="Format">
+              <FieldWithBinding
+                label="Format"
+                value={formatMask as import('./_formula-panel').FormulaValue}
+                onChange={v => patchProp('format', v || undefined)}
+                expectedType="string"
+              >
+                <input
+                  value={formatMask}
+                  onChange={e => patchProp('format', e.target.value || undefined)}
+                  placeholder="e.g. ####-##-##"
+                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+                />
+              </FieldWithBinding>
+            </SettingsRow>
+          )}
+          {nodeType === 'Input' && formatMask && (
+            <div style={{ fontSize: 10, color: '#6b7280', padding: '0 8px 4px', lineHeight: '1.4' }}>
+              # digit · A letter · * any char · other = literal
+            </div>
+          )}
+
+          {/* Read only */}
+          <SettingsRow label="Read only">
+            <OnOffToggle value={isReadOnly} onChange={v => patchProp('readOnly', v || undefined)} />
+          </SettingsRow>
+
           {/* Autocomplete */}
           <SettingsRow label="Autocomplete">
-            <BindingIcon isBound={false} onClick={() => {}} />
-            <OnOffToggle value={autocomplete !== 'new-password' && autocomplete !== 'off'} onChange={v => patchProp('autoComplete', v ? 'on' : 'new-password')} />
+            <FieldWithBinding
+              label="Autocomplete"
+              value={(typeof nodeProps.autoComplete === 'object' && nodeProps.autoComplete !== null && 'formula' in (nodeProps.autoComplete as object) ? nodeProps.autoComplete : autocomplete ?? '') as import('./_formula-panel').FormulaValue}
+              onChange={v => patchProp('autoComplete', v || undefined)}
+              expectedType="string"
+            >
+              <OnOffToggle value={autocomplete !== 'new-password' && autocomplete !== 'off'} onChange={v => patchProp('autoComplete', v ? 'on' : 'new-password')} />
+            </FieldWithBinding>
           </SettingsRow>
 
           {/* Debounce */}
@@ -1555,18 +1966,16 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
   }, [store, nodeId, config]);
 
   // Merge page-scoped custom variables with component-scoped variables from the
-  // enclosing _shared/_system root (if any) so the Control Variable picker can
-  // resolve UUIDs like `cal-v-is-open-uuid` defined inside a system component.
+  // enclosing _shared root (if any) so the Control Variable picker can
+  // resolve UUIDs defined inside a shared component.
   const mergedCustomVars = useMemo(() => {
-    const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'any');
+    const linkedRoot = findLinkedRoot(store.pageNodes as SDUINode[], nodeId, 'shared');
     if (!linkedRoot) return store.customVars;
     const rootRec = linkedRoot as unknown as Record<string, unknown>;
     const sharedMeta = rootRec._shared as { id: string; name: string } | undefined;
-    const systemMeta = rootRec._system as { id: string; name: string } | undefined;
-    const meta = sharedMeta ?? systemMeta;
+    const meta = sharedMeta;
     if (!meta) return store.customVars;
-    const isSystem = !!systemMeta;
-    const scModel = isSystem ? getSystemComponents()[meta.id] : getSharedComponents()[meta.id];
+    const scModel = getSharedComponents()[meta.id];
     const vars = scModel?.variables as Record<string, { label?: string; type?: string }> | undefined;
     if (!vars) return store.customVars;
     const componentVars = Object.entries(vars).map(([id, v]) => ({

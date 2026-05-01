@@ -363,72 +363,6 @@
       "layout": "full"
     },
     {
-      "path": "/datepicker-test",
-      "config": "datepickerTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/select-test",
-      "config": "selectTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/file-upload-test",
-      "config": "fileUploadTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/button-test",
-      "config": "buttonTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/tabs-test",
-      "config": "tabsTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/pagination-test",
-      "config": "paginationTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/rating-test",
-      "config": "ratingTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/stepper-test",
-      "config": "stepperTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/breadcrumbs-test",
-      "config": "breadcrumbsTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/radio-group-test",
-      "config": "radioGroupTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
-      "path": "/chip-test",
-      "config": "chipTest",
-      "auth": false,
-      "layout": "full"
-    },
-    {
       "path": "/workflow-call-test",
       "config": "workflowCallTest",
       "auth": false,
@@ -437,6 +371,12 @@
     {
       "path": "/theme-custom-colors-test",
       "config": "themeCustomColorsTest",
+      "auth": false,
+      "layout": "full"
+    },
+    {
+      "path": "/sc-component-showcase",
+      "config": "scComponentShowcase",
       "auth": false,
       "layout": "full"
     }

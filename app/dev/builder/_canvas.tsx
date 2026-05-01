@@ -2163,15 +2163,12 @@ export default function BuilderCanvas() {
       for (const page of s.pages as Array<{ nodes: SDUINode[] }>) {
         allNodes.push(...(page.nodes as SDUINode[]));
       }
-      // Accept both Shared AND System component roots — live-resize broadcast
-      // during Edit mode applies to _system instances the same way it does to
-      // _shared instances.
-      const sharedRoot = findLinkedRoot(allNodes, id, 'any');
+      const sharedRoot = findLinkedRoot(allNodes, id, 'shared');
       if (!sharedRoot) return;
       const sharedRootRec = sharedRoot as unknown as Record<string, unknown>;
-      const sharedKindMeta = (sharedRootRec._shared ?? sharedRootRec._system) as { id: string } | undefined;
+      const sharedKindMeta = sharedRootRec._shared as { id: string } | undefined;
       if (!sharedKindMeta?.id) return;
-      const siblingMetaKey: '_shared' | '_system' = sharedRootRec._shared ? '_shared' : '_system';
+      const siblingMetaKey: '_shared' = '_shared';
 
       // Only broadcast to siblings in Edit Component mode. In instance mode the resize
       // is a per-instance override and must not affect other instances.
@@ -2203,7 +2200,6 @@ export default function BuilderCanvas() {
       if (!pathOk) return;
 
       // Find other linked roots with the same model ID across all pages.
-      // Match siblings of the SAME kind (_shared ↔ _shared, _system ↔ _system).
       const otherRoots: SDUINode[] = [];
       (function walk(nodes: SDUINode[]) {
         for (const n of nodes) {

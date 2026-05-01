@@ -3402,13 +3402,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative inline-flex self-start px-[24px] py-[12px] rounded-[8px] bg-emerald-100 font-semibold cursor-pointer",
+                  "className": "relative inline-flex self-start px-[14px] py-[7px] rounded-[8px] bg-emerald-600 cursor-pointer",
                   "data-testid": "p15-overlay",
                   "animation": {
                     "pseudoElement": {
                       "enabled": true,
                       "target": "::before",
-                      "background": "rgba(16,185,129,0.3)",
+                      "background": "rgba(255,255,255,0.22)",
                       "width": "0%",
                       "height": "100%",
                       "bottom": "0",
@@ -3423,7 +3423,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-emerald-800 font-semibold relative"
+                      "className": "text-[12px] font-semibold text-white relative"
                     },
                     "text": "Highlight sweep"
                   }

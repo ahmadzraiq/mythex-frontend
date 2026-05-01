@@ -21,7 +21,7 @@ export function extractPathsFromTemplate(template: string): string[] {
 function extractFormulaVarPaths(expr: string): string[] {
   if (!expr || typeof expr !== 'string') return [];
   const paths: string[] = [];
-  const re = /\b(variables|collections)\s*(?:\?\.)?\s*\[\s*['"]([^'"]+)['"]\s*\]/g;
+  const re = /\b(variables|collections)(?:\?\.?|\.?)?\s*\[\s*['"]([^'"]+)['"]\s*\]/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(expr)) !== null) {
     paths.push(`${m[1]}.${m[2]}`);
@@ -44,6 +44,20 @@ function extractFormulaVarPaths(expr: string): string[] {
   if (themeRe.test(expr)) {
     paths.push('theme');
   }
+  // Extract `local.data.form.*` paths so formulas like
+  //   JSON.stringify(local?.data?.form?.formData ?? {})
+  //   local?.data?.form?.fields?.x?.isValid
+  // subscribe to FormContainer state changes and re-render live.
+  // Captures the deepest matched segment (e.g. "local.data.form.formData") so
+  // formMappedDeps can remap it to the per-container isolated store path.
+  const localFormRe = /\blocal\s*(?:\?\.)?\s*data\s*(?:\?\.)?\s*form\b((?:\s*(?:\?\.|\.)[\w$]+)*)/g;
+  let lf: RegExpExecArray | null;
+  while ((lf = localFormRe.exec(expr)) !== null) {
+    const suffix = lf[1].replace(/\?\./g, '.').replace(/^\./,'');
+    const dep = suffix ? `local.data.form.${suffix}` : 'local.data.form';
+    if (!paths.includes(dep)) paths.push(dep);
+  }
+
   // Extract shared-component instance variable references so formulas/text
   // templates re-render when the underlying variable changes:
   //   context?.component?.variables?.['UUID']   → context.component.variables.UUID
@@ -150,8 +164,12 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
   if (node.props) paths.push(...extractPathsFromObject(node.props));
   if (node.condition) {
     paths.push(...extractPathsFromObject(node.condition));
-    // Also extract variables['UUID'] / collections['UUID'] from plain JS formula condition strings
+    // Condition strings are plain JS expressions (not {{template}} syntax), so
+    // extractPathsFromObject returns [] for them. Add the string itself as a dep
+    // path so getNestedValue can navigate it (after stripping ?.) and useVariablePaths
+    // re-renders the node when local.data.form.fields.* or variables['UUID'] change.
     if (typeof node.condition === 'string') {
+      paths.push(node.condition.trim());
       paths.push(...extractFormulaVarPaths(node.condition));
     }
   }
@@ -182,6 +200,17 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
       }
     }
   }
+  // _initialValue may be a formula binding (e.g. context.component.variables['sw-on']).
+  // Scanning it ensures the node subscribes to its deps and re-renders when they change —
+  // critical for controlled SC instances that mirror their internal variable to instanceId-value.
+  const nodeAny = node as Record<string, unknown>;
+  const initVal = nodeAny._initialValue;
+  if (initVal != null && typeof initVal === 'object' && 'formula' in (initVal as object)) {
+    const f = (initVal as { formula: unknown }).formula;
+    paths.push(...extractPathsFromObject(initVal as { formula: unknown }));
+    if (typeof f === 'string') paths.push(...extractFormulaVarPaths(f));
+  }
+
   return [...new Set(paths)].filter((p): p is string => typeof p === 'string');
 }
 

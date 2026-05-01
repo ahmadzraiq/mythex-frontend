@@ -19,7 +19,7 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | `_store-helpers.ts` | Tree helpers extracted from `_store.ts`: `ALLOWED_CHILDREN`, `REQUIRED_PARENT`, `findNode`, `findParentNode`, `hasFormContainerAncestor`, and all node-path utilities. |
 | `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
 | `_overlay.tsx` | Renders visual overlays: selection box, hover outline, crosshair lines, padding fills, gap fills, distance lines, drop zone indicators. All overlays use `data-testid` for Playwright. |
-| `_panel-left.tsx` | Left panel: Layers tree tab + Components palette tab. `PRIMITIVE_COMPONENTS` defines all palette groups and `defaultNode` templates. |
+| `_panel-left.tsx` | Left panel: Layers tree tab + Components tab. Components tab has two sections: **Primitives** (8 atoms: Box, Text, Input, Textarea, Image, Icon, Video, Iframe) and **Templates** (Shared Components + Template Library). |
 | `_panel-right.tsx` | Right panel: Design / Props / JSON / Settings tabs. Orchestrates tab routing; delegates to split files below. |
 | `_panel-right-design.tsx` | `DesignTab` — all 17 design-property sections (layout, spacing, typography, border, shadow, etc.) plus `ToggleBind`, visibility, repeat, and node-name subsections. |
 | `_panel-right-settings.tsx` | `SettingsTab` — form field `_validation` rules editor: add/remove/configure per-field validation rules displayed in the right panel when a FormContainer descendant is selected. |
@@ -65,88 +65,28 @@ Components render directly in the React tree. The canvas uses a `data-builder-pa
 
 ---
 
-## Palette — Primitive Components (`_panel-left.tsx`)
+## Components Tab — Primitives + Templates (`_panel-left.tsx`)
 
-All components in the palette are **primitives**: they use `Box`, `Text`, and `Icon` as building blocks, giving users full `className`-based control over styling. Gluestack compound components (Slider, Select, etc.) are used when no plain-primitive equivalent exists.
+The Components tab has two sections:
 
-**Groups and key `defaultNode` patterns:**
+**Primitives** — 8 atomic building blocks, flat (no group headers). Each is a `Box`, `Text`, `Image`, or HTML-native wrapper. Templates are built from these.
 
-| Group | Component | Type(s) | Notes |
-|---|---|---|---|
-| Layout | Box | `Box` `flex flex-col` | Column container |
-| Layout | Row | `Box` `flex flex-row` | Horizontal container |
-| Layout | VStack | `VStack` | Gluestack VStack (column) |
-| Layout | HStack | `HStack` | Gluestack HStack (row) |
-| Layout | Center | `Center` | Centers children horizontally & vertically |
-| Layout | Grid | `Grid` (empty, `grid-cols-2 gap-[16px]`) | CSS grid container; `isContainer`; drop `GridItem` children into it |
-| Layout | Card | `Box` with border/bg/rounded/shadow className | Bordered surface container; `isContainer` |
-| Layout | Divider | `Box` `h-px bg-border` | Horizontal rule |
-| Typography | Text | `Text` | Text node (Typography section) |
-| Typography | Heading | `Heading` | Text node (Typography section) |
-| Typography | Label | `Text` `text-[14px] font-medium` | Text node |
-| Typography | Caption | `Text` `text-[12px]` | Text node |
-| Typography | Link | `Box` with `cursor-pointer` + `Text` child | Navigable link; `isContainer` |
-| Buttons | Btn Solid | `Box` + `Text` child | `bg-primary text-primary-foreground` |
-| Buttons | Btn Destructive | `Box` + `Text` child | `bg-destructive text-destructive-foreground` |
-| Buttons | Btn Outline | `Box` + `Text` child | `border border-primary` |
-| Buttons | Btn Ghost | `Box` + `Text` child | No bg, no border |
-| Buttons | Btn + Icon L | `Box` + `Icon` + `Text` | Icon left of label |
-| Buttons | Btn + Icon R | `Box` + `Text` + `Icon` | Icon right of label |
-| Buttons | Icon Btn | `Box` + `Icon` | Square icon button |
-| Buttons | Icon Btn Round | `Box` + `Icon` | Circular icon button |
-| Buttons | Link Btn | `Box` + `Text` + `Icon` | Underlined link-style |
+| Component | Type | Notes |
+|---|---|---|
+| Box | `Box` | Flex container; the primary layout primitive |
+| Text | `Text` | Text node |
+| Input | `Input` | `InputWithField` composite; `forwardRef`; `isLeafWidget` |
+| Textarea | `Textarea` | Multi-line input; `isLeafWidget` |
+| Image | `Image` | Custom `img` wrapper; `isLeafWidget` |
+| Icon | `Icon` | Iconify icon; `forwardRef` via `span`; `isLeafWidget` |
+| Video | `Video` | `<video>` wrapper; `isLeafWidget` |
+| Iframe | `Iframe` | `<iframe>` placeholder; `isLeafWidget` |
 
-| Buttons | FAB | `Box` + `Icon` + `Text` | Floating action button; `isContainer` |
-| Form | Input | `Input` | `InputWithField` composite; supports `forwardRef`; `isLeafWidget` |
-| Form | Input Search | `Box` (flex-row) + `Icon` + `Input` | Input with leading search icon |
-| Form | Textarea | `Textarea` | Multi-line input; `isLeafWidget` |
-| Form | Select | `Select` + `SelectTrigger`/`SelectPortal` | Dropdown picker; `isLeafWidget` |
-| Form | Slider | `Slider` + `SliderTrack`/`SliderThumb` | Range input; `isLeafWidget` |
-| Form | Radio | `Radio` + `RadioIndicator` + `RadioLabel` | Single radio option; `isContainer` |
-| Form | Radio Group | `RadioGroup` wrapping `Radio` children | Mutually exclusive group; `isContainer` |
-| Form | Progress | `Progress` + `ProgressFilledTrack` | Progress bar; `isLeafWidget` |
-| Form | Toggle | `Box` + `Box` thumb | Primitive toggle (track + thumb); `isContainer` |
-| Form | Checkbox | `Checkbox` + `CheckboxIndicator` + `CheckboxLabel` | Checkbox; `isContainer` |
-| Media | Image | `Image` | Custom `img` wrapper; `isLeafWidget` |
-| Media | Icon | `Icon` | Iconify icon; `forwardRef` via `span`; `isLeafWidget` |
-| Media | Icon Tap | `Box` + `Icon` | Icon in a circle |
-| Display | Badge | `Box` + `Text` child | Pill-shaped label |
-| Display | Avatar | `Box` + `Image` or `Text` child | Circular avatar |
-| Display | Spinner | `Spinner` | Animated loading indicator; `isLeafWidget` |
-| Display | Skeleton | `Skeleton` + `SkeletonText` | Loading placeholder; `isContainer` |
-| Display | Alert | `Box` + `Icon` + `Text` | Informational callout; `isContainer` |
-| Form | Switch | `Box` (track) + `Box` (thumb) | Primitive toggle; fully styleable sub-parts; `isContainer` |
-| Form | Switch On | `Box` + `Box` (right) | Same but active state |
-| Form | DatePicker | `DatePicker` | Native `<input type="date">`; `isLeafWidget` |
-| Form | TimePicker | `TimePicker` | Native `<input type="time">`; `isLeafWidget` |
-| Form | Date & Time | `DateTimePicker` | Native `<input type="datetime-local">`; `isLeafWidget` |
-| Form | Color Picker | `ColorPicker` | Color swatch + `<input type="color">`; `isLeafWidget` |
-| Form | File Upload | `FileUpload` | Dashed drop zone + hidden file input; `isLeafWidget` |
-| Form | Autocomplete | `Box` + `Input` + dropdown `Box` | Primitive search-with-dropdown; `isContainer` |
-| Layout | ScrollView | `Box` `overflow-auto` | Scrollable container; `isContainer` |
-| Composite | Chip | `Box` + `Text` + `Icon X` | Removable tag; `isContainer` |
-| Composite | Tag | `Box` `rounded-[9999px]` + `Text` | Static tag; `isContainer` |
-| Composite | Tabs | `Box` + tab bar + content | `isContainer` |
-| Composite | Stepper | `Box` + circle nodes + connectors | Step progress; `isContainer` |
-| Composite | Pagination | `Box` + Prev/Next + pages | Page nav bar; `isContainer` |
-| Composite | Star Rating | `Box` + 5× `Icon Star` | Rating display; `isContainer` |
-| Composite | Breadcrumbs | `Box` + `Text` + separators | Nav path; `isContainer` |
-| Composite | Accordion | `Box` + `Box` header + body | Collapsible section; `isContainer` |
-| Composite | Table | `Box` + header row + data rows | Flex-based table; `isContainer` |
-| Composite | Snackbar | `Box` + `Icon` + `Text` | Bottom notification bar; `isContainer` |
-| Overlays | Modal | `Modal` (`isOpen: true`) + backdrop + content | Gluestack portal dialog; `isContainer` |
-| Overlays | Tooltip | `Tooltip` (`isOpen: true`) + trigger + content | Hover popup; `isContainer` |
-| Overlays | Alert Dialog | `AlertDialog` (`isOpen: true`) + backdrop + content | Confirmation dialog; `isContainer` |
-| Data & Media | Iframe | `Iframe` | `<iframe>` with placeholder; `isLeafWidget` |
-| Data & Media | SVG Viewer | `SvgViewer` | `dangerouslySetInnerHTML` SVG; `isLeafWidget` |
-| Data & Media | JSON Viewer | `JsonViewer` | Syntax-colored JSON pre block; `isLeafWidget` |
-| Data & Media | Chart | `Chart` | recharts Line/Bar/Pie; `isLeafWidget` |
-| Data & Media | QR Code | `QRCodeWidget` | qrcode.react SVG; `isLeafWidget` |
-| Data & Media | Markdown | `MarkdownViewer` | react-markdown; `isLeafWidget` |
-| Data & Media | Google Map | `GoogleMap` | Embedded map; placeholder without `apiKey`; `isLeafWidget` |
-| Data & Media | Places Search | `GoogleMapPlaces` | Places search input; `isLeafWidget` |
+**Templates** — Collapsible section containing:
+- **Import from Library** button — opens the Template Library modal (`_template-library-modal.tsx`) to browse/import pre-built templates from `lib/builder/template-library.ts`
+- **Shared Components list** — all user-created and built-in shared components rendered via `SharedComponentsTab` (`_shared-components-tab.tsx`); draggable onto the canvas
 
-**Primitive-first rule:** Every component that CAN be composed from `Box`, `Text`, `Icon` MUST be. Exceptions: Gluestack overlay compounds (Tooltip) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons. Form inputs (Checkbox, Radio, Select, Slider, Textarea) are kept for their native behavior and accessibility semantics.
+**Primitive-first rule:** Every component that CAN be composed from `Box`, `Text`, `Icon` MUST be. Exceptions: Gluestack overlay compounds (Tooltip, Modal, AlertDialog) manage DOM portals; HTML input wrappers (DatePicker, ColorPicker, etc.) wrap native elements for semantic/accessibility reasons; Select is kept for its native behavior.
 
 **Rule:** When adding a new palette entry, prefer `Box`/`Text`/`Icon` primitives. Use Gluestack compound components only when no primitive equivalent exists. All new Gluestack compound sub-components need `REQUIRED_PARENT` / `ALLOWED_CHILDREN` entries in `_store.ts`.
 
@@ -159,7 +99,7 @@ Context-dependent Gluestack sub-components crash when orphaned (they use `useSty
 - **`REQUIRED_PARENT`**: maps a sub-component type → its required parent type. Dragging out is blocked.
 - **`ALLOWED_CHILDREN`**: maps a container type → allowed child types. Dropping incompatible children is blocked.
 
-**Current guards include:** `SelectItem`, `SelectInput`, `SelectTrigger`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, `CheckboxIndicator`, `CheckboxLabel`, `RadioIndicator`, `RadioLabel`, `SliderTrack`, `SliderFilledTrack`, `SliderThumb`, `SkeletonText`, `ProgressFilledTrack`, `TextareaInput`, `TooltipContent`, `TooltipText`.
+**Current guards include:** `SelectItem`, `SelectInput`, `SelectTrigger`, `SelectPortal`, `SelectBackdrop`, `SelectContent`, `TextareaInput`, `TooltipContent`, `TooltipText`.
 
 **Rule:** When adding any new Gluestack sub-component to the palette, also add its `REQUIRED_PARENT` and parent's `ALLOWED_CHILDREN` entry.
 
@@ -171,9 +111,9 @@ Three booleans control which design sections are shown:
 
 | Variable | Includes | Controls |
 |---|---|---|
-| `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem`, `Checkbox`, `Radio`, `RadioGroup`, `Skeleton` | Alignment grid, Auto Layout section |
-| `isTextNode` | `Text`, `Heading`, `CheckboxLabel`, `RadioLabel`, `SkeletonText`, `TooltipText` | Typography section |
-| `isLeafWidget` | `Input`, `Icon`, `Image`, `Textarea`, `Select`, `Slider`, `Progress`, `Spinner` | Hides Auto Layout + Alignment |
+| `isContainer` | `Box`, `VStack`, `HStack`, `Center`, `Grid`, `GridItem` | Alignment grid, Auto Layout section |
+| `isTextNode` | `Text`, `Heading`, `TooltipText` | Typography section |
+| `isLeafWidget` | `Input`, `Icon`, `Image`, `Textarea`, `Select`, `Spinner` | Hides Auto Layout + Alignment |
 
 **Content section:** shown for `isTextNode` nodes (edits `node.text`) and for `isContainer` nodes that have a `Text` or `Heading` child (edits the first such child's `text`).
 
@@ -1088,8 +1028,8 @@ Apply this pattern to **both** the `hovEl` siblings path and the root-level `nod
 
   **Do NOT re-add** `isHomeCont ? true` to force the node to stay inside its home container. This was the original cause of the "can't drag Input out of FormContainer" bug.
 3. **skipIds must include full subtrees** — `draggingIdSet` must include not just the top-level dragged IDs but also every descendant. Without this, children of the dragged node are hit by `findDropTargetElAt`. The nearest-gap algorithm then sets `parentId = dragged-node-id`, and `moveNode(node, node, …)` triggers the self-drop guard silently — preventing the move. The fix builds `draggingIdSet` with `collectSubtreeIds` before calling `findDropTargetElAt`. **Do NOT remove this expansion.**
-4. **ALLOWED_DROP_INTO check in onDragOver** — before routing to "inside container", check `ALLOWED_DROP_INTO[containerType]`. If the dragged types are not permitted (e.g. dragging a node over a Checkbox — `ALLOWED[Checkbox]` only accepts `CheckboxIndicator/CheckboxLabel`), fall through to "before/after in parent". Without this, `dropTargetRef` points inside the sibling, `moveNode` silently blocks it, and the user sees no drop indicator and no move.
-5. **Auto-escalation of context-bound nodes in onDragStart** — when the user clicks a sub-component that has a `REQUIRED_PARENT` (e.g. `CheckboxIndicator`) and drags, the drag is escalated to the required parent so context-bound sub-components always move as a unit. `onDragStart` checks `DRAG_REQUIRED_PARENT[dragId.type]`: if set, walks up the DOM to find the required parent and escalates `dragId` to that parent. Also updates the selection so the correct node is highlighted. **Do NOT remove this — it's what makes clicking on a sub-component and dragging it work at all.**
+4. **ALLOWED_DROP_INTO check in onDragOver** — before routing to "inside container", check `ALLOWED_DROP_INTO[containerType]`. If the dragged types are not permitted (e.g. dragging a node over a Select — `ALLOWED[Select]` only accepts `SelectInput/SelectTrigger/SelectPortal`), fall through to "before/after in parent". Without this, `dropTargetRef` points inside the sibling, `moveNode` silently blocks it, and the user sees no drop indicator and no move.
+5. **Auto-escalation of context-bound nodes in onDragStart** — when the user clicks a sub-component that has a `REQUIRED_PARENT` (e.g. `SelectInput`) and drags, the drag is escalated to the required parent so context-bound sub-components always move as a unit. `onDragStart` checks `DRAG_REQUIRED_PARENT[dragId.type]`: if set, walks up the DOM to find the required parent and escalates `dragId` to that parent. Also updates the selection so the correct node is highlighted. **Do NOT remove this — it's what makes clicking on a sub-component and dragging it work at all.**
 3. `isDroppingIntoSelf` correctly checks for cycles (hover container inside dragged subtree):
 ```typescript
 const isDroppingIntoSelf = isContainer && allDraggingIds.some(id => {
@@ -1181,7 +1121,7 @@ Same guard in `onDrop`: `if (isAbsNode && !isMultiDrag)`.
 
 ## §29 Context-Dependent Sub-Component Crash Guard — REQUIRED_PARENT + ALLOWED_CHILDREN
 
-**Root cause:** Gluestack sub-components like `CheckboxIndicator`, etc. use `useStyleContext(SCOPE)` to read styling from their parent. Moving them outside their required parent makes that context `undefined` → hard crash.
+**Root cause:** Gluestack sub-components like `SelectInput`, `TooltipContent`, etc. use `useStyleContext(SCOPE)` to read styling from their parent. Moving them outside their required parent makes that context `undefined` → hard crash.
 
 **Fix:** `moveNode` in `_store.ts` validates both directions before any tree mutation:
 ```typescript
@@ -1199,7 +1139,7 @@ if (newParentId) {
 }
 ```
 
-**Rule:** Any time you add a Gluestack compound component that uses `useStyleContext`, add it to `REQUIRED_PARENT` and the parent type to `ALLOWED` in `_store.ts`.
+**Rule:** Any time you add a Gluestack compound component that uses `useStyleContext`, add it to `REQUIRED_PARENT` and the parent type to `ALLOWED` in `_store.ts`. Currently active: `Select` sub-components, `Tooltip` sub-components, `Textarea` input.
 
 ---
 
@@ -3317,35 +3257,33 @@ Source files:
 
 When adding a new workflow file, spread it into `config/root.ts` `actions` AND `lib/builder/config-data.ts` `allActions` so the builder's `pageWorkflowMeta` picks up the definitions (see existing imports as a pattern).
 
-## System Components
+## Templates — Shared Components + Template Library
 
-System Components (SCs) are **built-in editable templates** registered in code, parallel to Shared Components but shipped with the builder. They surface in the Components tab and behave like Shared Component instances on drop.
+The **Templates** section of the Components tab surfaces two sources of pre-built UI:
 
-### File map
+### Shared Components
 
-- `lib/builder/system-components/` — per-component definitions. Simple SCs use `_make.ts` (e.g. `accordion.ts`, `alert.ts`); complex ones import a sibling `*.data.json` (see `datepicker.ts` + `datepicker.data.json`).
-- `lib/builder/system-components/index.ts` — aggregates everything into `SYSTEM_COMPONENT_DEFAULTS`.
-- `lib/builder/system-component-data.ts` — runtime registry. Merges `SYSTEM_COMPONENT_DEFAULTS` with per-project user overrides and stamps `_sharedKey` on every model node at module init.
-- `lib/builder/system-component-types.ts` — `SystemComponentModel` (mirrors `SharedComponentModel` with `isBuiltIn: true`).
+Defined in `config/shared-components.json`. Each has an `id`, `name`, `properties: []`, and a full `content` tree. Rendered via `SharedComponentsTab` (`_shared-components-tab.tsx`).
 
-### Instance metadata — parallel to `_shared`
-
-Dropped SC instances carry:
+Dropped instances carry:
 
 ```json
 {
-  "_system": { "modelId": "sys-datepicker", "sharedKey": "<uuid>" },
-  "_overrides": { /* per-instance prop / class / child overrides */ }
+  "_shared": { "id": "sc-id", "name": "Name" }
 }
 ```
 
-The sync engine is **kind-agnostic**: `_syncSharedInstances` in `app/dev/builder/_store.ts` walks both `_shared` and `_system` roots. `findLinkedRoot(node, 'any')` in `app/dev/builder/_store-node-helpers.ts` resolves either kind. Per-instance `_overrides` are preserved when the model is edited.
+Per-instance overrides use `_overrides`. The sync engine in `_store.ts` (`_syncSharedInstances`) walks `_shared` roots. `findLinkedRoot(node, 'any')` in `_store-node-helpers.ts` resolves the linked model.
 
 ### Instance operations
 
-- **Edit System Component** — opens the Component Editor for the model; every instance reflects structural/style changes in real time.
-- **Detach from System** — strips `_system` + `_overrides`, instance becomes a plain node tree.
-- **Reset to System** — clears local overrides, snaps back to the model's current content.
+- **Edit** — opens the Component Editor for the shared component model; every instance reflects structural/style changes in real time.
+- **Detach** — strips `_shared` + `_overrides`, instance becomes a plain node tree.
+- **Reset** — clears local overrides, snaps back to the model's current content.
+
+### Template Library
+
+Opened via the "Import from Library" button in the Templates section. Backed by `lib/builder/template-library.ts`. Allows importing pre-built section/page templates directly onto the canvas.
 
 ### Trigger model — lifecycle vs DOM event
 
@@ -3358,7 +3296,7 @@ The sync engine is **kind-agnostic**: `_syncSharedInstances` in `app/dev/builder
 
 ### SC element bindings — bare ref (canonical)
 
-When an inner element of an SC (e.g. a day cell in `sys-datepicker`) invokes one of the SC's own workflows, write the `actions` entry as a **bare ref** — the canonical form:
+When an inner element of an SC (e.g. a day cell in `sc-datepicker`) invokes one of the SC's own workflows, write the `actions` entry as a **bare ref** — the canonical form:
 
 ```json
 "actions": [
@@ -3367,7 +3305,7 @@ When an inner element of an SC (e.g. a day cell in `sys-datepicker`) invokes one
 ]
 ```
 
-**How it resolves:** `runOne` in `lib/sdui/sdui-engine.tsx` performs an ambient-SC lookup. When the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (i.e. we're rendering inside a `_shared` / `_system` subtree), the engine resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition on the fly. The workflow then dispatches under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely when the target workflow takes no params — the ECA handler tolerates `undefined` args.
+**How it resolves:** `runOne` in `lib/sdui/sdui-engine.tsx` performs an ambient-SC lookup. When the action name is not a top-level `actionsConfig` entry AND `scope.context.component.id` is set (i.e. we're rendering inside a `_shared` subtree), the engine resolves the name against the ambient model's `workflows` map and synthesizes an `executeComponentAction` definition on the fly. The workflow then dispatches under the ambient `compInfo` (model + instance resolved automatically). Omit `args` entirely when the target workflow takes no params — the ECA handler tolerates `undefined` args.
 
 **Legacy fallback — do not author new bindings with it.** The inline-workflow wrapper shape (`{ "type": "workflow", "steps": [{ "type": "executeComponentAction", "config": {...} }] }`) still runs correctly and is kept as a fallback for older content, but new bindings should always use the bare ref above.
 
@@ -3403,22 +3341,14 @@ Components declare named events that parent pages can listen to on each instance
 
 **Visibility rule** — listener rows are hidden in the right-panel Workflow tab while the owning SC is being edited (`_panel-right-workflows.tsx`). They reappear once edit mode ends. The trigger picker on an SC instance (element or page workflow) surfaces custom triggers under a **Component events** category alongside DOM events.
 
-### Authoring checklist for a new System Component
+### Authoring a new Shared Component
 
-1. Add `lib/builder/system-components/<name>.ts` (either `makeSystemComponent(...)` for static UI or a thin wrapper importing `<name>.data.json`).
-2. Import + register in `lib/builder/system-components/index.ts`.
-3. For any inner-element workflow binding, use the bare ref shape shown above (`{ "action": "<wfId>", "args": {...} }`).
-4. Do **not** hardcode `id`s on content nodes — `cloneWithFreshIdsKeepSharedKey` mints fresh UUIDs on every drop (`_store-node-helpers.ts:494`). `_sharedKey` is stamped automatically by `_stampSharedKeys` at module init.
-5. Component-scoped variables, formulas, workflows follow the same keying convention as Shared Components (see `config/shared-component-types.ts`).
+1. Add the model to `config/shared-components.json` with `id`, `name`, `properties: []`, and a `content` tree built from primitives.
+2. For any inner-element workflow binding, use the bare ref shape (`{ "action": "<wfId>", "args": {...} }`).
+3. Do **not** hardcode `id`s on content nodes — `cloneWithFreshIdsKeepSharedKey` mints fresh UUIDs on every drop (`_store-node-helpers.ts`). `_sharedKey` is stamped automatically at module init.
+4. Component-scoped variables, formulas, and workflows follow the keying convention in `config/shared-component-types.ts`.
 
-### Built-in System Component catalog
+### Authoring a new Template Library entry
 
-The following System Components ship in `lib/builder/system-components/`:
-
-- **Overlays / surfaces** — `sys-modal`, `sys-drawer`, `sys-bottom-sheet`, `sys-toast`, `sys-snackbar`, `sys-alert`.
-- **Data input** — `sys-select`, `sys-datepicker`, `sys-autocomplete`, `sys-file-upload`, `sys-radio-group`.
-- **Data display** — `sys-badge`, `sys-avatar`, `sys-accordion`, `sys-table`.
-- **Buttons** — `sys-button` (variant: `solid|destructive|outline|ghost|link`, size: `sm|md|lg`, optional iconLeft / iconRight, disabled gate), `sys-icon-button` (variant: `ghost|solid|outline`, shape: `square|round`, size: `sm|md|lg`), `sys-fab` (icon + optional label).
-- **Composite navigation / feedback** — `sys-tabs` (internal `activeTab` variable, `On change`), `sys-pagination` (stateless prev/next/jump, `On page change`), `sys-rating` (1-indexed `On change`), `sys-stepper` (`done | current | upcoming` driven by `activeStep`, `On step click`), `sys-breadcrumbs` (`On item click`), `sys-chip` (body click + remove icon click with `stopPropagation`).
-
-The full registration list lives in `lib/builder/system-components/index.ts`; each palette tile that drops a linked instance points at one of these via `systemComponentId` in `lib/builder/primitive-components.ts`. Per-tile prop overrides (e.g. `Btn Solid` vs `Btn Destructive`) are merged from the tile's `defaultNode.props` onto the cloned SC root at drop time (`app/dev/builder/_components-tab.tsx`).
+1. Add the template definition to `lib/builder/template-library.ts`.
+2. Templates appear in the **Import from Library** modal inside the Templates section of the Components tab.

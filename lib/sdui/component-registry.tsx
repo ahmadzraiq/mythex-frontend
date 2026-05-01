@@ -1,31 +1,20 @@
 /**
  * SDUI Component Registry — runtime types referenced by JSON `type` fields.
  *
- * The list is deliberately small. Anything that can be expressed as a System
- * Component (built from the primitives below) lives in
- * `lib/builder/system-components/` instead — `Select`, `Tooltip`, the old
- * `FileUpload`, and the `FileInput` primitive (replaced by the `pickFile`
- * workflow step) were removed for that reason.
+ * The list covers all primitive types used in SDUI rendering.
+ * Shared Components built from these primitives live in
+ * `lib/builder/shared-component-data.ts`.
  *
  * Every entry here has a corresponding palette row in
- * `lib/builder/primitive-components.ts` (or is reachable through one of the
- * System Components built on top of these primitives).
+ * `lib/builder/primitive-components.ts`.
  */
 
 // Layout + Typography
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 
-// Feedback
-import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
-
-// Form
-import { Checkbox, CheckboxGroup, CheckboxIndicator, CheckboxLabel } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
-import { Textarea, TextareaInput } from '@/components/ui/textarea';
-
 // Composite components
-import { NextImage, HtmlContent, InputWithField } from './components';
+import { NextImage, HtmlContent, InputWithField, TextareaWithInput } from './components';
 import IconifyIcon from './components/IconifyIcon';
 import LottiePlayer from './components/LottiePlayer';
 import Video from './components/Video';
@@ -36,15 +25,6 @@ import QRCodeWidget from './components/QRCodeWidget';
 import MarkdownViewer from './components/MarkdownViewer';
 import GoogleMap from './components/GoogleMap';
 import GoogleMapPlaces from './components/GoogleMapPlaces';
-
-// Radio
-import { Radio, RadioGroup, RadioIndicator, RadioLabel } from '@/components/ui/radio';
-
-// Progress
-import { Progress, ProgressFilledTrack } from '@/components/ui/progress';
-
-// Slider
-import { Slider, SliderThumb, SliderTrack, SliderFilledTrack } from '@/components/ui/slider';
 
 import type React from 'react';
 
@@ -62,26 +42,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryComponent> = {
   // Forms
   FormContainer,
   Input: InputWithField,
-  Textarea,
-  TextareaInput,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-  RadioGroup,
-  Radio,
-  RadioIndicator,
-  RadioLabel,
-  Progress,
-  ProgressFilledTrack,
-  Switch,
-  Checkbox,
-  CheckboxIndicator,
-  CheckboxLabel,
-  CheckboxGroup,
-  // Feedback
-  Skeleton,
-  SkeletonText,
+  Textarea: TextareaWithInput,
   // Tier 3 — HTML input wrappers
   Iframe,
   // Tier 4 — Library-dependent

@@ -190,6 +190,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const auth = (__state__ ?? {})['auth'] ?? {}; ` +
       `const _workflow = (__state__ ?? {})['_workflow'] ?? {}; ` +
       `const local = (__state__ ?? {})['local'] ?? {}; ` +
+      `const value = (__state__ ?? {})['value']; ` +
       `const get = (p) => { if (!p) return undefined; if (__ctxGet__) return __ctxGet__(p); if (!__state__) return undefined; if (p in __state__) return __state__[p]; const parts = p.split('.'); let c = __state__; for (const k of parts) { if (c == null || typeof c !== 'object') return undefined; c = c[k]; } return c; }; ` +
       `return (${processed});`
     );

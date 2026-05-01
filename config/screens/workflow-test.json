@@ -5813,63 +5813,6 @@
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000007']}}"
                   }
                 ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "flex flex-col gap-[8px] p-[12px] rounded-[8px] bg-gray-50 dark:bg-gray-800"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-                    },
-                    "text": "onChange (Checkbox — event.value is boolean)"
-                  },
-                  {
-                    "type": "Checkbox",
-                    "id": "evt-checkbox-node",
-                    "props": {
-                      "data-testid": "evt-checkbox",
-                      "value": "toggle",
-                      "size": "md"
-                    },
-                    "actions": [
-                      {
-                        "action": "waEvtCheckbox"
-                      }
-                    ],
-                    "children": [
-                      {
-                        "type": "CheckboxIndicator",
-                        "children": [
-                          {
-                            "type": "Icon",
-                            "props": {
-                              "className": "stroke-white"
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "CheckboxLabel",
-                        "props": {
-                          "className": "text-[14px] text-gray-600 dark:text-gray-300"
-                        },
-                        "text": "Toggle me"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
-                      "data-testid": "out-evt-checkbox"
-                    },
-                    "text": "{{variables['wa-evt-0000-0000-0000-000000000008']}}"
-                  }
-                ]
               }
             ]
           }

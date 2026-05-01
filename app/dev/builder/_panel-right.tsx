@@ -64,9 +64,8 @@ import type { BuilderStore } from './_store-types';
 import { findNode, findLinkedRoot } from './_store-node-helpers';
 import { getOverrides, readPropValue, copyCssProp } from './_shared-overrides';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
-import { getSystemComponents } from '@/lib/builder/system-component-data';
-// findLinkedRoot + getSharedComponents/getSystemComponents used in isFieldChanged
-// to detect the model baseline for both Shared and System component instances.
+// findLinkedRoot + getSharedComponents used in isFieldChanged
+// to detect the model baseline for Shared component instances.
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
 import { ThemePanel } from './_theme-panel';
 import { AiChatPanel } from './_ai-chat-panel';
@@ -2477,16 +2476,13 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const scBaseline = useMemo(():
     | { node: Record<string, unknown>; cls: string; instanceRoot: SDUINode; isRootSelected: boolean; modelId: string }
     | undefined => {
-    const scRoot = findLinkedRoot(pageNodes as SDUINode[], nodeId, 'any');
+    const scRoot = findLinkedRoot(pageNodes as SDUINode[], nodeId, 'shared');
     if (!scRoot) return undefined;
     const scRec = scRoot as unknown as Record<string, unknown>;
     const sharedMeta = scRec._shared as { id: string } | undefined;
-    const systemMeta = scRec._system as { id: string } | undefined;
-    const scMeta = sharedMeta ?? systemMeta;
+    const scMeta = sharedMeta;
     if (!scMeta) return undefined;
-    const model = sharedMeta
-      ? getSharedComponents()[scMeta.id]
-      : getSystemComponents()[scMeta.id];
+    const model = getSharedComponents()[scMeta.id];
     if (!model?.content) return undefined;
     const content = model.content as unknown as Record<string, unknown>;
 
