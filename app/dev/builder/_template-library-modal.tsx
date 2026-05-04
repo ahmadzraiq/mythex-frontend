@@ -291,14 +291,19 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
   const overlayRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Sync imported state from existing shared components (match by description tag).
+  // Sync imported state from existing shared components.
+  // Primary:   SC has a `templateId` field set when it was imported from the library.
+  // Fallback:  legacy description marker `[tpl:...]` for SCs imported before this field existed.
   useEffect(() => {
     function syncImported(models: SharedComponentModel[]) {
       const ids = new Set<string>();
       for (const m of models) {
-        // We tag imported templates via their description field as a marker.
-        const marker = extractTemplateId(m);
-        if (marker) ids.add(marker);
+        if (m.templateId) {
+          ids.add(m.templateId);
+        } else {
+          const marker = extractTemplateId(m);
+          if (marker) ids.add(marker);
+        }
       }
       setImportedIds(ids);
     }
@@ -333,12 +338,14 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
       createSharedComponent({
         id,
         name: item.definition.name,
-        description: buildTemplateDescription(item),
+        description: item.definition.description,
         folder: item.definition.folder,
         properties: item.definition.properties,
         variables: item.definition.variables,
         formulas: item.definition.formulas,
         workflows: item.definition.workflows,
+        triggers: item.definition.triggers,
+        templateId: item.id,
         content: item.definition.content,
       });
       setImportedIds(prev => new Set([...prev, item.id]));

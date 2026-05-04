@@ -1694,23 +1694,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <NumberInput label="Slot H (px)" value={drag.slotHeight ?? 0} min={0} max={500} onChange={v => patchDrag({ slotHeight: v || undefined })} />
                 <NumberInput label="Slot W (px)"  value={drag.slotWidth  ?? 0} min={0} max={500} onChange={v => patchDrag({ slotWidth:  v || undefined })} />
               </Row>
-              <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginTop: 6 }}>Workflow hooks</span>
-              {(['onDragStart', 'onDragUpdate', 'onDragEnd'] as const).map(key => (
-                <FieldWithBinding
-                  key={key}
-                  label={key === 'onDragStart' ? 'On drag start' : key === 'onDragUpdate' ? 'On drag update' : 'On drag end'}
-                  value={(drag[key] ?? '') as FormulaValue}
-                  onChange={v => patchDrag({ [key]: (typeof v === 'string' ? v : (v as { formula: string })?.formula) || undefined })}
-                  expectedType="string"
-                >
-                  <input
-                    value={drag[key] ?? ''}
-                    onChange={e => patchDrag({ [key]: e.target.value || undefined })}
-                    placeholder="workflow-id"
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' as const }}
-                  />
-                </FieldWithBinding>
-              ))}
+              <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginTop: 6 }}>Attach drag workflows via the Workflows tab (On drag start / update / end).</span>
             </>
           )}
 

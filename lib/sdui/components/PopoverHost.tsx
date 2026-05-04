@@ -34,21 +34,59 @@ export interface PopoverHostProps {
   openVariableIsComponentScoped?: boolean;
 }
 
-// ── Placement → CSS ──────────────────────────────────────────────────────────
+// ── Placement → CSS (pixel-based, relative to wrapper DOMRect) ───────────────
 
+/**
+ * Computes pixel-based absolute positioning for the floating panel so it is
+ * anchored to the *trigger* element's actual bounding box rather than the
+ * full-width wrapper `<div>`. All values are relative to `wrapperRect`.
+ */
+function computeRelativePlacementStyle(
+  side: string,
+  align: string | undefined,
+  gap: number,
+  triggerRect: DOMRect,
+  wrapperRect: DOMRect,
+): CSSProperties {
+  const style: CSSProperties = { position: 'absolute', visibility: 'visible', zIndex: 9999 };
+
+  const relTop    = triggerRect.top    - wrapperRect.top;
+  const relBottom = triggerRect.bottom - wrapperRect.top;
+  const relLeft   = triggerRect.left   - wrapperRect.left;
+  const relRight  = triggerRect.right  - wrapperRect.left;
+
+  if (side === 'top' || side === 'bottom') {
+    if (side === 'top') {
+      style.bottom = wrapperRect.height - relTop + gap;
+    } else {
+      style.top = relBottom + gap;
+    }
+    if (align === 'start')     { style.left = relLeft; }
+    else if (align === 'end')  { style.right = wrapperRect.width - relRight; }
+    else { style.left = relLeft + triggerRect.width / 2; style.transform = 'translateX(-50%)'; }
+  } else {
+    if (side === 'right') { style.left = relRight + gap; }
+    else                  { style.right = wrapperRect.width - relLeft + gap; }
+    if (align === 'start')     { style.top = relTop; }
+    else if (align === 'end')  { style.bottom = wrapperRect.height - relBottom; }
+    else { style.top = relTop + triggerRect.height / 2; style.transform = 'translateY(-50%)'; }
+  }
+
+  return style;
+}
+
+/** Fallback for builder mode — percentage-based, trigger-width agnostic. */
 function computePlacementStyle(placement: PopoverPlacement, gap: number): CSSProperties {
   const parts = placement.split('-');
   const side = parts[0] as string;
   const align = parts[1] as string | undefined;
   const style: CSSProperties = {};
-
   switch (side) {
     case 'bottom': style.top = '100%'; style.paddingTop = gap; break;
     case 'top':    style.bottom = '100%'; style.paddingBottom = gap; break;
     case 'right':  style.left = '100%'; style.paddingLeft = gap; break;
     case 'left':   style.right = '100%'; style.paddingRight = gap; break;
   }
-
   if (side === 'top' || side === 'bottom') {
     if (align === 'start')     style.left = 0;
     else if (align === 'end')  style.right = 0;
@@ -58,13 +96,10 @@ function computePlacementStyle(placement: PopoverPlacement, gap: number): CSSPro
     else if (align === 'end')  style.bottom = 0;
     else { style.top = '50%'; style.transform = 'translateY(-50%)'; }
   }
-
   return style;
 }
 
-const OPPOSITE: Record<string, string> = {
-  top: 'bottom', bottom: 'top', left: 'right', right: 'left',
-};
+const HIDDEN_PANEL: CSSProperties = { position: 'absolute', visibility: 'hidden', top: 0, left: 0 };
 
 // ── Variable-synced open state ───────────────────────────────────────────────
 
@@ -126,6 +161,7 @@ export default function PopoverHost({
 }: PopoverHostProps) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const floatingRef = useRef<HTMLDivElement>(null);
+  const wrapperRef  = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const active = !!popoverConfig;
@@ -195,31 +231,45 @@ export default function PopoverHost({
     return () => document.removeEventListener('keydown', handler);
   }, [effectiveOpen, builderMode, popoverConfig?.closeOnEscape, setOpen]);
 
-  // ── Placement + flip ───────────────────────────────────────────────────────
+  // ── Panel positioning (pixel-based, trigger-relative) ────────────────────
 
   const configured = (popoverConfig?.placement ?? 'bottom') as PopoverPlacement;
-  const [activePlacement, setActivePlacement] = useState(configured);
   const flipDone = useRef(false);
 
-  useEffect(() => { setActivePlacement(configured); flipDone.current = false; }, [configured]);
-  useEffect(() => { if (!effectiveOpen) flipDone.current = false; }, [effectiveOpen]);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>(HIDDEN_PANEL);
 
+  // Reset when the panel closes or configured placement changes.
+  useEffect(() => {
+    if (!effectiveOpen) { flipDone.current = false; setPanelStyle(HIDDEN_PANEL); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveOpen]);
+  useEffect(() => { flipDone.current = false; setPanelStyle(HIDDEN_PANEL); }, [configured]);
+
+  // After the (invisible) panel mounts: detect flip, then compute pixel offsets.
   useLayoutEffect(() => {
-    if (!effectiveOpen || builderMode || !floatingRef.current || flipDone.current) return;
+    if (!effectiveOpen || builderMode || !floatingRef.current || !triggerRef.current || !wrapperRef.current || flipDone.current) return;
     flipDone.current = true;
-    const rect = floatingRef.current.getBoundingClientRect();
-    const side = configured.split('-')[0] as string;
-    const align = configured.split('-')[1] as string | undefined;
-    let flip = false;
-    if (side === 'bottom' && rect.bottom > window.innerHeight) flip = true;
-    else if (side === 'top' && rect.top < 0) flip = true;
-    else if (side === 'right' && rect.right > window.innerWidth) flip = true;
-    else if (side === 'left' && rect.left < 0) flip = true;
-    if (flip) {
-      const opp = OPPOSITE[side] ?? side;
-      setActivePlacement((align ? `${opp}-${align}` : opp) as PopoverPlacement);
-    }
-  }, [effectiveOpen, builderMode, configured, activePlacement]);
+
+    const panelRect   = floatingRef.current.getBoundingClientRect();
+    const parts = configured.split('-');
+    const side  = parts[0] as string;
+    const align = parts[1] as string | undefined;
+
+    let finalSide = side;
+    if      (side === 'bottom' && panelRect.bottom > window.innerHeight) finalSide = 'top';
+    else if (side === 'top'    && panelRect.top    < 0)                  finalSide = 'bottom';
+    else if (side === 'right'  && panelRect.right  > window.innerWidth)  finalSide = 'left';
+    else if (side === 'left'   && panelRect.left   < 0)                  finalSide = 'right';
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const wrapperRect = wrapperRef.current.getBoundingClientRect();
+    const gap = popoverConfig?.offset ?? 4;
+
+    setPanelStyle({
+      ...computeRelativePlacementStyle(finalSide, align, gap, triggerRect, wrapperRect),
+      pointerEvents: 'auto',
+    });
+  }, [effectiveOpen, builderMode, configured, popoverConfig?.offset]);
 
   // ── matchTriggerWidth ──────────────────────────────────────────────────────
 
@@ -231,14 +281,18 @@ export default function PopoverHost({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const placementStyle = computePlacementStyle(activePlacement, popoverConfig?.offset ?? 4);
-
   const triggerProps: Record<string, unknown> = { ref: handleTriggerRef };
   if (isClick) triggerProps.onClick = handleClick;
   const triggerEl = cloneElement(trigger, triggerProps);
 
+  // Builder mode: use the legacy percentage-based placement (trigger size is irrelevant in builder).
+  const builderPanelStyle: CSSProperties = builderMode
+    ? { position: 'absolute', zIndex: 9999, pointerEvents: 'auto', ...computePlacementStyle((popoverConfig?.placement ?? 'bottom') as PopoverPlacement, popoverConfig?.offset ?? 4) }
+    : panelStyle;
+
   return (
     <div
+      ref={wrapperRef}
       style={{ position: 'relative' }}
       onMouseEnter={isHover ? handleMouseEnter : undefined}
       onMouseLeave={isHover ? handleMouseLeave : undefined}
@@ -248,7 +302,7 @@ export default function PopoverHost({
       {effectiveOpen && renderPopoverContent && (
         <div
           ref={floatingRef}
-          style={{ position: 'absolute', zIndex: 9999, ...placementStyle, pointerEvents: 'auto' }}
+          style={builderPanelStyle}
           data-popover-host="popover"
           data-popover-node-id={nodeId}
         >

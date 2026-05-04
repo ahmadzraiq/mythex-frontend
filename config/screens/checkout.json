@@ -938,7 +938,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer transition-colors",
+                                  "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer",
                                   "style": { "borderColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'" }, "backgroundColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-muted)' : 'transparent'" } }
                                 },
                                 "actions": [
@@ -1169,7 +1169,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer transition-colors {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-primary)]'}}"
+                              "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-muted)]' : 'border-[var(--theme-border)] hover:border-[var(--theme-primary)]'}}"
                             },
                             "children": [
                               {

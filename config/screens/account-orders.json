@@ -138,7 +138,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "inline-flex items-center gap-[4px] px-[12px] py-[6px] border-[1px] border-[var(--theme-border)] rounded-[6px] text-[14px] hover:bg-[var(--theme-muted)] transition-colors"
+                              "className": "inline-flex items-center gap-[4px] px-[12px] py-[6px] border-[1px] border-[var(--theme-border)] rounded-[6px] text-[14px] hover:bg-[var(--theme-muted)]"
                             },
                             "actions": [
                               {

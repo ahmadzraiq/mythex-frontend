@@ -1039,9 +1039,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     if (typeof node.map === 'string') {
       const mapStr = node.map;
       arr = (get(mapStr) as unknown[]) ?? [];
-    } else if (node.map && typeof node.map === 'object' && 'formula' in node.map) {
-      const m = node.map as { formula: string | object; keyField?: string };
-      arr = (evaluateFormula(m.formula, stateWithScope).value as unknown[]) ?? [];
+    } else if (node.map && typeof node.map === 'object' && ('formula' in node.map || 'js' in node.map)) {
+      const m = node.map as { formula?: string | object; js?: string; keyField?: string };
+      const binding = 'js' in m ? { js: m.js! } : m.formula!;
+      arr = (evaluateFormula(binding, stateWithScope).value as unknown[]) ?? [];
     } else {
       arr = [];
     }
@@ -1274,6 +1275,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // transforms (Reanimated's worklet tries element.style[0]=... → CSSStyleDeclaration
   // throws "indexed property setter is not supported"). Use the Animated.View wrapper
   // path instead — it properly converts transforms to CSS before the img ever sees them.
+  // Disabled for Icon nodes: IconifyIcon also renders to <img>, same failure mode.
   // Disabled when the node has a static transform in node.props.style (translateX, translateY,
   // or a CSS transform string like "rotate(-8deg)"):
   // In the singleEl path, Reanimated applies the transform via useAnimatedStyle to an
@@ -1288,7 +1290,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     _rawNodeStyle?.translateY !== undefined ||
     (typeof _rawNodeStyle?.transform === 'string' && (_rawNodeStyle.transform as string).trim().length > 0)
   );
-  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image' && !_hasStaticStyleTransform);
+  const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image' && node.type !== 'Icon' && !_hasStaticStyleTransform && !(animCfgObj as { gesture?: { dragFeedback?: boolean } }).gesture?.dragFeedback);
   // In builder mode, wrapped animated nodes own their own data-builder-id (set on the
   // outer Animated.View in AnimatedNode). Single-element nodes keep normal annotation.
   const animNodeOwnsId = !!(builderMode && node.id && animCfgObj && !useSingleElementPath);

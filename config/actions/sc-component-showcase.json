@@ -294,7 +294,7 @@
       "type": "changeVariableValue",
       "config": {
         "variableName": "showcase-carousel",
-        "value": { "formula": "{ slide: Math.max(0, (variables['showcase-carousel']?.slide ?? 0) - 1), offset: 0 }" }
+        "value": { "formula": "{ slide: Math.max(0, (variables['showcase-carousel']?.slide ?? 0) - 1) }" }
       }
     }]
   },
@@ -308,43 +308,70 @@
       "type": "changeVariableValue",
       "config": {
         "variableName": "showcase-carousel",
-        "value": { "formula": "{ slide: Math.min(2, (variables['showcase-carousel']?.slide ?? 0) + 1), offset: 0 }" }
+        "value": { "formula": "{ slide: Math.min(2, (variables['showcase-carousel']?.slide ?? 0) + 1) }" }
       }
     }]
   },
 
-  "carousel-drag-update": {
-    "id": "carousel-drag-update",
-    "name": "Carousel: Drag update",
-    "trigger": "drag",
+  "demo-scroll-to-form": {
+    "id": "demo-scroll-to-form",
+    "name": "Scroll to form section",
+    "trigger": "click",
     "steps": [{
       "id": "s1",
-      "type": "changeVariableValue",
-      "config": {
-        "variableName": "showcase-carousel",
-        "value": { "formula": "{ slide: variables['showcase-carousel']?.slide ?? 0, offset: event?.translationX ?? 0 }" }
-      }
+      "type": "scrollToElement",
+      "config": { "elementId": "form-demo-section-wrapper", "behavior": "smooth", "block": "start" }
     }]
   },
 
-  "carousel-drag-end": {
-    "id": "carousel-drag-end",
-    "name": "Carousel: Drag end",
-    "trigger": "drag",
+  "demo-scroll-to-top": {
+    "id": "demo-scroll-to-top",
+    "name": "Scroll to top",
+    "trigger": "click",
     "steps": [{
       "id": "s1",
-      "type": "changeVariableValue",
-      "config": {
-        "variableName": "showcase-carousel",
-        "value": { "formula": "(()=>{ const tx=event?.translationX??0; const cur=variables['showcase-carousel']?.slide??0; const s=tx<-30&&cur<2?cur+1:tx>30&&cur>0?cur-1:cur; return {slide:s,offset:0}; })()" }
-      }
+      "type": "scrollToElement",
+      "config": { "elementId": "showcase-top-anchor", "behavior": "smooth", "block": "start" }
+    }]
+  },
+
+  "demo-animate-badge": {
+    "id": "demo-animate-badge",
+    "name": "Animate badge pulse",
+    "trigger": "click",
+    "steps": [{
+      "id": "s1",
+      "type": "animate",
+      "config": { "targetNodeId": "showcase-animate-target", "animation": "pulse", "duration": 500 }
+    }]
+  },
+
+  "demo-animate-shake": {
+    "id": "demo-animate-shake",
+    "name": "Animate shake",
+    "trigger": "click",
+    "steps": [{
+      "id": "s1",
+      "type": "animate",
+      "config": { "targetNodeId": "showcase-animate-target", "animation": "shake", "duration": 600 }
+    }]
+  },
+
+  "demo-animate-bounce": {
+    "id": "demo-animate-bounce",
+    "name": "Animate bounce",
+    "trigger": "click",
+    "steps": [{
+      "id": "s1",
+      "type": "animate",
+      "config": { "targetNodeId": "showcase-animate-target", "animation": "bounce", "duration": 600 }
     }]
   },
 
   "kanban-drag-start": {
     "id": "kanban-drag-start",
     "name": "Kanban: Drag start",
-    "trigger": "drag",
+    "trigger": "dragStart",
     "steps": [{
       "id": "s1",
       "type": "changeVariableValue",
@@ -358,14 +385,14 @@
   "kanban-drag-update": {
     "id": "kanban-drag-update",
     "name": "Kanban: Drag update",
-    "trigger": "drag",
+    "trigger": "dragUpdate",
     "steps": [{
       "id": "s1",
       "type": "changeVariableValue",
       "config": {
         "variableName": "showcase-kanban-drag",
         "value": {
-          "formula": "(()=>{ const cols=['todo','doing','done']; const src=variables['showcase-kanban-drag']?.sourceCol??'todo'; const ci=cols.indexOf(src); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,ci+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; const srcCards=allCards.filter(c=>c.col===src); const srcIdx=srcCards.findIndex(c=>c.id===variables['showcase-kanban-drag']?.cardId); const slotH=84; let ti; if(targetCol===src){ ti=Math.max(0,Math.min(srcCards.length-1,srcIdx+Math.round(ty/slotH))); } else { const tgtCards=allCards.filter(c=>c.col===targetCol); ti=Math.max(0,Math.min(tgtCards.length,srcIdx+Math.round(ty/slotH))); } return { cardId: variables['showcase-kanban-drag']?.cardId, sourceCol: src, targetCol, targetIndex: ti }; })()"
+          "js": "const cols=['todo','doing','done']; const src=variables['showcase-kanban-drag']?.sourceCol??'todo'; const ci=cols.indexOf(src); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,ci+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; const srcCards=allCards.filter(c=>c.col===src); const srcIdx=srcCards.findIndex(c=>c.id===variables['showcase-kanban-drag']?.cardId); const slotH=84; let ti; if(targetCol===src){ ti=Math.max(0,Math.min(srcCards.length-1,srcIdx+Math.round(ty/slotH))); } else { const tgtCards=allCards.filter(c=>c.col===targetCol); ti=Math.max(0,Math.min(tgtCards.length,srcIdx+Math.round(ty/slotH))); } return { cardId: variables['showcase-kanban-drag']?.cardId, sourceCol: src, targetCol, targetIndex: ti };"
         }
       }
     }]
@@ -374,7 +401,7 @@
   "kanban-drag-end": {
     "id": "kanban-drag-end",
     "name": "Kanban: Drag end",
-    "trigger": "drag",
+    "trigger": "dragEnd",
     "steps": [
       {
         "id": "s1",
@@ -382,7 +409,7 @@
         "config": {
           "variableName": "showcase-kanban-cards",
           "value": {
-            "formula": "(()=>{ const cols=['todo','doing','done']; const cardId=context?.item?.data?.id; const sourceCol=context?.item?.data?.col; const si=cols.indexOf(sourceCol??'todo'); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,si+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; if(!cardId) return allCards; if(targetCol!==sourceCol){ const srcCards=allCards.filter(c=>c.col===sourceCol); const srcIdx=srcCards.findIndex(c=>c.id===cardId); const slotH=84; const ti=Math.max(0,Math.min(allCards.filter(c=>c.col===targetCol).length,srcIdx+Math.round(ty/slotH))); const without=allCards.filter(c=>c.id!==cardId); const newTgt=without.filter(c=>c.col===targetCol); const updated={...allCards.find(c=>c.id===cardId),col:targetCol}; newTgt.splice(ti,0,updated); return [...without.filter(c=>c.col!==targetCol),...newTgt]; } const colCards=allCards.filter(c=>c.col===sourceCol); const curIdx=colCards.findIndex(c=>c.id===cardId); const slotH=84; const idxDelta=Math.round(ty/slotH); const newIdx=Math.max(0,Math.min(colCards.length-1,curIdx+idxDelta)); if(curIdx===newIdx) return allCards; const reordered=[...colCards]; const [moved]=reordered.splice(curIdx,1); reordered.splice(newIdx,0,moved); return [...allCards.filter(c=>c.col!==sourceCol),...reordered]; })()"
+            "js": "const cols=['todo','doing','done']; const cardId=context?.item?.data?.id; const sourceCol=context?.item?.data?.col; const si=cols.indexOf(sourceCol??'todo'); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,si+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; if(!cardId) return allCards; if(targetCol!==sourceCol){ const srcCards=allCards.filter(c=>c.col===sourceCol); const srcIdx=srcCards.findIndex(c=>c.id===cardId); const slotH=84; const ti=Math.max(0,Math.min(allCards.filter(c=>c.col===targetCol).length,srcIdx+Math.round(ty/slotH))); const without=allCards.filter(c=>c.id!==cardId); const newTgt=without.filter(c=>c.col===targetCol); const updated={...allCards.find(c=>c.id===cardId),col:targetCol}; newTgt.splice(ti,0,updated); return [...without.filter(c=>c.col!==targetCol),...newTgt]; } const colCards=allCards.filter(c=>c.col===sourceCol); const curIdx=colCards.findIndex(c=>c.id===cardId); const slotH=84; const idxDelta=Math.round(ty/slotH); const newIdx=Math.max(0,Math.min(colCards.length-1,curIdx+idxDelta)); if(curIdx===newIdx) return allCards; const reordered=[...colCards]; const [moved]=reordered.splice(curIdx,1); reordered.splice(newIdx,0,moved); return [...allCards.filter(c=>c.col!==sourceCol),...reordered];"
           }
         }
       },
@@ -395,6 +422,75 @@
         }
       }
     ]
+  },
+
+  "demo-exit-animation": {
+    "id": "demo-exit-animation",
+    "name": "Demo: Trigger exit animation",
+    "trigger": "click",
+    "steps": [
+      { "id": "s1", "type": "triggerExitAnimation", "config": { "targetNodeId": "showcase-exit-target" } },
+      { "id": "s2", "type": "timeDelay",             "config": { "time": 600 } },
+      { "id": "s3", "type": "changeVariableValue",   "config": { "variableName": "showcase-exit-visible", "value": false } },
+      { "id": "s4", "type": "timeDelay",             "config": { "time": 700 } },
+      { "id": "s5", "type": "changeVariableValue",   "config": { "variableName": "showcase-exit-visible", "value": true } }
+    ]
+  },
+
+  "demo-start-loop-spin": {
+    "id": "demo-start-loop-spin",
+    "name": "Demo: Start loop spin",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "startLoop", "config": { "targetNodeId": "showcase-loop-target", "loopType": "spin", "duration": 1000 } }]
+  },
+
+  "demo-start-loop-pulse": {
+    "id": "demo-start-loop-pulse",
+    "name": "Demo: Start loop pulse",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "startLoop", "config": { "targetNodeId": "showcase-loop-target", "loopType": "pulse", "duration": 800 } }]
+  },
+
+  "demo-start-loop-float": {
+    "id": "demo-start-loop-float",
+    "name": "Demo: Start loop float",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "startLoop", "config": { "targetNodeId": "showcase-loop-target", "loopType": "float", "duration": 1200 } }]
+  },
+
+  "demo-stop-loop": {
+    "id": "demo-stop-loop",
+    "name": "Demo: Stop loop",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "stopLoop", "config": { "targetNodeId": "showcase-loop-target" } }]
+  },
+
+  "demo-enter-fade": {
+    "id": "demo-enter-fade",
+    "name": "Demo: Play enter fade",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "playEnterAnimation", "config": { "targetNodeId": "showcase-enter-target", "enterType": "fadeIn", "duration": 500 } }]
+  },
+
+  "demo-enter-slide": {
+    "id": "demo-enter-slide",
+    "name": "Demo: Play enter slide up",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "playEnterAnimation", "config": { "targetNodeId": "showcase-enter-target", "enterType": "slideInUp", "duration": 500 } }]
+  },
+
+  "demo-enter-zoom": {
+    "id": "demo-enter-zoom",
+    "name": "Demo: Play enter zoom",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "playEnterAnimation", "config": { "targetNodeId": "showcase-enter-target", "enterType": "zoomIn", "duration": 500 } }]
+  },
+
+  "demo-enter-bounce": {
+    "id": "demo-enter-bounce",
+    "name": "Demo: Play enter bounce",
+    "trigger": "click",
+    "steps": [{ "id": "s1", "type": "playEnterAnimation", "config": { "targetNodeId": "showcase-enter-target", "enterType": "bounceIn", "duration": 600 } }]
   }
 
 }

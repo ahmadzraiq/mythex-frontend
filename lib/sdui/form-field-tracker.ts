@@ -377,12 +377,35 @@ export function useFormFieldRegistration(
       const scGlobalId = scControlledMeta != null && node.id ? `${node.id}-value` : null;
       if (scGlobalId && fieldName) {
         const nodeInitVal = (node as { _initialValue?: unknown })._initialValue;
-        const initVal = nodeInitVal
-          ?? getGlobalVariableStore().getState().getFullState()[scGlobalId]
-          ?? null;
+        // If _initialValue is a formula object (e.g. "context?.component?.variables?.['cb-checked']"),
+        // it cannot be used directly as an initial form value — it requires runtime SC scope.
+        // Instead, read the actual current value from:
+        //   1. The SC instance variable slot (set synchronously during render by ensureComponentInstanceSlot)
+        //   2. The already-initialized store slot (scGlobalId)
+        //   3. Fall back to null
+        const isFormulaInitVal = nodeInitVal != null && typeof nodeInitVal === 'object' && 'formula' in (nodeInitVal as object);
+        let initVal: unknown;
+        if (!isFormulaInitVal && nodeInitVal != null) {
+          // Literal initial value — use directly
+          initVal = nodeInitVal;
+        } else {
+          // Formula or no init value — try the SC instance variable first (already set during render)
+          let scInstanceVal: unknown;
+          if (isFormulaInitVal && scControlledMeta?.variable && node.id) {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              const gvs = require('@/lib/sdui/global-variable-store') as typeof import('./global-variable-store');
+              scInstanceVal = gvs.getComponentInstanceVar(node.id as string, scControlledMeta.variable);
+            } catch { /* ignore */ }
+          }
+          initVal = scInstanceVal !== undefined
+            ? scInstanceVal
+            : getGlobalVariableStore().getState().getFullState()[scGlobalId] ?? null;
+        }
         formCtx.registerField(fieldName, initVal);
-        // Seed the global store so formulas reading variables['nodeId-value'] see the init value
-        if (nodeInitVal !== undefined && nodeInitVal !== null &&
+        // Seed the global store only with literal (non-formula) values so that formulas reading
+        // variables['nodeId-value'] see the init value. Never seed with a formula object.
+        if (!isFormulaInitVal && nodeInitVal !== undefined && nodeInitVal !== null &&
             getGlobalVariableStore().getState().getFullState()[scGlobalId] === undefined) {
           getGlobalVariableStore().getState().set(scGlobalId, nodeInitVal);
         }

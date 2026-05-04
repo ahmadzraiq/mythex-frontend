@@ -35,6 +35,7 @@ for (const [id, raw] of Object.entries(initialData as Record<string, Record<stri
     formulas: ((raw as Record<string, unknown>).formulas ?? {}) as Record<string, ScopedFormulaDef>,
     workflows: ((raw as Record<string, unknown>).workflows ?? {}) as Record<string, ScopedWorkflow>,
     triggers: Array.isArray((raw as Record<string, unknown>).triggers) ? ((raw as Record<string, unknown>).triggers as ComponentTrigger[]) : undefined,
+    templateId: (raw as Record<string, unknown>).templateId != null ? String((raw as Record<string, unknown>).templateId) : undefined,
     content: ((raw as Record<string, unknown>).content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
   };
 }
@@ -78,6 +79,8 @@ export function normaliseSharedComponentModel(raw: Record<string, unknown>): Sha
     variables: (raw.variables ?? {}) as Record<string, ScopedVarDef>,
     formulas: (raw.formulas ?? {}) as Record<string, ScopedFormulaDef>,
     workflows: (raw.workflows ?? {}) as Record<string, ScopedWorkflow>,
+    triggers: Array.isArray(raw.triggers) ? (raw.triggers as ComponentTrigger[]) : undefined,
+    templateId: raw.templateId != null ? String(raw.templateId) : undefined,
     content: (raw.content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
     ...(raw.valueVariable != null ? { valueVariable: String(raw.valueVariable) } : {}),
   };
@@ -93,6 +96,8 @@ export function createSharedComponent(data: {
   variables?: Record<string, ScopedVarDef>;
   formulas?: Record<string, ScopedFormulaDef>;
   workflows?: Record<string, ScopedWorkflow>;
+  triggers?: ComponentTrigger[];
+  templateId?: string;
   content?: Record<string, unknown>;
 }): SharedComponentModel {
   const model: SharedComponentModel = {
@@ -104,6 +109,8 @@ export function createSharedComponent(data: {
     variables: data.variables ?? {},
     formulas: data.formulas ?? {},
     workflows: data.workflows ?? {},
+    triggers: data.triggers,
+    templateId: data.templateId,
     content: data.content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] },
   };
   _store = { ..._store, [model.id]: model };

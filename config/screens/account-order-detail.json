@@ -33,7 +33,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:underline transition-colors"
+                  "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] hover:underline"
                 },
                 "text": "← Orders"
               }

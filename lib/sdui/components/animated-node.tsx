@@ -764,6 +764,36 @@ export const triggerExitAnimation = (id: string): Promise<void> =>
     else resolve();
   });
 
+// ─── Loop control registry ────────────────────────────────────────────────────
+// Allows external callers (workflow steps) to imperatively start or stop a node's
+// loop animation without requiring a declarative loop config on the node.
+
+type LoopControlFn = (animType: string, duration: number) => void;
+const loopStartRegistry = new Map<string, LoopControlFn>();
+const loopStopRegistry  = new Map<string, () => void>();
+export const registerLoopNode   = (id: string, startFn: LoopControlFn, stopFn: () => void) => {
+  loopStartRegistry.set(id, startFn);
+  loopStopRegistry.set(id, stopFn);
+};
+export const unregisterLoopNode = (id: string) => {
+  loopStartRegistry.delete(id);
+  loopStopRegistry.delete(id);
+};
+export const startLoopOnNode = (id: string, type: string, duration: number) =>
+  loopStartRegistry.get(id)?.(type, duration);
+export const stopLoopOnNode  = (id: string) => loopStopRegistry.get(id)?.();
+
+// ─── Play-enter registry ──────────────────────────────────────────────────────
+// Allows external callers to imperatively play an enter animation (with overrideable
+// type and duration) on any registered AnimatedNode.
+
+type PlayEnterFn = (type: string, duration: number) => void;
+const enterPlayRegistry = new Map<string, PlayEnterFn>();
+export const registerEnterNode   = (id: string, fn: PlayEnterFn) => enterPlayRegistry.set(id, fn);
+export const unregisterEnterNode = (id: string) => enterPlayRegistry.delete(id);
+export const playEnterOnNode     = (id: string, type: string, duration: number) =>
+  enterPlayRegistry.get(id)?.(type, duration);
+
 // ─── CSS-string parser for statesMachine (converts to RN-compatible values) ───
 
 function parseCSSProps(cssProps: Record<string, string>): {
@@ -1446,15 +1476,160 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   // ── Imperative trigger registry ────────────────────────────────────────────
   useEffect(() => {
     if (!nodeId) return;
-    const trigger: TriggerFn = (_animType, duration) => {
+    const trigger: TriggerFn = (animType, duration) => {
       impTriggerProg.value = 0;
       impTriggerProg.value = withSequence(
         withTiming(1, { duration: duration * 0.5 }),
         withTiming(0, { duration: duration * 0.5 }),
       );
+      // Web: apply CSS keyframe animations directly so visual feedback is immediate.
+      if (typeof document !== 'undefined') {
+        const CSS_KEYFRAMES: Record<string, string> = {
+          shake:     '@keyframes an-shake    { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }',
+          pulse:     '@keyframes an-pulse    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }',
+          bounce:    '@keyframes an-bounce   { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-14px)} 70%{transform:translateY(-5px)} 85%{transform:translateY(0)} 95%{transform:translateY(-3px)} }',
+          spin:      '@keyframes an-spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }',
+          fadeIn:    '@keyframes an-fadeIn   { 0%{opacity:0;transform:scale(0.95)} 60%{opacity:1;transform:scale(1)} 100%{opacity:1;transform:scale(1)} }',
+          fadeOut:   '@keyframes an-fadeOut  { 0%{opacity:1} 60%{opacity:0} 100%{opacity:1} }',
+          slideUp:   '@keyframes an-slideUp  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }',
+          slideDown: '@keyframes an-slideDown{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(12px)} }',
+          heartbeat: '@keyframes an-heartbeat{ 0%,100%{transform:scale(1)} 20%{transform:scale(1.06)} 40%{transform:scale(1)} 60%{transform:scale(1.10)} 80%{transform:scale(1)} }',
+        };
+        const kfKey = `an-${animType}`;
+        if (CSS_KEYFRAMES[animType] && !document.getElementById(`__kf_${kfKey}`)) {
+          const s = document.createElement('style');
+          s.id = `__kf_${kfKey}`;
+          s.textContent = CSS_KEYFRAMES[animType];
+          document.head.appendChild(s);
+        }
+        const el = getDOMEl(animatedRef, nodeId);
+        if (el && CSS_KEYFRAMES[animType]) {
+          el.style.animation = `${kfKey} ${duration}ms ease-in-out`;
+          setTimeout(() => { if (el) el.style.animation = ''; }, duration + 50);
+        }
+      }
     };
     registerAnimationNode(nodeId, trigger);
     return () => { unregisterAnimationNode(nodeId); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  // ── Imperative loop control registry ───────────────────────────────────────
+  useEffect(() => {
+    if (!nodeId) return;
+    const startFn: LoopControlFn = (animType, duration) => {
+      // Stop any running loop first
+      cancelAnimation(loopScale);
+      cancelAnimation(loopTransX);
+      cancelAnimation(loopTransY);
+      cancelAnimation(loopOpac);
+      cancelAnimation(loopRotate);
+      cancelAnimation(loopBgPosX);
+      cancelAnimation(loopShadowRadius);
+      cancelAnimation(loopShadowOpac);
+      loopScale.value = 1; loopTransX.value = 0; loopTransY.value = 0;
+      loopOpac.value = 1;  loopRotate.value = 0;
+
+      // Special types not in LOOP_ANIM table
+      if (animType === 'gradientDrift') {
+        loopBgPosX.value = 0;
+        loopBgPosX.value = withRepeat(withTiming(100, { duration, easing: ReanimatedEasing.inOut(ReanimatedEasing.sin) }), -1, true);
+        return;
+      }
+      if (animType === 'glowPulse') {
+        const halfDur = duration * 0.5;
+        const easing  = ReanimatedEasing.inOut(ReanimatedEasing.quad);
+        loopShadowRadius.value = 4;
+        loopShadowOpac.value   = 0.25;
+        loopShadowRadius.value = withRepeat(withTiming(18, { duration: halfDur, easing }), -1, true);
+        loopShadowOpac.value   = withRepeat(withTiming(0.8,{ duration: halfDur, easing }), -1, true);
+        return;
+      }
+      if (animType === 'ripple') {
+        const easing = ReanimatedEasing.out(ReanimatedEasing.quad);
+        loopShadowRadius.value = 0; loopShadowOpac.value = 0.7;
+        loopShadowRadius.value = withRepeat(withTiming(20, { duration, easing }), -1, false);
+        loopShadowOpac.value   = withRepeat(withTiming(0,  { duration, easing }), -1, false);
+        return;
+      }
+
+      const mapping = LOOP_ANIM[animType];
+      if (!mapping) return;
+      const svMap: Record<string, typeof loopScale> = {
+        scale: loopScale, translateX: loopTransX, translateY: loopTransY, opacity: loopOpac, rotate: loopRotate,
+      };
+      const target = svMap[mapping.sv] ?? loopScale;
+
+      if (mapping.sequence) {
+        const steps = mapping.sequence.map(s =>
+          withTiming(s.to, { duration: duration * s.dur, easing: ReanimatedEasing.linear }),
+        );
+        target.value = mapping.from;
+        target.value = withRepeat(withSequence(...steps), -1, false);
+      } else if (mapping.sv === 'rotate') {
+        target.value = 0;
+        target.value = withRepeat(
+          withTiming((mapping as { sv: string; from: number; to: number }).to, { duration, easing: ReanimatedEasing.linear }),
+          -1, false,
+        );
+      } else {
+        const m = mapping as { sv: string; from: number; to: number };
+        target.value = m.from;
+        target.value = withRepeat(
+          withTiming(m.to, { duration: duration * 0.5, easing: ReanimatedEasing.inOut(ReanimatedEasing.quad) }),
+          -1, true,
+        );
+      }
+    };
+
+    const stopFn = () => {
+      cancelAnimation(loopScale);     cancelAnimation(loopTransX);
+      cancelAnimation(loopTransY);    cancelAnimation(loopOpac);
+      cancelAnimation(loopRotate);    cancelAnimation(loopBgPosX);
+      cancelAnimation(loopShadowRadius); cancelAnimation(loopShadowOpac);
+      loopScale.value         = withTiming(1, { duration: 300 });
+      loopTransX.value        = withTiming(0, { duration: 300 });
+      loopTransY.value        = withTiming(0, { duration: 300 });
+      loopOpac.value          = withTiming(1, { duration: 300 });
+      loopRotate.value        = withTiming(0, { duration: 300 });
+      loopShadowRadius.value  = withTiming(0, { duration: 300 });
+      loopShadowOpac.value    = withTiming(0, { duration: 300 });
+      loopBgPosX.value        = -1;
+    };
+
+    registerLoopNode(nodeId, startFn, stopFn);
+    return () => { unregisterLoopNode(nodeId); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId]);
+
+  // ── Imperative play-enter registry ─────────────────────────────────────────
+  useEffect(() => {
+    if (!nodeId) return;
+    const playEnterFn: PlayEnterFn = (animType, duration) => {
+      const from    = { ...(ENTER_FROM[animType] ?? { opacity: 0 }) };
+      const easing  = rnEase('easeOut');
+      const animFn  = (f: number, to: number) => withTiming(to, { duration, easing });
+
+      cancelAnimation(enterOpacity);   cancelAnimation(enterTranslateX);
+      cancelAnimation(enterTranslateY); cancelAnimation(enterScale);
+      cancelAnimation(enterRotateX);   cancelAnimation(enterRotateY);
+      cancelAnimation(enterRotateZ);   cancelAnimation(enterBlur);
+      cancelAnimation(enterSkewX);     cancelAnimation(enterSkewY);
+
+      if (from.opacity    != null) { enterOpacity.value    = from.opacity;    enterOpacity.value    = animFn(from.opacity,    1); } else { enterOpacity.value    = 1; }
+      if (from.translateX != null) { enterTranslateX.value = from.translateX; enterTranslateX.value = animFn(from.translateX, 0); } else { enterTranslateX.value = 0; }
+      if (from.translateY != null) { enterTranslateY.value = from.translateY; enterTranslateY.value = animFn(from.translateY, 0); } else { enterTranslateY.value = 0; }
+      if (from.scale      != null) { enterScale.value      = from.scale;      enterScale.value      = animFn(from.scale,      1); } else { enterScale.value      = 1; }
+      if (from.rotateX    != null) { enterRotateX.value    = from.rotateX;    enterRotateX.value    = animFn(from.rotateX,    0); } else { enterRotateX.value    = 0; }
+      if (from.rotateY    != null) { enterRotateY.value    = from.rotateY;    enterRotateY.value    = animFn(from.rotateY,    0); } else { enterRotateY.value    = 0; }
+      if (from.rotate     != null) { enterRotateZ.value    = from.rotate;     enterRotateZ.value    = animFn(from.rotate,     0); } else { enterRotateZ.value    = 0; }
+      if (from.blur       != null) { enterBlur.value       = from.blur;       enterBlur.value       = animFn(from.blur,       0); } else { enterBlur.value       = 0; }
+      if (from.skewX      != null) { enterSkewX.value      = from.skewX;      enterSkewX.value      = animFn(from.skewX,      0); } else { enterSkewX.value      = 0; }
+      if (from.skewY      != null) { enterSkewY.value      = from.skewY;      enterSkewY.value      = animFn(from.skewY,      0); } else { enterSkewY.value      = 0; }
+    };
+
+    registerEnterNode(nodeId, playEnterFn);
+    return () => { unregisterEnterNode(nodeId); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId]);
 
@@ -2511,6 +2686,22 @@ export const AnimatedNode = React.memo(function AnimatedNode({
   const safeRunActionWithEventRef = useRef(safeRunActionWithEvent);
   safeRunActionWithEventRef.current = safeRunActionWithEvent;
 
+  // Handler functions produced by bindActionsToProps when node.actions contains drag triggers
+  // (trigger: "dragStart" / "dragUpdate" / "dragEnd"). We hold them in refs so the gesture
+  // useMemo below doesn't need to re-run when they change on re-render.
+  const dragStartHandlerRef = useRef<((...args: unknown[]) => void) | undefined>(
+    componentProps?.onDragStart as ((...args: unknown[]) => void) | undefined,
+  );
+  dragStartHandlerRef.current = componentProps?.onDragStart as ((...args: unknown[]) => void) | undefined;
+  const dragUpdateHandlerRef = useRef<((...args: unknown[]) => void) | undefined>(
+    componentProps?.onDragUpdate as ((...args: unknown[]) => void) | undefined,
+  );
+  dragUpdateHandlerRef.current = componentProps?.onDragUpdate as ((...args: unknown[]) => void) | undefined;
+  const dragEndHandlerRef = useRef<((...args: unknown[]) => void) | undefined>(
+    componentProps?.onDragEnd as ((...args: unknown[]) => void) | undefined,
+  );
+  dragEndHandlerRef.current = componentProps?.onDragEnd as ((...args: unknown[]) => void) | undefined;
+
   const dragGesture = useMemo(() => {
     if (!drag?.enabled) return Gesture.Pan().runOnJS(true).enabled(false);
     const axis         = drag.axis ?? 'both';
@@ -2520,7 +2711,12 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const onEnd        = drag.onDragEnd;
     const noVisual     = drag.noVisualMove ?? false;
 
-    if (onStart || onUpdate || onEnd) {
+    // Always use the action-firing gesture path when drag is enabled.
+    // Handlers (both string IDs and prop handler refs) may be absent at first render but added later
+    // via node.actions without the drag config changing. Since the useMemo deps only cover the drag
+    // config object, all handler dispatch goes through refs that are updated on every render — this
+    // means the gesture is built once and handlers are always current at call-time.
+    {
       // Generic action-firing mode.
       // Builds a rich event payload from the Pan gesture and fires the configured action.
       // containerWidthSv may be 0 on web (onLayout doesn't always fire) — fall back to
@@ -2566,14 +2762,16 @@ export const AnimatedNode = React.memo(function AnimatedNode({
         .onStart((e: GestureStateChangeEvent<PanGestureHandlerEventPayload>) => {
           // Only fires when the user has actually moved (minDistance met) — not on plain clicks.
           if (!noVisual) { dragging.value = true; dragStartX.value = dragX.value; dragStartY.value = dragY.value; }
-          if (onStart) safeRunActionWithEventRef.current([{ action: onStart }], buildPayload(e));
+          // Prefer prop handler (from node.actions binding); fall back to legacy string ID.
+          if (dragStartHandlerRef.current) dragStartHandlerRef.current(buildPayload(e));
+          else if (onStart) safeRunActionWithEventRef.current([{ action: onStart }], buildPayload(e));
         })
         .onUpdate((e: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
           if (!noVisual) {
             if (axis !== 'y') dragX.value = clamp(dragStartX.value + e.translationX, bounds?.left, bounds?.right);
             if (axis !== 'x') dragY.value = clamp(dragStartY.value + e.translationY, bounds?.top, bounds?.bottom);
           }
-          if (onUpdate) {
+          if (dragUpdateHandlerRef.current || onUpdate) {
             // Throttle action dispatch to one call per animation frame.
             // Visual movement (dragX/dragY) still updates every event for smoothness;
             // only the expensive action pipeline (formula eval → Zustand) is capped at ~60fps.
@@ -2582,7 +2780,9 @@ export const AnimatedNode = React.memo(function AnimatedNode({
               dragUpdateRafRef.current = requestAnimationFrame(() => {
                 dragUpdateRafRef.current = null;
                 const latestE = dragUpdateEventRef.current;
-                if (latestE) safeRunActionWithEventRef.current([{ action: onUpdate }], buildPayload(latestE));
+                if (!latestE) return;
+                if (dragUpdateHandlerRef.current) dragUpdateHandlerRef.current(buildPayload(latestE));
+                else if (onUpdate) safeRunActionWithEventRef.current([{ action: onUpdate }], buildPayload(latestE));
               });
             }
           }
@@ -2593,7 +2793,8 @@ export const AnimatedNode = React.memo(function AnimatedNode({
             cancelAnimationFrame(dragUpdateRafRef.current);
             dragUpdateRafRef.current = null;
           }
-          if (onEnd) safeRunActionWithEventRef.current([{ action: onEnd }], buildPayload(e));
+          if (dragEndHandlerRef.current) dragEndHandlerRef.current(buildPayload(e));
+          else if (onEnd) safeRunActionWithEventRef.current([{ action: onEnd }], buildPayload(e));
           if (!noVisual) {
             if (drag.snapBack || drag.springBack) {
               // Defer snap-back one frame: by the time the RAF fires, React will have
@@ -2625,27 +2826,6 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           }
         });
     }
-
-    return Gesture.Pan()
-      .runOnJS(true)
-      .minDistance(8)
-      .onStart(() => {
-        dragging.value = true;
-        dragStartX.value = dragX.value;
-        dragStartY.value = dragY.value;
-      })
-      .onUpdate((e: GestureUpdateEvent<PanGestureHandlerEventPayload>) => {
-        if (axis !== 'y') dragX.value = clamp(dragStartX.value + e.translationX, bounds?.left, bounds?.right);
-        if (axis !== 'x') dragY.value = clamp(dragStartY.value + e.translationY, bounds?.top, bounds?.bottom);
-      })
-      .onEnd(() => {
-        dragging.value = false;
-        if (drag.snapBack || drag.springBack) {
-          const snapEase = ReanimatedEasing.out(ReanimatedEasing.quad);
-          dragX.value = withTiming(0, { duration: 250, easing: snapEase });
-          dragY.value = withTiming(0, { duration: 250, easing: snapEase });
-        }
-      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag?.enabled, drag?.axis, drag?.snapBack, drag?.springBack, JSON.stringify(drag?.bounds),
       drag?.onDragStart, drag?.onDragUpdate, drag?.onDragEnd, drag?.noVisualMove]);
@@ -2690,10 +2870,18 @@ export const AnimatedNode = React.memo(function AnimatedNode({
           actionName = dy < 0 ? gesture.onSwipeUpAction    : gesture.onSwipeDownAction;
         }
 
-        // dragFeedback: don't reset gestureTranslateX — the statesMachine will
-        // animate it to the new slide position when the action fires and the
-        // watchVar changes. Resetting here would cause a visible snap-back.
-        if (actionName) runOnJS(safeRunAction)([{ action: actionName }]);
+        // dragFeedback: always snap back to the last confirmed state position first.
+        // When the action changes the watchVar, the statesMachine useEffect fires in the
+        // same JS turn and overrides this with the correct slide animation. When the swipe
+        // hits a boundary (watchVar stays the same), this snap-back is all that runs,
+        // returning the track to its correct position instead of getting stuck.
+        if (actionName) {
+          if (gesture.dragFeedback) {
+            const snapDur = gesture.animationDuration ?? 400;
+            gestureTranslateX.value = withTiming(lastSmTransform.value, { duration: snapDur, easing: rnEase('easeInOut') });
+          }
+          runOnJS(safeRunAction)([{ action: actionName }]);
+        }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gesture?.enabled, gesture?.swipe, gesture?.swipeThreshold, gesture?.velocityThreshold,
@@ -3402,6 +3590,11 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     const singleProps = { ...((componentProps ?? {}) as Record<string, unknown>) };
     // Never spread React's reserved `key` prop into JSX props.
     delete singleProps.key;
+    // Drag event handlers are consumed by AnimatedNode's gesture system — strip them
+    // so they don't reach the underlying DOM element as unknown event props.
+    delete singleProps.onDragStart;
+    delete singleProps.onDragUpdate;
+    delete singleProps.onDragEnd;
     // RN-specific DOM-incompatible props that crash or warn on web host elements.
     // Our web host components (Box, Text, Heading, etc.) are functions that forward
     // {...props} to raw DOM elements, so all RN-only props must be stripped.

@@ -137,8 +137,9 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--theme-border)] hover:shadow-lg transition-shadow duration-150"
+                          "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--theme-border)]"
                         },
+                        "animation": { "hover": { "duration": 150, "styles": { "boxShadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)" } } },
                         "actions": [
                           {
                             "action": "f6046c33-0164-45b5-86aa-0710fc408247"
@@ -157,9 +158,10 @@
                                   "src": "{{context.item.data.productAsset.preview}}",
                                   "alt": "{{context.item.data.productName}}",
                                   "fill": true,
-                                  "className": "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                },
-                                "condition": "context?.item?.data?.productAsset?.preview"
+                                "className": "w-full h-full object-cover",
+                                "animation": { "hover": { "scale": 1.05, "duration": 300 } }
+                              },
+                              "condition": "context?.item?.data?.productAsset?.preview"
                               },
                               {
                                 "type": "Box",
@@ -188,7 +190,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[24px] font-bold text-foreground font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70 transition-opacity"
+                                  "className": "text-[24px] font-bold text-foreground font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70"
                                 },
                                 "text": "{{context.item.data.productName}}"
                               },

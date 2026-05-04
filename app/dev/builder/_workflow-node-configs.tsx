@@ -2048,6 +2048,382 @@ function WorkflowKvEditor({
   );
 }
 
+// ─── Shared: NodePickerDropdown ──────────────────────────────────────────────
+// Searchable popover dropdown that lists all named canvas nodes.
+// Matches the exact style of PagePickerDropdown / TypeSearchDropdown.
+// If the configured value isn't in pageNodes (e.g. node lives on another screen)
+// it is still shown in the trigger so the configured ID is never silently lost.
+
+function NodePickerDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const { pageNodes } = useBuilderStore();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const namedNodes = React.useMemo(() => {
+    const results: { id: string; label: string }[] = [];
+    function walk(nodes: unknown[]) {
+      for (const n of nodes) {
+        const node = n as Record<string, unknown>;
+        if (node.id && typeof node.id === 'string' && node.id.length > 0) {
+          const label = (node.name as string | undefined) || (node.type as string | undefined) || node.id as string;
+          results.push({ id: node.id as string, label });
+        }
+        if (Array.isArray(node.children)) walk(node.children as unknown[]);
+      }
+    }
+    walk(pageNodes);
+    return results;
+  }, [pageNodes]);
+
+  const q = search.toLowerCase();
+  const filtered = namedNodes.filter(n =>
+    !q || n.id.toLowerCase().includes(q) || n.label.toLowerCase().includes(q),
+  );
+
+  const selected = namedNodes.find(n => n.id === value);
+  const triggerLabel = selected ? `${selected.label} (${value})` : value || 'Select a node…';
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-popover="node-picker"]')) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    window.addEventListener('mousedown', handler, true);
+    return () => window.removeEventListener('mousedown', handler, true);
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} data-popover="node-picker" style={{ position: 'relative', width: '100%' }}>
+      <button
+        style={{
+          ...S.fieldSelect,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+          paddingRight: 28,
+        }}
+        onClick={() => { setOpen(v => !v); setSearch(''); }}
+      >
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          color: value ? '#f3f4f6' : '#6b7280' }}>
+          {triggerLabel}
+        </span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+          fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          ...S.dropdown,
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 280,
+        }}>
+          <input
+            ref={searchRef}
+            style={S.dropdownSearch}
+            placeholder="Search nodes…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {filtered.length === 0 && (
+            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
+              {namedNodes.length === 0 ? 'No named nodes on this page' : 'No matches'}
+            </div>
+          )}
+          {filtered.map(n => (
+            <button
+              key={n.id}
+              style={S.dropdownItem(n.id === value)}
+              onMouseEnter={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onClick={() => { onChange(n.id); setOpen(false); setSearch(''); }}
+            >
+              <span style={{ flex: 1 }}>{n.label}</span>
+              <span style={{ fontSize: 10, color: '#6b7280' }}>{n.id}</span>
+              {n.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ScrollToElementConfig ───────────────────────────────────────────────────
+
+function ScrollToElementConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  const elementId = (cfg.elementId ?? cfg.targetId ?? '') as string;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Element ID</label>
+      <input
+        style={S.fieldInput}
+        value={elementId}
+        placeholder="Node id or data-section-id value"
+        onChange={e => setCfg('elementId', e.target.value)}
+      />
+      <label style={S.fieldLabel}>Or pick from canvas</label>
+      <NodePickerDropdown
+        value={elementId}
+        onChange={id => setCfg('elementId', id)}
+      />
+      <label style={S.fieldLabel}>Behavior</label>
+      <select
+        style={S.fieldSelect}
+        value={(cfg.behavior as string) ?? 'smooth'}
+        onChange={e => setCfg('behavior', e.target.value)}
+      >
+        <option value="smooth">Smooth</option>
+        <option value="instant">Instant</option>
+        <option value="auto">Auto</option>
+      </select>
+      <label style={S.fieldLabel}>Block alignment</label>
+      <select
+        style={S.fieldSelect}
+        value={(cfg.block as string) ?? 'start'}
+        onChange={e => setCfg('block', e.target.value)}
+      >
+        <option value="start">Start</option>
+        <option value="center">Center</option>
+        <option value="end">End</option>
+        <option value="nearest">Nearest</option>
+      </select>
+    </div>
+  );
+}
+
+// ─── AnimateStepConfig ────────────────────────────────────────────────────────
+
+const ANIMATION_TYPES = [
+  { value: 'fadeIn',    label: 'Fade in' },
+  { value: 'fadeOut',   label: 'Fade out' },
+  { value: 'slideUp',   label: 'Slide up' },
+  { value: 'slideDown', label: 'Slide down' },
+  { value: 'shake',     label: 'Shake' },
+  { value: 'pulse',     label: 'Pulse' },
+  { value: 'bounce',    label: 'Bounce' },
+  { value: 'spin',      label: 'Spin' },
+  { value: 'heartbeat', label: 'Heartbeat' },
+];
+
+function AnimateStepConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Target node</label>
+      <NodePickerDropdown
+        value={(cfg.targetNodeId ?? '') as string}
+        onChange={id => setCfg('targetNodeId', id)}
+      />
+      <label style={S.fieldLabel}>Animation</label>
+      <select
+        style={S.fieldSelect}
+        value={(cfg.animation as string) ?? 'pulse'}
+        onChange={e => setCfg('animation', e.target.value)}
+      >
+        {ANIMATION_TYPES.map(a => (
+          <option key={a.value} value={a.value}>{a.label}</option>
+        ))}
+      </select>
+      <label style={S.fieldLabel}>Duration (ms)</label>
+      <input
+        type="number"
+        style={{ ...S.fieldInput, width: 100 }}
+        value={(cfg.duration as number) ?? 400}
+        min={50}
+        max={5000}
+        step={50}
+        onChange={e => setCfg('duration', Number(e.target.value))}
+      />
+    </div>
+  );
+}
+
+// ─── TriggerExitAnimationConfig ──────────────────────────────────────────────
+
+function TriggerExitAnimationConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Target node</label>
+      <NodePickerDropdown
+        value={(cfg.targetNodeId ?? '') as string}
+        onChange={id => setCfg('targetNodeId', id)}
+      />
+      <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>
+        The node must have <code>animation.exit</code> configured. The step awaits the exit animation before continuing.
+      </p>
+    </div>
+  );
+}
+
+// ─── StartLoopConfig ──────────────────────────────────────────────────────────
+
+const LOOP_TYPES = [
+  { value: 'pulse',        label: 'Pulse (scale)' },
+  { value: 'breathe',      label: 'Breathe (gentle scale)' },
+  { value: 'float',        label: 'Float (translateY)' },
+  { value: 'flash',        label: 'Flash (opacity)' },
+  { value: 'ripple',       label: 'Ripple (shadow ring)' },
+  { value: 'glowPulse',    label: 'Glow pulse (shadow halo)' },
+  { value: 'spin',         label: 'Spin (rotate)' },
+  { value: 'ticker',       label: 'Ticker (rotate)' },
+  { value: 'shake',        label: 'Shake (translateX seq)' },
+  { value: 'bounce',       label: 'Bounce (translateY seq)' },
+  { value: 'wiggle',       label: 'Wiggle (rotate seq)' },
+  { value: 'swing',        label: 'Swing (rotate seq)' },
+  { value: 'wobble',       label: 'Wobble (translateX seq)' },
+  { value: 'heartbeat',    label: 'Heartbeat (scale seq)' },
+  { value: 'gradientDrift',label: 'Gradient drift (bg position)' },
+];
+
+function StartLoopConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Target node</label>
+      <NodePickerDropdown
+        value={(cfg.targetNodeId ?? '') as string}
+        onChange={id => setCfg('targetNodeId', id)}
+      />
+      <label style={S.fieldLabel}>Loop type</label>
+      <select
+        style={S.fieldSelect}
+        value={(cfg.loopType ?? 'pulse') as string}
+        onChange={e => setCfg('loopType', e.target.value)}
+      >
+        {LOOP_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+      <label style={S.fieldLabel}>Duration (ms per cycle)</label>
+      <input
+        type="number"
+        style={{ ...S.fieldInput, width: 100 }}
+        value={(cfg.duration ?? 1000) as number}
+        min={100}
+        max={10000}
+        step={100}
+        onChange={e => setCfg('duration', Number(e.target.value))}
+      />
+    </div>
+  );
+}
+
+// ─── StopLoopConfig ───────────────────────────────────────────────────────────
+
+function StopLoopConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Target node</label>
+      <NodePickerDropdown
+        value={(cfg.targetNodeId ?? '') as string}
+        onChange={id => setCfg('targetNodeId', id)}
+      />
+    </div>
+  );
+}
+
+// ─── PlayEnterAnimationConfig ─────────────────────────────────────────────────
+
+const ENTER_TYPES = [
+  { value: 'fadeIn',          label: 'Fade in' },
+  { value: 'slideInUp',       label: 'Slide in up' },
+  { value: 'slideInDown',     label: 'Slide in down' },
+  { value: 'slideInLeft',     label: 'Slide in left' },
+  { value: 'slideInRight',    label: 'Slide in right' },
+  { value: 'zoomIn',          label: 'Zoom in' },
+  { value: 'bounceIn',        label: 'Bounce in' },
+  { value: 'flipInX',         label: 'Flip in X' },
+  { value: 'flipInY',         label: 'Flip in Y' },
+  { value: 'flipIn3D',        label: 'Flip in 3D' },
+  { value: 'rollIn',          label: 'Roll in' },
+  { value: 'tiltIn',          label: 'Tilt in' },
+  { value: 'dropIn',          label: 'Drop in' },
+  { value: 'riseFade',        label: 'Rise fade' },
+  { value: 'expandIn',        label: 'Expand in' },
+  { value: 'blurIn',          label: 'Blur in' },
+  { value: 'skewIn',          label: 'Skew in' },
+];
+
+function PlayEnterAnimationConfig({
+  cfg,
+  setCfg,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={S.fieldLabel}>Target node</label>
+      <NodePickerDropdown
+        value={(cfg.targetNodeId ?? '') as string}
+        onChange={id => setCfg('targetNodeId', id)}
+      />
+      <label style={S.fieldLabel}>Enter type</label>
+      <select
+        style={S.fieldSelect}
+        value={(cfg.enterType ?? 'fadeIn') as string}
+        onChange={e => setCfg('enterType', e.target.value)}
+      >
+        {ENTER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+      <label style={S.fieldLabel}>Duration (ms)</label>
+      <input
+        type="number"
+        style={{ ...S.fieldInput, width: 100 }}
+        value={(cfg.duration ?? 400) as number}
+        min={50}
+        max={5000}
+        step={50}
+        onChange={e => setCfg('duration', Number(e.target.value))}
+      />
+    </div>
+  );
+}
+
 // ─── PopoverStepConfig ────────────────────────────────────────────────────────
 
 function PopoverStepConfig({
@@ -4621,6 +4997,30 @@ export function NodePropsPanel({
 
       {(step.type === 'openPopover' || step.type === 'closePopover' || step.type === 'togglePopover') && (
         <PopoverStepConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'scrollToElement' && (
+        <ScrollToElementConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'animate' && (
+        <AnimateStepConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'triggerExitAnimation' && (
+        <TriggerExitAnimationConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'startLoop' && (
+        <StartLoopConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'stopLoop' && (
+        <StopLoopConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {step.type === 'playEnterAnimation' && (
+        <PlayEnterAnimationConfig cfg={cfg} setCfg={setCfg} />
       )}
 
       <label style={{ ...S.fieldLabel, marginTop: 12 }}>Description</label>

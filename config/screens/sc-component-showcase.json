@@ -5,7 +5,7 @@
   "state": {},
   "ui": {
     "type": "Box",
-    "id": "dc6d0968-a7e2-45aa-8169-e62632d113db",
+    "id": "showcase-top-anchor",
     "props": {
       "className": "w-full min-h-screen bg-[var(--theme-background)]"
     },
@@ -46,7 +46,7 @@
             "type": "Box",
             "id": "e2ad9f7d-4a0b-4619-bfe6-d8f74fa1d48d",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -83,7 +83,7 @@
                     "type": "Box",
                     "id": "050eb1d3-309f-4be1-872c-a97a7f5f2187",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -117,7 +117,7 @@
                     "type": "Box",
                     "id": "a802a589-f5d3-4490-9506-7201a56013a5",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -142,7 +142,7 @@
                     "type": "Box",
                     "id": "c0bc7865-413e-4996-9730-940aabfefe71",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -157,7 +157,7 @@
                         "type": "Input",
                         "id": "25552ed4-ce42-476a-8fd8-0ebd3ee7cf98",
                         "props": {
-                          "className": "w-full h-[34px] border border-[var(--theme-border-[1px])] rounded-[6px] text-[13px] px-0",
+                          "className": "w-full h-[34px] border border-[var(--theme-border)] rounded-[6px] text-[13px] px-0",
                           "placeholder": "Type here..."
                         }
                       },
@@ -173,7 +173,7 @@
                         "type": "Input",
                         "id": "mask-phone-input",
                         "props": {
-                          "className": "w-full h-[34px] border border-[var(--theme-border-[1px])] rounded-[6px] text-[13px] px-0",
+                          "className": "w-full h-[34px] border border-[var(--theme-border)] rounded-[6px] text-[13px] px-0",
                           "placeholder": "(###) ###-####",
                           "format": "(###) ###-####"
                         }
@@ -190,7 +190,7 @@
                         "type": "Input",
                         "id": "mask-date-input",
                         "props": {
-                          "className": "w-full h-[34px] border border-[var(--theme-border-[1px])] rounded-[6px] text-[13px] px-0",
+                          "className": "w-full h-[34px] border border-[var(--theme-border)] rounded-[6px] text-[13px] px-0",
                           "placeholder": "####-##-##",
                           "format": "####-##-##"
                         }
@@ -201,7 +201,7 @@
                     "type": "Box",
                     "id": "5da93f47-78dd-41b5-b56c-c8d75cee65e0",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -216,7 +216,7 @@
                         "type": "Textarea",
                         "id": "91320601-8b70-4e0f-add6-6f31b3d2b80a",
                         "props": {
-                          "className": "w-full h-[48px] border border-[var(--theme-border-[1px])] rounded-[6px] text-[13px] p-0",
+                          "className": "w-full h-[48px] border border-[var(--theme-border)] rounded-[6px] text-[13px] p-0",
                           "placeholder": "Text area..."
                         }
                       }
@@ -226,7 +226,7 @@
                     "type": "Box",
                     "id": "40ed7ca9-1bb7-4a2f-9087-d963eaf19fc8",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -251,7 +251,7 @@
                     "type": "Box",
                     "id": "455e09c8-3a0b-41aa-8f76-5fbd4698f1b8",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -276,7 +276,7 @@
                     "type": "Box",
                     "id": "a79f1ef1-977c-48f8-a0b4-4367e4b3ae0d",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -302,7 +302,7 @@
                     "type": "Box",
                     "id": "eeec1222-a468-456b-9fc3-0eadc2fac8a8",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -318,7 +318,7 @@
                         "id": "8596b99c-f562-4777-a438-a6b3c34e8d25",
                         "props": {
                           "src": "https://example.com",
-                          "className": "w-full h-[80px] rounded-[6px] border border-[var(--theme-border-[1px])]"
+                          "className": "w-full h-[80px] rounded-[6px] border border-[var(--theme-border)]"
                         }
                       }
                     ]
@@ -331,7 +331,7 @@
             "type": "Box",
             "id": "10aa0dd9-fb59-4573-bdfc-80049c8e3c13",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -360,7 +360,7 @@
                     "type": "Box",
                     "id": "66783610-a5cf-4a45-b306-dd855b990c5e",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -374,7 +374,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-col gap-[10px] p-[20px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] w-full"
+                          "className": "flex flex-col gap-[10px] p-[20px] rounded-[12px] border border-[var(--theme-border)] bg-[var(--theme-card)] w-full"
                         },
                         "children": [
                           {
@@ -410,7 +410,7 @@
                     "type": "Box",
                     "id": "c86f6b9e-de63-4796-94b5-de6b5ee1d089",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -466,7 +466,7 @@
                     "type": "Box",
                     "id": "354865c3-4c92-4be6-a358-d8dfcf3840bc",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -526,7 +526,7 @@
             "type": "Box",
             "id": "cf44891a-faf5-4bb1-86b7-7cd94a161fd3",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -555,7 +555,7 @@
                     "type": "Box",
                     "id": "9e9f5875-b189-482a-a6f0-6a40c4a8364e",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -586,7 +586,7 @@
                     "type": "Box",
                     "id": "4b5c4f40-eb2d-4235-a039-9799887acb22",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -617,7 +617,7 @@
                     "type": "Box",
                     "id": "b2f1576a-c033-49ca-b05a-f5691ae641d7",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -648,7 +648,7 @@
                     "type": "Box",
                     "id": "8831ec0a-d092-4d87-9320-08f68e274406",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -689,7 +689,7 @@
                     "type": "Box",
                     "id": "6228da32-92fe-4f91-8e92-2d855d1c4817",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -703,7 +703,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-full h-px bg-[var(--theme-border-[1px])] my-[8px]"
+                          "className": "w-full h-px bg-[var(--theme-border)] my-[8px]"
                         },
                         "_sharedKey": "38e18b10-e476-4312-a714-8b303751cadd",
                         "id": "f470167a-357b-4a6d-a5d9-dd7272c0eff9",
@@ -723,7 +723,7 @@
             "type": "Box",
             "id": "b4fae723-f5f0-488b-9c63-3c5215db6ac8",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -752,7 +752,7 @@
                     "type": "Box",
                     "id": "1885556e-d820-4182-8c89-e69fc2cba39f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -793,7 +793,7 @@
                     "type": "Box",
                     "id": "7ec19594-3525-4086-a99b-47a0cab23d55",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -835,7 +835,7 @@
                     "type": "Box",
                     "id": "826ab3bb-8d7c-4f78-9f81-8b66475062b9",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -849,7 +849,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] w-fit"
+                          "className": "inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] border border-[var(--theme-border)] bg-[var(--theme-card)] w-fit"
                         },
                         "children": [
                           {
@@ -890,7 +890,7 @@
             "type": "Box",
             "id": "f10f1f1a-bc28-40a9-b37f-b254519ef937",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -919,7 +919,7 @@
                     "type": "Box",
                     "id": "a4b866dc-988d-4fff-b26e-547cf16d504d",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -989,7 +989,7 @@
                     "type": "Box",
                     "id": "fec6cd96-8c2c-404e-86b2-18ebf4bca5ac",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1032,7 +1032,7 @@
                     "type": "Box",
                     "id": "a2af22a8-4071-40e4-87b3-1185ead8ac9d",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1088,7 +1088,7 @@
                     "type": "Box",
                     "id": "55784417-1e9f-4fea-a115-0c042ba2eaf8",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1156,7 +1156,7 @@
             "type": "Box",
             "id": "f379f1d8-e337-4d5c-b074-f97f769602a3",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -1185,7 +1185,7 @@
                     "type": "Box",
                     "id": "dfa82356-0148-4de3-be20-00c60299537c",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1245,7 +1245,7 @@
                     "type": "Box",
                     "id": "89d3a688-a674-4e52-92eb-3c99a00b9cbb",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1259,7 +1259,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-row border-b border-[var(--theme-border-[1px])] w-full"
+                          "className": "flex flex-row border-b border-[var(--theme-border)] w-full"
                         },
                         "children": [
                           {
@@ -1343,7 +1343,7 @@
                     "type": "Box",
                     "id": "aa855458-e812-4ba4-b9b9-d4c58bcd0137",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1371,7 +1371,7 @@
                             "children": [
                               {
                                 "type": "Box",
-                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'none' : '2px solid var(--theme-border)'" } } },
                                 "_sharedKey": "8072aef4-a0bb-42e7-86d4-c61c5717c10c",
                                 "id": "387c16e3-e193-48bf-a98b-531d50b46ebb",
                                 "children": [
@@ -1382,7 +1382,7 @@
                               { "type": "Text", "text": "{{context.component.props.step1}}", "props": { "className": "text-[12px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? '600' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } }, "_sharedKey": "cae4d99c-9212-43f7-934f-667b6a2800f6", "id": "db787174-e172-40c4-8562-9b590035cb11" }
                             ]
                           },
-                          { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 1 ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } }, "_sharedKey": "d001cba6-f46e-47f9-8b94-4c1dc76c0bfa", "id": "b2f63351-cec1-46a0-a16d-0804104a1ae3" },
+                          { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 1 ? 'var(--theme-primary)' : 'var(--theme-border)'" } } }, "_sharedKey": "d001cba6-f46e-47f9-8b94-4c1dc76c0bfa", "id": "b2f63351-cec1-46a0-a16d-0804104a1ae3" },
                           {
                             "type": "Box",
                             "props": { "className": "flex flex-col items-center gap-[8px]" },
@@ -1392,7 +1392,7 @@
                             "children": [
                               {
                                 "type": "Box",
-                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'none' : '2px solid var(--theme-border)'" } } },
                                 "_sharedKey": "4e10ec6b-86f7-4925-9174-19f31021573d",
                                 "id": "1db84b7a-77f9-4a55-9349-b87740467b8b",
                                 "children": [
@@ -1403,7 +1403,7 @@
                               { "type": "Text", "text": "{{context.component.props.step2}}", "props": { "className": "text-[12px]", "style": { "fontWeight": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? '600' : '400'" }, "color": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'var(--theme-primary)' : 'var(--theme-muted-foreground)'" } } }, "_sharedKey": "3176fe51-2154-4279-9bb9-b37f148c587c", "id": "9f1beedc-e448-403e-b24b-d6b532c6a986" }
                             ]
                           },
-                          { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 2 ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } }, "_sharedKey": "2181123a-5d3d-4e27-a416-d82eba30cef7", "id": "768f6265-b36d-4ba0-b508-7d52badd5a08" },
+                          { "type": "Box", "props": { "className": "flex-1 border-t-2 border-dashed mt-[15px]", "style": { "borderColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) > 2 ? 'var(--theme-primary)' : 'var(--theme-border)'" } } }, "_sharedKey": "2181123a-5d3d-4e27-a416-d82eba30cef7", "id": "768f6265-b36d-4ba0-b508-7d52badd5a08" },
                           {
                             "type": "Box",
                             "props": { "className": "flex flex-col items-center gap-[8px]" },
@@ -1413,7 +1413,7 @@
                             "children": [
                               {
                                 "type": "Box",
-                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'none' : '2px solid var(--theme-border-[1px])'" } } },
+                                "props": { "className": "flex items-center justify-center w-[32px] h-[32px] rounded-full cursor-pointer", "style": { "backgroundColor": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'none' : '2px solid var(--theme-border)'" } } },
                                 "_sharedKey": "0a370f28-468a-44d6-bcdd-f71e11d6e9e8",
                                 "id": "0bbab6d9-87ec-49da-8854-0b415193c5bf",
                                 "children": [
@@ -1432,7 +1432,7 @@
                     "type": "Box",
                     "id": "fb5efbb8-5181-4766-b8a9-5625268cc29f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1453,7 +1453,7 @@
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
+                            "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
                             "actions": [{ "action": "pg-wf-prev" }],
                             "_sharedKey": "8edfc847-bbb1-4dc1-800f-a070bbb53157",
                             "id": "b0cfec8d-a5dc-4609-a061-e4d302347998",
@@ -1469,7 +1469,7 @@
                             "children": [
                               {
                                 "type": "Box",
-                                "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] cursor-pointer", "style": { "backgroundColor": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'none' : '1px solid var(--theme-border-[1px])'" } } },
+                                "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] cursor-pointer", "style": { "backgroundColor": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'var(--theme-primary)' : 'var(--theme-card)'" }, "border": { "formula": "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'none' : '1px solid var(--theme-border)'" } } },
                                 "actions": [{ "action": "pg-wf-go-page" }],
                                 "_sharedKey": "00f7368b-d866-4428-91c2-b9ce96f3d37c",
                                 "id": "77372ae3-e3ca-4be9-9467-ac9a4e54d3ea",
@@ -1479,7 +1479,7 @@
                           },
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
+                            "props": { "className": "flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]" },
                             "actions": [{ "action": "pg-wf-next" }],
                             "_sharedKey": "a098eebd-e325-4e9d-a9d1-20cc830c1f7e",
                             "id": "59fea663-6bef-4ea4-a839-eeb30d8276a7",
@@ -1497,7 +1497,7 @@
             "type": "Box",
             "id": "e9774f1c-2e8c-43e0-a079-257911e485a3",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -1526,7 +1526,7 @@
                     "type": "Box",
                     "id": "b0e7e5cf-721f-42d6-9a7e-5c80d5384ff9",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1556,7 +1556,7 @@
                             "type": "Input",
                             "props": {
                               "placeholder": "{{context.component.props.placeholder}}",
-                              "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)]"
+                              "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)]"
                             },
                             "_sharedKey": "adc4eda2-a61a-41d7-b222-056131e6fd72",
                             "id": "a1f97868-0f9e-4449-a0f1-426ea12c3260"
@@ -1582,7 +1582,7 @@
                     "type": "Box",
                     "id": "cad0014b-d7b7-4dd9-b754-304c9605798f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1612,7 +1612,7 @@
                             "type": "Textarea",
                             "props": {
                               "placeholder": "{{context.component.props.placeholder}}",
-                              "className": "w-full min-h-[100px] px-[12px] py-[10px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)] resize-none"
+                              "className": "w-full min-h-[100px] px-[12px] py-[10px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)] resize-none"
                             },
                             "_sharedKey": "28a7855b-dab1-4137-b8ae-48f34668e7e8",
                             "id": "b4023fbb-d502-43d5-8b86-ffd0634f733c"
@@ -1638,7 +1638,7 @@
                     "type": "Box",
                     "id": "b2c54cd6-e0a9-455a-8b46-90a238ecd81f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1674,7 +1674,7 @@
                               "matchTriggerWidth": true
                             },
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer"
+                              "className": "flex flex-row items-center justify-between w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer"
                             },
                             "children": [
                               {
@@ -1703,7 +1703,7 @@
                                 "type": "Box",
                                 "_popoverContent": true,
                                 "props": {
-                                  "className": "w-full min-w-0 bg-[var(--theme-card)] rounded-[8px] border border-[var(--theme-border-[1px])] py-[4px] shadow-lg overflow-hidden"
+                                  "className": "w-full min-w-0 bg-[var(--theme-card)] rounded-[8px] border border-[var(--theme-border)] py-[4px] shadow-lg overflow-hidden"
                                 },
                                 "children": [
                                   {
@@ -1772,7 +1772,7 @@
                     "type": "Box",
                     "id": "88087b59-4754-4c8e-8be7-118f78c708fc",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1794,7 +1794,7 @@
                             "type": "Box",
                             "props": {
                               "className": "w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0",
-                              "style": { "borderColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" }, "backgroundColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" } }
+                              "style": { "borderColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border)'" }, "backgroundColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" } }
                             },
                             "children": [
                               {
@@ -1845,7 +1845,7 @@
                     "type": "Box",
                     "id": "2d457f1a-4718-4f7f-9330-7b9b40b40b9c",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1882,8 +1882,8 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm transition-transform duration-150",
-                                  "style": { "transform": { "formula": "context?.component?.variables?.['sw-on'] ? 'translateX(22px)' : 'translateX(0px)'" } }
+                                  "className": "absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm",
+                                  "animation": { "states": { "watchVar": "context?.component?.variables?.['sw-on'] ? 'on' : 'off'", "defaultState": "off", "duration": 150, "states": { "off": { "translateX": "0" }, "on": { "translateX": "22" } } } }
                                 },
                                 "_sharedKey": "8d76c51c-fa89-4b8d-8cdb-dd85fe39ede7",
                                 "id": "3c0d96dc-3675-4637-ade0-816ab9cb46aa"
@@ -1915,7 +1915,7 @@
                     "type": "Box",
                     "id": "d83b4274-a433-4cf1-80d4-726066a323ea",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -1943,7 +1943,7 @@
                                 "type": "Box",
                                 "props": {
                                   "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0",
-                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-a' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } }
+                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-a' ? 'var(--theme-primary)' : 'var(--theme-border)'" } }
                                 },
                                 "children": [
                                   {
@@ -1984,7 +1984,7 @@
                                 "type": "Box",
                                 "props": {
                                   "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0",
-                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-b' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } }
+                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-b' ? 'var(--theme-primary)' : 'var(--theme-border)'" } }
                                 },
                                 "children": [
                                   {
@@ -2025,7 +2025,7 @@
                                 "type": "Box",
                                 "props": {
                                   "className": "w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0",
-                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-c' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } }
+                                  "style": { "borderColor": { "formula": "context?.component?.variables?.['rg-value'] === 'option-c' ? 'var(--theme-primary)' : 'var(--theme-border)'" } }
                                 },
                                 "children": [
                                   {
@@ -2078,7 +2078,7 @@
                     "type": "Box",
                     "id": "70ac2517-d842-4364-a309-0846e9a5242f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2092,7 +2092,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-col gap-[8px] w-full"
+                          "className": "flex flex-col gap-[10px] w-full select-none"
                         },
                         "children": [
                           {
@@ -2113,10 +2113,10 @@
                               {
                                 "type": "Text",
                                 "text": {
-                                  "formula": "(context?.component?.variables?.['sl-value'] ?? 60) + '%'"
+                                  "formula": "String(context?.component?.variables?.['sl-value'] ?? 0)"
                                 },
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-muted-foreground)]"
+                                  "className": "text-[13px] font-medium text-[var(--theme-primary)]"
                                 },
                                 "_sharedKey": "a4a74585-71e1-4c42-9cc0-12f05e5aca0d",
                                 "id": "afe353e7-63b4-46e8-8702-199de6272753"
@@ -2126,16 +2126,51 @@
                             "id": "d42420f7-8b26-4d44-b4bd-1b136ddd5fc7"
                           },
                           {
-                            "type": "Input",
+                            "type": "Box",
                             "props": {
-                              "type": "range",
-                              "min": "{{context.component.props.min}}",
-                              "max": "{{context.component.props.max}}",
-                              "value": {
-                                "formula": "context?.component?.variables?.['sl-value'] ?? 60"
-                              },
-                              "className": "w-full accent-[var(--theme-primary)] cursor-pointer"
+                              "className": "relative w-full h-[20px] flex items-center cursor-pointer touch-none"
                             },
+                            "animation": {
+                              "drag": { "enabled": true, "axis": "x", "noVisualMove": true }
+                            },
+                            "actions": [
+                              { "action": "sl-wf-update", "trigger": "dragStart" },
+                              { "action": "sl-wf-update", "trigger": "dragUpdate" },
+                              { "action": "sl-wf-update", "trigger": "dragEnd" }
+                            ],
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "absolute inset-x-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-muted)] pointer-events-none"
+                                },
+                                "id": "sl-track-bg-bdcdf255"
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-primary)] pointer-events-none",
+                                  "style": {
+                                    "width": {
+                                      "formula": "Math.max(0, Math.min(100, ((context?.component?.variables?.['sl-value'] ?? context?.component?.props?.min ?? 0) - (context?.component?.props?.min ?? 0)) / ((context?.component?.props?.max ?? 100) - (context?.component?.props?.min ?? 0) || 1) * 100)) + '%'"
+                                    }
+                                  }
+                                },
+                                "id": "sl-track-fill-bdcdf255"
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "absolute top-1/2 w-[18px] h-[18px] rounded-full bg-[var(--theme-primary)] border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                                  "style": {
+                                    "left": {
+                                      "formula": "Math.max(0, Math.min(100, ((context?.component?.variables?.['sl-value'] ?? context?.component?.props?.min ?? 0) - (context?.component?.props?.min ?? 0)) / ((context?.component?.props?.max ?? 100) - (context?.component?.props?.min ?? 0) || 1) * 100)) + '%'"
+                                    }
+                                  }
+                                },
+                                "id": "sl-thumb-bdcdf255"
+                              }
+                            ],
                             "_sharedKey": "29bc921a-6e28-41b1-b2f1-80c272e9e603",
                             "id": "2579f4ed-f6c8-4472-8db1-34cf61c5a5c4"
                           }
@@ -2162,7 +2197,7 @@
                     "type": "Box",
                     "id": "23c47ab3-a64f-4893-ada0-d00fbb4b9d3c",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2197,7 +2232,7 @@
                               "openVariable": "dp-v-open"
                             },
                             "props": {
-                              "className": "inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer w-full"
+                              "className": "inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full"
                             },
                             "children": [
                               {
@@ -2226,7 +2261,7 @@
                                 "type": "Box",
                                 "_popoverContent": true,
                                 "props": {
-                                  "className": "w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border-[1px])] p-[12px] shadow-lg"
+                                  "className": "w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] shadow-lg"
                                 },
                                 "children": [
                                   {
@@ -2469,13 +2504,13 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border-[1px])]"
+                                      "className": "flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border)]"
                                     },
                                     "children": [
                                       {
                                         "type": "Box",
                                         "props": {
-                                          "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]"
+                                          "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]"
                                         },
                                         "actions": [{ "action": "dp-wf-today" }],
                                         "children": [
@@ -2495,7 +2530,7 @@
                                       {
                                         "type": "Box",
                                         "props": {
-                                          "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]"
+                                          "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]"
                                         },
                                         "actions": [{ "action": "dp-wf-clear" }],
                                         "children": [
@@ -2547,7 +2582,7 @@
                     "type": "Box",
                     "id": "aa8021cf-0e6d-4798-8085-cbde75ca5dc1",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2561,8 +2596,9 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-col items-center justify-center gap-[8px] w-full py-[32px] px-[16px] rounded-[10px] border-2 border-dashed border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer"
+                          "className": "flex flex-col items-center justify-center gap-[8px] w-full py-[32px] px-[16px] rounded-[10px] border-2 border-dashed border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer"
                         },
+                        "actions": [{ "action": "fu-wf-on-click" }],
                         "children": [
                           {
                             "type": "Icon",
@@ -2607,7 +2643,7 @@
                     "type": "Box",
                     "id": "3f4c9d72-8649-4b42-a317-485992c68ae6",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2685,7 +2721,7 @@
                     "type": "Box",
                     "id": "4be867ee-9748-493a-995f-77a4e0f05ed1",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2699,7 +2735,7 @@
                       {
                         "type": "FormContainer",
                         "props": {
-                          "className": "flex flex-col gap-[16px] w-full p-[24px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                          "className": "flex flex-col gap-[16px] w-full p-[24px] rounded-[12px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                         },
                         "children": [
                           {
@@ -2730,7 +2766,7 @@
                                 "type": "Input",
                                 "props": {
                                   "placeholder": "Your name",
-                                  "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px]"
+                                  "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px]"
                                 },
                                 "_sharedKey": "a5e0ea46-bb63-40fc-b86d-4198bb3f8faf",
                                 "id": "143af9ed-bd1f-4438-a358-2c14dbcf29d0"
@@ -2758,7 +2794,7 @@
                                 "type": "Input",
                                 "props": {
                                   "placeholder": "your@email.com",
-                                  "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px]"
+                                  "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px]"
                                 },
                                 "_sharedKey": "ca1ddb28-35d4-4de4-96bd-824ffcde7d64",
                                 "id": "2bddfa28-5764-42e9-a3fb-217eac60101c"
@@ -2805,7 +2841,7 @@
             "type": "Box",
             "id": "236ac4aa-7766-414b-8d34-9b5eae8faa31",
             "props": {
-              "className": "w-full h-px bg-[var(--theme-border-[1px])]"
+              "className": "w-full h-px bg-[var(--theme-border)]"
             }
           },
           {
@@ -2834,7 +2870,7 @@
                     "type": "Box",
                     "id": "1c87d64c-514b-4133-a2a1-387e81d6727f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2848,7 +2884,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-row items-center gap-[12px] px-[16px] py-[12px] w-full border-b border-[var(--theme-border-[1px])]"
+                          "className": "flex flex-row items-center gap-[12px] px-[16px] py-[12px] w-full border-b border-[var(--theme-border)]"
                         },
                         "children": [
                           {
@@ -2914,7 +2950,7 @@
                     "type": "Box",
                     "id": "eff69f15-529f-4fa1-a421-d1f652571309",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -2928,7 +2964,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-col gap-[6px] p-[20px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                          "className": "flex flex-col gap-[6px] p-[20px] rounded-[12px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                         },
                         "children": [
                           {
@@ -2973,7 +3009,7 @@
                     "type": "Box",
                     "id": "060b3c96-ef79-4478-bc5e-e8049f00658f",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3014,7 +3050,7 @@
                     "type": "Box",
                     "id": "178eb3a6-9fd0-4e47-8874-9fb72474cf40",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3122,7 +3158,7 @@
                     "type": "Box",
                     "id": "3fa34a24-96fa-4651-98cf-dd01fea275ea",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3136,7 +3172,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-full rounded-[10px] border border-[var(--theme-border-[1px])] overflow-hidden"
+                          "className": "w-full rounded-[10px] border border-[var(--theme-border)] overflow-hidden"
                         },
                         "children": [
                           {
@@ -3148,7 +3184,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3167,7 +3203,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3209,13 +3245,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex flex-row border-t border-[var(--theme-border-[1px])]"
+                              "className": "flex flex-row border-t border-[var(--theme-border)]"
                             },
                             "children": [
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3234,7 +3270,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3276,13 +3312,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex flex-row border-t border-[var(--theme-border-[1px])]"
+                              "className": "flex flex-row border-t border-[var(--theme-border)]"
                             },
                             "children": [
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3301,7 +3337,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3343,13 +3379,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex flex-row border-t border-[var(--theme-border-[1px])]"
+                              "className": "flex flex-row border-t border-[var(--theme-border)]"
                             },
                             "children": [
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3368,7 +3404,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border-[1px])]"
+                                  "className": "flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]"
                                 },
                                 "children": [
                                   {
@@ -3422,7 +3458,7 @@
                     "type": "Box",
                     "id": "3ff1cb0f-8414-49ed-a8f6-0b2fb53c60cb",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3436,7 +3472,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex flex-col w-full border border-[var(--theme-border-[1px])] rounded-[10px] overflow-hidden"
+                          "className": "flex flex-col w-full border border-[var(--theme-border)] rounded-[10px] overflow-hidden"
                         },
                         "children": [
                           {
@@ -3457,15 +3493,27 @@
                               },
                               {
                                 "type": "Icon",
+                                "condition": "!context?.component?.variables?.['acc-open']",
                                 "props": {
                                   "icon": "lucide:chevron-down",
                                   "size": 18,
                                   "color": "var(--theme-muted-foreground)",
-                                  "className": "transition-transform",
-                                  "style": { "transform": { "formula": "context?.component?.variables?.['acc-open'] ? 'rotate(180deg)' : 'rotate(0deg)'" } }
+                                  "animation": { "enter": { "type": "fadeIn", "duration": 120 } }
                                 },
                                 "_sharedKey": "6c0c4dc1-a17e-4281-8c1a-ec16a1cc4d3c",
                                 "id": "8c196637-8f6a-46a9-a9e4-43fe03574fb8"
+                              },
+                              {
+                                "type": "Icon",
+                                "condition": "context?.component?.variables?.['acc-open']",
+                                "props": {
+                                  "icon": "lucide:chevron-up",
+                                  "size": 18,
+                                  "color": "var(--theme-muted-foreground)",
+                                  "animation": { "enter": { "type": "fadeIn", "duration": 120 } }
+                                },
+                                "_sharedKey": "6c0c4dc1-a17e-4281-8c1a-ec16a1cc4d3d",
+                                "id": "8c196637-8f6a-46a9-a9e4-43fe03574fb9"
                               }
                             ],
                             "_sharedKey": "594f6815-eac4-4d6b-bbe2-9c7fcbe19879",
@@ -3475,7 +3523,7 @@
                             "type": "Box",
                             "condition": "context?.component?.variables?.['acc-open']",
                             "props": {
-                              "className": "px-[16px] py-[14px] border-t border-[var(--theme-border-[1px])] bg-[var(--theme-background)]"
+                              "className": "px-[16px] py-[14px] border-t border-[var(--theme-border)] bg-[var(--theme-background)]"
                             },
                             "children": [
                               {
@@ -3506,7 +3554,7 @@
                     "type": "Box",
                     "id": "8344c107-91d4-4e9d-a227-c491d23865c1",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3532,7 +3580,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "inline-flex items-center justify-center px-[12px] h-[34px] rounded-[6px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-default select-none"
+                              "className": "inline-flex items-center justify-center px-[12px] h-[34px] rounded-[6px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-default select-none"
                             },
                             "children": [
                               {
@@ -3583,7 +3631,7 @@
                     "type": "Box",
                     "id": "1557f4c4-5a9e-474a-a37c-a1298818cc36",
                     "props": {
-                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]"
+                      "className": "flex flex-col gap-[8px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]"
                     },
                     "children": [
                       {
@@ -3609,7 +3657,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center px-[14px] h-[36px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer"
+                              "className": "flex items-center justify-center px-[14px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer"
                             },
                             "children": [
                               {
@@ -3629,7 +3677,7 @@
                             "type": "Box",
                             "_popoverContent": true,
                             "props": {
-                              "className": "min-w-[200px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] shadow-lg"
+                              "className": "min-w-[200px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)] shadow-lg"
                             },
                             "children": [
                               {
@@ -3680,7 +3728,7 @@
               {
                 "type": "FormContainer",
                 "id": "form-demo",
-                "props": { "className": "flex flex-col gap-[20px] w-full max-w-[480px] p-[24px] rounded-[12px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)]" },
+                "props": { "className": "flex flex-col gap-[20px] w-full max-w-[480px] p-[24px] rounded-[12px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
                 "children": [
                   {
                     "type": "Box",
@@ -3703,7 +3751,7 @@
                         "props": {
                           "name": "username",
                           "placeholder": "Enter username",
-                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
+                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
                         },
                         "_initialValue": "john_doe",
                         "_debounce": { "enabled": true, "delay": 400 },
@@ -3733,7 +3781,7 @@
                         "props": {
                           "name": "firstName",
                           "placeholder": "John",
-                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
+                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
                         },
                         "_validation": [
                           { "rule": "required", "message": "First name is required" },
@@ -3762,7 +3810,7 @@
                           "name": "email",
                           "type": "email",
                           "placeholder": "john@example.com",
-                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
+                          "className": "w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)]"
                         },
                         "_validation": [
                           { "rule": "required", "message": "Email is required" },
@@ -3790,7 +3838,7 @@
                         "props": {
                           "name": "bio",
                           "placeholder": "Tell us about yourself...",
-                          "className": "w-full min-h-[80px] px-[12px] py-[8px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)] resize-none"
+                          "className": "w-full min-h-[80px] px-[12px] py-[8px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px] text-[var(--theme-foreground)] resize-none"
                         },
                         "_validation": [
                           { "rule": "maxLength", "value": 200, "message": "Bio must be 200 characters or fewer" }
@@ -3819,7 +3867,7 @@
                           {
                             "type": "Box",
                             "id": "form-demo-cb-box",
-                            "props": { "className": "w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0", "style": { "borderColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" }, "backgroundColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" } } },
+                            "props": { "className": "w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0", "style": { "borderColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border)'" }, "backgroundColor": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" } } },
                             "children": [
                               { "type": "Icon", "id": "form-demo-cb-icon", "props": { "icon": "lucide:check", "size": 12, "color": { "formula": "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary-foreground)' : 'transparent'" } } }
                             ]
@@ -3862,7 +3910,7 @@
                             "props": { "className": "relative w-[48px] h-[26px] rounded-[13px] cursor-pointer flex-shrink-0", "style": { "backgroundColor": { "formula": "context?.component?.variables?.['sw-on'] ? 'var(--theme-primary)' : 'var(--theme-muted)'" } } },
                             "actions": [{ "action": "sw-wf-toggle" }],
                             "children": [
-                              { "type": "Box", "id": "form-demo-sw-thumb", "props": { "className": "absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm transition-transform duration-150", "style": { "transform": { "formula": "context?.component?.variables?.['sw-on'] ? 'translateX(22px)' : 'translateX(0px)'" } } } }
+                              { "type": "Box", "id": "form-demo-sw-thumb", "props": { "className": "absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm", "animation": { "states": { "watchVar": "context?.component?.variables?.['sw-on'] ? 'on' : 'off'", "defaultState": "off", "duration": 150, "states": { "off": { "translateX": "0" }, "on": { "translateX": "22" } } } } } }
                             ]
                           }
                         ],
@@ -3889,7 +3937,7 @@
                             "type": "Box",
                             "id": "form-demo-dp-trigger",
                             "popover": { "trigger": "click", "placement": "bottom-start", "offset": 6, "openVariable": "dp-v-open" },
-                            "props": { "className": "inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border-[1px])] bg-[var(--theme-card)] cursor-pointer w-full" },
+                            "props": { "className": "inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full" },
                             "children": [
                               { "type": "Icon", "id": "form-demo-dp-icon", "props": { "icon": "lucide:calendar", "size": 16, "color": "var(--theme-muted-foreground)" } },
                               {
@@ -3907,7 +3955,7 @@
                                 "type": "Box",
                                 "id": "form-demo-dp-popover",
                                 "_popoverContent": true,
-                                "props": { "className": "w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border-[1px])] p-[12px] shadow-lg" },
+                                "props": { "className": "w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] shadow-lg" },
                                 "children": [
                                   {
                                     "type": "Box",
@@ -3971,10 +4019,10 @@
                                   {
                                     "type": "Box",
                                     "id": "form-demo-dp-footer",
-                                    "props": { "className": "flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border-[1px])]" },
+                                    "props": { "className": "flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border)]" },
                                     "children": [
-                                      { "type": "Box", "id": "form-demo-dp-today-btn", "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]" }, "actions": [{ "action": "dp-wf-today" }], "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Today" }] },
-                                      { "type": "Box", "id": "form-demo-dp-clear-btn", "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border-[1px])] hover:bg-[var(--theme-muted)]" }, "actions": [{ "action": "dp-wf-clear" }], "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Clear" }] }
+                                      { "type": "Box", "id": "form-demo-dp-today-btn", "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]" }, "actions": [{ "action": "dp-wf-today" }], "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Today" }] },
+                                      { "type": "Box", "id": "form-demo-dp-clear-btn", "props": { "className": "flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]" }, "actions": [{ "action": "dp-wf-clear" }], "children": [{ "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-foreground)]" }, "text": "Clear" }] }
                                     ]
                                   }
                                 ]
@@ -4023,21 +4071,21 @@
                             "type": "Box",
                             "id": "form-demo-priority-low",
                             "actions": [{ "action": "form-demo-priority-low" }],
-                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? 'var(--theme-primary)' : 'var(--theme-border)'" } } },
                             "children": [{ "type": "Text", "id": "form-demo-priority-low-label", "text": "Low", "props": { "className": "text-[13px]", "style": { "fontWeight": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? '600' : '500'" }, "color": { "formula": "variables?.['form-demo-priority-value'] === 'low' ? 'var(--theme-primary-foreground)' : 'var(--theme-foreground)'" } } } }]
                           },
                           {
                             "type": "Box",
                             "id": "form-demo-priority-medium",
                             "actions": [{ "action": "form-demo-priority-medium" }],
-                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? 'var(--theme-primary)' : 'var(--theme-border)'" } } },
                             "children": [{ "type": "Text", "id": "form-demo-priority-medium-label", "text": "Medium", "props": { "className": "text-[13px]", "style": { "fontWeight": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? '600' : '500'" }, "color": { "formula": "variables?.['form-demo-priority-value'] === 'medium' ? 'var(--theme-primary-foreground)' : 'var(--theme-foreground)'" } } } }]
                           },
                           {
                             "type": "Box",
                             "id": "form-demo-priority-high",
                             "actions": [{ "action": "form-demo-priority-high" }],
-                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? 'var(--theme-primary)' : 'var(--theme-border-[1px])'" } } },
+                            "props": { "className": "flex items-center justify-center px-[14px] py-[7px] rounded-[8px] cursor-pointer border", "style": { "backgroundColor": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? 'var(--theme-primary)' : 'transparent'" }, "borderColor": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? 'var(--theme-primary)' : 'var(--theme-border)'" } } },
                             "children": [{ "type": "Text", "id": "form-demo-priority-high-label", "text": "High", "props": { "className": "text-[13px]", "style": { "fontWeight": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? '600' : '500'" }, "color": { "formula": "variables?.['form-demo-priority-value'] === 'high' ? 'var(--theme-primary-foreground)' : 'var(--theme-foreground)'" } } } }]
                           }
                         ]
@@ -4053,6 +4101,40 @@
                   },
                   {
                     "type": "Box",
+                    "id": "form-demo-upload-field",
+                    "props": { "className": "flex flex-col gap-[6px]" },
+                    "children": [
+                      { "type": "Text", "id": "form-demo-upload-label", "text": "Attachment", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" } },
+                      {
+                        "type": "Box",
+                        "id": "form-demo-upload-instance",
+                        "name": "attachment",
+                        "_shared": { "id": "sc-file-upload", "name": "File Upload" },
+                        "_controlled": { "variable": "fu-v-files" },
+                        "_initialValue": { "formula": "context?.component?.variables?.['fu-v-files']" },
+                        "actions": [{ "action": "fu-wf-on-click" }],
+                        "props": { "className": "flex flex-col items-center justify-center gap-[8px] w-full py-[24px] px-[16px] rounded-[10px] border-2 border-dashed border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer" },
+                        "children": [
+                          { "type": "Icon", "id": "form-demo-upload-icon", "props": { "icon": "lucide:upload-cloud", "size": 28, "color": "var(--theme-muted-foreground)" } },
+                          {
+                            "type": "Text",
+                            "id": "form-demo-upload-hint",
+                            "text": { "formula": "(context?.component?.variables?.['fu-v-files']?.[0]?.name) || 'Click to pick a file'" },
+                            "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)] text-center" }
+                          },
+                          {
+                            "type": "Text",
+                            "id": "form-demo-upload-subhint",
+                            "text": { "formula": "(context?.component?.variables?.['fu-v-files']?.length ?? 0) > 1 ? (context?.component?.variables?.['fu-v-files']?.length) + ' files selected' : 'PNG, JPG, PDF up to 10 MB'" },
+                            "props": { "className": "text-[11px] text-[var(--theme-muted-foreground)] text-center" }
+                          }
+                        ],
+                        "_overrides": []
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
                     "id": "form-demo-submit-btn",
                     "actions": [{ "action": "form-demo-submit" }],
                     "props": { "className": "flex items-center justify-center h-[40px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer" },
@@ -4063,7 +4145,7 @@
                   {
                     "type": "Box",
                     "id": "form-demo-result-inner",
-                    "props": { "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[color-mix(in_srgb,var(--theme-muted)_40%,transparent)]" },
+                    "props": { "className": "flex flex-col gap-[8px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[color-mix(in_srgb,var(--theme-muted)_40%,transparent)]" },
                     "children": [
                       { "type": "Text", "id": "form-demo-result-inner-title", "text": "Live form state (inside FormContainer — local.*)", "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wider" } },
                       {
@@ -4094,7 +4176,7 @@
               {
                 "type": "Box",
                 "id": "form-demo-result-outer",
-                "props": { "className": "flex flex-col gap-[8px] w-full max-w-[480px] p-[14px] rounded-[10px] border border-[var(--theme-border-[1px])] bg-[color-mix(in_srgb,var(--theme-muted)_40%,transparent)]" },
+                "props": { "className": "flex flex-col gap-[8px] w-full max-w-[480px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[color-mix(in_srgb,var(--theme-muted)_40%,transparent)]" },
                 "children": [
                   { "type": "Text", "id": "form-demo-result-outer-title", "text": "Live form state (outside FormContainer — variables['form-demo-form'])", "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wider" } },
                   {
@@ -4144,11 +4226,11 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3 transition-all duration-200",
+                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
-                        "backgroundColor": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'todo' && variables['showcase-kanban-drag']?.cardId !== null ? '#dbeafe' : 'var(--theme-muted)'" },
                         "outline": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'todo' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #60a5fa' : 'none'" }
-                      }
+                      },
+                      "animation": { "states": { "watchVar": "variables['showcase-kanban-drag']?.targetCol === 'todo' && variables['showcase-kanban-drag']?.cardId !== null ? 'active' : 'idle'", "duration": 200, "states": { "idle": { "backgroundColor": "var(--theme-muted)" }, "active": { "backgroundColor": "#dbeafe" } } } }
                     },
                     "children": [
                       {
@@ -4158,13 +4240,13 @@
                       },
                       {
                         "type": "Box",
-                        "map": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='todo'); if(!kd?.cardId) return cards; if(kd.targetCol==='todo'&&kd.sourceCol!=='todo'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'todo',_placeholder:true}); return r; } return cards; })()", "keyField": "id" },
+                        "map": { "js": "const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='todo'); if(!kd?.cardId) return cards; if(kd.targetCol==='todo'&&kd.sourceCol!=='todo'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'todo',_placeholder:true}); return r; } return cards;", "keyField": "id" },
                         "props": { "className": "flex flex-col gap-2" },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "style": { "transition": { "formula": "variables['showcase-kanban-drag']?.cardId ? 'transform 150ms ease' : 'none'" }, "transform": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='todo'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none'; })()" } }
+                              "style": { "transform": { "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='todo'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';" } }
                             },
                             "children": [
                               {
@@ -4186,12 +4268,14 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84,
-                                    "onDragStart": "kanban-drag-start",
-                                    "onDragUpdate": "kanban-drag-update",
-                                    "onDragEnd": "kanban-drag-end"
+                                    "slotHeight": 84
                                   }
                                 },
+                                "actions": [
+                                  { "action": "kanban-drag-start",  "trigger": "dragStart"  },
+                                  { "action": "kanban-drag-update", "trigger": "dragUpdate" },
+                                  { "action": "kanban-drag-end",    "trigger": "dragEnd"    }
+                                ],
                                 "children": [
                                   {
                                     "type": "Text",
@@ -4214,11 +4298,11 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3 transition-all duration-200",
+                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
-                        "backgroundColor": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'doing' && variables['showcase-kanban-drag']?.cardId !== null ? '#fef9c3' : 'var(--theme-muted)'" },
                         "outline": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'doing' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #facc15' : 'none'" }
-                      }
+                      },
+                      "animation": { "states": { "watchVar": "variables['showcase-kanban-drag']?.targetCol === 'doing' && variables['showcase-kanban-drag']?.cardId !== null ? 'active' : 'idle'", "duration": 200, "states": { "idle": { "backgroundColor": "var(--theme-muted)" }, "active": { "backgroundColor": "#fef9c3" } } } }
                     },
                     "children": [
                       {
@@ -4228,13 +4312,13 @@
                       },
                       {
                         "type": "Box",
-                        "map": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='doing'); if(!kd?.cardId) return cards; if(kd.targetCol==='doing'&&kd.sourceCol!=='doing'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'doing',_placeholder:true}); return r; } return cards; })()", "keyField": "id" },
+                        "map": { "js": "const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='doing'); if(!kd?.cardId) return cards; if(kd.targetCol==='doing'&&kd.sourceCol!=='doing'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'doing',_placeholder:true}); return r; } return cards;", "keyField": "id" },
                         "props": { "className": "flex flex-col gap-2" },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "style": { "transition": { "formula": "variables['showcase-kanban-drag']?.cardId ? 'transform 150ms ease' : 'none'" }, "transform": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='doing'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none'; })()" } }
+                              "style": { "transform": { "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='doing'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';" } }
                             },
                             "children": [
                               {
@@ -4256,12 +4340,14 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84,
-                                    "onDragStart": "kanban-drag-start",
-                                    "onDragUpdate": "kanban-drag-update",
-                                    "onDragEnd": "kanban-drag-end"
+                                    "slotHeight": 84
                                   }
                                 },
+                                "actions": [
+                                  { "action": "kanban-drag-start",  "trigger": "dragStart"  },
+                                  { "action": "kanban-drag-update", "trigger": "dragUpdate" },
+                                  { "action": "kanban-drag-end",    "trigger": "dragEnd"    }
+                                ],
                                 "children": [
                                   {
                                     "type": "Text",
@@ -4284,11 +4370,11 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3 transition-all duration-200",
+                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
-                        "backgroundColor": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'done' && variables['showcase-kanban-drag']?.cardId !== null ? '#dcfce7' : 'var(--theme-muted)'" },
                         "outline": { "formula": "variables['showcase-kanban-drag']?.targetCol === 'done' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #4ade80' : 'none'" }
-                      }
+                      },
+                      "animation": { "states": { "watchVar": "variables['showcase-kanban-drag']?.targetCol === 'done' && variables['showcase-kanban-drag']?.cardId !== null ? 'active' : 'idle'", "duration": 200, "states": { "idle": { "backgroundColor": "var(--theme-muted)" }, "active": { "backgroundColor": "#dcfce7" } } } }
                     },
                     "children": [
                       {
@@ -4298,13 +4384,13 @@
                       },
                       {
                         "type": "Box",
-                        "map": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='done'); if(!kd?.cardId) return cards; if(kd.targetCol==='done'&&kd.sourceCol!=='done'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'done',_placeholder:true}); return r; } return cards; })()", "keyField": "id" },
+                        "map": { "js": "const kd=variables['showcase-kanban-drag']; const all=variables['showcase-kanban-cards']??[]; const cards=all.filter(c=>c.col==='done'); if(!kd?.cardId) return cards; if(kd.targetCol==='done'&&kd.sourceCol!=='done'){ const ti=Math.max(0,Math.min(cards.length,kd.targetIndex??0)); const r=[...cards]; r.splice(ti,0,{id:'__placeholder__',title:'',col:'done',_placeholder:true}); return r; } return cards;", "keyField": "id" },
                         "props": { "className": "flex flex-col gap-2" },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "style": { "transition": { "formula": "variables['showcase-kanban-drag']?.cardId ? 'transform 150ms ease' : 'none'" }, "transform": { "formula": "(()=>{ const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='done'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none'; })()" } }
+                              "style": { "transform": { "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='done'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';" } }
                             },
                             "children": [
                               {
@@ -4326,12 +4412,14 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84,
-                                    "onDragStart": "kanban-drag-start",
-                                    "onDragUpdate": "kanban-drag-update",
-                                    "onDragEnd": "kanban-drag-end"
+                                    "slotHeight": 84
                                   }
                                 },
+                                "actions": [
+                                  { "action": "kanban-drag-start",  "trigger": "dragStart"  },
+                                  { "action": "kanban-drag-update", "trigger": "dragUpdate" },
+                                  { "action": "kanban-drag-end",    "trigger": "dragEnd"    }
+                                ],
                                 "children": [
                                   {
                                     "type": "Text",
@@ -4368,23 +4456,31 @@
               {
                 "type": "Box",
                 "props": { "className": "relative overflow-hidden rounded-xl w-full" },
-                "animation": {
-                  "drag": {
-                    "enabled": true,
-                    "axis": "x",
-                    "noVisualMove": true,
-                    "onDragUpdate": "carousel-drag-update",
-                    "onDragEnd": "carousel-drag-end"
-                  }
-                },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
                       "className": "flex flex-row",
-                      "style": {
-                        "transition": { "formula": "(variables['showcase-carousel']?.offset ?? 0) === 0 ? 'transform 300ms ease' : 'none'" },
-                        "transform": { "formula": "'translateX(calc(-' + ((variables['showcase-carousel']?.slide ?? 0) * 100) + '% + ' + (variables['showcase-carousel']?.offset ?? 0) + 'px))'" }
+                      "animation": {
+                        "gesture": {
+                          "enabled": true,
+                          "swipe": true,
+                          "dragFeedback": true,
+                          "onSwipeLeftAction": "carousel-next",
+                          "onSwipeRightAction": "carousel-prev"
+                        },
+                        "states": {
+                          "watchVar": "String(variables['showcase-carousel']?.slide ?? 0)",
+                          "defaultState": "0",
+                          "duration": 400,
+                          "easing": "easeInOut",
+                          "states": {
+                            "0": { "transform": "translateX(0%)" },
+                            "1": { "transform": "translateX(-100%)" },
+                            "2": { "transform": "translateX(-200%)" }
+                          }
+                        },
+                        "outerClassName": "w-full"
                       }
                     },
                     "children": [
@@ -4447,6 +4543,277 @@
               }
             ]
           },
+          {
+            "type": "Box",
+            "id": "showcase-advanced-actions-section",
+            "props": { "className": "flex flex-col gap-[24px]" },
+            "children": [
+              {
+                "type": "Text",
+                "id": "showcase-advanced-actions-title",
+                "text": "Advanced Actions",
+                "props": { "className": "text-[20px] font-bold text-[var(--theme-foreground)]" }
+              },
+              {
+                "type": "Box",
+                "props": { "className": "grid grid-cols-2 gap-[16px] w-full" },
+                "children": [
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-[12px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "SCROLL TO ELEMENT",
+                        "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Click a button to scroll the page to a specific section.",
+                        "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)]" }
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-row items-center gap-[6px] px-[12px] h-[36px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-scroll-to-form" }],
+                            "children": [
+                              { "type": "Icon", "props": { "icon": "lucide:arrow-down", "size": 14, "color": "var(--theme-primary-foreground)" } },
+                              { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-primary-foreground)]" }, "text": "Scroll to Form" }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "flex flex-row items-center gap-[6px] px-[12px] h-[36px] rounded-[8px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-scroll-to-top" }],
+                            "children": [
+                              { "type": "Icon", "props": { "icon": "lucide:arrow-up", "size": 14, "color": "var(--theme-foreground)" } },
+                              { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" }, "text": "Scroll to Top" }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-[12px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "TRIGGER ANIMATION",
+                        "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Trigger an animation on any node imperatively via a workflow step.",
+                        "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)]" }
+                      },
+                      {
+                        "type": "Box",
+                        "id": "showcase-animate-target",
+                        "props": {
+                          "className": "flex items-center justify-center h-[56px] rounded-[10px] bg-gradient-to-r from-[var(--theme-primary)] to-[var(--theme-accent)] select-none"
+                        },
+                        "animation": { "enter": { "type": "fadeIn", "duration": 400 } },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[14px] font-semibold text-[var(--theme-primary-foreground)]" }, "text": "✨ Animated target" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row gap-[8px] flex-wrap" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none text-[12px] font-medium text-[var(--theme-foreground)]" },
+                            "actions": [{ "action": "demo-animate-badge" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Pulse" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-animate-shake" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Shake" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-animate-bounce" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Bounce" }]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-[12px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "EXIT ANIMATION",
+                        "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Trigger a node's configured exit animation and await its completion before the workflow continues.",
+                        "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)]" }
+                      },
+                      {
+                        "type": "Box",
+                        "id": "showcase-exit-target",
+                        "condition": "variables['showcase-exit-visible']",
+                        "props": { "className": "flex items-center justify-center h-[48px] rounded-[10px] bg-[var(--theme-muted)] select-none" },
+                        "animation": { "exit": { "type": "slideOutUp", "duration": 400 } },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" }, "text": "👋 I'll fly away" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row gap-[6px]" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-exit-animation" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Trigger Exit" }]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-[12px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "LOOP CONTROL",
+                        "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Imperatively start or stop a continuous loop animation on any node.",
+                        "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)]" }
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex items-center justify-center h-[56px]" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "id": "showcase-loop-target",
+                            "props": { "className": "w-[40px] h-[40px] rounded-[10px] bg-[var(--theme-primary)] flex items-center justify-center" },
+                            "animation": { "enter": { "type": "fadeIn", "duration": 300 } },
+                            "children": [
+                              { "type": "Icon", "props": { "icon": "lucide:star", "size": 20, "color": "var(--theme-primary-foreground)" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row gap-[6px] flex-wrap" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-start-loop-spin" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Spin" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-start-loop-pulse" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Pulse" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-start-loop-float" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Float" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[color-mix(in_srgb,var(--theme-destructive)_15%,transparent)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-stop-loop" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-destructive)]" }, "text": "Stop" }]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex flex-col gap-[12px] p-[16px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)]" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "text": "PLAY ENTER ANIMATION",
+                        "props": { "className": "text-[11px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-widest" }
+                      },
+                      {
+                        "type": "Text",
+                        "text": "Replay an enter animation on a node at any time — choose any type and duration.",
+                        "props": { "className": "text-[12px] text-[var(--theme-muted-foreground)]" }
+                      },
+                      {
+                        "type": "Box",
+                        "id": "showcase-enter-target",
+                        "props": { "className": "flex items-center justify-center h-[56px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-muted)] select-none" },
+                        "animation": { "enter": { "type": "fadeIn", "duration": 400 } },
+                        "children": [
+                          { "type": "Text", "props": { "className": "text-[14px] font-semibold text-[var(--theme-foreground)]" }, "text": "✨ Watch me animate" }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex flex-row gap-[6px] flex-wrap" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-enter-fade" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Fade In" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-enter-slide" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Slide Up" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-enter-zoom" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Zoom In" }]
+                          },
+                          {
+                            "type": "Box",
+                            "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
+                            "actions": [{ "action": "demo-enter-bounce" }],
+                            "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Bounce In" }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+
+                ]
+              }
+            ]
+          },
+
           {
             "type": "Box",
             "id": "46c174a7-0727-4688-9fc2-f4cc23955ae3",

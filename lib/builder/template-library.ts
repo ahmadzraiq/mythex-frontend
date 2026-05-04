@@ -252,11 +252,11 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'Box',
-        props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[8px] bg-[rgb(var(--primary))] cursor-pointer' },
+        props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer' },
         children: [
           {
             type: 'Icon',
-            props: { icon: '{{context.component.props.icon}}', size: 20, color: 'rgb(var(--primary-foreground))' },
+            props: { icon: '{{context.component.props.icon}}', size: 20, color: 'var(--theme-primary-foreground)' },
           },
         ],
       },
@@ -343,7 +343,7 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'Box',
-        props: { className: 'inline-flex items-center px-[10px] py-[2px] rounded-[9999px] bg-[rgb(var(--primary)/0.1)] w-fit' },
+        props: { className: 'inline-flex items-center px-[10px] py-[2px] rounded-[9999px] bg-[color-mix(in_srgb,var(--theme-primary)_10%,transparent)] w-fit' },
         children: [
           {
             type: 'Text',
@@ -513,14 +513,14 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         children: [
           {
             type: 'Box',
-            props: { className: 'inline-flex items-center justify-center px-[12px] h-[34px] rounded-[6px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-default select-none' },
-            children: [{ type: 'Text', text: '{{context.component.props.triggerLabel}}', props: { className: 'text-[13px] text-[rgb(var(--foreground))]' } }],
+            props: { className: 'inline-flex items-center justify-center px-[12px] h-[34px] rounded-[6px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-default select-none' },
+            children: [{ type: 'Text', text: '{{context.component.props.triggerLabel}}', props: { className: 'text-[13px] text-[var(--theme-foreground)]' } }],
           },
           {
             type: 'Box',
             _popoverContent: true,
-            props: { className: 'inline-flex items-center px-[10px] py-[5px] rounded-[6px] bg-[rgb(var(--foreground))] shadow-lg' },
-            children: [{ type: 'Text', text: '{{context.component.props.text}}', props: { className: 'text-[12px] text-[rgb(var(--background))] whitespace-nowrap' } }],
+            props: { className: 'inline-flex items-center px-[10px] py-[5px] rounded-[6px] bg-[var(--theme-foreground)] shadow-lg' },
+            children: [{ type: 'Text', text: '{{context.component.props.text}}', props: { className: 'text-[12px] text-[var(--theme-background)] whitespace-nowrap' } }],
           },
         ],
       },
@@ -549,13 +549,13 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
           {
             type: 'Text',
             text: '{{context.component.props.label}}',
-            props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' },
+            props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' },
           },
           {
             type: 'Input',
             props: {
               placeholder: '{{context.component.props.placeholder}}',
-              className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[14px] text-[rgb(var(--foreground))]',
+              className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)]',
             },
           },
         ],
@@ -583,13 +583,13 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
           {
             type: 'Text',
             text: '{{context.component.props.label}}',
-            props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' },
+            props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' },
           },
           {
             type: 'Textarea',
             props: {
               placeholder: '{{context.component.props.placeholder}}',
-              className: 'w-full min-h-[100px] px-[12px] py-[10px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] text-[14px] text-[rgb(var(--foreground))] resize-none',
+              className: 'w-full min-h-[100px] px-[12px] py-[10px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] text-[14px] text-[var(--theme-foreground)] resize-none',
             },
           },
         ],
@@ -625,18 +625,24 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         children: [
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['cb-checked'] ? 'w-[18px] h-[18px] rounded-[4px] border-2 border-[rgb(var(--primary))] bg-[rgb(var(--primary))] flex items-center justify-center flex-shrink-0' : 'w-[18px] h-[18px] rounded-[4px] border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))] flex items-center justify-center flex-shrink-0'" } },
+            props: {
+              className: 'w-[18px] h-[18px] rounded-[4px] border-2 flex items-center justify-center flex-shrink-0',
+              style: {
+                borderColor: { formula: "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-border)'" },
+                backgroundColor: { formula: "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary)' : 'var(--theme-card)'" },
+              },
+            },
             children: [
               {
                 type: 'Icon',
-                props: { icon: 'lucide:check', size: 12, color: { formula: "context?.component?.variables?.['cb-checked'] ? 'rgb(var(--primary-foreground))' : 'transparent'" } },
+                props: { icon: 'lucide:check', size: 12, color: { formula: "context?.component?.variables?.['cb-checked'] ? 'var(--theme-primary-foreground)' : 'transparent'" } },
               },
             ],
           },
           {
             type: 'Text',
             text: '{{context.component.props.label}}',
-            props: { className: 'text-[14px] text-[rgb(var(--foreground))]' },
+            props: { className: 'text-[14px] text-[var(--theme-foreground)]' },
           },
         ],
       },
@@ -666,11 +672,14 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
           {
             type: 'Text',
             text: '{{context.component.props.label}}',
-            props: { className: 'text-[14px] text-[rgb(var(--foreground))]' },
+            props: { className: 'text-[14px] text-[var(--theme-foreground)]' },
           },
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['sw-on'] ? 'relative w-[48px] h-[26px] rounded-[13px] bg-[rgb(var(--primary))] cursor-pointer flex-shrink-0' : 'relative w-[48px] h-[26px] rounded-[13px] bg-[rgb(var(--muted))] cursor-pointer flex-shrink-0'" } },
+            props: {
+              className: 'relative w-[48px] h-[26px] rounded-[13px] cursor-pointer flex-shrink-0',
+              style: { backgroundColor: { formula: "context?.component?.variables?.['sw-on'] ? 'var(--theme-primary)' : 'var(--theme-muted)'" } },
+            },
             actions: [
               {
                 trigger: 'click',
@@ -680,7 +689,10 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "context?.component?.variables?.['sw-on'] ? 'absolute right-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm' : 'absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm'" } },
+                props: {
+                  className: 'absolute left-[2px] top-[2px] w-[22px] h-[22px] rounded-[11px] bg-white shadow-sm transition-transform duration-150',
+                  style: { transform: { formula: "context?.component?.variables?.['sw-on'] ? 'translateX(22px)' : 'translateX(0px)'" } },
+                },
               },
             ],
           },
@@ -718,12 +730,15 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-a' ? 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--primary))] flex items-center justify-center flex-shrink-0' : 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--border))] flex items-center justify-center flex-shrink-0'" } },
+                props: {
+                  className: 'w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0',
+                  style: { borderColor: { formula: "context?.component?.variables?.['rg-value'] === 'option-a' ? 'var(--theme-primary)' : 'var(--theme-border)'" } },
+                },
                 children: [
-                  { type: 'Box', props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-a' ? 'w-[8px] h-[8px] rounded-[4px] bg-[rgb(var(--primary))]' : 'hidden'" } } },
+                  { type: 'Box', condition: "context?.component?.variables?.['rg-value'] === 'option-a'", props: { className: 'w-[8px] h-[8px] rounded-full bg-[var(--theme-primary)]' } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.optionA}}', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.optionA}}', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } },
             ],
           },
           {
@@ -733,12 +748,15 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-b' ? 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--primary))] flex items-center justify-center flex-shrink-0' : 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--border))] flex items-center justify-center flex-shrink-0'" } },
+                props: {
+                  className: 'w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0',
+                  style: { borderColor: { formula: "context?.component?.variables?.['rg-value'] === 'option-b' ? 'var(--theme-primary)' : 'var(--theme-border)'" } },
+                },
                 children: [
-                  { type: 'Box', props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-b' ? 'w-[8px] h-[8px] rounded-[4px] bg-[rgb(var(--primary))]' : 'hidden'" } } },
+                  { type: 'Box', condition: "context?.component?.variables?.['rg-value'] === 'option-b'", props: { className: 'w-[8px] h-[8px] rounded-full bg-[var(--theme-primary)]' } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.optionB}}', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.optionB}}', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } },
             ],
           },
           {
@@ -748,12 +766,15 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-c' ? 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--primary))] flex items-center justify-center flex-shrink-0' : 'w-[18px] h-[18px] rounded-[9px] border-2 border-[rgb(var(--border))] flex items-center justify-center flex-shrink-0'" } },
+                props: {
+                  className: 'w-[18px] h-[18px] rounded-[9px] border-2 flex items-center justify-center flex-shrink-0',
+                  style: { borderColor: { formula: "context?.component?.variables?.['rg-value'] === 'option-c' ? 'var(--theme-primary)' : 'var(--theme-border)'" } },
+                },
                 children: [
-                  { type: 'Box', props: { className: { formula: "context?.component?.variables?.['rg-value'] === 'option-c' ? 'w-[8px] h-[8px] rounded-[4px] bg-[rgb(var(--primary))]' : 'hidden'" } } },
+                  { type: 'Box', condition: "context?.component?.variables?.['rg-value'] === 'option-c'", props: { className: 'w-[8px] h-[8px] rounded-full bg-[var(--theme-primary)]' } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.optionC}}', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.optionC}}', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } },
             ],
           },
         ],
@@ -784,18 +805,18 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         type: 'Box',
         props: { className: 'flex flex-col gap-[6px] w-full' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             popover: { trigger: 'click', placement: 'bottom-start', offset: 4, openVariable: 'sel-open', matchTriggerWidth: true },
-            props: { className: 'flex flex-row items-center justify-between w-full h-[40px] px-[12px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer' },
+            props: { className: 'flex flex-row items-center justify-between w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer' },
             children: [
-              { type: 'Text', text: { formula: "context?.component?.variables?.['sel-value'] || context?.component?.props?.placeholder || 'Select an option'" }, props: { className: { formula: "context?.component?.variables?.['sel-value'] ? 'text-[14px] text-[rgb(var(--foreground))]' : 'text-[14px] text-[rgb(var(--muted-foreground))]'" } } },
-              { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 16, color: 'rgb(var(--muted-foreground))' } },
+              { type: 'Text', text: { formula: "context?.component?.variables?.['sel-value'] || context?.component?.props?.placeholder || 'Select an option'" }, props: { className: { formula: "context?.component?.variables?.['sel-value'] ? 'text-[14px] text-[var(--theme-foreground)]' : 'text-[14px] text-[var(--theme-muted-foreground)]'" } } },
+              { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 16, color: 'var(--theme-muted-foreground)' } },
               {
                 type: 'Box',
                 _popoverContent: true,
-                props: { className: 'w-full min-w-0 bg-[rgb(var(--card))] rounded-[8px] border border-[rgb(var(--border))] py-[4px] shadow-lg overflow-hidden' },
+                props: { className: 'w-full min-w-0 bg-[var(--theme-card)] rounded-[8px] border border-[var(--theme-border)] py-[4px] shadow-lg overflow-hidden' },
                 children: [
                   {
                     type: 'Box',
@@ -805,13 +826,13 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
                     children: [
                       {
                         type: 'Box',
-                        props: { className: { formula: "context?.component?.variables?.['sel-value'] === context?.item?.data?.label ? 'flex flex-row items-center gap-[8px] px-[12px] h-[36px] cursor-pointer bg-[rgb(var(--primary)/0.1)]' : 'flex flex-row items-center gap-[8px] px-[12px] h-[36px] cursor-pointer hover:bg-[rgb(var(--muted))]'" } },
+                        props: { className: { formula: "context?.component?.variables?.['sel-value'] === context?.item?.data?.label ? 'flex flex-row items-center gap-[8px] px-[12px] h-[36px] cursor-pointer bg-[color-mix(in_srgb,var(--theme-primary)_10%,transparent)]' : 'flex flex-row items-center gap-[8px] px-[12px] h-[36px] cursor-pointer hover:bg-[var(--theme-muted)]'" } },
                         actions: [{ trigger: 'click', steps: [
                           { id: 'sv', type: 'changeVariableValue', config: { variableName: 'sel-value', value: { formula: "context?.item?.data?.label" } } },
                           { id: 'cl', type: 'changeVariableValue', config: { variableName: 'sel-open', value: false } },
                         ] }],
                         children: [
-                          { type: 'Text', text: '{{context.item.data.label}}', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } },
+                          { type: 'Text', text: '{{context.item.data.label}}', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } },
                         ],
                       },
                     ],
@@ -831,65 +852,106 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
     category: 'Form inputs',
     icon: '📅',
     valueVariable: 'dp-v-selected',
-    description: 'Calendar popover date picker with month navigation.',
+    description: 'Calendar popover date picker with month navigation and typed input.',
     definition: {
       name: 'Date Picker',
       description: 'Calendar popover date picker with month navigation.',
       properties: [
-        prop('p-dp-label', 'label', 'text', 'Date'),
+        prop('p-dp-label',  'label',  'text', 'Date'),
+        prop('p-dp-format', 'format', 'text', '####-##-##'),
       ],
       variables: {
-        'dp-v-year': { label: 'year', type: 'number', initialValue: 2026 },
-        'dp-v-month': { label: 'month (0-11)', type: 'number', initialValue: 3 },
-        'dp-v-selected': { label: 'selectedDate', type: 'string', initialValue: '' },
-        'dp-v-open': { label: 'isOpen', type: 'boolean', initialValue: false },
+        'dp-v-year':     { label: 'year',         type: 'number',  initialValue: 2026 },
+        'dp-v-month':    { label: 'month (0-11)', type: 'number',  initialValue: 3 },
+        'dp-v-selected': { label: 'selectedDate', type: 'string',  initialValue: '' },
+        'dp-v-open':     { label: 'isOpen',       type: 'boolean', initialValue: false },
+      },
+      triggers: [
+        { id: 'dp-t-on-date-selected', name: 'On date selected', payload: { formula: "{ date: context?.component?.variables?.['dp-v-selected'] ?? '' }" } },
+      ],
+      workflows: {
+        'dp-wf-prev-month': {
+          id: 'dp-wf-prev-month', name: 'Previous Month', trigger: 'click', params: [],
+          steps: [
+            { id: 'py', type: 'changeVariableValue', config: { variableName: 'dp-v-year',  value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) - 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
+            { id: 'pm', type: 'changeVariableValue', config: { variableName: 'dp-v-month', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? 11 : (context?.component?.variables?.['dp-v-month'] ?? 0) - 1" } } },
+          ],
+        },
+        'dp-wf-next-month': {
+          id: 'dp-wf-next-month', name: 'Next Month', trigger: 'click', params: [],
+          steps: [
+            { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dp-v-year',  value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) + 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
+            { id: 'nm', type: 'changeVariableValue', config: { variableName: 'dp-v-month', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? 0 : (context?.component?.variables?.['dp-v-month'] ?? 0) + 1" } } },
+          ],
+        },
+        'dp-wf-select-day': {
+          id: 'dp-wf-select-day', name: 'Select Day', trigger: 'click', params: [],
+          steps: [
+            { id: 'sd',   type: 'changeVariableValue',  config: { variableName: 'dp-v-selected', value: { formula: "context?.item?.data?.dateStr" } } },
+            { id: 'cl',   type: 'changeVariableValue',  config: { variableName: 'dp-v-open',     value: false } },
+            { id: 'emit', type: 'emitComponentTrigger', config: { triggerId: 'dp-t-on-date-selected' } },
+          ],
+        },
+        'dp-wf-today': {
+          id: 'dp-wf-today', name: 'Go To Today', trigger: 'click', params: [],
+          steps: [
+            { id: 'ty', type: 'changeVariableValue', config: { variableName: 'dp-v-year',     value: { formula: "new Date().getFullYear()" } } },
+            { id: 'tm', type: 'changeVariableValue', config: { variableName: 'dp-v-month',    value: { formula: "new Date().getMonth()" } } },
+            { id: 'ts', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0')" } } },
+          ],
+        },
+        'dp-wf-clear': {
+          id: 'dp-wf-clear', name: 'Clear Selection', trigger: 'click', params: [],
+          steps: [
+            { id: 'cs', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: '' } },
+          ],
+        },
+        'dp-wf-set-typed': {
+          id: 'dp-wf-set-typed', name: 'Set typed date', trigger: 'change', params: [],
+          steps: [
+            { id: 's1', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "event?.value ?? event?.text ?? (typeof event === 'string' ? event : '')" } } },
+          ],
+        },
       },
       content: {
         type: 'Box',
         props: { className: 'flex flex-col gap-[6px] w-full' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             popover: { trigger: 'click', placement: 'bottom-start', offset: 6, openVariable: 'dp-v-open' },
-            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer w-full' },
+            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full' },
             children: [
-              { type: 'Icon', props: { icon: 'lucide:calendar', size: 16, color: 'rgb(var(--muted-foreground))' } },
-              { type: 'Text', text: { formula: "context?.component?.variables?.['dp-v-selected'] || 'Pick a date'" }, props: { className: 'text-[14px] flex-1 text-[rgb(var(--muted-foreground))]' } },
+              { type: 'Icon', props: { icon: 'lucide:calendar', size: 16, color: 'var(--theme-muted-foreground)' } },
+              {
+                type: 'Input',
+                props: {
+                  value: { formula: "context?.component?.variables?.['dp-v-selected'] ?? ''" },
+                  format: '{{context.component.props.format}}',
+                  placeholder: '{{context.component.props.format}}',
+                  className: 'flex-1 border-0 bg-transparent outline-none shadow-none text-[14px] h-auto p-0 min-h-0',
+                },
+                actions: [{ trigger: 'change', action: 'dp-wf-set-typed' }],
+              },
               {
                 type: 'Box',
                 _popoverContent: true,
-                props: { className: 'w-[280px] bg-[rgb(var(--card))] rounded-[12px] border border-[rgb(var(--border))] p-[12px] shadow-lg' },
+                props: { className: 'w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] shadow-lg' },
                 children: [
                   {
                     type: 'Box',
                     props: { className: 'flex flex-row items-center justify-between px-[4px] pb-[8px]' },
                     children: [
-                      {
-                        type: 'Box',
-                        props: { className: 'w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[rgb(var(--muted))]' },
-                        actions: [{ trigger: 'click', steps: [
-                          { id: 'py', type: 'changeVariableValue', config: { variableName: 'dp-v-year', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) - 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
-                          { id: 'pm', type: 'changeVariableValue', config: { variableName: 'dp-v-month', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 0 ? 11 : (context?.component?.variables?.['dp-v-month'] ?? 0) - 1" } } },
-                        ] }],
-                        children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 14, color: 'rgb(var(--muted-foreground))' } }],
-                      },
-                      { type: 'Text', text: { formula: "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['dp-v-month'] ?? 0] + ' ' + (context?.component?.variables?.['dp-v-year'] ?? 2026)" }, props: { className: 'text-[13px] font-semibold text-[rgb(var(--foreground))]' } },
-                      {
-                        type: 'Box',
-                        props: { className: 'w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[rgb(var(--muted))]' },
-                        actions: [{ trigger: 'click', steps: [
-                          { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dp-v-year', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? (context?.component?.variables?.['dp-v-year'] ?? 2026) + 1 : (context?.component?.variables?.['dp-v-year'] ?? 2026)" } } },
-                          { id: 'nm', type: 'changeVariableValue', config: { variableName: 'dp-v-month', value: { formula: "(context?.component?.variables?.['dp-v-month'] ?? 0) === 11 ? 0 : (context?.component?.variables?.['dp-v-month'] ?? 0) + 1" } } },
-                        ] }],
-                        children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: 'rgb(var(--muted-foreground))' } }],
-                      },
+                      { type: 'Box', props: { className: 'w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ action: 'dp-wf-prev-month' }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 14, color: 'var(--theme-muted-foreground)' } }] },
+                      { type: 'Text', text: { formula: "['January','February','March','April','May','June','July','August','September','October','November','December'][context?.component?.variables?.['dp-v-month'] ?? 0] + ' ' + (context?.component?.variables?.['dp-v-year'] ?? 2026)" }, props: { className: 'text-[13px] font-semibold text-[var(--theme-foreground)]' } },
+                      { type: 'Box', props: { className: 'w-[28px] h-[28px] flex items-center justify-center rounded-full cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ action: 'dp-wf-next-month' }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 14, color: 'var(--theme-muted-foreground)' } }] },
                     ],
                   },
                   {
                     type: 'Box',
                     props: { className: 'grid grid-cols-7 mb-[4px]' },
-                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[rgb(var(--muted-foreground))] text-center py-[4px]' }, text: d })),
+                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]' }, text: d })),
                   },
                   {
                     type: 'Box',
@@ -900,19 +962,19 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
                       key: 'context.item.data.idx',
                       props: { className: 'contents' },
                       children: [
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full bg-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'dp-v-open', value: false } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--primary-foreground))] font-semibold' } }] },
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full border-2 border-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'dp-v-open', value: false } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] font-semibold text-[rgb(var(--foreground))]' } }] },
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'dp-v-open', value: false } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--foreground))]' } }] },
-                        { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[36px] h-[36px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))] opacity-30' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected",                                     props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full bg-[var(--theme-primary)]' },                                  actions: [{ action: 'dp-wf-select-day' }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-primary-foreground)] font-semibold' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday",     props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full border-2 border-[var(--theme-primary)]' },      actions: [{ action: 'dp-wf-select-day' }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] font-semibold text-[var(--theme-foreground)]' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday",    props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full hover:bg-[var(--theme-muted)]' },             actions: [{ action: 'dp-wf-select-day' }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-foreground)]' } }] },
+                        { type: 'Box', condition: "!context?.item?.data?.inMonth",                                                                        props: { className: 'flex items-center justify-center w-[36px] h-[36px]' },                                                                           children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-muted-foreground)] opacity-30' } }] },
                       ],
                     }],
                   },
                   {
                     type: 'Box',
-                    props: { className: 'flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[rgb(var(--border))]' },
+                    props: { className: 'flex flex-row gap-[6px] pt-[10px] mt-[4px] border-t border-[var(--theme-border)]' },
                     children: [
-                      { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[rgb(var(--border))] hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'ty', type: 'changeVariableValue', config: { variableName: 'dp-v-year', value: { formula: 'new Date().getFullYear()' } } }, { id: 'tm', type: 'changeVariableValue', config: { variableName: 'dp-v-month', value: { formula: 'new Date().getMonth()' } } }, { id: 'ts', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: { formula: "new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0')" } } }] }], children: [{ type: 'Text', props: { className: 'text-[11px] font-semibold text-[rgb(var(--foreground))]' }, text: 'Today' }] },
-                      { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[rgb(var(--border))] hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'cs', type: 'changeVariableValue', config: { variableName: 'dp-v-selected', value: '' } }] }], children: [{ type: 'Text', props: { className: 'text-[11px] font-semibold text-[rgb(var(--foreground))]' }, text: 'Clear' }] },
+                      { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]' }, actions: [{ action: 'dp-wf-today' }], children: [{ type: 'Text', props: { className: 'text-[11px] font-semibold text-[var(--theme-foreground)]' }, text: 'Today' }] },
+                      { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[5px] rounded-[6px] cursor-pointer border border-[var(--theme-border)] hover:bg-[var(--theme-muted)]' }, actions: [{ action: 'dp-wf-clear' }],  children: [{ type: 'Text', props: { className: 'text-[11px] font-semibold text-[var(--theme-foreground)]' }, text: 'Clear' }] },
                     ],
                   },
                 ],
@@ -947,20 +1009,20 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         type: 'Box',
         props: { className: 'flex flex-col gap-[6px] w-full' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             popover: { trigger: 'click', placement: 'bottom-start', offset: 6, openVariable: 'tm-v-open' },
-            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer w-full' },
+            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full' },
             children: [
-              { type: 'Icon', props: { icon: 'lucide:clock', size: 16, color: 'rgb(var(--muted-foreground))' } },
-              { type: 'Text', text: { formula: "context?.component?.variables?.['tm-v-time'] || 'Pick a time'" }, props: { className: 'text-[14px] flex-1 text-[rgb(var(--muted-foreground))]' } },
+              { type: 'Icon', props: { icon: 'lucide:clock', size: 16, color: 'var(--theme-muted-foreground)' } },
+              { type: 'Text', text: { formula: "context?.component?.variables?.['tm-v-time'] || 'Pick a time'" }, props: { className: 'text-[14px] flex-1 text-[var(--theme-muted-foreground)]' } },
               {
                 type: 'Box',
                 _popoverContent: true,
-                props: { className: 'w-[220px] bg-[rgb(var(--card))] rounded-[12px] border border-[rgb(var(--border))] p-[16px] shadow-lg flex flex-col gap-[12px]' },
+                props: { className: 'w-[220px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[16px] shadow-lg flex flex-col gap-[12px]' },
                 children: [
-                  { type: 'Text', text: 'Select Time', props: { className: 'text-[13px] font-semibold text-[rgb(var(--foreground))] text-center' } },
+                  { type: 'Text', text: 'Select Time', props: { className: 'text-[13px] font-semibold text-[var(--theme-foreground)] text-center' } },
                   {
                     type: 'Box',
                     props: { className: 'flex flex-row items-center justify-center gap-[8px]' },
@@ -969,26 +1031,26 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
                         type: 'Box',
                         props: { className: 'flex flex-col items-center gap-[4px]' },
                         children: [
-                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'hu', type: 'changeVariableValue', config: { variableName: 'tm-v-hour', value: { formula: "((context?.component?.variables?.['tm-v-hour']??12)+1)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-up', size: 14, color: 'rgb(var(--foreground))' } }] },
-                          { type: 'Text', text: { formula: "String(context?.component?.variables?.['tm-v-hour']??12).padStart(2,'0')" }, props: { className: 'text-[20px] font-bold text-[rgb(var(--foreground))] w-[40px] text-center' } },
-                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'hd', type: 'changeVariableValue', config: { variableName: 'tm-v-hour', value: { formula: "((context?.component?.variables?.['tm-v-hour']??12)-1+24)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 14, color: 'rgb(var(--foreground))' } }] },
-                          { type: 'Text', text: 'HR', props: { className: 'text-[10px] text-[rgb(var(--muted-foreground))]' } },
+                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'hu', type: 'changeVariableValue', config: { variableName: 'tm-v-hour', value: { formula: "((context?.component?.variables?.['tm-v-hour']??12)+1)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-up', size: 14, color: 'var(--theme-foreground)' } }] },
+                          { type: 'Text', text: { formula: "String(context?.component?.variables?.['tm-v-hour']??12).padStart(2,'0')" }, props: { className: 'text-[20px] font-bold text-[var(--theme-foreground)] w-[40px] text-center' } },
+                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'hd', type: 'changeVariableValue', config: { variableName: 'tm-v-hour', value: { formula: "((context?.component?.variables?.['tm-v-hour']??12)-1+24)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 14, color: 'var(--theme-foreground)' } }] },
+                          { type: 'Text', text: 'HR', props: { className: 'text-[10px] text-[var(--theme-muted-foreground)]' } },
                         ],
                       },
-                      { type: 'Text', text: ':', props: { className: 'text-[24px] font-bold text-[rgb(var(--foreground))] mb-[14px]' } },
+                      { type: 'Text', text: ':', props: { className: 'text-[24px] font-bold text-[var(--theme-foreground)] mb-[14px]' } },
                       {
                         type: 'Box',
                         props: { className: 'flex flex-col items-center gap-[4px]' },
                         children: [
-                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'mu', type: 'changeVariableValue', config: { variableName: 'tm-v-minute', value: { formula: "((context?.component?.variables?.['tm-v-minute']??0)+5)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-up', size: 14, color: 'rgb(var(--foreground))' } }] },
-                          { type: 'Text', text: { formula: "String(context?.component?.variables?.['tm-v-minute']??0).padStart(2,'0')" }, props: { className: 'text-[20px] font-bold text-[rgb(var(--foreground))] w-[40px] text-center' } },
-                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'md', type: 'changeVariableValue', config: { variableName: 'tm-v-minute', value: { formula: "((context?.component?.variables?.['tm-v-minute']??0)-5+60)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 14, color: 'rgb(var(--foreground))' } }] },
-                          { type: 'Text', text: 'MIN', props: { className: 'text-[10px] text-[rgb(var(--muted-foreground))]' } },
+                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'mu', type: 'changeVariableValue', config: { variableName: 'tm-v-minute', value: { formula: "((context?.component?.variables?.['tm-v-minute']??0)+5)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-up', size: 14, color: 'var(--theme-foreground)' } }] },
+                          { type: 'Text', text: { formula: "String(context?.component?.variables?.['tm-v-minute']??0).padStart(2,'0')" }, props: { className: 'text-[20px] font-bold text-[var(--theme-foreground)] w-[40px] text-center' } },
+                          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'md', type: 'changeVariableValue', config: { variableName: 'tm-v-minute', value: { formula: "((context?.component?.variables?.['tm-v-minute']??0)-5+60)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-down', size: 14, color: 'var(--theme-foreground)' } }] },
+                          { type: 'Text', text: 'MIN', props: { className: 'text-[10px] text-[var(--theme-muted-foreground)]' } },
                         ],
                       },
                     ],
                   },
-                  { type: 'Box', props: { className: 'flex items-center justify-center h-[36px] rounded-[8px] bg-[rgb(var(--primary))] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'ok', type: 'changeVariableValue', config: { variableName: 'tm-v-time', value: { formula: "String(context?.component?.variables?.['tm-v-hour']??12).padStart(2,'0')+':'+String(context?.component?.variables?.['tm-v-minute']??0).padStart(2,'0')" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'tm-v-open', value: false } }] }], children: [{ type: 'Text', text: 'OK', props: { className: 'text-[13px] font-semibold text-[rgb(var(--primary-foreground))]' } }] },
+                  { type: 'Box', props: { className: 'flex items-center justify-center h-[36px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'ok', type: 'changeVariableValue', config: { variableName: 'tm-v-time', value: { formula: "String(context?.component?.variables?.['tm-v-hour']??12).padStart(2,'0')+':'+String(context?.component?.variables?.['tm-v-minute']??0).padStart(2,'0')" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'tm-v-open', value: false } }] }], children: [{ type: 'Text', text: 'OK', props: { className: 'text-[13px] font-semibold text-[var(--theme-primary-foreground)]' } }] },
                 ],
               },
             ],
@@ -1024,34 +1086,34 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         type: 'Box',
         props: { className: 'flex flex-col gap-[6px] w-full' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             popover: { trigger: 'click', placement: 'bottom-start', offset: 6, openVariable: 'dtp-v-open' },
-            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer w-full' },
+            props: { className: 'inline-flex flex-row items-center gap-[8px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full' },
             children: [
-              { type: 'Icon', props: { icon: 'lucide:calendar-clock', size: 16, color: 'rgb(var(--muted-foreground))' } },
-              { type: 'Text', text: { formula: "context?.component?.variables?.['dtp-v-selected'] || 'Pick date & time'" }, props: { className: 'text-[14px] flex-1 text-[rgb(var(--muted-foreground))]' } },
+              { type: 'Icon', props: { icon: 'lucide:calendar-clock', size: 16, color: 'var(--theme-muted-foreground)' } },
+              { type: 'Text', text: { formula: "context?.component?.variables?.['dtp-v-selected'] || 'Pick date & time'" }, props: { className: 'text-[14px] flex-1 text-[var(--theme-muted-foreground)]' } },
               {
                 type: 'Box',
                 _popoverContent: true,
-                props: { className: 'w-[280px] bg-[rgb(var(--card))] rounded-[12px] border border-[rgb(var(--border))] p-[12px] shadow-lg flex flex-col gap-[8px]' },
+                props: { className: 'w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] shadow-lg flex flex-col gap-[8px]' },
                 children: [
                   // Month navigation header
                   {
                     type: 'Box',
                     props: { className: 'flex flex-row items-center justify-between mb-[4px]' },
                     children: [
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dtp-v-month', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)-1<0?(()=>{return 11})():(context?.component?.variables?.['dtp-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dtp-v-year', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)-1<0?(context?.component?.variables?.['dtp-v-year']??2026)-1:(context?.component?.variables?.['dtp-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'rgb(var(--foreground))' } }] },
-                      { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dtp-v-month']??3]+' '+(context?.component?.variables?.['dtp-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[rgb(var(--foreground))]' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dtp-v-month', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)+1>11?0:(context?.component?.variables?.['dtp-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dtp-v-year', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)+1>11?(context?.component?.variables?.['dtp-v-year']??2026)+1:(context?.component?.variables?.['dtp-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'rgb(var(--foreground))' } }] },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dtp-v-month', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)-1<0?11:(context?.component?.variables?.['dtp-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dtp-v-year', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)-1<0?(context?.component?.variables?.['dtp-v-year']??2026)-1:(context?.component?.variables?.['dtp-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'var(--theme-foreground)' } }] },
+                      { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dtp-v-month']??3]+' '+(context?.component?.variables?.['dtp-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[var(--theme-foreground)]' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dtp-v-month', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)+1>11?0:(context?.component?.variables?.['dtp-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dtp-v-year', value: { formula: "(context?.component?.variables?.['dtp-v-month']??3)+1>11?(context?.component?.variables?.['dtp-v-year']??2026)+1:(context?.component?.variables?.['dtp-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'var(--theme-foreground)' } }] },
                     ],
                   },
                   // Week header
                   {
                     type: 'Box',
                     props: { className: 'grid grid-cols-7 mb-[2px]' },
-                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[rgb(var(--muted-foreground))] text-center py-[2px]' }, text: d })),
+                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[2px]' }, text: d })),
                   },
                   // Day grid
                   {
@@ -1063,30 +1125,30 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
                       key: 'context.item.data.idx',
                       props: { className: 'contents' },
                       children: [
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[34px] h-[34px] cursor-pointer rounded-full bg-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dtp-v-date', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--primary-foreground))] font-semibold' } }] },
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[34px] h-[34px] cursor-pointer rounded-full hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dtp-v-date', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--foreground))]' } }] },
-                        { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[34px] h-[34px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))] opacity-30' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[34px] h-[34px] cursor-pointer rounded-full bg-[var(--theme-primary)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dtp-v-date', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-primary-foreground)] font-semibold' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[34px] h-[34px] cursor-pointer rounded-full hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dtp-v-date', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-foreground)]' } }] },
+                        { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[34px] h-[34px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-muted-foreground)] opacity-30' } }] },
                       ],
                     }],
                   },
                   // Time row
-                  { type: 'Box', props: { className: 'h-[1px] bg-[rgb(var(--border))]' } },
+                  { type: 'Box', props: { className: 'h-[1px] bg-[var(--theme-border)]' } },
                   {
                     type: 'Box',
                     props: { className: 'flex flex-row items-center justify-center gap-[6px]' },
                     children: [
-                      { type: 'Icon', props: { icon: 'lucide:clock', size: 14, color: 'rgb(var(--muted-foreground))' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'hd', type: 'changeVariableValue', config: { variableName: 'dtp-v-hour', value: { formula: "((context?.component?.variables?.['dtp-v-hour']??12)-1+24)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 12, color: 'rgb(var(--foreground))' } }] },
-                      { type: 'Text', text: { formula: "String(context?.component?.variables?.['dtp-v-hour']??12).padStart(2,'0')" }, props: { className: 'text-[14px] font-bold text-[rgb(var(--foreground))] w-[22px] text-center' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'hu', type: 'changeVariableValue', config: { variableName: 'dtp-v-hour', value: { formula: "((context?.component?.variables?.['dtp-v-hour']??12)+1)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 12, color: 'rgb(var(--foreground))' } }] },
-                      { type: 'Text', text: ':', props: { className: 'text-[16px] font-bold text-[rgb(var(--foreground))]' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'md', type: 'changeVariableValue', config: { variableName: 'dtp-v-minute', value: { formula: "((context?.component?.variables?.['dtp-v-minute']??0)-5+60)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 12, color: 'rgb(var(--foreground))' } }] },
-                      { type: 'Text', text: { formula: "String(context?.component?.variables?.['dtp-v-minute']??0).padStart(2,'0')" }, props: { className: 'text-[14px] font-bold text-[rgb(var(--foreground))] w-[22px] text-center' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'mu', type: 'changeVariableValue', config: { variableName: 'dtp-v-minute', value: { formula: "((context?.component?.variables?.['dtp-v-minute']??0)+5)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 12, color: 'rgb(var(--foreground))' } }] },
+                      { type: 'Icon', props: { icon: 'lucide:clock', size: 14, color: 'var(--theme-muted-foreground)' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'hd', type: 'changeVariableValue', config: { variableName: 'dtp-v-hour', value: { formula: "((context?.component?.variables?.['dtp-v-hour']??12)-1+24)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 12, color: 'var(--theme-foreground)' } }] },
+                      { type: 'Text', text: { formula: "String(context?.component?.variables?.['dtp-v-hour']??12).padStart(2,'0')" }, props: { className: 'text-[14px] font-bold text-[var(--theme-foreground)] w-[22px] text-center' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'hu', type: 'changeVariableValue', config: { variableName: 'dtp-v-hour', value: { formula: "((context?.component?.variables?.['dtp-v-hour']??12)+1)%24" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 12, color: 'var(--theme-foreground)' } }] },
+                      { type: 'Text', text: ':', props: { className: 'text-[16px] font-bold text-[var(--theme-foreground)]' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'md', type: 'changeVariableValue', config: { variableName: 'dtp-v-minute', value: { formula: "((context?.component?.variables?.['dtp-v-minute']??0)-5+60)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 12, color: 'var(--theme-foreground)' } }] },
+                      { type: 'Text', text: { formula: "String(context?.component?.variables?.['dtp-v-minute']??0).padStart(2,'0')" }, props: { className: 'text-[14px] font-bold text-[var(--theme-foreground)] w-[22px] text-center' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'mu', type: 'changeVariableValue', config: { variableName: 'dtp-v-minute', value: { formula: "((context?.component?.variables?.['dtp-v-minute']??0)+5)%60" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 12, color: 'var(--theme-foreground)' } }] },
                     ],
                   },
                   // Confirm button
-                  { type: 'Box', props: { className: 'flex items-center justify-center h-[34px] rounded-[8px] bg-[rgb(var(--primary))] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'ok', type: 'changeVariableValue', config: { variableName: 'dtp-v-selected', value: { formula: "(context?.component?.variables?.['dtp-v-date']||'?')+' '+String(context?.component?.variables?.['dtp-v-hour']??12).padStart(2,'0')+':'+String(context?.component?.variables?.['dtp-v-minute']??0).padStart(2,'0')" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'dtp-v-open', value: false } }] }], children: [{ type: 'Text', text: 'Confirm', props: { className: 'text-[13px] font-semibold text-[rgb(var(--primary-foreground))]' } }] },
+                  { type: 'Box', props: { className: 'flex items-center justify-center h-[34px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'ok', type: 'changeVariableValue', config: { variableName: 'dtp-v-selected', value: { formula: "(context?.component?.variables?.['dtp-v-date']||'?')+' '+String(context?.component?.variables?.['dtp-v-hour']??12).padStart(2,'0')+':'+String(context?.component?.variables?.['dtp-v-minute']??0).padStart(2,'0')" } } }, { id: 'cl', type: 'changeVariableValue', config: { variableName: 'dtp-v-open', value: false } }] }], children: [{ type: 'Text', text: 'Confirm', props: { className: 'text-[13px] font-semibold text-[var(--theme-primary-foreground)]' } }] },
                 ],
               },
             ],
@@ -1119,42 +1181,42 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         type: 'Box',
         props: { className: 'flex flex-col gap-[6px] w-full' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             popover: { trigger: 'click', placement: 'bottom-start', offset: 6, openVariable: 'dr-v-open' },
-            props: { className: 'inline-flex flex-row items-center gap-[6px] px-[12px] h-[40px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer w-full' },
+            props: { className: 'inline-flex flex-row items-center gap-[6px] px-[12px] h-[40px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer w-full' },
             children: [
-              { type: 'Icon', props: { icon: 'lucide:calendar-range', size: 16, color: 'rgb(var(--muted-foreground))' } },
-              { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-start']||'Start'" }, props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
-              { type: 'Text', text: '→', props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))]' } },
-              { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-end']||'End'" }, props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
+              { type: 'Icon', props: { icon: 'lucide:calendar-range', size: 16, color: 'var(--theme-muted-foreground)' } },
+              { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-start']||'Start'" }, props: { className: 'text-[13px] text-[var(--theme-muted-foreground)]' } },
+              { type: 'Text', text: '→', props: { className: 'text-[12px] text-[var(--theme-muted-foreground)]' } },
+              { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-end']||'End'" }, props: { className: 'text-[13px] text-[var(--theme-muted-foreground)]' } },
               {
                 type: 'Box',
                 _popoverContent: true,
-                props: { className: 'w-[300px] bg-[rgb(var(--card))] rounded-[12px] border border-[rgb(var(--border))] p-[12px] shadow-lg flex flex-col gap-[8px]' },
+                props: { className: 'w-[300px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] shadow-lg flex flex-col gap-[8px]' },
                 children: [
                   {
                     type: 'Box',
                     props: { className: 'flex flex-col gap-[4px]' },
                     children: [
-                      { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-start']?'Start: '+context.component.variables['dr-v-start']:'Click a date to set start'" }, props: { className: 'text-[11px] text-[rgb(var(--muted-foreground))]' } },
-                      { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-end']?'End: '+context.component.variables['dr-v-end']:'Click again to set end'" }, props: { className: 'text-[11px] text-[rgb(var(--muted-foreground))]' } },
+                      { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-start']?'Start: '+context.component.variables['dr-v-start']:'Click a date to set start'" }, props: { className: 'text-[11px] text-[var(--theme-muted-foreground)]' } },
+                      { type: 'Text', text: { formula: "context?.component?.variables?.['dr-v-end']?'End: '+context.component.variables['dr-v-end']:'Click again to set end'" }, props: { className: 'text-[11px] text-[var(--theme-muted-foreground)]' } },
                     ],
                   },
                   {
                     type: 'Box',
                     props: { className: 'flex flex-row items-center justify-between' },
                     children: [
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dr-v-month', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)-1<0?11:(context?.component?.variables?.['dr-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dr-v-year', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)-1<0?(context?.component?.variables?.['dr-v-year']??2026)-1:(context?.component?.variables?.['dr-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'rgb(var(--foreground))' } }] },
-                      { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dr-v-month']??3]+' '+(context?.component?.variables?.['dr-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[rgb(var(--foreground))]' } },
-                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dr-v-month', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)+1>11?0:(context?.component?.variables?.['dr-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dr-v-year', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)+1>11?(context?.component?.variables?.['dr-v-year']??2026)+1:(context?.component?.variables?.['dr-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'rgb(var(--foreground))' } }] },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dr-v-month', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)-1<0?11:(context?.component?.variables?.['dr-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dr-v-year', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)-1<0?(context?.component?.variables?.['dr-v-year']??2026)-1:(context?.component?.variables?.['dr-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'var(--theme-foreground)' } }] },
+                      { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dr-v-month']??3]+' '+(context?.component?.variables?.['dr-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[var(--theme-foreground)]' } },
+                      { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dr-v-month', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)+1>11?0:(context?.component?.variables?.['dr-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dr-v-year', value: { formula: "(context?.component?.variables?.['dr-v-month']??3)+1>11?(context?.component?.variables?.['dr-v-year']??2026)+1:(context?.component?.variables?.['dr-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'var(--theme-foreground)' } }] },
                     ],
                   },
                   {
                     type: 'Box',
                     props: { className: 'grid grid-cols-7' },
-                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[rgb(var(--muted-foreground))] text-center py-[2px]' }, text: d })),
+                    children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[2px]' }, text: d })),
                   },
                   {
                     type: 'Box',
@@ -1165,16 +1227,16 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
                       key: 'context.item.data.idx',
                       props: { className: 'contents' },
                       children: [
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && (context?.item?.data?.isStart || context?.item?.data?.isEnd)", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer rounded-full bg-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: { formula: "!context?.component?.variables?.['dr-v-start']||context?.component?.variables?.['dr-v-end']?context?.item?.data?.dateStr:context?.component?.variables?.['dr-v-start']" } } }, { id: 'selen', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.component?.variables?.['dr-v-start']&&!context?.component?.variables?.['dr-v-end']?context?.item?.data?.dateStr:''" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--primary-foreground))] font-semibold' } }] },
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.inRange", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer bg-[rgb(var(--primary))]/20' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--foreground))]' } }] },
-                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isStart && !context?.item?.data?.isEnd && !context?.item?.data?.inRange", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer rounded-full hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: { formula: "!context?.component?.variables?.['dr-v-start']||(context?.component?.variables?.['dr-v-start']&&context?.component?.variables?.['dr-v-end'])?context?.item?.data?.dateStr:context?.component?.variables?.['dr-v-start']" } } }, { id: 'selen', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.component?.variables?.['dr-v-start']&&!context?.component?.variables?.['dr-v-end']&&context?.item?.data?.dateStr>=context?.component?.variables?.['dr-v-start']?context?.item?.data?.dateStr:!context?.component?.variables?.['dr-v-start']||(context?.component?.variables?.['dr-v-start']&&context?.component?.variables?.['dr-v-end'])?'':context?.component?.variables?.['dr-v-end']" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--foreground))]' } }] },
-                        { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[36px] h-[34px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))] opacity-30' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && (context?.item?.data?.isStart || context?.item?.data?.isEnd)", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer rounded-full bg-[var(--theme-primary)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: { formula: "!context?.component?.variables?.['dr-v-start']||context?.component?.variables?.['dr-v-end']?context?.item?.data?.dateStr:context?.component?.variables?.['dr-v-start']" } } }, { id: 'selen', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.component?.variables?.['dr-v-start']&&!context?.component?.variables?.['dr-v-end']?context?.item?.data?.dateStr:''" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-primary-foreground)] font-semibold' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.inRange", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer bg-[var(--theme-primary)]/20' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-foreground)]' } }] },
+                        { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isStart && !context?.item?.data?.isEnd && !context?.item?.data?.inRange", props: { className: 'flex items-center justify-center w-[36px] h-[34px] cursor-pointer rounded-full hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sel', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: { formula: "!context?.component?.variables?.['dr-v-start']||(context?.component?.variables?.['dr-v-start']&&context?.component?.variables?.['dr-v-end'])?context?.item?.data?.dateStr:context?.component?.variables?.['dr-v-start']" } } }, { id: 'selen', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: { formula: "context?.component?.variables?.['dr-v-start']&&!context?.component?.variables?.['dr-v-end']&&context?.item?.data?.dateStr>=context?.component?.variables?.['dr-v-start']?context?.item?.data?.dateStr:!context?.component?.variables?.['dr-v-start']||(context?.component?.variables?.['dr-v-start']&&context?.component?.variables?.['dr-v-end'])?'':context?.component?.variables?.['dr-v-end']" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-foreground)]' } }] },
+                        { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[36px] h-[34px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-muted-foreground)] opacity-30' } }] },
                       ],
                     }],
                   },
-                  { type: 'Box', props: { className: 'flex flex-row justify-between pt-[6px] border-t border-[rgb(var(--border))]' }, children: [
-                    { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[4px] rounded-[6px] border border-[rgb(var(--border))] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'clr', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: '' } }, { id: 'cle', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: '' } }] }], children: [{ type: 'Text', text: 'Clear', props: { className: 'text-[12px] font-medium text-[rgb(var(--foreground))]' } }] },
-                    { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[4px] rounded-[6px] bg-[rgb(var(--primary))] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'cl', type: 'changeVariableValue', config: { variableName: 'dr-v-open', value: false } }] }], children: [{ type: 'Text', text: 'Done', props: { className: 'text-[12px] font-semibold text-[rgb(var(--primary-foreground))]' } }] },
+                  { type: 'Box', props: { className: 'flex flex-row justify-between pt-[6px] border-t border-[var(--theme-border)]' }, children: [
+                    { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[4px] rounded-[6px] border border-[var(--theme-border)] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'clr', type: 'changeVariableValue', config: { variableName: 'dr-v-start', value: '' } }, { id: 'cle', type: 'changeVariableValue', config: { variableName: 'dr-v-end', value: '' } }] }], children: [{ type: 'Text', text: 'Clear', props: { className: 'text-[12px] font-medium text-[var(--theme-foreground)]' } }] },
+                    { type: 'Box', props: { className: 'flex items-center justify-center px-[10px] py-[4px] rounded-[6px] bg-[var(--theme-primary)] cursor-pointer' }, actions: [{ trigger: 'click', steps: [{ id: 'cl', type: 'changeVariableValue', config: { variableName: 'dr-v-open', value: false } }] }], children: [{ type: 'Text', text: 'Done', props: { className: 'text-[12px] font-semibold text-[var(--theme-primary-foreground)]' } }] },
                   ] },
                 ],
               },
@@ -1203,21 +1265,21 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       },
       content: {
         type: 'Box',
-        props: { className: 'w-[280px] bg-[rgb(var(--card))] rounded-[12px] border border-[rgb(var(--border))] p-[12px] flex flex-col gap-[6px]' },
+        props: { className: 'w-[280px] bg-[var(--theme-card)] rounded-[12px] border border-[var(--theme-border)] p-[12px] flex flex-col gap-[6px]' },
         children: [
           {
             type: 'Box',
             props: { className: 'flex flex-row items-center justify-between mb-[4px]' },
             children: [
-              { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dpi-v-month', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)-1<0?11:(context?.component?.variables?.['dpi-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dpi-v-year', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)-1<0?(context?.component?.variables?.['dpi-v-year']??2026)-1:(context?.component?.variables?.['dpi-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'rgb(var(--foreground))' } }] },
-              { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dpi-v-month']??3]+' '+(context?.component?.variables?.['dpi-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[rgb(var(--foreground))]' } },
-              { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dpi-v-month', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)+1>11?0:(context?.component?.variables?.['dpi-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dpi-v-year', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)+1>11?(context?.component?.variables?.['dpi-v-year']??2026)+1:(context?.component?.variables?.['dpi-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'rgb(var(--foreground))' } }] },
+              { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'pm', type: 'changeVariableValue', config: { variableName: 'dpi-v-month', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)-1<0?11:(context?.component?.variables?.['dpi-v-month']??3)-1" } } }, { id: 'py', type: 'changeVariableValue', config: { variableName: 'dpi-v-year', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)-1<0?(context?.component?.variables?.['dpi-v-year']??2026)-1:(context?.component?.variables?.['dpi-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'var(--theme-foreground)' } }] },
+              { type: 'Text', text: { formula: "['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][context?.component?.variables?.['dpi-v-month']??3]+' '+(context?.component?.variables?.['dpi-v-year']??2026)" }, props: { className: 'text-[13px] font-semibold text-[var(--theme-foreground)]' } },
+              { type: 'Box', props: { className: 'flex items-center justify-center w-[28px] h-[28px] rounded-[6px] cursor-pointer hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'nm', type: 'changeVariableValue', config: { variableName: 'dpi-v-month', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)+1>11?0:(context?.component?.variables?.['dpi-v-month']??3)+1" } } }, { id: 'ny', type: 'changeVariableValue', config: { variableName: 'dpi-v-year', value: { formula: "(context?.component?.variables?.['dpi-v-month']??3)+1>11?(context?.component?.variables?.['dpi-v-year']??2026)+1:(context?.component?.variables?.['dpi-v-year']??2026)" } } }] }], children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'var(--theme-foreground)' } }] },
             ],
           },
           {
             type: 'Box',
             props: { className: 'grid grid-cols-7 mb-[4px]' },
-            children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[rgb(var(--muted-foreground))] text-center py-[4px]' }, text: d })),
+            children: ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => ({ type: 'Text', props: { className: 'text-[10px] font-semibold text-[var(--theme-muted-foreground)] text-center py-[4px]' }, text: d })),
           },
           {
             type: 'Box',
@@ -1228,10 +1290,10 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
               key: 'context.item.data.idx',
               props: { className: 'contents' },
               children: [
-                { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full bg-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--primary-foreground))] font-semibold' } }] },
-                { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full border-2 border-[rgb(var(--primary))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] font-semibold text-[rgb(var(--foreground))]' } }] },
-                { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full hover:bg-[rgb(var(--muted))]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--foreground))]' } }] },
-                { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[36px] h-[36px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))] opacity-30' } }] },
+                { type: 'Box', condition: "context?.item?.data?.inMonth && context?.item?.data?.isSelected", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full bg-[var(--theme-primary)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-primary-foreground)] font-semibold' } }] },
+                { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full border-2 border-[var(--theme-primary)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] font-semibold text-[var(--theme-foreground)]' } }] },
+                { type: 'Box', condition: "context?.item?.data?.inMonth && !context?.item?.data?.isSelected && !context?.item?.data?.isToday", props: { className: 'flex items-center justify-center w-[36px] h-[36px] cursor-pointer rounded-full hover:bg-[var(--theme-muted)]' }, actions: [{ trigger: 'click', steps: [{ id: 'sd', type: 'changeVariableValue', config: { variableName: 'dpi-v-selected', value: { formula: "context?.item?.data?.dateStr" } } }] }], children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-foreground)]' } }] },
+                { type: 'Box', condition: "!context?.item?.data?.inMonth", props: { className: 'flex items-center justify-center w-[36px] h-[36px]' }, children: [{ type: 'Text', text: '{{context.item.data.day}}', props: { className: 'text-[12px] text-[var(--theme-muted-foreground)] opacity-30' } }] },
               ],
             }],
           },
@@ -1255,21 +1317,21 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'Box',
-        props: { className: 'flex flex-col items-center justify-center gap-[8px] w-full py-[32px] px-[16px] rounded-[10px] border-2 border-dashed border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer' },
+        props: { className: 'flex flex-col items-center justify-center gap-[8px] w-full py-[32px] px-[16px] rounded-[10px] border-2 border-dashed border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer' },
         children: [
           {
             type: 'Icon',
-            props: { icon: 'lucide:upload-cloud', size: 32, color: 'rgb(var(--muted-foreground))' },
+            props: { icon: 'lucide:upload-cloud', size: 32, color: 'var(--theme-muted-foreground)' },
           },
           {
             type: 'Text',
             text: '{{context.component.props.hint}}',
-            props: { className: 'text-[14px] font-medium text-[rgb(var(--foreground))] text-center' },
+            props: { className: 'text-[14px] font-medium text-[var(--theme-foreground)] text-center' },
           },
           {
             type: 'Text',
             text: '{{context.component.props.accept}}',
-            props: { className: 'text-[12px] text-[rgb(var(--muted-foreground))] text-center' },
+            props: { className: 'text-[12px] text-[var(--theme-muted-foreground)] text-center' },
           },
         ],
       },
@@ -1282,39 +1344,68 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
     category: 'Form inputs',
     icon: '⧖',
     valueVariable: 'sl-value',
-    description: 'Native range slider with live value readout.',
+    description: 'Drag-based slider built from Box primitives with min/max/step.',
     definition: {
       name: 'Slider',
-      description: 'Native range slider with live value readout.',
+      description: 'Custom drag slider built from Box primitives.',
       properties: [
         prop('p-sl-label', 'label', 'text', 'Volume'),
-        prop('p-sl-min', 'min', 'text', '0'),
-        prop('p-sl-max', 'max', 'text', '100'),
+        { id: 'p-sl-min',  name: 'min',  type: 'number', defaultValue: 0 },
+        { id: 'p-sl-max',  name: 'max',  type: 'number', defaultValue: 100 },
+        { id: 'p-sl-step', name: 'step', type: 'number', defaultValue: 1 },
       ],
       variables: {
         'sl-value': { label: 'Value', type: 'number', initialValue: 60 },
       },
+      workflows: {
+        'sl-wf-update': {
+          id: 'sl-wf-update', name: 'Update value', trigger: 'dragUpdate', params: [],
+          steps: [{
+            id: 's1', type: 'changeVariableValue', config: {
+              variableName: 'sl-value',
+              value: { js: "const mn=context?.component?.props?.min??0; const mx=context?.component?.props?.max??100; const st=context?.component?.props?.step??1; const raw=mn+(event?.percentX??0)*(mx-mn); return Math.max(mn,Math.min(mx,st>0?Math.round(raw/st)*st:raw));" },
+            },
+          }],
+        },
+      },
       content: {
         type: 'Box',
-        props: { className: 'flex flex-col gap-[8px] w-full' },
+        props: { className: 'flex flex-col gap-[10px] w-full select-none' },
         children: [
           {
             type: 'Box',
             props: { className: 'flex flex-row items-center justify-between' },
             children: [
-              { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
-              { type: 'Text', text: { formula: "(context?.component?.variables?.['sl-value'] ?? 60) + '%'" }, props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
+              { type: 'Text', text: { formula: "String(context?.component?.variables?.['sl-value'] ?? 0)" }, props: { className: 'text-[13px] font-medium text-[var(--theme-primary)]' } },
             ],
           },
           {
-            type: 'Input',
-            props: {
-              type: 'range',
-              min: '{{context.component.props.min}}',
-              max: '{{context.component.props.max}}',
-              value: { formula: "context?.component?.variables?.['sl-value'] ?? 60" },
-              className: 'w-full accent-[rgb(var(--primary))] cursor-pointer',
-            },
+            type: 'Box',
+            props: { className: 'relative w-full h-[20px] flex items-center cursor-pointer touch-none' },
+            animation: { drag: { enabled: true, axis: 'x', noVisualMove: true } },
+            actions: [
+              { action: 'sl-wf-update', trigger: 'dragStart' },
+              { action: 'sl-wf-update', trigger: 'dragUpdate' },
+              { action: 'sl-wf-update', trigger: 'dragEnd' },
+            ],
+            children: [
+              { type: 'Box', props: { className: 'absolute inset-x-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-muted)] pointer-events-none' } },
+              {
+                type: 'Box',
+                props: {
+                  className: 'absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-[var(--theme-primary)] pointer-events-none',
+                  style: { width: { formula: "Math.max(0, Math.min(100, ((context?.component?.variables?.['sl-value'] ?? context?.component?.props?.min ?? 0) - (context?.component?.props?.min ?? 0)) / ((context?.component?.props?.max ?? 100) - (context?.component?.props?.min ?? 0) || 1) * 100)) + '%'" } },
+                },
+              },
+              {
+                type: 'Box',
+                props: {
+                  className: 'absolute top-1/2 w-[18px] h-[18px] rounded-full bg-[var(--theme-primary)] border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none',
+                  style: { left: { formula: "Math.max(0, Math.min(100, ((context?.component?.variables?.['sl-value'] ?? context?.component?.props?.min ?? 0) - (context?.component?.props?.min ?? 0)) / ((context?.component?.props?.max ?? 100) - (context?.component?.props?.min ?? 0) || 1) * 100)) + '%'" } },
+                },
+              },
+            ],
           },
         ],
       },
@@ -1341,15 +1432,15 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             type: 'Box',
             props: { className: 'flex flex-row items-center justify-between' },
             children: [
-              { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
-              { type: 'Text', text: '75%', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[13px] text-[var(--theme-muted-foreground)]' } },
+              { type: 'Text', text: '75%', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
             ],
           },
           {
             type: 'Box',
-            props: { className: 'w-full h-[8px] rounded-[4px] bg-[rgb(var(--muted))]' },
+            props: { className: 'w-full h-[8px] rounded-[4px] bg-[var(--theme-muted)]' },
             children: [
-              { type: 'Box', props: { className: 'h-full w-[75%] rounded-[4px] bg-[rgb(var(--primary))]' } },
+              { type: 'Box', props: { className: 'h-full w-[75%] rounded-[4px] bg-[var(--theme-primary)]' } },
             ],
           },
         ],
@@ -1372,30 +1463,30 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'FormContainer',
-        props: { className: 'flex flex-col gap-[16px] w-full p-[24px] rounded-[12px] border border-[rgb(var(--border))] bg-[rgb(var(--card))]' },
+        props: { className: 'flex flex-col gap-[16px] w-full p-[24px] rounded-[12px] border border-[var(--theme-border)] bg-[var(--theme-card)]' },
         children: [
-          { type: 'Text', text: '{{context.component.props.title}}', props: { className: 'text-[18px] font-bold text-[rgb(var(--foreground))]' } },
+          { type: 'Text', text: '{{context.component.props.title}}', props: { className: 'text-[18px] font-bold text-[var(--theme-foreground)]' } },
           {
             type: 'Box',
             props: { className: 'flex flex-col gap-[6px] w-full' },
             children: [
-              { type: 'Text', text: 'Name', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
-              { type: 'Input', props: { placeholder: 'Your name', className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--background))] text-[14px]' } },
+              { type: 'Text', text: 'Name', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
+              { type: 'Input', props: { placeholder: 'Your name', className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px]' } },
             ],
           },
           {
             type: 'Box',
             props: { className: 'flex flex-col gap-[6px] w-full' },
             children: [
-              { type: 'Text', text: 'Email', props: { className: 'text-[13px] font-medium text-[rgb(var(--foreground))]' } },
-              { type: 'Input', props: { placeholder: 'your@email.com', className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--background))] text-[14px]' } },
+              { type: 'Text', text: 'Email', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' } },
+              { type: 'Input', props: { placeholder: 'your@email.com', className: 'w-full h-[40px] px-[12px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-background)] text-[14px]' } },
             ],
           },
           {
             type: 'Box',
-            props: { className: 'flex items-center justify-center h-[42px] rounded-[8px] bg-[rgb(var(--primary))] cursor-pointer' },
+            props: { className: 'flex items-center justify-center h-[42px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer' },
             children: [
-              { type: 'Text', text: '{{context.component.props.submitLabel}}', props: { className: 'text-[14px] font-semibold text-[rgb(var(--primary-foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.submitLabel}}', props: { className: 'text-[14px] font-semibold text-[var(--theme-primary-foreground)]' } },
             ],
           },
         ],
@@ -1424,30 +1515,30 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       },
       content: {
         type: 'Box',
-        props: { className: 'flex flex-row border-b border-[rgb(var(--border))] w-full' },
+        props: { className: 'flex flex-row border-b border-[var(--theme-border)] w-full' },
         children: [
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[rgb(var(--primary))] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
+            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[var(--theme-primary)] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
             actions: [{ trigger: 'click', steps: [{ id: 't1', type: 'changeVariableValue', config: { variableName: 'tabs-active', value: 'tab1' } }] }],
             children: [
-              { type: 'Text', text: '{{context.component.props.tab1}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'text-[14px] font-semibold text-[rgb(var(--primary))]' : 'text-[14px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.tab1}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab1' ? 'text-[14px] font-semibold text-[var(--theme-primary)]' : 'text-[14px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[rgb(var(--primary))] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
+            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[var(--theme-primary)] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
             actions: [{ trigger: 'click', steps: [{ id: 't2', type: 'changeVariableValue', config: { variableName: 'tabs-active', value: 'tab2' } }] }],
             children: [
-              { type: 'Text', text: '{{context.component.props.tab2}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'text-[14px] font-semibold text-[rgb(var(--primary))]' : 'text-[14px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.tab2}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab2' ? 'text-[14px] font-semibold text-[var(--theme-primary)]' : 'text-[14px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[rgb(var(--primary))] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
+            props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-[var(--theme-primary)] cursor-pointer' : 'flex flex-row items-center px-[16px] py-[10px] border-b-2 border-transparent cursor-pointer'" } },
             actions: [{ trigger: 'click', steps: [{ id: 't3', type: 'changeVariableValue', config: { variableName: 'tabs-active', value: 'tab3' } }] }],
             children: [
-              { type: 'Text', text: '{{context.component.props.tab3}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'text-[14px] font-semibold text-[rgb(var(--primary))]' : 'text-[14px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.tab3}}', props: { className: { formula: "context?.component?.variables?.['tabs-active'] === 'tab3' ? 'text-[14px] font-semibold text-[var(--theme-primary)]' : 'text-[14px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
         ],
@@ -1469,10 +1560,10 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'Box',
-        props: { className: 'inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] w-fit' },
+        props: { className: 'inline-flex flex-row items-center gap-[6px] px-[10px] py-[4px] rounded-[9999px] border border-[var(--theme-border)] bg-[var(--theme-card)] w-fit' },
         children: [
-          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[12px] font-medium text-[rgb(var(--foreground))]' } },
-          { type: 'Icon', props: { icon: 'lucide:x', size: 12, color: 'rgb(var(--muted-foreground))' } },
+          { type: 'Text', text: '{{context.component.props.label}}', props: { className: 'text-[12px] font-medium text-[var(--theme-foreground)]' } },
+          { type: 'Icon', props: { icon: 'lucide:x', size: 12, color: 'var(--theme-muted-foreground)' } },
         ],
       },
     },
@@ -1506,16 +1597,16 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[rgb(var(--primary))] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer'" } },
+                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[var(--theme-primary)] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer'" } },
                 children: [
-                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) > 1", props: { icon: 'lucide:check', size: 14, color: 'rgb(var(--primary-foreground))' } },
-                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) <= 1", text: '1', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) === 1 ? 'text-[13px] font-bold text-[rgb(var(--primary-foreground))]' : 'text-[13px] text-[rgb(var(--muted-foreground))]'" } } },
+                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) > 1", props: { icon: 'lucide:check', size: 14, color: 'var(--theme-primary-foreground)' } },
+                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) <= 1", text: '1', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) === 1 ? 'text-[13px] font-bold text-[var(--theme-primary-foreground)]' : 'text-[13px] text-[var(--theme-muted-foreground)]'" } } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.step1}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'text-[12px] font-semibold text-[rgb(var(--primary))]' : 'text-[12px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.step1}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 1 ? 'text-[12px] font-semibold text-[var(--theme-primary)]' : 'text-[12px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
-          { type: 'Box', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) > 1 ? 'flex-1 border-t-2 border-dashed border-[rgb(var(--primary))] mt-[15px]' : 'flex-1 border-t-2 border-dashed border-[rgb(var(--border))] mt-[15px]'" } } },
+          { type: 'Box', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) > 1 ? 'flex-1 border-t-2 border-dashed border-[var(--theme-primary)] mt-[15px]' : 'flex-1 border-t-2 border-dashed border-[var(--theme-border)] mt-[15px]'" } } },
           {
             type: 'Box',
             props: { className: 'flex flex-col items-center gap-[8px]' },
@@ -1523,16 +1614,16 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[rgb(var(--primary))] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer'" } },
+                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[var(--theme-primary)] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer'" } },
                 children: [
-                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) > 2", props: { icon: 'lucide:check', size: 14, color: 'rgb(var(--primary-foreground))' } },
-                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) <= 2", text: '2', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) === 2 ? 'text-[13px] font-bold text-[rgb(var(--primary-foreground))]' : 'text-[13px] text-[rgb(var(--muted-foreground))]'" } } },
+                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) > 2", props: { icon: 'lucide:check', size: 14, color: 'var(--theme-primary-foreground)' } },
+                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) <= 2", text: '2', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) === 2 ? 'text-[13px] font-bold text-[var(--theme-primary-foreground)]' : 'text-[13px] text-[var(--theme-muted-foreground)]'" } } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.step2}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'text-[12px] font-semibold text-[rgb(var(--primary))]' : 'text-[12px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.step2}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 2 ? 'text-[12px] font-semibold text-[var(--theme-primary)]' : 'text-[12px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
-          { type: 'Box', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) > 2 ? 'flex-1 border-t-2 border-dashed border-[rgb(var(--primary))] mt-[15px]' : 'flex-1 border-t-2 border-dashed border-[rgb(var(--border))] mt-[15px]'" } } },
+          { type: 'Box', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) > 2 ? 'flex-1 border-t-2 border-dashed border-[var(--theme-primary)] mt-[15px]' : 'flex-1 border-t-2 border-dashed border-[var(--theme-border)] mt-[15px]'" } } },
           {
             type: 'Box',
             props: { className: 'flex flex-col items-center gap-[8px]' },
@@ -1540,13 +1631,13 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[rgb(var(--primary))] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer'" } },
+                props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[var(--theme-primary)] cursor-pointer' : 'flex items-center justify-center w-[32px] h-[32px] rounded-full border-2 border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer'" } },
                 children: [
-                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3", props: { icon: 'lucide:check', size: 14, color: 'rgb(var(--primary-foreground))' } },
-                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) < 3", text: '3', props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
+                  { type: 'Icon', condition: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3", props: { icon: 'lucide:check', size: 14, color: 'var(--theme-primary-foreground)' } },
+                  { type: 'Text', condition: "(context?.component?.variables?.['stp-active'] ?? 1) < 3", text: '3', props: { className: 'text-[13px] text-[var(--theme-muted-foreground)]' } },
                 ],
               },
-              { type: 'Text', text: '{{context.component.props.step3}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'text-[12px] font-semibold text-[rgb(var(--primary))]' : 'text-[12px] text-[rgb(var(--muted-foreground))]'" } } },
+              { type: 'Text', text: '{{context.component.props.step3}}', props: { className: { formula: "(context?.component?.variables?.['stp-active'] ?? 1) >= 3 ? 'text-[12px] font-semibold text-[var(--theme-primary)]' : 'text-[12px] text-[var(--theme-muted-foreground)]'" } } },
             ],
           },
         ],
@@ -1575,9 +1666,9 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         children: [
           {
             type: 'Box',
-            props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer hover:bg-[rgb(var(--muted))]' },
+            props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]' },
             actions: [{ trigger: 'click', steps: [{ id: 'prev', type: 'changeVariableValue', config: { variableName: 'pg-current', value: { formula: "Math.max(1, (context?.component?.variables?.['pg-current'] ?? 1) - 1)" } } }] }],
-            children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'rgb(var(--foreground))' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:chevron-left', size: 16, color: 'var(--theme-foreground)' } }],
           },
           {
             type: 'Box',
@@ -1587,17 +1678,17 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [
               {
                 type: 'Box',
-                props: { className: { formula: "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] bg-[rgb(var(--primary))] cursor-pointer' : 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer hover:bg-[rgb(var(--muted))]'" } },
+                props: { className: { formula: "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer' : 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]'" } },
                 actions: [{ trigger: 'click', steps: [{ id: 'pg', type: 'changeVariableValue', config: { variableName: 'pg-current', value: { formula: "context?.item?.data?.n" } } }] }],
-                children: [{ type: 'Text', text: '{{context.item.data.n}}', props: { className: { formula: "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'text-[14px] font-semibold text-[rgb(var(--primary-foreground))]' : 'text-[14px] text-[rgb(var(--muted-foreground))]'" } } }],
+                children: [{ type: 'Text', text: '{{context.item.data.n}}', props: { className: { formula: "context?.item?.data?.n === (context?.component?.variables?.['pg-current'] ?? 1) ? 'text-[14px] font-semibold text-[var(--theme-primary-foreground)]' : 'text-[14px] text-[var(--theme-muted-foreground)]'" } } }],
               },
             ],
           },
           {
             type: 'Box',
-            props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer hover:bg-[rgb(var(--muted))]' },
+            props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer hover:bg-[var(--theme-muted)]' },
             actions: [{ trigger: 'click', steps: [{ id: 'next', type: 'changeVariableValue', config: { variableName: 'pg-current', value: { formula: "Math.min(Number(context?.component?.props?.total ?? 5), (context?.component?.variables?.['pg-current'] ?? 1) + 1)" } } }] }],
-            children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'rgb(var(--foreground))' } }],
+            children: [{ type: 'Icon', props: { icon: 'lucide:chevron-right', size: 16, color: 'var(--theme-foreground)' } }],
           },
         ],
       },
@@ -1624,7 +1715,7 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         children: [
           {
             type: 'Icon',
-            props: { icon: 'lucide:loader-2', size: 24, color: 'rgb(var(--primary))', className: 'animate-spin' },
+            props: { icon: 'lucide:loader-2', size: 24, color: 'var(--theme-primary)', className: 'animate-spin' },
           },
         ],
       },
@@ -1645,9 +1736,9 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         type: 'Box',
         props: { className: 'flex flex-col gap-[10px] w-full' },
         children: [
-          { type: 'Box', props: { className: 'w-full h-[16px] rounded-[6px] bg-[rgb(var(--muted))] animate-pulse' } },
-          { type: 'Box', props: { className: 'w-[80%] h-[16px] rounded-[6px] bg-[rgb(var(--muted))] animate-pulse' } },
-          { type: 'Box', props: { className: 'w-[60%] h-[16px] rounded-[6px] bg-[rgb(var(--muted))] animate-pulse' } },
+          { type: 'Box', props: { className: 'w-full h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse' } },
+          { type: 'Box', props: { className: 'w-[80%] h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse' } },
+          { type: 'Box', props: { className: 'w-[60%] h-[16px] rounded-[6px] bg-[var(--theme-muted)] animate-pulse' } },
         ],
       },
     },
@@ -1693,7 +1784,7 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
               },
             ],
           },
-          { type: 'Text', text: { formula: "(context?.component?.variables?.['sr-rating'] ?? 0) + ' / 5 — ' + (context?.component?.props?.count || '')" }, props: { className: 'text-[13px] text-[rgb(var(--muted-foreground))]' } },
+          { type: 'Text', text: { formula: "(context?.component?.variables?.['sr-rating'] ?? 0) + ' / 5 — ' + (context?.component?.props?.count || '')" }, props: { className: 'text-[13px] text-[var(--theme-muted-foreground)]' } },
         ],
       },
     },
@@ -1721,12 +1812,12 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       ],
       content: {
         type: 'Box',
-        props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[20px] overflow-hidden bg-[rgb(var(--primary))] flex-shrink-0' },
+        props: { className: 'flex items-center justify-center w-[40px] h-[40px] rounded-[20px] overflow-hidden bg-[var(--theme-primary)] flex-shrink-0' },
         children: [
           {
             type: 'Text',
             text: '{{context.component.props.initials}}',
-            props: { className: 'text-[15px] font-semibold text-[rgb(var(--primary-foreground))]' },
+            props: { className: 'text-[15px] font-semibold text-[var(--theme-primary-foreground)]' },
           },
         ],
       },
@@ -1753,8 +1844,8 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
             children: [{ type: 'Text', text: 'AB', props: { className: 'text-[12px] font-semibold text-white' } }] },
           { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[#14b8a6] border-2 border-white -ml-[10px] z-[1]' },
             children: [{ type: 'Text', text: 'TK', props: { className: 'text-[12px] font-semibold text-white' } }] },
-          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[rgb(var(--muted))] border-2 border-white -ml-[10px] z-0' },
-            children: [{ type: 'Text', text: '+5', props: { className: 'text-[11px] font-semibold text-[rgb(var(--muted-foreground))]' } }] },
+          { type: 'Box', props: { className: 'flex items-center justify-center w-[36px] h-[36px] rounded-[18px] bg-[var(--theme-muted)] border-2 border-white -ml-[10px] z-0' },
+            children: [{ type: 'Text', text: '+5', props: { className: 'text-[11px] font-semibold text-[var(--theme-muted-foreground)]' } }] },
         ],
       },
     },
@@ -1772,58 +1863,58 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       properties: [],
       content: {
         type: 'Box',
-        props: { className: 'w-full rounded-[10px] border border-[rgb(var(--border))] overflow-hidden' },
+        props: { className: 'w-full rounded-[10px] border border-[var(--theme-border)] overflow-hidden' },
         children: [
           // Header
           {
             type: 'Box',
-            props: { className: 'flex flex-row bg-[rgb(var(--muted))]' },
+            props: { className: 'flex flex-row bg-[var(--theme-muted)]' },
             children: [
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[10px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Name', props: { className: 'text-[12px] font-semibold text-[rgb(var(--muted-foreground))] uppercase tracking-wide' } }] },
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[10px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Status', props: { className: 'text-[12px] font-semibold text-[rgb(var(--muted-foreground))] uppercase tracking-wide' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Name', props: { className: 'text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[10px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Status', props: { className: 'text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide' } }] },
               { type: 'Box', props: { className: 'flex-1 px-[14px] py-[10px]' },
-                children: [{ type: 'Text', text: 'Amount', props: { className: 'text-[12px] font-semibold text-[rgb(var(--muted-foreground))] uppercase tracking-wide' } }] },
+                children: [{ type: 'Text', text: 'Amount', props: { className: 'text-[12px] font-semibold text-[var(--theme-muted-foreground)] uppercase tracking-wide' } }] },
             ],
           },
           // Row 1
           {
             type: 'Box',
-            props: { className: 'flex flex-row border-t border-[rgb(var(--border))]' },
+            props: { className: 'flex flex-row border-t border-[var(--theme-border)]' },
             children: [
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Alice Chen', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Alice Chen', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
                 children: [{ type: 'Text', text: 'Active', props: { className: 'text-[13px] font-medium text-green-600' } }] },
               { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px]' },
-                children: [{ type: 'Text', text: '$240.00', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
+                children: [{ type: 'Text', text: '$240.00', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
             ],
           },
           // Row 2
           {
             type: 'Box',
-            props: { className: 'flex flex-row border-t border-[rgb(var(--border))]' },
+            props: { className: 'flex flex-row border-t border-[var(--theme-border)]' },
             children: [
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Bob Smith', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Bob Smith', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
                 children: [{ type: 'Text', text: 'Pending', props: { className: 'text-[13px] font-medium text-amber-600' } }] },
               { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px]' },
-                children: [{ type: 'Text', text: '$85.00', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
+                children: [{ type: 'Text', text: '$85.00', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
             ],
           },
           // Row 3
           {
             type: 'Box',
-            props: { className: 'flex flex-row border-t border-[rgb(var(--border))]' },
+            props: { className: 'flex flex-row border-t border-[var(--theme-border)]' },
             children: [
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Carol Lee', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
-              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[rgb(var(--border))]' },
-                children: [{ type: 'Text', text: 'Inactive', props: { className: 'text-[13px] font-medium text-[rgb(var(--muted-foreground))]' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Carol Lee', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
+              { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px] border-r border-[var(--theme-border)]' },
+                children: [{ type: 'Text', text: 'Inactive', props: { className: 'text-[13px] font-medium text-[var(--theme-muted-foreground)]' } }] },
               { type: 'Box', props: { className: 'flex-1 px-[14px] py-[12px]' },
-                children: [{ type: 'Text', text: '$0.00', props: { className: 'text-[14px] text-[rgb(var(--foreground))]' } }] },
+                children: [{ type: 'Text', text: '$0.00', props: { className: 'text-[14px] text-[var(--theme-foreground)]' } }] },
             ],
           },
         ],
@@ -1849,24 +1940,24 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
       },
       content: {
         type: 'Box',
-        props: { className: 'flex flex-col w-full border border-[rgb(var(--border))] rounded-[10px] overflow-hidden' },
+        props: { className: 'flex flex-col w-full border border-[var(--theme-border)] rounded-[10px] overflow-hidden' },
         children: [
           {
             type: 'Box',
-            props: { className: 'flex flex-row items-center justify-between px-[16px] py-[14px] cursor-pointer bg-[rgb(var(--card))]' },
+            props: { className: 'flex flex-row items-center justify-between px-[16px] py-[14px] cursor-pointer bg-[var(--theme-card)]' },
             actions: [
               { trigger: 'click', steps: [{ id: 'acc-toggle', type: 'changeVariableValue', config: { variableName: 'acc-open', value: { formula: "!(context?.component?.variables?.['acc-open'] ?? false)" } } }] },
             ],
             children: [
-              { type: 'Text', text: '{{context.component.props.title}}', props: { className: 'text-[14px] font-semibold text-[rgb(var(--foreground))] flex-1' } },
-              { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 18, color: 'rgb(var(--muted-foreground))', className: { formula: "context?.component?.variables?.['acc-open'] ? 'rotate-180 transition-transform' : 'transition-transform'" } } },
+              { type: 'Text', text: '{{context.component.props.title}}', props: { className: 'text-[14px] font-semibold text-[var(--theme-foreground)] flex-1' } },
+              { type: 'Icon', props: { icon: 'lucide:chevron-down', size: 18, color: 'var(--theme-muted-foreground)', className: { formula: "context?.component?.variables?.['acc-open'] ? 'rotate-180 transition-transform' : 'transition-transform'" } } },
             ],
           },
           {
             type: 'Box',
-            props: { className: { formula: "context?.component?.variables?.['acc-open'] ? 'px-[16px] py-[14px] border-t border-[rgb(var(--border))] bg-[rgb(var(--background))]' : 'hidden'" } },
+            props: { className: { formula: "context?.component?.variables?.['acc-open'] ? 'px-[16px] py-[14px] border-t border-[var(--theme-border)] bg-[var(--theme-background)]' : 'hidden'" } },
             children: [
-              { type: 'Text', text: '{{context.component.props.body}}', props: { className: 'text-[14px] text-[rgb(var(--muted-foreground))] leading-relaxed' } },
+              { type: 'Text', text: '{{context.component.props.body}}', props: { className: 'text-[14px] text-[var(--theme-muted-foreground)] leading-relaxed' } },
             ],
           },
         ],
@@ -1899,17 +1990,156 @@ export const TEMPLATE_LIBRARY: TemplateLibraryItem[] = [
         children: [
           {
             type: 'Box',
-            props: { className: 'flex items-center justify-center px-[14px] h-[36px] rounded-[8px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] cursor-pointer' },
+            props: { className: 'flex items-center justify-center px-[14px] h-[36px] rounded-[8px] border border-[var(--theme-border)] bg-[var(--theme-card)] cursor-pointer' },
             children: [
-              { type: 'Text', text: '{{context.component.props.triggerLabel}}', props: { className: 'text-[14px] font-medium text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.triggerLabel}}', props: { className: 'text-[14px] font-medium text-[var(--theme-foreground)]' } },
             ],
           },
           {
             type: 'Box',
             _popoverContent: true,
-            props: { className: 'min-w-[200px] p-[14px] rounded-[10px] border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-lg' },
+            props: { className: 'min-w-[200px] p-[14px] rounded-[10px] border border-[var(--theme-border)] bg-[var(--theme-card)] shadow-lg' },
             children: [
-              { type: 'Text', text: '{{context.component.props.content}}', props: { className: 'text-[13px] text-[rgb(var(--foreground))]' } },
+              { type: 'Text', text: '{{context.component.props.content}}', props: { className: 'text-[13px] text-[var(--theme-foreground)]' } },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-carousel',
+    name: 'Carousel',
+    category: 'Composite',
+    icon: '🎠',
+    description: '3-slide swipeable carousel with Reanimated animation, dot indicators, and prev/next buttons.',
+    definition: {
+      name: 'Carousel',
+      description: 'Swipeable 3-slide carousel with prev/next navigation.',
+      properties: [],
+      variables: {
+        'cr-slide': { label: 'Current slide', type: 'number', initialValue: 0 },
+      },
+      workflows: {
+        'cr-wf-prev': {
+          id: 'cr-wf-prev',
+          name: 'Previous slide',
+          trigger: 'click',
+          params: [],
+          steps: [{
+            id: 's1',
+            type: 'changeVariableValue',
+            config: {
+              variableName: 'cr-slide',
+              value: { formula: "Math.max(0, (context?.component?.variables?.['cr-slide'] ?? 0) - 1)" },
+            },
+          }],
+        },
+        'cr-wf-next': {
+          id: 'cr-wf-next',
+          name: 'Next slide',
+          trigger: 'click',
+          params: [],
+          steps: [{
+            id: 's1',
+            type: 'changeVariableValue',
+            config: {
+              variableName: 'cr-slide',
+              value: { formula: "Math.min(2, (context?.component?.variables?.['cr-slide'] ?? 0) + 1)" },
+            },
+          }],
+        },
+      },
+      content: {
+        type: 'Box',
+        props: { className: 'flex flex-col gap-[12px] w-full select-none' },
+        children: [
+          {
+            type: 'Box',
+            props: { className: 'relative overflow-hidden rounded-[12px] w-full' },
+            children: [
+              {
+                type: 'Box',
+                props: {
+                  className: 'flex flex-row',
+                  animation: {
+                    gesture: {
+                      enabled: true,
+                      swipe: true,
+                      dragFeedback: true,
+                      onSwipeLeftAction: 'cr-wf-next',
+                      onSwipeRightAction: 'cr-wf-prev',
+                    },
+                    states: {
+                      watchVar: "String(context?.component?.variables?.['cr-slide'] ?? 0)",
+                      defaultState: '0',
+                      duration: 400,
+                      easing: 'easeInOut',
+                      states: {
+                        '0': { transform: 'translateX(0%)' },
+                        '1': { transform: 'translateX(-100%)' },
+                        '2': { transform: 'translateX(-200%)' },
+                      },
+                    },
+                    outerClassName: 'w-full',
+                  },
+                },
+                children: [
+                  {
+                    type: 'Box',
+                    props: { className: 'min-w-full h-[200px] bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center rounded-[12px]' },
+                    children: [{ type: 'Text', props: { className: 'text-white text-[24px] font-bold' }, text: 'Slide 1' }],
+                  },
+                  {
+                    type: 'Box',
+                    props: { className: 'min-w-full h-[200px] bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center rounded-[12px]' },
+                    children: [{ type: 'Text', props: { className: 'text-white text-[24px] font-bold' }, text: 'Slide 2' }],
+                  },
+                  {
+                    type: 'Box',
+                    props: { className: 'min-w-full h-[200px] bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center rounded-[12px]' },
+                    children: [{ type: 'Text', props: { className: 'text-white text-[24px] font-bold' }, text: 'Slide 3' }],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'Box',
+            props: { className: 'flex flex-row items-center justify-between' },
+            children: [
+              {
+                type: 'Box',
+                props: { className: 'px-[14px] py-[7px] rounded-[8px] bg-[var(--theme-muted)] cursor-pointer' },
+                actions: [{ action: 'cr-wf-prev', trigger: 'click' }],
+                children: [{ type: 'Text', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' }, text: 'Prev' }],
+              },
+              {
+                type: 'Box',
+                props: { className: 'flex flex-row gap-[8px] items-center' },
+                children: [
+                  {
+                    type: 'Box',
+                    props: { className: 'w-[8px] h-[8px] rounded-full cursor-pointer', style: { backgroundColor: { formula: "(context?.component?.variables?.['cr-slide'] ?? 0) === 0 ? 'var(--theme-primary)' : 'var(--theme-muted)'" } } },
+                    actions: [{ action: 'cr-wf-prev', trigger: 'click' }],
+                  },
+                  {
+                    type: 'Box',
+                    props: { className: 'w-[8px] h-[8px] rounded-full cursor-pointer', style: { backgroundColor: { formula: "(context?.component?.variables?.['cr-slide'] ?? 0) === 1 ? 'var(--theme-primary)' : 'var(--theme-muted)'" } } },
+                  },
+                  {
+                    type: 'Box',
+                    props: { className: 'w-[8px] h-[8px] rounded-full cursor-pointer', style: { backgroundColor: { formula: "(context?.component?.variables?.['cr-slide'] ?? 0) === 2 ? 'var(--theme-primary)' : 'var(--theme-muted)'" } } },
+                    actions: [{ action: 'cr-wf-next', trigger: 'click' }],
+                  },
+                ],
+              },
+              {
+                type: 'Box',
+                props: { className: 'px-[14px] py-[7px] rounded-[8px] bg-[var(--theme-muted)] cursor-pointer' },
+                actions: [{ action: 'cr-wf-next', trigger: 'click' }],
+                children: [{ type: 'Text', props: { className: 'text-[13px] font-medium text-[var(--theme-foreground)]' }, text: 'Next' }],
+              },
             ],
           },
         ],

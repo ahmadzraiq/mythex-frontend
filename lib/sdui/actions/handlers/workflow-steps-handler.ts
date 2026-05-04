@@ -21,6 +21,13 @@ import { setNestedValue } from '../../nested-utils';
 import { buildAuthHeaders, clearStoredToken, setStoredToken, setStoredAuthSnapshot, clearStoredAuthSnapshot, getStoredAuthSnapshot } from '../../auth-token-storage';
 import { SUPPORTED_WORKFLOW_STEP_TYPES } from '@/app/dev/builder/_workflow-types';
 import { submitFormStepHandler } from './form-variable-handler';
+import {
+  triggerAnimationNode,
+  triggerExitAnimation,
+  startLoopOnNode,
+  stopLoopOnNode,
+  playEnterOnNode,
+} from '@/lib/sdui/components/animated-node';
 
 interface WorkflowStep {
   id: string;
@@ -726,6 +733,47 @@ async function runSteps(
           ?? document.querySelector(`[data-section-id="${targetId}"]`) as HTMLElement | null;
         if (el) el.scrollIntoView({ behavior, block });
       }
+      continue;
+    }
+
+    // ── Trigger animation on a target node by ID ─────────────────────────────
+    if (step.type === 'animate') {
+      const targetId = String(step.config?.targetNodeId ?? '');
+      const animationType = String(step.config?.animation ?? 'pulse');
+      const duration = Number(step.config?.duration ?? 400);
+      if (targetId) triggerAnimationNode(targetId, animationType, duration);
+      continue;
+    }
+
+    // ── Trigger exit animation and await completion ───────────────────────────
+    if (step.type === 'triggerExitAnimation') {
+      const targetId = String(step.config?.targetNodeId ?? '');
+      if (targetId) await triggerExitAnimation(targetId);
+      continue;
+    }
+
+    // ── Imperatively start a loop animation on a node ────────────────────────
+    if (step.type === 'startLoop') {
+      const targetId = String(step.config?.targetNodeId ?? '');
+      const loopType = String(step.config?.loopType ?? 'pulse');
+      const duration = Number(step.config?.duration ?? 1000);
+      if (targetId) startLoopOnNode(targetId, loopType, duration);
+      continue;
+    }
+
+    // ── Imperatively stop a loop animation on a node ─────────────────────────
+    if (step.type === 'stopLoop') {
+      const targetId = String(step.config?.targetNodeId ?? '');
+      if (targetId) stopLoopOnNode(targetId);
+      continue;
+    }
+
+    // ── Play an enter animation on a node (overrideable type + duration) ──────
+    if (step.type === 'playEnterAnimation') {
+      const targetId  = String(step.config?.targetNodeId ?? '');
+      const enterType = String(step.config?.enterType ?? 'fadeIn');
+      const duration  = Number(step.config?.duration ?? 400);
+      if (targetId) playEnterOnNode(targetId, enterType, duration);
       continue;
     }
 

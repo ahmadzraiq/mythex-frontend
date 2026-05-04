@@ -1239,7 +1239,9 @@ export default function BuilderPage() {
     const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta, customVars, customColors } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
 
-    // Always save to localStorage so the standalone preview (/dev/builder/preview) still works
+    // Always save to localStorage so the standalone preview (/dev/builder/preview) still works.
+    // Include sharedComponents so template-imported SCs are available in the preview tab.
+    const { getSharedComponents } = await import('@/lib/builder/shared-component-data');
     localStorage.setItem(BUILDER_PREVIEW_KEY, JSON.stringify({
       nodes: pageNodes,
       viewport,
@@ -1253,6 +1255,7 @@ export default function BuilderPage() {
       globalWorkflowMeta,
       customVars,
       customColors,
+      sharedComponents: getSharedComponents(),
     }));
 
     if (projectId) {

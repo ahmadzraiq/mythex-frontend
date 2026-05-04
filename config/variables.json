@@ -2193,6 +2193,13 @@
       "type": "object",
       "initialValue": { "cardId": null, "sourceCol": null, "targetCol": null, "targetIndex": 0 },
       "folder": "Component Showcase"
+    },
+
+    "showcase-exit-visible": {
+      "label": "Showcase Exit Target Visible",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Component Showcase"
     }
   },
   "varFolders": [

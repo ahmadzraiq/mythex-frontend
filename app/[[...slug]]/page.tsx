@@ -40,6 +40,7 @@ interface BuilderLiveConfig {
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
   customColors?: Array<{ name: string; light?: string; dark?: string }>;
+  sharedComponents?: Record<string, unknown>;
 }
 
 function hexToRgbTriplet(hex: string): string {
@@ -190,6 +191,14 @@ export default function DynamicRoutePage() {
       setBuilderLive(cfg);
       if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
         applyBuilderTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
+      }
+      // Load any template-imported shared components sent by the builder so
+      // component-scoped variables resolve correctly in the preview.
+      if (cfg.sharedComponents && typeof cfg.sharedComponents === 'object') {
+        try {
+          const { loadSharedComponents } = require('@/lib/builder/shared-component-data') as typeof import('@/lib/builder/shared-component-data');
+          loadSharedComponents(cfg.sharedComponents);
+        } catch { /* non-fatal */ }
       }
       // Seed UI-created custom variables into the global store so
       // formulas like variables['uuid'] resolve in the preview.

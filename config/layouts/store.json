@@ -801,7 +801,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 transition-colors p-[4px]"
+                              "className": "text-[var(--theme-muted-foreground)] hover:text-red-500 p-[4px]"
                             },
                             "actions": [
                               {

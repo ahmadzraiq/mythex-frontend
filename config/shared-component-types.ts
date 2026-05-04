@@ -137,5 +137,11 @@ export interface SharedComponentModel {
    * `variables['<instanceId>-value']` via `_controlled` metadata.
    */
   valueVariable?: string;
+  /**
+   * If this SC was created by importing a template from the Template Library,
+   * this field stores the stable template id (e.g. `"tpl-datepicker"`).
+   * It is a pure marker — it never affects runtime behaviour.
+   */
+  templateId?: string;
   content: Record<string, unknown>;
 }

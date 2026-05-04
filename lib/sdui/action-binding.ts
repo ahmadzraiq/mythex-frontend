@@ -162,11 +162,13 @@ export function bindActionsToProps(
       const workflowDef = workflowName
         ? (actionsConfig?.[workflowName] as Record<string, unknown> | undefined)
         : undefined;
-      // Resolve trigger: named workflow def > item's own trigger field > default 'click'
-      // The item's own trigger field is set by the workflow canvas for element workflows
-      // (format: { trigger: 'click', steps: [...] })
-      const trigger = (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
-        ?? (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
+      // Resolve trigger: item's own trigger field > named workflow def > default 'click'
+      // The inline trigger on the action ref (set by the node in node.actions) is the most
+      // specific declaration — e.g. { action: "kanban-drag-start", trigger: "dragStart" }.
+      // The workflow definition's trigger is the fallback when no inline trigger is given,
+      // which is the normal Workflows-tab flow where node.actions = [{ action: uuid }].
+      const trigger = (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
+        ?? (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
         ?? 'click';
       // Capture handlers for this action into a temp object, then merge-chain into result
       const temp: Record<string, (...args: unknown[]) => void> = {};

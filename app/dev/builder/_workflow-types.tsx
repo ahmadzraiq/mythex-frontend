@@ -59,6 +59,10 @@ export type ActionStepType =
   | 'encodeFileAsBase64'
   | 'scrollToElement'
   | 'animate'
+  | 'triggerExitAnimation'
+  | 'startLoop'
+  | 'stopLoop'
+  | 'playEnterAnimation'
   // Shared Component
   | 'addSharedComponent'
   | 'deleteSharedComponent'
@@ -180,6 +184,14 @@ const UNIVERSAL_TRIGGER_CATEGORIES: TriggerCategory[] = [
       { value: 'touchMove', label: 'On touch move' },
       { value: 'touchEnd', label: 'On touch end' },
       { value: 'touchCancel', label: 'On touch cancel' },
+    ],
+  },
+  {
+    category: 'Drag',
+    options: [
+      { value: 'dragStart',  label: 'On drag start' },
+      { value: 'dragUpdate', label: 'On drag update' },
+      { value: 'dragEnd',    label: 'On drag end' },
     ],
   },
   {
@@ -358,6 +370,16 @@ export const TI = {
       <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
     </svg>
   ),
+  Move: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="5 9 2 12 5 15"/>
+      <polyline points="9 5 12 2 15 5"/>
+      <polyline points="15 19 12 22 9 19"/>
+      <polyline points="19 9 22 12 19 15"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <line x1="12" y1="2" x2="12" y2="22"/>
+    </svg>
+  ),
 };
 
 export function getTriggerIcon(value: string): React.ReactNode {
@@ -404,6 +426,10 @@ export function getTriggerIcon(value: string): React.ReactNode {
       return <TI.Eye />;
     case 'enterKey':
       return <TI.Enter />;
+    case 'dragStart':
+    case 'dragUpdate':
+    case 'dragEnd':
+      return <TI.Move />;
     default:
       return <TI.Zap />;
   }
@@ -488,8 +514,12 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'downloadFileFromUrl', label: 'Download file from URL', icon: '</>' },
       { type: 'createUrlFromBase64', label: 'Create URL from Base64', icon: '</>' },
       { type: 'encodeFileAsBase64', label: 'Encode file as Base64', icon: '</>' },
-      { type: 'scrollToElement', label: 'Scroll to element', icon: '↓' },
-      { type: 'animate', label: 'Trigger animation', icon: '✨' },
+      { type: 'scrollToElement',      label: 'Scroll to element',       icon: '↓' },
+      { type: 'animate',              label: 'Trigger animation',        icon: '✨' },
+      { type: 'triggerExitAnimation', label: 'Trigger exit animation',   icon: '👋' },
+      { type: 'startLoop',            label: 'Start loop animation',     icon: '🔄' },
+      { type: 'stopLoop',             label: 'Stop loop animation',      icon: '⏹' },
+      { type: 'playEnterAnimation',   label: 'Play enter animation',     icon: '▶' },
     ],
   },
   {
@@ -717,6 +747,16 @@ export function isStepComplete(step: ActionStep): boolean {
       return Boolean(cfg.value);
     case 'scrollToElement':
       return Boolean(cfg.elementId ?? cfg.targetId);
+    case 'animate':
+      return Boolean(cfg.targetNodeId);
+    case 'triggerExitAnimation':
+      return Boolean(cfg.targetNodeId);
+    case 'startLoop':
+      return Boolean(cfg.targetNodeId);
+    case 'stopLoop':
+      return Boolean(cfg.targetNodeId);
+    case 'playEnterAnimation':
+      return Boolean(cfg.targetNodeId);
     case 'downloadFileFromUrl':
       return Boolean(cfg.url);
     case 'addSharedComponent':
@@ -851,6 +891,16 @@ export function getStepSummary(
       return cfgStr(cfg.value);
     case 'scrollToElement':
       return cfgStr(cfg.elementId) || cfgStr(cfg.targetId) || null;
+    case 'animate':
+      return cfg.targetNodeId ? `${cfg.animation ?? 'pulse'} → ${cfg.targetNodeId}` : null;
+    case 'triggerExitAnimation':
+      return cfg.targetNodeId ? `→ ${cfg.targetNodeId}` : null;
+    case 'startLoop':
+      return cfg.targetNodeId ? `${cfg.loopType ?? 'pulse'} → ${cfg.targetNodeId}` : null;
+    case 'stopLoop':
+      return cfg.targetNodeId ? `stop → ${cfg.targetNodeId}` : null;
+    case 'playEnterAnimation':
+      return cfg.targetNodeId ? `${cfg.enterType ?? 'fadeIn'} → ${cfg.targetNodeId}` : null;
     case 'returnValue':
       return cfg.value !== undefined ? cfgStr(cfg.value) : null;
     default:

@@ -468,7 +468,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] text-[var(--theme-foreground)]"
                                 },
                                 "actions": [
                                   {
@@ -492,7 +492,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] text-[var(--theme-foreground)]"
                                 },
                                 "actions": [
                                   {
@@ -516,7 +516,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] transition-colors text-[var(--theme-foreground)]"
+                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium hover:bg-[var(--theme-muted)] hover:text-[var(--theme-foreground)] text-[var(--theme-foreground)]"
                                 },
                                 "actions": [
                                   {
@@ -546,7 +546,7 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium text-red-500 hover:bg-red-50 transition-colors"
+                                  "className": "flex items-center gap-[12px] w-full px-[12px] py-[8px] rounded-[6px] text-[14px] font-medium text-red-500 hover:bg-red-50"
                                 },
                                 "actions": [
                                   {

@@ -177,6 +177,7 @@ export function extractNodeDependencies(node: Pick<SDUINode, 'text' | 'props' | 
     if (typeof node.map === 'string') paths.push(node.map);
     else if (typeof node.map === 'object' && node.map !== null) {
       if ('formula' in node.map) paths.push(...extractPathsFromObject(node.map as { formula: unknown }));
+      else if ('js' in node.map) paths.push(...extractPathsFromObject(node.map as { js: unknown }));
     }
   }
   // animation.imperativeTrigger.watchVar and animation.states.watchVar are formula expressions

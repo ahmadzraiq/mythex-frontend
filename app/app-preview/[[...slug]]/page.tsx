@@ -31,6 +31,7 @@ import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { useSduiStore } from '@/store/sdui-store';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
+import { loadSharedComponents } from '@/lib/builder/shared-component-data';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -69,6 +70,7 @@ interface ProjectConfig {
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
   customColors?: Array<{ name: string; light?: string; dark?: string }>;
   authConfig?: AuthConfig;
+  sharedComponents?: Record<string, unknown>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -233,6 +235,7 @@ function seedCustomVars(cfg: ProjectConfig) {
   }
 }
 
+
 function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -288,6 +291,9 @@ export default function AppPreviewPage() {
           if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
             applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
           }
+          if (cfg.sharedComponents && typeof cfg.sharedComponents === 'object') {
+            loadSharedComponents(cfg.sharedComponents);
+          }
           seedCustomVars(cfg);
           setProjectConfig(cfg);
           setLoading(false);
@@ -322,6 +328,11 @@ export default function AppPreviewPage() {
         applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
       }
 
+      // Restore any shared component models saved by the builder (including
+      // template-imported SCs that don't exist in the static JSON file).
+      if (cfg.sharedComponents && typeof cfg.sharedComponents === 'object') {
+        loadSharedComponents(cfg.sharedComponents);
+      }
       // Seed UI-created custom variables into the global store
       seedCustomVars(cfg);
 
