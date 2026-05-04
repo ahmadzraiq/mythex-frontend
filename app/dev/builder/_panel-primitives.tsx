@@ -17,8 +17,11 @@
  *  - AnimPreview     — pure-CSS animated preview box for animation sub-sections
  */
 
-import React, { useState, useEffect, useRef, useId, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useRef, useId, useCallback, useContext, useMemo } from 'react';
 import { FigmaColorPicker } from './_color-picker';
+import { useBuilderStore } from './_store';
+import { BREAKPOINT_CASCADE } from '@/lib/sdui/types/node';
+import type { BreakpointKey, ResponsiveOverride } from '@/lib/sdui/types/node';
 
 // ─── Changed-field context ────────────────────────────────────────────────────
 
@@ -838,3 +841,166 @@ export function AnimPreview({
     </div>
   );
 }
+
+// ─── Responsive field hook + wrapper ─────────────────────────────────────────
+
+type ResponsiveChannel = keyof ResponsiveOverride;
+
+/**
+ * Generic hook for wiring any field in `node.responsive[bp].<channel>.<path>` to
+ * builder state. Returns helpers needed by fields that want green-dot + orange-reset.
+ *
+ * @param nodeId     - The node being edited.
+ * @param channel    - Top-level key in ResponsiveOverride (e.g. 'styles', 'props', 'text', 'map').
+ * @param path       - Dotted path within the channel, or undefined for the channel root.
+ * @param baseGet    - Returns the base (desktop) value — used to detect overrides and reset.
+ * @param baseSet    - Writes the base (desktop) value.
+ * @param eq         - Optional equality check (defaults to ===).
+ */
+export function useResponsiveField<T>({
+  nodeId,
+  channel,
+  path,
+  baseGet,
+  baseSet,
+  eq,
+}: {
+  nodeId: string;
+  channel: ResponsiveChannel;
+  path?: string;
+  baseGet: () => T;
+  baseSet: (v: T) => void;
+  eq?: (a: T, b: T) => boolean;
+}) {
+  const store = useBuilderStore();
+  const abp = useBuilderStore(s => s.activeBreakpoint) as 'desktop' | BreakpointKey;
+
+  const isDesktop = abp === 'desktop';
+  const fullPath = path ? `${channel}.${path}` : channel;
+
+  /** Breakpoints where this path has an explicit override */
+  const overriddenBreakpoints = useMemo(() => {
+    const node = store.selectedIds.length === 1
+      ? (store.pageNodes as Array<{ id?: string; responsive?: unknown }>).find(n => n.id === nodeId)
+      : undefined;
+    if (!node?.responsive) return [] as string[];
+    return BREAKPOINT_CASCADE.filter(bp => {
+      const resp = (node.responsive as Partial<Record<BreakpointKey, ResponsiveOverride>>)[bp];
+      if (!resp) return false;
+      if (!path) return channel in resp;
+      const parts = [channel as string, ...path.split('.')];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let obj: any = resp;
+      for (const part of parts) {
+        if (obj == null || !(part in obj)) return false;
+        obj = obj[part];
+      }
+      return obj !== undefined;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, channel, path, store.pageNodes]);
+
+  /** The effective value at the current breakpoint (cascaded) */
+  const effective = useMemo<T>(() => {
+    if (isDesktop) return baseGet();
+    const node = store.selectedIds.length === 1
+      ? (store.pageNodes as Array<{ id?: string; responsive?: unknown }>).find(n => n.id === nodeId)
+      : undefined;
+    if (!node?.responsive) return baseGet();
+    const bpIdx = BREAKPOINT_CASCADE.indexOf(abp as BreakpointKey);
+    for (let i = bpIdx; i >= 0; i--) {
+      const bp = BREAKPOINT_CASCADE[i];
+      const resp = (node.responsive as Partial<Record<BreakpointKey, ResponsiveOverride>>)[bp];
+      if (!resp) continue;
+      const parts = [channel as string, ...(path ? path.split('.') : [])];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let obj: any = resp;
+      for (const part of parts) {
+        if (obj == null || !(part in obj)) { obj = undefined; break; }
+        obj = obj[part];
+      }
+      if (obj !== undefined) return obj as T;
+    }
+    return baseGet();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, nodeId, channel, path, abp, store.pageNodes]);
+
+  const write = useCallback((v: T) => {
+    if (isDesktop) {
+      baseSet(v);
+    } else {
+      store.patchResponsive(nodeId, abp as BreakpointKey, fullPath, v as unknown);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, nodeId, abp, fullPath]);
+
+  const resetAtActive = useCallback(() => {
+    if (!isDesktop) {
+      store.removeResponsiveOverride(nodeId, abp as BreakpointKey, fullPath);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, nodeId, abp, fullPath]);
+
+  const resetAll = useCallback(() => {
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      store.removeResponsiveOverride(nodeId, bp, fullPath);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, fullPath]);
+
+  const isOverridden = useMemo(() => {
+    const base = baseGet();
+    const isEq = eq ?? ((a: T, b: T) => a === b);
+    return !isEq(effective, base);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effective]);
+
+  return { effective, overriddenBreakpoints, write, resetAtActive, resetAll, isOverridden, isDesktop };
+}
+
+/**
+ * Lightweight wrapper that renders a label row with an inline ResponsiveDot chip and optional
+ * DirectChangedLabel (orange reset) when the field has been overridden.
+ */
+export function ResponsiveFieldRow({
+  label,
+  overriddenBreakpoints,
+  onRemoveBreakpoint,
+  onResetAll,
+  changed,
+  onReset,
+  children,
+  testId,
+}: {
+  label: string;
+  overriddenBreakpoints: string[];
+  onRemoveBreakpoint: (bp: string) => void;
+  onResetAll: () => void;
+  /** When true, renders orange "reset to default" label. */
+  changed?: boolean;
+  onReset?: () => void;
+  children?: React.ReactNode;
+  testId?: string;
+}) {
+  return (
+    <div data-testid={testId} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {changed && onReset ? (
+          <DirectChangedLabel text={label} changed onReset={onReset} />
+        ) : (
+          <span style={{ fontSize: 10, color: '#9ca3af' }}>{label}</span>
+        )}
+        {overriddenBreakpoints.length > 0 && (
+          <ResponsiveDot
+            cssProp={`resp-field-${label}`}
+            overriddenBreakpoints={overriddenBreakpoints}
+            onRemove={bp => onRemoveBreakpoint(bp)}
+            onResetAll={onResetAll}
+          />
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+

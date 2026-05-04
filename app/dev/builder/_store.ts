@@ -3727,7 +3727,25 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             next.history = [makeSnapshot(pages, pages[0].id, firstPageNodes, [])];
             next.historyIdx = 0;
             if (saved?.pageWorkflows) next.pageWorkflows = saved.pageWorkflows as typeof s.pageWorkflows;
-            if (saved?.pageWorkflowMeta) next.pageWorkflowMeta = saved.pageWorkflowMeta as typeof s.pageWorkflowMeta;
+            if (saved?.pageWorkflowMeta) {
+              let meta = saved.pageWorkflowMeta as typeof s.pageWorkflowMeta;
+              // One-time migration: promote old empty-pageScope triggers to isAppTrigger=true.
+              const MIGRATION_KEY = 'builder:trigger-scope-migration:v1';
+              if (typeof window !== 'undefined' && !localStorage.getItem(MIGRATION_KEY)) {
+                const migrated: typeof meta = {};
+                for (const [id, m] of Object.entries(meta)) {
+                  if (m.isTrigger && !m.isAppTrigger && (!m.pageScope || m.pageScope === '')) {
+                    const { pageScope: _removed, ...rest } = m;
+                    migrated[id] = { ...rest, isAppTrigger: true };
+                  } else {
+                    migrated[id] = m;
+                  }
+                }
+                meta = migrated;
+                localStorage.setItem(MIGRATION_KEY, '1');
+              }
+              next.pageWorkflowMeta = meta;
+            }
             if (saved?.globalWorkflows) next.globalWorkflows = saved.globalWorkflows as typeof s.globalWorkflows;
             if (saved?.globalWorkflowMeta) next.globalWorkflowMeta = saved.globalWorkflowMeta as typeof s.globalWorkflowMeta;
             if (Array.isArray(saved?.customVars)) next.customVars = saved!.customVars as typeof s.customVars;
@@ -3982,7 +4000,19 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             ...(w.pageScope ? { pageScope: w.pageScope } : {}),
           } as WorkflowMeta]));
           next.pageWorkflows = { ...configPageWorkflows, ...userWorkflows } as typeof s.pageWorkflows;
-          next.pageWorkflowMeta = { ...configPageMeta, ...userMeta };
+          // Promote legacy empty-pageScope triggers to isAppTrigger
+          const mergedPageMeta = { ...configPageMeta, ...userMeta };
+          const MIGRATION_KEY2 = 'builder:trigger-scope-migration:v1';
+          if (typeof window !== 'undefined' && !localStorage.getItem(MIGRATION_KEY2)) {
+            for (const [id, m] of Object.entries(mergedPageMeta)) {
+              if (m.isTrigger && !m.isAppTrigger && (!m.pageScope || m.pageScope === '')) {
+                const { pageScope: _r, ...rest } = m;
+                mergedPageMeta[id] = { ...rest, isAppTrigger: true };
+              }
+            }
+            localStorage.setItem(MIGRATION_KEY2, '1');
+          }
+          next.pageWorkflowMeta = mergedPageMeta;
 
           // Global workflows — seeded from config (params-bearing workflows)
           if (globalConfigWorkflows.length > 0) {

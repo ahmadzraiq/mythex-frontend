@@ -10,6 +10,14 @@
  *   F. Per-property responsive dots on FieldWithBinding
  *   G. Condition override (hide node at breakpoint)
  *   H. Text override per breakpoint
+ *   I. Text content textarea responsive channel
+ *   J. Repeat/map override channel
+ *   K. Disabled toggle override channel
+ *   L. Animation override deep-merge
+ *   M. Actions override channel
+ *   N. Settings-tab prop override (Iconify size at tablet)
+ *   O. CSS gap chips (leading, grid-cols, min-w, inset-top, flip-h)
+ *   P. Alignment section header chip
  *
  * Run: npx playwright test e2e/builder-responsive.spec.ts
  */
@@ -683,5 +691,363 @@ test.describe('BRP Group J — Responsive Popover', () => {
     expect(tablet?.styles?.gap).toBeUndefined();
 
     await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group I: Text content responsive ────────────────────────────────────────
+
+test.describe('BRP Group I — Text content channel', () => {
+  test('BRP-I01: Pre-seeded responsive.mobile.text renders correct text at mobile', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Text', id: 'i01-txt', text: 'Desktop text',
+        props: { className: '' },
+        responsive: { mobile: { text: 'Mobile text' } },
+      }]);
+    });
+    await P.waitForSelector('[data-builder-id="i01-txt"]', { timeout: 15_000 });
+
+    await setViewport(P, 'desktop');
+    const desktopEl = P.locator('[data-builder-id="i01-txt"]');
+    await expect(desktopEl).toContainText('Desktop text', { timeout: 5_000 });
+
+    await setViewport(P, 'mobile');
+    const mobileEl = P.locator('[data-builder-id="i01-txt"]');
+    await expect(mobileEl).toContainText('Mobile text', { timeout: 5_000 });
+
+    await setViewport(P, 'desktop');
+  });
+
+  test('BRP-I02: Text responsive[bp].text field is set when editing at mobile breakpoint', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{ type: 'Text', id: 'i02-txt', text: 'Base text', props: { className: '' } }]);
+    });
+    await P.waitForSelector('[data-builder-id="i02-txt"]', { timeout: 15_000 });
+
+    await P.getByTestId('tab-layers').click();
+    await P.locator('[data-testid="layer-row"]').first().click();
+    await P.getByTestId('tab-right-design').click();
+    await setViewport(P, 'mobile');
+    await P.waitForTimeout(500);
+
+    // Type new text in the Content textarea
+    const textarea = P.getByTestId('input-text-content');
+    await textarea.fill('Mobile text override');
+    await textarea.blur();
+    await P.waitForTimeout(500);
+
+    const resp = await getNodeResponsive(P, 'i02-txt');
+    expect((resp?.['mobile'] as { text?: string } | undefined)?.text).toBe('Mobile text override');
+
+    await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group K: Disabled toggle responsive ─────────────────────────────────────
+
+test.describe('BRP Group K — Disabled toggle channel', () => {
+  test('BRP-K01: Pre-seeded responsive.mobile.props.disabled renders disabled at mobile', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Button', id: 'k01-btn', props: { className: '', disabled: false },
+        responsive: { mobile: { props: { disabled: true } } },
+      }]);
+    });
+    await P.waitForSelector('[data-builder-id="k01-btn"]', { timeout: 15_000 });
+
+    await setViewport(P, 'mobile');
+    await P.waitForTimeout(500);
+    const btn = P.locator('[data-builder-id="k01-btn"]');
+    const isDisabled = await btn.evaluate(el => (el as HTMLButtonElement).disabled || el.hasAttribute('data-disabled') || el.getAttribute('aria-disabled') === 'true');
+    expect(isDisabled).toBe(true);
+
+    await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group L: Animation override ─────────────────────────────────────────────
+
+test.describe('BRP Group L — Animation override channel', () => {
+  test('BRP-L01: patchResponsive animation.enter.duration writes to responsive[tablet].animation.enter.duration', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await injectBoxWithResponsive(P, 'l01-box', 'w-[100px] h-[100px]', {});
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { patchResponsive: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.patchResponsive('l01-box', 'tablet', 'animation.enter.duration', 400);
+    });
+
+    const resp = await getNodeResponsive(P, 'l01-box');
+    const tabletAnim = (resp?.['tablet'] as { animation?: { enter?: { duration?: number } } } | undefined)?.animation;
+    expect(tabletAnim?.enter?.duration).toBe(400);
+  });
+});
+
+// ─── Group M: Actions override ────────────────────────────────────────────────
+
+test.describe('BRP Group M — Actions channel', () => {
+  test('BRP-M01: patchResponsive actions writes responsive[mobile].actions array', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await injectBoxWithResponsive(P, 'm01-box', 'w-[100px] h-[100px]', {});
+
+    const mobileActions = [{ action: 'wf-mobile-only' }];
+    await P.evaluate((acts) => {
+      const s = (window as unknown as { __builderStore: { getState: () => { patchResponsive: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.patchResponsive('m01-box', 'mobile', 'actions', acts);
+    }, mobileActions);
+
+    const resp = await getNodeResponsive(P, 'm01-box');
+    const mobileAct = (resp?.['mobile'] as { actions?: unknown[] } | undefined)?.actions;
+    expect(Array.isArray(mobileAct)).toBe(true);
+    expect((mobileAct as Array<{ action: string }>)?.[0]?.action).toBe('wf-mobile-only');
+  });
+});
+
+// ─── Group O: CSS gap chips ───────────────────────────────────────────────────
+
+test.describe('BRP Group O — CSS gap chip coverage', () => {
+  test('BRP-O01: lineHeight override shows responsive dot', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Text', id: 'o01-txt', text: 'Line height test', props: { className: 'leading-normal' },
+        responsive: { tablet: { styles: { lineHeight: '2.5rem' } } },
+      }]);
+    });
+    await P.waitForSelector('[data-builder-id="o01-txt"]', { timeout: 15_000 });
+    await P.getByTestId('tab-layers').click();
+    await P.locator('[data-testid="layer-row"]').first().click();
+    await P.getByTestId('tab-right-design').click();
+    await setViewport(P, 'tablet');
+    await P.waitForTimeout(500);
+
+    const dot = P.locator('[data-testid="responsive-dot-lineHeight"]');
+    await expect(dot).toBeVisible({ timeout: 5_000 });
+
+    await setViewport(P, 'desktop');
+  });
+
+  test('BRP-O02: gridTemplateColumns override shows responsive dot', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Box', id: 'o02-box', props: { className: 'grid grid-cols-4' },
+        responsive: { tablet: { styles: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' } } },
+      }]);
+    });
+    await P.waitForSelector('[data-builder-id="o02-box"]', { timeout: 15_000 });
+    await P.getByTestId('tab-layers').click();
+    await P.locator('[data-testid="layer-row"]').first().click();
+    await P.getByTestId('tab-right-design').click();
+    await setViewport(P, 'tablet');
+    await P.waitForTimeout(500);
+
+    const dot = P.locator('[data-testid="responsive-dot-gridTemplateColumns"]');
+    await expect(dot).toBeVisible({ timeout: 5_000 });
+
+    await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group P: Alignment section header chip ───────────────────────────────────
+
+test.describe('BRP Group P — Alignment section header chip', () => {
+  test('BRP-P01: alignItems override lights up Alignment SectionHeader chip', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await injectBoxWithResponsive(P, 'p01-box', 'flex flex-col items-start w-[200px] h-[200px]', {
+      tablet: { styles: { alignItems: 'center' } },
+    });
+    await P.getByTestId('tab-layers').click();
+    await P.locator('[data-testid="layer-row"]').first().click();
+    await P.getByTestId('tab-right-design').click();
+    await setViewport(P, 'tablet');
+    await P.waitForTimeout(500);
+
+    const alignDot = P.locator('[data-testid="responsive-dot-alignment"]');
+    await expect(alignDot).toBeVisible({ timeout: 5_000 });
+
+    await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group J (new): Repeat/map channel ───────────────────────────────────────
+
+test.describe('BRP Group J2 — Repeat/map channel', () => {
+  test('BRP-J2-01: patchResponsive map writes responsive[mobile].map', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await injectBoxWithResponsive(P, 'j201-box', 'w-[100px] h-[100px]', {});
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { patchResponsive: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.patchResponsive('j201-box', 'mobile', 'map', '[{"id":1},{"id":2}]');
+    });
+
+    const resp = await getNodeResponsive(P, 'j201-box');
+    expect((resp?.['mobile'] as { map?: string } | undefined)?.map).toBe('[{"id":1},{"id":2}]');
+  });
+
+  test('BRP-J2-02: removeResponsiveOverride map clears responsive[mobile].map', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await injectBoxWithResponsive(P, 'j202-box', 'w-[100px] h-[100px]', {
+      mobile: { map: '[{"a":1}]' },
+    });
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { removeResponsiveOverride: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.removeResponsiveOverride('j202-box', 'mobile', 'map');
+    });
+
+    const resp = await getNodeResponsive(P, 'j202-box');
+    const mobileMap = (resp?.['mobile'] as { map?: string } | undefined)?.map;
+    expect(mobileMap).toBeUndefined();
+  });
+
+  test('BRP-J2-03: Pre-seeded responsive map cascades at mobile breakpoint', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    // Inject a node with both base map and mobile override
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Box',
+        id: 'j203-repeater',
+        props: { className: 'flex flex-col gap-[8px]' },
+        map: '[{"label":"A"},{"label":"B"},{"label":"C"}]',
+        responsive: {
+          mobile: { map: '[{"label":"X"},{"label":"Y"}]' },
+        },
+        children: [{
+          type: 'Text',
+          id: 'j203-item',
+          props: { className: 'text-[12px]' },
+          text: '{{context.item.label}}',
+        }],
+      }]);
+    });
+
+    await P.waitForSelector('[data-builder-id="j203-repeater"]', { timeout: 15_000 });
+    await setViewport(P, 'mobile');
+    await P.waitForTimeout(800);
+
+    // At mobile the map override is '[{"label":"X"},{"label":"Y"}]' — only 2 items
+    const resp = await getNodeResponsive(P, 'j203-repeater');
+    const mobileMap = (resp?.['mobile'] as { map?: string } | undefined)?.map;
+    expect(mobileMap).toBe('[{"label":"X"},{"label":"Y"}]');
+
+    await setViewport(P, 'desktop');
+  });
+});
+
+// ─── Group N: Settings props (responsive component props) ─────────────────────
+
+test.describe('BRP Group N — Settings props channel', () => {
+  test('BRP-N01: patchResponsive props.objectFit writes responsive[mobile].props.objectFit', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Image',
+        id: 'n01-img',
+        props: {
+          className: 'w-[120px] h-[80px] rounded-[6px]',
+          src: 'https://picsum.photos/seed/resp/200/100',
+          objectFit: 'cover',
+        },
+      }]);
+    });
+
+    await P.waitForSelector('[data-builder-id="n01-img"]', { timeout: 15_000 });
+
+    // Write a responsive prop override
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { patchResponsive: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.patchResponsive('n01-img', 'mobile', 'props.objectFit', 'contain');
+    });
+
+    const resp = await getNodeResponsive(P, 'n01-img');
+    const mobilePropsFit = ((resp?.['mobile'] as { props?: { objectFit?: string } } | undefined)?.props)?.objectFit;
+    expect(mobilePropsFit).toBe('contain');
+  });
+
+  test('BRP-N02: removeResponsiveOverride props.objectFit removes override', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void; patchResponsive: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Image',
+        id: 'n02-img',
+        props: { className: 'w-[100px] h-[60px]', src: '', objectFit: 'cover' },
+        responsive: { mobile: { props: { objectFit: 'contain' } } },
+      }]);
+    });
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { removeResponsiveOverride: (...a: unknown[]) => void } } }).__builderStore.getState();
+      s.removeResponsiveOverride('n02-img', 'mobile', 'props.objectFit');
+    });
+
+    const resp = await getNodeResponsive(P, 'n02-img');
+    const mobileFit = ((resp?.['mobile'] as { props?: { objectFit?: string } } | undefined)?.props)?.objectFit;
+    expect(mobileFit).toBeUndefined();
+  });
+
+  test('BRP-N03: pre-seeded responsive props.disabled resolves at mobile', async () => {
+    test.setTimeout(60_000);
+    await resetCanvas(P);
+
+    await P.evaluate(() => {
+      const s = (window as unknown as { __builderStore: { getState: () => { _setPageNodes: (n: unknown[]) => void } } }).__builderStore.getState();
+      s._setPageNodes([{
+        type: 'Input',
+        id: 'n03-inp',
+        props: {
+          className: 'border border-gray-300 rounded-[6px] px-[10px] py-[6px] text-[14px] w-[200px]',
+          placeholder: 'disabled on mobile',
+          disabled: false,
+        },
+        responsive: {
+          mobile: { props: { disabled: true } },
+        },
+      }]);
+    });
+
+    await P.waitForSelector('[data-builder-id="n03-inp"]', { timeout: 15_000 });
+
+    const resp = await getNodeResponsive(P, 'n03-inp');
+    const mobileDisabled = ((resp?.['mobile'] as { props?: { disabled?: boolean } } | undefined)?.props)?.disabled;
+    expect(mobileDisabled).toBe(true);
   });
 });

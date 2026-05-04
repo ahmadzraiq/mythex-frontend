@@ -1,21 +1,18 @@
 'use client';
 
 /**
- * Triggers Tab — left panel "Triggers" tab.
+ * Triggers Tab — left panel "App Triggers" tab.
  *
- * Two sections:
- *   A. App Triggers  — app-lifecycle triggers (appLoadBefore, appLoad, and all others)
- *   B. Page Triggers — current-page triggers with a per-workflow page-scope picker
+ * Shows only app-level triggers (isAppTrigger: true). These fire globally on
+ * every page regardless of route — e.g. appLoad, keydown, scroll.
  *
- * Stored as pageWorkflows with { isTrigger: true } in pageWorkflowMeta.
- * Opened with { kind: 'pageWorkflow', name: id } so the canvas shows the
- * editable trigger dropdown — restricted to TRIGGER_WORKFLOW_CATEGORIES.
+ * Page-scoped triggers (isTrigger: true, isAppTrigger: false, pageScope set)
+ * are shown in the right panel's PageTriggersInRightPanel when no node is selected.
  *
- * These are NOT mixed with global workflows (Logic tab) or element interactions
- * (right panel WorkflowsSection).
+ * Stored as pageWorkflows with { isTrigger: true, isAppTrigger: true } in pageWorkflowMeta.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useBuilderStore } from './_store';
 import routesConfig from '@/config/routes.json';
 
@@ -146,146 +143,20 @@ const TRIGGER_ICONS: Record<string, { Icon: IconComponent; color: string }> = {
   collectionFetchError: { Icon: Icons.AlertCircle, color: '#f87171' },
 };
 
-// ─── Page scope dropdown ──────────────────────────────────────────────────────
+// ─── Trigger workflow row (exported for reuse in PageTriggersInRightPanel) ────
 
-function PageScopeDropdown({
-  value,
-  onChange,
-}: {
-  value: string | undefined;
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener('mousedown', handler, true);
-    return () => window.removeEventListener('mousedown', handler, true);
-  }, [open]);
-
-  const label = value
-    ? (ALL_PAGES.find(p => p.config === value)?.path ?? value)
-    : 'All pages';
-
-  return (
-    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        title="Assign to page"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '2px 7px 2px 6px', borderRadius: 4, cursor: 'pointer',
-          background: value ? '#1e3a5f' : '#1e293b',
-          border: `1px solid ${value ? '#2563eb' : '#334155'}`,
-          color: value ? '#93c5fd' : '#6b7280',
-          fontSize: 9, fontFamily: 'monospace', whiteSpace: 'nowrap',
-          maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis',
-        }}
-      >
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-
-      {open && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            position: 'fixed',
-            zIndex: 9999,
-            background: '#0f172a',
-            border: '1px solid #1e293b',
-            borderRadius: 6,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-            minWidth: 180,
-            maxHeight: 260,
-            overflowY: 'auto',
-            padding: '4px 0',
-          }}
-          ref={el => {
-            if (el && ref.current) {
-              const btn = ref.current.querySelector('button');
-              if (btn) {
-                const rect = btn.getBoundingClientRect();
-                el.style.top = `${rect.bottom + 4}px`;
-                el.style.left = `${rect.left}px`;
-              }
-            }
-          }}
-        >
-          {/* All pages option */}
-          <button
-            onClick={() => { onChange(''); setOpen(false); }}
-            style={{
-              width: '100%', textAlign: 'left', background: !value ? 'rgba(255,255,255,0.06)' : 'transparent',
-              border: 'none', padding: '6px 10px', cursor: 'pointer',
-              fontSize: 10, color: !value ? '#e2e8f0' : '#9ca3af',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-            onMouseEnter={e => { if (value) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-            onMouseLeave={e => { if (value) e.currentTarget.style.background = 'transparent'; }}
-          >
-            <span style={{ color: '#4b5563', fontSize: 9 }}>✦</span>
-            All pages
-          </button>
-
-          <div style={{ height: 1, background: '#1e293b', margin: '3px 0' }} />
-
-          {ALL_PAGES.map(page => (
-            <button
-              key={page.config}
-              onClick={() => { onChange(page.config); setOpen(false); }}
-              style={{
-                width: '100%', textAlign: 'left',
-                background: value === page.config ? 'rgba(37,99,235,0.15)' : 'transparent',
-                border: 'none', padding: '5px 10px', cursor: 'pointer',
-                fontSize: 10, color: value === page.config ? '#93c5fd' : '#9ca3af',
-                display: 'flex', flexDirection: 'column', gap: 1,
-              }}
-              onMouseEnter={e => { if (value !== page.config) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-              onMouseLeave={e => { if (value !== page.config) e.currentTarget.style.background = 'transparent'; }}
-            >
-              <span style={{ fontFamily: 'monospace', fontSize: 9, color: value === page.config ? '#60a5fa' : '#4b5563' }}>
-                {page.path}
-              </span>
-              <span style={{ fontSize: 10 }}>{page.config}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Trigger workflow row ─────────────────────────────────────────────────────
-
-function TriggerRow({
+export function TriggerRow({
   triggerValue,
   name,
   stepCount,
-  pageScope,
-  showPagePicker,
   onOpen,
   onDelete,
-  onPageScopeChange,
 }: {
   triggerValue: string;
   name: string;
   stepCount: number;
-  pageScope?: string;
-  showPagePicker: boolean;
   onOpen: () => void;
   onDelete: () => void;
-  onPageScopeChange: (v: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const iconDef = TRIGGER_ICONS[triggerValue];
@@ -354,31 +225,16 @@ function TriggerRow({
           ×
         </button>
       </div>
-
-      {/* Page scope row (only for page triggers) */}
-      {showPagePicker && (
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            paddingLeft: 52, paddingRight: 14, paddingBottom: 8,
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          <span style={{ fontSize: 9, color: '#374151', flexShrink: 0 }}>Page:</span>
-          <PageScopeDropdown value={pageScope} onChange={onPageScopeChange} />
-        </div>
-      )}
     </div>
   );
 }
 
-// ─── Generic section ──────────────────────────────────────────────────────────
+// ─── App Triggers section ─────────────────────────────────────────────────────
 
 function TriggerSection({
   title,
   defaultTrigger,
   triggerSet,
-  showPagePicker,
   open,
   onToggle,
 }: {
@@ -387,8 +243,6 @@ function TriggerSection({
   defaultTrigger: string;
   /** Set of trigger values that belong to this section */
   triggerSet: Set<string>;
-  /** When true, each row shows the page-scope picker */
-  showPagePicker: boolean;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -401,14 +255,13 @@ function TriggerSection({
     openWorkflowCanvas,
   } = useBuilderStore();
 
-  // All trigger workflows whose trigger value belongs to this section
+  // Only show app-level triggers (isAppTrigger: true)
   const entries = Object.entries(pageWorkflowMeta)
-    .filter(([, meta]) => meta?.isTrigger && triggerSet.has(meta?.trigger ?? ''))
+    .filter(([, meta]) => meta?.isTrigger && meta.isAppTrigger === true && triggerSet.has(meta?.trigger ?? ''))
     .map(([id, meta]) => ({
       id,
       trigger: meta?.trigger ?? '',
       name: meta?.name ?? id,
-      pageScope: meta?.pageScope,
       stepCount: (pageWorkflows[id] as unknown[])?.length ?? 0,
     }));
 
@@ -420,6 +273,7 @@ function TriggerSection({
       name: 'Untitled trigger',
       trigger: defaultTrigger,
       isTrigger: true,
+      isAppTrigger: true,
     });
     // Open with pageWorkflow kind — canvas shows editable trigger with restricted dropdown
     openWorkflowCanvas({ kind: 'pageWorkflow', name: id, isNew: true });
@@ -463,11 +317,8 @@ function TriggerSection({
               triggerValue={entry.trigger}
               name={entry.name}
               stepCount={entry.stepCount}
-              pageScope={entry.pageScope}
-              showPagePicker={showPagePicker}
               onOpen={() => openWorkflowCanvas({ kind: 'pageWorkflow', name: entry.id })}
               onDelete={() => removePageWorkflow(entry.id)}
-              onPageScopeChange={v => setPageWorkflowMeta(entry.id, { ...pageWorkflowMeta[entry.id]!, pageScope: v || undefined })}
             />
           ))}
         </div>
@@ -479,11 +330,10 @@ function TriggerSection({
 // ─── Main TriggersTab ─────────────────────────────────────────────────────────
 
 const APP_TRIGGER_VALUES = new Set(APP_TRIGGER_DEFS.map(d => d.value));
-const PAGE_TRIGGER_VALUES = new Set(PAGE_TRIGGER_DEFS.map(d => d.value));
+export const PAGE_TRIGGER_VALUES = new Set(PAGE_TRIGGER_DEFS.map(d => d.value));
 
 export function TriggersTab() {
   const [appOpen, setAppOpen] = useState(true);
-  const [pageOpen, setPageOpen] = useState(true);
 
   return (
     <div
@@ -495,24 +345,15 @@ export function TriggersTab() {
         padding: '6px 12px 5px', fontSize: 10, color: '#4b5563',
         borderBottom: '1px solid #1f2937', flexShrink: 0,
       }}>
-        Workflows that run automatically based on app or page events.
+        Workflows that run automatically on every page (app lifecycle events).
       </div>
 
       <TriggerSection
         title="App Triggers"
         defaultTrigger="appLoad"
         triggerSet={APP_TRIGGER_VALUES}
-        showPagePicker={false}
         open={appOpen}
         onToggle={() => setAppOpen(o => !o)}
-      />
-      <TriggerSection
-        title="Page Triggers"
-        defaultTrigger="pageLoad"
-        triggerSet={PAGE_TRIGGER_VALUES}
-        showPagePicker={true}
-        open={pageOpen}
-        onToggle={() => setPageOpen(o => !o)}
       />
     </div>
   );

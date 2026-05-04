@@ -28,6 +28,45 @@ import {
 import type { SharedComponentProperty } from '@/lib/builder/shared-component-data';
 import { findSharedRoot, findLinkedRoot } from './_store-node-helpers';
 import { STANDALONE_VARIABLE_TYPES } from '@/lib/sdui/controlled-component-registry';
+import { ResponsiveDot, DirectChangedLabel } from './_panel-primitives';
+
+// ─── Responsive prop patching helper ─────────────────────────────────────────
+
+/**
+ * Returns a responsive-aware prop patcher.
+ * At non-desktop breakpoints, writes to responsive[bp].props.<key> so the
+ * change is scoped to that breakpoint only, leaving the base node intact.
+ */
+function useResponsivePropPatch(nodeId: string, nodeProps: Record<string, unknown>) {
+  const store = useBuilderStore();
+  const abp = useBuilderStore(s => s.activeBreakpoint);
+
+  const patchPropResponsive = useCallback((key: string, value: unknown) => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      if (value === undefined) store.removeResponsiveOverride(nodeId, rbp, `props.${key}`);
+      else store.patchResponsive(nodeId, rbp, `props.${key}`, value);
+    } else {
+      store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+    }
+  }, [abp, nodeId, nodeProps, store]);
+
+  /** Get breakpoints that have a specific prop key overridden */
+  const getPropOverrideBps = useCallback((key: string): string[] => {
+    if (!store.pageNodes) return [];
+    const node = (store.pageNodes as Array<{ id?: string; responsive?: Record<string, unknown> }>).find(n => n.id === nodeId);
+    if (!node?.responsive) return [];
+    const bps: string[] = [];
+    for (const bp of ['laptop', 'tablet', 'mobile'] as const) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { props?: Record<string, unknown> } | undefined;
+      if (ov?.props && key in ov.props) bps.push(bp);
+    }
+    return bps;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, store.pageNodes]);
+
+  return { patchPropResponsive, getPropOverrideBps, abp };
+}
 
 // ─── Controlled Toggle ────────────────────────────────────────────────────────
 
@@ -639,6 +678,7 @@ function resolveCssVarToHex(color: string): string {
 
 function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Record<string, unknown> }) {
   const store = useBuilderStore();
+  const { patchPropResponsive, getPropOverrideBps } = useResponsivePropPatch(nodeId, nodeProps);
   const isBoundIcon = isBoundValue(nodeProps.icon as FormulaValue);
   const iconValue = (!isBoundIcon && typeof nodeProps.icon === 'string') ? nodeProps.icon : '';
   // 'currentColor' means inherit surrounding CSS color
@@ -655,13 +695,15 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
   const [searching,     setSearching]     = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /** Patch a single prop key with any value (string, FormulaValue, etc.) */
-  const patchProp = (key: string, value: unknown) =>
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  /** Patch a single prop key with any value — responsive-aware */
+  const patchProp = (key: string, value: unknown) => patchPropResponsive(key, value);
 
-  /** Patch multiple prop keys atomically */
-  const patchProps = (patch: Record<string, unknown>) =>
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, ...patch });
+  /** Patch multiple prop keys atomically — each key goes through responsive routing */
+  const patchProps = (patch: Record<string, unknown>) => {
+    for (const [k, v] of Object.entries(patch)) patchPropResponsive(k, v);
+  };
+
+  void getPropOverrideBps; // available for future chip display
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setSearchResults([]); return; }
@@ -786,13 +828,13 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
 
 function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodeProps: Record<string, unknown>; nodeSrc: string }) {
   const store = useBuilderStore();
+  const { patchPropResponsive } = useResponsivePropPatch(nodeId, nodeProps);
   const altValue  = (nodeProps.alt       as string | undefined) ?? '';
   // objectFit is a top-level prop on NextImage (read via rest.objectFit inside the img tag)
   const objectFit = (nodeProps.objectFit as string | undefined) ?? '';
 
-  /** Patch one prop key; also accepts FormulaValue objects for formula bindings */
-  const patchProp = (key: string, value: unknown) =>
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  /** Patch one prop key — responsive-aware */
+  const patchProp = (key: string, value: unknown) => patchPropResponsive(key, value);
   const patchSrc  = (value: string) =>
     store.patchNodeField(nodeId, 'src', value);
 
@@ -870,6 +912,7 @@ function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
 
 function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodeProps: Record<string, unknown>; nodeSrc: string }) {
   const store = useBuilderStore();
+  const { patchPropResponsive } = useResponsivePropPatch(nodeId, nodeProps);
   const posterVal = (nodeProps.poster   as string  | undefined) ?? '';
   const autoPlay  = (nodeProps.autoPlay as boolean | undefined) ?? false;
   const loop      = (nodeProps.loop     as boolean | undefined) ?? false;
@@ -877,11 +920,9 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
   const controls  = (nodeProps.controls as boolean | undefined) ?? false;
   const objectFit = (nodeProps.objectFit as string | undefined) ?? '';
 
-  const patchProp = (key: string, value: unknown) =>
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
+  const patchProp = (key: string, value: unknown) => patchPropResponsive(key, value);
   // Video nodes from assets-tab store src in props.src; write back to the same field.
-  const patchSrc  = (value: string) =>
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, src: value });
+  const patchSrc  = (value: string) => patchPropResponsive('src', value);
 
   const SELECT_STYLE: React.CSSProperties = {
     background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
@@ -1138,9 +1179,8 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     store.patchNodeField(nodeId, '_debounce', next);
   };
 
-  const patchProp = (key: string, value: unknown) => {
-    store.patchNodeField(nodeId, 'props', { ...nodeProps, [key]: value });
-  };
+  const { patchPropResponsive: patchPropResp } = useResponsivePropPatch(nodeId, nodeProps);
+  const patchProp = (key: string, value: unknown) => patchPropResp(key, value);
 
   const patchInitialValue = (value: unknown) => {
     store.patchNodeField(nodeId, '_initialValue', value);

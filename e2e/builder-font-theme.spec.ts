@@ -64,7 +64,7 @@ async function waitForBuilder(page: Page) {
 /** Open the right-panel Theme tab and expand the Typography section. */
 async function openTypographySection(page: Page) {
   // Click the Theme tab in the right panel
-  await page.getByTestId('tab-right-theme').click();
+  await page.getByTestId('tab-theme').click();
   await page.waitForTimeout(200);
 
   // Click Typography toggle to expand (may already be open, but click is idempotent

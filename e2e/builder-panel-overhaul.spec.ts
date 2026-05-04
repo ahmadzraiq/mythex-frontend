@@ -94,7 +94,7 @@ test.describe('BPO Group A — Left panel tab structure', () => {
   test('BPO-02 Right panel has tabs design, theme — NOT logic or data', async () => {
     const panel = page.locator('[data-testid="panel-right"]');
     await expect(panel.locator('[data-testid="tab-right-design"]')).toBeVisible();
-    await expect(panel.locator('[data-testid="tab-right-theme"]')).toBeVisible();
+    await expect(panel.locator('[data-testid="tab-theme"]')).toBeVisible();
     await expect(panel.locator('[data-testid="tab-right-logic"]')).not.toBeVisible();
     await expect(panel.locator('[data-testid="tab-right-data"]')).not.toBeVisible();
   });
@@ -623,11 +623,11 @@ test.describe('BPO Group I — Right panel: Theme tab', () => {
   test.afterAll(() => page.close());
 
   test('BPO-41 Right panel has a theme tab', async () => {
-    await expect(page.locator('[data-testid="tab-right-theme"]')).toBeVisible();
+    await expect(page.locator('[data-testid="tab-theme"]')).toBeVisible();
   });
 
   test('BPO-42 Clicking theme tab renders the ThemePanel (color pickers visible)', async () => {
-    await page.click('[data-testid="tab-right-theme"]');
+    await page.click('[data-testid="tab-theme"]');
     await expect(page.locator('[data-testid="panel-right"]')).toBeVisible();
     const panelRight = page.locator('[data-testid="panel-right"]');
     await expect(panelRight).toBeVisible();

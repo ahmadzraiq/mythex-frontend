@@ -3,6 +3,12 @@
  */
 
 import type { SetStatePayload, FetchPayload, NavigatePayload } from './payloads';
+import type { AnimationConfig } from '../components/animated-node';
+
+/** Recursively make all properties optional, with null allowed at leaf level */
+type DeepPartialNullable<T> = T extends object
+  ? { [K in keyof T]?: DeepPartialNullable<T[K]> | null }
+  : T | null;
 
 /** Condition: formula string, e.g. "cart.count > 0" or "{{demo.number}} >= 60" */
 type ConditionValue = string | Record<string, unknown>;
@@ -85,13 +91,14 @@ export interface ResponsiveOverride {
     opacity?: number | null;
     blur?: number | null;
   };
-  /** Sparse animation-config overrides. Currently only `filter.blur` is supported.
-   *  null = explicitly remove the value at this breakpoint (do not inherit). */
-  animation?: {
-    filter?: {
-      blur?: number | null;
-    };
-  };
+  /** Deep-partial animation-config overrides. Supports every AnimationConfig field.
+   *  null at any leaf = explicitly remove that value at this breakpoint (do not inherit). */
+  animation?: DeepPartialNullable<AnimationConfig>;
+  /** Repeat expression override. null = disable repeat at this breakpoint. */
+  map?: string | null;
+  /** Actions override. Replaces the full actions array at this breakpoint (last-write-wins).
+   *  null = explicitly remove actions at this breakpoint. */
+  actions?: SDUIAction[] | Record<string, SDUIAction | SDUIAction[]> | null;
 }
 
 // ─── Popover / Tooltip config ────────────────────────────────────────────────

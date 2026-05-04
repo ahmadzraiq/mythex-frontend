@@ -9,6 +9,10 @@
     "build:preview": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:export:config": "npx tsx scripts/export-config-test.ts",
+    "test:e2e:export": "npx playwright test e2e/export-from-config.spec.ts",
     "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/builder-bugfixes.spec.ts e2e/builder-logic.spec.ts e2e/test-dnd.spec.ts e2e/snap-engine.spec.ts e2e/panel-color-picker.spec.ts e2e/panel-interactive.spec.ts e2e/panel-media.spec.ts e2e/panel-overlays.spec.ts e2e/panel-rotate-smooth.spec.ts e2e/panel-rotate-timing.spec.ts e2e/panel-display.spec.ts e2e/panel-charts.spec.ts e2e/panel-layout.spec.ts e2e/panel-form.spec.ts --workers=1"
   },
   "dependencies": {
@@ -60,6 +64,7 @@
     "@playwright/test": "^1.58.2",
     "@react-native/assets-registry": "^0.79.5",
     "@tailwindcss/postcss": "^4",
+    "@types/jszip": "^3.4.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -71,10 +76,13 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "json5": "^2.2.3",
+    "jszip": "^3.10.1",
     "playwright": "^1.49.0",
     "postcss": "^8.5.6",
+    "prettier": "^3.8.3",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.7.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   }
 }

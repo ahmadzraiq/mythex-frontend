@@ -235,7 +235,29 @@ function StateTagPicker({ nodeId, node }: { nodeId: string; node: SDUINode }) {
 export function VisibilityInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
-  const rawCondition = (node as { condition?: unknown }).condition;
+  const abp = useBuilderStore(s => s.activeBreakpoint);
+
+  // Cascade condition from responsive overrides at non-desktop
+  const rawCondition = useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return (node as { condition?: unknown }).condition;
+    let v: unknown = (node as { condition?: unknown }).condition;
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { condition?: unknown } | undefined;
+      if (ov && 'condition' in ov) v = ov.condition;
+      if (bp === abp) break;
+    }
+    return v;
+  }, [abp, node]);
+
+  // Which breakpoints have condition overrides?
+  const conditionOverrideBps = useMemo(() => {
+    if (!node.responsive) return [];
+    return (BREAKPOINT_CASCADE as BreakpointKey[]).filter(bp => {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { condition?: unknown } | undefined;
+      return ov && 'condition' in ov;
+    });
+  }, [node.responsive]);
+
   // Normalize: plain string conditions (JS formula expressions) → { formula } so the editor recognises them as bound
   const condition: FormulaValue = typeof rawCondition === 'string' && rawCondition !== ''
     ? { formula: rawCondition }
@@ -245,8 +267,29 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
   const hasCondition = rawCondition != null;
   const forceShow = !!(node as { _forceShowInEditor?: boolean })._forceShowInEditor;
 
+  const patchConditionResponsive = useCallback((value: unknown | null) => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      if (value === null) store.removeResponsiveOverride(nodeId, rbp, 'condition');
+      else store.patchResponsive(nodeId, rbp, 'condition', value);
+      store._pushHistory();
+    } else {
+      store.patchCondition(nodeId, value as object | null);
+    }
+  }, [abp, nodeId, store]);
+
   return (
     <div style={DESIGN_INLINE_STYLE}>
+      {conditionOverrideBps.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+          <ResponsiveDot
+            cssProp="condition"
+            overriddenBreakpoints={conditionOverrideBps}
+            onRemove={bp => { store.removeResponsiveOverride(nodeId, bp as 'laptop'|'tablet'|'mobile', 'condition'); store._pushHistory(); }}
+            onResetAll={() => { for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) { store.removeResponsiveOverride(nodeId, bp, 'condition'); } store._pushHistory(); }}
+          />
+        </div>
+      )}
       <ToggleBind
         rowLabel="Visible"
         fieldId="visibility-condition"
@@ -254,14 +297,14 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
         expectedType="boolean"
         isOn={!isHidden}
         value={isBound ? condition : !isHidden as unknown as FormulaValue}
-        onToggle={() => store.patchCondition(nodeId, isHidden ? null : false as unknown as object)}
+        onToggle={() => patchConditionResponsive(isHidden ? null : false)}
         onChange={v => {
           if (isBoundValue(v)) {
             // Unwrap { formula: "..." } back to plain string for runtime compatibility
             const f = (v as { formula?: string }).formula;
-            store.patchCondition(nodeId, (typeof f === 'string' ? f : v) as unknown as object);
+            patchConditionResponsive(typeof f === 'string' ? f : v);
           } else {
-            store.patchCondition(nodeId, null);
+            patchConditionResponsive(null);
           }
         }}
         style={{ borderTop: 'none', padding: 0 }}
@@ -290,10 +333,44 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
   const abp = useBuilderStore(s => s.activeBreakpoint);
-  const disabled = (node.props as Record<string, unknown> | undefined)?.disabled;
+
+  // Cascade props.disabled from responsive overrides at non-desktop
+  const disabled = useMemo(() => {
+    const base = (node.props as Record<string, unknown> | undefined)?.disabled;
+    if (abp === 'desktop' || !node.responsive) return base;
+    let v: unknown = base;
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { props?: Record<string, unknown> } | undefined;
+      if (ov?.props && 'disabled' in ov.props) v = ov.props.disabled;
+      if (bp === abp) break;
+    }
+    return v;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abp, node.responsive, node.props]);
+
+  // Which breakpoints have props.disabled overrides?
+  const disabledOverrideBps = useMemo(() => {
+    if (!node.responsive) return [];
+    return (BREAKPOINT_CASCADE as BreakpointKey[]).filter(bp => {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { props?: Record<string, unknown> } | undefined;
+      return ov?.props && 'disabled' in ov.props;
+    });
+  }, [node.responsive]);
+
   const isBound = isBoundValue(disabled as FormulaValue);
   const isDisabled = !isBound && !!disabled;
   const showOverlay = isDisabled || isBound;
+
+  const patchDisabled = useCallback((value: unknown) => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      if (value === undefined) store.removeResponsiveOverride(nodeId, rbp, 'props.disabled');
+      else store.patchResponsive(nodeId, rbp, 'props.disabled', value);
+      store._pushHistory();
+    } else {
+      store.patchProp(nodeId, 'props.disabled', value);
+    }
+  }, [abp, nodeId, store]);
 
   // Base overlay (desktop)
   const baseOverlay = ((node as Record<string, unknown>)._disabledOverlay ?? {}) as {
@@ -423,6 +500,16 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
 
   return (
     <>
+      {disabledOverrideBps.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 12px 0' }}>
+          <ResponsiveDot
+            cssProp="props-disabled"
+            overriddenBreakpoints={disabledOverrideBps}
+            onRemove={bp => { store.removeResponsiveOverride(nodeId, bp as 'laptop'|'tablet'|'mobile', 'props.disabled'); store._pushHistory(); }}
+            onResetAll={() => { for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) { store.removeResponsiveOverride(nodeId, bp, 'props.disabled'); } store._pushHistory(); }}
+          />
+        </div>
+      )}
       <ToggleBind
         rowLabel="Disabled"
         fieldId="disabled-state"
@@ -430,10 +517,10 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
         expectedType="boolean"
         isOn={isDisabled}
         value={(isBound ? disabled : isDisabled) as FormulaValue}
-        onToggle={() => store.patchProp(nodeId, 'props.disabled', isDisabled ? undefined : true)}
+        onToggle={() => patchDisabled(isDisabled ? undefined : true)}
         onChange={v => {
-          if (isBoundValue(v)) store.patchProp(nodeId, 'props.disabled', v);
-          else store.patchProp(nodeId, 'props.disabled', undefined);
+          if (isBoundValue(v)) patchDisabled(v);
+          else patchDisabled(undefined);
         }}
       />
       {showOverlay && (
@@ -533,8 +620,32 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
 export function RepeatInDesign({ node }: { node: SDUINode }) {
   const store = useBuilderStore();
   const nodeId = (node as { id?: string }).id ?? '';
-  const mapValue = (node as { map?: unknown }).map;
-  const hasMap = !!mapValue;
+  const abp = useBuilderStore(s => s.activeBreakpoint);
+
+  // Cascade map from responsive overrides at non-desktop
+  const mapValue = useMemo(() => {
+    const base = (node as { map?: unknown }).map;
+    if (abp === 'desktop' || !node.responsive) return base;
+    let v: unknown = base;
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { map?: unknown } | undefined;
+      if (ov && 'map' in ov) v = ov.map;
+      if (bp === abp) break;
+    }
+    return v;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abp, node.responsive, (node as { map?: unknown }).map]);
+
+  // Which breakpoints have map overrides?
+  const mapOverrideBps = useMemo(() => {
+    if (!node.responsive) return [];
+    return (BREAKPOINT_CASCADE as BreakpointKey[]).filter(bp => {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { map?: unknown } | undefined;
+      return ov && 'map' in ov;
+    });
+  }, [node.responsive]);
+
+  const hasMap = !!mapValue && mapValue !== null;
   // Normalise: plain string paths become { formula } so the editor can display/edit them
   const mapFormulaValue: FormulaValue = isBoundValue(mapValue as FormulaValue)
     ? (mapValue as FormulaValue)
@@ -542,25 +653,50 @@ export function RepeatInDesign({ node }: { node: SDUINode }) {
       ? { formula: mapValue }
       : false;
 
+  const patchMapResponsive = useCallback((value: string | object | null) => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      if (value === null) store.patchResponsive(nodeId, rbp, 'map', null);
+      else store.patchResponsive(nodeId, rbp, 'map', value);
+      store._pushHistory();
+    } else {
+      if (value === null) store.patchMap(nodeId, null);
+      else if (typeof value === 'string') store.patchMap(nodeId, value);
+      else store.patchNodeField(nodeId, 'map', value);
+    }
+  }, [abp, nodeId, store]);
+
   return (
-    <ToggleBind
-      rowLabel="Repeat / List"
-      fieldId="repeat-map"
-      hint="e.g. store.products, cart.items"
-      expectedType="any"
-      isOn={hasMap}
-      value={mapFormulaValue}
-      onToggle={() => store.patchMap(nodeId, hasMap ? null : 'store.items')}
-      onChange={v => {
-        if (isBoundValue(v)) {
-          const f = (v as { formula: string }).formula.trim();
-          const isSimplePath = /^[\w$.]+$/.test(f);
-          store.patchNodeField(nodeId, 'map', isSimplePath ? f : v);
-        } else {
-          store.patchMap(nodeId, null);
-        }
-      }}
-    />
+    <>
+      {mapOverrideBps.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 12px 0' }}>
+          <ResponsiveDot
+            cssProp="map"
+            overriddenBreakpoints={mapOverrideBps}
+            onRemove={bp => { store.removeResponsiveOverride(nodeId, bp as 'laptop'|'tablet'|'mobile', 'map'); store._pushHistory(); }}
+            onResetAll={() => { for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) { store.removeResponsiveOverride(nodeId, bp, 'map'); } store._pushHistory(); }}
+          />
+        </div>
+      )}
+      <ToggleBind
+        rowLabel="Repeat / List"
+        fieldId="repeat-map"
+        hint="e.g. store.products, cart.items"
+        expectedType="any"
+        isOn={hasMap}
+        value={mapFormulaValue}
+        onToggle={() => patchMapResponsive(hasMap ? null : 'store.items')}
+        onChange={v => {
+          if (isBoundValue(v)) {
+            const f = (v as { formula: string }).formula.trim();
+            const isSimplePath = /^[\w$.]+$/.test(f);
+            patchMapResponsive(isSimplePath ? f : v as object);
+          } else {
+            patchMapResponsive(null);
+          }
+        }}
+      />
+    </>
   );
 }
 

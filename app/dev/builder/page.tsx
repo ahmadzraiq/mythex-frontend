@@ -54,6 +54,7 @@ import type { BuilderPage } from './_store';
 import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
+import { ExportModal } from './_export-modal';
 import { SlidePanel } from './_slide-panel';
 import { CustomColorSlideContent } from './_custom-color-form';
 import type { CustomColor } from './_store';
@@ -721,6 +722,7 @@ function TopBar({
       : 'Preview in new tab (⌘P)';
   const [menuOpen, setMenuOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   return (
     <div
@@ -851,6 +853,33 @@ function TopBar({
       >
         ↗ Preview
       </button>
+
+      {/* Export button */}
+      <button
+        data-testid="btn-export"
+        onClick={() => setExportOpen(true)}
+        title="Export as standalone React/Next.js project"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 12px',
+          background: '#1d4ed8',
+          border: 'none',
+          borderRadius: 5,
+          color: '#fff',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'system-ui',
+          letterSpacing: '0.02em',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = '#2563eb')}
+        onMouseLeave={e => (e.currentTarget.style.background = '#1d4ed8')}
+      >
+        ↓ Export
+      </button>
+
+      {exportOpen && <ExportModal onClose={() => setExportOpen(false)} />}
 
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
@@ -1487,6 +1516,7 @@ export default function BuilderPage() {
           onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
           onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
           onWidthChange={setLeftSlideWidth}
+          onOpenColorSlide={setRightSlide}
         />
 
         {/* Left SlidePanel — slides in between left panel and canvas */}
@@ -1565,7 +1595,7 @@ export default function BuilderPage() {
           </SlidePanel>
         )}
 
-        <PanelRight onOpenColorSlide={setRightSlide} />
+        <PanelRight />
       </div>
 
       {/* Workflow canvas overlay — full-screen, mounts above everything */}

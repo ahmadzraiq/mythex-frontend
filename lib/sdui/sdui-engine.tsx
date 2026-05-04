@@ -638,9 +638,10 @@ export function SDUIEngine({
   // Collect collectionFetchError trigger workflows once (stable ref).
   const collectionFetchErrorWorkflowsRef = useRef<string[]>([]);
   useEffect(() => {
-    type TriggerDef = { trigger?: string; isTrigger?: boolean; pageScope?: string };
+    type TriggerDef = { trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
     collectionFetchErrorWorkflowsRef.current = Object.entries(actionsConfig as Record<string, TriggerDef>)
-      .filter(([, def]) => def.isTrigger && def.trigger === 'collectionFetchError' && (!def.pageScope || def.pageScope === configName))
+      .filter(([, def]) => def.isTrigger && def.trigger === 'collectionFetchError' &&
+        (def.isAppTrigger === true || (!!def.pageScope && def.pageScope === configName)))
       .map(([key]) => key);
   }, [actionsConfig, configName]);
 
@@ -665,16 +666,20 @@ export function SDUIEngine({
   useEffect(() => {
     if (builderMode) return;
 
-    type TriggerDef = { trigger?: string; isTrigger?: boolean; pageScope?: string };
+    type TriggerDef = { trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
 
     const cfg = actionsConfigRef.current as Record<string, TriggerDef>;
-    const matchesPage = (scope: string | undefined) => !scope || scope === configName;
+    // isAppTrigger: true  → fires on every page (global)
+    // pageScope set       → fires only on the matching page
+    // empty pageScope + no isAppTrigger → defensive no-op (shouldn't exist post-migration)
+    const matchesPage = (def: TriggerDef) =>
+      def.isAppTrigger === true || (!!def.pageScope && def.pageScope === configName);
 
     // Group workflow keys by trigger type, filtered by page scope.
     const byTrigger = new Map<string, string[]>();
     for (const [key, def] of Object.entries(cfg)) {
       if (!def.isTrigger || !def.trigger) continue;
-      if (!matchesPage(def.pageScope)) continue;
+      if (!matchesPage(def)) continue;
       let list = byTrigger.get(def.trigger);
       if (!list) { list = []; byTrigger.set(def.trigger, list); }
       list.push(key);

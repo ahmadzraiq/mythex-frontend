@@ -389,8 +389,16 @@ export interface WorkflowMeta {
    */
   isTrigger?: boolean;
   /**
+   * True for trigger workflows that fire on EVERY page regardless of route.
+   * These appear in the left-panel "App Triggers" tab and have no pageScope.
+   * Mutually exclusive with pageScope — if isAppTrigger is true, pageScope must be absent.
+   */
+  isAppTrigger?: boolean;
+  /**
    * For page-scoped trigger workflows: the route config name (e.g. "home", "product")
-   * that this trigger should fire on. Empty / undefined = fires on all pages.
+   * that this trigger should fire on.
+   * INVALID (ignored at runtime) when isAppTrigger is true.
+   * New triggers must always have either isAppTrigger=true OR a non-empty pageScope.
    */
   pageScope?: string;
   /** Declared input parameters for global workflows */

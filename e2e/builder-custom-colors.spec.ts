@@ -35,7 +35,7 @@ async function gotoBuilder(page: Page) {
 
 /** Switch to the right-panel Theme tab and expand the Colors section. */
 async function openThemeColorsSection(page: Page) {
-  await page.getByTestId('tab-right-theme').click();
+  await page.getByTestId('tab-theme').click();
   await page.waitForTimeout(200);
 
   if (!(await page.getByTestId('add-custom-color').isVisible().catch(() => false))) {

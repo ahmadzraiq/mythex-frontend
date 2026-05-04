@@ -2179,6 +2179,466 @@
             ]
           }
         ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-stext-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_text — Responsive Text Content"
+      },
+      {
+        "type": "Box",
+        "id": "resp-stext-box",
+        "props": {
+          "className": "flex flex-col gap-[12px] p-[16px] bg-[#f0fdf4] dark:bg-[#052e16] rounded-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "resp-stext-node",
+            "props": {
+              "className": "text-[16px] font-semibold text-gray-800 dark:text-gray-100"
+            },
+            "text": "Desktop text",
+            "responsive": {
+              "tablet": { "text": "Tablet text" },
+              "mobile": { "text": "Mobile text" }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "resp-stext-formula",
+            "props": {
+              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+            },
+            "text": { "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint ?? 'desktop')" },
+            "responsive": {
+              "mobile": {
+                "text": { "formula": "'Mobile formula: ' + (globalContext?.browser?.breakpoint ?? '?')" }
+              }
+            }
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-svis-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_visibility — Responsive Visibility (condition)"
+      },
+      {
+        "type": "Box",
+        "id": "resp-svis-box",
+        "props": {
+          "className": "flex flex-col gap-[12px] p-[16px] bg-[#fef9c3] dark:bg-[#422006] rounded-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "resp-svis-desktop-only",
+            "props": {
+              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200"
+            },
+            "text": "Visible on desktop only",
+            "responsive": {
+              "tablet": { "condition": false },
+              "mobile": { "condition": false }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "resp-svis-mobile-only",
+            "props": {
+              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200"
+            },
+            "text": "Visible on mobile only",
+            "condition": false,
+            "responsive": {
+              "mobile": { "condition": null }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "resp-svis-formula",
+            "props": {
+              "className": "text-[12px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Condition via formula (hidden on tablet)",
+            "responsive": {
+              "tablet": {
+                "condition": { "formula": "false" }
+              }
+            }
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-sdis-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_disabled — Responsive Disabled Prop"
+      },
+      {
+        "type": "Box",
+        "id": "resp-sdis-box",
+        "props": {
+          "className": "flex gap-[16px] p-[16px] bg-[#eff6ff] dark:bg-[#172554] rounded-[8px] flex-wrap"
+        },
+        "children": [
+          {
+            "type": "Input",
+            "id": "resp-sdis-input",
+            "props": {
+              "className": "border border-gray-300 rounded-[6px] px-[10px] py-[6px] text-[14px] w-[200px]",
+              "placeholder": "Disabled on mobile"
+            },
+            "responsive": {
+              "mobile": { "props": { "disabled": true } }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "resp-sdis-hint",
+            "props": {
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 self-center"
+            },
+            "text": "Input is disabled at mobile breakpoint"
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-srep-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_repeat — Responsive Map/Repeat"
+      },
+      {
+        "type": "Box",
+        "id": "resp-srep-box",
+        "props": {
+          "className": "flex flex-col gap-[8px] p-[16px] bg-[#fdf4ff] dark:bg-[#2e1065] rounded-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "resp-srep-note",
+            "props": {
+              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Row below uses responsive map: desktop = full list, mobile = shorter list"
+          },
+          {
+            "type": "Box",
+            "id": "resp-srep-row",
+            "props": {
+              "className": "flex flex-row gap-[8px] flex-wrap"
+            },
+            "map": "[{\"label\":\"A\"},{\"label\":\"B\"},{\"label\":\"C\"},{\"label\":\"D\"}]",
+            "responsive": {
+              "mobile": {
+                "map": "[{\"label\":\"A\"},{\"label\":\"B\"}]"
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "resp-srep-item",
+                "props": {
+                  "className": "px-[12px] py-[6px] bg-[#e9d5ff] dark:bg-[#4c1d95] rounded-[6px] text-[12px] font-semibold text-purple-900 dark:text-purple-100"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px]"
+                    },
+                    "text": "{{context.item.label}}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-sanim-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_animation — Responsive Animation Override"
+      },
+      {
+        "type": "Box",
+        "id": "resp-sanim-box",
+        "props": {
+          "className": "flex flex-row gap-[16px] p-[16px] bg-[#fff7ed] dark:bg-[#431407] rounded-[8px] flex-wrap"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "resp-sanim-card",
+            "props": {
+              "className": "w-[160px] h-[80px] bg-[#fed7aa] dark:bg-[#7c2d12] rounded-[8px] flex items-center justify-center"
+            },
+            "animation": {
+              "enter": { "type": "fade", "duration": 600, "delay": 0 }
+            },
+            "responsive": {
+              "mobile": {
+                "animation": {
+                  "enter": { "duration": 200 }
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[12px] font-semibold text-orange-900 dark:text-orange-100"
+                },
+                "text": "Fade 600ms (200ms mobile)"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-sact-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_actions — Responsive Actions Override"
+      },
+      {
+        "type": "Box",
+        "id": "resp-sact-box",
+        "props": {
+          "className": "flex flex-col gap-[8px] p-[16px] bg-[#f0fdf4] dark:bg-[#052e16] rounded-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "resp-sact-note",
+            "props": {
+              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Button has a base action. At mobile it overrides with a different action array."
+          },
+          {
+            "type": "Box",
+            "id": "resp-sact-btn",
+            "props": {
+              "className": "px-[20px] py-[10px] bg-[#16a34a] hover:bg-[#15803d] rounded-[8px] cursor-pointer"
+            },
+            "actions": [
+              { "type": "log", "payload": { "msg": "desktop action" } }
+            ],
+            "responsive": {
+              "mobile": {
+                "actions": [
+                  { "type": "log", "payload": { "msg": "mobile override action" } }
+                ]
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold text-white"
+                },
+                "text": "Click me"
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-sset-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_settings_props — Responsive Component Props"
+      },
+      {
+        "type": "Box",
+        "id": "resp-sset-box",
+        "props": {
+          "className": "flex flex-row gap-[24px] p-[16px] bg-[#f8fafc] dark:bg-[#0f172a] rounded-[8px] flex-wrap items-center"
+        },
+        "children": [
+          {
+            "type": "Image",
+            "id": "resp-sset-img",
+            "props": {
+              "className": "w-[120px] h-[80px] rounded-[6px]",
+              "src": "https://picsum.photos/seed/resp/200/100",
+              "objectFit": "cover",
+              "alt": "Responsive image"
+            },
+            "responsive": {
+              "mobile": {
+                "props": {
+                  "objectFit": "contain",
+                  "alt": "Mobile alt text"
+                }
+              }
+            }
+          },
+          {
+            "type": "Text",
+            "id": "resp-sset-hint",
+            "props": {
+              "className": "text-[12px] text-gray-500 dark:text-gray-400"
+            },
+            "text": "Image: objectFit=cover on desktop, contain on mobile"
+          }
+        ]
+      },
+
+      {
+        "type": "Text",
+        "id": "resp-scss-label",
+        "props": {
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+        },
+        "text": "S_css_gaps — Responsive CSS Typography & Grid Gaps"
+      },
+      {
+        "type": "Box",
+        "id": "resp-scss-box",
+        "props": {
+          "className": "flex flex-col gap-[16px] p-[16px] bg-[#fafafa] dark:bg-[#18181b] rounded-[8px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "resp-scss-typo",
+            "props": {
+              "className": "text-[15px] text-gray-800 dark:text-gray-100"
+            },
+            "text": "Typography: lineHeight=1.8 on desktop, 1.4 on mobile. letterSpacing=0.05em on desktop, 0 on mobile.",
+            "responsive": {
+              "mobile": {
+                "styles": {
+                  "lineHeight": "1.4",
+                  "letterSpacing": "0"
+                }
+              }
+            }
+          },
+          {
+            "type": "Box",
+            "id": "resp-scss-grid",
+            "props": {
+              "className": "grid gap-[16px]"
+            },
+            "responsive": {
+              "desktop": {
+                "styles": {
+                  "gridTemplateColumns": "repeat(3, 1fr)"
+                }
+              },
+              "tablet": {
+                "styles": {
+                  "gridTemplateColumns": "repeat(2, 1fr)"
+                }
+              },
+              "mobile": {
+                "styles": {
+                  "gridTemplateColumns": "repeat(1, 1fr)"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "resp-scss-g1",
+                "props": {
+                  "className": "h-[60px] bg-[#dbeafe] dark:bg-[#1e3a5f] rounded-[6px] flex items-center justify-center"
+                },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] text-blue-800 dark:text-blue-200" }, "text": "Col 1" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "resp-scss-g2",
+                "props": {
+                  "className": "h-[60px] bg-[#dcfce7] dark:bg-[#14532d] rounded-[6px] flex items-center justify-center"
+                },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] text-green-800 dark:text-green-200" }, "text": "Col 2" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "resp-scss-g3",
+                "props": {
+                  "className": "h-[60px] bg-[#fef9c3] dark:bg-[#422006] rounded-[6px] flex items-center justify-center"
+                },
+                "children": [
+                  { "type": "Text", "props": { "className": "text-[12px] text-yellow-800 dark:text-yellow-200" }, "text": "Col 3" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "resp-scss-align",
+            "props": {
+              "className": "flex flex-row gap-[8px] bg-[#f1f5f9] dark:bg-[#1e293b] rounded-[6px] p-[8px]"
+            },
+            "responsive": {
+              "mobile": {
+                "styles": {
+                  "alignItems": "flex-end",
+                  "justifyContent": "flex-end"
+                }
+              }
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "resp-scss-align-a",
+                "props": {
+                  "className": "w-[40px] h-[40px] bg-[#6366f1] rounded-[4px]"
+                }
+              },
+              {
+                "type": "Box",
+                "id": "resp-scss-align-b",
+                "props": {
+                  "className": "w-[40px] h-[60px] bg-[#8b5cf6] rounded-[4px]"
+                }
+              },
+              {
+                "type": "Box",
+                "id": "resp-scss-align-c",
+                "props": {
+                  "className": "w-[40px] h-[30px] bg-[#a78bfa] rounded-[4px]"
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   }

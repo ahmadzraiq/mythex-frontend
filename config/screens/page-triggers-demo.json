@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "title": "Page Triggers Demo"
+  },
+  "layout": "store",
+  "state": {},
+  "workflows": {
+    "wf-app-trigger-1": {
+      "id": "wf-app-trigger-1",
+      "name": "App Trigger: On Load (all pages)",
+      "isTrigger": true,
+      "isAppTrigger": true,
+      "trigger": { "event": "onLoad" },
+      "actions": [
+        { "type": "log", "payload": { "msg": "App trigger fired on load" } }
+      ]
+    },
+    "wf-app-trigger-2": {
+      "id": "wf-app-trigger-2",
+      "name": "App Trigger: On Scroll (all pages)",
+      "isTrigger": true,
+      "isAppTrigger": true,
+      "trigger": { "event": "onScroll" },
+      "actions": [
+        { "type": "log", "payload": { "msg": "App trigger: scroll" } }
+      ]
+    },
+    "wf-page-trigger-1": {
+      "id": "wf-page-trigger-1",
+      "name": "Page Trigger: This Page Only",
+      "isTrigger": true,
+      "isAppTrigger": false,
+      "pageScope": "/page-triggers-demo",
+      "trigger": { "event": "onLoad" },
+      "actions": [
+        { "type": "log", "payload": { "msg": "Page trigger: fired only on /page-triggers-demo" } }
+      ]
+    },
+    "wf-legacy-empty-scope": {
+      "id": "wf-legacy-empty-scope",
+      "name": "Legacy: empty pageScope (should migrate to isAppTrigger=true)",
+      "isTrigger": true,
+      "pageScope": "",
+      "trigger": { "event": "onLoad" },
+      "actions": [
+        { "type": "log", "payload": { "msg": "Legacy trigger — migrated to app scope" } }
+      ]
+    }
+  },
+  "content": {
+    "type": "Box",
+    "id": "pt-root",
+    "props": {
+      "className": "w-full max-w-[900px] mx-auto px-[24px] py-[40px] flex flex-col gap-[32px]"
+    },
+    "children": [
+      {
+        "type": "Text",
+        "id": "pt-title",
+        "props": {
+          "className": "text-[24px] font-bold text-gray-900 dark:text-gray-100"
+        },
+        "text": "Page Triggers Demo"
+      },
+      {
+        "type": "Text",
+        "id": "pt-desc",
+        "props": {
+          "className": "text-[14px] text-gray-500 dark:text-gray-400"
+        },
+        "text": "This screen demonstrates the App Triggers / Page Triggers split introduced in the right-panel overhaul."
+      },
+      {
+        "type": "Box",
+        "id": "pt-section-app",
+        "props": {
+          "className": "flex flex-col gap-[12px] p-[20px] bg-[#eff6ff] dark:bg-[#172554] rounded-[10px] border border-[#bfdbfe] dark:border-[#1e40af]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "pt-app-title",
+            "props": {
+              "className": "text-[16px] font-semibold text-blue-800 dark:text-blue-200"
+            },
+            "text": "App Triggers (isAppTrigger=true)"
+          },
+          {
+            "type": "Text",
+            "id": "pt-app-desc",
+            "props": {
+              "className": "text-[13px] text-blue-700 dark:text-blue-300"
+            },
+            "text": "These triggers fire on EVERY page. They appear only in the left panel App Triggers tab, not in the right panel."
+          },
+          {
+            "type": "Box",
+            "id": "pt-app-list",
+            "props": {
+              "className": "flex flex-col gap-[6px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "pt-app-row-1",
+                "props": {
+                  "className": "flex flex-row gap-[8px] items-center"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "id": "pt-app-dot-1",
+                    "props": {
+                      "className": "w-[8px] h-[8px] rounded-full bg-[#3b82f6]"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "id": "pt-app-name-1",
+                    "props": {
+                      "className": "text-[13px] font-medium text-blue-900 dark:text-blue-100"
+                    },
+                    "text": "wf-app-trigger-1: On Load (all pages)"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "pt-app-row-2",
+                "props": {
+                  "className": "flex flex-row gap-[8px] items-center"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "id": "pt-app-dot-2",
+                    "props": {
+                      "className": "w-[8px] h-[8px] rounded-full bg-[#3b82f6]"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "id": "pt-app-name-2",
+                    "props": {
+                      "className": "text-[13px] font-medium text-blue-900 dark:text-blue-100"
+                    },
+                    "text": "wf-app-trigger-2: On Scroll (all pages)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "pt-section-page",
+        "props": {
+          "className": "flex flex-col gap-[12px] p-[20px] bg-[#f0fdf4] dark:bg-[#052e16] rounded-[10px] border border-[#bbf7d0] dark:border-[#166534]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "pt-page-title",
+            "props": {
+              "className": "text-[16px] font-semibold text-green-800 dark:text-green-200"
+            },
+            "text": "Page Trigger (pageScope=/page-triggers-demo)"
+          },
+          {
+            "type": "Text",
+            "id": "pt-page-desc",
+            "props": {
+              "className": "text-[13px] text-green-700 dark:text-green-300"
+            },
+            "text": "This trigger fires only on this page. It appears in the right panel when no node is selected (auto-scoped to this page)."
+          },
+          {
+            "type": "Box",
+            "id": "pt-page-row",
+            "props": {
+              "className": "flex flex-row gap-[8px] items-center"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "id": "pt-page-dot",
+                "props": {
+                  "className": "w-[8px] h-[8px] rounded-full bg-[#16a34a]"
+                }
+              },
+              {
+                "type": "Text",
+                "id": "pt-page-name",
+                "props": {
+                  "className": "text-[13px] font-medium text-green-900 dark:text-green-100"
+                },
+                "text": "wf-page-trigger-1: On Load (this page only)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "pt-section-legacy",
+        "props": {
+          "className": "flex flex-col gap-[12px] p-[20px] bg-[#fef9c3] dark:bg-[#422006] rounded-[10px] border border-[#fde68a] dark:border-[#92400e]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "id": "pt-legacy-title",
+            "props": {
+              "className": "text-[16px] font-semibold text-yellow-800 dark:text-yellow-200"
+            },
+            "text": "Legacy Trigger (empty pageScope — should migrate)"
+          },
+          {
+            "type": "Text",
+            "id": "pt-legacy-desc",
+            "props": {
+              "className": "text-[13px] text-yellow-700 dark:text-yellow-300"
+            },
+            "text": "wf-legacy-empty-scope has pageScope=\"\" and no isAppTrigger flag. On first builder load, the one-time migration promotes it to isAppTrigger=true so it behaves as an App Trigger."
+          }
+        ]
+      }
+    ]
+  }
+}

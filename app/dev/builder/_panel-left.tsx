@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Builder Left Panel — two tabs: Layers + Components
+ * Builder Left Panel — 7 tabs: Layers / Components / Data / Logic / App Triggers / Assets / Theme
  *
  * Layers tab:
  *   - Full node tree with type icons
@@ -16,6 +16,10 @@
  *   - All section variants, grouped by type
  *   - Draggable onto canvas via HTML5 drag API
  *   - Thumbnail + variant name
+ *
+ * Theme tab:
+ *   - Global CSS variable / token editor (ThemePanel)
+ *   - Custom colors and font settings
  */
 
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
@@ -38,11 +42,11 @@ import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab 
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
 import { AssetsTab } from './_assets-tab';
 import { TriggersTab } from './_triggers-tab';
+import { ThemePanel } from './_theme-panel';
 
 
-// ─── Pages Tab ────────────────────────────────────────────────────────────────
-
-function PagesTab() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _PagesTab_unused() {
   const { pages, currentPageId, addPage, navigatePage, renamePage, removePage } = useBuilderStore();
   const [showRouteMenu, setShowRouteMenu] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -1393,6 +1397,8 @@ interface PanelLeftProps {
   onOpenPageConfig: () => void;
   onOpenAuthConfig: () => void;
   onWidthChange?: (w: number) => void;
+  /** Called by ThemePanel to open the right slide panel for custom color add/edit. */
+  onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
 }
 
 export default function PanelLeft({
@@ -1403,13 +1409,32 @@ export default function PanelLeft({
   onOpenPageConfig,
   onOpenAuthConfig,
   onWidthChange,
+  onOpenColorSlide,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets'>('components');
+  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme'>('components');
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
+
+  // Listen for external requests to open the Theme tab or a specific left tab
+  useEffect(() => {
+    const handleOpenTheme = () => setTab('theme');
+    const handleOpenLeftTab = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail === 'triggers' || detail === 'layers' || detail === 'components' ||
+          detail === 'data' || detail === 'logic' || detail === 'assets' || detail === 'theme') {
+        setTab(detail);
+      }
+    };
+    window.addEventListener('builder:open-theme-tab', handleOpenTheme);
+    window.addEventListener('builder:open-left-tab', handleOpenLeftTab);
+    return () => {
+      window.removeEventListener('builder:open-theme-tab', handleOpenTheme);
+      window.removeEventListener('builder:open-left-tab', handleOpenLeftTab);
+    };
+  }, []);
 
   // (Removed: no longer auto-switching to layers when entering edit mode)
 
@@ -1556,10 +1581,14 @@ export default function PanelLeft({
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {(['layers', 'components', 'data', 'logic', 'triggers', 'assets'] as const).map(t => (
+        {((['layers', 'components', 'data', 'logic', 'triggers', 'assets', 'theme'] as const).map(t => ({
+          id: t,
+          label: t === 'triggers' ? 'App Triggers' : t,
+        }))).map(({ id: t, label }) => (
           <button
             key={t}
             data-testid={`tab-${t}`}
+            title={label}
             style={{
               flex: 1,
               padding: '9px 0',
@@ -1567,14 +1596,17 @@ export default function PanelLeft({
               border: 'none',
               borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent',
               color: tab === t ? '#f3f4f6' : '#6b7280',
-              fontSize: 10,
+              fontSize: 9,
               cursor: 'pointer',
               textTransform: 'capitalize',
               marginBottom: -1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
             onClick={() => setTab(t)}
           >
-            {t}
+            {label}
           </button>
         ))}
       </div>
@@ -1648,6 +1680,8 @@ export default function PanelLeft({
       {tab === 'triggers' && <TriggersTab />}
 
       {tab === 'assets' && <AssetsTab />}
+
+      {tab === 'theme' && <ThemePanel onOpenColorSlide={onOpenColorSlide} />}
 
       {/* Context menu */}
       {contextMenu && (

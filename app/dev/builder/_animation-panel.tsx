@@ -15,13 +15,16 @@
  *  - ADVANCED sections (Timeline, Gradient, etc.) retain inline config
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   SECTION_STYLE, SectionHeader,
   NumberInput, SelectInput, ColorInput,
   SliderField, ChipSelect, ToggleRow, AnimPreview,
+  ResponsiveDot,
 } from './_panel-primitives';
 import { FieldWithBinding, type FormulaValue } from './_formula-panel';
+import { getCascadedAnimation, deepMergeAnimation } from '@/lib/sdui/responsive-resolver';
+import { BREAKPOINT_CASCADE, type BreakpointKey } from '@/lib/sdui/types/node';
 import { XYOffsetControl } from './_spatial-controls';
 import type {
   AnimationConfig, ImperativeTriggerConfig, FilterConfig, TiltConfig,
@@ -440,19 +443,61 @@ interface AnimationInDesignProps {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AnimationInDesign({ nodeId, node, store, commitHistory }: AnimationInDesignProps) {
+  const abp: string = store.activeBreakpoint ?? 'desktop';
+
   // Animation may live at node.props.animation (canonical, written by the panel)
   // or node.animation (top-level alias used by the renderer and raw JSON configs).
-  const cfg: AnimationConfig =
+  const baseCfg: AnimationConfig =
     (node?.props as { animation?: AnimationConfig })?.animation ??
     (node as { animation?: AnimationConfig })?.animation ??
     {};
 
+  // Derived effective config: base merged with cascaded responsive overrides.
+  const effectiveCfg: AnimationConfig = useMemo(() => {
+    if (abp === 'desktop' || !node.responsive) return baseCfg;
+    const cascaded = getCascadedAnimation(node.responsive, abp as BreakpointKey);
+    if (!Object.keys(cascaded).length) return baseCfg;
+    return deepMergeAnimation(baseCfg as unknown as Record<string, unknown>, cascaded) as unknown as AnimationConfig;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abp, node.responsive, baseCfg]);
 
-  const patch = useCallback((partial: Partial<AnimationConfig>) => {
-    const next = { ...cfg, ...partial };
-    store.patchProp(nodeId, 'props.animation', next);
+  const cfg = effectiveCfg;
+
+  // Which top-level animation keys are overridden at any non-desktop breakpoint?
+  const animOverrideBps = useMemo(() => {
+    if (!node.responsive) return {} as Record<string, string[]>;
+    const result: Record<string, string[]> = {};
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const anim = (node.responsive as Record<string, unknown>)[bp] as { animation?: Record<string, unknown> } | undefined;
+      if (!anim?.animation) continue;
+      for (const key of Object.keys(anim.animation)) {
+        if (!result[key]) result[key] = [];
+        result[key].push(bp);
+      }
+    }
+    return result;
+  }, [node.responsive]);
+
+  /** Write animation partial: deep-merge into responsive[bp].animation at non-desktop, base at desktop. */
+  const writeAnim = useCallback((partial: Partial<AnimationConfig>) => {
+    if (abp !== 'desktop') {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      // Write each top-level key of partial into responsive[bp].animation.<key>
+      for (const [key, val] of Object.entries(partial)) {
+        if (val === undefined) {
+          store.removeResponsiveOverride(nodeId, rbp, `animation.${key}`);
+        } else {
+          store.patchResponsive(nodeId, rbp, `animation.${key}`, val);
+        }
+      }
+    } else {
+      const next = { ...baseCfg, ...partial };
+      store.patchProp(nodeId, 'props.animation', next);
+    }
     commitHistory();
-  }, [cfg, nodeId, store, commitHistory]);
+  }, [abp, baseCfg, nodeId, store, commitHistory]);
+
+  const patch = writeAnim;
 
   const patchEnter    = (p: object) => patch({ enter:             { ...cfg.enter,            ...p } });
   const patchExit     = (p: object) => patch({ exit:              { ...cfg.exit,             ...p } });
@@ -599,10 +644,32 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
   const togglePopover = (category: string, e: React.MouseEvent) =>
     setPopover(p => p?.category === category ? null : { category, y: e.clientY });
 
+  // Breakpoints that have any animation override (for section-level chip)
+  const allAnimOverrideBps = useMemo(() => {
+    const set = new Set<string>();
+    for (const bps of Object.values(animOverrideBps)) {
+      for (const bp of bps) set.add(bp);
+    }
+    return Array.from(set);
+  }, [animOverrideBps]);
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div style={SECTION_STYLE}>
-      <SectionHeader title="Animation">
+      <SectionHeader
+        title="Animation"
+        overriddenBreakpoints={allAnimOverrideBps}
+        onRemoveBreakpoint={bp => {
+          store.removeResponsiveOverride(nodeId, bp as BreakpointKey, undefined as unknown as string);
+          commitHistory();
+        }}
+        onResetAll={() => {
+          for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+            store.removeResponsiveOverride(nodeId, bp, undefined as unknown as string);
+          }
+          commitHistory();
+        }}
+      >
         <button
           onClick={() => postPreview(nodeId)}
           title="Preview all animations on canvas"

@@ -56,6 +56,7 @@ import {
 } from './_panel-primitives';
 import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
+import { PageTriggersInRightPanel } from './_panel-right-page-triggers';
 import { AnimationInDesign } from './_animation-panel';
 import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
@@ -67,7 +68,6 @@ import { getSharedComponents } from '@/lib/builder/shared-component-data';
 // findLinkedRoot + getSharedComponents used in isFieldChanged
 // to detect the model baseline for Shared component instances.
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas'; // used only for unbound slot picker
-import { ThemePanel } from './_theme-panel';
 import { AiChatPanel } from './_ai-chat-panel';
 import { ComponentEditorPanel, NewComponentButton } from './_component-editor';
 import { PathPicker } from './_path-picker';
@@ -210,10 +210,30 @@ const TW_LEADING_MAP: Record<string, string> = {
   'leading-none': '1', 'leading-tight': '1.25', 'leading-snug': '1.375',
   'leading-normal': '1.5', 'leading-relaxed': '1.625', 'leading-loose': '2',
 };
+const CSS_TO_TW_LEADING: Record<string, string> = Object.fromEntries(
+  Object.entries(TW_LEADING_MAP).map(([k, v]) => [v, k])
+);
 
 const TW_TRACKING_MAP: Record<string, string> = {
   'tracking-tighter': '-0.05em', 'tracking-tight': '-0.025em', 'tracking-normal': '0em',
   'tracking-wide': '0.025em', 'tracking-wider': '0.05em', 'tracking-widest': '0.1em',
+};
+const CSS_TO_TW_TRACKING: Record<string, string> = Object.fromEntries(
+  Object.entries(TW_TRACKING_MAP).map(([k, v]) => [v, k])
+);
+
+// grid-cols / grid-rows reverse maps (CSS value → TW token)
+const CSS_TO_TW_GRID_COLS: Record<string, string> = {};
+for (let i = 1; i <= 12; i++) {
+  CSS_TO_TW_GRID_COLS[`repeat(${i}, minmax(0, 1fr))`] = `grid-cols-${i}`;
+}
+const CSS_TO_TW_GRID_ROWS: Record<string, string> = {};
+for (let i = 1; i <= 6; i++) {
+  CSS_TO_TW_GRID_ROWS[`repeat(${i}, minmax(0, 1fr))`] = `grid-rows-${i}`;
+}
+const GRID_FLOW_CSS_TO_TW: Record<string, string> = {
+  row: 'grid-flow-row', column: 'grid-flow-col',
+  'row dense': 'grid-flow-row-dense', 'column dense': 'grid-flow-col-dense', dense: 'grid-flow-dense',
 };
 
 function twTokenToCss(token: string): { prop: string; value: string } | null {
@@ -714,6 +734,22 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
   };
 
   const switchToSolid = () => {
+    if (abp !== 'desktop') {
+      // At non-desktop: clear gradient/image responsive overrides only; don't touch base props.style.
+      removeGradient();
+      // Restore the saved solid bg color into the responsive override if we have one.
+      if (savedSolidBgRef.current) {
+        patchStyle({ backgroundColor: savedSolidBgRef.current });
+      } else {
+        // Explicitly remove any responsive backgroundColor override so it inherits from base.
+        const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+        store.removeResponsiveOverride(nodeId, rbp, 'styles.backgroundColor');
+      }
+      savedSolidBgRef.current  = '';
+      savedSolidClsRef.current = '';
+      setMode('solid');
+      return;
+    }
     const style = (node.props as { style?: Record<string, string> })?.style ?? {};
     const { backgroundColor: _t, backgroundImage: _i, backgroundSize: _s, backgroundPosition: _p, backgroundRepeat: _r, ...restStyle } = style;
     // Restore saved solid color — could be a className token or an inline style value
@@ -742,6 +778,13 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       savedSolidBgRef.current  = style.backgroundColor ?? '';
       savedSolidClsRef.current = extractBgClassToken();
     }
+    if (abp !== 'desktop') {
+      // At non-desktop: route through responsive; don't touch base props.style.
+      patchStyle({ backgroundColor: 'transparent' });
+      setMode('gradient');
+      applyGradient(gradientColors, false);
+      return;
+    }
     // Remove any existing bg class token
     const _rg = (node.props as { className?: unknown })?.className;
     const cls = typeof _rg === 'string' ? _rg : '';
@@ -759,6 +802,15 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
     if (mode === 'solid') {
       savedSolidBgRef.current  = style.backgroundColor ?? '';
       savedSolidClsRef.current = extractBgClassToken();
+    }
+    if (abp !== 'desktop') {
+      // At non-desktop: route through responsive; don't touch base props.style.
+      removeGradient();
+      patchStyle({ backgroundColor: 'transparent', backgroundImage: '' });
+      setLocalImageUrl('');
+      setMode('image');
+      commitHistory();
+      return;
     }
     // Remove any existing bg class token
     const _ri = (node.props as { className?: unknown })?.className;
@@ -851,7 +903,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
             <span style={{ flex: 1, fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <ChangedLabel
                 text={isGradientFormula ? 'Formula bound' : `${gradientColors.length} stops`}
-                cssProp="gradientColors"
+                cssProp="backgroundImage"
               />
               {getOverriddenBps('backgroundImage').length > 0 && (
                 <ResponsiveDot
@@ -1932,6 +1984,54 @@ export function DesignTab({ node }: { node: SDUINode }) {
     commitHistory();
   }, [nodeId, node, store, commitHistory]);
 
+  /** Get breakpoints where node.responsive[bp].text is set */
+  const getTextOverriddenBps = useCallback((): string[] => {
+    if (!node.responsive) return [];
+    return BP_ORDER.filter(bp => node.responsive![bp]?.text !== undefined);
+  }, [node]);
+
+  /** Write text: at non-desktop → responsive[bp].text; at desktop → base text field */
+  const patchText = useCallback((value: unknown) => {
+    if (abp !== 'desktop') {
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'text', value);
+    } else {
+      store.patchProp(nodeId, 'text', value);
+    }
+    commitHistory();
+  }, [abp, nodeId, store, commitHistory]);
+
+  /** Get breakpoints where node.responsive[bp].condition is set */
+  const getConditionOverriddenBps = useCallback((): string[] => {
+    if (!node.responsive) return [];
+    return BP_ORDER.filter(bp => node.responsive![bp]?.condition !== undefined);
+  }, [node]);
+
+  /** Write condition: at non-desktop → responsive[bp].condition; at desktop → base */
+  const patchCondition = useCallback((value: unknown) => {
+    if (abp !== 'desktop') {
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'condition', value);
+    } else {
+      store.patchProp(nodeId, 'condition', value);
+    }
+    commitHistory();
+  }, [abp, nodeId, store, commitHistory]);
+
+  /** Get breakpoints where node.responsive[bp].map is set */
+  const getMapOverriddenBps = useCallback((): string[] => {
+    if (!node.responsive) return [];
+    return BP_ORDER.filter(bp => node.responsive![bp]?.map !== undefined);
+  }, [node]);
+
+  /** Write map/repeat: at non-desktop → responsive[bp].map; at desktop → base */
+  const patchMap = useCallback((value: string | null) => {
+    if (abp !== 'desktop') {
+      store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'map', value);
+    } else {
+      store.patchProp(nodeId, 'map', value);
+    }
+    commitHistory();
+  }, [abp, nodeId, store, commitHistory]);
+
   /**
    * Apply a theme CSS variable as a color class (bg/text/border).
    *
@@ -2320,8 +2420,11 @@ export function DesignTab({ node }: { node: SDUINode }) {
   };
   const baseFontWeight = parseTwToken(cls, 'font-') ?? 'font-normal';
   const fontWeight  = rOvr('fontWeight') ? (CSS_TO_TW_WEIGHT[rOvr('fontWeight')!] ?? baseFontWeight) : baseFontWeight;
-  const leading     = parseTwToken(cls, 'leading-') ?? 'leading-normal';
-  const tracking    = parseTwToken(cls, 'tracking-') ?? 'tracking-normal';
+  const baseLeading  = parseTwToken(cls, 'leading-') ?? 'leading-normal';
+  const baseTracking = parseTwToken(cls, 'tracking-') ?? 'tracking-normal';
+  // Responsive overrides for leading/tracking — check rOvr first, then fall back to parsed class
+  const leading  = rOvr('lineHeight')    ? (CSS_TO_TW_LEADING[rOvr('lineHeight')!]    ?? baseLeading)  : baseLeading;
+  const tracking = rOvr('letterSpacing') ? (CSS_TO_TW_TRACKING[rOvr('letterSpacing')!] ?? baseTracking) : baseTracking;
   // Opacity is stored as opacity-[0.5] arbitrary class (or legacy style.opacity for old nodes).
   const opacityVal = (() => {
     if (rOvr('opacity') !== undefined) return Math.round(parseFloat(rOvr('opacity')!) * 100);
@@ -3080,50 +3183,56 @@ export function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Content (text value) — shown for text nodes and buttons ── */}
       {hasContent && (
         <div style={SECTION_STYLE}>
-          <SectionHeader title="Content" />
-          <div style={{ marginTop: 6 }}>
-            {(() => {
-              const rawText = (node as { text?: string }).text ?? '';
-              const targetId = nodeId;
-              const displayValue = textToFormulaValue(rawText);
-              return (
-                <FieldWithBinding
-                  label="text"
-                  displayLabel="Text"
-                  hint='any text or {{variable}} template'
-                  topAlign
-                  expectedType="string"
-                  value={displayValue}
-                  onChange={v => {
-                    // Store formula objects directly (resolveText handles { formula: '...' }
-                    // via evaluateFormula, which supports function calls like formatFullName(a,b)).
-                    // Only plain strings/null go through formulaValueToText for backward compat.
-                    const stored = v && typeof v === 'object' && 'formula' in (v as object)
-                      ? v
-                      : formulaValueToText(v as FormulaValue);
-                    store.patchProp(targetId, 'text', stored);
-                    commitHistory();
-                  }}
-                >
-                  <textarea
-                    data-testid="input-text-content"
-                    value={rawText}
-                    rows={2}
-                    onChange={e => {
-                      store.patchProp(targetId, 'text', e.target.value);
-                      commitHistory();
+          {(() => {
+            const textOverrideBps = getTextOverriddenBps();
+            // At non-desktop, prefer the cascaded responsive text value.
+            const cascadedText = (() => {
+              if (abp === 'desktop' || !node.responsive) return undefined;
+              let v: string | unknown = undefined;
+              for (const bp of BP_ORDER) {
+                const t = node.responsive[bp]?.text;
+                if (t !== undefined) v = t;
+                if (bp === abp) break;
+              }
+              return v;
+            })();
+            const rawText = (cascadedText !== undefined ? cascadedText : (node as { text?: unknown }).text) ?? '';
+            const displayValue = textToFormulaValue(rawText);
+            return (
+              <>
+                <SectionHeader title="Content" overriddenBreakpoints={textOverrideBps} onRemoveBreakpoint={bp => { store.removeResponsiveOverride(nodeId, bp as 'laptop'|'tablet'|'mobile', 'text'); commitHistory(); }} onResetAll={() => { for (const bp of BP_ORDER) { if (node.responsive?.[bp]?.text !== undefined) store.removeResponsiveOverride(nodeId, bp, 'text'); } commitHistory(); }} />
+                <div style={{ marginTop: 6 }}>
+                  <FieldWithBinding
+                    label="text"
+                    displayLabel="Text"
+                    hint='any text or {{variable}} template'
+                    topAlign
+                    expectedType="string"
+                    value={displayValue}
+                    onChange={v => {
+                      const stored = v && typeof v === 'object' && 'formula' in (v as object)
+                        ? v
+                        : formulaValueToText(v as FormulaValue);
+                      patchText(stored);
                     }}
-                    style={{
-                      width: '100%', boxSizing: 'border-box',
-                      background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-                      color: '#f3f4f6', fontSize: 12, padding: '5px 8px', resize: 'vertical',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </FieldWithBinding>
-              );
-            })()}
-          </div>
+                  >
+                    <textarea
+                      data-testid="input-text-content"
+                      value={typeof rawText === 'string' ? rawText : ''}
+                      rows={2}
+                      onChange={e => { patchText(e.target.value); }}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+                        color: '#f3f4f6', fontSize: 12, padding: '5px 8px', resize: 'vertical',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </FieldWithBinding>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -3257,13 +3366,26 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </div>
             <InsetDiagram
               values={{
-                top:    parseTwArbitrary(cls, 'top-')    ?? (nodeStyle.top    ? (parseInt(nodeStyle.top)    || 0) : null),
-                right:  parseTwArbitrary(cls, 'right-')  ?? (nodeStyle.right  ? (parseInt(nodeStyle.right)  || 0) : null),
-                bottom: parseTwArbitrary(cls, 'bottom-') ?? (nodeStyle.bottom ? (parseInt(nodeStyle.bottom) || 0) : null),
-                left:   parseTwArbitrary(cls, 'left-')   ?? (nodeStyle.left   ? (parseInt(nodeStyle.left)   || 0) : null),
+                top:    (nodeStyle.top    ? parseInt(nodeStyle.top)    || 0 : parseTwArbitrary(cls, 'top-'))    ?? null,
+                right:  (nodeStyle.right  ? parseInt(nodeStyle.right)  || 0 : parseTwArbitrary(cls, 'right-'))  ?? null,
+                bottom: (nodeStyle.bottom ? parseInt(nodeStyle.bottom) || 0 : parseTwArbitrary(cls, 'bottom-')) ?? null,
+                left:   (nodeStyle.left   ? parseInt(nodeStyle.left)   || 0 : parseTwArbitrary(cls, 'left-'))   ?? null,
               }}
               onChange={(side, px) => patchStyle({ [side]: `${px}px` })}
             />
+            {/* Per-side responsive chips */}
+            {(['top','right','bottom','left'] as const).some(s => getOverriddenBps(s).length > 0) && (
+              <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                {(['top','right','bottom','left'] as const).map(s =>
+                  getOverriddenBps(s).length > 0 ? (
+                    <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <span style={{ fontSize: 8, color: '#6b7280' }}>{s.charAt(0).toUpperCase()}</span>
+                      <ResponsiveDot cssProp={s} overriddenBreakpoints={getOverriddenBps(s)} onRemove={bp => removeResponsive(bp, s)} onResetAll={() => resetResponsive(s)} />
+                    </div>
+                  ) : null
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -3389,7 +3511,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               label="Min W"
               cssProp="minWidth"
               testId="input-min-w"
-              value={(parseTwArbitrary(cls, 'min-w-') ?? parseInt(nodeStyle.minWidth ?? '0')) || 0}
+              value={(nodeStyle.minWidth ? parseInt(nodeStyle.minWidth) || 0 : parseTwArbitrary(cls, 'min-w-')) || 0}
               onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
@@ -3398,7 +3520,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               label="Max W"
               cssProp="maxWidth"
               testId="input-max-w"
-              value={parseTwArbitrary(cls, 'max-w-') ?? (nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : 0)}
+              value={(nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : parseTwArbitrary(cls, 'max-w-')) ?? 0}
               onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
@@ -3407,7 +3529,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               label="Min H"
               cssProp="minHeight"
               testId="input-min-h"
-              value={(parseTwArbitrary(cls, 'min-h-') ?? parseInt(nodeStyle.minHeight ?? '0')) || 0}
+              value={(nodeStyle.minHeight ? parseInt(nodeStyle.minHeight) || 0 : parseTwArbitrary(cls, 'min-h-')) || 0}
               onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
@@ -3416,7 +3538,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
               label="Max H"
               cssProp="maxHeight"
               testId="input-max-h"
-              value={parseTwArbitrary(cls, 'max-h-') ?? (nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : 0)}
+              value={(nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : parseTwArbitrary(cls, 'max-h-')) ?? 0}
               onChange={px => patchStyle({ maxHeight: px > 0 ? `${px}px` : '' })}
             />
           </FieldWithBinding>
@@ -3462,7 +3584,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
 
       {/* ── Rotation + Flip ── */}
       <div style={SECTION_STYLE}>
-        <SectionHeader title="Transform" />
+        <SectionHeader title="Transform" overriddenBreakpoints={getSectionOverriddenBps(['transform','translateX','translateY'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['transform','translateX','translateY'])} onResetAll={() => resetSectionResponsive(['transform','translateX','translateY'])} />
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
           <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={(styleTransform ?? '') as FormulaValue} onChange={v => bindOrPatch('transform', v)} responsiveOverrides={getOverriddenBps('transform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="transform">
             <NumberInput
@@ -3596,7 +3718,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
       {/* ── Alignment (only for flex containers) ── */}
       {showLayout && (
         <div style={SECTION_STYLE}>
-          <SectionHeader title="Alignment" />
+          <SectionHeader title="Alignment" overriddenBreakpoints={getSectionOverriddenBps(['alignItems','justifyContent'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['alignItems','justifyContent'])} onResetAll={() => resetSectionResponsive(['alignItems','justifyContent'])} />
           <FieldWithBinding label="alignment" displayLabel="Align" cssProp="alignItems" hint='e.g. "items-center justify-start"'
             responsiveOverrides={Array.from(new Set([...getOverriddenBps('alignItems'), ...getOverriddenBps('justifyContent')]))}
             onResponsiveRemove={(bp) => { removeResponsive(bp, 'alignItems'); removeResponsive(bp, 'justifyContent'); }}
@@ -3812,62 +3934,80 @@ export function DesignTab({ node }: { node: SDUINode }) {
               </div>
               {/* Columns + Rows */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                <FieldWithBinding label="gridCols" displayLabel="Columns" cssProp="gridTemplateColumns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')} responsiveOverrides={getOverriddenBps('gridTemplateColumns')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateColumns" onChange={v => bindOrPatchCls('gridCols', evaluated => {
-                  let next = cls;
-                  GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(`${next} ${evaluated}`.trim());
-                }, v)} expectedType="string">
-                  <SelectInput
-                    label="Columns"
-                    cssProp="gridTemplateColumns"
-                    value={GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1'}
-                    options={[...GRID_COLS_TOKENS]}
-                    onChange={v => {
-                      let next = cls;
-                      GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                      patchCls(`${next} ${v}`.trim());
-                    }}
-                  />
-                </FieldWithBinding>
-                <FieldWithBinding label="gridRows" displayLabel="Rows" cssProp="gridTemplateRows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')} responsiveOverrides={getOverriddenBps('gridTemplateRows')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateRows" onChange={v => bindOrPatchCls('gridRows', evaluated => {
-                  let next = cls;
-                  GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(`${next} ${evaluated}`.trim());
-                }, v)} expectedType="string">
-                  <SelectInput
-                    label="Rows"
-                    cssProp="gridTemplateRows"
-                    value={GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1'}
-                    options={[...GRID_ROWS_TOKENS]}
-                    onChange={v => {
-                      let next = cls;
-                      GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                      patchCls(`${next} ${v}`.trim());
-                    }}
-                  />
-                </FieldWithBinding>
+                {(() => {
+                  const effColsCss = rOvr('gridTemplateColumns');
+                  const colsToken = effColsCss ? (CSS_TO_TW_GRID_COLS[effColsCss] ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')) : (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1');
+                  const effRowsCss = rOvr('gridTemplateRows');
+                  const rowsToken = effRowsCss ? (CSS_TO_TW_GRID_ROWS[effRowsCss] ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')) : (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1');
+                  return (
+                    <>
+                      <FieldWithBinding label="gridCols" displayLabel="Columns" cssProp="gridTemplateColumns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? colsToken} responsiveOverrides={getOverriddenBps('gridTemplateColumns')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateColumns" onChange={v => bindOrPatchCls('gridCols', evaluated => {
+                        let next = cls;
+                        GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                        patchCls(`${next} ${evaluated}`.trim());
+                      }, v)} expectedType="string">
+                        <SelectInput
+                          label="Columns"
+                          cssProp="gridTemplateColumns"
+                          value={colsToken}
+                          options={[...GRID_COLS_TOKENS]}
+                          onChange={v => {
+                            let next = cls;
+                            GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                            patchCls(`${next} ${v}`.trim());
+                          }}
+                        />
+                      </FieldWithBinding>
+                      <FieldWithBinding label="gridRows" displayLabel="Rows" cssProp="gridTemplateRows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? rowsToken} responsiveOverrides={getOverriddenBps('gridTemplateRows')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateRows" onChange={v => bindOrPatchCls('gridRows', evaluated => {
+                        let next = cls;
+                        GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                        patchCls(`${next} ${evaluated}`.trim());
+                      }, v)} expectedType="string">
+                        <SelectInput
+                          label="Rows"
+                          cssProp="gridTemplateRows"
+                          value={rowsToken}
+                          options={[...GRID_ROWS_TOKENS]}
+                          onChange={v => {
+                            let next = cls;
+                            GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                            patchCls(`${next} ${v}`.trim());
+                          }}
+                        />
+                      </FieldWithBinding>
+                    </>
+                  );
+                })()}
               </div>
               {/* Auto flow */}
-              <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense"
-                responsiveOverrides={getOverriddenBps('gridAutoFlow')}
-                onResponsiveRemove={removeResponsive}
-                onResponsiveReset={resetResponsive}
-                responsiveCssProp="gridAutoFlow"
-                value={(classFormulas?.['gridFlow'] as FormulaValue) ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row')} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
-                const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
-                patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
-              }, v)} expectedType="string">
-                <SelectInput
-                  label="Auto flow"
-                  cssProp="gridAutoFlow"
-                  value={(['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row'}
-                  options={['grid-flow-row','grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense']}
-                  onChange={v => {
+              {(() => {
+                const effFlowCss = rOvr('gridAutoFlow');
+                const flowToken = effFlowCss
+                  ? (GRID_FLOW_CSS_TO_TW[effFlowCss] ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row'))
+                  : ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row');
+                return (
+                  <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense"
+                    responsiveOverrides={getOverriddenBps('gridAutoFlow')}
+                    onResponsiveRemove={removeResponsive}
+                    onResponsiveReset={resetResponsive}
+                    responsiveCssProp="gridAutoFlow"
+                    value={(classFormulas?.['gridFlow'] as FormulaValue) ?? flowToken} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
                     const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
-                    patchCls(v && v !== 'grid-flow-row' ? `${next} ${v}`.trim() : next);
-                  }}
-                />
-              </FieldWithBinding>
+                    patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
+                  }, v)} expectedType="string">
+                    <SelectInput
+                      label="Auto flow"
+                      cssProp="gridAutoFlow"
+                      value={flowToken}
+                      options={['grid-flow-row','grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense']}
+                      onChange={v => {
+                        const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
+                        patchCls(v && v !== 'grid-flow-row' ? `${next} ${v}`.trim() : next);
+                      }}
+                    />
+                  </FieldWithBinding>
+                );
+              })()}
             </>
           )}
         </div>
@@ -4056,10 +4196,13 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 { v: 'truncate' as const, label: 'ellipsis', title: 'Clip + nowrap + ellipsis (truncate)' },
                 { v: 'clip' as const,    label: 'clip',     title: 'Clip text, no ellipsis' },
               ]).map(({ v, label, title }) => {
-                const active = v === '' 
-                  ? !cls.includes('truncate') && !cls.includes('text-clip')
-                  : v === 'truncate' ? cls.includes('truncate')
-                  : cls.includes('text-clip') && !cls.includes('truncate');
+                const effectiveTxtOvr = rOvr('textOverflow');
+                const active = effectiveTxtOvr !== undefined
+                  ? (v === '' ? !effectiveTxtOvr : v === 'truncate' ? effectiveTxtOvr === 'ellipsis' : effectiveTxtOvr === 'clip')
+                  : v === ''
+                    ? !cls.includes('truncate') && !cls.includes('text-clip')
+                    : v === 'truncate' ? cls.includes('truncate')
+                    : cls.includes('text-clip') && !cls.includes('truncate');
                 return (
                   <ToggleBtn key={v || 'none'} active={active} title={title} onClick={() => {
                     let next = removeTwToken(removeTwToken(removeTwToken(cls, 'truncate'), 'text-clip'), 'overflow-hidden');
@@ -4069,36 +4212,59 @@ export function DesignTab({ node }: { node: SDUINode }) {
                   }} style={{ fontSize: 9, padding: '2px 5px' }}>{label}</ToggleBtn>
                 );
               })}
+              {getOverriddenBps('textOverflow').length > 0 && (
+                <ResponsiveDot cssProp="textOverflow" overriddenBreakpoints={getOverriddenBps('textOverflow')} onRemove={bp => removeResponsive(bp, 'textOverflow')} onResetAll={() => resetResponsive('textOverflow')} />
+              )}
             </div>
             {/* Whitespace */}
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Whitespace</span>
-              {(['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal'] as const).map(v => (
-                <ToggleBtn
-                  key={v || 'default'}
-                  active={v === '' ? (!cls.includes('whitespace-nowrap') && !cls.includes('whitespace-pre') && !cls.includes('whitespace-normal')) : cls.includes(v)}
-                  title={v === '' ? 'Default (wrap normally)' : v === 'whitespace-nowrap' ? 'No wrapping' : v === 'whitespace-pre' ? 'Preserve whitespace' : 'Normal wrapping'}
-                  onClick={() => {
-                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'whitespace-nowrap'), 'whitespace-pre'), 'whitespace-normal');
-                    if (v) next = `${next} ${v}`.trim();
-                    patchCls(next);
-                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('whitespace-', '') : 'def'}</ToggleBtn>
-              ))}
+              {(['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal'] as const).map(v => {
+                const effWs = rOvr('whiteSpace');
+                const WS_MAP: Record<string, string> = { 'whitespace-nowrap': 'nowrap', 'whitespace-pre': 'pre', 'whitespace-normal': 'normal' };
+                const active = effWs !== undefined
+                  ? (v === '' ? !effWs : effWs === WS_MAP[v])
+                  : v === '' ? (!cls.includes('whitespace-nowrap') && !cls.includes('whitespace-pre') && !cls.includes('whitespace-normal')) : cls.includes(v);
+                return (
+                  <ToggleBtn
+                    key={v || 'default'}
+                    active={active}
+                    title={v === '' ? 'Default (wrap normally)' : v === 'whitespace-nowrap' ? 'No wrapping' : v === 'whitespace-pre' ? 'Preserve whitespace' : 'Normal wrapping'}
+                    onClick={() => {
+                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'whitespace-nowrap'), 'whitespace-pre'), 'whitespace-normal');
+                      if (v) next = `${next} ${v}`.trim();
+                      patchCls(next);
+                    }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('whitespace-', '') : 'def'}</ToggleBtn>
+                );
+              })}
+              {getOverriddenBps('whiteSpace').length > 0 && (
+                <ResponsiveDot cssProp="whiteSpace" overriddenBreakpoints={getOverriddenBps('whiteSpace')} onRemove={bp => removeResponsive(bp, 'whiteSpace')} onResetAll={() => resetResponsive('whiteSpace')} />
+              )}
             </div>
             {/* Word break */}
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Word break</span>
-              {(['', 'break-all', 'break-words', 'break-keep'] as const).map(v => (
-                <ToggleBtn
-                  key={v || 'none'}
-                  active={v === '' ? (!cls.includes('break-all') && !cls.includes('break-words') && !cls.includes('break-keep')) : cls.includes(v)}
-                  title={v === '' ? 'Default' : v === 'break-all' ? 'Break at any character' : v === 'break-words' ? 'Break long words only' : 'Keep CJK words together'}
-                  onClick={() => {
-                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'break-all'), 'break-words'), 'break-keep');
-                    if (v) next = `${next} ${v}`.trim();
-                    patchCls(next);
-                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('break-', '') : 'none'}</ToggleBtn>
-              ))}
+              {(['', 'break-all', 'break-words', 'break-keep'] as const).map(v => {
+                const effWb = rOvr('wordBreak');
+                const WB_MAP: Record<string, string> = { 'break-all': 'break-all', 'break-words': 'break-word', 'break-keep': 'keep-all' };
+                const active = effWb !== undefined
+                  ? (v === '' ? !effWb : effWb === WB_MAP[v])
+                  : v === '' ? (!cls.includes('break-all') && !cls.includes('break-words') && !cls.includes('break-keep')) : cls.includes(v);
+                return (
+                  <ToggleBtn
+                    key={v || 'none'}
+                    active={active}
+                    title={v === '' ? 'Default' : v === 'break-all' ? 'Break at any character' : v === 'break-words' ? 'Break long words only' : 'Keep CJK words together'}
+                    onClick={() => {
+                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'break-all'), 'break-words'), 'break-keep');
+                      if (v) next = `${next} ${v}`.trim();
+                      patchCls(next);
+                    }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('break-', '') : 'none'}</ToggleBtn>
+                );
+              })}
+              {getOverriddenBps('wordBreak').length > 0 && (
+                <ResponsiveDot cssProp="wordBreak" overriddenBreakpoints={getOverriddenBps('wordBreak')} onRemove={bp => removeResponsive(bp, 'wordBreak')} onResetAll={() => resetResponsive('wordBreak')} />
+              )}
             </div>
           </div>
         </div>
@@ -4495,13 +4661,10 @@ import {
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
-export interface PanelRightProps {
-  /** Open the right-side slide panel for adding/editing a custom theme color. */
-  onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
-}
+export interface PanelRightProps {}
 
-export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
-  const [tab, setTab] = useState<'design' | 'theme' | 'workflows' | 'json'>('design');
+export default function PanelRight({}: PanelRightProps = {}) {
+  const [tab, setTab] = useState<'design' | 'workflows' | 'json'>('design');
   const {
     selectedIds, pageNodes, activePreviewStates,
     editingSharedComponentId, editingSharedComponentContent,
@@ -4519,15 +4682,12 @@ export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
   // pageNodes is the source of truth — shared component content is swapped in during edit mode.
   const searchNodes = pageNodes as SDUINode[];
 
-  // Listen for external tab-switch requests (design only now; logic/data moved to left panel)
+  // Listen for external tab-switch requests (design only now; logic/data/theme moved to left panel)
   useEffect(() => {
     const handleDesign = () => setTab('design');
-    const handleTheme  = () => setTab('theme');
     window.addEventListener('builder:open-design-tab', handleDesign);
-    window.addEventListener('builder:open-theme-tab', handleTheme);
     return () => {
       window.removeEventListener('builder:open-design-tab', handleDesign);
-      window.removeEventListener('builder:open-theme-tab', handleTheme);
     };
   }, []);
 
@@ -4540,22 +4700,13 @@ export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
       ?? findNode(canvasNodes, selectedIds[0]);
   }, [selectedIds, searchNodes, canvasNodes]);
 
-  const TABS: Array<{ id: 'design' | 'theme' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
+  const TABS: Array<{ id: 'design' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
     {
       id: 'design',
       label: 'Design',
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-      ),
-    },
-    {
-      id: 'theme',
-      label: 'Theme',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M22 12h-2M4 12H2M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 22v-2M12 4V2"/>
         </svg>
       ),
     },
@@ -4601,6 +4752,15 @@ export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
     );
   }
 
+  // When no node is selected, show page triggers for the focused page instead of the tabbed UI
+  if (!selectedNode && selectedIds.length === 0) {
+    return (
+      <div data-testid="panel-right" style={PANEL_STYLE}>
+        <PageTriggersInRightPanel />
+      </div>
+    );
+  }
+
   return (
     <div data-testid="panel-right" style={PANEL_STYLE}>
       {/* Top chrome: node name + "New" component button — shown when a single node is selected */}
@@ -4628,20 +4788,12 @@ export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
         ))}
       </div>
 
-      {tab === 'theme' && <ThemePanel onOpenColorSlide={onOpenColorSlide} />}
-
       {tab === 'workflows' && <ElementWorkflowsTab node={selectedNode} />}
 
       {tab === 'design' && (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
           {/* Multi-select align/distribute */}
           {selectedIds.length > 1 && <AlignDistributePanel ids={selectedIds} />}
-
-          {!selectedNode && selectedIds.length <= 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
-              Select a node to edit its properties
-            </div>
-          )}
 
           {/* Specific section — component-specific settings at the top of the Design tab */}
           {selectedNode && selectedIds.length === 1 && (
@@ -4655,17 +4807,11 @@ export default function PanelRight({ onOpenColorSlide }: PanelRightProps = {}) {
         </div>
       )}
 
-      {tab === 'json' && (
+      {tab === 'json' && selectedNode && (
         <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-          {!selectedNode ? (
-            <div style={{ color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
-              Select a node to view its JSON
-            </div>
-          ) : (
-            <pre style={{ fontSize: 10, color: '#86efac', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
-              {JSON.stringify(selectedNode, null, 2)}
-            </pre>
-          )}
+          <pre style={{ fontSize: 10, color: '#86efac', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
+            {JSON.stringify(selectedNode, null, 2)}
+          </pre>
         </div>
       )}
     </div>

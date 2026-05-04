@@ -12,9 +12,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useBuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
+import { BREAKPOINT_CASCADE, type BreakpointKey } from '@/lib/sdui/types/node';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
 import type { ScopedWorkflow } from '@/config/shared-component-types';
+import { ResponsiveDot } from './_panel-primitives';
 
 /**
  * Trigger labels for Shared / System Component workflows. Mirrors the map in
@@ -219,7 +221,8 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
 }
 
 export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
-  const { openWorkflowCanvas, pageWorkflowMeta, patchNodeField, setPageWorkflow, setPageWorkflowMeta } = useBuilderStore();
+  const { openWorkflowCanvas, pageWorkflowMeta, patchNodeField, setPageWorkflow, setPageWorkflowMeta, patchResponsive, removeResponsiveOverride, _pushHistory } = useBuilderStore();
+  const abp = useBuilderStore(s => s.activeBreakpoint);
   // Which Shared/System Components are currently in Edit mode. SC-owned
   // workflow rows are only shown when their owning model is in this list —
   // otherwise the row is hidden as internal wiring of the instance.
@@ -263,8 +266,32 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
 
   const nodeId = (node as { id?: string }).id ?? '';
 
+  // Responsive cascade: check if there's a responsive actions override for the active bp
+  const actionsOverrideBps = useMemo(() => {
+    if (!node?.responsive) return [] as string[];
+    return (BREAKPOINT_CASCADE as BreakpointKey[]).filter(bp => {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { actions?: unknown } | undefined;
+      return ov && 'actions' in ov;
+    });
+  }, [node?.responsive]);
+
+  const hasActionsOverrideAtActive = abp !== 'desktop' && actionsOverrideBps.includes(abp);
+
+  // Get the effective actions (cascade responsive override on top of base)
+  const effectiveActions = useMemo(() => {
+    if (abp === 'desktop' || !node?.responsive) return node?.actions;
+    let v: unknown = node?.actions;
+    for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+      const ov = (node.responsive as Record<string, unknown>)[bp] as { actions?: unknown } | undefined;
+      if (ov && 'actions' in ov) v = ov.actions;
+      if (bp === abp) break;
+    }
+    return v as SDUINode['actions'];
+  }, [abp, node?.responsive, node?.actions]);
+
   // Normalise actions: new format is an array of ActionRefs, legacy is an event-keyed object
-  const rawActions = node.actions;
+  // At non-desktop, use the cascaded effective actions for display.
+  const rawActions = hasActionsOverrideAtActive ? effectiveActions : node.actions;
   type WorkflowEntry = {
     uuid: string;
     trigger: string;
@@ -362,15 +389,27 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
       });
   }
 
+  /** Commit an actions array to the right channel (responsive or base). */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const commitActions = useCallback((updated: any[] | undefined) => {
+    if (hasActionsOverrideAtActive) {
+      const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+      patchResponsive(nodeId, rbp, 'actions', updated ?? null);
+      _pushHistory();
+    } else {
+      patchNodeField(nodeId, 'actions', updated);
+    }
+  }, [hasActionsOverrideAtActive, abp, nodeId, patchResponsive, _pushHistory, patchNodeField]);
+
   function handleBind(idx: number, newUuid: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const current: any[] = rawActionsArr ? [...rawActionsArr] : [];
     if (!newUuid) {
       const updated = current.filter((_: unknown, i: number) => i !== idx);
-      patchNodeField(nodeId, 'actions', updated.length > 0 ? updated : undefined);
+      commitActions(updated.length > 0 ? updated : undefined);
     } else {
       current[idx] = { action: newUuid };
-      patchNodeField(nodeId, 'actions', current);
+      commitActions(current);
     }
   }
 
@@ -391,7 +430,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
           id: editingSharedComponentId,
           workflows: { ...(scModel.workflows ?? {}), [wfId]: newWf },
         });
-        patchNodeField(nodeId, 'actions', [...current, { action: wfId }]);
+        commitActions([...current, { action: wfId }]);
         openWorkflowCanvas({ kind: 'componentWorkflow', modelId: editingSharedComponentId, workflowId: wfId });
         return;
       }
@@ -400,7 +439,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
     // Outside SC edit mode: create a page-level workflow bound to a click event.
     setPageWorkflow(wfId, []);
     setPageWorkflowMeta(wfId, { id: wfId, name: 'New Workflow', trigger: 'click' });
-    patchNodeField(nodeId, 'actions', [...current, { action: wfId }]);
+    commitActions([...current, { action: wfId }]);
     openWorkflowCanvas({ kind: 'pageWorkflow', name: wfId, nodeId });
   }
 
@@ -410,7 +449,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
     const current: any[] = rawActionsArr ? [...rawActionsArr] : [];
     setPageWorkflow(wfId, []);
     setPageWorkflowMeta(wfId, { id: wfId, name: `On ${triggerName}`, trigger: triggerId });
-    patchNodeField(nodeId, 'actions', [...current, { action: wfId }]);
+    commitActions([...current, { action: wfId }]);
     setListenPickerOpen(false);
     openWorkflowCanvas({ kind: 'pageWorkflow', name: wfId, nodeId });
   }
@@ -422,6 +461,44 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
         <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#e5e7eb', letterSpacing: '0.01em' }}>
           ⚡ Workflows
         </span>
+
+        {/* Responsive actions chip — shown at non-desktop when there are overrides */}
+        {actionsOverrideBps.length > 0 && (
+          <ResponsiveDot
+            cssProp="actions"
+            overriddenBreakpoints={actionsOverrideBps}
+            onRemove={bp => { removeResponsiveOverride(nodeId, bp as 'laptop'|'tablet'|'mobile', 'actions'); _pushHistory(); }}
+            onResetAll={() => { for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) { removeResponsiveOverride(nodeId, bp, 'actions'); } _pushHistory(); }}
+          />
+        )}
+
+        {/* Override toggle — shown at non-desktop only */}
+        {abp !== 'desktop' && (
+          <button
+            title={hasActionsOverrideAtActive ? 'Remove workflow override for this breakpoint' : 'Override workflows at this breakpoint'}
+            onClick={() => {
+              const rbp = abp as 'laptop' | 'tablet' | 'mobile';
+              if (hasActionsOverrideAtActive) {
+                removeResponsiveOverride(nodeId, rbp, 'actions');
+                _pushHistory();
+              } else {
+                // Materialize current effective actions into responsive[bp].actions
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const toMaterialize: any[] = rawActionsArr ? [...rawActionsArr] : [];
+                patchResponsive(nodeId, rbp, 'actions', toMaterialize);
+                _pushHistory();
+              }
+            }}
+            style={{
+              padding: '3px 7px', fontSize: 10, borderRadius: 4, cursor: 'pointer',
+              background: hasActionsOverrideAtActive ? '#1e3a5f' : 'transparent',
+              border: `1px solid ${hasActionsOverrideAtActive ? '#1d4ed8' : '#374151'}`,
+              color: hasActionsOverrideAtActive ? '#93c5fd' : '#6b7280',
+            }}
+          >
+            {hasActionsOverrideAtActive ? '⚡ Override' : 'Override'}
+          </button>
+        )}
 
         {/* + Listen: only shown on SC instances with custom triggers, outside of SC edit mode */}
         {customTriggers.length > 0 && !isEditingOwningSc && (

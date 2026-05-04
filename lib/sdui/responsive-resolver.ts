@@ -307,29 +307,49 @@ function getCascadedDisabledOverlay(
 }
 
 /**
- * Collect cascaded animation overrides for a given breakpoint.
- * Returns a sparse object with the same shape as `ResponsiveOverride['animation']`.
- * `null` for a leaf means "explicitly removed at this breakpoint".
+ * Generic deep-merge helper for sparse animation objects.
+ * `null` at any leaf is preserved (means "explicitly removed at this breakpoint").
  */
-function getCascadedAnimation(
+export function deepMergeAnimation(
+  base: Record<string, unknown>,
+  override: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, val] of Object.entries(override)) {
+    if (val === null) {
+      result[key] = null;
+    } else if (val !== null && typeof val === 'object' && !Array.isArray(val)
+               && typeof result[key] === 'object' && result[key] !== null && !Array.isArray(result[key])) {
+      result[key] = deepMergeAnimation(
+        result[key] as Record<string, unknown>,
+        val as Record<string, unknown>,
+      );
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
+/**
+ * Collect cascaded animation overrides for a given breakpoint via generic deep-merge.
+ * `null` for any leaf means "explicitly removed at this breakpoint".
+ */
+export function getCascadedAnimation(
   responsive: Partial<Record<BreakpointKey, ResponsiveOverride>>,
   breakpoint: ActiveBreakpoint,
-): { filter?: { blur?: number | null } } {
+): Record<string, unknown> {
   if (breakpoint === 'desktop') return {};
 
   const bpIndex = BREAKPOINT_CASCADE.indexOf(breakpoint as BreakpointKey);
   if (bpIndex === -1) return {};
 
-  const merged: { filter?: { blur?: number | null } } = {};
+  let merged: Record<string, unknown> = {};
   for (let i = 0; i <= bpIndex; i++) {
     const bp = BREAKPOINT_CASCADE[i];
-    const override = responsive[bp];
-    const anim = override?.animation;
+    const anim = responsive[bp]?.animation;
     if (!anim) continue;
-    if (anim.filter !== undefined) {
-      const f = anim.filter ?? {};
-      merged.filter = { ...(merged.filter ?? {}), ...(f as { blur?: number | null }) };
-    }
+    merged = deepMergeAnimation(merged, anim as Record<string, unknown>);
   }
   return merged;
 }
@@ -377,6 +397,8 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
   const textOverride = getCascadedField(responsive, breakpoint, 'text');
   const propsOverride = getCascadedField(responsive, breakpoint, 'props');
   const styleOverride = getCascadedField(responsive, breakpoint, 'style');
+  const mapOverride = getCascadedField(responsive, breakpoint, 'map');
+  const actionsOverride = getCascadedField(responsive, breakpoint, 'actions');
 
   const cascadedAnim = getCascadedAnimation(responsive, breakpoint);
   const hasAnimOverrides = Object.keys(cascadedAnim).length > 0;
@@ -389,6 +411,8 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
     || textOverride !== undefined
     || propsOverride !== undefined
     || styleOverride !== undefined
+    || mapOverride !== undefined
+    || actionsOverride !== undefined
     || hasAnimOverrides
     || hasDisabledOverlayOverrides;
 
@@ -452,7 +476,7 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
 
   if (hasAnimOverrides) {
     // Animation can live at node.animation (top-level alias) or props.animation (canonical).
-    // Merge into whichever exists (and create on canonical if neither does).
+    // Deep-merge into whichever exists (and create on canonical if neither does).
     const propsAnim = (resolved.props as Record<string, unknown> | undefined)?.animation as
       | Record<string, unknown>
       | undefined;
@@ -460,32 +484,31 @@ export function resolveResponsiveNode(node: SDUINode, breakpoint: ActiveBreakpoi
       | Record<string, unknown>
       | undefined;
 
-    const mergeAnim = (existing: Record<string, unknown> | undefined): Record<string, unknown> => {
-      const next: Record<string, unknown> = { ...(existing ?? {}) };
-      if (cascadedAnim.filter !== undefined) {
-        const existingFilter = (next.filter ?? {}) as Record<string, unknown>;
-        const filterPatch = { ...existingFilter };
-        if ('blur' in cascadedAnim.filter) {
-          if (cascadedAnim.filter.blur === null) {
-            delete filterPatch.blur;
-          } else {
-            filterPatch.blur = cascadedAnim.filter.blur;
-            // The renderer only composes filter when enabled or has values; ensure it's on.
-            filterPatch.enabled = true;
-          }
-        }
-        next.filter = filterPatch;
-      }
-      return next;
-    };
+    const mergeAnim = (existing: Record<string, unknown> | undefined): Record<string, unknown> =>
+      deepMergeAnimation(existing ?? {}, cascadedAnim);
 
     if (propsAnim !== undefined) {
       resolved.props = { ...resolved.props, animation: mergeAnim(propsAnim) };
     } else if (topAnim !== undefined) {
       (resolved as unknown as Record<string, unknown>).animation = mergeAnim(topAnim);
     } else {
-      // No base animation — create one on props (canonical location) so the renderer picks it up.
       resolved.props = { ...resolved.props, animation: mergeAnim(undefined) };
+    }
+  }
+
+  if (mapOverride !== undefined) {
+    if (mapOverride === null) {
+      delete resolved.map;
+    } else {
+      resolved.map = mapOverride;
+    }
+  }
+
+  if (actionsOverride !== undefined) {
+    if (actionsOverride === null) {
+      delete resolved.actions;
+    } else {
+      resolved.actions = actionsOverride;
     }
   }
 

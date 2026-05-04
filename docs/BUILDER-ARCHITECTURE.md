@@ -14,11 +14,12 @@ The visual builder lives at `app/dev/builder/`. It renders SDUI components direc
 | `_store-helpers.ts` | _future_ | Tree utilities: `REQUIRED_PARENT`, `ALLOWED_CHILDREN`, `findNode`, `findParentNode`, `hasFormContainerAncestor` (currently still in `_store.ts` ~lines 25–375) |
 | `_canvas.tsx` | ~2,433 | Live SDUI render in builder mode: DnD, selection, zoom/pan, drop targets |
 | `_overlay.tsx` | ~1,115 | Visual overlays: selection rings, hover outline, gap fills, distance lines |
-| `_panel-left.tsx` | ~2,260 | Left panel: Layers tree, Components palette, Pages, App/Vars tabs |
-| `_panel-right.tsx` | ~3,302 | Right panel: Design / Props / JSON / Settings tabs |
+| `_panel-left.tsx` | ~2,260 | Left panel: **7 tabs** — Layers, Components, Data, Logic, **App Triggers** (filters `isAppTrigger === true`), Assets, **Theme** (moved from right panel) |
+| `_panel-right.tsx` | ~3,400 | Right panel: **Design / Settings / Workflows / JSON** tabs. When no node is selected, renders `<PageTriggersInRightPanel />` auto-scoped to the focused page. |
+| `_panel-right-page-triggers.tsx` | ~100 | `PageTriggersInRightPanel` — page-scoped triggers shown in the right panel's empty-selection state |
 | `_panel-right-design.tsx` | _future_ | `DesignTab` (~1,696 lines, lines 279–1975): all 17 design-property sections |
-| `_panel-right-settings.tsx` | _future_ | `SettingsTab` (~710 lines, lines 2538–3248): form `_validation` rules editor |
-| `_panel-right-workflows.tsx` | _future_ | `ElementWorkflowsTab`, `WorkflowRowMenu`, `PreviewDataEditor` |
+| `_panel-right-settings.tsx` | ~2,300 | `SettingsTab` — form `_validation` rules editor; uses `useResponsivePropPatch` for all prop writes at non-desktop breakpoints |
+| `_panel-right-workflows.tsx` | ~600 | `ElementWorkflowsTab`, `WorkflowRowMenu`, `PreviewDataEditor`; supports `responsive[bp].actions` override toggle + chip |
 | `_workflow-canvas.tsx` | ~3,013 | Full-screen workflow editor overlay (imports types from `_workflow-types.tsx`) |
 | `_workflow-types.tsx` | ~460 | **Pure types + constants extracted from `_workflow-canvas.tsx`**: `ActionStepType`, `ActionStep`, `BranchDef`, `ACTION_CATEGORIES`, `FORM_ACTION_CATEGORY`, trigger definitions, serialization helpers |
 | `_formula-editor.tsx` | ~3,639 | Formula editor overlay: variable tree, collections tree, function library, formula input |
@@ -35,6 +36,30 @@ The visual builder lives at `app/dev/builder/`. It renders SDUI components direc
 | `_state-bar.tsx` | ~200 | StateBar — single-select state preview chips (Normal / Loading / Validation / Empty / Disabled / Custom). State changes wrapped in `startTransition` for performance. |
 | `_canvas-helpers.tsx` | ~280 | `PageEngine` (memoized active-page SDUI wrapper), `InactivePageEngine` (memoized background-page SDUI wrapper, applies `applyStateTagOverrides` inside its own `useMemo`), `InactivePagesGrid` (isolated component with targeted store subscription — renders all inactive pages without re-rendering on hover/select). |
 | `_floating-toolbar.tsx` | ~250 | Floating mini-toolbar for selected nodes |
+| `_theme-panel.tsx` | ~500 | Theme color overrides panel — **now in the left panel's Theme tab** (was right panel) |
+| `_triggers-tab.tsx` | ~400 | **App Triggers** tab — shows page-lifecycle triggers with `isAppTrigger === true` only; `PageScopeDropdown` deleted |
+| `_panel-right-design-sections.tsx` | ~750 | `VisibilityInDesign`, `DisableInDesign`, `RepeatInDesign` — all route writes to `responsive[bp]` at non-desktop |
+| `_animation-panel.tsx` | ~1,800 | `AnimationInDesign` — derives `effectiveCfg` from `getCascadedAnimation` at non-desktop; uses `writeAnim` to write per-key into `responsive[bp].animation.<key>` |
+
+---
+
+## Responsive Channels (`ResponsiveOverride` in `lib/sdui/types/node.ts`)
+
+Every write in the right panel at a non-desktop breakpoint goes to `node.responsive[bp].<channel>`:
+
+| Channel | Type | UI Component |
+|---|---|---|
+| `styles` | `Record<string, string>` | CSS properties (position, size, typography, gap, etc.) |
+| `style` | `Record<string, string>` | `props.style` inline styles (transform, translateX, etc.) |
+| `props` | `Record<string, unknown>` | Component props (disabled, objectFit, icon size, etc.) |
+| `text` | `string \| object` | Text node content / formula |
+| `condition` | `unknown` | Visibility toggle / formula |
+| `map` | `string \| null` | Repeat/list data binding; `null` = disable repeat |
+| `animation` | `DeepPartial<AnimationConfig>` | Animation config — deep-merged over base by `getCascadedAnimation` |
+| `actions` | `SDUIAction[]` | Workflow bindings — whole-array override; toggle materialises current effective actions |
+| `_disabledOverlay` | `{color?, opacity?, blur?}` | Disabled overlay fields per-breakpoint |
+
+**Resolver:** `lib/sdui/responsive-resolver.ts` — `resolveResponsiveNode` cascades all channels from laptop → tablet → mobile for the active breakpoint.
 
 ---
 
