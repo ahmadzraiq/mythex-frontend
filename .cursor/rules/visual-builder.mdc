@@ -20,11 +20,12 @@ A Figma-like visual page builder that renders SDUI components directly in the sa
 | `_canvas.tsx` | Renders the page frame and SDUI node tree in `builderMode`. Handles drop targets, drag-and-drop reordering, click-to-select. |
 | `_overlay.tsx` | Renders visual overlays: selection box, hover outline, crosshair lines, padding fills, gap fills, distance lines, drop zone indicators. All overlays use `data-testid` for Playwright. |
 | `_panel-left.tsx` | Left panel: **7 tabs** — Layers, Components, Data, Logic, **App Triggers** (renamed from Triggers; filters to `isAppTrigger === true`), Assets, **Theme** (moved from right panel). Components tab has two sections: **Primitives** (8 atoms: Box, Text, Input, Textarea, Image, Icon, Video, Iframe) and **Templates** (Shared Components + Template Library). |
-| `_panel-right.tsx` | Right panel: **Design / Settings / Workflows / JSON tabs** (no longer has a Theme tab). When no node is selected, renders `<PageTriggersInRightPanel />` auto-scoped to the focused page instead of the old "Select a node" empty state. |
-| `_panel-right-page-triggers.tsx` | `PageTriggersInRightPanel` — shows page-scoped triggers (where `isTrigger && !isAppTrigger && pageScope === focusedConfig`) in the right panel when no node is selected. |
-| `_panel-right-design.tsx` | `DesignTab` — all 17 design-property sections (layout, spacing, typography, border, shadow, etc.) plus `ToggleBind`, visibility, repeat, and node-name subsections. |
-| `_panel-right-settings.tsx` | `SettingsTab` — form field `_validation` rules editor: add/remove/configure per-field validation rules displayed in the right panel when a FormContainer descendant is selected. |
-| `_panel-right-workflows.tsx` | `ElementWorkflowsTab`, `WorkflowRowMenu`, `PreviewDataEditor` — workflow binding UI shown in the right panel Logic tab. |
+| `_panel-right.tsx` | Right panel: **three tabs** — **Design \| Workflows \| JSON**. There is **no Props tab**; component-specific settings live in **`SettingsTab`** from `_panel-right-settings.tsx`, rendered **above** the `DesignTab` body when exactly one node is selected (single-selection mode). When **no** node is selected, shows `PageTriggersInRightPanel` (`_panel-right-page-triggers.tsx`) for the focused page instead of an empty "select a node" shell. |
+| `_panel-right-page-triggers.tsx` | `PageTriggersInRightPanel` — page-scoped triggers (`isTrigger && !isAppTrigger`) for the focused page in the empty selection state. |
+| `_panel-right-design-sections.tsx` | Shared design subcomponents: `ToggleBind`, visibility/repeat/disable strips, node name, grid overlay, align/distribute (`AlignDistributePanel` for multi-select), `PropsTab` / `JsonTab` helpers imported into `_panel-right.tsx`. |
+| `_panel-right-settings.tsx` | `SettingsTab` — per-component controls (validation, input modes, component props) shown **inline above** the design sections; also **Align / Distribute** when multiple nodes are selected. |
+| `_panel-right-workflows.tsx` | `ElementWorkflowsTab` — workflow bindings for the selected element; shown on the **Workflows** tab. |
+| `_export-modal.tsx` | Export / codegen modal — wraps generated app output (`lib/builder/codegen/*`) for download or copy. |
 | `_workflow-canvas.tsx` | Full-screen workflow editor overlay. Orchestrates the canvas; imports types from `_workflow-types.ts` and step-config panels. |
 | `_workflow-types.ts` | All pure types and constants for the workflow canvas: `ActionStepType` union, `BranchDef`, `ActionStep`, `ActionTypeDef`, `WorkflowMeta`, `FORM_ACTION_CATEGORY`, `ACTION_CATEGORIES`, `getTriggerCategories`. Import from here instead of `_workflow-canvas.tsx` when only types are needed. |
 | `_tw-utils.ts` | Tailwind class utilities: token tables, parse/replace/remove helpers, spacing helpers, border-radius helpers, alignment helpers. |
@@ -143,29 +144,63 @@ Icons use Iconify `set:name` format (e.g. `"lucide:search"`, `"heroicons:star"`)
 
 ---
 
-## Design Panel Sections (Right Panel)
+## Design tab sections (`DesignTab` in `_panel-right.tsx`)
 
-Full section list in render order:
+Render order (matches the `DesignTab` implementation from the Content block through disable). Section visibility still depends on `isContainer` / `isTextNode` / `isLeafWidget` and node type (see above).
 
-0. **Content** *(Text/Heading + any container with Text/Heading child)* — Textarea to edit `node.text` directly. Shown before Position & Size.
-1. **Position & Size** — X/Y (read-only DOM metrics), W/H (inline `style.width/height` + `minWidth/minHeight: 0`)
-2. **Dimensions** — W mode: Hug (`w-fit`) / Fill (`w-full`) / Fixed (removes fit/full). H mode: same with `h-*`. Also: Min W / Max W / Min H / Max H (inline `style.minWidth/maxWidth/minHeight/maxHeight`).
-3. **Self Alignment** — How this node aligns inside its parent flex container: `self-auto/start/center/end/stretch/baseline`
-4. **Transform** — Rotation (inline `style.transform = rotate(Ndeg)`), Flip H (`-scale-x-100`), Flip V (`-scale-y-100`)
-5. **Alignment** *(containers only)* — 9-cell grid (items-* + justify-*). Only shown for Box/VStack/HStack.
-6. **Auto Layout** *(containers only)* — Flex direction, wrap, gap (inline `style.gap`), space-between mode
-7. **Padding** — Exact pixel values via inline `style.paddingLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
-8. **Margin** — Exact pixel values via inline `style.marginLeft/Right/Top/Bottom`. Combined H/V or individual toggle.
-9. **Display & Interaction** — Display type (`block/flex/grid/hidden`), Cursor (`cursor-pointer` etc.)
-10. **Clip content** — Toggle `overflow-hidden`
-11. **Fill** — Background color (inline `style.backgroundColor`, initialized from computed DOM color) + bg-opacity slider
-12. **Stroke** — Border color (inline `style.borderColor`, initialized from computed DOM color), border width, border style
-13. **Effects** — Drop shadow (`shadow-*` class)
-14. **Typography** *(Text/Heading only)* — Size, Weight, Leading, Tracking, Text alignment, Decoration, Transform, Text color (inline `style.color`, initialized from computed DOM color)
-15. **Border Radius** — 4-corner selects. All equal → single global token. Mixed → per-corner tokens.
-16. **Opacity** — Inline `style.opacity` (0–1). Slider min=5.
-17. **Selection colors** — Hex swatches from className
-18. **Layout Guide** — Grid overlay toggle
+1. **Content** — Text / formula binding for `node.text` when `hasContent` (text nodes or containers with a Text/Heading child).
+2. **Position & Size** — Position token + Z-index; DOM X/Y (read-only); W/H with unit toggles.
+3. **Dimensions** — Hug / Fill / Screen / Fixed modes; min/max width & height.
+4. **Self alignment** — `self-*` flex alignment within parent.
+5. **Transform** — Rotate, flip shortcuts, translate X/Y.
+6. **Alignment** *(containers)* — 9-cell items/justify grid.
+7. **Auto Layout** *(containers)* — direction, wrap, gap, grid flow when applicable.
+8. **Padding** *(non–text nodes)* — per-side spacing diagram + formulas.
+9. **Margin** — per-side spacing diagram + formulas.
+10. **Typography** *(text nodes)* — size, weight, leading, tracking, align, decoration, text transform, color; includes **text overflow / truncate** controls in the same block.
+11. **Interaction** — Display + cursor (and related interaction classes).
+12. **Overflow** — Axis overflow tokens for containers (`overflow-hidden`, scroll, etc.).
+13. **Fill & Opacity** — Background fill + opacity slider.
+14. **Stroke** — Border color, width, line style.
+15. **Border Radius** — Corner radius diagram (uniform + per-corner responsive dots).
+16. **Per-side border** — Collapsible T/R/B/L width + color.
+17. **Effects** — Shadow, blur, backdrop (see `EffectsSection` in `_panel-right.tsx`).
+18. **Animation** — `AnimationInDesign` / `_animation-panel.tsx` surface.
+19. **Selection colors** — Hex swatches parsed from `className`.
+20. **Layout guide** — `GridOverlayPanel` toggle.
+21. **Repeat** — List / collection binding.
+22. **Visibility** — `showIf` / conditional display.
+23. **Disable** — Disabled state binding.
+
+---
+
+## JS-in-formulas (bindings)
+
+Bindings can be a **formula string** / `{ formula: "..." }` for SDUI expressions, or **`{ js: "<body>" }`** for richer JS (templates, regex, `wwLib`, etc.). The builder and renderer share validators that reject dangerous tokens in JS (`fetch(`, `document`, `eval`, …). Prefer formulas for simple math/theme/conditions; use JS when the panel or workflow needs imperative logic. See `lib/sdui/javascript-evaluator.ts` and `lib/sdui/formula-evaluator.ts`.
+
+---
+
+## App vs page triggers
+
+**App triggers** (global) are edited from the left panel **App Triggers** tab (`isAppTrigger === true`). **Page triggers** fire in page scope and appear in the right panel when nothing is selected (`PageTriggersInRightPanel`). Types and categories: `app/dev/builder/_workflow-types.ts`; runtime dispatch: `lib/sdui/sdui-engine.tsx`.
+
+---
+
+## Auth (builder + runtime)
+
+Auth configuration is part of app config; the runtime uses token storage and route guards (`lib/sdui/auth-token-storage.ts`, `app/[[...slug]]/page.tsx`). The AI builder documents auth UX (sign-in surfaces, protected routes) in `AUTH_BLOCK` inside `builder-knowledge-v2.ts`.
+
+---
+
+## Shared components
+
+Shared components have a **model** (props schema + variables + nested nodes) in the store and **instances** on pages with `_shared: { id }`. Editing mode swaps the right panel for the component editor while mutating the shared definition. Renderer: `lib/sdui/components/SharedComponentDynamicRenderer.tsx` / `lib/sdui/renderer.tsx`; persisted config may also reference `config/shared-components.json`.
+
+---
+
+## Codegen export
+
+The **Export** flow (`app/dev/builder/_export-modal.tsx`) runs the TypeScript code generator in `lib/builder/codegen/` to produce a runnable app bundle from the current builder graph — use it when verifying AI-generated pages outside the builder iframe.
 
 ---
 

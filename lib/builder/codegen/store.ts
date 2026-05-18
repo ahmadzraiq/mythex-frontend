@@ -99,11 +99,11 @@ export function emitStoreTs(ctx: CodegenCtx): EmittedFile {
   lines.push(`// ── State shape ───────────────────────────────────────────────────────────`);
   lines.push('');
 
-  // Variables initial state
+  // Variables initial state — use camelCase identifier as the key (consistent with JSX reads)
   const varInitials: Record<string, unknown> = {};
   const persistedVarNames: string[] = [];
   for (const v of store.customVars ?? []) {
-    const ident = symbols.vars.get(v.name) ?? v.name;
+    const ident = symbols.vars.get(v.name) ?? symbols.vars.get(v.id ?? '') ?? v.name;
     varInitials[ident] = v.initialValue ?? defaultForType(v.type);
     if (v.saveInLocalStorage) persistedVarNames.push(ident);
   }
@@ -144,6 +144,10 @@ export function emitStoreTs(ctx: CodegenCtx): EmittedFile {
   lines.push(`  _workflow: { lastAction: unknown; lastError: unknown };`);
   lines.push(`  pages: Record<string, unknown>;`);
   lines.push(`  sharedComponents: Record<string, boolean>;`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lines.push(`  /** Per-instance state for shared components (variables keyed by instance node ID) */`);
+  lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
+  lines.push(`  componentVars: Record<string, Record<string, any>>;`);
   lines.push(`}`);
   lines.push('');
 
@@ -156,6 +160,7 @@ export function emitStoreTs(ctx: CodegenCtx): EmittedFile {
     _workflow: { lastAction: null, lastError: null },
     pages: {},
     sharedComponents: {},
+    componentVars: {},
   };
 
   lines.push(`const initialState: AppState = ${JSON.stringify(initialState, null, 2)};`);

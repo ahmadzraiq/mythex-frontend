@@ -159,14 +159,51 @@ const PHASE_LABELS: Record<string, string> = {
   workflows: 'Workflows',
 };
 
+/** Convert a dynamic phase tag like "combined:home-navigation-button" to a display label. */
+function phaseToLabel(phase: string | undefined): string {
+  if (!phase) return 'Assistant';
+  if (PHASE_LABELS[phase]) return PHASE_LABELS[phase];
+  // combined:<slug> → title-case the slug
+  if (phase.startsWith('combined:')) {
+    const slug = phase.slice('combined:'.length);
+    return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  // sc:<slug>, styling:<slug>, workflows:<slug> etc.
+  const colon = phase.indexOf(':');
+  if (colon !== -1) {
+    const family = phase.slice(0, colon);
+    const slug = phase.slice(colon + 1).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return `${family.charAt(0).toUpperCase() + family.slice(1)}: ${slug}`;
+  }
+  return phase;
+}
+
 function groupToolsByPhase(tools: AiToolCall[]) {
-  return PHASE_ORDER
+  // 1. Collect static phases in predefined order
+  const staticGroups = PHASE_ORDER
     .map(p => ({
       phase: p,
-      label: p ? (PHASE_LABELS[p] ?? p) : 'Other',
+      label: phaseToLabel(p),
       tools: tools.filter(t => t.phase === p),
     }))
     .filter(g => g.tools.length > 0);
+
+  // 2. Collect dynamic phases (e.g. combined:home, sc:button) not in PHASE_ORDER
+  const coveredPhases = new Set<string | undefined>(PHASE_ORDER);
+  const dynamicPhases: string[] = [];
+  for (const t of tools) {
+    if (!coveredPhases.has(t.phase) && t.phase !== undefined) {
+      coveredPhases.add(t.phase);
+      dynamicPhases.push(t.phase);
+    }
+  }
+  const dynamicGroups = dynamicPhases.map(p => ({
+    phase: p,
+    label: phaseToLabel(p),
+    tools: tools.filter(t => t.phase === p),
+  }));
+
+  return [...staticGroups, ...dynamicGroups];
 }
 
 // ---------------------------------------------------------------------------
@@ -314,7 +351,19 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
     if (streaming && listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [streaming, n]);
 
-  const timeLabel = totalMs !== null ? `${(totalMs / 1000).toFixed(1)}s` : null;
+  // Prefer server-side agent duration (includes LLM thinking time before first tool call).
+  // Client-side totalMs only tracks from when the first tool call appeared in the UI.
+  const serverDurationMs = (!streaming && agentDebugInfo)
+    ? (() => {
+        const durations = Object.values(agentDebugInfo)
+          .map(a => (a.endedAt != null && a.startedAt != null) ? a.endedAt - a.startedAt : 0)
+          .filter(d => d > 0);
+        return durations.length > 0 ? Math.max(...durations) : null;
+      })()
+    : null;
+  const timeLabel = serverDurationMs != null
+    ? `${(serverDurationMs / 1000).toFixed(1)}s`
+    : totalMs !== null ? `${(totalMs / 1000).toFixed(1)}s` : null;
 
   // Check whether any tool has a phase tag — if so use grouped display
   const hasPhases = tools.some(t => t.phase !== undefined);
@@ -472,7 +521,9 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
   const rounds = msg.roundCount ?? maxRound;
   const plan = msg.buildPlanUnits;
   const agents = msg.agentDebugInfo;
-  const agentList = agents ? Object.values(agents) : [];
+  const agentList = agents
+    ? Object.values(agents).filter(a => a.agent !== 'structure')
+    : [];
 
   const hasStats = rounds > 0 || blindCount > 0 || (plan && plan.length > 0) || agentList.length > 0;
   if (!hasStats) return null;
@@ -491,6 +542,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
   const earliestStart = agentList.length > 0
     ? Math.min(...agentList.map(a => a.startedAt))
     : 0;
+  const totalTurnMs = msg.debug?.stats?.totalDurationMs;
 
   return (
     <div style={{ marginTop: 4, marginBottom: 6 }}>
@@ -508,6 +560,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           {errorCount > 0 ? ` · ${errorCount} error${errorCount !== 1 ? 's' : ''}` : ''}
           {blindCount > 0 ? ` · ${blindCount} blind` : ''}
           {totalDuration > 0 ? ` · ${(totalDuration / 1000).toFixed(1)}s` : ''}
+          {totalTurnMs != null ? ` · total ${(totalTurnMs / 1000).toFixed(1)}s` : ''}
         </span>
         <span style={{ fontSize: 9, color: blindCount > 0 ? '#fbbf24' : '#334155' }}>
           {expanded ? '▲ Stats' : '▼ Stats'}
@@ -782,13 +835,21 @@ function CopyMsgLogBtn({ msg }: { msg: AiChatMessage }) {
   const handleCopy = () => {
     const payload = {
       role: msg.role,
+      turnId: msg.turnId,
       content: msg.content ?? '',
       tools: (msg.toolCalls ?? []).map(t => ({
         name: t.name,
         status: t.status,
+        agent: t.phase,
+        round: t.round,
         input: t.input,
         result: t.result,
       })),
+      // Phase O — typed debug envelope (planner/structure/agents/stats).
+      debug: msg.debug,
+      structureContext: msg.structureContext,
+      agentDebugInfo: msg.agentDebugInfo,
+      buildPlan: msg.buildPlan,
     };
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
       setLabel('copied');
@@ -815,6 +876,80 @@ function CopyMsgLogBtn({ msg }: { msg: AiChatMessage }) {
     >
       {label === 'copied' ? '✓ Copied' : '⎘ Copy log'}
     </button>
+  );
+}
+
+// Phase K — Cursor-style @-mention typeahead. Lists pages + currently-selected
+// canvas nodes; consumers receive a free-form `label` they paste back into the
+// composer (e.g. "@Pricing", "@hero-image").
+function MentionTypeahead({
+  query, pages, selectedNodeIds, onPick, onClose,
+}: {
+  query: string;
+  pages: Array<{ id: string; name: string; route: string }>;
+  selectedNodeIds: string[];
+  onPick: (label: string) => void;
+  onClose: () => void;
+}) {
+  const q = query.toLowerCase();
+  const pageMatches = pages.filter(p => !q || p.name.toLowerCase().includes(q) || p.route.toLowerCase().includes(q)).slice(0, 6);
+  const nodeMatches = selectedNodeIds.filter(id => !q || id.toLowerCase().includes(q)).slice(0, 4);
+  const hasAny = pageMatches.length + nodeMatches.length > 0;
+
+  return (
+    <div
+      data-testid="mention-typeahead"
+      style={{
+        position: 'absolute', bottom: 'calc(100% + 6px)', left: 12,
+        background: '#0f172a', border: '1px solid #1e293b',
+        borderRadius: 6, padding: 4, minWidth: 180,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+        zIndex: 50,
+      }}
+      onMouseDown={e => e.preventDefault()}
+    >
+      {!hasAny && (
+        <div style={{ padding: 8, color: '#475569', fontSize: 11 }}>No matches</div>
+      )}
+      {pageMatches.length > 0 && (
+        <>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pages</div>
+          {pageMatches.map(p => (
+            <button
+              key={p.id}
+              onClick={() => onPick(p.name)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#1e293b')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {p.name} <span style={{ color: '#475569' }}>· {p.route}</span>
+            </button>
+          ))}
+        </>
+      )}
+      {nodeMatches.length > 0 && (
+        <>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Selected nodes</div>
+          {nodeMatches.map(id => (
+            <button
+              key={id}
+              onClick={() => onPick(id.slice(0, 8))}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#1e293b')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {id.slice(0, 12)}…
+            </button>
+          ))}
+        </>
+      )}
+      <button
+        onClick={onClose}
+        style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#64748b', fontSize: 10, cursor: 'pointer' }}
+      >
+        ↵ close
+      </button>
+    </div>
   );
 }
 
@@ -880,29 +1015,39 @@ function MessageBubble({
       className="ai-msg-row"
       style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', gap: 3 }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, maxWidth: '92%', width: isUser ? 'auto' : '100%', minWidth: 0 }}>
-        {/* AI avatar */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, maxWidth: isUser ? '92%' : '100%', width: isUser ? 'auto' : '100%', minWidth: 0 }}>
+        {/* AI avatar — kept only as a small marker since the assistant bubble itself is gone */}
         {!isUser && (
           <div style={{
-            width: 24, height: 24, borderRadius: 6, flexShrink: 0, marginTop: 1,
+            width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 2,
             background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
           }}>✦</div>
         )}
 
-        {/* Bubble */}
+        {/* Bubble — Cursor-style:
+         *   • Assistant turns have NO background bubble; the activity feed below is the
+         *     real "answer" surface, with the model's prose flowing as plain text.
+         *   • User turns keep a subtle pill (rounded, soft slate background, no purple
+         *     gradient or thick border) so they're still visually distinct from the AI.
+         *   • While editing, we revert to a colored panel so the textarea is obvious.
+         */}
         <div style={{
           flex: isUser ? 'none' : 1,
           minWidth: 0,
           maxWidth: '100%',
-          padding: '9px 13px',
-          paddingRight: isUser && !isEditing ? 36 : 13,
-          paddingBottom: timeLabel ? 20 : 9,
-          borderRadius: isUser ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
-          background: isEditing ? '#160e28' : isUser ? '#2d2278' : '#1e293b',
-          border: `1px solid ${isEditing ? '#5b21b6' : isUser ? '#4338ca' : '#334155'}`,
+          padding: isUser ? '8px 13px' : '2px 0 0 0',
+          paddingRight: isUser && !isEditing ? 36 : isUser ? 13 : 0,
+          paddingBottom: isUser ? (timeLabel ? 20 : 8) : 0,
+          borderRadius: isUser ? 14 : 0,
+          background: isEditing ? '#160e28' : isUser ? 'rgba(124,58,237,0.10)' : 'transparent',
+          border: isEditing
+            ? '1px solid #5b21b6'
+            : isUser
+              ? '1px solid rgba(124,58,237,0.22)'
+              : 'none',
           color: isEditing ? '#c4b5fd' : '#f1f5f9',
-          fontSize: 13, lineHeight: 1.6, wordBreak: 'break-word',
+          fontSize: 13, lineHeight: 1.65, wordBreak: 'break-word',
           overflowWrap: 'anywhere', position: 'relative',
         }}>
           {/* Node chips inside bubble */}
@@ -933,8 +1078,8 @@ function MessageBubble({
 
           {isUser ? (
             <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', display: 'block' }}>{msg.content}</span>
-          ) : isThisStreaming && !visibleContent && !msg.thinkingContent ? (
-            /* No text yet — tools running or between rounds */
+          ) : isThisStreaming && !visibleContent && !msg.thinkingContent && !msg.debug?.planner ? (
+            /* No text yet — tools running or between rounds (hidden once Planner row appears) */
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 11, color: '#64748b' }}>
                 {msg.isThinking ? 'Planning next steps…' : 'Thinking…'}
@@ -963,11 +1108,12 @@ function MessageBubble({
             <IconResultChips icons={msg.iconResults} />
           )}
 
-          {/* Timestamp — inside bubble, bottom corner */}
-          {timeLabel && (
+          {/* Timestamp — bottom corner of the user bubble; suppressed for the assistant
+           *  to keep its surface bubble-free in the new Cursor-style layout. */}
+          {timeLabel && isUser && (
             <div style={{
-              position: 'absolute', bottom: 5, right: isUser ? 10 : 8,
-              fontSize: 9, color: isUser ? 'rgba(167,139,250,0.5)' : '#334155',
+              position: 'absolute', bottom: 4, right: 10,
+              fontSize: 9, color: 'rgba(167,139,250,0.5)',
               pointerEvents: 'none', userSelect: 'none',
             }}>{timeLabel}</div>
           )}
@@ -987,11 +1133,160 @@ function MessageBubble({
 
       {/* Tool calls + per-message copy — below the message bubble */}
       {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
-        <div style={{ width: '100%', paddingLeft: 32 }}>
+        <div style={{ width: '100%' }}>
+          {/* Context Agent status — only shown for EDIT requests where search actually ran */}
+          {msg.debug?.context && !msg.debug.context.skippedSearch && (
+            <div style={{ paddingBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                  background: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399',
+                }} />
+                <span style={{ color: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399', fontWeight: 500 }}>
+                  Context
+                </span>
+                <span style={{ color: '#64748b' }}>
+                  · {msg.debug.context.status === 'running' ? 'searching…' : (
+                    msg.debug.context.resolvedNodeCount != null && msg.debug.context.resolvedNodeCount > 0
+                      ? `found ${msg.debug.context.resolvedNodeCount} node${msg.debug.context.resolvedNodeCount !== 1 ? 's' : ''}`
+                      : 'searched'
+                  )}
+                  {msg.debug.context.duration != null && ` · ${(msg.debug.context.duration / 1000).toFixed(1)}s`}
+                  {msg.debug.context.toolCalls && msg.debug.context.toolCalls.length > 0 && ` · ${msg.debug.context.toolCalls.length} call${msg.debug.context.toolCalls.length !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+              {msg.debug.context.toolCalls && msg.debug.context.toolCalls.length > 0 && (
+                <div style={{ paddingLeft: 13, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {msg.debug.context.toolCalls.map((tc, i) => {
+                    const query = tc.name === 'search' ? String((tc.input as Record<string, unknown>).query ?? '') : String((tc.input as Record<string, unknown>).id ?? tc.name);
+                    const res = tc.result as { results?: unknown[]; totalMatches?: number; note?: string; error?: string } | null;
+                    const isRead = tc.name === 'read';
+                    const hits = res?.results?.length ?? res?.totalMatches ?? 0;
+                    const note = res?.note;
+                    const displayLabel = isRead
+                      ? (res && !res.error ? 'found' : 'not found')
+                      : (note ? '0 (no match)' : `${hits} hit${hits !== 1 ? 's' : ''}`);
+                    const displayColor = isRead
+                      ? (res && !res.error ? '#34d399' : '#f87171')
+                      : (note ? '#f87171' : hits > 0 ? '#34d399' : '#64748b');
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#475569' }}>
+                        <span style={{ color: '#6366f1', fontWeight: 500 }}>{tc.name}</span>
+                        <span style={{ color: '#334155', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
+                        <span style={{ color: displayColor }}>
+                          → {displayLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Planner status — appears immediately on planner_started, before any tool calls fire */}
+          {msg.debug?.planner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                background: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399',
+              }} />
+              <span style={{ color: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
+                Planner
+              </span>
+              <span style={{ color: '#64748b' }}>
+                · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
+                {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
+              </span>
+            </div>
+          )}
           <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} agentDebugInfo={msg.agentDebugInfo} />
           {!isThisStreaming && <BuildStats msg={msg} />}
           {!isThisStreaming && (
             <CopyMsgLogBtn msg={msg} />
+          )}
+        </div>
+      )}
+      {/* Planner-only state — when planner is thinking but no tool calls have fired yet */}
+      {!isUser && (!msg.toolCalls || msg.toolCalls.length === 0) && (msg.debug?.context || msg.debug?.planner || msg.debug?.structure) && (
+        <div style={{ width: '100%' }}>
+          {/* Context Agent status — only shown for EDIT requests where search actually ran */}
+          {msg.debug?.context && !msg.debug.context.skippedSearch && (
+            <div style={{ paddingBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                  background: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399',
+                }} />
+                <span style={{ color: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399', fontWeight: 500 }}>
+                  Context
+                </span>
+                <span style={{ color: '#64748b' }}>
+                  · {msg.debug.context.status === 'running' ? 'searching…' : (
+                    msg.debug.context.resolvedNodeCount != null && msg.debug.context.resolvedNodeCount > 0
+                      ? `found ${msg.debug.context.resolvedNodeCount} node${msg.debug.context.resolvedNodeCount !== 1 ? 's' : ''}`
+                      : 'searched'
+                  )}
+                  {msg.debug.context.duration != null && ` · ${(msg.debug.context.duration / 1000).toFixed(1)}s`}
+                  {msg.debug.context.toolCalls && msg.debug.context.toolCalls.length > 0 && ` · ${msg.debug.context.toolCalls.length} call${msg.debug.context.toolCalls.length !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+              {msg.debug.context.toolCalls && msg.debug.context.toolCalls.length > 0 && (
+                <div style={{ paddingLeft: 13, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {msg.debug.context.toolCalls.map((tc, i) => {
+                    const query = tc.name === 'search' ? String((tc.input as Record<string, unknown>).query ?? '') : String((tc.input as Record<string, unknown>).id ?? tc.name);
+                    const res = tc.result as { results?: unknown[]; totalMatches?: number; note?: string; error?: string } | null;
+                    const isRead = tc.name === 'read';
+                    const hits = res?.results?.length ?? res?.totalMatches ?? 0;
+                    const note = res?.note;
+                    const displayLabel = isRead
+                      ? (res && !res.error ? 'found' : 'not found')
+                      : (note ? '0 (no match)' : `${hits} hit${hits !== 1 ? 's' : ''}`);
+                    const displayColor = isRead
+                      ? (res && !res.error ? '#34d399' : '#f87171')
+                      : (note ? '#f87171' : hits > 0 ? '#34d399' : '#64748b');
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#475569' }}>
+                        <span style={{ color: '#6366f1', fontWeight: 500 }}>{tc.name}</span>
+                        <span style={{ color: '#334155', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
+                        <span style={{ color: displayColor }}>
+                          → {displayLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {msg.debug?.planner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                background: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399',
+              }} />
+              <span style={{ color: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
+                Planner
+              </span>
+              <span style={{ color: '#64748b' }}>
+                · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
+                {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
+              </span>
+            </div>
+          )}
+          {msg.debug?.structure && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                background: msg.debug.structure.status === 'running' ? '#60a5fa' : '#34d399',
+              }} />
+              <span style={{ color: msg.debug.structure.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
+                Structure
+              </span>
+              <span style={{ color: '#64748b' }}>
+                · {msg.debug.structure.status === 'running' ? 'building…' : 'done'}
+                {msg.debug.structure.status === 'done' && msg.debug.structure.duration != null && ` · ${(msg.debug.structure.duration / 1000).toFixed(1)}s`}
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -1236,6 +1531,8 @@ export function AiChatPanel() {
   const [rewindLabel, setRewindLabel] = useState<string | null>(null);
   // ID of the message being edited — truncation happens at send time, NOT on click
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
+  // @-mention typeahead state.
+  const [mentionState, setMentionState] = useState<{ open: boolean; query: string; anchor: number } | null>(null);
 
   const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel, pages, currentPageId } = store;
   const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? 'Home';
@@ -1332,40 +1629,67 @@ export function AiChatPanel() {
     if (copyToolsLabel === 'loading') return;
     setCopyToolsLabel('loading');
     try {
-      const info = await getDebugInfo();
-
       const allToolCalls = aiChatHistory.flatMap(m => m.toolCalls ?? []);
       const lastMsg = aiChatHistory[aiChatHistory.length - 1];
       const agentInfo = lastMsg?.agentDebugInfo;
 
-      // If we have per-agent debug info (parallel architecture), use it directly
-      if (agentInfo && Object.keys(agentInfo).length > 0) {
+      // New-arch if agents ran OR if context/planner debug data is present (covers 0-agent runs)
+      const hasNewArchData = (agentInfo && Object.keys(agentInfo).length > 0)
+        || !!(lastMsg?.debug?.planner || lastMsg?.debug?.context);
+
+      if (hasNewArchData) {
         const agents: Record<string, unknown> = {};
-        for (const [name, a] of Object.entries(agentInfo)) {
-          agents[name] = {
-            rounds: a.rounds,
-            toolCallCount: a.toolCallCount,
-            duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
-            tools: a.tools,
-            systemPrompt: a.systemPrompt,
-            userMessage: a.userMessage ?? null,
-            toolCalls: a.toolCalls.map(t => ({
-              name: t.name, status: t.status, input: t.input, result: t.result,
-              round: t.round, aiBlind: t.aiBlind || undefined,
-            })),
-          };
+        if (agentInfo) {
+          for (const [name, a] of Object.entries(agentInfo)) {
+            agents[name] = {
+              rounds: a.rounds,
+              toolCallCount: a.toolCallCount,
+              duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
+              tools: a.tools,
+              systemPrompt: a.systemPrompt,
+              userMessage: a.userMessage ?? null,
+              toolCalls: a.toolCalls.map(t => ({
+                name: t.name, status: t.status, input: t.input, result: t.result,
+                round: t.round, aiBlind: t.aiBlind || undefined,
+              })),
+            };
+          }
         }
 
         const blindTotal = allToolCalls.filter(t => t.aiBlind).length;
         const stats = {
           totalTools: allToolCalls.length,
-          agents: Object.keys(agentInfo).length,
+          agents: agentInfo ? Object.keys(agentInfo).length : 0,
           blindFailures: blindTotal,
         };
 
         const structureCtx = lastMsg?.structureContext;
+        const dbg = lastMsg?.debug;
+        const timing = {
+          ...(dbg?.context ? { context: { status: dbg.context.status, resolvedNodeCount: dbg.context.resolvedNodeCount, durationMs: dbg.context.duration } } : {}),
+          ...(dbg?.planner ? { planner: { status: dbg.planner.status, durationMs: dbg.planner.duration } } : {}),
+          ...(dbg?.structure ? { structure: { status: dbg.structure.status, durationMs: dbg.structure.duration } } : {}),
+          ...(dbg?.stats?.totalDurationMs != null ? { totalDurationMs: dbg.stats.totalDurationMs } : {}),
+        };
+        const contextSearchLog = dbg?.context?.toolCalls
+          ? dbg.context.toolCalls.map(tc => {
+              const res = tc.result as { results?: unknown[]; note?: string; error?: string } | null;
+              const isRead = tc.name === 'read';
+              return {
+                tool: tc.name,
+                input: tc.input,
+                ...(isRead
+                  ? { result: res && !res.error ? 'found' : 'not found' }
+                  : { hits: res?.results?.length ?? 0, ...(res?.note ? { note: res.note } : {}) }),
+              };
+            })
+          : undefined;
+
         const output = {
           stats,
+          ...(Object.keys(timing).length > 0 ? { timing } : {}),
+          ...(contextSearchLog ? { contextSearch: contextSearchLog } : {}),
+          manifest: lastMsg?.debug?.planner?.manifest ?? null,
           buildPlan: lastMsg?.buildPlan ?? null,
           phaseLog: lastMsg?.phaseLog ?? null,
           compactTree: structureCtx?.compactTree ?? null,
@@ -1380,6 +1704,7 @@ export function AiChatPanel() {
       }
 
       // Fallback: legacy phase-based log
+      const info = await getDebugInfo();
       const phaseContext: Record<string, { systemPrompt: string; tools: string[] }> = {
         planning:   { systemPrompt: info.planningPrompt ?? '', tools: [] },
         structure:  { systemPrompt: info.phase2Prompt ?? '', tools: info.phase2Tools ?? [] },
@@ -1658,15 +1983,47 @@ export function AiChatPanel() {
           )}
 
           {/* Textarea */}
+          {/* @-mention typeahead */}
+          {mentionState?.open && (
+            <MentionTypeahead
+              query={mentionState.query}
+              pages={pages.map(p => ({ id: p.id, name: p.name, route: p.route }))}
+              selectedNodeIds={aiSelectedNodeIds}
+              onPick={(label) => {
+                setInputValue(prev => {
+                  const before = prev.slice(0, mentionState.anchor);
+                  const after = prev.slice(mentionState.anchor + 1 + mentionState.query.length);
+                  return `${before}@${label} ${after}`;
+                });
+                setMentionState(null);
+                setTimeout(() => textareaRef.current?.focus(), 0);
+              }}
+              onClose={() => setMentionState(null)}
+            />
+          )}
           <textarea
             ref={textareaRef}
             data-testid="ai-chat-input"
             value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={e => {
+              const v = e.target.value;
+              setInputValue(v);
+              const caret = e.target.selectionStart ?? v.length;
+              const before = v.slice(0, caret);
+              const at = before.lastIndexOf('@');
+              if (at >= 0 && (at === 0 || /\s/.test(before[at - 1]!)) && !/\s/.test(before.slice(at + 1))) {
+                setMentionState({ open: true, query: before.slice(at + 1), anchor: at });
+              } else {
+                setMentionState(null);
+              }
+            }}
+            onKeyDown={e => {
+              if (mentionState?.open && (e.key === 'Escape')) { setMentionState(null); return; }
+              handleKeyDown(e);
+            }}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
-            placeholder="Ask AI anything about your design…"
+            placeholder={'Ask AI anything · type @ to mention a page or node…'}
             disabled={aiGenerating}
             style={{
               width: '100%', minHeight: 68, maxHeight: 160,

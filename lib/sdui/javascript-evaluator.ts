@@ -30,6 +30,7 @@ import {
   getAllVariableNames,
   getAllCollectionNames,
 } from './variable-name-registry';
+import { FORMULA_FNS } from './formula-functions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -365,7 +366,7 @@ export function evaluateJsBinding(
   try {
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib',
+      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns',
       `"use strict";\n${body}`,
     );
     const value = fn(
@@ -380,6 +381,7 @@ export function evaluateJsBinding(
       (context.route ?? {}) as Record<string, unknown>,
       (context.auth ?? {}) as Record<string, unknown>,
       makeWwLib({ workflow: context.workflow as Record<string, { result: unknown; error: unknown }>, parameters: context.parameters as Record<string, unknown> }),
+      FORMULA_FNS,
     );
     return { value, error: null };
   } catch (e) {
@@ -408,7 +410,7 @@ export async function evaluateJsAsync(
   const body = ensureReturn(code);
   try {
     const fn = new AsyncFunctionCtor(
-      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib',
+      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns',
       `"use strict";\n${body}`,
     );
     const value = await fn(
@@ -423,6 +425,7 @@ export async function evaluateJsAsync(
       (context.route ?? {}) as Record<string, unknown>,
       (context.auth ?? {}) as Record<string, unknown>,
       makeWwLib(wwLibCtx),
+      FORMULA_FNS,
     );
     return { value, error: null };
   } catch (e) {

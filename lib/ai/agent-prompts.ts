@@ -6,8 +6,6 @@
 export {
   buildStructureAgentPrompt,
   buildBindingAgentPrompt,
-  buildLayoutAgentPrompt,
-  buildColorsAgentPrompt,
   buildStylingAgentPrompt,
   buildAnimationAgentPrompt,
   buildWorkflowsAgentPrompt,

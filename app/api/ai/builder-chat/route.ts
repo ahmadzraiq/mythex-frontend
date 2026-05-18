@@ -25,11 +25,9 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE3_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS } from '@/lib/ai/builder-tools';
-import { buildChatSystemPrompt, buildPhase3SystemPrompt, PLAN_SYSTEM } from '@/lib/ai/builder-knowledge-v2';
-import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt } from '@/lib/ai/agents';
-import { TOOL_CAPABILITY_GROUP, getCapabilities, buildBlockedGroupSuggestion, buildCapabilityNote } from '@/lib/ai/component-capabilities';
-import { validateWorkflowFormulas, findProhibitedStep } from '@/lib/ai/workflow-validator';
+import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt, buildDataAgentPrompt } from '@/lib/ai/agents';
+import { buildSharedComponentAgentPrompt } from '@/lib/ai/agents/sharedComponents/prompt';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
@@ -74,24 +72,10 @@ interface BuildUnit {
   description: string;
   sectionCount?: number;
   layout?: string;
-  /** When false, the structure agent is told to declare zero variables — purely visual section with no interactive state or data arrays. */
-  needsVariables?: boolean;
   /** Machine-readable layout pattern key emitted by the classify agent when a specific tree shape is required. */
   structureHint?: 'layered-absolute' | 'grid' | 'flex-row';
 }
 
-interface BuildPlan {
-  mode: 'edit' | 'build' | 'mixed';
-  /** When false, Phase 3 styling is skipped — components render with their defaultNode styles. */
-  needsStyling?: boolean;
-  /** When false, the binding agent is skipped — no repeat, condition, or text binding needed. */
-  needsBinding?: boolean;
-  /** When false, the workflows agent is skipped — purely visual/decorative section with no interactions. */
-  needsWorkflows?: boolean;
-  editSummary?: string;
-  buildUnits?: BuildUnit[];
-  relations?: string[];
-}
 
 interface CollectedTree {
   unitName: string;
@@ -99,6 +83,8 @@ interface CollectedTree {
   pageId: string | null;
   atIndex?: number;
   structureHint?: string;
+  // Page-lifecycle workflow stubs declared by the structure agent alongside the tree.
+  pageActions?: Array<{ workflowId: string; trigger: string }>;
   // Populated by onStructureReady via extractMediaFromTree — no post-hoc scanning
   mediaManifest?: {
     icons: Array<{ id: string; icon: string; name?: string }>;
@@ -122,15 +108,31 @@ interface ToolEvent {
 
 const TREE_UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
+function normalizeWorkflowId(raw: string, wfIdMap: Map<string, string>): string {
+  if (TREE_UUID_RE.test(raw)) return raw;
+  if (!wfIdMap.has(raw)) wfIdMap.set(raw, crypto.randomUUID());
+  return wfIdMap.get(raw)!;
+}
+
 function assignTreeIds(
   node: Record<string, unknown>,
-  seen: Set<string> = new Set()
+  seen: Set<string> = new Set(),
+  wfIdMap: Map<string, string> = new Map(),
 ): Record<string, unknown> {
   const raw = typeof node.id === 'string' ? node.id : '';
   const id = TREE_UUID_RE.test(raw) && !seen.has(raw) ? raw : crypto.randomUUID();
   seen.add(id);
+
+  // Normalize workflowId in actions so malformed AI-generated IDs become valid hex UUIDs
+  if (Array.isArray(node.actions)) {
+    (node.actions as Array<Record<string, unknown>>).forEach(act => {
+      const wfRaw = typeof act.workflowId === 'string' ? act.workflowId : '';
+      if (wfRaw) act.workflowId = normalizeWorkflowId(wfRaw, wfIdMap);
+    });
+  }
+
   const children = Array.isArray(node.children)
-    ? (node.children as Record<string, unknown>[]).map(c => assignTreeIds(c, seen))
+    ? (node.children as Record<string, unknown>[]).map(c => assignTreeIds(c, seen, wfIdMap))
     : [];
   const result: Record<string, unknown> = { ...node, id, children };
   if (result.condition === 'true' || result.condition === true) {
@@ -203,6 +205,7 @@ function isCustomJsDomWorkflow(input: Record<string, unknown>): boolean {
 
 function detectNestedRepeatNodes(trees: Array<{ tree: Record<string, unknown> }>): string {
   const innerNodeIds: string[] = [];
+  const innerTemplateIds: string[] = [];
   const walk = (node: Record<string, unknown>, repeatDepth: number, outerRepeatPath: string | null) => {
     const hasRepeat = (typeof node.repeat === 'string' && node.repeat.length > 0) || !!node.loop;
     const newDepth = hasRepeat ? repeatDepth + 1 : repeatDepth;
@@ -211,14 +214,22 @@ function detectNestedRepeatNodes(trees: Array<{ tree: Record<string, unknown> }>
     if (newDepth >= 2 && !hasRepeat) {
       innerNodeIds.push(node.id as string);
     }
+    if (hasRepeat && repeatDepth >= 1) {
+      innerTemplateIds.push(node.id as string);
+    }
     const children = node.children as Record<string, unknown>[] | undefined;
     if (Array.isArray(children)) {
       for (const child of children) walk(child, newDepth, newOuterPath);
     }
   };
   for (const ct of trees) walk(ct.tree, 0, null);
-  if (innerNodeIds.length === 0) return '';
-  return `\nNESTED REPEAT SCOPE: Nodes [${innerNodeIds.join(', ')}] are inside an inner repeat. To access OUTER template fields from these nodes, use context?.item?.parent?.data?.FIELD. context?.item?.data on these nodes refers to the inner repeat item (use .value for primitives, .index for position).`;
+  // Nodes annotated [nested] in the compact tree are inside an inner repeat.
+  // context?.item?.data is the inner item; use context?.item?.parent?.data for outer fields.
+  if (innerNodeIds.length === 0 && innerTemplateIds.length === 0) return '';
+  const parts: string[] = [];
+  if (innerNodeIds.length > 0) parts.push(`[nested] nodes (${innerNodeIds.join(', ')}): context?.item?.parent?.data?.FIELD = outer item field.`);
+  if (innerTemplateIds.length > 0) parts.push(`Inner repeat templates (${innerTemplateIds.join(', ')}): context?.item?.data?.FIELD per sub-item.`);
+  return '\n' + parts.join('\n');
 }
 
 /**
@@ -316,66 +327,6 @@ function detectTernaryContrastNodes(
   }).join('');
 }
 
-/**
- * Detect repeat templates and their parent containers.
- * Phase 3 frequently confuses these, applying ternary context?.item?.data formulas
- * to the parent (which is OUTSIDE the repeat scope — resolves to undefined) and
- * applying grid layout to the template (creating N grids instead of 1).
- *
- * Returns a hint string clearly identifying which node is the container vs template.
- */
-function detectRepeatContainerPairs(trees: Array<{ tree: Record<string, unknown> }>): string {
-  const pairs: Array<{ containerId: string; containerName: string; templateId: string; templateName: string }> = [];
-  const walk = (node: Record<string, unknown>) => {
-    const children = node.children as Record<string, unknown>[] | undefined;
-    if (!Array.isArray(children)) return;
-    for (const child of children) {
-      const hasRepeat = (typeof child.repeat === 'string' && child.repeat.length > 0) || !!child.loop;
-      if (hasRepeat) {
-        pairs.push({
-          containerId: node.id as string,
-          containerName: (node.name as string) ?? 'container',
-          templateId: child.id as string,
-          templateName: (child.name as string) ?? 'template',
-        });
-      }
-      walk(child);
-    }
-  };
-  for (const ct of trees) walk(ct.tree);
-  if (pairs.length === 0) return '';
-  return pairs.map(p =>
-    `\nREPEAT LAYOUT RULE: "${p.containerName}" (${p.containerId}) is the CONTAINER — set grid/flex layout, gap, maxWidth, width on THIS node. "${p.templateName}" (${p.templateId}) is the TEMPLATE with repeat — set per-item styling (bg ternary, border ternary, shadow ternary, padding, hover animation, position offset) on THIS node. NEVER apply context?.item?.data formulas to the container (${p.containerId}) — it is outside the repeat scope and those formulas return undefined. NEVER apply set_layout(gridCols) to the template (${p.templateId}) — it creates N grids instead of 1.`
-  ).join('');
-}
-
-// ── Phase 0: classify the request ────────────────────────────────────────────
-
-async function classifyRequest(
-  message: string,
-  pages: Array<{ id: string; name: string; route: string }>,
-  modelId: string,
-  currentPageRoute?: string,
-  signal?: AbortSignal,
-): Promise<BuildPlan> {
-  const pageList = pages.map(p => `- "${p.name}" at ${p.route} (id: ${p.id})`).join('\n');
-  const prompt = `Current page: "${currentPageRoute ?? '/'}"\nAll pages:\n${pageList || '(none)'}\n\nUser request:\n${message}`;
-  try {
-    const res = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 4096,
-      system: PLAN_SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
-    }, signal ? { signal } : undefined);
-    const text = res.content.filter(b => b.type === 'text').map(b => (b as { type: 'text'; text: string }).text).join('');
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]) as BuildPlan;
-  } catch {
-    // fall through to edit mode on any error
-  }
-  return { mode: 'edit' };
-}
-
 // ── Server-side media search helpers (Tier 0 pre-fetch) ──────────────────────
 
 // Random page offset (1–4) so repeated runs with identical queries get different photos/videos.
@@ -397,7 +348,8 @@ async function searchPexelsServer(query: string, count = 4, signal?: AbortSignal
   try {
     const apiKey = process.env.PEXELS_API_KEY;
     if (!apiKey) return [];
-    const q = encodeURIComponent(query || 'nature');
+    if (!query) return [];
+    const q = encodeURIComponent(query);
     const page = randPage(3);
     const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=${page}&per_page=${count}`, { headers: { Authorization: apiKey }, signal });
     if (!r.ok) return [];
@@ -427,7 +379,14 @@ async function searchPexelsPhotosServer(query: string, count = 5, signal?: Abort
  *  Returns a manifest of media nodes to process server-side.
  *  Tree is modified in place — icon/searchQuery/bgImage fields are removed so they don't reach the client.
  */
-function extractMediaFromTree(tree: Record<string, unknown>): {
+function extractMediaFromTree(
+  tree: Record<string, unknown>,
+  // IDs of nodes that are loop templates — extracted from `ct.markers` after
+  // `extractAndStripMarkers` processes the tree. When the AI correctly sets
+  // `loop: true`, those node IDs land here so their children are treated as
+  // inside a repeat even though the tree has been stripped of the `loop` prop.
+  loopNodeIds: ReadonlySet<string> = new Set(),
+): {
   icons: Array<{ id: string; icon: string; name?: string }>;
   images: Array<{ id: string; searchQuery: string; name?: string }>;
   videos: Array<{ id: string; searchQuery: string; name?: string }>;
@@ -446,7 +405,10 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
     const nodeName = node.name as string | undefined;
     // Track repeat context — Images/Videos inside a repeat subtree get their src
     // from binding agent formula expressions, not from the media agent.
-    const nowInsideRepeat = insideRepeat || !!node.repeat || !!node.loop;
+    // Also treat nodes whose IDs appear in the markers loop set as loop templates
+    // (their `loop: true` was stripped by extractAndStripMarkers before this runs).
+    const isLoopTemplate = !!(id && loopNodeIds.has(id));
+    const nowInsideRepeat = insideRepeat || !!node.repeat || !!node.loop || isLoopTemplate;
 
     if (id) {
       if (label === 'icon') {
@@ -460,25 +422,36 @@ function extractMediaFromTree(tree: Record<string, unknown>): {
       } else if (label === 'image') {
         const searchQuery = node.searchQuery as string | undefined;
         delete node.searchQuery; // strip
-        if (!insideRepeat) {
-          // Only add to manifest when NOT inside a repeat — binding agent handles formula src for repeat images.
-          manifest.images.push({ id, searchQuery: searchQuery ?? '', name: nodeName });
+        if (!insideRepeat && searchQuery) {
+          // Only add to manifest when NOT inside a repeat AND a searchQuery was provided.
+          // The structure prompt instructs the AI to omit searchQuery on loop-template images
+          // (those use per-item avatar/videoSrc fields in initialValue instead).
+          // Skipping images without a searchQuery ensures the media agent never overwrites
+          // the formula binding the binding agent applies for repeat-template images.
+          manifest.images.push({ id, searchQuery, name: nodeName });
         }
       } else if (label === 'video') {
         const searchQuery = node.searchQuery as string | undefined;
         delete node.searchQuery; // strip
-        if (!insideRepeat) {
-          // Only add to manifest when NOT inside a repeat — binding agent handles formula src for repeat videos.
-          manifest.videos.push({ id, searchQuery: searchQuery ?? '', name: nodeName });
+        if (!insideRepeat && searchQuery) {
+          // Same guard as images — loop-template videos carry no searchQuery.
+          manifest.videos.push({ id, searchQuery, name: nodeName });
         }
       }
       // Box with bgImage — CSS background-image set via set_background by media agent.
       // Skip gradient strings — the executor already applies them as inline style;
       // trying to photo-search a gradient expression would produce garbage results.
+      // Also skip search queries that mention "gradient" — these describe a desired
+      // visual effect (e.g. "gradient background abstract modern"), not a real photo.
+      // The structure agent should never set bgImage on gradient-only sections, but
+      // if it does, this filter prevents the media agent from overwriting the gradient
+      // with a stock photo.
       if (node.bgImage) {
         const bgImageQuery = node.bgImage as string;
         delete node.bgImage; // strip — media agent handles the URL lookup
-        if (id && !/^(linear|radial|conic)-gradient/i.test(bgImageQuery.trim())) {
+        const isGradientCss = /^(linear|radial|conic)-gradient/i.test(bgImageQuery.trim());
+        const isGradientQuery = /\bgradient\b/i.test(bgImageQuery);
+        if (id && !isGradientCss && !isGradientQuery) {
           manifest.bgImages.push({ id, searchQuery: bgImageQuery, name: nodeName });
         }
       }
@@ -510,17 +483,47 @@ async function runHaikuAgentLoop(
   maxRounds = 15,
   phase?: string,
   signal?: AbortSignal,
-  capabilityValidator?: (toolName: string, args: Record<string, unknown>) => string | null,
+  _capabilityValidator?: unknown,
   modelId?: string,
+  _schemaValidator?: unknown,
+  /**
+   * Multi-page support: maps node UUID → owning pageId. When the agent emits a write tool for
+   * a node living on a non-focused page, we tag the input with `_pageId` so the client executor
+   * can switch focus before applying the mutation. Without this, every cross-page write fails
+   * with "Node not found on the current page".
+   */
+  nodeIdToPageMap?: Map<string, string>,
+  /**
+   * When set, forces this tool_choice on the FIRST round only. Use `{ type: 'any' }` for agents
+   * that must call at least one tool (e.g. animation) — prevents the model from returning with
+   * 0 tool calls when it decides the task is optional.
+   */
+  toolChoice?: { type: 'auto' | 'any' | 'tool'; name?: string },
+  /**
+   * Optional server-side validators keyed by tool name. When a client-side tool call arrives,
+   * the validator runs before returning `{ ok: true, pending: 'client_execution' }`. If the
+   * validator returns a non-null string, that error is sent back to Claude as `is_error: true`
+   * so the model can self-correct without being blind to client-side failures.
+   */
+  serverSideValidators?: Record<string, (input: Record<string, unknown>) => string | null>,
 ): Promise<void> {
   const startedAt = Date.now();
   let localToolCount = 0;
   let currentMessages = [...messages];
   let rounds = 0;
-  // Maps tool call ID → error string for client-side tools blocked by capability check.
-  // These never reach the client; the model receives the real error for self-correction.
-  const blockedToolErrors = new Map<string, string>();
 
+  // Tag a tool input with the owning page when the referenced node lives on a non-focused page.
+  // Returns the same object unchanged when no remap is needed (no map, no nodeId/parentId, or
+  // the input already carries _pageId — e.g. generate_structure already sets it explicitly).
+  const enrichInputWithPageId = (input: Record<string, unknown>): Record<string, unknown> => {
+    if (!nodeIdToPageMap || !input || typeof input !== 'object') return input;
+    if (input._pageId !== undefined) return input;
+    const refId = (input.nodeId ?? input.parentId) as unknown;
+    if (typeof refId !== 'string') return input;
+    const pageId = nodeIdToPageMap.get(refId);
+    if (!pageId) return input;
+    return { ...input, _pageId: pageId };
+  };
   // Build allowed tool set — any tool name NOT in this set gets an error back to the LLM
   const allowedTools = new Set([
     ...tools.map(t => t.name),
@@ -544,11 +547,16 @@ async function runHaikuAgentLoop(
       system: systemBlocks,
       tools,
       messages: currentMessages,
+      ...(toolChoice && rounds === 1 ? { tool_choice: toolChoice } : {}),
     } as unknown as Parameters<typeof client.messages.stream>[0], signal ? { signal } : undefined);
 
     const toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
     // Track tool IDs emitted during streaming so the post-stream loop doesn't double-emit.
     const streamEmittedIds = new Set<string>();
+    // Track tools that failed server-side validation during streaming.
+    // These are NOT emitted as tool_executed — the client never runs them.
+    // The post-stream loop converts these to is_error results so the AI self-corrects.
+    const streamValidationErrors = new Map<string, string>(); // tool.id → error message
     let stopReason = '';
     let currentToolBlock: { id: string; name: string; inputJson: string } | null = null;
 
@@ -563,18 +571,29 @@ async function runHaikuAgentLoop(
         const parsedInput = parsed.input;
         const toolBlock = { id: currentToolBlock.id, name: currentToolBlock.name, input: parsedInput };
         toolUseBlocks.push(toolBlock);
-        // Only emit for known, non-read tools — unknown tools are rejected in the results loop
+        // Only emit for known, non-read tools — unknown tools are rejected in the results loop.
+        // Read tools are surfaced to the client so the Cursor-style activity feed can show
+        // them as they happen.
         const isReadTool = !!readToolHandlers[toolBlock.name];
+        if (isReadTool && allowedTools.has(toolBlock.name)) {
+          const enriched = enrichInputWithPageId(toolBlock.input);
+          send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: enriched, phase });
+          allExecutedTools.push({ name: toolBlock.name, input: enriched });
+          localToolCount++;
+        }
         if (!isReadTool && allowedTools.has(toolBlock.name)) {
-          // Server-side capability guard: validate before emitting to client.
-          // Blocked tools are never sent to the client; the model receives the real error.
-          const capBlockError = capabilityValidator?.(toolBlock.name, toolBlock.input) ?? null;
-          if (capBlockError) {
-            blockedToolErrors.set(toolBlock.id, capBlockError);
+          // Run server-side validator BEFORE emitting. If it fails, defer the error
+          // without emitting tool_executed — the client never receives or executes the call,
+          // so aiBlind cannot be set for validator-catchable mistakes.
+          const ssValidator = serverSideValidators?.[toolBlock.name];
+          const ssError = ssValidator ? ssValidator(toolBlock.input as Record<string, unknown>) : null;
+          if (ssError) {
+            streamValidationErrors.set(toolBlock.id, ssError);
           } else {
+            const enriched = enrichInputWithPageId(toolBlock.input);
             streamEmittedIds.add(toolBlock.id);
-            send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: toolBlock.input, phase });
-            allExecutedTools.push({ name: toolBlock.name, input: toolBlock.input });
+            send({ type: 'tool_executed', id: toolBlock.id, name: toolBlock.name, input: enriched, phase });
+            allExecutedTools.push({ name: toolBlock.name, input: enriched });
             localToolCount++;
           }
         }
@@ -702,30 +721,29 @@ async function runHaikuAgentLoop(
           success: false,
           error: 'customJavaScript with DOM manipulation is not supported in the SDUI engine. Visual effects (hover, press, entrance animations) are handled by set_animation in the styling phase. Only create workflows for state changes (toggle, tab switch, form submit, navigation). If no state logic is needed, stop.',
         }) });
-      } else if (blockedToolErrors.has(tool.id)) {
-        // Capability-blocked tool — return the real error so the model can self-correct.
+      } else if (streamValidationErrors.has(tool.id)) {
+        // Validator rejected this tool during streaming — it was never emitted to the client.
+        // Return is_error so the AI sees the exact validation message and self-corrects.
         toolResults.push({
           type: 'tool_result',
           tool_use_id: tool.id,
-          content: JSON.stringify({ success: false, error: blockedToolErrors.get(tool.id) }),
+          content: JSON.stringify({ success: false, error: streamValidationErrors.get(tool.id) }),
           is_error: true,
         });
       } else if (streamEmittedIds.has(tool.id)) {
-        // Already emitted during streaming — just add the tool result.
+        // Already emitted during streaming — client executed it; report pending.
+        // No need to re-run the validator here since it already passed during streaming.
         toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
       } else {
-        // Not emitted during streaming (e.g. max_tokens reconciliation path) — check capability first.
-        const capBlockError = capabilityValidator?.(tool.name, tool.input) ?? null;
-        if (capBlockError) {
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: tool.id,
-            content: JSON.stringify({ success: false, error: capBlockError }),
-            is_error: true,
-          });
+        // Not emitted during streaming (e.g. max_tokens reconciliation path) — emit now.
+        const ssValidator = serverSideValidators?.[tool.name];
+        const ssError = ssValidator ? ssValidator(tool.input as Record<string, unknown>) : null;
+        if (ssError) {
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ success: false, error: ssError }), is_error: true });
         } else {
-          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: tool.input, phase });
-          allExecutedTools.push({ name: tool.name, input: tool.input });
+          const enriched = enrichInputWithPageId(tool.input);
+          send({ type: 'tool_executed', id: tool.id, name: tool.name, input: enriched, phase });
+          allExecutedTools.push({ name: tool.name, input: enriched });
           localToolCount++;
           toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
         }
@@ -747,6 +765,17 @@ async function runHaikuAgentLoop(
 
 // ── Structure Agent: builds tree shape + declares variables in one call ───────
 
+/** Build the user-facing prompt for the structure agent.
+ *  Uses the original user message so the agent works from the user's own words
+ *  rather than a Planner-generated SDUI description that may use wrong node terminology.
+ *  For multi-page builds, prepends a page scope line so the agent knows which page to build. */
+function buildStructureUserRequest(message: string, unit: BuildUnit, totalUnits: number): string {
+  if (totalUnits > 1 && unit.pageName && unit.pageRoute) {
+    return `Page: ${unit.pageName} (${unit.pageRoute})\n\n${message}`;
+  }
+  return message;
+}
+
 async function runStructureAgent(
   unit: BuildUnit,
   assignedPageId: string | null,
@@ -755,6 +784,10 @@ async function runStructureAgent(
   allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>,
   signal?: AbortSignal,
   modelId?: string,
+  /** Original user request — passed directly so the structure agent works from the
+   *  user's own words instead of a Planner-generated SDUI description that may use
+   *  wrong node-type terminology. For multi-page builds, prefixed with the page scope. */
+  userRequest?: string,
 ): Promise<{
   tree: CollectedTree | null;
   markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>;
@@ -781,20 +814,15 @@ async function runStructureAgent(
     ...(sysPrompt.dynamic ? [{ type: 'text', text: sysPrompt.dynamic } as Anthropic.Messages.TextBlockParam] : []),
   ];
 
-  const sectionLimit = `\nSECTION LIMIT: Build EXACTLY ${unit.sectionCount ?? 1} section(s). Do NOT add extra sections.`;
-  const noVarsNote = unit.needsVariables === false
-    ? '\nVARIABLES: None needed — this section is purely visual. Leave the variables array empty [].'
-    : '';
-  const structureHintLine = '';
-  const prompt = `Build: ${unit.name}\nDescription: ${unit.description}${sectionLimit}\n${unit.layout ? `Layout: ${unit.layout}` : ''}${structureHintLine}${noVarsNote}\n\nBuild the tree and declare variables in one generate_structure call.`;
+  const prompt = userRequest
+    ? `${userRequest}\n\nBuild the tree and declare variables in one generate_structure call.`
+    : `Build: ${unit.name}\nDescription: ${unit.description}\n${unit.layout ? `Layout: ${unit.layout}` : ''}\n\nBuild the tree and declare variables in one generate_structure call.`;
 
-  // Retry loop: if the LLM omits searchQuery on Image/Video nodes, feed the error back and retry.
   const structureMessages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: prompt }];
-  const MAX_STRUCTURE_ATTEMPTS = 3;
 
   const resolvedStructureModel = (modelId && VALID_MODELS.has(modelId)) ? modelId : 'claude-haiku-4-5';
 
-  for (let attempt = 0; attempt < MAX_STRUCTURE_ATTEMPTS; attempt++) {
+  {
     const response = await client.messages.create({
       model: resolvedStructureModel,
       max_tokens: 16384,
@@ -810,142 +838,60 @@ async function runStructureAgent(
       const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
       if (!treeInput || typeof treeInput !== 'object') continue;
 
-      // Server-side validation: collect structural problems so the AI can self-correct before
-      // collectedTree is built. All checks use the same break-and-retry pattern.
-      const missingSearchQuery: string[] = [];
-      const missingIcon: string[] = [];
-      const walkForMedia = (node: Record<string, unknown>, insideRepeat = false) => {
-        const label = node.label as string | undefined;
-        const nodeHasRepeat = !!(node.repeat || node.loop);
-        const nowInsideRepeat = insideRepeat || nodeHasRepeat;
-        // Image/Video outside a repeat template must have searchQuery for the media agent.
-        // Inside repeat templates, src is bound by the binding agent from item data — no searchQuery needed.
-        if ((label === 'Image' || label === 'Video') && !nowInsideRepeat && !String(node.searchQuery ?? '').trim()) {
-          missingSearchQuery.push((node.name as string | undefined) ?? label ?? 'unknown');
-        }
-        // Icon nodes always need an icon field — they render nothing without it.
-        if (label === 'Icon' && !String((node.icon ?? (node.props as Record<string, unknown> | undefined)?.icon) ?? '').trim()) {
-          missingIcon.push((node.name as string | undefined) ?? 'Icon');
-        }
-        if (Array.isArray(node.children)) {
-          for (const child of node.children as Record<string, unknown>[]) walkForMedia(child, nowInsideRepeat);
-        }
-      };
-      walkForMedia(treeInput);
-
-      if (missingSearchQuery.length > 0) {
-        // Feed the error back so the LLM can self-correct on the next attempt.
-        structureMessages.push({ role: 'assistant', content: response.content });
-        structureMessages.push({
-          role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({
-              success: false,
-              error: `Missing searchQuery on Image/Video node(s): ${missingSearchQuery.join(', ')}. Every Image and Video node outside a repeat template MUST have searchQuery set to a descriptive photo search term (e.g. "modern SaaS dashboard screenshot"). Re-emit generate_structure with searchQuery added to each Image and Video node.`,
-            }),
-          }],
-        });
-        break; // retry with updated messages
-      }
-
-      if (missingIcon.length > 0) {
-        structureMessages.push({ role: 'assistant', content: response.content });
-        structureMessages.push({
-          role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({
-              success: false,
-              error: `Icon node(s) missing required "icon" field: ${missingIcon.join(', ')}. Every Icon MUST have icon set to a valid Iconify name (e.g. "lucide:check", "lucide:arrow-right"). Re-emit generate_structure with the icon field added to each Icon node.`,
-            }),
-          }],
-        });
-        break; // retry with updated messages
-      }
-
-      // UUID cross-check: inline repeat paths must reference a declared variable.
-      const declaredVarUuids = new Set(
-        (Array.isArray(rawInput.variables) ? rawInput.variables as Array<{ uuid?: string }> : [])
-          .map(v => v.uuid)
-          .filter(Boolean),
-      );
-      const mismatchedRepeatUuids: string[] = [];
-      const uuidPattern = /variables\s*\[\s*['"]([a-f0-9-]{36})['"]\s*\]/i;
-      const walkForRepeatUuids = (node: Record<string, unknown>) => {
-        const repeatPath = node.repeat as string | undefined;
-        if (repeatPath) {
-          const m = repeatPath.match(uuidPattern);
-          if (m && !declaredVarUuids.has(m[1])) {
-            mismatchedRepeatUuids.push(`"${repeatPath}" (UUID ${m[1]} not in declared variables)`);
-          }
-        }
-        if (Array.isArray(node.children)) {
-          for (const child of node.children as Record<string, unknown>[]) walkForRepeatUuids(child);
-        }
-      };
-      walkForRepeatUuids(treeInput);
-
-      if (mismatchedRepeatUuids.length > 0) {
-        structureMessages.push({ role: 'assistant', content: response.content });
-        structureMessages.push({
-          role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({
-              success: false,
-              error: `UUID mismatch in repeat field(s): ${mismatchedRepeatUuids.join('; ')}. The UUID used in repeat must exactly match one declared in the variables array. Declare the variable with the correct UUID and re-emit generate_structure.`,
-            }),
-          }],
-        });
-        break; // retry with updated messages
-      }
-
-      // Flat-array check: reject array variables whose items contain a field that is itself
-      // an array of objects (nested structure). This forces the AI to flatten all items to
-      // the same level so a single loop template can iterate over them directly.
-      const nestedArrayVars: string[] = [];
-      for (const v of (Array.isArray(rawInput.variables) ? rawInput.variables as Array<{ name: string; type: string; initialValue?: unknown }> : [])) {
-        if (v.type !== 'array' || !Array.isArray(v.initialValue) || v.initialValue.length === 0) continue;
-        const firstItem = v.initialValue[0];
-        if (typeof firstItem !== 'object' || firstItem === null) continue;
-        for (const [field, val] of Object.entries(firstItem as Record<string, unknown>)) {
-          if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
-            nestedArrayVars.push(`"${v.name}" (field "${field}" is a nested array of objects)`);
-            break;
-          }
-        }
-      }
-      if (nestedArrayVars.length > 0) {
-        structureMessages.push({ role: 'assistant', content: response.content });
-        structureMessages.push({
-          role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: block.id,
-            content: JSON.stringify({
-              success: false,
-              error: `Array variable(s) have nested sub-arrays: ${nestedArrayVars.join('; ')}. All items must be at the same flat level — no arrays of objects inside items. Flatten the structure so each item is a top-level object with all its fields (id, label, type, etc.) and re-emit generate_structure.`,
-            }),
-          }],
-        });
-        break; // retry with updated messages
-      }
-
       const atIndex = rawInput.atIndex as number | undefined;
-      const resolvedTree = assignTreeIds(treeInput);
+      const wfIdMap = new Map<string, string>();
+      const resolvedTree = assignTreeIds(treeInput, new Set(), wfIdMap);
       const markers = extractAndStripMarkers(resolvedTree);
-      const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex, structureHint: unit.structureHint };
+      const rawPageActions = Array.isArray(rawInput.pageActions)
+        ? (rawInput.pageActions as Array<{ workflowId?: string; trigger?: string }>)
+            .filter((pa): pa is { workflowId: string; trigger: string } => typeof pa.workflowId === 'string' && typeof pa.trigger === 'string')
+            .map(pa => ({ ...pa, workflowId: normalizeWorkflowId(pa.workflowId, wfIdMap) }))
+        : undefined;
+      const collectedTree: CollectedTree = { unitName: unit.name, tree: resolvedTree, pageId: assignedPageId, atIndex, structureHint: unit.structureHint, pageActions: rawPageActions?.length ? rawPageActions : undefined };
 
-      const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string; description?: string; folder?: string }>;
+      const declaredVars = (Array.isArray(rawInput.variables) ? rawInput.variables : []) as Array<{ name: string; type: string; initialValue?: unknown; uuid: string; description?: string; folder?: string; schema?: string }>;
       const varEvents: ToolEvent[] = [];
+      // Track UUIDs assigned within this batch to catch intra-batch collisions
+      // (the LLM sometimes emits the same UUID for two different new variables).
+      const batchAssignedIds = new Set<string>();
       for (const v of declaredVars) {
-        const assignedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : crypto.randomUUID();
         const varName = String(v.name ?? 'variable');
+        const requestedId = (v.uuid && isUUIDFormat(v.uuid)) ? v.uuid : null;
+
+        // ── UUID drift guard ────────────────────────────────────────────────
+        // 1. Reuse-by-name: if a variable with this name + type already exists in
+        //    the project, reuse its ID. The varRoster then matches the actual
+        //    store ID instead of inventing a fresh UUID the agents can't reach.
+        // 2. UUID collision: if the LLM happened to emit an ID already in use by
+        //    a *different* variable (pre-existing OR earlier in this same batch),
+        //    generate a fresh one so we don't silently overwrite the existing
+        //    variable. The client-side `add_variable` handler also has a collision
+        //    check, but catching it here means the `tool_executed` payload + the
+        //    varRoster the downstream agents see all reference the *same* canonical ID.
+        const sameNameVar = existingVariables.find(ev =>
+          (ev.name === varName || ev.label === varName) && ev.type === v.type
+        );
+        let assignedId: string;
+        if (sameNameVar?.id) {
+          assignedId = sameNameVar.id;
+        } else if (
+          requestedId &&
+          !existingVariables.some(ev => ev.id === requestedId) &&
+          !batchAssignedIds.has(requestedId)
+        ) {
+          assignedId = requestedId;
+        } else {
+          assignedId = crypto.randomUUID();
+        }
+        batchAssignedIds.add(assignedId);
+
         const clientInput: Record<string, unknown> = { name: varName, type: v.type, initialValue: v.initialValue, variableId: assignedId, _assignedVarId: assignedId, description: v.description, folder: v.folder };
+        if (typeof v.schema === 'string' && v.schema.trim() !== '') clientInput.schema = v.schema.trim();
+        const varMediaHints = Array.isArray((v as Record<string, unknown>).mediaHints)
+          ? ((v as Record<string, unknown>).mediaHints as Array<{ field: string; searchQuery: string }>)
+              .filter(h => typeof h.field === 'string' && typeof h.searchQuery === 'string')
+          : [];
+        if (varMediaHints.length > 0) clientInput.mediaHints = varMediaHints;
         varEvents.push({ name: 'add_variable', input: clientInput, result: { success: true } });
         send({ type: 'tool_executed', id: `var-${varName.replace(/[^a-zA-Z0-9_-]/g, '-')}-${assignedId.slice(0, 8)}`, name: 'add_variable', input: clientInput, phase: 'structure' });
         allExecutedTools.push({ name: 'add_variable', input: clientInput });
@@ -959,7 +905,6 @@ async function runStructureAgent(
 }
 
 // Strict hex-only UUID validation — rejects non-hex chars (g-z) and short aliases.
-// The AI is instructed to generate proper UUIDs; if it doesn't, we fail fast so it self-corrects.
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 function isUUIDFormat(s: string): boolean { return UUID_RE.test(s); }
 
@@ -972,11 +917,111 @@ const MAX_TOOL_ROUNDS = 100;
 const THINKING_MODELS = new Set(['claude-sonnet-4-5']);
 const VALID_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-5']);
 
+interface NodeFlat {
+  id: string;
+  name?: string;
+  type?: string;
+  text?: string;
+  path: string;
+  parentId?: string;
+  blob: string;
+}
+
+// ─── Universal search helper ───────────────────────────────────────────────
+// Fans a regex pattern across all indexed artifacts and returns tagged results.
+// Sources: current-page nodeFlat (full blob), other-pages compact index,
+// variables, workflows (page + global), globalFormulas, dataSources, sharedComponents.
+function runSearchNodes(
+  rawQuery: unknown,
+  nodeFlat: NodeFlat[],
+  otherPagesIndex: Array<{ pageId: string; pageName: string; nodes: Array<{ id: string; name?: string; type?: string; text?: string }> }>,
+  variables: Array<{ id?: string; name: string; label?: string; type: string }>,
+  workflows: Array<{ id?: string; name: string; trigger?: string; stepTypes?: string[]; scope?: string }>,
+  globalFormulas: Array<{ name: string; preview: string }>,
+  dataSources: Array<{ id: string; label: string; path: string }>,
+  sharedComponents: Array<{ id: string; name: string }>,
+): unknown {
+  const q = String(rawQuery ?? '');
+  let matcher: (s: string) => boolean;
+  try {
+    const re = new RegExp(q, 'i');
+    matcher = (s) => re.test(s);
+  } catch {
+    const lc = q.toLowerCase();
+    matcher = (s) => s.toLowerCase().includes(lc);
+  }
+
+  const results: unknown[] = [];
+
+  // 1. Current page — full blob search
+  for (const n of nodeFlat) {
+    if (matcher(n.blob ?? '')) {
+      results.push({ kind: 'node', id: n.id, name: n.name, type: n.type, path: n.path, parentId: n.parentId });
+    }
+  }
+
+  // 2. Other pages — compact name/type/text search
+  for (const page of otherPagesIndex) {
+    for (const n of page.nodes) {
+      const searchable = [n.name, n.type, n.id, n.text].filter(Boolean).join(' ');
+      if (matcher(searchable)) {
+        results.push({ kind: 'node_other_page', pageId: page.pageId, pageName: page.pageName, id: n.id, name: n.name, type: n.type, text: n.text });
+      }
+    }
+  }
+
+  // 3. Variables
+  for (const v of variables) {
+    const searchable = [v.id, v.name, v.label, v.type].filter(Boolean).join(' ');
+    if (matcher(searchable)) {
+      results.push({ kind: 'variable', id: v.id, name: v.name, label: v.label, type: v.type });
+    }
+  }
+
+  // 4. Workflows (page + global)
+  for (const wf of workflows) {
+    const searchable = [wf.id, wf.name, wf.trigger, ...(wf.stepTypes ?? [])].filter(Boolean).join(' ');
+    if (matcher(searchable)) {
+      results.push({ kind: 'workflow', scope: wf.scope ?? 'page', id: wf.id, name: wf.name, trigger: wf.trigger, stepTypes: wf.stepTypes });
+    }
+  }
+
+  // 5. Global formulas
+  for (const f of globalFormulas) {
+    if (matcher([f.name, f.preview].join(' '))) {
+      results.push({ kind: 'formula', name: f.name, preview: f.preview });
+    }
+  }
+
+  // 6. Data sources
+  for (const ds of dataSources) {
+    if (matcher([ds.id, ds.label, ds.path].join(' '))) {
+      results.push({ kind: 'dataSource', id: ds.id, name: ds.label });
+    }
+  }
+
+  // 7. Shared components
+  for (const sc of sharedComponents) {
+    if (matcher([sc.id, sc.name].join(' '))) {
+      results.push({ kind: 'sharedComponent', id: sc.id, name: sc.name });
+    }
+  }
+
+  const capped = results.slice(0, 30);
+  if (capped.length > 0) return capped;
+  return {
+    note: `No match for "${q}". Try a broader pattern — e.g. search_nodes("<label>|<name>") or search_nodes("<color-name>|<hex>|<tailwind-class>") for color, or search_nodes("variables\\\\'uuid\\\\'") for bindings. Searches: all pages, variables, workflows, formulas, data sources, shared components.`,
+  };
+}
+
 interface ChatRequestBody {
   message: string;
   selectedNodeIds?: string[];
   selectedNodesDetails?: unknown[];
   pageTreeSnapshot?: Array<{ id?: string; type?: string; name?: string }>;
+  nodeFlat?: NodeFlat[];
+  /** Compact node index for all non-current pages — includes blob (props+styles serialized) for full style/color search parity with current-page nodes */
+  otherPagesIndex?: Array<{ pageId: string; pageName: string; pageRoute?: string; nodes: Array<{ id: string; name?: string; type?: string; text?: string; blob?: string }> }>;
   pageId?: string;
   pages?: Array<{ id: string; name: string; route: string }>;
   theme?: Record<string, string>;
@@ -987,8 +1032,12 @@ interface ChatRequestBody {
   description?: string;
   category?: string;
   variables?: Array<{ id?: string; name: string; label?: string; type: string; initialValue?: unknown }>;
-  workflows?: Array<{ name: string; trigger: string }>;
-  dataSources?: Array<{ id: string; label: string; path: string }>;
+  workflows?: Array<{ id?: string; name: string; trigger?: string; stepTypes?: string[]; scope?: string }>;
+  dataSources?: Array<{ id: string; label: string; path: string; schema?: string }>;
+  /** Compact global formula index — name + first 80 chars of expression */
+  globalFormulas?: Array<{ name: string; preview: string }>;
+  /** Compact shared component index — id + name */
+  sharedComponents?: Array<{ id: string; name: string }>;
   threadId?: string;
   chatHistory?: Array<{ role: string; content: string }>;
   /** Which Anthropic model to use (defaults to claude-haiku-4-5) */
@@ -998,8 +1047,6 @@ interface ChatRequestBody {
   /** When true, the client is continuing a Phase 3 styling session across a tool-result request.
    *  The server must restore inPhase3Mode=true so Phase 3 tool restrictions are preserved. */
   isPhase3Continuation?: boolean;
-  /** When true, skip the AI call and return the built system prompt as JSON */
-  systemPromptOnly?: boolean;
 }
 
 // ── Build palette snapshot from the project's live theme overrides ─────────────
@@ -1045,6 +1092,7 @@ export async function POST(req: NextRequest) {
     selectedNodeIds = [],
     selectedNodesDetails = [],
     pageTreeSnapshot = [],
+    nodeFlat = [],
     pageId,
     pages = [],
     theme = {},
@@ -1057,11 +1105,13 @@ export async function POST(req: NextRequest) {
     variables = [],
     workflows = [],
     dataSources = [],
+    otherPagesIndex = [],
+    globalFormulas = [],
+    sharedComponents: sharedComponentsIndex = [],
     threadId,
     chatHistory = [],
     toolResults,
     model: requestedModel,
-    systemPromptOnly = false,
     isPhase3Continuation = false,
   } = body;
 
@@ -1078,23 +1128,34 @@ export async function POST(req: NextRequest) {
 
   const paletteSnapshot = buildPaletteSnapshot(theme);
 
-  const mainPromptParts = buildChatSystemPrompt({
-    pages,
-    currentPageName: currentPage.name,
-    currentPageRoute: currentPage.route,
-    paletteSnapshot,
-    mood,
-    animationLevel,
-    layoutStructure,
-    appName,
-    description,
-    category,
-  });
-
   // Add context about selected nodes and page tree as a system note
+  // Show enough of the initialValue that the AI can IDENTIFY the variable (grep use).
+  // IMPORTANT: This is a preview only — the AI must call get_variables for the full value
+  // before calling update_variable_initial_value to avoid data loss.
   const fmtInitial = (val: unknown): string => {
-    if (Array.isArray(val)) return `array (${val.length} items)`;
-    if (typeof val === 'object' && val !== null) return 'object';
+    if (Array.isArray(val)) {
+      if (val.length === 0) return 'array (empty)';
+      // Show keys + first value of each top-level item to help the agent identify the variable.
+      // Deliberately compact — not for reconstruction, only for grep/identification.
+      const preview = val.slice(0, 2).map(item => {
+        if (typeof item === 'object' && item !== null) {
+          // Show only the first 3 keys per item, values truncated to 30 chars
+          const entries = Object.entries(item as Record<string, unknown>).slice(0, 3)
+            .map(([k, v]) => {
+              const vs = typeof v === 'string' ? `"${v}"` : String(v);
+              return `${k}:${vs.length > 30 ? vs.slice(0, 27) + '…' : vs}`;
+            }).join(',');
+          return `{${entries}}`;
+        }
+        const s = typeof item === 'string' ? `"${item}"` : String(item);
+        return s.length > 40 ? s.slice(0, 37) + '…' : s;
+      }).join(', ');
+      return `array[${val.length}] preview (call get_variables for full): [${preview}${val.length > 2 ? ', …' : ''}]`;
+    }
+    if (typeof val === 'object' && val !== null) {
+      const s = JSON.stringify(val);
+      return s.length > 100 ? s.slice(0, 97) + '…' : s;
+    }
     return String(val);
   };
 
@@ -1102,45 +1163,15 @@ export async function POST(req: NextRequest) {
     selectedNodesDetails.length > 0
       ? `Selected: ${selectedNodesDetails.map((n: unknown) => { const node = n as { type?: string; id?: string; name?: string }; return `${node.type ?? 'Node'} "${node.name ?? 'untitled'}" (id: ${node.id ?? '?'})`; }).join(', ')}`
       : `Nothing selected`,
-    pageTreeSnapshot.length > 0
-      ? `Current page has ${pageTreeSnapshot.length} top-level section(s). Use search_nodes(query) to find a node by name/type/text, or get_page_tree() to inspect the full structure.`
+    nodeFlat.length > 0
+      ? `Current page has ${pageTreeSnapshot.length} top-level section(s) and ${nodeFlat.length} nodes total. Use search_nodes(query) with regex to find any node — searches name, type, text, styles, and bindings.`
       : `Current page is empty — no nodes yet.`,
     variables.length > 0
       ? `Variables: ${variables.map(v => `${v.label ?? v.name}${v.type ? ` — ${v.type}` : ''}${v.initialValue != null ? `, initial: ${fmtInitial(v.initialValue)}` : ''}${v.id ? ` (id: ${v.id}, path: variables['${v.id}'])` : ''}`).join(', ')}`
       : null,
     workflows.length > 0 ? `Workflows: ${workflows.map(w => `${w.name} (trigger: ${w.trigger})`).join(', ')}` : null,
-    dataSources.length > 0 ? `DataSources: ${dataSources.map(d => `${d.label} → ${d.path}`).join(', ')}` : null,
+    dataSources.length > 0 ? `DataSources:\n${dataSources.map(d => `  ${d.label} → ${d.path}${d.schema ? `  schema: ${d.schema}` : ''}`).join('\n')}` : null,
   ].filter(Boolean).join('\n');
-
-  // ── Early return for system prompt inspection ────────────────────────────────
-  if (systemPromptOnly) {
-    const mainFull = mainPromptParts.static + '\n\n' + mainPromptParts.dynamic;
-    const full = contextNote ? `${mainFull}\n\n[Builder Context]\n${contextNote}` : mainFull;
-    const phase3PromptParts = buildPhase3SystemPrompt({
-      pages,
-      currentPageName: currentPage.name,
-      currentPageRoute: currentPage.route,
-      paletteSnapshot,
-      mood,
-      animationLevel,
-      appName,
-      description,
-      category,
-    });
-    const structurePromptParts = buildStructureAgentPrompt();
-    const workflowsPromptParts = buildWorkflowsAgentPrompt({ pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, appName, description });
-    return Response.json({
-      systemPrompt: mainFull,
-      planningPrompt: PLAN_SYSTEM,
-      structurePrompt: structurePromptParts.static + (structurePromptParts.dynamic ? '\n\n' + structurePromptParts.dynamic : ''),
-      phase3Prompt: phase3PromptParts.static + '\n\n' + phase3PromptParts.dynamic,
-      workflowsPrompt: workflowsPromptParts.static + '\n\n' + workflowsPromptParts.dynamic,
-      structureTools: STRUCTURE_AGENT_TOOLS.map(t => t.name),
-      phase3Tools: PHASE3_BUILDER_TOOLS.map(t => t.name),
-      workflowsTools: PHASE_W_TOOLS.map(t => t.name),
-      mainTools: ALL_BUILDER_TOOLS.map(t => t.name),
-    });
-  }
 
   // ── Build message history ────────────────────────────────────────────────────
 
@@ -1183,89 +1214,236 @@ export async function POST(req: NextRequest) {
     start(c) { controller = c; },
   });
 
-  const send = (event: Record<string, unknown>) => {
+  // Phase O \u2014 turn instrumentation captured by wrapping `send`.
+  const turnStartedAt = Date.now();
+  const turnCounters = { ops: 0, agents: new Set<string>(), toolCalls: 0 };
+  const rawSend = (event: Record<string, unknown>) => {
     try {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
     } catch {
       // stream closed
     }
   };
+  const send = (event: Record<string, unknown>) => {
+    const t = event.type as string | undefined;
+    if (t === 'tool_executed') turnCounters.toolCalls += 1;
+    else if (t === 'agent_context' && typeof event.agent === 'string') turnCounters.agents.add(event.agent);
+    else if (t === 'planner_complete' && event.manifest && Array.isArray((event.manifest as Record<string, unknown>).operations)) turnCounters.ops = ((event.manifest as Record<string, unknown>).operations as unknown[]).length;
+    rawSend(event);
+  };
   send({ type: 'request_start', requestId, pageId: currentPage.id, model: modelId });
 
-  // ── Detect build / mixed mode ────────────────────────────────────────────────
-  // Always call Phase 0 classifier for first-round messages — it uses Haiku (fast, cheap)
-  // and correctly returns "edit" for non-build requests, so there is no routing cost.
-  // A regex heuristic would silently miss any request that doesn't match the pattern.
-  const mightBeBuildRequest = !toolResults?.length;
 
   // ── Run AI loop ──────────────────────────────────────────────────────────────
 
   void (async () => {
-    let currentMessages = [...messages];
-    let rounds = 0;
     const allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> = [];
-    // Restored from isPhase3Continuation when the client sends back tool results across requests.
-    let inPhase3Mode = isPhase3Continuation;
 
-    // ── Build / mixed mode orchestrator ──────────────────────────────────────
-    async function runBuildOrMixedMode(plan: BuildPlan): Promise<boolean> {
-      // Phase 1 (mixed only): run sequential edit loop first
-      if (plan.mode === 'mixed' && plan.editSummary) {
-        send({ type: 'build_phase', phase: 'editing', message: 'Applying changes...' });
-        const editMsgs: Anthropic.Messages.MessageParam[] = [
-          ...currentMessages.slice(0, -1),
-          { role: 'user', content: `${contextNote ? `[Context]\n${contextNote}\n\n` : ''}[Edit Operations]\n${plan.editSummary}\n\nApply ONLY the edit operations listed above. Do NOT create new pages or sections.` },
-        ];
-        await runEditLoop(editMsgs);
+    // ── Build pipeline (always runs — planner decides dynamic vs specialist) ──
+    async function runBuildPipeline(): Promise<void> {
+      // Default to a single build unit on the current page.
+      // The planner/structure agent will determine the actual structure from the message.
+      const units: BuildUnit[] = [{
+        name: message.slice(0, 60),
+        pageRoute: currentPage.route,
+        pageName: currentPage.name,
+        description: message,
+      }];
+
+      // Emit build plan for diagnostic log.
+      send({ type: 'build_plan', mode: 'build', buildUnits: units });
+
+      // Phase H — planner → structure step pipeline.
+      // Emits Phase O envelope events (planner_complete, structure_complete, …)
+      // that the Cursor-style chat surfaces in Copy Debug.
+      // We also capture the resulting manifest so the legacy dispatch below can
+      // pluck out predicted dataSourceIds (so per-page binders can reference
+      // collections['…'] formulas while the data agent is still working).
+      type PredictedDataSource = { id: string; name?: string; type?: 'rest' | 'graphql' };
+      let predictedDataSources: PredictedDataSource[] = [];
+      let plannerWantsData = false;
+      // Manifest-derived agent gate set — populated from the planner's ContractManifest.
+      // Source of truth for which agent families run.
+      let manifestAgentSet = new Set<string>();
+      let manifestOperations: import('@/lib/ai/agents/manifest').ManifestOperation[] = [];
+      // Human-readable intent string from the manifest (used for the completion text bubble).
+      let manifestIntent = '';
+      // Planner-refined working spec for all specialist agents. Falls back to the raw user message.
+      let effectiveMessage = message;
+      try {
+        const { runNewAgentDispatch } = await import('@/lib/ai/agents/dispatch');
+        const dispatchResult = await runNewAgentDispatch(
+          {
+            projectId: (body as { projectId?: string }).projectId ?? threadId ?? requestId,
+            message,
+            selectedNodeIds: selectedNodeIds ?? [],
+            pageId: currentPage.id,
+            pageNodes: (pageTreeSnapshot ?? []) as never,
+            // Full search context for Context Agent + legacy read handlers
+            nodeFlat: nodeFlat ?? [],
+            otherPagesIndex: otherPagesIndex ?? [],
+            variables: variables ?? [],
+            workflows: workflows ?? [],
+            globalFormulas: globalFormulas ?? [],
+            dataSources: dataSources ?? [],
+            sharedComponents: sharedComponentsIndex ?? [],
+            pages: pages ?? [],
+            theme: theme ?? {},
+            currentPageRoute: currentPage.route,
+            signal: modelSignalCtl.signal,
+          },
+          send,
+        );
+        // If context agent couldn't find a target, surface the clarification question and stop.
+        if (dispatchResult.needsClarification) {
+          send({ type: 'turn_stats', totalDurationMs: Date.now() - turnStartedAt, toolCalls: 0, ops: 0, agents: 0 });
+          send({ type: 'text_delta', content: dispatchResult.needsClarification.question });
+          send({ type: 'done', tools: [] });
+          return;
+        }
+        // Capture top-level manifest intent for the completion text bubble.
+        if (dispatchResult.manifest.intent) manifestIntent = dispatchResult.manifest.intent;
+        // Use the planner's refined request as the working spec for all specialist agents.
+        // Falls back to the raw user message when refinedRequest is absent (e.g. clarification flows).
+        if (dispatchResult.manifest.refinedRequest) effectiveMessage = dispatchResult.manifest.refinedRequest;
+        // Capture operations for dynamic agent detection.
+        manifestOperations = dispatchResult.manifest.operations ?? [];
+        // Walk the manifest for predicted datasources + signal whether the
+        // planner asked for a data agent (so we can avoid spawning one for
+        // prompts that don't need any external data).
+        for (const op of manifestOperations) {
+          if (op.agents?.data) plannerWantsData = true;
+          // Collect all agent family keys emitted by the planner.
+          for (const key of Object.keys(op.agents ?? {})) manifestAgentSet.add(key);
+          const ctx = (op.agents?.structure?.context ?? {}) as Record<string, unknown>;
+          if (Array.isArray(ctx.dataSources)) {
+            for (const d of ctx.dataSources as Array<Record<string, unknown>>) {
+              const id = (d.dataSourceId ?? d.id) as string | undefined;
+              if (typeof id === 'string' && id.length > 0) {
+                predictedDataSources.push({
+                  id,
+                  name: typeof d.name === 'string' ? d.name : undefined,
+                  type: (d.type as 'rest' | 'graphql' | undefined),
+                });
+              }
+            }
+          }
+          const dctx = (op.agents?.data?.context ?? {}) as Record<string, unknown>;
+          if (Array.isArray(dctx.dataSources)) {
+            for (const d of dctx.dataSources as Array<Record<string, unknown>>) {
+              const id = (d.dataSourceId ?? d.id) as string | undefined;
+              if (typeof id === 'string' && id.length > 0) {
+                predictedDataSources.push({
+                  id,
+                  name: typeof d.name === 'string' ? d.name : undefined,
+                  type: (d.type as 'rest' | 'graphql' | undefined),
+                });
+              }
+            }
+          }
+        }
+        // Dedupe by id.
+        const seen = new Set<string>();
+        predictedDataSources = predictedDataSources.filter(d => {
+          if (seen.has(d.id)) return false;
+          seen.add(d.id);
+          return true;
+        });
+      } catch (err) {
+        console.warn('[new-arch] dispatch failed', err);
       }
 
-      const units = plan.buildUnits ?? [];
-      if (units.length === 0) { send({ type: 'done', tools: allExecutedTools }); return false; }
+      // Rebuild build units from manifest operations — one per distinct pageRoute.
+      // The Planner outputs pageRoute + pageName per operation; we derive units from
+      // that rather than defaulting everything to the current page.
+      if (manifestOperations.length > 0) {
+        const routeMap = new Map<string, BuildUnit>();
+        for (const op of manifestOperations) {
+          const route = op.pageRoute ?? currentPage.route;
+          if (!route || routeMap.has(route)) continue;
+          routeMap.set(route, {
+            name: op.summary,
+            pageRoute: route,
+            pageName: op.pageName ?? (route === currentPage.route ? currentPage.name : undefined),
+            description: op.summary,
+            sectionCount: 1,
+          });
+        }
+        if (routeMap.size > 0) {
+          units.length = 0;
+          units.push(...routeMap.values());
+          send({ type: 'build_plan', mode: 'build', buildUnits: units });
+        }
+      }
 
-      // Emit full build plan for diagnostic log.
-      send({ type: 'build_plan', mode: plan.mode, needsStyling: plan.needsStyling, needsBinding: plan.needsBinding, needsWorkflows: plan.needsWorkflows, editSummary: plan.editSummary, buildUnits: units });
+      // Compute early gates from manifest (needed before structure agent runs).
+      const skipStructureAgentEarly = !manifestAgentSet.has('structure');
 
       send({ type: 'build_phase', phase: 'building', total: units.length, message: `Building ${units.length} section${units.length !== 1 ? 's' : ''} with parallel agents...`, buildUnits: units.map(u => ({ name: u.name, description: u.description, pageRoute: u.pageRoute, sectionCount: u.sectionCount })) });
 
       // ── Page creation (sequential) ──────────────────────────────────────────
       const pageIdMap: Record<string, string> = {};
+      if (!skipStructureAgentEarly) {
       for (const unit of units) {
         const routeKey = unit.pageRoute ?? '/';
-        if (pageIdMap[routeKey]) continue; // already assigned for this route — skip to avoid duplicate add_page events
-        const isCurrent = !unit.pageRoute || unit.pageRoute === '/' || unit.pageRoute === currentPage.route;
+          if (pageIdMap[routeKey]) continue; // already assigned for this route
+        const isCurrent = !unit.pageRoute || unit.pageRoute === currentPage.route;
         if (isCurrent) { pageIdMap[routeKey] = pageId ?? currentPage.id; continue; }
         const existing = pages.find(p => p.route === unit.pageRoute);
         if (existing) { pageIdMap[unit.pageRoute] = existing.id; continue; }
         const newPageId = `page-${crypto.randomUUID().slice(0, 8)}`;
         pageIdMap[unit.pageRoute] = newPageId;
         send({ type: 'tool_executed', id: `page-create-${newPageId}`, name: 'add_page', input: { route: unit.pageRoute, name: unit.pageName, pageId: newPageId, _assignedPageId: newPageId }, phase: 'structure' });
+        }
       }
 
+      // Shared state populated by the structure agent (empty for dynamic-only requests).
+      const collectedTrees: CollectedTree[] = [];
+      const allMarkers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[] = [];
+      let addVarEventsCollected: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> = [];
+      let boolVarIds: string[] = [];
+
       // ── Phase 1: Structure (tree + variables in one LLM call) ─────────────────
+      // Skipped for dynamic-only requests — no new structure is being created.
+      if (!skipStructureAgentEarly) {
       send({ type: 'build_phase', phase: 'structure', message: 'Building structure & variables...' });
       const structureStartedAt = Date.now();
-      send({ type: 'agent_context', agent: 'structure', systemPrompt: buildStructureAgentPrompt().static, tools: STRUCTURE_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: structureStartedAt });
+      // Build a representative user message for the first unit so the copy log can show it.
+      const firstStructureUnit = units[0];
+      const firstStructureUserRequest = firstStructureUnit
+        ? buildStructureUserRequest(effectiveMessage, firstStructureUnit, units.length)
+        : undefined;
+      const firstStructureUserMessage = firstStructureUserRequest
+        ? `${firstStructureUserRequest}\n\nBuild the tree and declare variables in one generate_structure call.`
+        : undefined;
+      send({ type: 'agent_context', agent: 'structure', systemPrompt: buildStructureAgentPrompt().static, userMessage: firstStructureUserMessage, tools: STRUCTURE_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: structureStartedAt });
 
       type StructureSubResult = {
         result: Awaited<ReturnType<typeof runStructureAgent>>;
         unit: BuildUnit;
         index: number;
         ctWithMedia?: CollectedTree;
+        prompt: string;
       };
 
       const structureSubResultsSettled = await Promise.allSettled(units.map(async (unit, i): Promise<StructureSubResult> => {
         const assignedPid = pageIdMap[unit.pageRoute ?? '/'] ?? null;
-        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal, modelId);
+        const structureUserRequest = buildStructureUserRequest(effectiveMessage, unit, units.length);
+        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal, modelId, structureUserRequest);
+        const unitPrompt = `${structureUserRequest}\n\nBuild the tree and declare variables in one generate_structure call.`;
 
         let ctWithMedia: CollectedTree | undefined;
         if (result.tree) {
           const ct = result.tree;
-          const mediaManifest = extractMediaFromTree(ct.tree);
+          const loopNodeIds = new Set(
+            (result.markers ?? []).filter(m => m.loop).map(m => m.nodeId),
+          );
+          const mediaManifest = extractMediaFromTree(ct.tree, loopNodeIds);
           ctWithMedia = { ...ct, mediaManifest };
         }
 
         send({ type: 'section_progress', done: i + 1, total: units.length, name: unit.name });
-        return { result, unit, index: i, ctWithMedia };
+        return { result, unit, index: i, ctWithMedia, prompt: unitPrompt };
       }));
       const structureSubResults: StructureSubResult[] = [];
       for (const [idx, settled] of structureSubResultsSettled.entries()) {
@@ -1281,15 +1459,10 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Collect variable events from all structure sub-results
-      const addVarEventsCollected = structureSubResults.flatMap(s => s.result.varEvents);
-
-      const boolVarIds = addVarEventsCollected
+        addVarEventsCollected = structureSubResults.flatMap(s => s.result.varEvents);
+        boolVarIds = addVarEventsCollected
         .filter(e => (e.input as Record<string, unknown>).type === 'boolean')
         .map(e => String((e.input as Record<string, unknown>).variableId ?? ''));
-
-      const collectedTrees: CollectedTree[] = [];
-      const allMarkers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[] = [];
 
       for (const sub of structureSubResults) {
         if (sub.ctWithMedia) {
@@ -1297,8 +1470,7 @@ export async function POST(req: NextRequest) {
           const isCurrentPage = !ct.pageId || ct.pageId === (pageId ?? currentPage.id);
           collectedTrees.push(ct);
           allMarkers.push(sub.result.markers);
-
-          send({ type: 'tool_executed', id: `build-${ct.unitName}-imm-${sub.index}`, name: 'generate_structure', input: { tree: ct.tree, parentId: undefined, atIndex: ct.atIndex, _pageId: isCurrentPage ? undefined : ct.pageId, _boolVarIds: boolVarIds }, phase: 'structure' });
+          send({ type: 'tool_executed', id: `build-${ct.unitName}-imm-${sub.index}`, name: 'generate_structure', input: { tree: ct.tree, parentId: undefined, atIndex: ct.atIndex, _pageId: isCurrentPage ? undefined : ct.pageId, _boolVarIds: boolVarIds, pageActions: ct.pageActions }, phase: 'structure' });
           allExecutedTools.push({ name: 'generate_structure', input: { tree: ct.tree } });
         }
       }
@@ -1307,16 +1479,16 @@ export async function POST(req: NextRequest) {
 
       if (collectedTrees.length === 0) {
         send({ type: 'done', tools: allExecutedTools });
-        return false;
+          return;
+        }
       }
 
       // ── Compute hints (between structure and parallel fan-out) ──────────────
       // Hints are computed from the trees BEFORE markers are stripped (they're still on the trees at this point for hint detectors)
       const nestedRepeatHint = detectNestedRepeatNodes(collectedTrees);
       const ternaryContrastHint = detectTernaryContrastNodes(collectedTrees, addVarEventsCollected.map(e => ({ name: e.name, input: e.input as Record<string, unknown> })));
-      const repeatContainerHint = detectRepeatContainerPairs(collectedTrees);
 
-      const relations = plan.relations ?? [];
+      const relations: string[] = [];
       const relationsNote = relations.length > 0 ? `\n\nAlso wire these connections:\n${relations.join('\n')}` : '';
       const createdPageIds = [...new Set(collectedTrees.map(t => t.pageId).filter((id): id is string => !!id && id !== (pageId ?? currentPage.id)))];
       const pageContextNote = createdPageIds.length > 0
@@ -1353,6 +1525,9 @@ export async function POST(req: NextRequest) {
         for (const ct of trees) walkNested(ct.tree, 0);
 
         // Infer semantic role from structure alone — no names, no hints required.
+        // Roles use square-bracket notation: Box[role] so agents can tell role from type at a glance.
+        // Disambiguation rule: Box[button] = the OUTER container (gets bg/radius/padding).
+        //                       Text[button-label] = the INNER label (gets color/font only).
         const LEAF_TYPES = new Set(['Text', 'Icon']);
         function inferRole(
           node: Record<string, unknown>,
@@ -1365,7 +1540,7 @@ export async function POST(req: NextRequest) {
 
           // Non-Box nodes: annotate based on parent context only
           if (nType === 'Text') {
-            if (parentRole === 'button' || parentRole === 'icon-button') return 'button-text';
+            if (parentRole === 'button' || parentRole === 'icon-button') return 'button-label';
             return '';
           }
           if (nType === 'Icon') {
@@ -1380,8 +1555,14 @@ export async function POST(req: NextRequest) {
           const allLeaf = childTypes.every(t => LEAF_TYPES.has(t));
 
           if (allLeaf) {
-            // Icon-only → icon-button; anything else all-leaf → button (CTA, badge, chip, tag)
-            return childTypes.length === 1 && childTypes[0] === 'Icon' ? 'icon-button' : 'button';
+            // Icon-only → icon-button
+            if (childTypes.length === 1 && childTypes[0] === 'Icon') return 'icon-button';
+            // Display-section names: output panels, result screens, info badges — NOT buttons.
+            const nodeName = (node.name as string | undefined) ?? '';
+            const isDisplaySection = /Display|Output|Result|Screen|Panel|Indicator|Status/i.test(nodeName);
+            if (isDisplaySection && childTypes.every(t => t === 'Text' || t === 'Heading')) return 'group';
+            // All other all-leaf Box nodes (CTA, badge, chip, tag, nav link) → button
+            return 'button';
           }
           if (kids.length === 1 && childTypes[0] === 'Image') return 'image-wrap';
           if (kids.length === 1 && childTypes[0] === 'Video') return 'video-wrap';
@@ -1399,22 +1580,54 @@ export async function POST(req: NextRequest) {
           const nId = node.id as string ?? '?';
           const nType = ((node.type ?? node.label) as string | undefined) ?? 'Box';
           const nName = node.name as string ?? '';
-          const nText = node.text as string ?? '';
+          const rawText = node.text;
+          // Static text for display; if it's a binding object, show abbreviated form
+          const nText = typeof rawText === 'string' ? rawText
+            : rawText && typeof rawText === 'object' && ('formula' in (rawText as object) || 'js' in (rawText as object))
+              ? '' // shown as existing binding below
+              : '';
           const nRepeat = typeof node.repeat === 'string' ? node.repeat : '';
           const nCondition = typeof node.condition === 'string' ? node.condition : '';
           const mk = markerMap.get(nId);
-          const nested = nestedSet.has(nId) ? '(NESTED)' : '';
+          const nested = nestedSet.has(nId) ? '[nested]' : '';
+
+          // ── Existing binding annotations ──────────────────────────────────
+          // Show what's already bound so downstream agents don't re-bind or duplicate.
+          const existingTags: string[] = [];
+          // Text binding (formula or js object)
+          if (rawText && typeof rawText === 'object') {
+            const textObj = rawText as Record<string, unknown>;
+            const expr = (textObj.formula ?? textObj.js ?? '') as string;
+            if (expr) existingTags.push(`text:${expr.slice(0, 60)}(existing)`);
+          }
+          // Workflow/action bindings
+          const nodeActions = node.actions as unknown;
+          if (Array.isArray(nodeActions)) {
+            for (const a of nodeActions as Record<string, unknown>[]) {
+              const wfName = (a.action ?? a.workflow) as string | undefined;
+              const trigger = (a.trigger ?? '') as string;
+              if (wfName) existingTags.push(`${trigger || 'click'}:${wfName}(existing)`);
+            }
+          } else if (nodeActions && typeof nodeActions === 'object') {
+            for (const [trigger, def] of Object.entries(nodeActions as Record<string, unknown>)) {
+              const wfName = (def as Record<string, unknown>)?.action ?? (def as Record<string, unknown>)?.workflow;
+              if (wfName) existingTags.push(`${trigger}:${wfName}(existing)`);
+            }
+          }
+
           const tags = [
             mk?.repeat,
             mk?.condition,
-            nRepeat ? `repeat="${nRepeat}"` : '',
-            nCondition ? `condition="${nCondition}"` : '',
+            nRepeat ? `REPEAT(mapPath=${nRepeat})` : '',
+            nCondition ? `CONDITION(${nCondition})` : '',
             nested,
+            ...existingTags,
           ].filter(Boolean).join(' ');
 
           const kids = (Array.isArray(node.children) ? node.children : []) as Record<string, unknown>[];
           const role = inferRole(node, kids, parentRole, depth);
-          const displayType = role ? `${nType}(${role})` : nType;
+          // Use square brackets for role: Box[button] vs Text[button-label] is unambiguous.
+          const displayType = role ? `${nType}[${role}]` : nType;
 
           let line = `${indent}[${nId}] ${displayType}${nName ? ` "${nName}"` : ''}${nText ? ` text="${nText}"` : ''}`;
           if (tags) line += ` — ${tags}`;
@@ -1450,25 +1663,29 @@ export async function POST(req: NextRequest) {
           filteredVars.length > 0
             ? `Variables: ${filteredVars.map((v: { label?: string; name?: string; type?: string; initialValue?: unknown; id?: string }) => `${v.label ?? v.name}${v.type ? ` — ${v.type}` : ''}${v.initialValue != null ? `, initial: ${fmtInitial(v.initialValue)}` : ''}${v.id ? ` (id: ${v.id}, path: variables['${v.id}'])` : ''}`).join(', ')}`
             : null,
-          dataSources.length > 0 ? `DataSources: ${dataSources.map((d: { label?: string; path?: string }) => `${d.label} → ${d.path}`).join(', ')}` : null,
+          dataSources.length > 0 ? `DataSources:\n${dataSources.map((d: { label?: string; path?: string; schema?: string }) => `  ${d.label} → ${d.path}${d.schema ? `  schema: ${d.schema}` : ''}`).join('\n')}` : null,
         ].filter(Boolean).join('\n');
       })();
 
       // Build id→type map from all collected trees for the server-side capability validator.
       // This lets runHaikuAgentLoop resolve component types without accessing the Zustand store.
       const nodeTypeMap = new Map<string, string>();
+      // Build id→pageId map so downstream agents can write to nodes on non-focused pages.
+      // Without this, a styling tool emitted for a node on page B fails on the client because
+      // the executor only scans store.pageNodes (the active page).
+      const nodeIdToPageMap = new Map<string, string>();
       {
-        const walkForTypes = (node: Record<string, unknown>) => {
+        const walkForTypes = (node: Record<string, unknown>, pageId: string | undefined) => {
           const id = node.id as string | undefined;
-          // Structure trees use `label`; resolved SDUI trees use `type`. Handle both.
           const type = (node.type ?? node.label) as string | undefined;
           if (id && type) nodeTypeMap.set(id, type);
+          if (id && pageId) nodeIdToPageMap.set(id, pageId);
           for (const child of (Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [])) {
-            walkForTypes(child);
+            walkForTypes(child, pageId);
           }
         };
         for (const ct of collectedTrees) {
-          if (ct.tree) walkForTypes(ct.tree as Record<string, unknown>);
+          if (ct.tree) walkForTypes(ct.tree as Record<string, unknown>, ct.pageId);
         }
       }
 
@@ -1479,12 +1696,19 @@ export async function POST(req: NextRequest) {
         allExecutedTools.push({ name: 'switch_page', input: { pageId: createdPageIds[0] } });
       }
 
-      send({ type: 'build_phase', phase: 'parallel', message: 'Running Styling, Binding, Workflows, Media agents in parallel...' });
-
       // ── Flatten markers for diagnostic log ──────────────────────────────────
       const flatMarkers = allMarkers.flat();
       // Emit markers for diagnostic log only — all annotations are in the compact tree.
       send({ type: 'structure_markers', markers: flatMarkers });
+
+      // ── Defensive binding gate ───────────────────────────────────────────────
+      // If the structure step produced loop markers OR declared variables, the planner
+      // MUST have included binding — if it forgot, force it in now.
+      // This prevents the binding agent from being skipped for set_repeat / set_text.
+      const hasLoopsOrVars = flatMarkers.some(m => m.loop) || addVarEventsCollected.length > 0;
+      if (hasLoopsOrVars && !manifestAgentSet.has('binding')) {
+        manifestAgentSet.add('binding');
+      }
 
       // ── Variable roster for downstream agents ───────────────────────────────
       // Merge: newly-created vars (with full schema) + pre-existing vars not re-created this run.
@@ -1500,50 +1724,11 @@ export async function POST(req: NextRequest) {
         const n = String(inp.name ?? '');
         const id = String(inp.variableId ?? '');
         const t = String(inp.type ?? 'string');
-        let fields = '';
-        if (t === 'object' && inp.initialValue && typeof inp.initialValue === 'object' && !Array.isArray(inp.initialValue)) {
-          const objKeys = Object.keys(inp.initialValue as Record<string, unknown>);
-          if (objKeys.length > 0) fields = ` — fields: ${objKeys.join(', ')}`;
-        }
-        if (t === 'array' && Array.isArray(inp.initialValue) && (inp.initialValue as unknown[]).length > 0) {
-          const allItems = inp.initialValue as unknown[];
-          const firstItem = allItems[0] as Record<string, unknown>;
-          const fieldDescs = Object.entries(firstItem).map(([k, v]) => {
-            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null) {
-              const allInner = allItems.flatMap(row =>
-                Array.isArray((row as Record<string, unknown>)[k]) ? (row as Record<string, unknown>)[k] as unknown[] : []
-              );
-              const innerFieldDescs = Object.keys(v[0] as Record<string, unknown>).map(ik => {
-                const innerVals = [...new Set(
-                  allInner.map(inner => (inner as Record<string, unknown>)[ik])
-                    .filter(val => typeof val === 'string' && (val as string).length <= 20)
-                )] as string[];
-                if (innerVals.length >= 2 && innerVals.length <= 8) return `${ik}(${innerVals.map(u => `"${u}"`).join('|')})`;
-                return ik;
-              });
-              return `${k}[{${innerFieldDescs.join(', ')}}]`;
-            }
-            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') {
-              // Primitive string array — show sample values so binding agent knows to use keyField:"index" and context?.item?.data?.value
-              const sample = (v as string[]).slice(0, 2).map(s => `"${s.slice(0, 25)}"`).join(', ');
-              return `${k}([${sample},…])`;
-            }
-            if (typeof v === 'string') {
-              const uniqueVals = [...new Set(
-                allItems
-                  .map(item => (item as Record<string, unknown>)[k])
-                  .filter(val => typeof val === 'string' && (val as string).length <= 20)
-              )] as string[];
-              if (uniqueVals.length >= 2 && uniqueVals.length <= 30) {
-                return `${k}(${uniqueVals.map(u => `"${u}"`).join('|')})`;
-              }
-            }
-            return k;
-          });
-          fields = ` — fields: ${fieldDescs.join(', ')}`;
-        }
         const desc = inp.description ? ` — ${inp.description}` : '';
-        return `  "${n}" (${t}) → variables['${id}']${fields}${desc}`;
+        const valueStr = inp.initialValue !== undefined
+          ? ` = ${JSON.stringify(inp.initialValue)}`
+          : '';
+        return `  "${n}" (${t}) → variables['${id}']${valueStr}${desc}`;
       };
 
       const newVarEntries = addVarEventsCollected.map(e => {
@@ -1587,123 +1772,492 @@ export async function POST(req: NextRequest) {
       send({ type: 'structure_context', compactTree, varRoster });
 
       // ── Read handlers shared by Styling and Binding ─────────────────────────
+      // search_nodes now uses the full runSearchNodes engine — blob, regex, all pages,
+      // variables, workflows, formulas, dataSources. The old simple tree-walk is replaced.
+      // Legacy get_* shims kept for one release so specialist agent prompts still work.
       const buildReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+        // v2 unified tools
+        search: (inp) => runSearchNodes(
+          inp.query,
+          nodeFlat,
+          otherPagesIndex,
+          mergedVariables,
+          workflows,
+          globalFormulas,
+          dataSources,
+          sharedComponentsIndex,
+        ),
+        read: (inp) => {
+          const kind = String(inp.kind ?? '');
+          const id = String(inp.id ?? '');
+          if (kind === 'page' || id === '*') return pages;
+          if (kind === 'variable') return mergedVariables.find((v: { id?: string; name?: string }) => (v.id ?? v.name) === id) ?? null;
+          if (kind === 'workflow') return workflows.find((w: { id?: string; name?: string }) => (w.id ?? w.name) === id) ?? null;
+          if (kind === 'dataSource') return dataSources.find((d: { id: string }) => d.id === id) ?? null;
+          if (kind === 'theme') return theme;
+          if (kind === 'node') return nodeFlat.find(nf => nf.id === id) ?? null;
+          return null;
+        },
+        // Legacy shims — deprecated
         get_page_tree: () => ({ pageName: currentPage.name, sections: pageTreeSnapshot }),
         get_variables: () => mergedVariables,
         get_pages: () => pages,
         get_workflows: () => workflows,
-        get_formula_context: () => ({ variables: mergedVariables, collections: [] }),
-        search_nodes: (inp) => {
-          const q = String(inp.query ?? '').toLowerCase();
-          const typeFilter = inp.nodeType ? String(inp.nodeType).toLowerCase() : undefined;
-          type SN = { id?: string; type?: string; name?: string; children?: unknown[] };
-          const hits: Array<{ id: string | undefined; name: string | undefined; type: string | undefined }> = [];
-          const wk = (nodes: SN[]) => {
-            for (const n of nodes) {
-              const name = (n.name ?? '').toLowerCase();
-              const type = (n.type ?? '').toLowerCase();
-              const text = (String((n as Record<string, unknown>).text ?? '')).toLowerCase();
-              const id = (n.id ?? '').toLowerCase();
-              const matches = name.includes(q) || type.includes(q) || text.includes(q) || id.includes(q);
-              const typeMatches = !typeFilter || type === typeFilter;
-              if (matches && typeMatches) hits.push({ id: n.id, name: n.name, type: n.type });
-              if (Array.isArray(n.children)) wk(n.children as SN[]);
-            }
-          };
-          wk(pageTreeSnapshot as SN[]);
-          return hits.length ? hits : { note: `No nodes found matching "${inp.query}"` };
+        get_data_sources: () => dataSources,
+        get_formulas: () => globalFormulas,
+        get_shared_components: () => sharedComponentsIndex,
+        get_theme: () => theme,
+        // Full-blob search replacing the old simple tree-walk
+        search_nodes: (inp) => runSearchNodes(
+          inp.query,
+          nodeFlat,
+          otherPagesIndex,
+          mergedVariables,
+          workflows,
+          globalFormulas,
+          dataSources,
+          sharedComponentsIndex,
+        ),
+        get_node_details: (inp) => {
+          const ids = Array.isArray(inp.nodeIds) ? inp.nodeIds as string[] : [String(inp.nodeId ?? inp.id ?? '')];
+          return ids.map(id => nodeFlat.find(n => n.id === id) ?? { id, error: 'not found' });
         },
       };
 
-      // ── Binding Agent ───────────────────────────────────────────────────────
+      // ── Binding Agent (system prompt — user messages are built per-page below) ──
       const bindingPromptParts = buildBindingAgentPrompt();
       const bindingSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
         { type: 'text', text: bindingPromptParts.static, cache_control: { type: 'ephemeral' } },
       ];
-      const bindingMessages: Anthropic.Messages.MessageParam[] = [
-        {
-          role: 'user',
-          content: `[Binding Agent] Connect data to all nodes. Apply set_repeat, set_text, set_condition based on the structure tree and variable data.
 
-[Page Tree — use exact node UUIDs]
-${compactTree}
+      // ── Predicted-datasource roster ─────────────────────────────────────────
+      // The Planner / new-arch dispatcher pre-declares dataSourceIds the rest of
+      // the build expects to exist. Per-page binding agents reference these as
+      // collections['<predicted-id>'].data.… in formulas — the data agent (running
+      // in parallel) confirms or aliases them when it actually creates the source.
+      const predictedDsRosterText = predictedDataSources.length > 0
+        ? `Predicted data sources (binding may reference collections['<id>']):\n${predictedDataSources
+            .map(d => `  - ${d.id}${d.name ? ` (${d.name})` : ''}${d.type ? ` — ${d.type}` : ''}`)
+            .join('\n')}`
+        : '';
 
-${varRoster}
-
-Apply data bindings: use set_text only for formula expressions (context, variables, ternaries). Static text and inline repeat/condition visible in the tree are already applied — do not re-apply them.
-
-Original request:
-${message}`,
-        },
-      ];
-
-      // ── Styling + Animation Sub-Agents (2 parallel) ────────────────────────
-      const stylingCtx = { pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, paletteSnapshot, mood, animationLevel, appName, description, category };
-
+      // ── Styling + Animation + Binding + Workflow Sub-Agents (one set per built page, fully parallel) ──
+      // The legacy implementation ran ONE styling agent + ONE animation agent over the
+      // whole multi-page tree, which meant the user saw a single "styling" row in the
+      // activity feed and the work proceeded section-by-section even though the canvas
+      // patches had already been split per-page. Splitting the agents themselves means:
+      //   1. Two pages → two styling agents and two animation agents, each chewing on
+      //      a smaller compact tree → genuine wall-clock speedup.
+      //   2. The activity feed shows one row per (agent × page) so the user can see
+      //      "styling:Hero" and "styling:About" advancing simultaneously.
+      const stylingCtx = { pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, paletteSnapshot, mood, appName, description, category };
       const stylingPromptParts = buildStylingAgentPrompt(stylingCtx);
       const stylingSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
         { type: 'text', text: stylingPromptParts.static, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: stylingPromptParts.dynamic },
       ];
-      const stylingMessages: Anthropic.Messages.MessageParam[] = [
-        {
-          role: 'user',
-          content: `${buildContextNote ? `[Context]\n${buildContextNote}\n\n` : ''}[Styling Agent]
-The structure ALREADY EXISTS — do NOT create or modify structure. Apply ALL visual styles using set_style: layout, spacing, size, typography, position, overflow, background, text color, border, shadow, and opacity. Apply TERNARY CONTRAST on all repeated template descendants.
-
-[Page Tree — use exact node UUIDs]
-${compactTree}
-
-${varRoster}
-${repeatContainerHint}${nestedRepeatHint}${ternaryContrastHint}
-Repeat template reminder: style ALL children (buttons, icons, text/headings). When boolean fields exist in repeat data, apply ternary expressions for background, text color, border, shadow.
-
-Original request:
-${message}${relationsNote}${pageContextNote}`,
-        },
-      ];
-
       const animationPromptParts = buildAnimationAgentPrompt(stylingCtx);
       const animationSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
         { type: 'text', text: animationPromptParts.static, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: animationPromptParts.dynamic },
       ];
-      const animationMessages: Anthropic.Messages.MessageParam[] = [
-        {
+
+      // Slugify the page label so the agent name stays predictable (`styling:hero` etc.)
+      // while keeping a human-readable display name for the activity feed.
+      const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'page';
+
+      // Per-page split for binding and workflows (always 1 per page).
+      type PageAgentSplit = {
+        unit: BuildUnit;
+        ct: CollectedTree;
+        pageId: string | null;       // resolved page id for this split (null = canvas/global)
+        agentLabel: string;          // e.g. "Hero" — surfaced in the activity feed
+        slug: string;                // slugged label, used as the agent suffix
+        bindingAgentName: string;    // e.g. "binding:hero"
+        workflowsAgentName: string;  // e.g. "workflows:hero"
+        bindingMessages: Anthropic.Messages.MessageParam[];
+        workflowsMessages: Anthropic.Messages.MessageParam[];
+        workflowServerValidators: Record<string, (input: Record<string, unknown>) => string | null>;
+      };
+
+      // Per-chunk split for styling and animation. The planner controls how many chunks
+      // to emit per page via multiple ops with styling agents. Each chunk receives its
+      // slice of depth-1 sections plus the full page tree as read-only context.
+      type StyleChunk = {
+        stylingAgentName: string;    // e.g. "styling:op-style-a"
+        animationAgentName: string;  // e.g. "animation:op-style-a"
+        agentLabel: string;
+        stylingMessages: Anthropic.Messages.MessageParam[];
+        animationMessages: Anthropic.Messages.MessageParam[];
+      };
+
+      // ── Existing workflow roster builder ────────────────────────────────────
+      // Surfaces page-level and app-level triggers upfront so agents don't create
+      // duplicate pageLoad/appLoad workflows. Node-level bindings (click, change, text)
+      // are already annotated inline in the compact tree as (existing).
+      function buildExistingWorkflowRoster(targetPageId: string | null): string {
+        type WorkflowEntry = { name?: string; id?: string; trigger?: string; pageScope?: string; isAppTrigger?: boolean };
+        const pageWfs = (workflows as WorkflowEntry[]).filter(w => {
+          if (!w.trigger) return false;
+          const isDomTrigger = /^(click|change|submit|valueChange|enterKey|drag|mouse|swipe|focus|blur)/.test(w.trigger ?? '');
+          if (isDomTrigger) return false; // node-level: already in compact tree
+          if (w.isAppTrigger) return false; // app-level: shown in app agent message
+          // Page-scoped: when targetPageId is known, only include workflows that
+          // explicitly belong to that page. Workflows without pageScope are excluded
+          // — they may belong to other pages and would pollute the roster with stale entries.
+          return !targetPageId || w.pageScope === targetPageId;
+        });
+        if (pageWfs.length === 0) return '';
+        return `Existing workflows on this page (add steps to these instead of creating duplicates):\n${
+          pageWfs.map(w => `  "${w.name ?? '?'}"${w.id ? ` (id: ${w.id})` : ''} — trigger: ${w.trigger ?? '?'}`).join('\n')
+        }`;
+      }
+
+      function buildExistingAppWorkflowRoster(): string {
+        type WorkflowEntry = { name?: string; id?: string; trigger?: string; isAppTrigger?: boolean };
+        const appWfs = (workflows as WorkflowEntry[]).filter(w => w.isAppTrigger);
+        if (appWfs.length === 0) return '';
+        return `Existing app-level workflows (add steps to these instead of creating duplicates):\n${
+          appWfs.map(w => `  "${w.name ?? '?'}"${w.id ? ` (id: ${w.id})` : ''} — trigger: ${w.trigger ?? '?'}`).join('\n')
+        }`;
+      }
+
+      // Walk the AI-generated tree (before client execution) and collect declared actions[]/pageActions[].
+      // These stubs are minted by the generate_structure executor on the client — we surface them here
+      // so the workflows agent knows exactly which stubs exist and only needs to add steps.
+      //
+      // We surface the workflowId UUID directly — UUIDs never collide, so no name-derivation or
+      // suffix logic is needed. The agent passes the UUID to add_workflow_step.
+      function buildMintedWorkflowRoster(ct: CollectedTree): string {
+        const stubs: Array<{ workflowId: string; trigger: string; nodeName?: string; isPage?: boolean }> = [];
+
+        function walkTree(node: Record<string, unknown>) {
+          const acts = Array.isArray(node.actions) ? node.actions as Array<{ workflowId?: string; trigger?: string }> : [];
+          const nodeName = (node.name ?? '') as string;
+          for (const a of acts) {
+            if (a.workflowId && a.trigger) {
+              stubs.push({ workflowId: a.workflowId, trigger: a.trigger, nodeName: nodeName || undefined });
+            }
+          }
+          const kids = Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [];
+          for (const child of kids) walkTree(child);
+        }
+
+        walkTree(ct.tree as Record<string, unknown>);
+
+        // pageActions are stored on the CollectedTree directly (preserved from the AI's input).
+        for (const pa of ct.pageActions ?? []) {
+          if (pa.workflowId && pa.trigger) {
+            stubs.push({ workflowId: pa.workflowId, trigger: pa.trigger, isPage: true });
+          }
+        }
+
+        if (stubs.length === 0) return '';
+        const lines = stubs.map(s =>
+          s.isPage
+            ? `  workflowId: "${s.workflowId}" — page lifecycle — trigger: ${s.trigger}`
+            : `  workflowId: "${s.workflowId}" — trigger: ${s.trigger}${s.nodeName ? ` — node: "${s.nodeName}"` : ''}`
+        );
+        return `WORKFLOW ROSTER (pass workflowId exactly as shown to add_workflow_step — do not create_workflow or bind_action):\n${lines.join('\n')}`;
+      }
+
+      /** Returns the set of all workflowId UUIDs minted by the structure agent in this tree. */
+      function collectMintedWorkflowIds(ct: CollectedTree): Set<string> {
+        const ids = new Set<string>();
+        function walk(node: Record<string, unknown>) {
+          const acts = Array.isArray(node.actions) ? node.actions as Array<{ workflowId?: string }> : [];
+          for (const a of acts) { if (a.workflowId) ids.add(a.workflowId); }
+          const kids = Array.isArray(node.children) ? node.children as Record<string, unknown>[] : [];
+          for (const child of kids) walk(child);
+        }
+        walk(ct.tree as Record<string, unknown>);
+        for (const pa of ct.pageActions ?? []) { if (pa.workflowId) ids.add(pa.workflowId); }
+        return ids;
+      }
+
+      const pageSplits: PageAgentSplit[] = collectedTrees.map((ct, idx) => {
+        const pageCompactTree = buildCompactTreeText([ct], allMarkers);
+        const unit = units[idx] ?? units.find(u => (pageIdMap[u.pageRoute ?? '/'] ?? null) === ct.pageId) ?? units[0];
+        const rawLabel = unit?.name || ct.unitName || ct.pageId || `page-${idx + 1}`;
+        const agentLabel = rawLabel;
+        const slug = slugify(rawLabel);
+        const bindingMessages: Anthropic.Messages.MessageParam[] = [{
           role: 'user',
-          content: `[Animation Agent]
-Apply enter/exit/scroll/hover/press/loop animations. Do NOT set any layout, color, or other styles — the styling agent handles those.
+          content: `[Binding Agent — ${agentLabel}]
 
 [Page Tree — use exact node UUIDs]
-${compactTree}
+${pageCompactTree}
+
+${varRoster}${predictedDsRosterText ? `\n\n${predictedDsRosterText}` : ''}
 
 Original request:
-${message}${relationsNote}${pageContextNote}`,
-        },
-      ];
+${effectiveMessage}`,
+        }];
+        // Use pageIdMap to resolve the authoritative page ID for this split.
+        // ct.pageId is null when the section was placed on the "current page" without an
+        // explicit _pageId. currentPage.id is wrong when the user is on a different page
+        // than the one being built — use the unit's route to get the correct ID instead.
+        const splitFullPageId = ct.pageId ?? pageIdMap[unit.pageRoute ?? '/'] ?? currentPage.id;
+        const existingWfRoster = buildExistingWorkflowRoster(splitFullPageId);
+        const mintedWfRoster = buildMintedWorkflowRoster(ct);
+        const mintedWorkflowIds = collectMintedWorkflowIds(ct);
+        const workflowServerValidators: Record<string, (input: Record<string, unknown>) => string | null> = {
+          add_workflow_step: (input: Record<string, unknown>) => {
+            if (!input.workflowId) {
+              // Model used wrong field name — tell it exactly what to fix
+              const hint = input.workflowName
+                ? `Use the "workflowId" field (not "workflowName") — you sent workflowName="${input.workflowName}". Copy that UUID into the workflowId field.`
+                : 'add_workflow_step requires workflowId. Use the exact UUID from your WORKFLOW ROSTER.';
+              return hint;
+            }
+            const wfId = input.workflowId as string;
+            if (!mintedWorkflowIds.has(wfId)) {
+              const list = [...mintedWorkflowIds].join(', ');
+              return `Workflow "${wfId}" not found. Your WORKFLOW ROSTER has: ${list || '(none)'}. Use the exact UUID shown — not a human-readable name.`;
+            }
+            // Block any browser global usage in runJavaScript — the sandbox only
+            // exposes variables, wwLib, context, globalContext, auth, event, fetch,
+            // Promise, JSON, Math, Date, console. Nothing else exists.
+            if (input.type === 'runJavaScript') {
+              const code = (input.code ?? '') as string;
+              const BROWSER_GLOBALS = /\b(document|window|navigator|location|history|localStorage|sessionStorage|HTMLElement|Element|querySelector|getElementById|getElementsBy)\b/;
+              if (BROWSER_GLOBALS.test(code)) {
+                const sid = (input.stepId ?? 'step') as string;
+                return (
+                  `Step "${sid}" runJavaScript uses a browser global that does not exist in the sandbox. ` +
+                  `Only variables, wwLib, context, globalContext, auth, event, fetch, Promise, JSON, Math, Date, console are available — no DOM or BOM APIs. ` +
+                  `For visual hover effects use set_animation (animation agent). For navigation use wwLib.navigate.to(path). For state use variables['UUID'] = value.`
+                );
+              }
+            }
+            return null;
+          },
+        };
+        const workflowsMessages: Anthropic.Messages.MessageParam[] = [{
+          role: 'user',
+          content: `[Workflows Agent — ${agentLabel}]
+Page: ${splitFullPageId}
 
-      // ── Workflows Agent ─────────────────────────────────────────────────────
+[Page Tree — use exact node UUIDs]
+${pageCompactTree}
+
+${varRosterForWorkflows}${mintedWfRoster ? `\n\n${mintedWfRoster}` : ''}${existingWfRoster ? `\n\n${existingWfRoster}` : ''}
+
+Original request:
+${effectiveMessage}${relationsNote}`,
+        }];
+        return {
+          unit,
+          ct,
+          pageId: ct.pageId ?? null,
+          agentLabel,
+          slug,
+          bindingAgentName: `binding:${slug}`,
+          workflowsAgentName: `workflows:${slug}`,
+          bindingMessages,
+          workflowsMessages,
+          workflowServerValidators,
+        };
+      });
+
+      // ── Style chunks: planner-controlled parallel styling/animation splits ──────
+      // For each page, find how many styling ops the planner emitted targeting that
+      // page route. Split the page's depth-1 children (sections) positionally across
+      // those ops. Each styling/animation agent pair receives its chunk tree plus the
+      // full page as read-only context. Falls back to 1 chunk per page if the manifest
+      // has no pageRoute-tagged styling ops.
+      const styleChunks: StyleChunk[] = [];
+      for (const ct of collectedTrees) {
+        const pageRoute = ct.pageId
+          ? (Object.entries(pageIdMap).find(([, id]) => id === ct.pageId)?.[0] ?? '/')
+          : '/';
+        // Collect styling ops for this page from the manifest.
+        const pageStylingOps = manifestOperations.filter(
+          op => op.agents?.styling && (!op.pageRoute || op.pageRoute === pageRoute),
+        );
+        const N = Math.max(1, pageStylingOps.length);
+        const rootChildren = Array.isArray((ct.tree as Record<string, unknown>)?.children)
+          ? ((ct.tree as Record<string, unknown>).children as Record<string, unknown>[])
+          : [];
+        const chunkSize = Math.ceil(rootChildren.length / N) || 1;
+
+        for (let i = 0; i < N; i++) {
+          const chunk = rootChildren.slice(i * chunkSize, (i + 1) * chunkSize);
+          if (chunk.length === 0 && i > 0) break; // no sections left for this chunk
+
+          // Build compact tree for just this chunk of sections.
+          const chunkCt: CollectedTree = { ...ct, tree: { ...(ct.tree as Record<string, unknown>), children: chunk } as CollectedTree['tree'] };
+          const chunkCompactTree = buildCompactTreeText([chunkCt], allMarkers);
+
+          const op = pageStylingOps[i];
+          const opId = op?.id ?? slugify(ct.unitName || pageRoute);
+          const chunkLabel = op?.agents?.styling?.briefing
+            ? op.agents.styling.briefing.slice(0, 40)
+            : (ct.unitName || pageRoute);
+          const animationBriefing = (op?.agents?.animation as { briefing?: string } | undefined)?.briefing ?? '';
+          const animationChunkLabel = animationBriefing ? animationBriefing.slice(0, 40) : chunkLabel;
+          const stylingAgentName = N > 1 ? `styling:${opId}` : `styling:${slugify(ct.unitName || pageRoute)}`;
+          const animationAgentName = N > 1 ? `animation:${opId}` : `animation:${slugify(ct.unitName || pageRoute)}`;
+
+          const contextBlock = buildContextNote ? `[Context]\n${buildContextNote}\n\n` : '';
+          const fullPageBlock = N > 1 ? (() => {
+            // List only the top-level section IDs that belong to OTHER chunks.
+            // This replaces the full-page compact tree (hundreds of tree-text tokens)
+            // with a compact denial line — the agent cannot style what it cannot see.
+            const chunkSectionIds = new Set(
+              (chunk as { id?: string }[]).map(c => c.id).filter(Boolean)
+            );
+            const forbidden = (rootChildren as { id?: string }[])
+              .map(c => c.id)
+              .filter((id): id is string => !!id && !chunkSectionIds.has(id));
+            return forbidden.length > 0
+              ? `\n\n[NOT YOUR CHUNK — do NOT call set_style on these section IDs or any of their children: ${forbidden.join(' ')}]`
+              : '';
+          })() : '';
+
+          const stylingBriefing = (op?.agents?.styling as { briefing?: string } | undefined)?.briefing ?? '';
+          const stylingMessages: Anthropic.Messages.MessageParam[] = [{
+            role: 'user',
+            content: `${contextBlock}[Styling Agent — ${chunkLabel}]
+${stylingBriefing ? stylingBriefing + '\n\n' : ''}
+[Page Tree Chunk — use exact node UUIDs]
+${chunkCompactTree}${fullPageBlock}
+
+${varRoster}
+${nestedRepeatHint}${ternaryContrastHint}
+Original request:
+${effectiveMessage}${relationsNote}${pageContextNote}`,
+          }];
+
+          const animationMessages: Anthropic.Messages.MessageParam[] = [{
+            role: 'user',
+            content: `[Animation Agent — ${animationChunkLabel}]
+${animationBriefing ? animationBriefing + '\n\n' : ''}
+[Page Tree Chunk — use exact node UUIDs]
+${chunkCompactTree}${fullPageBlock}
+
+Original request:
+${effectiveMessage}${relationsNote}${pageContextNote}`,
+          }];
+
+          styleChunks.push({ stylingAgentName, animationAgentName, agentLabel: chunkLabel, stylingMessages, animationMessages });
+        }
+      }
+
+      // ── Edit-mode fallback: create agent slots from manifest resolvedNodeIds ──
+      // When structure is skipped (edit-only request), collectedTrees is empty so the
+      // loop above produces no styleChunks/pageSplits. Build slots directly from
+      // manifest ops that have resolvedNodeIds — agents receive exact UUIDs, no search.
+      if (skipStructureAgentEarly) {
+        const editOps = manifestOperations.filter(op =>
+          op.resolvedNodeIds && op.resolvedNodeIds.length > 0 && !op.agents?.structure
+        );
+
+        if (editOps.length > 0 && styleChunks.length === 0 && (manifestAgentSet.has('styling') || manifestAgentSet.has('animation'))) {
+          const contextBlock = buildContextNote ? `[Context]\n${buildContextNote}\n\n` : '';
+          for (const op of editOps) {
+            if (!op.agents?.styling && !op.agents?.animation) continue;
+            const opSlug = slugify(op.id ?? 'edit');
+            const sBriefing = (op.agents?.styling as { briefing?: string } | undefined)?.briefing ?? op.summary ?? message;
+            const label = op.summary?.slice(0, 50) ?? 'Edit';
+            const uuidHint = `\nTarget node UUIDs: ${op.resolvedNodeIds.join(', ')}`;
+
+            const stylingMessages: Anthropic.Messages.MessageParam[] = [{
+              role: 'user',
+              content: `${contextBlock}[Styling Agent — ${label}]
+The page structure ALREADY EXISTS — do NOT call generate_structure. Apply visual styles directly to the target nodes.
+${sBriefing}${uuidHint}
+
+${varRoster}
+
+Original request:
+${effectiveMessage}`,
+            }];
+            const animationMessages: Anthropic.Messages.MessageParam[] = [{
+              role: 'user',
+              content: `${contextBlock}[Animation Agent — ${label}]
+The page structure ALREADY EXISTS. Apply animations to the target nodes.
+${sBriefing}${uuidHint}
+
+Original request:
+${effectiveMessage}`,
+            }];
+            styleChunks.push({
+              stylingAgentName: `styling:${opSlug}`,
+              animationAgentName: `animation:${opSlug}`,
+              agentLabel: label,
+          stylingMessages,
+          animationMessages,
+            });
+          }
+        }
+
+        if (editOps.length > 0 && pageSplits.length === 0 && (manifestAgentSet.has('binding') || manifestAgentSet.has('workflows'))) {
+          const contextBlock = buildContextNote ? `[Context]\n${buildContextNote}\n\n` : '';
+          for (const op of editOps) {
+            if (!op.agents?.binding && !op.agents?.workflows) continue;
+            const opSlug = slugify(op.id ?? 'edit');
+            const wBriefing = (op.agents?.workflows as { briefing?: string } | undefined)?.briefing ?? op.summary ?? message;
+            const label = op.summary?.slice(0, 50) ?? 'Edit';
+            const uuidHint = `\nTarget node UUIDs: ${op.resolvedNodeIds.join(', ')}`;
+            const resolvedPageId = pages.find((p: { route: string }) => p.route === (op.pageRoute ?? currentPage.route))?.id ?? currentPage.id;
+
+            const bindingMessages: Anthropic.Messages.MessageParam[] = [{
+              role: 'user',
+              content: `${contextBlock}[Binding Agent — ${label}]
+${uuidHint}
+
+${varRoster}${predictedDsRosterText ? `\n\n${predictedDsRosterText}` : ''}
+
+Original request:
+${effectiveMessage}`,
+            }];
+            const editExistingWfRoster = buildExistingWorkflowRoster(resolvedPageId ?? null);
+            const workflowsMessages: Anthropic.Messages.MessageParam[] = [{
+              role: 'user',
+              content: `${contextBlock}[Workflows Agent — ${label}]
+Page: ${resolvedPageId} (page-scoped workflows must include pageScope: '${resolvedPageId}').
+${wBriefing}${uuidHint}
+${varRosterForWorkflows}${editExistingWfRoster ? `\n\n${editExistingWfRoster}` : ''}
+
+Original request:
+${effectiveMessage}`,
+            }];
+            pageSplits.push({
+              unit: units[0] ?? { name: 'Edit', pageRoute: op.pageRoute ?? '/' } as never,
+              ct: {} as never,
+              pageId: resolvedPageId ?? null,
+              agentLabel: label,
+              slug: opSlug,
+              bindingAgentName: `binding:${opSlug}`,
+              workflowsAgentName: `workflows:${opSlug}`,
+              bindingMessages,
+              workflowsMessages,
+              workflowServerValidators: {},
+            });
+          }
+        }
+      }
+
+      // ── Workflows Agent (system prompt — page-scoped user messages live in pageSplits, plus a global "app" agent below) ──
       const phaseWPromptParts = buildWorkflowsAgentPrompt({ pages, currentPageName: currentPage.name, currentPageRoute: currentPage.route, appName, description });
       const phaseWSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
         { type: 'text', text: phaseWPromptParts.static, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: phaseWPromptParts.dynamic },
       ];
-      const phaseWPageNote = createdPageIds.length > 0
-        ? `\n\nActive page: ${createdPageIds[0]} (switch_page already called).`
-        : '';
-      const phaseWMessages: Anthropic.Messages.MessageParam[] = [
+      // The workflows:app agent only emits app-level (isAppTrigger) workflows. The
+      // per-page workflows:<page> agents handle pageScope/DOM-trigger workflows.
+      const appWfRoster = buildExistingAppWorkflowRoster();
+      const appWorkflowsMessages: Anthropic.Messages.MessageParam[] = [
         {
           role: 'user',
-          content: `[Workflows Agent]
-Create and bind all workflows needed for interactive behaviors.
-
-[Page Tree — use exact node UUIDs]
-${compactTree}
-
+          content: `[Workflows Agent — App]
+Create ONLY app-level workflows (isAppTrigger: true) — analytics init, restoreSession, app-wide listeners.
+${appWfRoster ? `\n${appWfRoster}\n` : ''}
 ${varRosterForWorkflows}
 
 Original request:
-${message}${relationsNote}${phaseWPageNote}`,
+${effectiveMessage}${relationsNote}`,
         },
       ];
       const phaseWReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
@@ -1715,34 +2269,88 @@ ${message}${relationsNote}${phaseWPageNote}`,
       // Build a compact media manifest showing only media nodes so the AI knows exactly
       // what to process. Sibling nodes in the same section are listed together so the
       // AI can reason about diversifying queries for siblings.
+      // Build loop-variable media entries from mediaHints stored on each variable event.
+      // UUID is resolved at add_variable time — no cross-call coordination needed.
+      const loopVarManifestLines: string[] = [];
+      for (const e of addVarEventsCollected) {
+        const inp = e.input as Record<string, unknown>;
+        const hints = Array.isArray(inp.mediaHints)
+          ? (inp.mediaHints as Array<{ field: string; searchQuery?: string; queryField?: string }>)
+          : [];
+        if (!hints.length) continue;
+        const varId = String(inp.variableId ?? inp._assignedVarId ?? '');
+        const varName = String(inp.name ?? varId);
+        for (const h of hints) {
+          if (h.queryField) {
+            // Per-item icon search: extract query text from each initialValue item using queryField
+            const items = Array.isArray(inp.initialValue)
+              ? (inp.initialValue as Array<Record<string, unknown>>)
+              : [];
+            const perItemQueries = items
+              .map(item => String(item[h.queryField!] ?? ''))
+              .filter(Boolean);
+            if (perItemQueries.length > 0) {
+              loopVarManifestLines.push(`LoopVariable "${varName}" — variableId: ${varId} | patchField: ${h.field} | iconQueries: ${JSON.stringify(perItemQueries)}`);
+            }
+          } else if (h.searchQuery) {
+            // Auto-detect: if searchQuery is a single word matching a field name in items, treat as queryField.
+            // This corrects the common model mistake of writing searchQuery: "title" instead of queryField: "title".
+            const possibleField = h.searchQuery.trim();
+            const items = Array.isArray(inp.initialValue)
+              ? (inp.initialValue as Array<Record<string, unknown>>)
+              : [];
+            const looksLikeFieldName = /^\w+$/.test(possibleField) && items.length > 0 && possibleField in items[0];
+            if (looksLikeFieldName) {
+              const perItemQueries = items.map(item => String(item[possibleField] ?? '')).filter(Boolean);
+              if (perItemQueries.length > 0) {
+                loopVarManifestLines.push(`LoopVariable "${varName}" — variableId: ${varId} | patchField: ${h.field} | iconQueries: ${JSON.stringify(perItemQueries)}`);
+              }
+            } else {
+              loopVarManifestLines.push(`LoopVariable "${varName}" — variableId: ${varId} | patchField: ${h.field} | searchQuery: "${h.searchQuery}"`);
+            }
+          }
+        }
+      }
+
       const mediaManifestLines: string[] = [];
       for (const ct of collectedTrees) {
         const manifest = ct.mediaManifest;
-        if (!manifest) continue;
-        const hasMedia = manifest.icons.length + manifest.images.length + manifest.videos.length + (manifest.bgImages?.length ?? 0) > 0;
-        if (!hasMedia) continue;
+        const hasNodeMedia = manifest ? manifest.icons.length + manifest.images.length + manifest.videos.length + (manifest.bgImages?.length ?? 0) > 0 : false;
+        if (!hasNodeMedia) continue;
 
         mediaManifestLines.push(`=== ${ct.unitName} ===`);
-        for (const n of manifest.images) {
-          const nameTag = n.name ? ` "${n.name}"` : '';
-          mediaManifestLines.push(`[${n.id}] Image${nameTag} | hint: searchQuery="${n.searchQuery}"`);
-        }
-        for (const n of manifest.videos) {
-          const nameTag = n.name ? ` "${n.name}"` : '';
-          mediaManifestLines.push(`[${n.id}] Video${nameTag} | hint: searchQuery="${n.searchQuery}"`);
-        }
-        for (const n of manifest.bgImages ?? []) {
-          const nameTag = n.name ? ` "${n.name}"` : '';
-          mediaManifestLines.push(`[${n.id}] Box(bgImage)${nameTag} | hint: searchQuery="${n.searchQuery}"`);
-        }
-        for (const n of manifest.icons) {
-          const nameTag = n.name ? ` "${n.name}"` : '';
-          mediaManifestLines.push(`[${n.id}] Icon${nameTag} | hint: icon="${n.icon}"`);
+        if (manifest) {
+          for (const n of manifest.images) {
+            const nameTag = n.name ? ` "${n.name}"` : '';
+            mediaManifestLines.push(`[${n.id}] Image${nameTag} | hint: searchQuery="${n.searchQuery}"`);
+          }
+          for (const n of manifest.videos) {
+            const nameTag = n.name ? ` "${n.name}"` : '';
+            mediaManifestLines.push(`[${n.id}] Video${nameTag} | hint: searchQuery="${n.searchQuery}"`);
+          }
+          for (const n of manifest.bgImages ?? []) {
+            const nameTag = n.name ? ` "${n.name}"` : '';
+            mediaManifestLines.push(`[${n.id}] Box(bgImage)${nameTag} | hint: searchQuery="${n.searchQuery}"`);
+          }
+          for (const n of manifest.icons) {
+            const nameTag = n.name ? ` "${n.name}"` : '';
+            mediaManifestLines.push(`[${n.id}] Icon${nameTag} | hint: icon="${n.icon}"`);
+          }
         }
       }
+      // Append loop-variable entries after node entries
+      mediaManifestLines.push(...loopVarManifestLines);
       const mediaManifestText = mediaManifestLines.length > 0
         ? mediaManifestLines.join('\n')
         : '(no media nodes in this build)';
+
+      // ── shouldMedia: computed here (before the promise is created) so the
+      // agent loop is only started when there are actual media nodes to process.
+      const totalMediaNodesEarly = collectedTrees.reduce((n, ct) => {
+        const m = ct.mediaManifest;
+        return n + (m ? m.icons.length + m.images.length + m.videos.length + (m.bgImages?.length ?? 0) : 0);
+      }, 0) + loopVarManifestLines.length;
+      const shouldMediaEarly = totalMediaNodesEarly > 0;
 
       const mediaPromptParts = buildMediaAgentPrompt();
       const mediaSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
@@ -1756,7 +2364,7 @@ ${message}${relationsNote}${phaseWPageNote}`,
 ${mediaManifestText}
 
 Original request:
-${message}`,
+${effectiveMessage}`,
         },
       ];
 
@@ -1769,71 +2377,221 @@ ${message}`,
         return typeof first.content === 'string' ? first.content : JSON.stringify(first.content);
       };
 
-      send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(mediaMessages) });
-      const mediaInjectionPromise = runHaikuAgentLoop(mediaMessages, mediaSystemBlocks, MEDIA_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 15, 'media', modelSignalCtl.signal);
+      // Media stays as a single global agent — only start the loop when there are real
+      // media nodes; otherwise the promise resolves immediately and no event is emitted.
+      const mediaInjectionPromise = shouldMediaEarly
+        ? runHaikuAgentLoop(mediaMessages, mediaSystemBlocks, MEDIA_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 15, 'media', modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap)
+        : Promise.resolve();
 
-      // ── Emit agent_context for LLM agents ───────────────────────────────────
-      send({ type: 'agent_context', agent: 'binding', systemPrompt: bindingPromptParts.static, tools: BINDING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(bindingMessages) });
-      send({ type: 'agent_context', agent: 'styling', systemPrompt: stylingPromptParts.static + '\n\n' + stylingPromptParts.dynamic, tools: STYLING_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(stylingMessages) });
-      send({ type: 'agent_context', agent: 'animation', systemPrompt: animationPromptParts.static + '\n\n' + animationPromptParts.dynamic, tools: ANIMATION_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(animationMessages) });
-      send({ type: 'agent_context', agent: 'workflows', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(phaseWMessages) });
-
-      // ── Capability validator for styling/binding sub-agents ─────────────────
-      // Resolves component type from the nodeTypeMap built above and checks against
-      // the component capability registry. Blocked calls are returned as real errors
-      // to the model (instead of the usual ok:true/pending response) for self-correction.
-      const capabilityValidator = (toolName: string, args: Record<string, unknown>): string | null => {
-        const group = TOOL_CAPABILITY_GROUP[toolName];
-        if (!group) return null; // tool has no capability constraint
-        const nodeId = args.nodeId as string | undefined;
-        if (!nodeId) return null;
-        const nodeType = nodeTypeMap.get(nodeId);
-        if (!nodeType) return null;
-        const caps = getCapabilities(nodeType);
-        if (caps === null) return null; // unknown type → no restriction
-        if (caps.includes(group)) return null; // allowed
-        const suggestion = buildBlockedGroupSuggestion(group, nodeType);
-        return `"${group}" tools are not supported on ${nodeType}. ${suggestion} ${buildCapabilityNote(nodeType)}`;
-      };
-
-      // ── Capability validator for workflows sub-agent ─────────────────────────
-      // Pre-validates create_workflow steps server-side before emitting tool_executed.
-      // Returns is_error: true directly so the model self-corrects in the same agent run
-      // instead of receiving ok:true/pending (aiBlind) and never retrying.
-      const workflowCapabilityValidator = (toolName: string, args: Record<string, unknown>): string | null => {
-        if (toolName !== 'create_workflow') return null;
-        let steps: Array<Record<string, unknown>> = [];
-        try {
-          steps = Array.isArray(args.steps)
-            ? (args.steps as Array<Record<string, unknown>>)
-            : typeof args.steps === 'string'
-              ? (JSON.parse(args.steps) as Array<Record<string, unknown>>)
-              : [];
-        } catch {
-          return 'steps is not valid JSON.';
-        }
-        return validateWorkflowFormulas(steps) ?? findProhibitedStep(steps);
-      };
-
-      // ── Launch agents in parallel (conditionally based on plan flags) ────────
-      const shouldStyle    = plan.needsStyling   !== false;
-      const shouldBind     = plan.needsBinding   !== false;
-      const shouldWorkflow = plan.needsWorkflows !== false;
-
-      const agentRuns: Array<{ agent: string; promise: Promise<void> }> = [
-        ...(shouldBind ? [{ agent: 'binding', promise: runHaikuAgentLoop(bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, 'binding', modelSignalCtl.signal, capabilityValidator) }] : []),
-        ...(shouldStyle ? [{ agent: 'styling', promise: runHaikuAgentLoop(stylingMessages, stylingSystemBlocks, STYLING_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'styling', modelSignalCtl.signal, capabilityValidator) }] : []),
-        ...(shouldStyle && ANIMATION_AGENT_ENABLED ? [{ agent: 'animation', promise: runHaikuAgentLoop(animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, 'animation', modelSignalCtl.signal) }] : []),
-        ...(shouldWorkflow ? [{ agent: 'workflows', promise: runHaikuAgentLoop(phaseWMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 15, 'workflows', modelSignalCtl.signal, workflowCapabilityValidator, modelId) }] : []),
-        { agent: 'media', promise: mediaInjectionPromise },
+      // ── Data Agent (global, runs in parallel with the per-page fan-out) ──────
+      // Owns project-level datasource creation. Per-page binding agents reference
+      // collections['<predicted-id>'].data.… formulas in parallel; codegen reconciles
+      // when both sides finish via the predicted-id alias.
+      const dataPromptParts = buildDataAgentPrompt();
+      const dataSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+        { type: 'text', text: dataPromptParts.static, cache_control: { type: 'ephemeral' } },
       ];
+      const predictedDsBlock = predictedDataSources.length > 0
+        ? `\nPredicted dataSourceIds (use these via the \`dataSourceId\` parameter so binders that already reference collections['…'] keep working):\n${predictedDataSources.map(d => `  - ${d.id}${d.name ? ` (${d.name})` : ''}${d.type ? ` — ${d.type}` : ''}`).join('\n')}\n`
+        : '';
+      const dataMessages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: `[Data Agent]
+Create the project-level datasources this build needs.${predictedDsBlock}
+${varRosterForWorkflows}
+
+Original request:
+${effectiveMessage}`,
+        },
+      ];
+      const dataReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+        get_variables: () => mergedVariables,
+        get_data_sources: () => dataSources,
+      };
+
+      // ── Data agent gate — driven entirely by the Planner manifest ──────────
+      const shouldData = predictedDataSources.length > 0 || plannerWantsData;
+
+      // ── Manifest-driven agent gates ────────────────────────────────────────
+      // Planner is always the source of truth for which families run.
+      // All gates require an explicit planner signal — no fallback defaults.
+      const hasManifest = manifestAgentSet.size > 0;
+      const shouldStyle     = manifestAgentSet.has('styling');
+      const shouldBind      = manifestAgentSet.has('binding');
+      const shouldWorkflow  = manifestAgentSet.has('workflows');
+      const shouldAnimation = manifestAgentSet.has('animation');
+      const skipStructureAgent = skipStructureAgentEarly;
+      // Media gate — reuse the value computed before the promise was created.
+      const shouldMedia = shouldMediaEarly;
+
+      // App-level workflows agent — Planner manifest is the sole gate.
+      const shouldAppWorkflow = shouldWorkflow && manifestAgentSet.has('appWorkflows');
+
+      // ── SC pre-minted models (collected from structure step tool calls) ──────
+      // The structure agent calls create_shared_component for each SC the planner
+      // requested. We pluck those IDs here (same pattern as predictedDataSources)
+      // so SC content agents can enter edit mode immediately, in parallel with page agents.
+      const predictedSCModels = allExecutedTools
+        .filter(t => t.name === 'create_shared_component' && t.input?.id)
+        .map(t => ({
+          modelId: String(t.input.id),
+          label:   String(t.input.name ?? t.input.id),
+          slug:    slugify(String(t.input.name ?? t.input.id)),
+        }));
+      const shouldAuthSC = predictedSCModels.length > 0 || (hasManifest && manifestAgentSet.has('sharedComponents'));
+
+      // ── Build SC agent system blocks ─────────────────────────────────────────
+      // One system block per SC — the agent is told exactly which model to author.
+      // Re-used across all SC agents (same static prompt, only user message differs).
+      const scPromptParts = shouldAuthSC ? buildSharedComponentAgentPrompt({ varRoster }) : null;
+      const scSystemBlocks: Anthropic.Messages.TextBlockParam[] = scPromptParts
+        ? [{ type: 'text', text: scPromptParts.static, cache_control: { type: 'ephemeral' } }]
+        : [];
+      const scReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+        get_variables: () => mergedVariables,
+        // SC models created by the structure step are available through the client store;
+        // we return a placeholder here so the agent knows to trust its user-message context.
+        get_shared_components: () => [],
+      };
+
+      // ── Launch agents in parallel ─────────────────────────────────────────
+      // Single batch: SC + data + media + per-page family agents (shape depends on dispatchMode).
+      // Nothing awaits anything else. SC agents enter edit mode on pre-minted shells concurrently
+      // with page agents — the store routes per-node mutations to the correct model.
+      const agentRuns: Array<{ agent: string; promise: Promise<void> }> = [];
+
+      // Guard: if the planner produced no work (empty manifest / context failure), surface an error
+      // instead of silently completing with zero agents.
+      const hasAnyWork = styleChunks.length > 0 || shouldBind || shouldWorkflow || shouldMedia || shouldData || shouldAuthSC;
+      if (!hasAnyWork) {
+        send({ type: 'build_error', message: 'Build produced no work — the planner may have failed or returned an empty manifest. Please try again.' });
+        return;
+      }
+
+      // Emit the parallel phase message now that we know the actual dispatch shape.
+      {
+        const activeAgents: string[] = [];
+          if (shouldStyle)     activeAgents.push('Styling');
+          if (shouldAnimation) activeAgents.push('Animation');
+          if (shouldBind)      activeAgents.push('Binding');
+          if (shouldWorkflow)  activeAgents.push('Workflows');
+        if (shouldMedia) activeAgents.push('Media');
+        if (shouldData)  activeAgents.push('Data');
+        if (shouldAuthSC) activeAgents.push('Components');
+        const agentLabel = activeAgents.length > 0
+          ? activeAgents.join(', ')
+          : 'agents';
+        send({ type: 'build_phase', phase: 'parallel', message: `Running ${agentLabel} in parallel...` });
+      }
+
+      // ── Flat pool: separate specialist agents per family, styling/animation split into chunks ──
+      // Emit agent_context for styling/animation chunks first, then per-page binding/workflows.
+      if (shouldStyle || shouldAnimation) {
+        for (const chunk of styleChunks) {
+          if (shouldStyle)     send({ type: 'agent_context', agent: chunk.stylingAgentName,   displayLabel: chunk.agentLabel, systemPrompt: stylingPromptParts.static + '\n\n' + stylingPromptParts.dynamic,   tools: STYLING_AGENT_TOOLS.map(t => t.name),   syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(chunk.stylingMessages) });
+          if (shouldAnimation) send({ type: 'agent_context', agent: chunk.animationAgentName, displayLabel: chunk.agentLabel, systemPrompt: animationPromptParts.static + '\n\n' + animationPromptParts.dynamic, tools: ANIMATION_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(chunk.animationMessages) });
+        }
+      }
+        for (const split of pageSplits) {
+        if (shouldBind)     send({ type: 'agent_context', agent: split.bindingAgentName,   displayLabel: split.agentLabel, systemPrompt: bindingPromptParts.static,                                          tools: BINDING_AGENT_TOOLS.map(t => t.name),   syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(split.bindingMessages) });
+        if (shouldWorkflow) send({ type: 'agent_context', agent: split.workflowsAgentName, displayLabel: split.agentLabel, systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic,     tools: PHASE_W_TOOLS.map(t => t.name),         syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(split.workflowsMessages) });
+        }
+        if (shouldAppWorkflow) {
+          send({ type: 'agent_context', agent: 'workflows:app', displayLabel: 'App', systemPrompt: phaseWPromptParts.static + '\n\n' + phaseWPromptParts.dynamic, tools: PHASE_W_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(appWorkflowsMessages) });
+        }
+
+        agentRuns.push(
+          ...(shouldStyle
+          ? styleChunks.map(chunk => ({
+              agent: chunk.stylingAgentName,
+              promise: runHaikuAgentLoop(chunk.stylingMessages, stylingSystemBlocks, STYLING_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, chunk.stylingAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap),
+              }))
+            : []),
+          ...(shouldAnimation
+          ? styleChunks.map(chunk => ({
+              agent: chunk.animationAgentName,
+              promise: runHaikuAgentLoop(chunk.animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, chunk.animationAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap, { type: 'any' }),
+              }))
+            : []),
+          ...(shouldBind
+            ? pageSplits.map(split => ({
+                agent: split.bindingAgentName,
+              promise: runHaikuAgentLoop(split.bindingMessages, bindingSystemBlocks, BINDING_AGENT_TOOLS.map(toToolParam), {}, send, allExecutedTools, 10, split.bindingAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap),
+              }))
+            : []),
+          ...(shouldWorkflow
+            ? pageSplits.map(split => ({
+                agent: split.workflowsAgentName,
+              promise: runHaikuAgentLoop(split.workflowsMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 25, split.workflowsAgentName, modelSignalCtl.signal, undefined, modelId, undefined, nodeIdToPageMap, undefined, split.workflowServerValidators),
+              }))
+            : []),
+          ...(shouldAppWorkflow
+          ? [{ agent: 'workflows:app', promise: runHaikuAgentLoop(appWorkflowsMessages, phaseWSystemBlocks, PHASE_W_TOOLS.map(toToolParam), phaseWReadHandlers, send, allExecutedTools, 8, 'workflows:app', modelSignalCtl.signal, undefined, modelId, undefined, nodeIdToPageMap) }]
+            : []),
+        );
+
+      // ── Data agent (global, always in parallel regardless of dispatch mode) ──
+      if (shouldData) {
+        send({ type: 'agent_context', agent: 'data', systemPrompt: dataPromptParts.static, tools: DATA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(dataMessages) });
+        agentRuns.push({
+          agent: 'data',
+          promise: runHaikuAgentLoop(dataMessages, dataSystemBlocks, DATA_AGENT_TOOLS.map(toToolParam), dataReadHandlers, send, allExecutedTools, 8, 'data', modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap),
+        });
+      }
+
+      // ── Media agent (global; only fires when tree has media nodes) ────────
+      if (shouldMedia) {
+        send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(mediaMessages) });
+        agentRuns.push({ agent: 'media', promise: mediaInjectionPromise });
+      }
+
+      // ── SC agents (one per pre-minted model; joins parallel batch) ────────
+      // Shells were created by the structure step. SC agents call enter_shared_component_edit
+      // on pre-minted IDs, author content, then exit. The store's editingSharedComponentIds
+      // stack safely handles multiple SCs in edit simultaneously (per-model isolation).
+      if (shouldAuthSC && scPromptParts) {
+        for (const sc of predictedSCModels) {
+          const scAgentName = `sharedComponents:${sc.slug}`;
+          const scMessages: Anthropic.Messages.MessageParam[] = [{
+            role: 'user',
+            content: `[Shared Component Agent — ${sc.label}]
+modelId: "${sc.modelId}". The shell already exists — do NOT call create_shared_component again.
+Instance nodes were placed on pages by the structure step — skip add_shared_component_instance.
+
+${varRoster}
+
+Original request:
+${effectiveMessage}`,
+          }];
+          send({ type: 'agent_context', agent: scAgentName, displayLabel: sc.label, systemPrompt: scPromptParts.static, tools: SC_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(scMessages) });
+          agentRuns.push({
+            agent: scAgentName,
+            promise: runHaikuAgentLoop(scMessages, scSystemBlocks, SC_AGENT_TOOLS.map(toToolParam), scReadHandlers, send, allExecutedTools, 12, scAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap),
+          });
+        }
+      }
 
       // Agents whose agent_context was sent unconditionally but won't run — emit a zero-duration
       // agent_complete so the frontend doesn't show them as perpetually active.
-      const skippedLlmAgents = (['binding', 'styling', 'animation', 'workflows'] as const)
-        .filter(name => !agentRuns.some(r => r.agent === name));
-      for (const agent of skippedLlmAgents) {
-        send({ type: 'agent_complete', agent, rounds: 0, toolCallCount: 0, duration: 0, endedAt: Date.now() });
+      const launchedAgentNames = new Set(agentRuns.map(r => r.agent));
+      const expectedAgentNames = new Set<string>();
+        if (shouldAppWorkflow) expectedAgentNames.add('workflows:app');
+      for (const chunk of styleChunks) {
+        if (shouldStyle)     expectedAgentNames.add(chunk.stylingAgentName);
+        if (shouldAnimation) expectedAgentNames.add(chunk.animationAgentName);
+      }
+        for (const split of pageSplits) {
+        if (shouldBind)     expectedAgentNames.add(split.bindingAgentName);
+        if (shouldWorkflow) expectedAgentNames.add(split.workflowsAgentName);
+      }
+      if (shouldData) expectedAgentNames.add('data');
+      if (shouldMedia) expectedAgentNames.add('media');
+      if (shouldAuthSC) predictedSCModels.forEach(sc => expectedAgentNames.add(`sharedComponents:${sc.slug}`));
+      for (const agent of expectedAgentNames) {
+        if (!launchedAgentNames.has(agent)) {
+          send({ type: 'agent_complete', agent, rounds: 0, toolCallCount: 0, duration: 0, endedAt: Date.now() });
+        }
       }
       const settledAgents = await Promise.allSettled(agentRuns.map(a => a.promise));
       settledAgents.forEach((res, idx) => {
@@ -1845,691 +2603,24 @@ ${message}`,
         });
       });
 
+      // Phase O — turn stats before `done`.
+      send({ type: 'turn_stats', totalDurationMs: Date.now() - turnStartedAt, toolCalls: turnCounters.toolCalls, ops: turnCounters.ops, agents: turnCounters.agents.size });
+
+      // Emit a brief completion message.
+      const completionText = manifestIntent
+        ? `Done — ${manifestIntent}`
+        : `Done.`;
+      send({ type: 'text_delta', content: completionText });
+
       send({ type: 'done', tools: allExecutedTools });
-      return false;
     }
-
-    // ── Focused edit loop (used by mixed mode for edit phase) ────────────────
-    async function runEditLoop(editMsgs: Anthropic.Messages.MessageParam[]): Promise<void> {
-      let editRounds = 0;
-      while (editRounds < MAX_TOOL_ROUNDS) {
-        editRounds++;
-        send({ type: 'round_start', round: editRounds });
-        const editResp = client.messages.stream({
-          model: modelId, max_tokens: 4096,
-          system: [
-            { type: 'text', text: mainPromptParts.static, cache_control: { type: 'ephemeral' } },
-            { type: 'text', text: mainPromptParts.dynamic },
-          ],
-          tools: ALL_BUILDER_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
-          messages: editMsgs,
-        } as unknown as Parameters<typeof client.messages.stream>[0], { signal: modelSignalCtl.signal });
-        const editToolBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
-        let editStop = '';
-        let editToolBlock: { id: string; name: string; inputJson: string } | null = null;
-        for await (const ev of editResp) {
-          if (ev.type === 'content_block_start' && (ev.content_block as { type: string }).type === 'tool_use') {
-            const tb = ev.content_block as { id: string; name: string };
-            editToolBlock = { id: tb.id, name: tb.name, inputJson: '' };
-          } else if (ev.type === 'content_block_delta') {
-            const dt = (ev.delta as { type: string }).type;
-            if (dt === 'text_delta') send({ type: 'text_delta', content: (ev.delta as { text: string }).text });
-            else if (dt === 'input_json_delta' && editToolBlock) editToolBlock.inputJson += (ev.delta as { partial_json: string }).partial_json;
-          } else if (ev.type === 'content_block_stop' && editToolBlock) {
-            const parsed = parseStreamedToolInput(editToolBlock.inputJson);
-            editToolBlocks.push({ id: editToolBlock.id, name: editToolBlock.name, input: parsed.input });
-            editToolBlock = null;
-          } else if (ev.type === 'message_delta') {
-            editStop = (ev.delta as { stop_reason?: string }).stop_reason ?? '';
-          }
-        }
-        const editFinal = await editResp.finalMessage();
-        editStop = editFinal.stop_reason ?? editStop;
-        {
-          const streamedIds = new Set(editToolBlocks.map(t => t.id));
-          for (const block of editFinal.content) {
-            if (block.type !== 'tool_use') continue;
-            const tb = block as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
-            if (!streamedIds.has(tb.id)) {
-              editToolBlocks.push({ id: tb.id, name: tb.name, input: tb.input ?? {} });
-            }
-          }
-        }
-        editMsgs.push({ role: 'assistant', content: editFinal.content });
-        if (editToolBlocks.length === 0) break;
-        const editResultBlocks: Anthropic.Messages.ToolResultBlockParam[] = [];
-        for (const t of editToolBlocks) {
-          const ri = t.input;
-          if (ri.__parseError === true) {
-            editResultBlocks.push({
-              type: 'tool_result',
-              tool_use_id: t.id,
-              content: JSON.stringify({ success: false, error: 'Malformed tool JSON input. Re-emit the tool call with valid JSON.' }),
-              is_error: true,
-            });
-            continue;
-          }
-          let tr = JSON.stringify({ ok: true, pending: 'client_execution' });
-          if (t.name === 'get_page_tree') tr = JSON.stringify({ pageName: currentPage.name, sections: pageTreeSnapshot });
-          else if (t.name === 'get_pages') tr = JSON.stringify(pages);
-          else if (t.name === 'get_variables') tr = JSON.stringify(variables);
-          else if (t.name === 'get_workflows') tr = JSON.stringify(workflows);
-          else if (t.name === 'search_nodes') {
-            const q = String(ri.query ?? '').toLowerCase();
-            type SN = { id?: string; type?: string; name?: string; children?: unknown[] };
-            const hits: Array<{ id: string | undefined; name: string | undefined; type: string | undefined; breadcrumb: string }> = [];
-            const wk = (nodes: SN[], bc: string[]) => { for (const n of nodes) { const c = [...bc, n.name ?? n.type ?? 'Node']; if ((n.name ?? '').toLowerCase().includes(q) || (n.type ?? '').toLowerCase().includes(q)) hits.push({ id: n.id, name: n.name, type: n.type, breadcrumb: c.join(' > ') }); if (Array.isArray(n.children)) wk(n.children as SN[], c); } };
-            wk(pageTreeSnapshot as SN[], []);
-            tr = JSON.stringify(hits.length ? hits : { note: `No nodes found matching "${ri.query}"` });
-          } else if (t.name === 'generate_structure') {
-            const resolved = assignTreeIds(ri.tree as Record<string, unknown>);
-            const ci = { tree: resolved, parentId: ri.parentId, atIndex: ri.atIndex };
-            send({ type: 'tool_executed', id: t.id, name: t.name, input: ci });
-            allExecutedTools.push({ name: t.name, input: ci });
-            tr = JSON.stringify({ success: true, data: { tree: resolved, message: 'Structure created. Read the id field from each node in the returned tree to get its server-assigned UUID.' } });
-            editResultBlocks.push({ type: 'tool_result', tool_use_id: t.id, content: tr });
-            continue;
-          }
-          send({ type: 'tool_executed', id: t.id, name: t.name, input: ri });
-          allExecutedTools.push({ name: t.name, input: ri });
-          editResultBlocks.push({ type: 'tool_result', tool_use_id: t.id, content: tr });
-        }
-        editMsgs.push({ role: 'user', content: editResultBlocks });
-        if (editStop !== 'tool_use' && editStop !== 'max_tokens') break;
-      }
-    }
-
-    // Pre-compute Phase 3 prompt parts once — static block is identical every round so
-    // Anthropic can serve it from cache; only the dynamic block (palette + project + page) is fresh.
-    const phase3PromptParts = buildPhase3SystemPrompt({
-      pages,
-      currentPageName: currentPage.name,
-      currentPageRoute: currentPage.route,
-      paletteSnapshot,
-      mood,
-      animationLevel,
-      appName,
-      description,
-      category,
-    });
 
 
     try {
-      // ── Phase 0: classify for build / mixed mode ──────────────────────────
-      if (mightBeBuildRequest) {
-        send({ type: 'build_phase', phase: 'planning', message: 'Planning your request...' });
-        const plan = await classifyRequest(message, pages, modelId, currentPage.route, modelSignalCtl.signal);
-        send({
-          type: 'tool_executed',
-          id: 'classify-request',
-          name: 'classify_request',
-          input: { message },
-          result: plan,
-          phase: 'planning',
-        });
+      // ── Always run the build pipeline — planner decides if dynamic or specialist ──
+      await runBuildPipeline();
+      return; // runBuildPipeline sends its own 'done' event
 
-        if (plan.mode === 'build' || plan.mode === 'mixed') {
-          const needsWiring = await runBuildOrMixedMode(plan);
-          if (!needsWiring) return; // done — no wiring phase needed
-          // needsWiring=true: currentMessages set for wiring, fall through to standard loop
-        }
-        // mode === 'edit' falls through to the standard loop
-      }
-
-      while (rounds < MAX_TOOL_ROUNDS) {
-        rounds++;
-
-        // Tell the client a new Anthropic call is starting (shows "Planning…" between rounds)
-        send({ type: 'round_start', round: rounds });
-
-        // Create streaming request to Anthropic using the stream helper (has finalMessage())
-        // Phase 3 (post-build styling) uses haiku with a focused prompt + filtered tools.
-        // inPhase3Mode persists across all rounds so rounds 2+ don't revert to full prompt/tools.
-        const isPhase3 = inPhase3Mode;
-        const activeModel = isPhase3 ? 'claude-haiku-4-5' : modelId;
-        const activeSupportsThinking = supportsThinking && activeModel === modelId;
-        // Phase 3 gets only styling tools — structure tools are architecturally excluded
-        const activeTools = isPhase3 ? PHASE3_BUILDER_TOOLS : ALL_BUILDER_TOOLS;
-        // Build system blocks: Phase 3 uses two-block split (static cached + dynamic fresh);
-        // main edit mode uses the full prompt in one cached block.
-        const activeSystemBlocks: Anthropic.Messages.TextBlockParam[] = isPhase3
-          ? [
-              { type: 'text', text: phase3PromptParts.static, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: phase3PromptParts.dynamic },
-            ]
-          : [
-              { type: 'text', text: mainPromptParts.static, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: mainPromptParts.dynamic },
-            ];
-        const response = client.messages.stream({
-          model: activeModel,
-          // Thinking models need a higher token budget (thinking uses tokens too)
-          max_tokens: 16000,
-          system: activeSystemBlocks,
-          ...(activeSupportsThinking ? { thinking: { type: 'enabled', budget_tokens: 8000 } } : {}),
-          tools: activeTools.map(t => ({
-            name: t.name,
-            description: t.description,
-            input_schema: t.input_schema,
-          })),
-          messages: currentMessages,
-        } as unknown as Parameters<typeof client.messages.stream>[0], { signal: modelSignalCtl.signal });
-
-        // Collect response blocks incrementally — no need to wait for finalMessage() for tool extraction
-        let textContent = '';
-        const toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
-        let stopReason = '';
-        // Track the tool_use block currently being streamed
-        let currentToolBlock: { id: string; name: string; inputJson: string } | null = null;
-        // Track extended thinking block (Sonnet only)
-        let currentThinkingBlock: { content: string } | null = null;
-
-        for await (const event of response) {
-          if (event.type === 'content_block_start') {
-            const blockType = (event.content_block as { type: string }).type;
-            if (blockType === 'tool_use') {
-              const tb = event.content_block as { id: string; name: string };
-              currentToolBlock = { id: tb.id, name: tb.name, inputJson: '' };
-            } else if (blockType === 'thinking') {
-              currentThinkingBlock = { content: '' };
-            }
-          } else if (event.type === 'content_block_delta') {
-            const deltaType = (event.delta as { type: string }).type;
-            if (deltaType === 'text_delta') {
-              const text = (event.delta as { type: string; text: string }).text;
-              textContent += text;
-              send({ type: 'text_delta', content: text });
-            } else if (deltaType === 'input_json_delta' && currentToolBlock) {
-              currentToolBlock.inputJson += (event.delta as { type: string; partial_json: string }).partial_json;
-            } else if (deltaType === 'thinking_delta' && currentThinkingBlock) {
-              const thinking = (event.delta as { type: string; thinking: string }).thinking;
-              currentThinkingBlock.content += thinking;
-              send({ type: 'thinking_delta', content: thinking });
-            }
-          } else if (event.type === 'content_block_stop') {
-            if (currentToolBlock) {
-              // Tool input is fully received — parse and store without waiting for finalMessage()
-              const parsed = parseStreamedToolInput(currentToolBlock.inputJson);
-              toolUseBlocks.push({
-                id: currentToolBlock.id,
-                name: currentToolBlock.name,
-                input: parsed.input,
-              });
-              currentToolBlock = null;
-            }
-            if (currentThinkingBlock) {
-              currentThinkingBlock = null;
-            }
-          } else if (event.type === 'message_delta') {
-            stopReason = (event.delta as { stop_reason?: string }).stop_reason ?? '';
-          }
-        }
-
-        // finalMessage() is still needed to get the full content array for the conversation history
-        // (it resolves immediately since we already exhausted the stream above)
-        const finalMessage = await response.finalMessage();
-        stopReason = finalMessage.stop_reason ?? stopReason;
-
-        // Reconcile streamed toolUseBlocks with finalMessage.content.
-        // When max_tokens is hit mid-response, the last tool_use block may not receive a
-        // content_block_stop event, so it ends up in finalMessage.content but not in
-        // toolUseBlocks. Without this reconciliation, the assistant message has an orphaned
-        // tool_use block with no corresponding tool_result → Anthropic 400 on the next round.
-        {
-          const streamedIds = new Set(toolUseBlocks.map(t => t.id));
-          for (const block of finalMessage.content) {
-            if (block.type !== 'tool_use') continue;
-            const tb = block as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
-            if (!streamedIds.has(tb.id)) {
-              toolUseBlocks.push({ id: tb.id, name: tb.name, input: tb.input ?? {} });
-            }
-          }
-        }
-
-        // Add assistant response to message history for continuation
-        currentMessages.push({
-          role: 'assistant',
-          content: finalMessage.content,
-        });
-
-        // If tool calls were made, send them to the client for execution
-        if (toolUseBlocks.length > 0) {
-          const toolResultsForNextRound: Anthropic.Messages.ToolResultBlockParam[] = [];
-
-          // Build whitelists from all prior tool executions so we can validate references
-          // server-side before returning { ok: true, pending: 'client_execution' }.
-          //
-          // knownNodeIds — covers fresh-build sessions where all nodes come from generate_structure.
-          //   Only populated when generate_structure was called; stays empty for pure edit
-          //   sessions (no generate_structure) so we never false-reject pre-existing node IDs.
-          const knownNodeIds = new Set<string>();
-          const walkExtractIds = (node: Record<string, unknown>) => {
-            if (typeof node.id === 'string') knownNodeIds.add(node.id);
-            const kids = node.children as Record<string, unknown>[] | undefined;
-            if (Array.isArray(kids)) kids.forEach(c => walkExtractIds(c));
-          };
-          for (const t of allExecutedTools) {
-            if (t.name === 'generate_structure' && t.input.tree) {
-              walkExtractIds(t.input.tree as Record<string, unknown>);
-            }
-            if (t.name === 'add_component' && typeof t.input.nodeId === 'string') {
-              knownNodeIds.add(t.input.nodeId as string);
-            }
-          }
-
-          // knownWorkflowNames — built from create_workflow calls in allExecutedTools.
-          //   Validates bind_action references so ghost bindings can't be silently created.
-          const knownWorkflowNames = new Set<string>(
-            allExecutedTools
-              .filter(t => t.name === 'create_workflow' && typeof t.input.name === 'string')
-              .map(t => t.input.name as string),
-          );
-
-          for (const tool of toolUseBlocks) {
-            if (tool.input.__parseError === true) {
-              toolResultsForNextRound.push({
-                type: 'tool_result',
-                tool_use_id: tool.id,
-                content: JSON.stringify({ success: false, error: 'Malformed tool JSON input. Re-emit this tool call with valid JSON.' }),
-                is_error: true,
-              });
-              continue;
-            }
-            // For read-only tools, execute server-side and return results
-            // For mutation tools, the client executes them
-            const isReadTool = ['get_page_tree', 'get_node_details', 'get_theme', 'get_variables', 'get_pages', 'get_formula_context', 'get_workflows', 'get_data_sources', 'search_nodes'].includes(tool.name);
-            const isSearchTool = ['search_images', 'search_videos', 'search_icons'].includes(tool.name);
-            // add_component: AI provides its own hex UUID for nodeId — validate it strictly.
-            const isAddComponentTool = tool.name === 'add_component';
-            // Media node tools: AI does not provide nodeId — server generates one.
-            const isMediaNodeTool = ['add_icon', 'add_image', 'add_video'].includes(tool.name);
-            // Variable-creating tool — always generate a server UUID so variable IDs stay stable
-            const isVarCreateTool = tool.name === 'add_variable';
-            // Page-creating tool — pre-assign a page ID so Claude can use it in switch_page immediately
-            const isPageCreateTool = tool.name === 'add_page';
-
-            const rawInput = tool.input as Record<string, unknown>;
-
-            let toolResult: string;
-            // input sent to client
-            let clientInput: Record<string, unknown> = rawInput;
-            // When true, skip sending tool_executed to the client (nothing was created server-side)
-            let skipClientExecution = false;
-
-            if (isAddComponentTool) {
-              // Validate that the AI provided a proper hex UUID. If not, fail immediately and
-              // do NOT send tool_executed to the client — prevents phantom node creation.
-              // The AI sees the error and self-corrects; no duplicate node is left on canvas.
-              const nodeId = rawInput.nodeId as string | undefined;
-              if (!nodeId || !isUUIDFormat(nodeId)) {
-                skipClientExecution = true;
-                toolResult = JSON.stringify({
-                  success: false,
-                  error: `nodeId "${nodeId ?? '(missing)'}" is not a valid UUID. ` +
-                    `Generate a proper hex UUID (e.g. "a1b2c3d4-e5f6-7890-abcd-ef1234567890") and retry this tool call. ` +
-                    `Do NOT call any other tools that reference this nodeId as parentId until this is fixed.`,
-                });
-              } else {
-                // nodeId is valid — pass rawInput directly (nodeId is already in it, no _assignedNodeId needed)
-                clientInput = rawInput;
-                const placement = rawInput.parentId
-                  ? `placed under parentId: ${rawInput.parentId}`
-                  : `placed at ROOT of page (no parentId)`;
-              toolResult = JSON.stringify({
-                success: true,
-                data: {
-                    nodeId,
-                  type: rawInput.label ?? 'node',
-                    message: `Added ${rawInput.label ?? 'component'} (${placement}). nodeId="${nodeId}". Use as parentId for children or in set_text/set_class/rename_node.`,
-                },
-              });
-                // Register newly created node so same-round styling/binding tools can reference it
-                knownNodeIds.add(nodeId);
-              }
-            } else if (isMediaNodeTool) {
-              // AI doesn't provide nodeId for icon/image/video — server generates one so the
-              // client executor has a stable ID to use.
-              const assignedNodeId = crypto.randomUUID();
-              clientInput = { ...rawInput, _assignedNodeId: assignedNodeId };
-              toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
-            } else if (isVarCreateTool) {
-              // Respect the AI's variableId if it is a valid hex UUID (same pattern as add_component).
-              // This allows batching: AI pre-assigns a UUID, uses it in create_workflow variableName
-              // in the same round without a round-trip. Only generate a server UUID as fallback.
-              const aiVarId = rawInput.variableId as string | undefined;
-              const assignedVarId = (aiVarId && isUUIDFormat(aiVarId))
-                ? aiVarId
-                : crypto.randomUUID();
-              clientInput = { ...rawInput, variableId: assignedVarId, _assignedVarId: assignedVarId };
-              const varName = String(rawInput.name ?? 'variable');
-              toolResult = JSON.stringify({
-                success: true,
-                data: {
-                  id: assignedVarId,
-                  name: varName,
-                  message: `Created variable "${varName}" id="${assignedVarId}". ` +
-                    `Use variables['${assignedVarId}'] in all tools (set_text, conditions, formulas). ` +
-                    `variableName:"${assignedVarId}" in changeVariableValue steps.`,
-                },
-              });
-            } else if (isPageCreateTool) {
-              // Check if a page with this route already exists before generating a fake success.
-              // If the client's addPage silently no-ops (duplicate route), the AI would receive
-              // "success" with a ghost pageId and switch_page would navigate nowhere.
-              const existingPage = pages.find((p: { id: string; route?: string; name?: string }) =>
-                p.route === (rawInput.route as string)
-              );
-              if (existingPage) {
-                clientInput = rawInput; // nothing to execute on the client
-                toolResult = JSON.stringify({
-                  success: false,
-                  error: `A page with route "${rawInput.route}" already exists (pageId: "${existingPage.id}", name: "${existingPage.name}"). Use switch_page with pageId="${existingPage.id}" to navigate to it instead of creating a duplicate.`,
-                });
-              } else {
-              // Pre-assign page ID so Claude can reference it in switch_page immediately
-                const assignedPageId = `page-${crypto.randomUUID().slice(0, 8)}`;
-                clientInput = { ...rawInput, pageId: assignedPageId, _assignedPageId: assignedPageId };
-              toolResult = JSON.stringify({
-                success: true,
-                data: {
-                  pageId: assignedPageId,
-                  route: rawInput.route,
-                  name: rawInput.name,
-                  message: `Created page "${rawInput.name}" at route "${rawInput.route}". pageId="${assignedPageId}". Use this exact pageId in switch_page to navigate to this page.`,
-                },
-              });
-              }
-            } else if (tool.name === 'generate_structure') {
-              // Server assigns UUIDs to every node in the tree, returns name→id map to Claude.
-              // Client receives the resolved tree (with real UUIDs) via tool_executed and
-              // materializes each node through getTemplate(label) + AI prop merge.
-              const treeInput = rawInput.tree as Record<string, unknown> | undefined | null;
-              const parentId = rawInput.parentId as string | undefined;
-              const atIndex = rawInput.atIndex as number | undefined;
-              if (!treeInput || typeof treeInput !== 'object') {
-                toolResult = JSON.stringify({ success: false, error: 'generate_structure requires a "tree" object. Provide the full nested UI tree under the "tree" key.' });
-              } else {
-                const resolvedTree = assignTreeIds(treeInput);
-                clientInput = { tree: resolvedTree, parentId, atIndex };
-                toolResult = JSON.stringify({
-                  success: true,
-                  data: {
-                    tree: resolvedTree,
-                    message: 'Structure created. Read the id field from each node in the returned tree to get its server-assigned UUID.',
-                  },
-                });
-                // Register all nodes from this tree so same-round tool calls can reference them
-                walkExtractIds(resolvedTree);
-              }
-            } else if (isReadTool) {
-              // Serve real data from the request context
-              if (tool.name === 'get_page_tree') {
-                const depth = Math.min(Number(rawInput.depth ?? 2), 4);
-                const summarize = (n: Record<string, unknown>, d: number): unknown => {
-                  const base: Record<string, unknown> = {
-                    id: n.id, type: n.type, name: n.name,
-                    text: typeof n.text === 'string' ? (n.text as string).slice(0, 60) : undefined,
-                    className: (n.props as { className?: string })?.className?.slice(0, 80),
-                  };
-                  const children = n.children as Record<string, unknown>[] | undefined;
-                  if (d > 0 && children?.length) base.children = children.map(c => summarize(c, d - 1));
-                  else if (children?.length) base.childCount = children.length;
-                  return base;
-                };
-                const tree = pageTreeSnapshot.map(n => summarize(n as Record<string, unknown>, depth));
-                toolResult = JSON.stringify({ pageName: currentPage.name, sections: tree });
-              } else if (tool.name === 'get_node_details') {
-                const ids = (rawInput.nodeIds as string[]) || [];
-                // Search selected nodes first, then fall back to full page tree snapshot
-                const findInTree = (nodes: unknown[], targetId: string): unknown | null => {
-                  for (const n of nodes) {
-                    const node = n as Record<string, unknown>;
-                    if (node.id === targetId) return node;
-                    const children = node.children as unknown[] | undefined;
-                    if (Array.isArray(children)) {
-                      const hit = findInTree(children, targetId);
-                      if (hit) return hit;
-                    }
-                  }
-                  return null;
-                };
-                const found = ids.map(id => {
-                  // Try selectedNodesDetails first (has full detail), then fall back to page tree
-                  const fromSelected = (selectedNodesDetails as Array<Record<string, unknown>>).find(n => n.id === id);
-                  if (fromSelected) return fromSelected;
-                  return findInTree(pageTreeSnapshot, id) ?? { id, note: 'Node not found in page tree' };
-                });
-                toolResult = JSON.stringify(found);
-              } else if (tool.name === 'get_pages') {
-                toolResult = JSON.stringify(pages);
-              } else if (tool.name === 'get_theme') {
-                toolResult = JSON.stringify(theme);
-              } else if (tool.name === 'get_variables') {
-                toolResult = JSON.stringify(variables);
-              } else if (tool.name === 'get_formula_context') {
-                // Variables and data sources are already in the system prompt contextNote.
-                // This handler only computes the repeat context, which depends on which
-                // specific node is selected and cannot be pre-injected into the system prompt.
-                const targetNodeId = (rawInput as Record<string, unknown>).nodeId as string | undefined;
-
-                function findAncestors(nodes: unknown[], id: string, path: unknown[] = []): unknown[] | null {
-                  for (const n of nodes as Record<string, unknown>[]) {
-                    if (n.id === id) return path;
-                    const kids = n.children as unknown[] | undefined;
-                    if (Array.isArray(kids)) {
-                      const hit = findAncestors(kids, id, [...path, n]);
-                      if (hit !== null) return hit;
-                    }
-                  }
-                  return null;
-                }
-
-                let repeatContext = null;
-                if (targetNodeId) {
-                  const ancestors = findAncestors(pageTreeSnapshot, targetNodeId) ?? [];
-                  const mapAncestors = (ancestors as Record<string, unknown>[])
-                    .filter(a => a.map)
-                    .reverse(); // innermost first
-                  if (mapAncestors.length > 0) {
-                    repeatContext = mapAncestors.map((a, i) => ({
-                      level: i === 0 ? 'current' : 'parent',
-                      mapPath: a.map,
-                      accessPath: i === 0 ? 'context.item.data.*' : 'context.item.parent.data.*',
-                    }));
-                  }
-                }
-
-                toolResult = JSON.stringify({
-                  note: 'Variables and data sources are already in your context. Only repeat context is returned here.',
-                  repeatContext,
-                });
-              } else if (tool.name === 'get_workflows') {
-                toolResult = JSON.stringify(workflows);
-              } else if (tool.name === 'get_data_sources') {
-                toolResult = JSON.stringify(dataSources);
-              } else if (tool.name === 'search_nodes') {
-                // Search the current page's node tree by substring match on name/type/text/id.
-                // Returns all matches with breadcrumb paths so the AI can reference node IDs.
-                const query = String(rawInput.query ?? '').toLowerCase();
-                const filterType = rawInput.nodeType ? String(rawInput.nodeType).toLowerCase() : undefined;
-
-                type SearchNode = { id?: string; type?: string; name?: string; text?: string; children?: unknown[] };
-                const results: Array<{ id: string | undefined; name: string | undefined; type: string | undefined; text: string | undefined; breadcrumb: string; parentId: string | undefined }> = [];
-
-                const walk = (nodes: SearchNode[], breadcrumb: string[], parentId: string | undefined) => {
-                  for (const n of nodes) {
-                    const crumb = [...breadcrumb, n.name ?? n.type ?? 'Node'];
-                    const matchesType = !filterType || (n.type ?? '').toLowerCase() === filterType;
-                    const matchesQuery =
-                      (n.name ?? '').toLowerCase().includes(query) ||
-                      (n.type ?? '').toLowerCase().includes(query) ||
-                      (typeof n.text === 'string' ? n.text : '').toLowerCase().includes(query) ||
-                      (n.id ?? '').toLowerCase().includes(query);
-                    if (matchesQuery && matchesType) {
-                      results.push({
-                        id: n.id,
-                        name: n.name ?? n.type,
-                        type: n.type,
-                        text: typeof n.text === 'string' ? n.text.slice(0, 80) : undefined,
-                        breadcrumb: crumb.join(' > '),
-                        parentId,
-                      });
-                    }
-                    if (Array.isArray(n.children) && n.children.length > 0) {
-                      walk(n.children as SearchNode[], crumb, n.id);
-                    }
-                  }
-                };
-
-                walk(pageTreeSnapshot as SearchNode[], [], undefined);
-                toolResult = JSON.stringify(
-                  results.length > 0
-                    ? results
-                    : { note: `No nodes found matching "${rawInput.query}"${filterType ? ` with type "${rawInput.nodeType}"` : ''}. Try a broader query or call get_page_tree() to see all nodes.` }
-                );
-              } else {
-                toolResult = JSON.stringify({ note: 'Data from client context' });
-              }
-            } else if (isSearchTool && tool.name === 'search_images') {
-              // Execute server-side image search
-              try {
-                const q = encodeURIComponent(String(rawInput.query ?? ''));
-                const count = Number(rawInput.count ?? 5);
-                const apiKey = process.env.UNSPLASH_ACCESS_KEY;
-                if (apiKey) {
-                  const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=${count}&client_id=${apiKey}`, { signal: externalSignalCtl.signal });
-                  if (r.ok) {
-                    const d = await r.json() as { results?: Array<{ id: string; urls: { regular: string; small: string }; alt_description: string; user: { name: string } }> };
-                    const photos = (d.results ?? []).map(p => ({
-                      url: p.urls.regular, thumb: p.urls.small, alt: p.alt_description, credit: p.user.name,
-                    }));
-                    toolResult = JSON.stringify(photos);
-                    // Send results to client so it can display image options
-                    send({ type: 'image_results', images: photos });
-                  } else {
-                    toolResult = JSON.stringify({ error: `Unsplash API error ${r.status}` });
-                  }
-                } else {
-                  toolResult = JSON.stringify({ error: 'UNSPLASH_ACCESS_KEY not configured' });
-                }
-              } catch (e) {
-                toolResult = JSON.stringify({ error: String(e) });
-              }
-            } else if (isSearchTool && tool.name === 'search_videos') {
-              // Execute server-side video search via Pexels
-              try {
-                const q = encodeURIComponent(String(rawInput.query ?? ''));
-                const count = Number(rawInput.count ?? 4);
-                const apiKey = process.env.PEXELS_API_KEY;
-                if (apiKey) {
-                  const url = q
-                    ? `https://api.pexels.com/videos/search?query=${q}&page=1&per_page=${count}`
-                    : `https://api.pexels.com/videos/popular?page=1&per_page=${count}`;
-                  const r = await fetch(url, { headers: { Authorization: apiKey }, next: { revalidate: 300 }, signal: externalSignalCtl.signal });
-                  if (r.ok) {
-                    const d = await r.json() as { videos?: Array<{ id: number; image: string; video_files: Array<{ quality: string; link: string }> }> };
-                    const videos = (d.videos ?? []).map(v => {
-                      const sd = v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
-                      return { src: sd?.link ?? '', poster: v.image };
-                    }).filter(v => v.src);
-                    toolResult = JSON.stringify(videos);
-                  } else {
-                    toolResult = JSON.stringify({ error: `Pexels API error ${r.status}` });
-                  }
-                } else {
-                  toolResult = JSON.stringify({ error: 'PEXELS_API_KEY not configured' });
-                }
-              } catch (e) {
-                toolResult = JSON.stringify({ error: String(e) });
-              }
-            } else if (isSearchTool && tool.name === 'search_icons') {
-              // Execute server-side icon search via Iconify
-              try {
-                const q = encodeURIComponent(String(rawInput.query ?? ''));
-                const count = Number(rawInput.count ?? 10);
-                const prefix = rawInput.prefix ? `&prefix=${rawInput.prefix}` : '';
-                const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`, { signal: externalSignalCtl.signal });
-                if (r.ok) {
-                  const d = await r.json() as { icons?: string[] };
-                  toolResult = JSON.stringify(d.icons ?? []);
-                  send({ type: 'icon_results', icons: d.icons ?? [] });
-                } else {
-                  toolResult = JSON.stringify({ error: `Iconify API error ${r.status}` });
-                }
-              } catch (e) {
-                toolResult = JSON.stringify({ error: String(e) });
-              }
-            } else {
-              // Mutation tool — validate nodeId and workflowName before handing to client.
-              const nodeId = rawInput.nodeId as string | undefined;
-              const workflowName = rawInput.workflowName as string | undefined;
-
-              // nodeId whitelist: only active when generate_structure was called in this session
-              // (knownNodeIds would be empty for pure-edit sessions, so we never false-reject
-              // pre-existing nodes that the AI referenced from the page tree context).
-              if (nodeId && knownNodeIds.size > 0 && !knownNodeIds.has(nodeId)) {
-                skipClientExecution = true;
-                toolResult = JSON.stringify({
-                  success: false,
-                  error: `Node "${nodeId}" not found. Call get_page_tree to get valid node IDs, or check whether a prior generate_structure / add_component step failed.`,
-                });
-              } else if (tool.name === 'bind_action' && workflowName && !knownWorkflowNames.has(workflowName)) {
-                // Workflow doesn't exist — binding it would create a ghost action that silently does nothing.
-                skipClientExecution = true;
-                toolResult = JSON.stringify({
-                  success: false,
-                  error: `Workflow "${workflowName}" not found. Create it with create_workflow first, then call bind_action.`,
-                });
-              } else {
-                // Track create_workflow names so later bind_action calls in this batch can validate them
-                if (tool.name === 'create_workflow' && typeof rawInput.name === 'string') {
-                  knownWorkflowNames.add(rawInput.name);
-                }
-                toolResult = JSON.stringify({ ok: true, pending: 'client_execution' });
-              }
-            }
-
-            // Send tool execution event to client — skipped when validation failed so the
-            // client never creates a phantom node that the AI will then duplicate on retry.
-            if (!skipClientExecution) {
-            send({
-              type: 'tool_executed',
-              id: tool.id,
-              name: tool.name,
-              input: clientInput,
-            });
-
-            allExecutedTools.push({
-              name: tool.name,
-              input: clientInput,
-              result: toolResult,
-            });
-            }
-
-            toolResultsForNextRound.push({
-              type: 'tool_result',
-              tool_use_id: tool.id,
-              content: toolResult,
-            });
-          }
-
-          // Add tool results to messages for next round
-          currentMessages.push({
-            role: 'user',
-            content: toolResultsForNextRound,
-          });
-
-          // Continue conversation if AI has more to say
-          if (stopReason === 'tool_use' || stopReason === 'max_tokens') {
-            continue; // next round
-          }
-        }
-
-        break;
-      }
-
-      // Send final done event
-      send({ type: 'done', tools: allExecutedTools });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[builder-chat] request failed', { requestId, pageId: currentPage.id, modelId, message: msg });

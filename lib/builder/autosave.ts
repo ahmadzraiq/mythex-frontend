@@ -192,6 +192,29 @@ export function useBuilderAutosave(
       onStatusRef.current('error');
     } else {
       onStatusRef.current('saved');
+
+      // Warm the node embedding cache so semantic_search in AI messages is instant.
+      // Send ALL pages (not just current) — any page's nodes may have changed.
+      // Fire-and-forget — non-blocking, safe to fail silently.
+      if (dirtyPages.length > 0) {
+        try {
+          const store = useBuilderStore.getState() as BuilderStore;
+          const pages = (store.pages as Array<{ id: string; route?: string; nodes: unknown[] }>)
+            .filter(p => p.nodes?.length > 0)
+            .map(p => ({ pageRoute: p.route ?? '/', nodes: p.nodes }));
+          if (pages.length > 0) {
+            fetch('/api/ai/retrieval/ensure-index', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                pages,
+                theme: store.themeOverrides ?? {},
+              }),
+            }).catch(() => {/* non-fatal */});
+          }
+        } catch {/* non-fatal */}
+      }
     }
   }, [projectId]);
 

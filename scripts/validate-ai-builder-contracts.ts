@@ -4,9 +4,10 @@ import {
   PHASE3_BUILDER_TOOLS,
   PHASE_W_TOOLS,
   BINDING_AGENT_TOOLS,
-  LAYOUT_AGENT_TOOLS,
-  COLORS_AGENT_TOOLS,
-  TYPO_ANIM_AGENT_TOOLS,
+  STYLING_AGENT_TOOLS,
+  DATA_AGENT_TOOLS,
+  SC_AGENT_TOOLS,
+  COMBINED_AGENT_TOOLS,
 } from '../lib/ai/builder-tools';
 
 function getTool(name: string) {
@@ -28,9 +29,20 @@ function main() {
   assertSubset(PHASE3_BUILDER_TOOLS.map(t => t.name), 'PHASE3_BUILDER_TOOLS');
   assertSubset(PHASE_W_TOOLS.map(t => t.name), 'PHASE_W_TOOLS');
   assertSubset(BINDING_AGENT_TOOLS.map(t => t.name), 'BINDING_AGENT_TOOLS');
-  assertSubset(LAYOUT_AGENT_TOOLS.map(t => t.name), 'LAYOUT_AGENT_TOOLS');
-  assertSubset(COLORS_AGENT_TOOLS.map(t => t.name), 'COLORS_AGENT_TOOLS');
-  assertSubset(TYPO_ANIM_AGENT_TOOLS.map(t => t.name), 'TYPO_ANIM_AGENT_TOOLS');
+  assertSubset(STYLING_AGENT_TOOLS.map(t => t.name), 'STYLING_AGENT_TOOLS');
+  assertSubset(DATA_AGENT_TOOLS.map(t => t.name), 'DATA_AGENT_TOOLS');
+  assertSubset(SC_AGENT_TOOLS.map(t => t.name), 'SC_AGENT_TOOLS');
+  assertSubset(COMBINED_AGENT_TOOLS.map(t => t.name), 'COMBINED_AGENT_TOOLS');
+
+  // DATA_AGENT_TOOLS must include the datasource write tools — they're the agent's whole job.
+  const dataNames = DATA_AGENT_TOOLS.map(t => t.name);
+  for (const required of ['add_data_source', 'delete_data_source', 'update_data_source_schema']) {
+    assert.ok(dataNames.includes(required), `DATA_AGENT_TOOLS must include "${required}"`);
+  }
+  // DATA_AGENT_TOOLS must NOT include node-mutation tools — that's the binding/styling agents' job.
+  for (const forbidden of ['set_text', 'set_style', 'set_repeat', 'set_animation', 'create_workflow']) {
+    assert.ok(!dataNames.includes(forbidden), `DATA_AGENT_TOOLS must not include "${forbidden}" (data agent owns datasources only)`);
+  }
 
   const repeat = getTool('set_repeat');
   assert.ok(repeat, 'set_repeat tool missing');
@@ -47,6 +59,12 @@ function main() {
   const exitEnum = (((animation?.input_schema.properties.exit as { enum?: string[] })?.enum) ?? []);
   for (const removed of ['bounceOut', 'flipOutX', 'flipOutY', 'flipOut3D', 'rollOut']) {
     assert.ok(!exitEnum.includes(removed), `set_animation.exit should not include unsupported "${removed}"`);
+  }
+
+  // Phase B removed set_typography / set_spacing / set_position / get_formula_context.
+  const removed = ['set_typography', 'set_spacing', 'set_position', 'get_formula_context'];
+  for (const r of removed) {
+    assert.ok(!allNameSet.has(r), `${r} must be removed from ALL_BUILDER_TOOLS (Phase B)`);
   }
 
   const size = getTool('set_size');
@@ -71,6 +89,27 @@ function main() {
     !phaseWNames.includes('add_variable'),
     'PHASE_W_TOOLS must not include add_variable — Structure agent is the sole variable owner'
   );
+
+  // SC_AGENT_TOOLS must include the SC authoring lifecycle tools.
+  const scNames = SC_AGENT_TOOLS.map(t => t.name);
+  for (const required of ['enter_shared_component_edit', 'exit_shared_component_edit', 'create_shared_component']) {
+    assert.ok(scNames.includes(required), `SC_AGENT_TOOLS must include "${required}"`);
+  }
+  // SC_AGENT_TOOLS must NOT include add_shared_component_instance — structure step places instances.
+  assert.ok(
+    !scNames.includes('add_shared_component_instance'),
+    'SC_AGENT_TOOLS must not include add_shared_component_instance — structure step handles placement'
+  );
+  // SC_AGENT_TOOLS must include primitive authoring tools (used inside enter/exit scope).
+  assert.ok(scNames.includes('set_style'), 'SC_AGENT_TOOLS must include set_style for content styling');
+  assert.ok(scNames.includes('add_component'), 'SC_AGENT_TOOLS must include add_component for content authoring');
+
+  // COMBINED_AGENT_TOOLS must cover all four families' tools.
+  const combinedNames = COMBINED_AGENT_TOOLS.map(t => t.name);
+  assert.ok(combinedNames.length > 0, 'COMBINED_AGENT_TOOLS must not be empty');
+  for (const required of ['set_style', 'set_animation', 'create_workflow', 'bind_action', 'set_text', 'set_repeat', 'set_condition']) {
+    assert.ok(combinedNames.includes(required), `COMBINED_AGENT_TOOLS must include "${required}"`);
+  }
 
   console.log('AI builder contract checks passed.');
 }

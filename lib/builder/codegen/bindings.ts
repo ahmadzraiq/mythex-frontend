@@ -9,7 +9,7 @@
 
 import type { SymbolMap } from './types';
 
-type ActionRef = { action: string; trigger?: string; stopPropagation?: boolean };
+type ActionRef = { action: string; trigger?: string; stopPropagation?: boolean; __inlineCode?: string };
 
 const LIFECYCLE = new Set(['created', 'mounted']);
 
@@ -44,12 +44,16 @@ function eventToProp(event: string, componentType?: string): string | null {
  * The workflow function receives (state, dispatch, { router, api, form, popover }).
  */
 function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap): string {
+  const stop = actionRef.stopPropagation ? 'e.stopPropagation();\n  ' : '';
+  // __inlineCode from shared-component workflows takes priority (avoids round-trip through lib/workflows.ts)
+  if (actionRef.__inlineCode) {
+    return `${stop}${actionRef.__inlineCode}`;
+  }
   const wfName = symbols.workflows.get(actionRef.action);
   if (!wfName) {
     // Inline action with no workflow — should not happen in normal flow
     return `/* unknown workflow: ${actionRef.action} */`;
   }
-  const stop = actionRef.stopPropagation ? 'e.stopPropagation();\n  ' : '';
   return `${stop}await ${wfName}({ state: useStore.getState(), dispatch: useStore.setState, router, api, form, popover, event: e });`;
 }
 

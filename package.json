@@ -11,6 +11,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:ai-prompts": "npx tsx scripts/validate-ai-builder-prompts.ts",
+    "export:run": "npx tsx scripts/export-and-run.ts",
     "test:export:config": "npx tsx scripts/export-config-test.ts",
     "test:e2e:export": "npx playwright test e2e/export-from-config.spec.ts",
     "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/builder-bugfixes.spec.ts e2e/builder-logic.spec.ts e2e/test-dnd.spec.ts e2e/snap-engine.spec.ts e2e/panel-color-picker.spec.ts e2e/panel-interactive.spec.ts e2e/panel-media.spec.ts e2e/panel-overlays.spec.ts e2e/panel-rotate-smooth.spec.ts e2e/panel-rotate-timing.spec.ts e2e/panel-display.spec.ts e2e/panel-charts.spec.ts e2e/panel-layout.spec.ts e2e/panel-form.spec.ts --workers=1"

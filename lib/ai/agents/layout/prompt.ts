@@ -18,48 +18,36 @@
  *
  * ─── User message (injected by route) ────────────────────────────────────────
  * route.ts: "[Styling Agent] Apply all visual styles…"
- *   [Page Tree], {varRoster}, {repeatContainerHint}, {nestedRepeatHint},
+ *   [Page Tree], {varRoster}, {nestedRepeatHint},
  *   {ternaryContrastHint}, "Original request: {message}"
  */
 
 import {
   buildStylingDynamicPart,
-  buildAnimLevelBlock,
   BATCH_RETRY_RULE,
   type StylingSubAgentContext,
 } from '../shared/styling-subagent';
-import { SHARED_FORMULA_SYNTAX } from '../shared/formula-scope';
-import { buildAgentCapabilityTable } from '../../component-capabilities';
-
-// Keep old export name as an alias so existing callers in route.ts keep working
-// until the route is updated to call buildStylingAgentPrompt directly.
-export { buildStylingAgentPrompt as buildLayoutAgentPrompt };
+import { STYLING_FORMULA_SYNTAX } from '../shared/formula-scope';
 
 export function buildStylingAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  // Replace the auto-generated "Icon → icon only (skip: ...)" line with an explicit
-  // instruction telling the agent to use set_style for Icon color/size.
-  const capabilityTable = buildAgentCapabilityTable(['layout', 'size', 'spacing', 'typography', 'overflow', 'background', 'border', 'shadow', 'icon'])
-    .replace(
-      /- Icon → icon only.*$/m,
-      `- Icon → use set_style(nodeId, { color: "hex", width: N }) for color and size. Do NOT call set_icon_src (media agent sets the icon name). Always include explicit color (e.g. "#ffffff" on dark BG, "var(--theme-primary)" on light) and size (width: 16–24 for inline, 24–36 for feature/hero).`
-    );
+  const staticPart = `You are the visual designer. The target node UUIDs are in your message — apply styles directly via set_style without calling read tools.
 
-  const staticPart = `You are the visual designer. Use set_style for ALL styling — layout, spacing, size, typography, position, overflow, background, text color, border, shadow, opacity, and transform in one call per node.
+set_style works on any node type and is one call per node. Pass base styles at the top level, responsive overrides via the breakpoints dict.
 
-CRITICAL — every section must be fully styled — width, direction, content distribution, and responsive constraints — before any child receives styles. Understyled sections cause cascading layout failures.
+Every layout property that changes across screen sizes MUST include breakpoints — no exceptions. direction: row always needs a mobile stack. Fixed pixel widths always need a smaller breakpoint variant. A layout with no breakpoints is a bug. After styling all nodes, verify the layout at both narrow (mobile) and wide (1440px+) viewports — fix any overflow, misalignment, or visual breakage at either end before executing.
 
-${SHARED_FORMULA_SYNTAX}
+Chunk isolation: your [Page Tree Chunk] is the only tree you may style. Any [NOT YOUR CHUNK] block lists section IDs owned by a parallel agent — do not touch those IDs or their descendants.
 
-- **Text alignment:** Set \`textAlign\` on each **Text** node directly — Box nodes do not support typography and will silently ignore it.
+Your FIRST set_style call must be on the topmost section node in your chunk — before any child. Never call set_style on a child before its parent section is styled.
 
-${capabilityTable}
+${STYLING_FORMULA_SYNTAX}
+
+- Text alignment and color: set \`textAlign\` and \`color\` ONLY on Text/Heading nodes directly. NEVER set them on a Box or container.
+- Icon color/size: set_style(iconId, { color, width }). The media agent owns set_icon_src.
 
 ${BATCH_RETRY_RULE}`.trim();
 
-  const dynamicPart = [buildStylingDynamicPart(context), buildAnimLevelBlock(context.animationLevel)].filter(Boolean).join('\n\n');
+  const dynamicPart = buildStylingDynamicPart(context);
 
   return { static: staticPart, dynamic: dynamicPart };
 }
-
-// Keep old export for backward compat (used by single-agent edit mode route)
-export { buildStylingAgentPrompt as buildColorsAgentPrompt };

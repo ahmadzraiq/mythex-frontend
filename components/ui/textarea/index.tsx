@@ -10,9 +10,20 @@ import {
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 
 const SCOPE = 'TEXTAREA';
+
+const ResetTextInput = React.forwardRef<any, React.ComponentProps<typeof TextInput>>(
+  (props, ref) => (
+    <TextInput
+      ref={ref}
+      {...props}
+      style={[{ fontFamily: 'inherit' as any, fontSize: 'inherit' as any, fontWeight: 'inherit' as any }, props.style]}
+    />
+  )
+);
+
 const UITextarea = createTextarea({
   Root: withStyleContext(View, SCOPE),
-  Input: TextInput,
+  Input: ResetTextInput,
 });
 
 const textareaStyle = tva({
@@ -33,15 +44,7 @@ const textareaStyle = tva({
 });
 
 const textareaInputStyle = tva({
-  base: 'p-2 web:outline-0 web:outline-none flex-1 color-typography-900 placeholder:text-typography-500 web:cursor-text web:data-[disabled=true]:cursor-not-allowed',
-  parentVariants: {
-    size: {
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-      xl: 'text-xl',
-    },
-  },
+  base: 'p-2 web:outline-0 web:outline-none flex-1 web:cursor-text web:data-[disabled=true]:cursor-not-allowed',
 });
 
 type ITextareaProps = React.ComponentProps<typeof UITextarea> &
@@ -51,7 +54,7 @@ const Textarea = React.forwardRef<
   React.ComponentRef<typeof UITextarea>,
   ITextareaProps
 >(function Textarea(
-  { className, variant = 'default', size = 'md', ...props },
+  { className, variant = 'default', size, ...props },
   ref
 ) {
   return (
@@ -78,12 +81,7 @@ const TextareaInput = React.forwardRef<
       ref={ref}
       {...props}
       textAlignVertical="top"
-      className={textareaInputStyle({
-        parentVariants: {
-          size: parentSize,
-        },
-        class: className,
-      })}
+      className={textareaInputStyle({ class: className })}
     />
   );
 });

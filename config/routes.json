@@ -255,6 +255,12 @@
       "layout": "full"
     },
     {
+      "path": "/calculator2",
+      "config": "calculator2",
+      "auth": false,
+      "layout": "full"
+    },
+    {
       "path": "/counter-example",
       "config": "counterExample",
       "auth": false,

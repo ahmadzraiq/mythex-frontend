@@ -1,339 +1,272 @@
 ---
-description: AI builder knowledge base — system prompt structure, core philosophy, contrast rules, asset handling, video defaults, and prompt design decisions
-globs: lib/ai/builder-knowledge.ts,lib/ai/builder-tools.ts,app/api/ai/builder-chat/**
+description: AI builder knowledge base — system prompt structure, agent architecture, tool philosophy, and prompt design decisions
+globs: lib/ai/builder-knowledge-v2.ts,lib/ai/builder-tools.ts,lib/ai/agents/**,app/api/ai/builder-chat/**
 alwaysApply: false
 ---
 
-# AI Builder Knowledge Base (`lib/ai/builder-knowledge.ts`)
+# AI Builder Knowledge Base (`lib/ai/builder-knowledge-v2.ts`)
+
+The AI builder is a **multi-agent pipeline**. The system prompt in `builder-knowledge-v2.ts` is the static "tool manual" that orchestrators and free-form chat use. Per-scope sub-agents (Structure, Binding, UI / Styling, Animation, Workflow, Data, Media) carry their own focused prompts under `lib/ai/agents/<scope>/prompt.ts`.
+
+---
 
 ## Tool Manual Principle — What the AI Needs vs What Is Leakage
 
-The system prompt is a **tool manual**, not a design guide. Claude already knows how to design. The four things the AI needs to know are system-specific facts it cannot derive from general knowledge:
+The system prompt is a **tool manual**, not a design guide. Claude already knows how to design. The four things the AI needs that it cannot derive from general knowledge:
 
 | Category | Examples | Where it lives |
 |---|---|---|
-| **1. Tool names + input parameters** | `set_size(id, {width: "full"})`, `set_opacity(id, {opacity: N})` | `builder-tools.ts` schema + quick-ref |
-| **2. System-specific behavior** | Our token names, batch nodeId system, formula syntax (`{{variables['UUID']}}`), sizing mode strings | `JSON_SCHEMA_RULES`, knowledge blocks |
-| **3. Component labels + structure** | `"Box"`, `"Btn Solid"`, `"Card"` — exactly as shown in the left panel; aiRef structure | component label list + `buildComponentStructureRef()` |
-| **4. System quirks** | Non-obvious tool behaviors Claude can't predict (e.g. maxWidth alone doesn't center, align ≠ justify in set_layout) | knowledge blocks |
+| **1. Tool names + input parameters** | `set_style(id, {...})`, `set_layout(id, {gap})`, `set_animation(id, {tilt: {...}})` | `builder-tools.ts` schema + per-agent prompts |
+| **2. System-specific behavior** | Token names, `{{variables['UUID']}}` formula syntax, JS bindings `{ js: "<body>" }`, responsive cascade | `JSON_SCHEMA_RULES`, knowledge blocks |
+| **3. Component primitives + structure** | The 8 real primitives (Box, Text, Input, Textarea, Image, Icon, Video, Iframe); shared components; loop templates | `COMPONENT_AI_REFS` (names + summaries in code), `PRIMITIVES_BLOCK`, `SHARED_COMPONENTS_BLOCK` |
+| **4. System quirks** | Drag/swipe gesture payload, JS forbidden tokens, batch nodeId ordering, theme color tokens | knowledge blocks + agent prompts |
 
-**Diagnostic rule:** When AI output is wrong, the fix is either (a) extend the tool to support the capability, or (b) add one system-specific fact to the prompt. **Never add design guidance** — Claude already knows how to design.
+**Diagnostic rule:** When AI output is wrong, the fix is either (a) extend the tool to support the capability, or (b) add one system-specific fact. **Never add design guidance** — Claude already knows how to design.
 
 **What is leakage (never put in what the AI sees):**
 - General design principles (contrast theory, layout patterns, when to use rounded corners)
 - Tailwind class names (`flex-col`, `w-full`, `text-gray-900`, `rounded-lg`, `p-4`, …)
 - Raw JSON node structure (`className`, `style`, `props`, `children` keys)
-- CSS concept terminology (`align-items`, `justify-content`, `flex-1`, `h-screen`, …)
-- Internal prop names (`props.src`, `props.poster`, `props.icon`, `props.type`)
-- Tool write targets (`→ style.opacity`, `→ style.transform`, `→ props.className`, …)
+- CSS terminology (`align-items`, `justify-content`, `flex-1`, …)
+- Internal prop names (`props.src`, `props.icon`, `props.type`)
+- Tool write targets (`→ style.opacity`, `→ style.transform`, …)
 - Implementation details about how tools store values internally
 
-**Rule for new content:** Before adding anything to `builder-knowledge.ts`, ask: "Is this something Claude cannot know without being told?" If Claude can derive it from general design/CSS/engineering knowledge, it does not belong in the system prompt.
+**Rule for new content:** Before adding anything to `builder-knowledge-v2.ts`, ask: "Is this something Claude cannot know without being told?" If Claude can derive it from general design/CSS/engineering knowledge, it does not belong in the system prompt.
+
+---
+
+## Multi-Agent Architecture
+
+Every user message unconditionally routes to `runBuildPipeline()` in `lib/ai/agents/dispatch.ts` — there is no Phase-0 classifier, no `BuildPlan`, and no edit loop. The **Planner** decides what to do via the `ContractManifest`.
+
+| Agent | ID in registry | Tools | Prompt |
+|---|---|---|---|
+| Context Agent (Haiku) | — | `search`, `semantic_search`, `read` | `lib/ai/agents/context-agent.ts` |
+| Planner (Haiku, single-shot) | — | emits `ContractManifest` (ops + `sharedComponentsToCreate`) | `agents/planner/prompt.ts` |
+| Structure (deterministic, no LLM) | `structure` | `generate_structure`, `add_variable` | `agents/structure/structure-step.ts` |
+| UI / Styling (Haiku) | `styling` | `set_style` | `agents/layout/prompt.ts` (`buildStylingAgentPrompt`) |
+| Animation (Haiku) | `animation` | `set_animation` | `agents/animation/prompt.ts` |
+| Workflows (Haiku) | `workflows` | `create_workflow`, `bind_action`, `update_workflow_steps`, `set_workflow_params` | `agents/workflows/prompt.ts` |
+| Data (Haiku) | `data` | `add_data_source`, `update_data_source`, `delete_data_source` | `agents/data/prompt.ts` |
+| Binding (Haiku) | `binding` | `set_text`, `set_repeat`, `set_condition`, `set_disabled`, `set_src`, `set_icon_src` | `agents/binding/prompt.ts` |
+| Media (Haiku) | `media` | `search_images`, `search_videos`, `search_icons`, `set_src`, `set_background`, `set_icon_src` | `agents/media/prompt.ts` |
+| Shared Components (Haiku) | `sharedComponents` | SC model edits via `enter_shared_component_edit` / `exit_shared_component_edit` | `agents/sharedComponents/prompt.ts` |
+
+**Hard invariants:**
+- Only the **Structure** step creates resources (pages, nodes, variables, workflows, data sources, SC instances). Every UUID downstream agents reference must already exist in the manifest.
+- Structure processes **`sharedComponentsToCreate` BEFORE pages** — SC models (with `_sharedKey`-stamped internal nodes) are fully ready before any specialist agent starts.
+- Within a build, all specialists (styling / animation / binding / workflows / data / media / sharedComponents) **run in parallel** in a single flat `Promise.all` pool — they never collide because Structure pre-mints all UUIDs.
+
+**SC three-path instance overrides (page agents):**
+- Path 1: `set_component_props(instanceId, { propName })` — declared property override
+- Path 2: `set_style/set_animation/set_text(internalNodeId, ...)` — targets a specific node inside this instance via `_sharedKey`
+- Path 3: `set_style(instanceId, ...)` — styles the instance's root Box wrapper
+
+**`sharedComponents` agent scope:** Model edits only, runs on a separate user-intent turn. Never runs during builds that create new SCs (the planner authors those inline).
 
 ---
 
 ## Core Concept — Tools Mirror the Panel Exactly
 
-**The fundamental rule of this AI system:**
 > AI tools expose exactly what the builder's right-side design panel exposes — nothing more, nothing less.
 
 This means:
 - If the panel has a pixel number input → the tool accepts a **number (pixels)**
-- If the panel has a dropdown of Tailwind tokens → the tool accepts those **exact enum strings**
+- If the panel has a token dropdown → the tool accepts those **exact enum strings**
 - If the panel writes to `style.paddingTop` → the tool writes to `style.paddingTop`
 - If the panel writes to `props.className` → the tool writes to `props.className`
 - If the panel doesn't expose a control → the tool doesn't expose it either
 
-**Why:** When the AI writes style via a tool and the user opens the panel, the panel must display the correct value. If the AI writes `opacity-50` class but the panel reads `style.opacity`, the panel shows 0 — the two are out of sync. The tool and the panel must write to the same place in the same units.
+**Why:** When the AI writes style via a tool and the user opens the panel, the panel must display the correct value. If they disagree, the panel goes blank or shows wrong values — out of sync.
 
 ---
 
 ## How to Audit a Tool Against the Panel
 
-When adding or modifying a tool, open `_panel-right.tsx` and find the panel control for that property. Then:
+When adding or modifying a tool, open the relevant panel section (`_panel-right-design-sections.tsx`, `_panel-right-settings.tsx`, `_animation-panel.tsx`, `_theme-panel.tsx`, etc.) and:
 
-1. **Check write target** — does the panel use `patchStyle({ key: value })` or `patchCls(newClass)`?
-   - `patchStyle` → the panel calls `styleToClassName` internally before saving, so both panel and tool now write to `props.className` as arbitrary-value classes (e.g. `pt-[16px]`). The tool must do the same.
-   - `patchCls` → tool writes to `props.className` with a fixed Tailwind token
-2. **Check units** — is it a pixel `NumberInput`, a token `SelectInput`, or a boolean `Toggle`?
-   - `NumberInput` → tool parameter is `number` (pixels)
-   - `SelectInput` with token list → tool parameter is `string` enum matching exact token values
-   - `Toggle` → tool parameter is `boolean`
-3. **Check enum options** — compare panel's token array (from `_tw-utils.ts`) to the tool's enum exactly. If the panel has `"rounded"` (bare default), the tool must have `"default"` mapped to `"rounded"`.
+1. **Check write target** — does the panel use `patchStyle({ key: value })` (style passthrough that runs `styleToClassName`) or `patchCls(newClass)` (raw class)?
+2. **Check units** — `NumberInput` = pixels (`number`). `SelectInput` = token string enum. `Toggle` = boolean.
+3. **Check enum options** — compare panel's token array (from `_tw-utils.ts`) to the tool's enum exactly.
 
-**Reference files for panel token arrays:**
-- `app/dev/builder/_panel-right.tsx` — all panel controls with their write targets
-- `app/dev/builder/_panel-primitives.tsx` — `NumberInput`, `SelectInput`, `FieldWithBinding`
-- `app/dev/builder/_tw-utils.ts` — `ROUNDED_TOKENS`, `SHADOW_TOKENS`, `LEADING_TOKENS`, `ENTER_TYPES`, `EXIT_TYPES`, `LOOP_TYPES`, etc.
+**Reference files:**
+- `app/dev/builder/_panel-right.tsx` and the panel section files for write targets.
+- `app/dev/builder/_panel-primitives.tsx` for input components.
+- `app/dev/builder/_tw-utils.ts` for `ROUNDED_TOKENS`, `SHADOW_TOKENS`, `LEADING_TOKENS`, `ENTER_TYPES`, `EXIT_TYPES`, `LOOP_TYPES`, etc.
+- `app/dev/builder/_animation-panel.tsx` for the full `AnimationConfig` surface.
 
 ---
 
-## Style Mechanism Map (what each tool writes to)
+## Style Mechanism Map (current tools)
+
+The styling toolset was consolidated in Phase B. There is now **one** unified styling tool (`set_style`) plus a focused `set_layout` for direction/justify/align/gap.
 
 | Tool | Mechanism | Units |
 |---|---|---|
-| `set_background` | `props.className` (bg-[color] class) + strips `style.backgroundColor` | color string |
-| `set_text_color` | `props.className` (text-* class) | color token / hex |
-| `set_typography` | `props.className` (Tailwind text-* font-* etc.) | Tailwind tokens |
-| `set_border` | `props.className` (border-* rounded-* classes) | Tailwind tokens |
-| `set_shadow` | `props.className` (shadow-* class) | Tailwind tokens |
-| `set_opacity` | `style.opacity` (0–1 float) | 0–100 input → divided by 100 |
-| `set_spacing` | `props.className` as arbitrary-value classes (pt-[Npx], gap-[Npx], etc.) + strips `style.*` | pixels |
-| `set_size` | `props.className` for all values: width/height modes + max-w-[Npx], min-w-[Npx], etc. + strips `style.*`; `px:N` double-writes class AND `style.*` | pixels / mode strings |
-| `set_position` | `props.className` for position/zIndex + top-[Npx]/right-[Npx]/etc. for inset + strips `style.*` | pixels for inset |
-| `set_transform` | `style.transform` for rotate; `props.className` for flip/cursor/overflow/self | degrees for rotate |
-| `set_layout` | `props.className` for direction/align/justify + gap-[Npx] for gap + gridCols/gridRows/colSpan/flexWrap + strips `style.gap` | pixels for gap |
-| `set_submit` | `props.type` = `"submit"` or null | boolean |
-| `set_input_props` | `props.type`, `props.step`, `props.multiline`, etc. | typed values |
-| `set_animation` | `node.animation.*` object | enum strings matching panel |
+| `set_style` (unified) | `props.className` (arbitrary-value Tailwind for pixels, tokens for fixed enums) + `props.style` for opacity/rotate; strips conflicting style/class on every write | pixels (numbers) and token strings — mirrors the panel exactly |
+| `set_layout` | `props.className` for direction/justify/align/grid + `gap-[Npx]`; strips `style.gap` | pixels for gap; token strings for direction/justify/align |
+| `set_background` | `props.className` (bg-[color] class) + strips `style.backgroundColor` | color string or `theme:tokenName` |
+| `set_animation` | `node.animation.*` object (nested config for tilt/parallax/drag/gesture/states/etc.) | enum strings + nested objects matching `AnimationConfig` |
+| `set_validation` | `node.validation.*` array of `{type, message, value, formula}` | enum + string |
+| `set_repeat` | `node.repeat = { source, key }` formula | formula expression |
+| `set_condition` | `node.showIf` formula | formula expression |
+| `set_responsive_override` | `node.responsive[bp].<field>` | per-field |
+| `bind_action` | `node.actions[i] = { workflowId, trigger? }` | trigger enum string + workflow id |
+| `set_text` / `set_placeholder` / `set_src` / `set_icon_src` | direct prop / formula | string or `{ formula }` / `{ js }` |
 
-**Runtime rendering note:** Arbitrary-value Tailwind classes written from JSON (e.g. `pt-[96px]`, `bg-[#0f172a]`) are not compiled by NativeWind's static scanner. The renderer's `classToInlineStyle()` function in `lib/sdui/renderer.tsx` converts them to inline styles at render time. This means the JSON stores classes (for panel sync) while the browser sees inline styles (for correct rendering). `props.style` values take precedence over `classToInlineStyle` output.
+**Runtime rendering note:** Arbitrary-value Tailwind classes written from JSON (e.g. `pt-[96px]`, `bg-[#0f172a]`) are not compiled by NativeWind's static scanner. The renderer's `classToInlineStyle()` in `lib/sdui/renderer.tsx` converts them at render time. JSON stores classes (for panel sync), browser sees inline styles.
+
+**Removed tools (do not reference):** `set_class`, `set_grid`, `set_typography`, `set_spacing`, `set_position`, `set_size`, `set_border`, `set_shadow`, `set_text_color`, `get_formula_context`, `get_components`. All folded into `set_style` / `set_layout` / `set_animation`.
 
 ---
 
-## Making Rules Generic
+## Concept blocks (injected into the chat system prompt)
 
-When a new fix is discovered (e.g. video controls being wrong, or spacing using wrong units), the rule goes into the knowledge base and this doc as a **generic principle**, not a specific case.
+These are the main **static concept strings** concatenated by `buildChatSystemPrompt` in `lib/ai/builder-knowledge-v2.ts` (see `buildChatSystemPrompt` for the exact assembly order next to runtime injections):
 
-**Pattern:**
-- Specific: "Dark hero sections need white button borders" ❌
-- Generic: "All spacing tools (set_spacing, set_layout) accept pixels — not Tailwind scale values" ✅ (system-specific: Claude doesn't know our units)
+| Block | Topic | Constant / source in `builder-knowledge-v2.ts` |
+|---|---|---|
+| **Primitives** | The eight atoms, composition rules | `PRIMITIVES_BLOCK` |
+| **Shared components** | SC models, instances, `_shared` | `SHARED_COMPONENTS_BLOCK` |
+| **Responsive** | Breakpoint cascade, `node.responsive[bp]` | `RESPONSIVE_BLOCK` |
+| **Triggers** | Page vs app triggers, bind surface | `TRIGGERS_BLOCK` |
+| **Auth** | Guards, session shapes for prompts | `AUTH_BLOCK` |
+| **JS-in-formulas** | `{ js: "..." }` vs `formula`, forbidden tokens | `JS_FORMULAS_BLOCK` |
 
-- Specific: "Video controls should be false in hero sections" ❌
-- Generic: "Video ambient defaults (autoPlay=true, loop=true, muted=true, controls=false) apply everywhere — only override when the user explicitly requests a media player" ✅ (system-specific: these are OUR component's default props)
-
-- Specific: "Build pricing cards dynamically" ❌
-- Generic: "Any repeated structure (cards, rows, list items) → set_repeat + ONE template node; never N static copies" ✅ (system-specific: the set_repeat tool and context.item.data.* binding syntax are not general knowledge — Claude cannot infer that our system supports a repeat mechanism or what the exact call signature is)
-
-- Specific: "Tell Claude to check contrast before finishing a section" ❌
-- Correct: nothing — Claude has the live palette hex values and knows how to design ✅
-
-- Specific: "The hero's gap should be 16px" ❌
-- Correct: nothing — specific pixel values are design decisions Claude makes ✅
-
-**Rule for adding a new rule:** Ask "is this something Claude cannot know without being told?" If Claude can derive it from general design, CSS, or engineering knowledge — don't add it. Only add system-specific facts: our token names, our tool params, our quirks, our formula syntax.
+Additional catalog blocks (same file): `ACTION_CATALOG_BLOCK`, `MOTION_BLOCK`, auto-generated capability / function-library tables, and live theme line from `paletteSnapshot`.
 
 ---
 
 ## How the System Prompt Is Built
 
-`buildKnowledge(context)` is called per-request and returns the full system prompt string. It injects:
+`buildChatSystemPrompt(context)` in `lib/ai/builder-knowledge-v2.ts` is called per-request and returns the full system prompt string. It injects:
 
 - `paletteSnapshot` — live resolved CSS variable values (var=hex pairs) so the AI knows the current theme
 - `currentPageName`, `pages`, `selectedNodeSummary` — per-request builder state
-- Component list (auto-derived from `PRIMITIVE_COMPONENTS`)
-- Component structure reference (from `aiRef` field on each primitive)
-- All tool descriptions, quick reference, formula functions
+- Component list (auto-derived from `COMPONENT_AI_REFS` — the 8 real primitives)
+- All tool descriptions and quick reference
+- Concept blocks: `PRIMITIVES_BLOCK`, `SHARED_COMPONENTS_BLOCK`, `RESPONSIVE_BLOCK`, `TRIGGERS_BLOCK`, `AUTH_BLOCK`, `JS_FORMULAS_BLOCK`, `ACTION_CATALOG_BLOCK`, `MOTION_BLOCK`
 
 **Injection order:**
-```
 1. Project context (appName, description, category, mood)
-2. Builder Context (current page, selected node)
-3. Core Philosophy (no raw Tailwind, no set_class)
-4. Tool Strategy (build incrementally, pre-assign IDs)
-5. Section building patterns and examples
-6. Width/Height sizing model
-7. Quick reference table
-8. Component list (auto-generated)
-9. Component structure reference (from aiRef)
-10. Formula function library (auto-generated)
-11. Tool reference table
-```
+2. Builder context (current page, selected node)
+3. Capability reference table (auto-generated from `COMPONENT_CAPABILITIES`)
+4. Primitives, Shared Components, Responsive, Triggers, Auth, JS-in-formulas, Action catalog, Motion blocks
+5. Formula function library (auto-generated from `FUNCTION_LIBRARY`)
+6. Theme block (live palette)
 
 **Never hardcode theme values** — they come from `paletteSnapshot` at runtime.
 
 ---
 
-## Phase 2 — Variable Reuse Rule
+## JS-in-Formulas — First-Class Support
 
-Phase 2 runs a mini-model to scaffold repeated structures. It receives a list of existing array variables so it can reuse them instead of creating duplicates.
+Two storage shapes for any binding:
+- **SDUI formula:** `"some expression"` (string) OR `{ "formula": "..." }` — preferred for arithmetic, ternaries, FORMULA_FNS, theme tokens, `condition` formulas.
+- **JavaScript:** `{ "js": "<body>" }` — preferred for backtick string templates, regex literals, complex `reduce`/`flat`/`Object.fromEntries` patterns, and `wwLib.*` calls.
 
-**Critical rule in `buildPhase2SysPrompt()`:**
+**Forbidden tokens in JS bindings (validator rejects them):** `fetch(`, `import(`, `require(`, `document`, `window`, `globalThis`, `localStorage`, `sessionStorage`, `eval(`, `new Function(`, `process`. For HTTP use `fetchData`/`graphql` workflow steps; for navigation use `navigateTo` (or `wwLib.navigate.to` inside async `runJavaScript`).
 
-- If an existing variable **exactly matches** the data needed → skip `add_variable`, use the existing UUID directly.
-- If the existing variable does **NOT match** (different fields or data) → create a new variable with a **fresh UUID**. NEVER call `add_variable` with an existing variable's UUID — variables are global, and overwriting one corrupts every page that uses it.
+The Workflow agent emits `runJavaScript` workflow steps for the same use cases at the action layer.
 
-**Why this matters:** A pricing page built on page A has `Pricing Plans` variable with fields `{ name, price, features }`. Page B also wants pricing plans but adds `highlighted` and `borderAccent`. Reusing the page A UUID overwrites the global variable, breaking page A silently. The fix is always a fresh UUID when the data shape differs.
+---
 
-**Where it lives:** `buildPhase2SysPrompt()` in `app/api/ai/builder-chat/route.ts`, STEP 1. The existing variable list is injected at runtime by `buildPhase2SysPrompt()` reading the store's variable registry.
+## Variable Reuse Rule (Structure agent)
+
+Structure receives a list of existing array variables and reuses their UUIDs when the data shape **exactly matches**. If the shape differs, mint a fresh UUID — NEVER overwrite an existing variable's UUID, because variables are global and overwriting one corrupts every page that uses it.
+
+**Where it lives:** Structure agent prompt + `route.ts` runStructureAgent dynamic block.
 
 ---
 
 ## Contrast — Claude's Responsibility, Not the System Prompt's
 
-Claude receives the live theme palette with real hex values at runtime. He can judge contrast himself using that palette — the system prompt does not teach contrast.
+Claude receives the live theme palette with real hex values at runtime. He judges contrast himself.
 
-**Architectural decision:** The executor must NOT silently rewrite button/border colors when `set_background` is called — that would break pages where the user deliberately set element colors. Contrast is Claude's design judgment, applied upfront when he picks colors.
+**Architectural decision:** The executor must NOT silently rewrite button/border colors when `set_background` is called. Contrast is a design judgment applied upfront when Claude picks colors.
 
-**What this means for `builder-knowledge.ts`:** Do not add general contrast checklists or "verify contrast before finishing" instructions. If the AI makes a contrast mistake, the fix is to check whether the palette injection is working (see Class of Bug 3), not to add more design guidance.
-
-**Exception — system-specific ternary propagation (the CONTRAST RULE):** When a container background is set via a ternary/formula, descendants must ALSO use ternary formulas — not static colors. This is a system quirk Claude cannot derive from general knowledge (it's a consequence of our repeat-template rendering model). This is why `builder-knowledge.ts` includes a CONTRAST RULE block. The rule was extended to also cover conditionally-visible nodes: a node shown via `set_condition` based on the same flag always appears against one specific background, so its static colors must contrast against that background.
-
----
-
-
-## Design Judgment — Defaults Are Starting Points, Not Decisions
-
-Component defaults are neutral. The AI makes the actual design decisions.
-
-When adding any component, evaluate whether its default values fit the user's intent — and override anything that doesn't. The user's prompt provides enough context. Don't wait for the user to notice and ask for a fix.
-
-This applies universally: dimensions, typography, spacing, color, behavior, or any other property.
-
-### Structural Layout Containers — No Default Padding (Changed)
-
-`Box`, `Row`, `VStack`, `HStack`, and `Center` no longer ship with default padding or gap. There is nothing to clear when using them as structural wrappers — they start empty.
-
-Add spacing explicitly with `set_spacing` only when the design calls for it. The only containers that still have intentional default padding are `Card`, `Alert`, `Accordion`, `Modal`, `AlertDialog`, and similar visible UI surfaces.
-
-**Min-height:** If a layout container still shows unexpected height, call `set_size(id, { height: "fit" })` to ensure it wraps its content.
-
-### Fixed Dimension Defaults Need Contextual Evaluation
-
-Some components ship with a fixed default dimension. That default is a neutral starting point — not a design decision. The AI must evaluate it against the section being built.
-
-**Rule:** After adding any component with a fixed dimension default, ask — does this dimension fit where it is placed? If not, override it immediately with `set_size` in the same batch. Never leave a dimension default that visually doesn't fit the context.
-
----
-
-## Component Defaults Are Intentional — Do Not Override Unless Asked
-
-Every component ships with defaults that are deliberately chosen for the most common use case. The AI must not call follow-up tools to override those defaults immediately after adding a component — doing so undoes an intentional design decision.
-
-Only override a component's default behavior when the user explicitly requests it. The prompt context alone (e.g. "dark background", "hero section") is not sufficient justification to override playback behavior, interaction state, or other behavioral defaults.
+**Exception — system-specific ternary propagation (the CONTRAST RULE):** When a container background is set via a ternary/formula, descendants must ALSO use ternary formulas — not static colors. Same applies to `set_condition`-gated nodes.
 
 ---
 
 ## Asset Handling Rules
 
-Always search before adding:
-- Images: `search_images(query)` → `add_image(src, alt, parentId)`
-- Videos: `search_videos(query)` → `add_video(src, poster, parentId)`
-- Icons: `search_icons(query)` → `add_icon(icon, parentId)`
+The Media agent always searches before applying:
+- Images: `search_images(query)` → `set_src(nodeId, url, alt, "cover")` for Image, or `set_background(nodeId, url, "cover", "center")` for bgImage Box
+- Videos: `search_videos(query)` → `set_src(nodeId, src, undefined, "cover", poster)`
+- Icons: `search_icons(query)` → `set_icon_src(nodeId, iconName)` (color/size handled by UI agent via `set_style`)
 
-Never hardcode a Pexels/Unsplash URL or icon name directly. The search tools are server-side and return real URLs from the API. Never reference external services (YouTube, etc.) — only internal asset searches.
-
----
-
-
-## Adding Rules to the Knowledge Base
-
-- Keep rules **generic** — avoid hardcoding app-specific scenarios
-- Rules about "when X, do Y" must cover the general case, not just the specific bug that was observed
-- If a rule is too specific (e.g. "dark sections need white buttons"), make it a principle ("custom bg → matching contrast for children")
-- Avoid duplicating rules — check if an existing rule already covers the case before adding
-- Update this doc when a rule is added or changed so the decisions are traceable
+Never hardcode a Pexels/Unsplash URL or icon name. Never reference YouTube or external services beyond the internal asset searches.
 
 ---
 
-## System Prompt Health — What Can Go Wrong and How to Check
+## System Prompt Health — Audit Checklist
 
-The Builder AI's behavior is entirely driven by what it receives at runtime: the assembled system prompt + tool schemas + live context. When the AI makes bad design decisions or calls wrong tools, the root cause is almost always in one of these areas. Before adding new features or reporting AI misbehavior, audit these layers first.
+When the AI behaves unexpectedly:
+
+1. **Copy the debug log** from the chat panel — see exactly what each agent received (Phase O envelope).
+2. **Check tool name references** — every tool referenced in `builder-knowledge-v2.ts`, `agents/*/prompt.ts`, and primitive metadata in `lib/builder/primitive-components.ts` must exist in `lib/ai/builder-tools.ts`.
+3. **Check the live palette line** in the captured prompt — should show hex values like `var(--theme-primary) = #00b4d8`. If it shows `(no theme palette)`, `buildPaletteSnapshot` is broken.
+4. **Check manifest scope** — the Planner manifest must list every UUID downstream agents reference. Self-correction rejects any tool call whose primary id is missing.
+5. **Check JS forbidden tokens** — if the validator rejected a JS binding, the body contains `fetch(`, `document`, `window`, etc.
+6. **Cross-reference removed tools** — `rg "set_class|set_grid|set_text_color|set_typography|set_spacing|set_position|set_size|set_border|set_shadow|get_formula_context|get_components" lib/ai lib/builder` should return nothing.
 
 ---
 
-### Class of Bug 1 — Dead Tool References
+## Class of Bug 1 — Dead Tool References
 
-**What it is:** A string somewhere (an `aiRef`, a knowledge block) tells the AI to call a tool that no longer exists.
+A string somewhere (primitive copy in code, knowledge block, agent prompt) tells the AI to call a tool that no longer exists. The AI tries the call, the executor rejects it (or self-correction retries 3x then fails), and the user sees nothing.
 
-**Why it's dangerous:** The AI confidently tries to call the tool. The executor rejects it or silently does nothing. The AI either loops or produces incomplete output — and there is no error the user sees.
+**Where to look:** `lib/builder/primitive-components.ts` (palette labels / helper copy), every file under `lib/ai/agents/*/prompt.ts`, and `builder-knowledge-v2.ts` concept blocks.
+
+**How to verify:** Open `lib/ai/builder-tools.ts` and confirm the tool name exists. Anything not registered is a dead reference.
+
+---
+
+## Class of Bug 2 — Contradictory Instructions
+
+Two sections of the system prompt say opposite things about the same behavior. The AI sees both and behavior becomes unpredictable.
+
+**Where to look:** Any behavioral instruction that appears in more than one block (variable creation, scope rules, formula syntax, JS rules). The Structure agent prompt + `builder-knowledge-v2.ts` + workflow agent prompt all describe variable scope — they must agree.
+
+---
+
+## Class of Bug 3 — Live Context Injection That Never Resolves
+
+A runtime injection (theme colors, page name, selected node, varRoster) silently produces empty output because of a data format mismatch.
 
 **Where to look:**
-- `aiRef` strings in `lib/builder/primitive-components.ts` — every one that says "use X tool" must match a tool that exists in `lib/ai/builder-tools.ts`
-- `aiRef` strings in `lib/ai/builder-knowledge.ts` / `primitive-components.ts` — any "adjust with X" reference
-- Any knowledge block that names a specific tool
-
-**How to verify:** Open `lib/ai/builder-tools.ts` and check that the tool name exists as a registered tool. If it's not there, it's a dead reference.
-
-**Observed during audit:** `set_class` was referenced in 4 `aiRef` strings (Box, Grid, Btn Solid, Toggle). `set_grid` was referenced in the old component-defaults block in `builder-knowledge.ts`. Both tools were removed. Fixed by replacing with the correct tools (`set_layout`, `set_background`, `set_text_color`, `set_condition`).
+- `buildPaletteSnapshot()` in `app/api/ai/builder-chat/route.ts` — `THEME_VAR_MAP` keys must match `store.themeOverrides` keys exactly (no `--` prefix in source keys).
+- `varRoster` for downstream agents — Structure must emit `add_variable` events with UUIDs the workflow agent then references.
+- Manifest assembly — Planner must emit one entry per pre-minted UUID with the right scope tag.
 
 ---
 
-### Class of Bug 2 — Contradictory Instructions
+## Class of Bug 4 — Redundant Prose That Dilutes Actionable Instructions
 
-**What it is:** Two sections of the system prompt say opposite things about the same behavior.
+The prompt explains a concept Claude already knows (contrast theory, what "fill" means). This dilutes the unique, system-specific instructions.
 
-**Why it's dangerous:** The AI sees both instructions. Depending on which it encounters last or which seems more "local" to the task, it may follow either one. The behavior becomes unpredictable — sometimes correct, sometimes wrong.
-
-**Where to look:**
-- Any behavioral instruction that appears in more than one block (IDs, tool call patterns, color decisions)
-- The "Core Philosophy" block vs. component `aiRef` strings — if philosophy bans a tool, every `aiRef` must also not reference it
-- Timing rules that contradict mandatory rules — "do this as a verification pass" vs. "this is mandatory with no exceptions"
-
-**How to verify:** Search `lib/ai/builder-knowledge.ts` for the behavior in question (e.g. "nodeId", "contrast", "class") and read every occurrence. They must be consistent.
-
-**Observed during audit:** The "CRITICAL: Pre-assign short IDs" section told the AI to always pass `nodeId` in `add_component`. But a line buried inside Color Rule 1 said "NEVER pass a nodeId field." The stale note was from an old API shape and had been orphaned in the wrong section. Fixed by deleting it.
-
-A second contradiction: `contrastRules` closed with "This is a verification pass, not an upfront decision" while Color Rule 3 said contrast is mandatory with no exceptions. These directly conflicted. Fixed by rewriting the close of `contrastRules` to mandate upfront + final scan.
+**Heuristic:** Read each paragraph and ask "Would a senior frontend engineer already know this without being told?" If yes and it doesn't include a tool call or system-specific constraint, delete it.
 
 ---
 
-### Class of Bug 3 — Live Context Injection That Never Resolves
+## Component Copy in the System Prompt
 
-**What it is:** A runtime injection (theme colors, page name, selected node) silently produces empty output because of a data format mismatch between where data is stored and where the injector looks for it.
+Baseline presets live in each primitive's `defaultNode` in `lib/builder/primitive-components.ts`. **Do not** maintain a parallel "defaults" list in `builder-knowledge-v2.ts` — it duplicates the model's design judgment and drifts from code.
 
-**Why it's dangerous:** The AI receives "(no theme palette)" or similar fallback text and designs without any color context — picking arbitrary colors that may clash with the actual theme.
+`builder-knowledge-v2.ts` focuses on **how to use this product**: tools, schema, formulas, theme injection, agent architecture, JS-in-formulas rules, responsive cascade, shared components, auth, and triggers.
 
-**Where to look:**
-- `buildPaletteSnapshot()` in `app/api/ai/builder-chat/route.ts` — the `THEME_VAR_MAP` array maps source keys to display names. The source key must exactly match how `store.themeOverrides` stores them.
-- `_store.ts` — `themeOverrides` and `patchTheme` show the actual key format
-- `_store-node-helpers.ts` — `_applyLightOverrides` shows `--${k}`, confirming `k` itself has no `--` prefix
-
-**How to verify:** In `_store.ts`, find how a theme preset populates `themeOverrides`. The keys it stores (e.g. `'background'`, `'primary'`) must exactly match the first column of `THEME_VAR_MAP`. If `THEME_VAR_MAP` has `'--background'` but the store has `'background'`, the lookup always returns `undefined`.
-
-**Quick check:** Open the builder, apply a theme preset, open the browser devtools, and evaluate `window.__zustand?.getState?.()?.themeOverrides` (or use the "Copy system prompt" button at the bottom of the AI chat panel) to see what the AI actually receives. If you see "(no theme palette)", the injection is broken.
-
-**Observed during audit:** `THEME_VAR_MAP` had `--` prefixed keys (`'--background'`) while `store.themeOverrides` stores without prefix (`'background'`). All 14 entries returned `undefined`. Fixed by stripping `--` from all source keys in `THEME_VAR_MAP`.
+Any tool name referenced in `builder-knowledge-v2.ts`, primitive palette copy, or any agent prompt **must exist** in `lib/ai/builder-tools.ts`.
 
 ---
 
-### Class of Bug 4 — Redundant Prose That Dilutes Actionable Instructions
+## Rule: Keep primitive + agent tool references in sync with `builder-tools.ts`
 
-**What it is:** The prompt explains a concept Claude already knows as general knowledge (contrast theory, what "fill" means, that defaults exist). This takes up tokens and buries the actual constraint (the tool call, the system-specific behavior) deeper in the text.
+Every reference to a tool in `lib/builder/primitive-components.ts`, `lib/ai/agents/*/prompt.ts`, or `lib/ai/builder-knowledge-v2.ts` is a contract. When a tool is added, renamed, or removed in `lib/ai/builder-tools.ts`:
 
-**Why it's dangerous:** The AI has finite attention weight. When a critical instruction is surrounded by text explaining things it already knows, the ratio of signal to noise drops. The unique, tool-specific instructions become less prominent.
+1. `rg "<old-tool-name>" lib/ai lib/builder docs .cursor/rules` — every hit is a candidate.
+2. Update each one to the new name or replacement.
+3. If the tool is replaced by a different mechanism (e.g. `set_typography` → `set_style`), rewrite the surrounding paragraph rather than just renaming.
 
-**Where to look:**
-- Any paragraph that starts with "X is when..." or "Y means..." for widely-understood concepts (light vs dark contrast, what viewport height is, that components have defaults)
-- Any block that explains WHY a rule exists rather than just stating the rule
-- Definitions of terms Claude already understands (fill, screen, near-white, etc.)
-
-**How to identify:** Read each paragraph and ask: "Would a senior frontend engineer already know this without being told?" If yes, and the paragraph doesn't also include a system-specific tool call or constraint, it's redundant prose.
-
-**Observed during audit:** Five locations trimmed — two-layer section intro, "defaults are neutral" filler, "neutral starting point" sentence, fill/screen definitions, and the near-white/dark-on-dark "NEVER" lines. All were condensed to keep only the tool-call instruction or system-specific constraint.
-
----
-
-### Audit Checklist — Run This When the AI Behaves Unexpectedly
-
-1. **Copy the system prompt** — use the "Copy system prompt" button at the bottom of the AI chat panel to see exactly what the AI received, including live injections.
-2. **Search for the tool the AI called** — find every place in `builder-knowledge.ts` and `primitive-components.ts` that mentions it. Check consistency.
-3. **Search for the behavior that was wrong** — e.g. if contrast is wrong, search for "contrast" across both files. Read all occurrences together to find contradictions.
-4. **Check theme palette line in the copied prompt** — it should show hex values like `var(--theme-primary) = #00b4d8`. If it shows "(no theme palette)", `buildPaletteSnapshot` is broken.
-5. **Check aiRef strings for dead tools** — `grep -n "set_class\|set_grid\|_assignedNodeId" lib/builder/primitive-components.ts lib/ai/builder-knowledge.ts`. Any hit is a bug.
-6. **Check new tools match aiRef** — when a tool is renamed or removed, immediately update every `aiRef` that references it.
-
----
-
----
-
-## Component copy in the system prompt
-
-Baseline presets live in each primitive’s `defaultNode` and are summarized in `aiRef` (injected via `buildComponentStructureRef()`). **Do not** maintain a parallel “defaults” or “gotchas” list in `builder-knowledge.ts` for specific widgets — it duplicates design judgment the model already has and drifts from code.
-
-Keep `builder-knowledge` focused on **how to use this product**: tools, schema, formulas, theme injection, and project rules. Component-specific behavior belongs in `aiRef` (and rarely one line in **Color rules** if it applies to all edits).
-
-Any tool name referenced in builder knowledge or `aiRef` must exist in `lib/ai/builder-tools.ts`. (See "Class of Bug 1" in the audit section above.)
-
----
-
-### Rule: Keep aiRef Strings in Sync With Registered Tools
-
-Every `aiRef` string in `lib/builder/primitive-components.ts` that names a tool is a contract. When a tool is added, renamed, or removed in `lib/ai/builder-tools.ts`:
-
-1. Search `primitive-components.ts` for the old tool name
-2. Update every occurrence to the new name or replacement
-3. Search `builder-knowledge.ts` for the old tool name and update there too
-
-Failure to do this produces Class of Bug 1 (dead tool references) silently — there is no compile error.
-
+Failure to do this produces dead tool references silently — there is no compile error.

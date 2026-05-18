@@ -4160,14 +4160,14 @@
                         "type": "Text",
                         "id": "form-demo-formdata-value-inner",
                         "text": { "formula": "JSON.stringify(local?.data?.form?.formData ?? {}, null, 2)" },
-                        "props": { "className": "text-[11px] font-mono text-[var(--theme-foreground)] whitespace-pre-wrap" }
+                        "props": { "className": "text-[11px] font-mono text-[var(--theme-foreground)]" }
                       },
                       { "type": "Text", "id": "form-demo-errors-label-inner", "text": "field errors:", "props": { "className": "text-[11px] font-medium text-[var(--theme-muted-foreground)]" } },
                       {
                         "type": "Text",
                         "id": "form-demo-errors-value-inner",
                         "text": { "formula": "JSON.stringify(Object.fromEntries(Object.entries(local?.data?.form?.fields ?? {}).map(([k,v]) => [k, v?.isValid ?? ''])), null, 2)" },
-                        "props": { "className": "text-[11px] font-mono text-[var(--theme-destructive)] whitespace-pre-wrap" }
+                        "props": { "className": "text-[11px] font-mono text-[var(--theme-destructive)]" }
                       }
                     ]
                   }
@@ -4191,14 +4191,14 @@
                     "type": "Text",
                     "id": "form-demo-formdata-value-outer",
                     "text": { "formula": "JSON.stringify(variables?.['form-demo-form']?.['formData'] ?? {}, null, 2)" },
-                    "props": { "className": "text-[11px] font-mono text-[var(--theme-foreground)] whitespace-pre-wrap" }
+                    "props": { "className": "text-[11px] font-mono text-[var(--theme-foreground)]" }
                   },
                   { "type": "Text", "id": "form-demo-errors-label-outer", "text": "field errors:", "props": { "className": "text-[11px] font-medium text-[var(--theme-muted-foreground)]" } },
                   {
                     "type": "Text",
                     "id": "form-demo-errors-value-outer",
                     "text": { "formula": "JSON.stringify(Object.fromEntries(Object.entries(variables?.['form-demo-form']?.['fields'] ?? {}).map(([k,v]) => [k, v?.isValid ?? ''])), null, 2)" },
-                    "props": { "className": "text-[11px] font-mono text-[var(--theme-destructive)] whitespace-pre-wrap" }
+                    "props": { "className": "text-[11px] font-mono text-[var(--theme-destructive)]" }
                   }
                 ]
               }

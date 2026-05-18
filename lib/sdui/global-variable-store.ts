@@ -21,6 +21,34 @@ type VariableDef = {
   fields?: Array<{ name: string; initialValue?: unknown }>;
 };
 
+// ── Initial-value registry ────────────────────────────────────────────────────
+// Environment-agnostic: populated from JSON at startup AND can be extended by
+// any backend-loading path that calls registerVariableInitialValue().
+const _initialValues: Record<string, unknown> = {};
+
+/**
+ * Register the initialValue for a variable UUID so resetVariableValue can
+ * restore it correctly regardless of whether variables were loaded from the
+ * local JSON config or from a backend API.
+ * Stores a deep copy so runtime mutations never corrupt the reset target.
+ */
+export function registerVariableInitialValue(uuid: string, value: unknown): void {
+  try {
+    _initialValues[uuid] = JSON.parse(JSON.stringify(value ?? null));
+  } catch {
+    _initialValues[uuid] = value ?? null;
+  }
+}
+
+/**
+ * Returns the registered initialValue for a UUID.
+ * Returns undefined when the UUID was never registered (caller should fall
+ * back to null or cfg.defaultValue in that case).
+ */
+export function getVariableInitialValue(uuid: string): unknown {
+  return _initialValues[uuid];
+}
+
 /** Build the initial variable store state from config/variables.json */
 function buildInitialState(): Record<string, unknown> {
   const vars = (variablesJson as { variables: Record<string, VariableDef> }).variables ?? {};
@@ -41,6 +69,7 @@ function buildInitialState(): Record<string, unknown> {
       state[uuid] = { value, errors, dirty, valid: false };
     } else if (def.initialValue !== undefined) {
       state[uuid] = def.initialValue;
+      registerVariableInitialValue(uuid, def.initialValue);
     } else {
       state[uuid] = null;
     }

@@ -662,7 +662,7 @@ const PC_SECTION: React.CSSProperties = {
 };
 
 export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows, setCurrentPageAccess } = useBuilderStore();
+  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows, pageWorkflowMeta, setCurrentPageAccess } = useBuilderStore();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   const [pageName, setPageName] = useState(currentPage?.name ?? '');
@@ -765,7 +765,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             style={{ ...PC_INPUT, cursor: 'pointer' }}
           >
             <option value="">— none —</option>
-            {workflowNames.map(w => <option key={w} value={w}>{w}</option>)}
+            {workflowNames.map(w => <option key={w} value={w}>{pageWorkflowMeta[w]?.name ?? w}</option>)}
           </select>
           {mountWorkflow && (
             <button

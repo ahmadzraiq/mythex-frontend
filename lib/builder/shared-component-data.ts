@@ -37,6 +37,7 @@ for (const [id, raw] of Object.entries(initialData as Record<string, Record<stri
     triggers: Array.isArray((raw as Record<string, unknown>).triggers) ? ((raw as Record<string, unknown>).triggers as ComponentTrigger[]) : undefined,
     templateId: (raw as Record<string, unknown>).templateId != null ? String((raw as Record<string, unknown>).templateId) : undefined,
     content: ((raw as Record<string, unknown>).content ?? { type: 'Box', props: { className: 'flex flex-col' }, children: [] }) as Record<string, unknown>,
+    ...((raw as Record<string, unknown>).valueVariable != null ? { valueVariable: String((raw as Record<string, unknown>).valueVariable) } : {}),
   };
 }
 let _store: Record<string, SharedComponentModel> = _initialNormalised;

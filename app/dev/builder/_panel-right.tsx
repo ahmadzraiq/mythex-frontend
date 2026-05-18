@@ -2062,7 +2062,12 @@ export function DesignTab({ node }: { node: SDUINode }) {
     // 2. Cancel any pending patchStyle for this prop so the 80ms timer doesn't overwrite
     delete (pendingStyleRef.current as Record<string, string>)[cssProp];
     // 3. Remove old arbitrary color class + add CSS var class; clear inline style in Zustand
-    const regex = new RegExp(`\\b${clsPrefix}-\\[[^\\]]+\\]`, 'g');
+    // For the `text-` prefix we must NOT remove text-[16px] / text-[1rem] size classes —
+    // only remove color values (hex, rgba, or an existing var(...)). The broad [^\]]+ pattern
+    // would erase font-size arbitrary classes and make the size readout show 0.
+    const regex = clsPrefix === 'text'
+      ? /\btext-\[(?:#[0-9a-fA-F]{3,8}|rgba?\([^\]]*\)|hsl[a]?\([^\]]*\)|var\([^\]]*\))\]/g
+      : new RegExp(`\\b${clsPrefix}-\\[[^\\]]+\\]`, 'g');
     const next = cls.replace(regex, '').replace(/\s+/g, ' ').trim();
     // Use rgb(var(--X)) so Tailwind generates: background-color: rgb(var(--X))
     // which correctly resolves the R G B triplet CSS variable format used by ThemeStyles.
@@ -2123,9 +2128,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
   // we can't decode without a full token map. Reading getComputedStyle() from the
   // rendered DOM element always gives the real on-screen value.
 
-  const [computedBgColor,     setComputedBgColor]     = useState<string>('#ffffff');
-  const [computedTextColor,   setComputedTextColor]   = useState<string>('#000000');
-  const [computedBorderColor, setComputedBorderColor] = useState<string>('#000000');
+  const [computedBgColor,          setComputedBgColor]          = useState<string>('#ffffff');
+  const [computedTextColor,        setComputedTextColor]        = useState<string>('#000000');
+  const [computedBorderColor,      setComputedBorderColor]      = useState<string>('#000000');
+  const [computedPlaceholderColor, setComputedPlaceholderColor] = useState<string>('');
 
   useEffect(() => {
     const rgbToHex = (rgb: string): string | null => {
@@ -2224,8 +2230,11 @@ export function DesignTab({ node }: { node: SDUINode }) {
     } else {
       setComputedBorderColor(borderVal as string);
     }
+
+    // Placeholder color is stored as a direct prop (React Native TextInput prop), not a CSS class.
+    setComputedPlaceholderColor((node.props?.placeholderTextColor as string) ?? '');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, cls, nodeStyle.backgroundColor, nodeStyle.color, nodeStyle.borderColor, store.pageNodes]);
+  }, [nodeId, cls, nodeStyle.backgroundColor, nodeStyle.color, nodeStyle.borderColor, node.props?.placeholderTextColor, store.pageNodes]);
 
   // ── Component type classification ────────────────────────────────────────────
   // Controls which panel sections are shown. Only show relevant controls
@@ -2235,6 +2244,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const isContainer  = ['Box', 'Checkbox', 'CheckboxGroup', 'Radio', 'RadioGroup', 'Skeleton', 'Tooltip', 'FormContainer'].includes(node.type);
   // CheckboxLabel / RadioLabel etc. are text nodes — show Typography section when selected
   const isTextNode   = ['Text', 'CheckboxLabel', 'RadioLabel', 'SkeletonText', 'TooltipText'].includes(node.type);
+  // Input / Textarea nodes — show Input Text + Placeholder sections
+  const isInputNode  = node.type === 'Input' || node.type === 'Textarea';
   // Padding/border-radius make sense for containers + button-like widgets, not raw text
   const showPadding  = !isTextNode;
   // Auto Layout (flex dir, gap) and Alignment only make sense for flex containers
@@ -4266,6 +4277,66 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 <ResponsiveDot cssProp="wordBreak" overriddenBreakpoints={getOverriddenBps('wordBreak')} onRemove={bp => removeResponsive(bp, 'wordBreak')} onResetAll={() => resetResponsive('wordBreak')} />
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Input Text (Input / Textarea nodes only) ── */}
+      {isInputNode && (
+        <div data-testid="section-input-text" style={SECTION_STYLE}>
+          <SectionHeader title="Input Text" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
+            <MiniPreview
+              style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
+              title={`${fontSizePx}px · ${fontWeight}`}
+            >
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || '#d1d5db', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+            </MiniPreview>
+          </SectionHeader>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
+            <FieldWithBinding label="fontSize" displayLabel="Size" cssProp="fontSize" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
+              <NumberInput
+                label="Size"
+                cssProp="fontSize"
+                testId="input-field-text-size"
+                value={fontSizePx}
+                onChange={px => patchStyle({ fontSize: `${px}px` })}
+              />
+            </FieldWithBinding>
+            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" cssProp="fontWeight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
+              <SelectInput label="Weight" cssProp="fontWeight" testId="select-input-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+            </FieldWithBinding>
+          </div>
+          <div>
+            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
+              <div>
+                <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+                <FigmaColorPicker
+                  testId="input-field-text-color"
+                  value={computedTextColor}
+                  onChange={(hex, cssVar) => cssVar
+                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
+                    : patchStyle({ color: hex || '' })
+                  }
+                />
+              </div>
+            </FieldWithBinding>
+          </div>
+        </div>
+      )}
+
+      {/* ── Placeholder (Input / Textarea nodes only) ── */}
+      {isInputNode && (
+        <div data-testid="section-placeholder" style={SECTION_STYLE}>
+          <SectionHeader title="Placeholder" />
+          <div>
+            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+            <FigmaColorPicker
+              testId="input-placeholder-color"
+              value={computedPlaceholderColor || '#737373'}
+              onChange={(hex) => {
+                store.patchProp(nodeId, 'props.placeholderTextColor', hex || '');
+              }}
+            />
           </div>
         </div>
       )}

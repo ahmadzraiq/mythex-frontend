@@ -1394,6 +1394,68 @@
       ],
       "folder": "Calculator"
     },
+    "9e89c88b-6dd3-4901-a71e-d1ad974a486e": {
+      "label": "Display Value",
+      "type": "string",
+      "initialValue": "0",
+      "folder": "Calculator 2"
+    },
+    "7ad35376-8982-470b-bdd6-8ae3af7d9bc0": {
+      "label": "Pending Value",
+      "type": "string",
+      "initialValue": "0",
+      "folder": "Calculator 2"
+    },
+    "6734e106-cb9f-4669-a889-b193d7038900": {
+      "label": "Pending Operation",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Calculator 2"
+    },
+    "d250e309-af3d-48e2-828e-df062def88bc": {
+      "label": "Should Replace Display",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Calculator 2"
+    },
+    "7000f6d9-82ce-4d1b-8b38-95bed82f8afd": {
+      "label": "Last Operand",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Calculator 2"
+    },
+    "c366dc58-3f00-4b0b-92b9-d9df5005d8e0": {
+      "label": "Has Decimal",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Calculator 2"
+    },
+    "99903d2f-7dda-4dfe-8c49-6bfefc3138b4": {
+      "label": "Buttons Layout",
+      "type": "array",
+      "initialValue": [
+        { "id": "ac",      "label": "AC",  "type": "clear",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
+        { "id": "sign",    "label": "+/−", "type": "unary",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
+        { "id": "percent", "label": "%",   "type": "unary",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
+        { "id": "divide",  "label": "÷",   "type": "operator", "op": "/", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
+        { "id": "seven",   "label": "7",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "eight",   "label": "8",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "nine",    "label": "9",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "multiply","label": "×",   "type": "operator", "op": "*", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
+        { "id": "four",    "label": "4",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "five",    "label": "5",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "six",     "label": "6",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "minus",   "label": "−",   "type": "operator", "op": "-", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
+        { "id": "one",     "label": "1",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "two",     "label": "2",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "three",   "label": "3",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "plus",    "label": "+",   "type": "operator", "op": "+", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
+        { "id": "zero",    "label": "0",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 2" },
+        { "id": "decimal", "label": ".",   "type": "decimal",  "bg": "#333333", "color": "#ffffff", "span": "span 1" },
+        { "id": "equals",  "label": "=",   "type": "equals",   "bg": "#ff9500", "color": "#ffffff", "span": "span 1" }
+      ],
+      "folder": "Calculator 2"
+    },
     "pr1c0001-0000-0000-0000-000000000001": {
       "label": "Nested Pricing Plans",
       "type": "array",
@@ -2286,6 +2348,10 @@
     {
       "id": "Calculator",
       "label": "Calculator"
+    },
+    {
+      "id": "Calculator 2",
+      "label": "Calculator 2"
     },
     {
       "id": "Nested Pricing",

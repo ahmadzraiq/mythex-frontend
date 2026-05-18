@@ -58,16 +58,23 @@ export type ActionStepType =
   | 'createUrlFromBase64'
   | 'encodeFileAsBase64'
   | 'scrollToElement'
+  // Unified animation control (Phase 9 — replaces 5 separate types below)
+  | 'controlAnimation'
+  // Legacy animation types — kept for backward compat; engine aliases to controlAnimation
   | 'animate'
   | 'triggerExitAnimation'
   | 'startLoop'
   | 'stopLoop'
   | 'playEnterAnimation'
-  // Shared Component
+  // Unified shared component management (Phase 9 — replaces 3 separate types below)
+  | 'modifySharedComponent'
+  // Legacy SC types — kept for backward compat
   | 'addSharedComponent'
   | 'deleteSharedComponent'
   | 'deleteAllSharedComponents'
-  // Popover / Tooltip
+  // Unified popover control (Phase 9 — replaces 3 separate types below)
+  | 'controlPopover'
+  // Legacy popover types — kept for backward compat
   | 'openPopover'
   | 'closePopover'
   | 'togglePopover'
@@ -474,8 +481,8 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
     items: [
       // runProjectWorkflow is NOT listed here — it appears dynamically as "Project workflows"
       { type: 'changeVariableValue', label: 'Change variable value', icon: '⇄' },
-      { type: 'fetchCollection', label: 'Fetch collection', icon: '🗄' },
-      { type: 'fetchCollectionsParallel', label: 'Fetch collections in parallel', icon: '🗄' },
+      { type: 'fetchCollection', label: 'Fetch collection(s)', icon: '🗄' },
+      // fetchCollectionsParallel kept for backward compat — use fetchCollection with collectionIds array
       { type: 'updateCollection', label: 'Update collection', icon: '🗄' },
       { type: 'resetVariableValue', label: 'Reset variable value', icon: '⇄' },
       { type: 'executeComponentAction', label: 'Execute component action', icon: '⚡' },
@@ -514,28 +521,20 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       { type: 'downloadFileFromUrl', label: 'Download file from URL', icon: '</>' },
       { type: 'createUrlFromBase64', label: 'Create URL from Base64', icon: '</>' },
       { type: 'encodeFileAsBase64', label: 'Encode file as Base64', icon: '</>' },
-      { type: 'scrollToElement',      label: 'Scroll to element',       icon: '↓' },
-      { type: 'animate',              label: 'Trigger animation',        icon: '✨' },
-      { type: 'triggerExitAnimation', label: 'Trigger exit animation',   icon: '👋' },
-      { type: 'startLoop',            label: 'Start loop animation',     icon: '🔄' },
-      { type: 'stopLoop',             label: 'Stop loop animation',      icon: '⏹' },
-      { type: 'playEnterAnimation',   label: 'Play enter animation',     icon: '▶' },
+      { type: 'scrollToElement',    label: 'Scroll to element',    icon: '↓' },
+      { type: 'controlAnimation',   label: 'Control animation',    icon: '✨' },
     ],
   },
   {
     category: 'Shared Component',
     items: [
-      { type: 'addSharedComponent', label: 'Add shared component', icon: '⧉' },
-      { type: 'deleteSharedComponent', label: 'Delete shared component', icon: '⧉' },
-      { type: 'deleteAllSharedComponents', label: 'Delete all shared components', icon: '⧉' },
+      { type: 'modifySharedComponent', label: 'Modify shared component', icon: '⧉' },
     ],
   },
   {
     category: 'Popover',
     items: [
-      { type: 'openPopover', label: 'Open popover', icon: '◱' },
-      { type: 'closePopover', label: 'Close popover', icon: '◱' },
-      { type: 'togglePopover', label: 'Toggle popover', icon: '◱' },
+      { type: 'controlPopover', label: 'Control popover', icon: '◱' },
     ],
   },
   {

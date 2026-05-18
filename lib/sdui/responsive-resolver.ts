@@ -199,7 +199,25 @@ function tokenMatchesProperty(token: string, cssProp: string): boolean {
     if (!pfx.endsWith('-')) {
       if (clean === pfx) return true;
     } else {
-      if (clean.startsWith(pfx)) return true;
+      if (clean.startsWith(pfx)) {
+        // Both 'fontSize' and 'color' share the 'text-' prefix.
+        // For arbitrary-value tokens like text-[var(--theme-foreground)] vs text-[40px],
+        // inspect the bracket value to avoid stripping a color token when only fontSize
+        // is being overridden (and vice-versa).
+        if (pfx === 'text-') {
+          const arbMatch = clean.match(/^text-\[(.+)\]$/);
+          if (arbMatch) {
+            const val = arbMatch[1];
+            const looksLikeColor =
+              val.startsWith('#') || val.startsWith('rgb') ||
+              val.startsWith('hsl') || val.startsWith('var(') ||
+              val.startsWith('oklch') || val.startsWith('color(');
+            if (cssProp === 'fontSize' && looksLikeColor) return false;
+            if (cssProp === 'color' && !looksLikeColor) return false;
+          }
+        }
+        return true;
+      }
     }
   }
   return false;

@@ -287,10 +287,10 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 | File | Purpose |
 |---|---|
 | `app/api/ai/builder-chat/route.ts` | POST endpoint — builds system prompt with live theme palette + project context, runs the Anthropic multi-round tool loop, streams SSE events |
-| `lib/ai/builder-knowledge.ts` | `buildChatSystemPrompt()` — the edit-mode system prompt. Accepts `paletteSnapshot`, `mood`, `appName`, `description`. Auto-generates formula function reference from `FUNCTION_LIBRARY`. |
-| `lib/ai/builder-knowledge-v2.ts` | Phase-specific system prompts for parallel build: `buildPhase2SysPrompt` (structure), `buildPhase3SystemPrompt` (styling), `buildPhaseWSysPrompt` (workflows). Contains anti-hallucination rules and concept blocks (`CONCEPT_REPEAT`, `CONCEPT_COLORS`, `CONCEPT_FORMULA`). |
-| `lib/ai/agents/` | Parallel agent prompts — one subfolder per agent (`structure`, `binding`, `layout`, `colors`, `typo-anim`, `workflows`) and `shared/` (formula/scope + styling context). `registry.ts` documents agent IDs aligned with SSE `agent` / `phase` strings. Barrel: `lib/ai/agents/index.ts`; also re-exported from `lib/ai/agent-prompts.ts` for stable imports. |
-| `lib/ai/builder-tools.ts` | `ALL_BUILDER_TOOLS` — all Anthropic `tool_use` tool definitions (add_component, create_workflow, set_text, etc.) |
+| `lib/ai/builder-knowledge-v2.ts` | Minimal live exports: `buildComponentList()`, `COMPONENT_AI_REFS`, re-exports `TOOL_DESCRIPTIONS` from `lib/ai/tool-descriptions.ts`. Dead prompt builders removed. |
+| `lib/ai/tool-descriptions.ts` | `TOOL_DESCRIPTIONS` — terse 1-3 line descriptions for every tool, imported by `builder-tools.ts`. |
+| `lib/ai/agents/` | Parallel agent prompts (`structure`, `binding`, `layout`, `workflows`, `animation`, `media`) and `registry.ts` (agent IDs for SSE). |
+| `lib/ai/builder-tools.ts` | **Single source of truth** for the AI tool catalog — `ALL_BUILDER_TOOLS` (read / structure / style / logic / data / formulas / shared components / pages / assets). |
 | `lib/ai/tool-executor.ts` | `executeTool()` — maps AI tool calls to Zustand store mutations client-side. Contains `validateFormula()` for formula linting. |
 | `lib/ai/sdui-component-schema.ts` | Maps component labels to default JSON node templates |
 | `app/dev/builder/_use-ai-chat.ts` | React hook — sends messages to `/api/ai/builder-chat`, streams SSE, executes client-side tools |
@@ -299,13 +299,7 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 
 **Semantic actions, never raw JSON.** The AI calls `add_component("Card")`, `set_text(id, "Hello")`, `create_workflow(...)` — tools map these to Zustand mutations. The AI never writes node JSON directly, and never manipulates raw Tailwind class strings.
 
-**Semantic design tools, not free-form class manipulation.** There are no `set_class`, `add_class`, `remove_class`, `swap_class`, or `set_prop` tools. Every design property is controlled via a dedicated semantic tool that mirrors the builder's right-panel UI controls:
-- `set_background(nodeId, {bg})` — background color or image
-- `set_text_color(nodeId, {color})` — text/foreground color
-- `set_typography(nodeId, {size, weight, align, …})` — font styling
-- `set_border(nodeId, {width, radius, color, …})` — border properties
-- `set_shadow / set_opacity / set_spacing / set_size / set_position / set_transform / set_layout` — mirror each design panel section
-- `set_submit / set_input_props` — component-specific controls
+**Semantic design tools, not free-form class manipulation.** There is no `set_class` tool. Prefer `set_style` for multi-property edits; use granular tools (`set_background`, `set_text_color`, `set_border`, `set_layout`, …) for single properties. Typography and spacing are handled via `set_layout` (font, gap, padding, position, grid).
 
 **Tool validation, not prompt rules.** Constraints are enforced by tools returning errors, not by "NEVER do X" instructions in the prompt. Example: `create_workflow` calls `validateFormula()` before storing; if a formula uses `Math.max`, the tool returns `{ success: false, error: "..." }` and the AI self-corrects on the next attempt.
 
@@ -315,12 +309,7 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 - Full formula function signatures (auto-generated from `FUNCTION_LIBRARY` in `_formula-editor-dom.ts`)
 - Component structure reference (from `aiRef` on each `PrimitiveComponent` in `primitive-components.ts`)
 
-**Full CRUD for variables, workflows, and data sources.**
-- Variables: `add_variable`, `update_variable`, `delete_variable`
-- Workflows: `create_workflow`, `delete_workflow`, plus `bind_action` (append-only) and `unbind_action`
-- Data sources: `add_data_source`, `delete_data_source`
-- Pages: `add_page`, `rename_page`, `remove_page`, `set_page_config` (SEO + on-mount workflow)
-- Structure: `move_node` (cross-container reparenting)
+**Full CRUD for variables, workflows, data sources, formulas, folders, app/auth config, and shared components** — see [`lib/ai/builder-tools.ts`](lib/ai/builder-tools.ts) for the authoritative list.
 
 ### Formula Validator
 
@@ -336,7 +325,7 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
 - Reads **only** from the `themeOverrides` object sent by the client — **no static fallback** to `config/theme.json`
 - Maps CSS variable names (e.g. `--primary`) to the `--theme-*` format the AI uses in `className` values
 - Produces a formatted string: `var(--theme-primary) = #00b4d8  (brand accent)`
-- Passed to `buildChatSystemPrompt` as `paletteSnapshot`
+- Passed to the Context Agent and Styling Agent prompts as `paletteSnapshot`
 - The prompt renders this as the live "Current Theme Palette" section so the AI makes informed color choices using actual project values
 
 ### `generate_structure` — Full Tree in One Call
@@ -362,120 +351,78 @@ The builder has an AI assistant that calls semantic builder actions via Anthropi
   src   = image or video URL
 ```
 
-`generate_structure` is intentionally **structure-only**. It never carries styling parameters. All custom styling is applied in Phase 3 using the returned node IDs with `set_spacing`, `set_layout`, `set_background`, `set_border`, `set_typography`, `bulk_apply`, etc. — the AI never writes raw Tailwind anywhere.
+`generate_structure` is intentionally **structure-only**. It never carries styling parameters. All custom styling is applied in Phase 3 using the returned node IDs with `set_style`, `set_layout`, `set_background`, `set_border`, etc. — the AI never writes raw Tailwind anywhere.
+
+### Auth, triggers, responsive, shared components, JS-in-formulas
+
+- **Auth** — `lib/sdui/auth-token-storage.ts`, page guards via `set_page_config` (`access`, `accessCondition`, `guestOnly`), provider wiring via `set_auth_config`.
+- **Triggers** — app vs page triggers in `app/dev/builder/_workflow-types.tsx`; runtime in `lib/sdui/sdui-engine.tsx`.
+- **Responsive** — cascade in `lib/sdui/responsive-resolver.ts`; overrides via `set_responsive_override` / `clear_responsive_override`.
+- **Shared components** — models in `config/shared-components.json`, runtime `lib/sdui/components/SharedComponentDynamicRenderer.tsx`.
+- **JS-in-formulas** — `lib/sdui/formula-evaluator.ts` routes `{"js":"..."}` to `lib/sdui/javascript-evaluator.ts`; workflow step `runJavaScript` for async code.
+- **Codegen export** — `lib/builder/codegen/index.ts`, UI `app/dev/builder/_export-modal.tsx`.
+
+### Out of scope (known product gaps)
+
+- Changing a page route after creation (no `setPageRoute` — set route only at `add_page` time).
+- First-class uploaded asset library (external URLs + stock search only).
+- Named slots on primitives.
+- Project-level global CSS / arbitrary external script tags.
 
 ---
 
-### `bulk_apply` — Batch Style Operations
+### Build Pipeline — Always-On Planner → Flat Pool
 
-`bulk_apply` applies the same style tool to multiple nodes in a single call. Pattern: `search_nodes` → collect IDs → `bulk_apply(nodeIds, tool, params)`.
-
-```ts
-bulk_apply({ nodeIds: ["uuid-1", "uuid-2", "uuid-3"], tool: "set_spacing", params: { py: 96 } })
-```
-
-Supported tools: `set_spacing`, `set_border`, `set_background`, `set_typography`, `set_opacity`, `set_size`, `set_position`.
-
-The executor iterates `nodeIds` and delegates to the named handler for each, returning a combined error if any node fails.
-
----
-
-### Build Mode & Parallel Orchestration
-
-For requests involving multiple pages or sections, the AI system runs in one of three modes determined by a lightweight planning phase.
-
-**Phase 0 — Classification (`classifyRequest`)**
-A fast haiku call analyzes the user's message and returns a `BuildPlan`:
-```ts
-{ mode: 'build' | 'edit' | 'mixed', buildUnits: [...], relations: [...], editOps: [...] }
-```
-
-**Mode: `edit`**
-Standard sequential tool loop — no change from the baseline behavior.
-
-**Mode: `build`** (new page(s)/section(s) only)
-
-The build pipeline is a multi-tier parallel system. The agreed architecture and the implementation target is:
+Every user message routes unconditionally to `runBuildPipeline()`. There is no Phase-0 classifier, no `BuildPlan`, and no edit loop. The Planner decides what to do.
 
 ```
-Phase 0 (~300ms)
-  classifyRequest → BuildPlan { buildUnits, descriptions }
-
-Tier 0 — Media Pre-fetch (starts immediately, runs in parallel with Phase 2)
-  searchUnsplash(unit.description) + searchPexels(unit.description) per unit
-
-Phase 2a — Structure (~2s, all units in parallel)
-  runBuildUnit per unit (claude-haiku, tools: generate_structure / add_variable)
-  → onStructureReady callback fires per unit when generate_structure returns
-  → canvas renders skeleton IMMEDIATELY at ~2s
-  → allStructuresReadyPromise resolves when last unit fires onStructureReady
-
-After allStructuresReadyPromise resolves — three branches run in parallel:
-
-  ┌─────────────────────┬──────────────────────┬──────────────────────┐
-  │  Phase 2b           │  Phase 3 — Styling   │  Phase W — Workflows │
-  │  (Binding)          │                      │                      │
-  │  set_repeat         │  set_background      │  create_workflow     │
-  │  set_text           │  set_spacing         │  bind_action         │
-  │  +                  │  set_typography      │  switch_page         │
-  │  Media Injection    │  set_animation       │                      │
-  │  set_src (Tier 0    │  set_border          │  claude-haiku        │
-  │  pre-fetched URLs)  │  set_size            │  PHASE_W_TOOLS only  │
-  │                     │  set_layout          │                      │
-  │  unitResultsPromise │  set_condition       │                      │
-  │  .then(mediaInject) │  set_icon            │                      │
-  │                     │                      │                      │
-  │                     │  claude-haiku        │                      │
-  │                     │  PHASE3_STYLING_TOOLS│                      │
-  └─────────────────────┴──────────────────────┴──────────────────────┘
-
-Promise.all([phase2bAndMedia, phase3, phaseW]) → done (~4-5s total)
+User message
+  │
+  ▼
+runPlanner (Haiku, single-shot)
+  emits ContractManifest:
+    • sharedComponentsToCreate[]  (full inline SC content)
+    • operations[]                (page ops + narrow dynamic ops)
+  │
+  ▼
+runStructureStep (deterministic, NO LLM)
+  1. defineSharedComponents FIRST — create_shared_component for each SC,
+     stamps _sharedKey on every internal node
+  2. then pages — generate_structure per page (or op)
+  awaits op_applied for each
+  │
+  ▼
+Single flat Promise.all pool (all agents run in parallel):
+  ┌──────────┬──────────┬──────────┬──────────┬──────────┬────────┬──────────────────┐
+  │ styling  │animation │ binding  │workflows │  data    │ media  │ dynamic agents   │
+  │ per page │ per page │ per page │ per page │ (global) │(global)│ (planner-chosen) │
+  └──────────┴──────────┴──────────┴──────────┴──────────┴────────┴──────────────────┘
+  sharedComponents agent (model edits — separate user intent only)
 ```
 
-**Key dependency rules (why three-way parallel is correct):**
-- Phase 3 needs: node IDs (from `generate_structure`) + variable UUIDs (from `add_variable`) — both available when `allStructuresReadyPromise` resolves
-- Phase 3 does NOT need: `set_repeat`, `set_text`, or media injection to complete first
-- Phase W needs: same node IDs + variable UUIDs — also available immediately
-- Phase 2b (`set_repeat`, `set_text`) and media injection have no downstream dependencies — they can run alongside Phase 3 + Phase W
+**Planner `ContractManifest` fields:**
+| Field | Purpose |
+|---|---|
+| `intent` | Short summary of what was requested |
+| `sharedComponentsToCreate[]` | New SC models; planner authors full `content` tree inline; structure step materializes them first |
+| `operations[]` | One per page-split or narrow task |
+| `operations[].agents` | Which specialists run for that op (`styling`, `animation`, `binding`, `workflows`, `sharedComponents`) |
+| `operations[].agents.dynamic` | Present on narrow ops — `allowedTools`, `briefing`, `rounds` |
 
-**`runBuildUnit` internal flow:**
-- `add_variable` → `generate_structure` → fires `onStructureReady(varEvents, tree)` immediately when structure resolves
-- `set_repeat` / `set_text` continue running after `onStructureReady` fires and are returned when the unit promise resolves
-- `onStructureReady` increments a counter; when all units have fired, `allStructuresReadyPromise` resolves
+**Dynamic agent (replaces edit loop):**
+When a request is narrow (single property change, rename, quick toggle), the planner emits a `dynamic` operation instead of fanning out to all specialists. The dynamic agent runs with a restricted `allowedTools` subset in the same flat pool. This replaces the old `runEditLoop` / `BuildPlan` system.
 
-**`syntheticMessages` for Phase 3 + Phase W:**
-Only `add_variable` and `generate_structure` results are included. Wiring events (`set_repeat`, `set_text`) are excluded — neither phase has those tools in their tool list, and the exclusion allows Phase 3 + Phase W to start without waiting for Phase 2b.
-
-**Phase-tagged SSE events:**
-Every `tool_executed` SSE event carries a `phase` field so the chat panel can render grouped sections:
-- `'structure'` — `add_page`, `add_variable`, `generate_structure`, `set_repeat`, `set_text`
-- `'media'` — `set_src` (injected from Tier 0 pre-fetched URLs)
-- `'styling'` — all Phase 3 setter calls
-- `'workflows'` — all Phase W calls
-
-**Timeline comparison:**
-```
-BEFORE — fully sequential, ~14s total
-  [classify][var+structure][set_repeat/text][img-search][styling+workflows]
-  User sees NOTHING until ~12s
-
-AFTER — parallel, ~4-5s total
-  [classify ~300ms]
-  [img pre-fetch ─────────────────────]
-  [var + generate_structure] → canvas skeleton at ~2s ✓
-  [set_repeat + set_text + set_src ───┐
-  [Phase 3 styling ───────────────────┤ → all done at ~4-5s ✓
-  [Phase W workflows ─────────────────┘
-```
-
-**Mode: `mixed`** (edits + new builds in one prompt)
-1. **Phase 1** — A focused edit loop runs first (sequential) with a `build_phase: 'editing'` SSE event.
-2. **Phase 2a** — Parallel structure builds execute for all new units.
-3. **Phase 2b + Phase 3 + Phase W** — Three-way parallel after all structures are ready.
+**SC handling:**
+- **New SCs:** Planner authors full `content` tree inline in `sharedComponentsToCreate`. Structure step calls `create_shared_component` with full model data and stamps `_sharedKey` on every internal node. SC models are ready before any specialist starts.
+- **SC instance overrides (page agents):** Three paths available:
+  - Path 1: `set_component_props(instanceId, { propName })` — declared property override
+  - Path 2: `set_style/set_animation/set_text(internalNodeId, ...)` — per-internal-node override via `_sharedKey`
+  - Path 3: `set_style(instanceId, ...)` — wrapper Box override
+- **SC model edits:** `sharedComponents` agent only, runs on a separate user intent turn.
 
 **SSE progress events streamed to client:**
 ```ts
-{ type: 'build_phase', phase: 'planning' | 'editing' | 'building' | 'wiring' }
+{ type: 'build_phase', phase: 'planning' | 'building' | 'wiring' }
 { type: 'section_progress', done: number, total: number, name: string }
 { type: 'tool_executed', name: string, input: {...}, phase: 'structure' | 'media' | 'styling' | 'workflows' }
 ```
@@ -487,7 +434,7 @@ AFTER — parallel, ~4-5s total
 
 **`AiToolCall.phase` field** (in `_store-types.ts`):
 - `'structure'` | `'media'` | `'styling'` | `'workflows'` — populated from the SSE event
-- Used by `ToolCallsGroup` in `_ai-chat-panel.tsx` to render phase-grouped collapsible sections instead of a flat list
+- Used by `ToolCallsGroup` in `_ai-chat-panel.tsx` to render phase-grouped collapsible sections
 
 The AI chat panel (`_ai-chat-panel.tsx`) displays a progress bar during `building` phase and groups completed tool calls into labelled phase sections (Structure / Media / Styling / Workflows) for clarity.
 
@@ -554,7 +501,7 @@ Domain-specific examples cause the AI to hallucinate those exact patterns into u
 2. Add the executor handler to `handlers` in `lib/ai/tool-executor.ts`
 3. Add the tool name to `CLIENT_SIDE_TOOLS` set in `tool-executor.ts` (all tools that need Zustand store access are client-side)
 4. If server-side only (generation, search), handle it in the SSE loop in `route.ts`
-5. Update the "Semantic Design Tool Reference" table in `buildChatSystemPrompt` in `lib/ai/builder-knowledge.ts`
+5. Add a terse description in `TOOL_DESCRIPTIONS` in `lib/ai/tool-descriptions.ts`
 6. If the new tool controls a design property, consider pairing it with a builder UI panel section — the tool should mirror what the right panel already exposes
 
 ---

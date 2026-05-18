@@ -49,7 +49,7 @@ type IIConProps = IPrimitiveIcon &
   React.ComponentPropsWithoutRef<typeof UIIcon>;
 
 const Icon = React.forwardRef<React.ComponentRef<typeof UIIcon>, IIConProps>(
-  function Icon({ size = 'md', className, ...props }, ref) {
+  function Icon({ size, className, ...props }, ref) {
     if (typeof size === 'number') {
       return (
         <UIIcon

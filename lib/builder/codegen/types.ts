@@ -49,6 +49,55 @@ export interface FeatureFlags {
   hasThemeActions: boolean;
 }
 
+/**
+ * Metadata for a standalone input node extracted into a narrow-selector sub-component.
+ * Used during codegen to skip the inline <input> element and emit a sub-component call instead.
+ */
+export interface InputVarInfo {
+  nodeId: string;
+  varKey: string;       // e.g. 'a1f97868-...-value'
+  subCompName: string;  // e.g. '_InputLive_a1f97868'
+  isTextarea: boolean;
+  className: string;    // static Tailwind class (empty if dynamic — fallback to plain input)
+  typeAttr: string;     // 'text' | 'email' | 'password' | etc.
+  placeholder: string;  // static placeholder text (empty if dynamic)
+}
+
+/**
+ * Metadata for a live-indicator Text node extracted into a narrow-selector sub-component.
+ * The indicator reads from the same value variable as its paired input.
+ */
+export interface LiveIndicatorInfo {
+  nodeId: string;
+  varKey: string;       // which input var key this displays
+  subCompName: string;  // e.g. '_LiveVar_lv_input_field'
+  rawFormula: string;   // original formula before rewrite — used to generate _display expression
+  className: string;    // static class string for the wrapping element
+}
+
+/**
+ * Metadata for a Text node inside a FormContainer that displays form data
+ * (formula references local.data.form.formData). Extracted into a narrow-selector
+ * sub-component so the page doesn't re-render on every form keystroke.
+ */
+export interface FormDataDisplayInfo {
+  nodeId: string;
+  subCompName: string;
+  /** Zustand store key for the form state, e.g. "form-demo-form" */
+  formKey: string;
+  /**
+   * Raw formula from the config. For inside-form nodes uses `local?.data?.form?.formData`;
+   * for outside-form nodes uses `variables?.['formKey']`.
+   * Empty string when the node has static text content (condition-only node).
+   */
+  rawFormula: string;
+  /** Raw condition formula, e.g. "variables?.['form-demo-form']?.['isSubmitted']" */
+  rawCondition?: string;
+  /** Static text when the node has a literal string rather than a formula */
+  staticText?: string;
+  className: string;
+}
+
 /** Full codegen context passed to every emitter */
 export interface CodegenCtx {
   store: BuilderStore;
@@ -64,4 +113,17 @@ export interface CodegenCtx {
   dsByStoreIn: Map<string, DataSourceConfig>;
   /** Custom colors */
   customColors: CustomColor[];
+  /**
+   * Per-page: input nodes that have been extracted into narrow-selector sub-components.
+   * Set by routing.ts before calling emitNode; read in nodes.ts emitNodeInner.
+   */
+  inputVarNodeIds?: Set<string>;
+  inputVarInfoMap?: Map<string, InputVarInfo>;
+  /** Per-page: live-indicator Text nodes paired with an extracted input sub-component. */
+  liveIndicatorNodeIds?: Map<string, LiveIndicatorInfo>;
+  /**
+   * Per-page: Text nodes inside FormContainer that display form data (formData key).
+   * Extracted as sub-components so typing in form inputs does not re-render the page.
+   */
+  formDataDisplayNodeIds?: Map<string, FormDataDisplayInfo>;
 }

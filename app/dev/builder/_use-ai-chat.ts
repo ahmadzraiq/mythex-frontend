@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import type { AiChatMessage } from './_store-types';
 import { executeTool, CLIENT_SIDE_TOOLS } from '@/lib/ai/tool-executor';
+import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import themeConfig from '@/config/theme.json';
 
 // Pre-compute default palette from the app's CSS variable defaults (strip '--' prefix).
@@ -25,6 +26,28 @@ const THEME_DEFAULTS: Record<string, string> = Object.fromEntries(
     .filter(([k]) => k.startsWith('--'))
     .map(([k, v]) => [k.slice(2), v])
 );
+
+// Compact response-schema inference — converts _lastFetch.data into a readable
+// type string the AI can use to know field names, nesting, and responsePath.
+// Caps object fields at 12, array depth at 2 to keep tokens minimal.
+// Defined at module level so it is accessible in both sendMessage and getDebugInfo.
+function inferSchema(value: unknown, depth = 0): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'string') return 'string';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'unknown[]';
+    return depth >= 2 ? 'object[]' : `${inferSchema(value[0], depth + 1)}[]`;
+  }
+  if (typeof value === 'object') {
+    if (depth >= 2) return 'object';
+    const entries = Object.entries(value as Record<string, unknown>).slice(0, 12);
+    const more = Object.keys(value as object).length > 12 ? ', ...' : '';
+    return `{${entries.map(([k, v]) => `${k}:${inferSchema(v, depth + 1)}`).join(', ')}${more}}`;
+  }
+  return typeof value;
+}
 
 // ---------------------------------------------------------------------------
 // Thread type (from backend)
@@ -46,17 +69,26 @@ type BuilderChatSSE =
   | { type: 'text_delta'; content: string }
   | { type: 'thinking_delta'; content: string }
   | { type: 'round_start'; round: number }
-  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string; phase?: 'structure' | 'media' | 'styling' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'animation' | 'workflows' | 'binding' }
+  | { type: 'tool_executed'; id: string; name: string; input: Record<string, unknown>; result?: unknown; error?: string; phase?: string }
   | { type: 'image_results'; images: Array<{ url: string; thumb: string; alt: string; credit: string; photographer?: string }> }
   | { type: 'icon_results'; icons: Array<{ id: string; name: string; prefix: string }> }
   | { type: 'build_phase'; phase: 'planning' | 'editing' | 'building' | 'wiring' | 'structure' | 'parallel'; total?: number; message: string; buildUnits?: Array<{ name: string; description: string; pageRoute: string; sectionCount?: number }> }
   | { type: 'section_progress'; done: number; total: number; name: string }
   | { type: 'phase3_started' }
-  | { type: 'agent_context'; agent: string; systemPrompt: string; userMessage?: string; tools: string[]; syntheticMessageCount: number; startedAt: number }
+  | { type: 'agent_context'; agent: string; displayLabel?: string; systemPrompt: string; userMessage?: string; tools: string[]; syntheticMessageCount: number; startedAt: number }
   | { type: 'agent_complete'; agent: string; rounds: number; toolCallCount: number; duration: number; endedAt: number }
   | { type: 'structure_context'; compactTree: string; varRoster: string }
   | { type: 'structure_markers'; markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string; direction?: string }> }
   | { type: 'build_plan'; mode: string; needsStyling?: boolean; needsBinding?: boolean; needsWorkflows?: boolean; editSummary?: string; buildUnits: unknown[] }
+  // Phase O — consolidated events
+  | { type: 'context_started'; startedAt?: number }
+  | { type: 'context_complete'; duration?: number; skippedSearch?: boolean; resolvedNodeCount?: number; resolvedVariableCount?: number; toolCalls?: Array<{ name: string; input: Record<string, unknown>; result: unknown }> }
+  | { type: 'planner_started'; startedAt?: number }
+  | { type: 'planner_complete'; manifest: { intent?: string; needsClarification?: { question: string; options?: string[] }; operations?: Array<{ id: string; summary: string; pageRoute?: string; pageName?: string; agents?: Record<string, unknown> }> }; duration?: number }
+  | { type: 'structure_started'; startedAt?: number }
+  | { type: 'structure_complete'; nodes: number; variables: number; formulas: number; workflows: number; dataSources: number; duration?: number }
+  | { type: 'agent_phase'; agent: string; phase: 'started' | 'tool_call' | 'complete'; opId?: string; model?: string; rounds?: number; toolCallCount?: number; duration?: number }
+  | { type: 'turn_stats'; totalDurationMs: number; usdEstimate?: number; toolCalls: number; ops: number; agents: number }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
   | { type: 'error'; message: string };
 
@@ -361,12 +393,14 @@ export function useAiChat() {
 
     // Show the user message and streaming placeholder in the UI immediately —
     // before any network calls so there is zero perceived delay.
+    const turnId = crypto.randomUUID();
     const userMsg: AiChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content: text,
       selectedNodeIds: selectedNodeIds.length ? selectedNodeIds : undefined,
       createdAt: new Date().toISOString(),
+      turnId,
     };
     store.addAiChatMessage(userMsg);
     store.setAiGenerating(true);
@@ -379,6 +413,7 @@ export function useAiChat() {
       toolCalls: [],
       streaming: true,
       createdAt: new Date().toISOString(),
+      turnId,
     });
 
     // Ensure a thread exists — create lazily after messages are already visible.
@@ -428,6 +463,110 @@ export function useAiChat() {
 
     const pageTreeSnapshot = store.pageNodes.map(n => summarizeNode(n, 3));
 
+    // Build flat node index — every node on the page with a searchable blob.
+    // Sent alongside pageTreeSnapshot so the server's search_nodes can grep
+    // ALL node properties (name, type, text, styles, bindings) without depth limits.
+    type NodeRecord = Record<string, unknown>;
+    interface NodeFlat {
+      id: string;
+      name?: string;
+      type?: string;
+      text?: string;
+      path: string;
+      parentId?: string;
+      blob: string;
+    }
+    const flattenNodes = (nodes: unknown[], path = '', parentId?: string): NodeFlat[] => {
+      const result: NodeFlat[] = [];
+      for (const n of nodes as NodeRecord[]) {
+        const nodeName = (n.name ?? n.type ?? 'Node') as string;
+        const nodePath = path ? `${path} > ${nodeName}` : nodeName;
+        // Resolve text: static string → use as-is; formula/object → JSON-stringify so
+        // "ahmad" in a {formula:"ahmad"} still matches search_nodes("ahmad")
+        const textVal = typeof n.text === 'string'
+          ? n.text
+          : n.text != null ? JSON.stringify(n.text) : null;
+        // Include direct children's text in this node's blob so a parent Box is
+        // searchable by its label. e.g. Box[button] > Text["Get Started"] → the
+        // Box blob gains "Get Started", so search("Get Started") hits the Box
+        // directly rather than only the Text leaf.
+        const childrenText = ((n.children ?? []) as NodeRecord[])
+          .map(c => (typeof c.text === 'string' ? c.text : null))
+          .filter(Boolean)
+          .join(' ');
+
+        const blob = [
+          n.name, n.type, n.id,
+          textVal,
+          childrenText,
+          // Full props object (superset of className + props.style — captures all bindings)
+          JSON.stringify((n.props ?? {}) as Record<string, unknown>),
+          JSON.stringify((n.styles ?? {}) as Record<string, unknown>),
+          JSON.stringify((n.map ?? {}) as Record<string, unknown>),
+          JSON.stringify((n.actions ?? []) as unknown[]),
+          // condition — visibility/show-if bindings (contains varIds and formula expressions)
+          JSON.stringify((n.condition ?? '') as unknown),
+        ].filter(Boolean).join(' ');
+        result.push({
+          id: n.id as string,
+          name: n.name as string | undefined,
+          type: n.type as string | undefined,
+          text: typeof n.text === 'string' ? (n.text as string).slice(0, 80) : (n.text != null ? JSON.stringify(n.text).slice(0, 80) : undefined),
+          path: nodePath,
+          parentId,
+          blob,
+        });
+        const children = n.children as unknown[] | undefined;
+        if (children?.length) result.push(...flattenNodes(children, nodePath, n.id as string));
+      }
+      return result;
+    };
+    const nodeFlat = flattenNodes(store.pageNodes);
+
+    // Compact cross-page index for other pages.
+    // Builds the same blob as flattenNodes (props + styles serialized) so color,
+    // Tailwind classes, and inline styles are all searchable — just skips the
+    // heavier parts (children recursion, map, actions, condition) to keep payload bounded.
+    type CompactNode = { id: string; name?: string; type?: string; text?: string; blob?: string };
+    const flattenNodesCompact = (nodes: unknown[], acc: CompactNode[] = []): CompactNode[] => {
+      for (const n of nodes as NodeRecord[]) {
+        const textVal = typeof n.text === 'string' ? (n.text as string).slice(0, 80) : undefined;
+        acc.push({
+          id: n.id as string,
+          name: n.name as string | undefined,
+          type: n.type as string | undefined,
+          text: textVal,
+          blob: [
+            n.name, n.type, n.id, textVal,
+            JSON.stringify((n.props ?? {}) as Record<string, unknown>),
+            JSON.stringify((n.styles ?? {}) as Record<string, unknown>),
+          ].filter(Boolean).join(' ').slice(0, 600),
+        });
+        const children = n.children as unknown[] | undefined;
+        if (children?.length) flattenNodesCompact(children, acc);
+      }
+      return acc;
+    };
+    const otherPagesIndex = store.pages
+      .filter(p => p.id !== store.currentPageId)
+      .map(p => ({
+        pageId: p.id,
+        pageName: p.name,
+        pageRoute: (p as unknown as { route?: string }).route,
+        nodes: flattenNodesCompact((p as unknown as { nodes?: unknown[] }).nodes ?? []),
+      }));
+
+    // Compact global formula index — name + preview (first 80 chars of expression).
+    const globalFormulasIndex = Object.values(
+      (store as unknown as { globalFormulas?: Record<string, { name: string; formula: string }> }).globalFormulas ?? {}
+    ).map(f => ({ name: f.name, preview: f.formula.slice(0, 80) }));
+
+    // Compact shared component index — id + name only.
+    const sharedComponentsIndex = Object.values(getSharedComponents()).map(sc => ({
+      id: sc.id,
+      name: sc.name,
+    }));
+
     const findNodeById = (nodes: typeof store.pageNodes, tid: string): unknown => {
       for (const n of nodes) {
         if ((n as { id?: string }).id === tid) return n;
@@ -458,6 +597,8 @@ export function useAiChat() {
           selectedNodeIds: mergedSelectedIds,
           selectedNodesDetails,
           pageTreeSnapshot,
+          nodeFlat,
+          otherPagesIndex,
           pageId: store.currentPageId,
           pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
           theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
@@ -468,15 +609,43 @@ export function useAiChat() {
           description: store.projectDescription,
           category: store.projectCategory,
           variables: (store.customVars ?? []).map((v) => ({ id: v.id ?? v.name, name: v.name, label: v.label, type: v.type, initialValue: v.initialValue })),
-          workflows: Object.entries(store.pageWorkflows ?? {}).map(([name]) => ({
-            name,
-            trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
-          })),
+          workflows: [
+            ...Object.entries(store.pageWorkflows ?? {}).map(([name, steps]) => ({
+              name,
+              trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
+              stepTypes: (steps as { type?: string }[]).map(s => s.type).filter(Boolean),
+              steps,
+              scope: 'page' as const,
+            })),
+            ...Object.entries(
+              (store as unknown as { globalWorkflowMeta?: Record<string, { name: string; trigger?: string }> }).globalWorkflowMeta ?? {}
+            ).map(([id, meta]) => {
+              const globalSteps = (store as unknown as { globalWorkflows?: Record<string, { type?: string }[]> }).globalWorkflows?.[id] ?? [];
+              return {
+                id,
+                name: meta.name,
+                trigger: meta.trigger,
+                stepTypes: globalSteps.map((s) => s.type).filter(Boolean),
+                steps: globalSteps,
+                scope: 'global' as const,
+              };
+            }),
+          ],
           dataSources: (store.pageDataSources ?? []).map((ds) => ({
             id: ds.id,
             label: ds._label ?? ds.name ?? ds.id,
             path: `collections['${ds.id}'].data`,
+            schema: ds._lastFetch?.status === 'success' && ds._lastFetch.data != null
+              ? inferSchema(ds._lastFetch.data)
+              : undefined,
+            // sampleResponse: most recent successful fetch result (capped 2KB).
+            // Used by Context Agent to search nested field paths without running a fetch.
+            sampleResponse: ds._lastFetch?.status === 'success' && ds._lastFetch.data != null
+              ? JSON.stringify(ds._lastFetch.data).slice(0, 2048)
+              : undefined,
           })),
+          globalFormulas: globalFormulasIndex,
+          sharedComponents: sharedComponentsIndex,
           threadId,
           chatHistory: store.aiChatHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
           model: store.aiSelectedModel,
@@ -504,6 +673,9 @@ export function useAiChat() {
       let accStructureContext: { compactTree: string; varRoster: string } | null = null;
       let accStructureMarkers: AiChatMessage['structureMarkers'] = undefined;
       let accBuildPlan: AiChatMessage['buildPlan'] = undefined;
+      // Phase O — debug envelope accumulator
+      const turnStartedAt = Date.now();
+      const debug: import('./_store-types').PhaseODebugEnvelope = { agents: {} };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -548,6 +720,30 @@ export function useAiChat() {
                     );
                     execResult = result.success ? result.data : { error: result.error };
                     execStatus = result.success ? 'success' : 'error';
+
+                    // Belt-and-suspenders: after generate_structure succeeds, ensure every
+                    // minted workflow UUID is stored as a direct key in pageWorkflows.
+                    // Old client bundles key by human name — this patch adds the UUID key so
+                    // add_workflow_step's direct lookup always finds it without needing the
+                    // meta.id scan, eliminating the HMR race condition.
+                    if (ev.name === 'generate_structure' && execStatus === 'success') {
+                      const minted = (execResult as { mintedWorkflows?: Array<{ workflowId: string; name: string; trigger: string }> })?.mintedWorkflows;
+                      if (Array.isArray(minted)) {
+                        const patchStore = useBuilderStore.getState();
+                        const pageId = (ev.input as { _pageId?: string })?._pageId;
+                        for (const { workflowId, name, trigger } of minted) {
+                          if (!(patchStore.pageWorkflows as Record<string, unknown>)?.[workflowId]) {
+                            patchStore.setPageWorkflow(workflowId, []);
+                            const meta: Record<string, unknown> = { id: workflowId, name, trigger };
+                            if (pageId) meta.pageScope = pageId;
+                            patchStore.setPageWorkflowMeta(
+                              workflowId,
+                              meta as Parameters<typeof patchStore.setPageWorkflowMeta>[1],
+                            );
+                          }
+                        }
+                      }
+                    }
                   } catch (e) {
                     execResult = { error: String(e) };
                     execStatus = 'error';
@@ -619,6 +815,7 @@ export function useAiChat() {
             } else if (ev.type === 'agent_context') {
               accAgentDebugInfo[ev.agent] = {
                 agent: ev.agent,
+                displayLabel: (ev as { displayLabel?: string }).displayLabel,
                 systemPrompt: ev.systemPrompt,
                 userMessage: ev.userMessage,
                 tools: ev.tools,
@@ -626,7 +823,18 @@ export function useAiChat() {
                 startedAt: ev.startedAt,
                 toolCalls: [],
               };
-              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, streaming: true });
+              // Mirror into the activity-feed envelope so the user sees per-agent rows
+              // light up the moment each agent kicks off (status: 'running'). Tool-count
+              // and duration get filled in by agent_complete below.
+              const ag = (debug.agents ??= {});
+              ag[ev.agent] = {
+                ...(ag[ev.agent] ?? {}),
+                displayLabel: (ev as { displayLabel?: string }).displayLabel,
+                tools: ev.tools,
+                startedAt: ev.startedAt,
+                status: 'running',
+              };
+              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, debug: { ...debug }, streaming: true });
             } else if (ev.type === 'agent_complete') {
               const info = accAgentDebugInfo[ev.agent];
               if (info) {
@@ -635,7 +843,28 @@ export function useAiChat() {
                 info.toolCallCount = ev.toolCallCount;
                 info.duration = ev.duration;
               }
-              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, streaming: true });
+              // Mirror legacy agent_complete into the new-arch debug.agents map so the
+              // Cursor-style activity feed can render every agent (structure / media /
+              // styling:hero / styling:about / animation:* / binding / workflows) — not
+              // just the new-arch shadow.
+              const ag = (debug.agents ??= {});
+              ag[ev.agent] = {
+                ...(ag[ev.agent] ?? {}),
+                rounds: ev.rounds,
+                toolCallCount: ev.toolCallCount,
+                duration: ev.duration,
+                endedAt: ev.endedAt,
+                status: ev.toolCallCount > 0 ? 'completed' : 'skipped',
+              };
+              // When the real LLM structure agent finishes, mark the inline structure
+              // row as done and compute total wall-clock time from structure_started.
+              if (ev.agent === 'structure' && debug.structure) {
+                const totalDuration = debug.structure.startedAt
+                  ? Date.now() - debug.structure.startedAt
+                  : ev.duration;
+                debug.structure = { ...debug.structure, status: 'done', duration: totalDuration };
+              }
+              store.updateLastAiMessage({ agentDebugInfo: { ...accAgentDebugInfo }, debug: { ...debug }, streaming: true });
             } else if (ev.type === 'structure_context') {
               accStructureContext = { compactTree: ev.compactTree, varRoster: ev.varRoster };
             } else if (ev.type === 'structure_markers') {
@@ -644,11 +873,85 @@ export function useAiChat() {
               accBuildPlan = { mode: ev.mode, needsStyling: ev.needsStyling, needsBinding: ev.needsBinding, needsWorkflows: ev.needsWorkflows, editSummary: ev.editSummary, buildUnits: ev.buildUnits };
             } else if (ev.type === 'phase3_started') {
               isInPhase3Ref.current = true;
+            } else if (ev.type === 'context_started') {
+              debug.context = { status: 'running', startedAt: (ev as { startedAt?: number }).startedAt ?? Date.now() };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'context_complete') {
+              debug.context = {
+                ...debug.context,
+                status: 'done',
+                duration: ev.duration,
+                skippedSearch: ev.skippedSearch,
+                resolvedNodeCount: ev.resolvedNodeCount,
+                toolCalls: ev.toolCalls,
+              };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'planner_started') {
+              debug.planner = { status: 'running', startedAt: (ev as { startedAt?: number }).startedAt ?? Date.now(), manifest: {} };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'planner_complete') {
+              debug.planner = {
+                status: 'done',
+                startedAt: debug.planner?.startedAt,
+                duration: (ev as { duration?: number }).duration,
+                manifest: {
+                  intent: ev.manifest.intent,
+                  needsClarification: ev.manifest.needsClarification,
+                  operations: ev.manifest.operations?.map(op => ({
+                    id: op.id,
+                    summary: op.summary,
+                    pageRoute: op.pageRoute,
+                    pageName: op.pageName,
+                    agents: op.agents
+                      ? Object.fromEntries(
+                          Object.entries(op.agents).map(([k, v]) => [
+                            k,
+                            { briefing: (v as { briefing?: string })?.briefing },
+                          ]),
+                        )
+                      : undefined,
+                  })),
+                },
+              };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'structure_started') {
+              debug.structure = { status: 'running', startedAt: (ev as { startedAt?: number }).startedAt ?? Date.now() };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'structure_complete') {
+              // Mark structure done immediately — for styling-only edits the LLM structure
+              // agent is skipped entirely so agent_complete:structure never fires. If the LLM
+              // agent does run, agent_complete:structure below will overwrite with a more
+              // accurate wall-clock duration — no harm done either way.
+              const elapsed = debug.structure?.startedAt ? Date.now() - debug.structure.startedAt : 0;
+              debug.structure = {
+                ...debug.structure,
+                nodes: ev.nodes, variables: ev.variables,
+                formulas: ev.formulas, workflows: ev.workflows, dataSources: ev.dataSources,
+                status: 'done',
+                duration: elapsed,
+              };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'agent_phase') {
+              const ag = (debug.agents ??= {});
+              const cur = ag[ev.agent] ?? {};
+              ag[ev.agent] = { ...cur, opId: ev.opId, model: ev.model, rounds: ev.rounds ?? cur.rounds, toolCallCount: ev.toolCallCount ?? cur.toolCallCount, duration: ev.duration ?? cur.duration };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'turn_stats') {
+              debug.stats = { totalDurationMs: ev.totalDurationMs, usdEstimate: ev.usdEstimate, toolCalls: ev.toolCalls, ops: ev.ops, agents: ev.agents };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
             } else if (ev.type === 'done') {
               store.setAiCurrentTool(null);
               // Read current buildPlanUnits so it is preserved in the final update
               const lastMsg = store.aiChatHistory[store.aiChatHistory.length - 1];
               const existingBuildPlanUnits = lastMsg?.buildPlanUnits;
+              if (!debug.stats) {
+                debug.stats = {
+                  totalDurationMs: Date.now() - turnStartedAt,
+                  toolCalls: allToolCalls.length,
+                  ops: debug.planner?.manifest?.operations?.length ?? 0,
+                  agents: Object.keys(accAgentDebugInfo).length,
+                };
+              }
               store.updateLastAiMessage({
                 content: fullContent,
                 toolCalls: allToolCalls.length ? allToolCalls : undefined,
@@ -660,6 +963,7 @@ export function useAiChat() {
                 structureContext: accStructureContext ?? undefined,
                 structureMarkers: accStructureMarkers,
                 buildPlan: accBuildPlan,
+                debug: { ...debug },
                 streaming: false,
               });
 
@@ -712,78 +1016,22 @@ export function useAiChat() {
   };
 
   const getDebugInfo = useCallback(async (): Promise<DebugInfo> => {
-    const summarizeNode = (n: unknown, depth: number): unknown => {
-      const node = n as Record<string, unknown>;
-      const base: Record<string, unknown> = {
-        id: node.id,
-        type: node.type,
-        name: node.name,
-        text: typeof node.text === 'string' ? (node.text as string).slice(0, 60) : undefined,
-        className: (node.props as { className?: string } | undefined)?.className?.slice(0, 100),
-      };
-      const children = node.children as unknown[] | undefined;
-      if (depth > 0 && children?.length) {
-        base.children = children.map(c => summarizeNode(c, depth - 1));
-      } else if (children?.length) {
-        base.childCount = children.length;
-      }
-      return base;
-    };
-
-    const pageTreeSnapshot = store.pageNodes.map(n => summarizeNode(n, 3));
-    const res = await fetch('/api/ai/builder-chat', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: '',
-        pageTreeSnapshot,
-        pages: store.pages.map(p => ({ id: p.id, name: p.name, route: p.route })),
-        theme: { ...THEME_DEFAULTS, ...store.themeOverrides },
-        mood: store.projectMood,
-        animationLevel: store.projectAnimationLevel,
-        layoutStructure: store.projectLayoutStructure,
-        appName: store.projectAppName,
-        description: store.projectDescription,
-        category: store.projectCategory,
-        variables: (store.customVars ?? []).map((v) => ({ id: v.id ?? v.name, name: v.name, label: v.label, type: v.type, initialValue: v.initialValue })),
-        workflows: Object.entries(store.pageWorkflows ?? {}).map(([name]) => ({
-          name,
-          trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
-        })),
-        dataSources: (store.pageDataSources ?? []).map((ds) => ({
-          id: ds.id,
-          label: ds._label ?? ds.name ?? ds.id,
-          path: `collections['${ds.id}'].data`,
-        })),
-        model: store.aiSelectedModel,
-        systemPromptOnly: true,
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => `HTTP ${res.status}`);
-      throw new Error(`Debug endpoint returned ${res.status}: ${errText.slice(0, 400)}`);
-    }
-    const data = await res.json() as Partial<DebugInfo>;
-
-    // Surface any undefined / empty prompts so the debug log shows them as errors
-    const check = (val: string | undefined, label: string): string => {
-      if (!val || val === '(unavailable)') return `(ERROR: ${label} is undefined — likely an import error in builder-knowledge-v2.ts)`;
-      return val;
-    };
-
+    // The systemPromptOnly endpoint was removed. New-arch debug data lives in
+    // msg.debug (PhaseODebugEnvelope) which is already in the chat history.
+    // Return empty stubs so the legacy fallback path in handleCopyToolsLog still
+    // compiles; it is never reached when hasNewArchData is true.
     return {
-      systemPrompt: check(data.systemPrompt, 'main prompt'),
-      planningPrompt: check(data.planningPrompt, 'planning prompt'),
-      phase2Prompt: check(data.phase2Prompt, 'phase2 prompt'),
-      phase3Prompt: check(data.phase3Prompt, 'phase3 prompt'),
-      phaseWPrompt: check(data.phaseWPrompt, 'phaseW prompt'),
-      phase2Tools: data.phase2Tools ?? [],
-      phase3Tools: data.phase3Tools ?? [],
-      phaseWTools: data.phaseWTools ?? [],
-      mainTools: data.mainTools ?? [],
+      systemPrompt: '',
+      planningPrompt: '',
+      phase2Prompt: '',
+      phase3Prompt: '',
+      phaseWPrompt: '',
+      phase2Tools: [],
+      phase3Tools: [],
+      phaseWTools: [],
+      mainTools: [],
     };
-  }, [store]);
+  }, []);
 
   // Convenience wrapper that returns only the main system prompt string (used by copy-prompt button)
   const getSystemPrompt = useCallback(async (): Promise<string> => {

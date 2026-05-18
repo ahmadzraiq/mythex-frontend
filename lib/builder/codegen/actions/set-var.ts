@@ -7,7 +7,8 @@ export function emitSetVar(step: SetVarStep, symbols: SymbolMap): string {
   const name = step.name ?? step.payload?.name ?? '';
   const rawValue = step.value !== undefined ? step.value : step.payload?.value;
   const valueExpr = rewritePropValue(rawValue, symbols);
-  const ident = symbols.vars.get(name) ?? name;
-  if (!ident) return `/* setVar: skipped — no variable name configured */`;
-  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${ident}: ${valueExpr} } }));`;
+  if (!name) return `/* setVar: skipped — no variable name configured */`;
+  const ident = symbols.vars.get(name);
+  const keyExpr = ident ?? JSON.stringify(name);
+  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${keyExpr}: ${valueExpr} } }));`;
 }

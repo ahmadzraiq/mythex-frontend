@@ -6161,7 +6161,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-sky-800 dark:text-sky-200 break-all whitespace-pre-wrap",
+                  "className": "text-[12px] font-mono text-sky-800 dark:text-sky-200 break-all",
                   "data-testid": "out-todo-result"
                 },
                 "text": "{{variables['wf-todo-result-0000-0000-0000-000000000002']}}"

@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
 import { SDUIEngine, paramChangeRunActionRef, startupRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
-import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
@@ -207,8 +207,11 @@ export default function DynamicRoutePage() {
         const fullState = vs.getFullState() as Record<string, unknown>;
         const patches: Record<string, unknown> = {};
         for (const v of cfg.customVars) {
-          if (v.id && !(v.id in fullState)) {
-            patches[v.id] = v.initialValue ?? null;
+          if (v.id) {
+            registerVariableInitialValue(v.id, v.initialValue);
+            if (!(v.id in fullState)) {
+              patches[v.id] = v.initialValue ?? null;
+            }
           }
         }
         if (Object.keys(patches).length > 0) {

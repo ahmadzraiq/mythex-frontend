@@ -49,6 +49,7 @@ import pricing from './screens/pricing.json';
 import videoHero from './screens/video-hero.json';
 import techHero from './screens/tech-hero.json';
 import calculator from './screens/calculator.json';
+import calculator2 from './screens/calculator2.json';
 import counterExample from './screens/counter-example.json';
 import pricingNested from './screens/pricing-nested.json';
 import videoHeroTest from './screens/video-hero-test.json';
@@ -89,6 +90,7 @@ import workflowTestActions from './actions/workflow-test.json';
 import javascriptTestActions from './actions/javascript-test.json';
 import animationTestActions from './actions/animation-test.json';
 import calculatorActions from './actions/calculator.json';
+import calculator2Actions from './actions/calculator2.json';
 import counterExampleActions from './actions/counter-example.json';
 import pricingNestedActions from './actions/pricing-nested.json';
 import responsiveTestActions from './actions/responsive-test.json';
@@ -141,6 +143,7 @@ const screens = {
   videoHero,
   techHero,
   calculator,
+  calculator2,
   counterExample,
   pricingNested,
   videoHeroTest,
@@ -184,6 +187,7 @@ const actions = {
   ...javascriptTestActions,
   ...animationTestActions,
   ...calculatorActions,
+  ...calculator2Actions,
   ...counterExampleActions,
   ...pricingNestedActions,
   ...responsiveTestActions,
@@ -207,6 +211,7 @@ const actionsByFile = {
   javascriptTest: javascriptTestActions,
   animationTest: animationTestActions,
   calculator: calculatorActions,
+  calculator2: calculator2Actions,
   counterExample: counterExampleActions,
   pricingNested: pricingNestedActions,
   responsiveTest: responsiveTestActions,

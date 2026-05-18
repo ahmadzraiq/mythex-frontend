@@ -37,25 +37,22 @@
 
 import { SHARED_FORMULA_SYNTAX } from '../shared/formula-scope';
 import { BATCH_RETRY_RULE } from '../shared/styling-subagent';
-import { buildAgentCapabilityTable } from '../../component-capabilities';
 
 export function buildBindingAgentPrompt(): { static: string; dynamic: string } {
-  const staticContent = `You connect data to UI nodes. Do NOT style or create workflows.
+  const staticContent = `You are a PURE EXECUTOR. Target node UUIDs and variable/datasource IDs are in your user message — do not call search or any read tool.
+
+Connect data to UI nodes. Do not style or create workflows.
 
 ${SHARED_FORMULA_SYNTAX}
 
-## System-Specific Rules
+## System-specific
 
-- Read \`REPEAT(key=...)\` and \`CONDITION(...)\` annotations directly from the compact tree and bind accordingly.
-- NEVER set_condition on the template root (the node with set_repeat) — it hides items instead of filtering. Use conditions only on child nodes inside the template.
-- In nested repeats: \`context?.item?.data\` = inner item, \`context?.item?.parent?.data\` = outer item.
-- Use EXACT field names from the variable roster — misspelled names resolve to undefined.
-- **Scalar Text binding disambiguation**: When multiple scalar (non-array) variables could bind to the same display Text node, prefer the variable whose \`initialValue\` exactly matches the node's static placeholder text. Variables with an empty-string \`initialValue\` (\`""\`) are state-tracking/accumulator variables — do NOT bind a display Text node to them unless no other scalar variable exists.
-- **Image or Video inside a repeat template**: call \`set_src(imageId, { src: "context?.item?.data?.avatar" })\` using the exact field name from the variable's initialValue schema (e.g. \`avatar\`, \`videoSrc\`). The executor stores it as a formula — each rendered card gets its own URL from the item data.
-- **Only call \`set_src\` inside repeat templates.** For Image/Video nodes outside a repeat template, skip entirely — the media agent owns their source. Never call \`set_src\` with a static URL string.
-- **Boolean toggle → ternary text binding**: When a boolean variable is in the varRoster and the repeat template's data schema has two variant fields for the same concept (two alternative values a text node could display depending on state), bind that text node as a ternary: \`variables['BOOL_UUID'] ? context?.item?.data?.fieldA : context?.item?.data?.fieldB\`. Do NOT bind to a single static field when a boolean variable controls which value is visible. Apply the same ternary to every text node whose displayed value depends on that boolean.
-
-${buildAgentCapabilityTable(['text', 'src', 'disabled', 'icon'])}
+- Read REPEAT(key=...) and CONDITION(...) annotations from the compact tree and bind accordingly.
+- The variable roster shows each variable's actual initialValue. Use the exact field names and values shown. Prefer the variable whose initialValue matches the node's placeholder text; variables with initialValue: "" are state-tracking, not display targets.
+- Nodes annotated with existing bindings (e.g. text:variables['UUID'](existing)) are already bound — do not re-bind them.
+- Shared-component instance nodes are Box wrappers with _shared metadata. set_text / set_src on an internal node id applies a per-instance override; set_component_props sets declared property overrides; set_repeat on the instance wrapper itself is not supported.
+- Responsive overrides (text/condition/repeat per-breakpoint) go through set_responsive_override.
+- Icon nodes inside a REPEAT template: call set_icon_src(iconNodeId, "context?.item?.data?.iconName") — use the exact field name from the variable's initialValue items.
 
 ${BATCH_RETRY_RULE}`;
 

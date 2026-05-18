@@ -56,9 +56,14 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
         const vsData = (storeState?.getFullState?.() ?? storeState?.data ?? {}) as Record<string, unknown>;
         const mergedState = ctx.getFullMergedState?.() ?? {};
 
-        // If we're inside a shared-component workflow, rebuild context.component.variables
-        // from the LIVE per-instance slot so sequential formulas see each other's writes.
-        let ctxForFormula = (ctx.scope?.context ?? (vsData['context'] as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>;
+        // Build context by merging the variable-store's context (which carries
+        // context.workflow[stepId].result after flushWorkflowCtx) with the action
+        // scope's context (which carries context.item.data.* from repeat clicks).
+        // Must be a MERGE, not ??, so that workflow results are never shadowed when
+        // the triggering element is inside a map/repeat (where ctx.scope.context is set).
+        const stateCtx = (vsData['context'] as Record<string, unknown> | undefined) ?? {};
+        const scopeCtxData = (ctx.scope?.context as Record<string, unknown> | undefined) ?? {};
+        let ctxForFormula = { ...stateCtx, ...scopeCtxData };
         const compInfo = ctxForFormula.component as Record<string, unknown> | undefined;
         const liveInstanceId = compInfo?.instanceId as string | undefined;
         if (liveInstanceId) {

@@ -13,7 +13,7 @@ const Text = React.forwardRef<React.ComponentRef<'span'>, ITextProps>(
       bold,
       underline,
       strikeThrough,
-      size = 'md',
+      size,
       sub,
       italic,
       highlight,

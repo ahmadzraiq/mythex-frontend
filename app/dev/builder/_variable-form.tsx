@@ -36,6 +36,7 @@ interface VarSlidePanelProps {
   initial: Partial<CustomVar> & { isNew?: boolean };
   onSave: (v: CustomVar) => void;
   onClose: () => void;
+  onDelete?: () => void;
   /** When provided, replaces the global FolderPicker with a custom folder UI (e.g. component-scoped text input) */
   folderNode?: React.ReactNode;
 }
@@ -63,7 +64,7 @@ export function YesNoToggle({ value, onChange }: { value: boolean; onChange: (v:
   );
 }
 
-export function VariableSlideContent({ initial, onSave, onClose, folderNode }: VarSlidePanelProps) {
+export function VariableSlideContent({ initial, onSave, onClose, onDelete, folderNode }: VarSlidePanelProps) {
   const [varName, setVarName] = useState(initial.name ?? '');
   const [varLabel, setVarLabel] = useState(initial.label ?? '');
   const [varType, setVarType] = useState<CustomVar['type']>(initial.type ?? 'string');
@@ -301,6 +302,13 @@ export function VariableSlideContent({ initial, onSave, onClose, folderNode }: V
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4, paddingBottom: 4 }}>
+        {onDelete && !initial.isNew && (
+          <button
+            data-testid="var-delete"
+            onClick={onDelete}
+            style={{ ...SP_BTN_SECONDARY, color: '#f87171', borderColor: '#7f1d1d', marginRight: 'auto' }}
+          >Delete</button>
+        )}
         <button onClick={onClose} style={SP_BTN_SECONDARY}>Cancel</button>
         <button data-testid="var-save" onClick={save} disabled={!canSave}
           style={{ ...SP_BTN_PRIMARY, opacity: canSave ? 1 : 0.4, cursor: canSave ? 'pointer' : 'not-allowed' }}>

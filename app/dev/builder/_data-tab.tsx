@@ -97,7 +97,10 @@ export function DataSlidePanelContent({ slideState, onClose, onWidthChange }: Da
     const existing = slideState.editingName
       ? store.customVars.find(v => v.name === slideState.editingName) ?? { isNew: false }
       : { isNew: true };
-    return <VariableSlideContent initial={existing} onSave={handleVarSave} onClose={onClose} />;
+    const handleVarDelete = slideState.editingName
+      ? () => { store.removeCustomVar(slideState.editingName!); onClose(); }
+      : undefined;
+    return <VariableSlideContent initial={existing} onSave={handleVarSave} onDelete={handleVarDelete} onClose={onClose} />;
   }
 
   return null;
@@ -137,10 +140,24 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
   const [dsOpen, setDsOpen] = useState(true);
   const [varOpen, setVarOpen] = useState(true);
   const [activeDsId, setActiveDsId] = useState<string | null>(null);
-  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders } = useBuilderStore();
+  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders, removeVarFolder } = useBuilderStore();
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [folderMenu, setFolderMenu] = useState<{ id: string; top: number; left: number } | null>(null);
+  const folderMenuRef = useRef<HTMLDivElement>(null);
 
   const toggleFolder = (id: string) => setExpandedFolders(s => ({ ...s, [id]: !s[id] }));
+
+  // Close folder menu on outside click
+  React.useEffect(() => {
+    if (!folderMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) {
+        setFolderMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, [folderMenu]);
 
   const filteredDs = pageDataSources.filter(s => {
     const displayName = (s as { _label?: string })._label ?? s.name ?? s.id ?? '';
@@ -178,6 +195,20 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
       const kids = childFolders(f.id);
       const its = folderItems(f.id);
       if (kids.length === 0 && its.length === 0) return null;
+
+      // Collect all descendant folder IDs (for delete-with-vars)
+      const getDescendants = (rootId: string): Set<string> => {
+        const ids = new Set([rootId]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const ff of varFolders) {
+            if (ff.parentId && ids.has(ff.parentId) && !ids.has(ff.id)) { ids.add(ff.id); changed = true; }
+          }
+        }
+        return ids;
+      };
+
       return (
         <React.Fragment key={f.id}>
           {/* Folder header row */}
@@ -193,7 +224,40 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
           >
             <Chevron open={isExpanded} size={10} color="#6b7280" />
             <span style={{ fontSize: 11, fontWeight: 500, color: '#d1d5db', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+            {section === 'var' && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setFolderMenu(m => m?.id === f.id ? null : { id: f.id, top: rect.bottom + 4, left: rect.right - 160 });
+                }}
+                style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+              >⋮</button>
+            )}
           </div>
+          {/* Folder dot-menu portal */}
+          {section === 'var' && folderMenu?.id === f.id && typeof document !== 'undefined' && ReactDOM.createPortal(
+            <div
+              ref={folderMenuRef}
+              style={{ position: 'fixed', top: folderMenu.top, left: folderMenu.left, width: 160, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden' }}
+            >
+              <button
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setFolderMenu(null);
+                  const ids = getDescendants(f.id);
+                  customVars.filter(v => v.folderId && ids.has(v.folderId)).forEach(v => removeCustomVar(v.name));
+                  removeVarFolder(f.id);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', fontSize: 12, color: '#f87171', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}
+              ><span>🗑</span> Remove with vars</button>
+            </div>,
+            document.body
+          )}
           {isExpanded && (
             <>
               {its.map(i => renderItem(i, depth + 1))}
@@ -305,6 +369,20 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
+            {customVars.length > 0 && (
+              <button
+                data-testid="remove-all-vars-btn"
+                title="Remove all variables"
+                onClick={() => { customVars.forEach(v => removeCustomVar(v.name)); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                </svg>
+              </button>
+            )}
             <button data-testid="add-variable-btn"
               onClick={() => onSetSlide({ kind: 'variable', editingName: null })}
               style={ADD_BTN}>
@@ -445,16 +523,6 @@ function VarRow({
           </span>
         )}
       </span>
-
-      {/* ⋮ menu button */}
-      <button
-        ref={btnRef}
-        data-testid={`var-menu-btn-${v.name}`}
-        onClick={openMenu}
-        style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
-      >⋮</button>
 
       {/* Dropdown menu (portal) */}
       {menuOpen && typeof document !== 'undefined' && ReactDOM.createPortal(

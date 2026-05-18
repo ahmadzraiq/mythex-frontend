@@ -13,11 +13,21 @@ import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 
 const SCOPE = 'INPUT';
 
+const ResetTextInput = React.forwardRef<any, React.ComponentProps<typeof TextInput>>(
+  (props, ref) => (
+    <TextInput
+      ref={ref}
+      {...props}
+      style={[{ fontFamily: 'inherit' as any, fontSize: 'inherit' as any, fontWeight: 'inherit' as any }, props.style]}
+    />
+  )
+);
+
 const UIInput = createInput({
   Root: withStyleContext(View, SCOPE),
   Icon: UIIcon,
   Slot: Pressable,
-  Input: TextInput,
+  Input: ResetTextInput,
 });
 
 cssInterop(PrimitiveIcon, {
@@ -76,27 +86,13 @@ const inputSlotStyle = tva({
 });
 
 const inputFieldStyle = tva({
-  base: 'flex-1 text-typography-900 py-0 px-0 placeholder:text-typography-500 h-full ios:leading-[0px] web:cursor-text web:data-[disabled=true]:cursor-not-allowed web:outline-0 web:outline-none',
+  base: 'flex-1 py-0 px-0 h-full ios:leading-[0px] web:cursor-text web:data-[disabled=true]:cursor-not-allowed web:outline-0 web:outline-none',
 
   parentVariants: {
     variant: {
       underlined: 'web:outline-0 web:outline-none px-0',
       outline: 'web:outline-0 web:outline-none',
       rounded: 'web:outline-0 web:outline-none px-4',
-    },
-
-    size: {
-      '2xs': 'text-2xs',
-      'xs': 'text-xs',
-      'sm': 'text-sm',
-      'md': 'text-base',
-      'lg': 'text-lg',
-      'xl': 'text-xl',
-      '2xl': 'text-2xl',
-      '3xl': 'text-3xl',
-      '4xl': 'text-4xl',
-      '5xl': 'text-5xl',
-      '6xl': 'text-6xl',
     },
   },
 });
@@ -201,7 +197,6 @@ const InputField = React.forwardRef<
       className={inputFieldStyle({
         parentVariants: {
           variant: parentVariant,
-          size: parentSize,
         },
         class: className,
       })}

@@ -35,7 +35,8 @@ export function emitFormAction(step: FormStep, symbols: SymbolMap): string {
       return `form?.setValue(${JSON.stringify(fieldKey)}, ${valueExpr}, { shouldValidate: true });`;
     }
     case 'submitForm': {
-      return `form?.handleSubmit(onSubmit)();`;
+      // Trigger RHF validation; if valid the form data is collected. The workflow continues after.
+      return `await form?.handleSubmit?.(async (_d: unknown) => { void _d; })?.();`;
     }
     default:
       return `/* unknown form action */`;

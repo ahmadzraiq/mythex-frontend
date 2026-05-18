@@ -46,7 +46,7 @@ export const TextareaWithInput = React.forwardRef<
     );
   }
 
-  const { className, ...restWithoutClass } = rest as Record<string, unknown> & { className?: string };
+  const { className, placeholderTextColor = '#737373', ...restWithoutClass } = rest as Record<string, unknown> & { className?: string; placeholderTextColor?: string };
   const handleChange = onChange ?? onChangeText;
   // Only forward padding-related classes to TextareaInput so the inner element doesn't
   // pick up border/bg classes and render a double border.
@@ -57,6 +57,7 @@ export const TextareaWithInput = React.forwardRef<
     <Textarea ref={ref} {...(restWithoutClass as React.ComponentProps<typeof Textarea>)} className={className}>
       <TextareaInput
         placeholder={placeholder as string}
+        placeholderTextColor={placeholderTextColor}
         // Do NOT default to '' — an explicit undefined keeps the textarea uncontrolled
         // so the user can type freely when no value binding is provided.
         value={value as string | undefined}

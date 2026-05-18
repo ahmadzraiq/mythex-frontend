@@ -49,7 +49,6 @@ const PRIMITIVES: Record<string, PrimitiveInfo> = {
   },
   Video: {
     tag: 'video',
-    defaultProps: { controls: 'true' },
     supportsMotion: false,
   },
   FormContainer: {

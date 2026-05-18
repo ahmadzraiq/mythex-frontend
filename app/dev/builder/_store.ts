@@ -21,9 +21,10 @@ import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updateSharedComponent, getSharedComponents, loadSharedComponents } from '@/lib/builder/shared-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
-import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar } from '@/lib/sdui/global-variable-store';
+import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import { registerVariableNames, registerCollectionNames } from '@/lib/sdui/variable-name-registry';
+import { emitStoreEvent } from '@/lib/builder/store-events';
 
 // ─── Node-tree helpers (extracted to _store-node-helpers.ts) ────────────────
 // Single import for internal use; explicit re-exports for external consumers.
@@ -209,17 +210,38 @@ function _reassignIds(node: SDUINode): SDUINode {
 }
 
 /**
- * Patch a node in either pageNodes or canvasNodes.
- * Tries pageNodes first; if unchanged, falls back to canvasNodes.
+ * Patch a node in pageNodes / pages[].nodes / canvasNodes.
+ *
+ * Search order:
+ *   1. The focused page's nodes (`pageNodes`) — the common case for interactive edits.
+ *   2. Every non-focused page's `nodes` — needed during AI multi-page builds, where
+ *      the agent emits writes for nodes that live on a page the user isn't viewing.
+ *      We update `pages[i].nodes` directly so the canvas keeps showing the user's
+ *      current page (no flicker), while both pages still receive their styling /
+ *      animation in parallel.
+ *   3. Canvas nodes (orphan / shared-component drafts).
+ *
+ * The middleware re-derives `pageNodes` from the focused page when `pages` changes,
+ * so writing to a non-focused page is invisible to the canvas.
  */
 function patchAnyNode(
-  s: { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
+  s: { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string },
   id: string,
   patcher: (n: SDUINode) => SDUINode,
-): Partial<{ pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }> {
+): Partial<{ pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[] }> {
   const newPageNodes = patchNodeById(s.pageNodes, id, patcher);
   if (newPageNodes !== s.pageNodes) return { pageNodes: newPageNodes };
-  // Search canvas nodes — both top-level and nested children
+  for (let i = 0; i < s.pages.length; i++) {
+    const p = s.pages[i];
+    if (p.id === s.focusedPageId) continue;
+    const sourceNodes = (p.nodes ?? []) as SDUINode[];
+    const patched = patchNodeById(sourceNodes, id, patcher);
+    if (patched !== sourceNodes) {
+      const newPages = [...s.pages];
+      newPages[i] = { ...p, nodes: patched };
+      return { pages: newPages };
+    }
+  }
   for (let i = 0; i < s.canvasNodes.length; i++) {
     const cn = s.canvasNodes[i];
     const cnAsArr = [cn] as SDUINode[];
@@ -749,6 +771,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     for (const [rootId, snap] of preRoots) {
       get()._syncSharedInstances(rootId, { prevEditedNode: snap });
     }
+    emitStoreEvent('node:created', { nodeId: node.id, pageId: get().focusedPageId });
     get()._pushHistory();
   },
 
@@ -888,6 +911,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     for (const [rootId, snap] of preRoots) {
       get()._syncSharedInstances(rootId, { prevEditedNode: snap });
     }
+    emitStoreEvent('subtree:restructured', { nodeId, pageId: get().focusedPageId });
     get()._pushHistory();
   },
 
@@ -960,6 +984,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     for (const [rootId, snap] of preRoots) {
       get()._syncSharedInstances(rootId, { prevEditedNode: snap });
     }
+    emitStoreEvent('subtree:restructured', { pageId: get().focusedPageId });
     get()._pushHistory();
   },
 
@@ -1088,6 +1113,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     for (const [rootId, snap] of affectedSharedRoots) {
       get()._syncSharedInstances(rootId, { prevEditedNode: snap });
     }
+    for (const id of idSet) emitStoreEvent('node:deleted', { nodeId: id, pageId: get().focusedPageId });
     get()._pushHistory();
   },
 
@@ -1250,7 +1276,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   patchProp: (id, propPath, value) => {
     const prevRootSnap = _snapshotSharedRoot(get(), id);
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => {
       const parts = propPath.split('.');
       if (parts.length === 1) {
         return { ...node, [parts[0]]: value };
@@ -1268,11 +1294,12 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       return root;
     }));
     get()._syncSharedInstances(id, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
+    emitStoreEvent('node:changed', { nodeId: id, pageId: get().focusedPageId });
   },
 
   patchClassName: (id, oldToken, newToken) => {
     const prevRootSnap = _snapshotSharedRoot(get(), id);
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => {
       const cls: string = (node.props as { className?: string })?.className ?? '';
       const newCls = oldToken
         ? cls.replace(new RegExp(`\\b${oldToken.replace('*', '[^\\s]+')}\\b`, 'g'), newToken).trim()
@@ -1285,7 +1312,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   renameNode: (id, newId) => {
     const prevRootSnap = _snapshotSharedRoot(get(), id);
     set(s => ({
-      ...patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, id: newId })),
+      ...patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => ({ ...node, id: newId })),
       selectedIds: s.selectedIds.map(sid => (sid === id ? newId : sid)),
     }));
     get()._syncSharedInstances(newId, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
@@ -1391,7 +1418,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         }
         return { ...n, popover: config } as unknown as SDUINode;
       };
-      return patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, nodeId, patcher);
+      return patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, nodeId, patcher);
     });
     get()._pushHistory();
   },
@@ -1405,7 +1432,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   setActiveBreakpoint: (bp) => set({ activeBreakpoint: bp }),
 
   patchResponsive: (id, breakpoint, field, value) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => {
       const patched = clone(node);
       if (!patched.responsive) patched.responsive = {};
       if (!patched.responsive[breakpoint]) patched.responsive[breakpoint] = {};
@@ -1422,7 +1449,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   removeResponsiveOverride: (id, breakpoint, field) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => {
         if (!node.responsive?.[breakpoint]) return node;
         const patched = clone(node);
         if (field) {
@@ -3313,7 +3340,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   // ── Logic / Behavior helpers ─────────────────────────────────────────────────
 
   patchCondition: (id, condition) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node =>
       condition === null
         ? (({ condition: _c, ...rest }) => rest)(node as SDUINode & { condition?: unknown }) as SDUINode
         : { ...node, condition } as SDUINode
@@ -3322,7 +3349,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchActions: (id, actions) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node =>
       actions === null
         ? (({ actions: _a, ...rest }) => rest)(node as SDUINode & { actions?: unknown }) as SDUINode
         : { ...node, actions } as SDUINode
@@ -3331,7 +3358,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchMap: (id, mapPath, keyField) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => {
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => {
       if (mapPath === null) {
         const { map: _m, key: _k, ...rest } = node as SDUINode & { map?: unknown; key?: unknown };
         return rest as SDUINode;
@@ -3342,7 +3369,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchDataSource: (id, ds) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node =>
       ds === null
         ? (({ dataSource: _d, ...rest }) => rest)(node as SDUINode & { dataSource?: unknown }) as SDUINode
         : { ...node, dataSource: ds } as unknown as SDUINode
@@ -3351,7 +3378,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   patchVariant: (id, variants) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node =>
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node =>
       variants === null
         ? (({ _variants: _v, ...rest }) => rest)(node as SDUINode & { _variants?: unknown }) as SDUINode
         : { ...node, _variants: variants } as SDUINode
@@ -3361,13 +3388,13 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   patchNodeField: (id, field, value) => {
     const prevRootSnap = _snapshotSharedRoot(get(), id);
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => ({ ...node, [field]: value }) as SDUINode));
     get()._syncSharedInstances(id, prevRootSnap ? { prevEditedNode: prevRootSnap } : undefined);
     get()._pushHistory();
   },
 
   patchNodeFieldLive: (id, field, value) => {
-    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] }, id, node => ({ ...node, [field]: value }) as SDUINode));
+    set(s => patchAnyNode(s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string }, id, node => ({ ...node, [field]: value }) as SDUINode));
     // Intentionally no _pushHistory — caller must call _pushHistory() once on commit.
   },
 
@@ -3393,7 +3420,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       return out;
     };
     set(s => patchAnyNode(
-      s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[] },
+      s as { pageNodes: SDUINode[]; canvasNodes: CanvasNode[]; pages: BuilderPage[]; focusedPageId: string },
       id,
       node => strip(node as unknown as Record<string, unknown>) as unknown as SDUINode,
     ));
@@ -3441,6 +3468,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   setAuthConfig: (config) => set({ authConfig: config }),
 
   setAppPreviewData: (data) => set({ appPreviewData: data }),
+  patchEngineConventions: (patch) =>
+    set(s => ({ engineConventions: { ...s.engineConventions, ...patch } })),
 
   setPageWorkflow: (name, actions) =>
     set(s => ({ pageWorkflows: { ...s.pageWorkflows, [name]: actions } })),
@@ -3451,7 +3480,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       return { pageWorkflows: restWorkflows, pageWorkflowMeta: restMeta };
     }),
   setPageWorkflowMeta: (name, meta) =>
-    set(s => ({ pageWorkflowMeta: { ...s.pageWorkflowMeta, [name]: { ...s.pageWorkflowMeta[name], ...meta, id: name } } })),
+    set(s => ({ pageWorkflowMeta: { ...s.pageWorkflowMeta, [name]: { ...s.pageWorkflowMeta[name], ...meta, id: (meta as { id?: string }).id ?? name } } })),
   setGlobalWorkflow: (name, actions) =>
     set(s => ({ globalWorkflows: { ...s.globalWorkflows, [name]: actions } })),
   removeGlobalWorkflow: (name) =>
@@ -3601,6 +3630,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     // leave the old array in the store and all bound formulas would return undefined.
     const vs = getGlobalVariableStore().getState();
     vs.setState((prev: Record<string, unknown>) => ({ ...prev, [id]: varWithId.initialValue ?? null }));
+    // Register initial value for resetVariableValue to restore correctly.
+    registerVariableInitialValue(id, varWithId.initialValue);
     // Register for localStorage persistence — registerStorageVar will also read any
     // previously stored value from localStorage and override the initialValue above.
     if (varWithId.saveInLocalStorage) {
@@ -3805,10 +3836,12 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             if (Object.keys(patches).length > 0) {
               vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
             }
-            // Register vars with saveInLocalStorage — registerStorageVar will immediately
-            // read any stored value from localStorage and patch the store, restoring the
-            // last persisted value after a page refresh.
+            // Register initial values for resetVariableValue to restore correctly,
+            // and register localStorage-persisted vars.
             for (const cv of saved!.customVars as CustomVar[]) {
+              if (cv.id) {
+                registerVariableInitialValue(cv.id, cv.initialValue);
+              }
               if (cv.id && cv.saveInLocalStorage) {
                 registerStorageVar(cv.id, cv.initialValue);
               }

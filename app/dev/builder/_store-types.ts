@@ -29,8 +29,10 @@ export interface AiToolCall {
   input: Record<string, unknown>;
   result?: unknown;
   status?: 'pending' | 'success' | 'error' | 'generating';
-  /** Which pipeline phase emitted this tool call — used for grouped display in the chat panel */
-  phase?: 'planning' | 'structure' | 'media' | 'styling' | 'animation' | 'styling:layout' | 'styling:colors' | 'styling:typo' | 'workflows' | 'binding';
+  /** Which pipeline phase emitted this tool call — used for grouped display in the chat panel.
+   *  Static values: planning, structure, media, styling, animation, workflows, binding.
+   *  Dynamic values: combined:<slug>, sc:<slug>, styling:<slug>, workflows:<slug>, etc. */
+  phase?: string;
   /** client Date.now() when the event was received — used for per-phase duration display */
   timestamp?: number;
   /** Which Anthropic API round produced this tool (1-based) */
@@ -41,6 +43,8 @@ export interface AiToolCall {
 
 export interface AgentDebugInfo {
   agent: string;
+  /** Human-friendly label (e.g. "Hero") for per-page agents like `styling:hero`. */
+  displayLabel?: string;
   systemPrompt: string;
   /** The first user message sent to this agent (contains inline tree, varRoster, original request, etc.) */
   userMessage?: string;
@@ -69,6 +73,68 @@ export interface AiIconResult {
   prefix: string;
 }
 
+/** Phase O — typed debug envelope assembled per-turn from SSE events. */
+export interface PhaseODebugEnvelope {
+  /** Context Agent — runs before Planner to resolve "what is the user pointing at?" */
+  context?: {
+    status?: 'running' | 'done';
+    startedAt?: number;
+    duration?: number;
+    skippedSearch?: boolean;
+    resolvedNodeCount?: number;
+    /** All search/read calls made during the context agent loop */
+    toolCalls?: Array<{ name: string; input: Record<string, unknown>; result: unknown }>;
+  };
+  planner?: {
+    /** 'running' while the LLM call is in flight; 'done' after planner_complete. */
+    status?: 'running' | 'done';
+    /** Unix ms when planner_started was emitted. */
+    startedAt?: number;
+    /** Wall-clock duration of the planner LLM call in ms (set after planner_complete). */
+    duration?: number;
+    manifest: {
+      intent?: string;
+      needsClarification?: { question: string; options?: string[] };
+      operations?: Array<{
+        id: string;
+        summary: string;
+        pageRoute?: string;
+        pageName?: string;
+        agents?: Record<string, { briefing?: string }>;
+      }>;
+    };
+  };
+  structure?: {
+    /** 'running' while runStructureStep is executing; 'done' after structure_complete. */
+    status?: 'running' | 'done';
+    startedAt?: number;
+    duration?: number;
+    nodes?: number;
+    variables?: number;
+    formulas?: number;
+    workflows?: number;
+    dataSources?: number;
+  };
+  agents?: Record<string, {
+    /** Human-friendly label shown in the activity feed (e.g. "Hero" for a `styling:hero` agent). */
+    displayLabel?: string;
+    opId?: string;
+    model?: string;
+    rounds?: number;
+    toolCallCount?: number;
+    duration?: number;
+    endedAt?: number;
+    startedAt?: number;
+    selfCorrectionAttempts?: number;
+    /** List of tool names this agent is allowed to call — surfaced under each row. */
+    tools?: string[];
+    /** Live lifecycle: `running` between agent_context and agent_complete; `completed` /
+     *  `skipped` afterwards. `skipped` means the agent fired with zero tool calls. */
+    status?: 'running' | 'completed' | 'skipped';
+  }>;
+  stats?: { totalDurationMs?: number; usdEstimate?: number; toolCalls?: number; ops?: number; agents?: number };
+}
+
 export interface AiChatMessage {
   id: string;
   role: AiChatRole;
@@ -78,8 +144,12 @@ export interface AiChatMessage {
   createdAt: string;
   /** Node IDs referenced in this message */
   selectedNodeIds?: string[];
-  /** Whether this message is currently streaming */
+  /** Pairs user message + assistant reply in one turn (Phase K). */
+  turnId?: string;
+  /** True while the assistant turn is still streaming (set false on done/error). */
   streaming?: boolean;
+  /** Consolidated debug envelope — in-memory only, Phase O. */
+  debug?: PhaseODebugEnvelope;
   /** Whether AI is between rounds (waiting for next Anthropic response) */
   isThinking?: boolean;
   /** Whether this message is in edit-rewind mode (user clicked ✎) */
@@ -733,6 +803,12 @@ export interface BuilderStore {
   appPreviewData: Record<string, unknown>;
   /** Set global app-level preview data */
   setAppPreviewData: (data: Record<string, unknown>) => void;
+  /** Merge patch into engine conventions (graphql endpoint/headers, etc.) */
+  patchEngineConventions: (patch: Partial<{
+    graphqlEndpoint?: string;
+    graphqlHeaders?: Record<string, string>;
+    graphqlCredentials?: string;
+  }>) => void;
 
   // ── Workflows & Formulas ─────────────────────────────────────────────────────
   /** Named workflows (per-page action sequences, keyed by workflow name) */

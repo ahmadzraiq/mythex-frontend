@@ -16,20 +16,102 @@ interface BuilderTool {
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
+    allOf?: Array<{ if: unknown; then: unknown }>;
   };
 }
 
 import { ALL_PRIMITIVES } from '@/lib/builder/primitive-components';
-import { TOOL_DESCRIPTIONS } from '@/lib/ai/builder-knowledge-v2';
+import { TOOL_DESCRIPTIONS } from '@/lib/ai/tool-descriptions';
 
 // ─── Component Labels (what the AI knows as palette labels) ───────────────────
 
 // Auto-derived from ALL_PRIMITIVES — stays in sync with the builder palette automatically
 export const COMPONENT_LABELS: string[] = ALL_PRIMITIVES.map(c => c.label);
 
-// ─── Read / Context Tools ─────────────────────────────────────────────────────
+// ─── Read / Context Tools v2 — two generic tools replacing the 10 individual get_* ───
+
+const KIND_ENUM = ['node', 'variable', 'workflow', 'formula', 'dataSource', 'sharedComponent', 'page', 'theme'] as const;
+
+const searchToolV2: BuilderTool = {
+  name: 'search',
+  description: 'Regex search across all artifacts. Use when the user refers to something by a specific name, label, or exact text (e.g. "header", "submit button", "Hero CTA"). Plain words do substring match. Use | for alternatives, .* to connect signals, ^ for starts-with, $ for ends-with.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Case-insensitive regex. Plain words do substring match. Use | for OR, .* to connect two signals, ^ and $ for anchors. Covers names, types, text content, IDs, and all stored fields.',
+      },
+      kinds: {
+        type: 'array',
+        items: { type: 'string', enum: KIND_ENUM as unknown as string[] },
+        description: 'Limit to these artifact kinds. Omit to search everything.',
+      },
+      scope: {
+        type: 'string',
+        enum: ['currentPage', 'allPages'],
+        description: 'currentPage = only nodes on current page (faster). allPages = also search other pages (default).',
+      },
+      limit: {
+        type: 'number',
+        description: 'Max results (default 30, max 100).',
+      },
+    },
+    required: ['query'],
+  },
+};
+
+const readToolV2: BuilderTool = {
+  name: 'read',
+  description: 'Get full details for a specific artifact by ID. Like Cursor\'s read_file. Supports dot-path slicing for nested data (e.g. "response.data[0].user") and depth control for node trees. For theme use id="*".',
+  input_schema: {
+    type: 'object',
+    properties: {
+      kind: {
+        type: 'string',
+        enum: KIND_ENUM as unknown as string[],
+        description: 'Type of artifact to read.',
+      },
+      id: {
+        type: 'string',
+        description: 'UUID, name, route, or "*" for singletons (theme, pages list).',
+      },
+      path: {
+        type: 'string',
+        description: 'Optional dot-notation path to slice into nested data: "response.data[0].customer.email". Only the matching subtree is returned.',
+      },
+      depth: {
+        type: 'number',
+        description: 'For node/page kinds: how many levels of children to include (default 1, max 3). Deeper levels replace children with stubs showing hasMoreChildren count.',
+      },
+    },
+    required: ['kind', 'id'],
+  },
+};
+
+const semanticSearchTool: BuilderTool = {
+  name: 'semantic_search',
+  description: 'Semantic search — finds nodes by meaning, not exact text. Use when the user describes a visual property or concept whose literal value may not appear in the markup: colors by name ("the red button", "dark card"), visual roles ("hero section", "navigation menu"), or interaction patterns. Returns all relevant matches ranked by similarity — no fixed cap.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Natural language description of what to find. Be specific and descriptive: "red primary action button", "large purple gradient hero banner".',
+      },
+    },
+    required: ['query'],
+  },
+};
+
+/** v2 read tools — used by Context Agent only */
+export const READ_TOOLS_V2: BuilderTool[] = [searchToolV2, semanticSearchTool, readToolV2];
+
+// ─── Read / Context Tools (legacy — deprecated, kept for one release) ─────────
 
 const readTools: BuilderTool[] = [
+  searchToolV2,
+  readToolV2,
   {
     name: 'get_page_tree',
     description: TOOL_DESCRIPTIONS['get_page_tree'],
@@ -67,24 +149,6 @@ const readTools: BuilderTool[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
-    name: 'get_formula_context',
-    description: TOOL_DESCRIPTIONS['get_formula_context'],
-    input_schema: {
-      type: 'object',
-      properties: {
-        nodeId: {
-          type: 'string',
-          description: 'Single node ID to check repeat nesting for.',
-        },
-        nodeIds: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Batch: array of node IDs to check in one call. Returns scope info for each.',
-        },
-      },
-    },
-  },
-  {
     name: 'get_workflows',
     description: TOOL_DESCRIPTIONS['get_workflows'],
     input_schema: { type: 'object', properties: {} },
@@ -92,6 +156,16 @@ const readTools: BuilderTool[] = [
   {
     name: 'get_data_sources',
     description: TOOL_DESCRIPTIONS['get_data_sources'],
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_formulas',
+    description: TOOL_DESCRIPTIONS['get_formulas'],
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_shared_components',
+    description: TOOL_DESCRIPTIONS['get_shared_components'],
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -196,6 +270,40 @@ const addTools: BuilderTool[] = [
       required: ['src'],
     },
   },
+  {
+    name: 'add_shared_component_instance',
+    description: TOOL_DESCRIPTIONS['add_shared_component_instance'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string', description: 'SharedComponentModel id (returned by get_shared_components).' },
+        nodeId: { type: 'string', description: 'Pre-minted UUID for the new instance node — required so subsequent calls can target it.' },
+        parentId: { type: 'string', description: 'Parent node id. Omit for page root.' },
+        atIndex: { type: 'number', description: 'Position within parent children. Omit to append.' },
+        name: { type: 'string', description: 'Optional display name for the Layers panel (defaults to the model name).' },
+        props: {
+          type: 'object',
+          description: 'Optional initial instance props (only keys declared in model.properties[]). Use set_component_props later to update.',
+        },
+      },
+      required: ['modelId', 'nodeId'],
+    },
+  },
+  {
+    name: 'set_component_props',
+    description: TOOL_DESCRIPTIONS['set_component_props'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'Shared-component instance node id (must have node._shared.id set).' },
+        props: {
+          type: 'object',
+          description: 'Object whose keys match model.properties[].name. Pass JS expressions ({"formula":"..."}) for dynamic values, plain literals for static.',
+        },
+      },
+      required: ['nodeId', 'props'],
+    },
+  },
 ];
 
 // ─── Node Deletion / Duplication / Movement ───────────────────────────────────
@@ -284,7 +392,7 @@ const textTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
-        text: { type: 'string', description: 'Literal text ("Get Started") or a plain formula expression ("variables[\'UUID\']", "context.item.data.title", "\'$\' + context.item.data.price"). CRITICAL: String literals inside formula expressions MUST use single quotes (\'$\', \'/month\', \'active\'). NEVER use double quotes inside formula strings — they cause Invalid formula errors.' },
+        text: { type: 'string', description: 'Text value. CRITICAL: string literals inside expressions MUST use single quotes (\'$\', \'/month\', \'active\'). Double quotes inside expressions cause parse errors.' },
       },
       required: ['nodeId', 'text'],
     },
@@ -354,7 +462,7 @@ const textTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         icon: {
           type: 'string',
-          description: 'Iconify icon name (static) or a formula expression string (conditional). Static: "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right", etc. Conditional: ternary, e.g. "context?.item?.data?.[\'featured\'] ? \'lucide:check-circle\' : \'lucide:check\'". Color and size are set via set_style.',
+          description: 'Iconify icon name, e.g. "lucide:home", "heroicons:star", "tabler:check", "ph:arrow-right". Color and size are set via set_style.',
         },
       },
       required: ['nodeId', 'icon'],
@@ -377,7 +485,7 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         bg: {
           type: 'string',
-          description: 'Solid color only — theme token, hex, rgb/rgba, or formula expression. For gradients use the gradient param or bgImage.',
+          description: 'Solid color only — theme token, hex, rgb/rgba. For gradients use the gradient param or bgImage.',
         },
         fillOpacity: {
           type: 'number',
@@ -423,67 +531,10 @@ const semanticDesignTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         color: {
           type: 'string',
-          description: 'Text color (theme token, hex, named color) or formula expression.',
+          description: 'Text color — theme token, hex, named color.',
         },
       },
       required: ['nodeId', 'color'],
-    },
-  },
-  {
-    name: 'set_typography',
-    description: TOOL_DESCRIPTIONS['set_typography'],
-    input_schema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'Node ID.' },
-        size: {
-          type: 'number',
-          description: 'Font size in px.',
-        },
-        weight: {
-          type: 'string',
-          enum: ['thin', 'extralight', 'light', 'normal', 'medium', 'semibold', 'bold', 'extrabold', 'black'],
-          description: 'Font weight.',
-        },
-        align: {
-          type: 'string',
-          enum: ['left', 'center', 'right', 'justify'],
-          description: 'Text alignment.',
-        },
-        leading: {
-          type: 'string',
-          enum: ['none', 'tight', 'snug', 'normal', 'relaxed', 'loose', '3', '4', '5', '6', '7', '8', '9', '10'],
-          description: 'Line height. Named scale or numeric (3–10).',
-        },
-        tracking: {
-          type: 'string',
-          enum: ['tighter', 'tight', 'normal', 'wide', 'wider', 'widest'],
-          description: 'Letter spacing.',
-        },
-        italic: { type: 'boolean' },
-        decoration: {
-          type: 'string',
-          enum: ['none', 'underline', 'line-through', 'overline'],
-        },
-        transform: {
-          type: 'string',
-          enum: ['none', 'uppercase', 'lowercase', 'capitalize'],
-        },
-        overflow: {
-          type: 'string',
-          enum: ['truncate', 'clip'],
-          description: '"truncate" = ellipsis, "clip" = hard clip.',
-        },
-        whitespace: {
-          type: 'string',
-          enum: ['normal', 'nowrap', 'pre', 'pre-line', 'pre-wrap', 'break-spaces'],
-        },
-        wordBreak: {
-          type: 'string',
-          enum: ['normal', 'all', 'words', 'keep'],
-        },
-      },
-      required: ['nodeId'],
     },
   },
   {
@@ -504,7 +555,7 @@ const semanticDesignTools: BuilderTool[] = [
         },
         color: {
           type: 'string',
-          description: 'Border color (static) or formula expression (conditional). Static: theme name ("border", "primary", "muted"), or "gray-200", "#hex". Conditional: ternary using \'theme:tokenName\' for colors.',
+          description: 'Border color — theme name ("border", "primary", "muted"), hex, or \'theme:tokenName\'.',
         },
         radius: {
           type: 'number',
@@ -518,10 +569,10 @@ const semanticDesignTools: BuilderTool[] = [
         rightWidth:  { type: 'number', description: 'Right border width in pixels.' },
         bottomWidth: { type: 'number', description: 'Bottom border width in pixels.' },
         leftWidth:   { type: 'number', description: 'Left border width in pixels.' },
-        topColor:    { type: 'string', description: 'Top border color (hex, theme name, or formula).' },
-        rightColor:  { type: 'string', description: 'Right border color (hex, theme name, or formula).' },
-        bottomColor: { type: 'string', description: 'Bottom border color (hex, theme name, or formula).' },
-        leftColor:   { type: 'string', description: 'Left border color (hex, theme name, or formula).' },
+        topColor:    { type: 'string', description: 'Top border color (hex, theme name).' },
+        rightColor:  { type: 'string', description: 'Right border color (hex, theme name).' },
+        bottomColor: { type: 'string', description: 'Bottom border color (hex, theme name).' },
+        leftColor:   { type: 'string', description: 'Left border color (hex, theme name).' },
       },
       required: ['nodeId'],
     },
@@ -533,7 +584,7 @@ const semanticDesignTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId:     { type: 'string', description: 'Node ID.' },
-        boxShadow:  { type: 'string', description: 'Full CSS box-shadow value OR a formula/ternary expression. Static: "0px 4px 20px 0px #000000". Formula for per-item shadow: "context?.item?.data?.featured ? \'0px 12px 25px -5px #7c3aed\' : \'0px 4px 8px 0px #00000026\'".' },
+        boxShadow:  { type: 'string', description: 'Full CSS box-shadow value OR a JS ternary expression. Static: "0px 4px 20px 0px #000000". Per-item: "context?.item?.data?.isActive ? \'0px 12px 25px -5px #000000\' : \'0px 4px 8px 0px #00000026\'".' },
         color:      { type: 'string', description: 'Shadow color (hex or rgba).' },
         blur:       { type: 'number', description: 'Shadow blur radius in px.' },
         spread:     { type: 'number', description: 'Shadow spread in px.' },
@@ -557,32 +608,6 @@ const semanticDesignTools: BuilderTool[] = [
     },
   },
   {
-    name: 'set_spacing',
-    description: TOOL_DESCRIPTIONS['set_spacing'],
-    input_schema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'Node ID.' },
-        p:  { type: 'number', description: 'Padding all sides in px.' },
-        px: { type: 'number', description: 'Horizontal padding (left + right) in px.' },
-        py: { type: 'number', description: 'Vertical padding (top + bottom) in px.' },
-        pt: { type: 'number', description: 'Padding top in px.' },
-        pr: { type: 'number', description: 'Padding right in px.' },
-        pb: { type: 'number', description: 'Padding bottom in px.' },
-        pl: { type: 'number', description: 'Padding left in px.' },
-        m:  { type: 'number', description: 'Margin all sides in px.' },
-        mx: { description: 'Horizontal margin in px, or "auto".' },
-        my: { description: 'Vertical margin in px, or "auto".' },
-        mt: { type: 'number', description: 'Margin top in px.' },
-        mr: { type: 'number', description: 'Margin right in px.' },
-        mb: { type: 'number', description: 'Margin bottom in px.' },
-        ml: { type: 'number', description: 'Margin left in px.' },
-        gap:  { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px.' },
-      },
-      required: ['nodeId'],
-    },
-  },
-  {
     name: 'set_size',
     description: TOOL_DESCRIPTIONS['set_size'],
     input_schema: {
@@ -601,30 +626,6 @@ const semanticDesignTools: BuilderTool[] = [
     },
   },
   {
-    name: 'set_position',
-    description: TOOL_DESCRIPTIONS['set_position'],
-    input_schema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'Node ID.' },
-        position: {
-          type: 'string',
-          enum: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
-          description: 'Position type.',
-        },
-        zIndex: {
-          type: 'number',
-          description: 'Z-index.',
-        },
-        top:    { description: 'Top inset — integer pixels (e.g. 50), percentage string (e.g. "10%"), or formula expression string.' },
-        right:  { description: 'Right inset — integer pixels (e.g. 50), percentage string (e.g. "20%"), or formula expression string.' },
-        bottom: { description: 'Bottom inset — integer pixels (e.g. 80), percentage string (e.g. "10%"), or formula expression string.' },
-        left:   { description: 'Left inset — integer pixels (e.g. 40), percentage string (e.g. "25%"), or formula expression string.' },
-      },
-      required: ['nodeId'],
-    },
-  },
-  {
     name: 'set_transform',
     description: TOOL_DESCRIPTIONS['set_transform'],
     input_schema: {
@@ -635,10 +636,10 @@ const semanticDesignTools: BuilderTool[] = [
         flipX: { type: 'boolean' },
         flipY: { type: 'boolean' },
         translateX: {
-          description: 'Pixels or formula string.',
+          description: 'Pixels (e.g. -50) or percentage string (e.g. "-50%").',
         },
         translateY: {
-          description: 'Pixels or formula string.',
+          description: 'Pixels (e.g. -50) or percentage string (e.g. "-50%").',
         },
       },
       required: ['nodeId'],
@@ -720,19 +721,19 @@ const layoutTools: BuilderTool[] = [
         breakpoint: { type: 'string', enum: ['desktop', 'laptop', 'tablet', 'mobile'], description: 'Target responsive breakpoint. Omit or "desktop" for base styles.' },
         // ── Flex/Grid layout ──────────────────────────────────────────────────
         direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (items-*). Accepts formula string.' },
-        justify: { description: 'justify-content value or Tailwind shorthand (between, around, evenly). Accepts formula string.' },
+        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (items-*).' },
+        justify: { description: 'justify-content value or Tailwind shorthand (between, around, evenly).' },
         self: {
           type: 'string',
           enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'],
-          description: 'Align-self. Accepts formula string.',
+          description: 'Align-self.',
         },
         cursor: {
           type: 'string',
           enum: ['auto', 'default', 'pointer', 'not-allowed', 'grab', 'move', 'text', 'crosshair'],
           description: 'Cursor style on hover.',
         },
-        gridCols: { description: 'Number of columns (integer, 1-12) or fr-unit template string (e.g. \'3fr 2fr\'). Fr strings are written as inline gridTemplateColumns. Switches display to grid automatically.' },
+        gridCols: { description: 'Number of columns (integer, 1-12) or fr-unit template string (e.g. \'3fr 2fr\'). Switches display to grid automatically. For repeat containers, set gridCols on the CONTAINER — the repeat template inherits each cell. Using direction:\'column\' on a repeat container only stacks items vertically; gridCols is required for multi-column grids.' },
         gridRows: { type: 'number', description: 'Number of grid rows (1-6).' },
         gridFlow: {
           type: 'string',
@@ -743,7 +744,7 @@ const layoutTools: BuilderTool[] = [
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behavior.' },
         flex:     { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
         // ── Spacing (padding, margin, gap) ────────────────────────────────────
-        gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px.' },
+        gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px (uniform).' },
         p:   { type: 'number', description: 'Padding all sides in px.' },
         px:  { type: 'number', description: 'Horizontal padding in px.' },
         py:  { type: 'number', description: 'Vertical padding in px.' },
@@ -778,7 +779,7 @@ const layoutTools: BuilderTool[] = [
         textAlign: {
           type: 'string',
           enum: ['left', 'center', 'right', 'justify'],
-          description: 'Text alignment.',
+          description: 'Text alignment — valid ONLY on Text nodes. Setting this on a Box has NO effect (text-align does not cascade to children).',
         },
         leading: {
           type: 'string',
@@ -822,12 +823,55 @@ const layoutTools: BuilderTool[] = [
           type: 'number',
           description: 'Z-index. Writes z-[N] to className.',
         },
-        top:    { description: 'Top inset — pixels (e.g. 8), percentage string (e.g. "50%"), or formula expression.' },
-        right:  { description: 'Right inset — pixels (e.g. 0), percentage string, or formula expression.' },
-        bottom: { description: 'Bottom inset — pixels (e.g. 0), percentage string, or formula expression.' },
-        left:   { description: 'Left inset — pixels (e.g. 0), percentage string, or formula expression.' },
+        top:    { description: 'Top inset — pixels (e.g. 8) or percentage string (e.g. "50%").' },
+        right:  { description: 'Right inset — pixels or percentage string.' },
+        bottom: { description: 'Bottom inset — pixels or percentage string.' },
+        left:   { description: 'Left inset — pixels or percentage string.' },
       },
       required: ['nodeId'],
+    },
+  },
+  {
+    name: 'set_responsive_override',
+    description: TOOL_DESCRIPTIONS['set_responsive_override'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'Node id.' },
+        breakpoint: {
+          type: 'string',
+          enum: ['laptop', 'tablet', 'mobile'],
+          description: 'Breakpoint to override at. Desktop is the base — never use it here.',
+        },
+        field: {
+          type: 'string',
+          description: 'Dot-path under node.responsive[bp]. Examples: "text" (override text), "condition", "props.className", "props.icon", "actions", "animation.enter", "animation.gesture", "map.path".',
+        },
+        value: {
+          description: 'Value to write. Pass a string for text/icon/className, a boolean/object for props, an array for actions, an object for animation/map.',
+        },
+      },
+      required: ['nodeId', 'breakpoint', 'field', 'value'],
+    },
+  },
+  {
+    name: 'clear_responsive_override',
+    description: TOOL_DESCRIPTIONS['clear_responsive_override'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'Node id.' },
+        breakpoint: {
+          type: 'string',
+          enum: ['laptop', 'tablet', 'mobile'],
+          description: 'Breakpoint to clear at.',
+        },
+        field: {
+          type: 'string',
+          description: 'Optional dot-path to clear. Omit to delete the entire breakpoint slice.',
+        },
+      },
+      required: ['nodeId', 'breakpoint'],
     },
   },
 ];
@@ -844,7 +888,7 @@ const logicTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         condition: {
           type: 'string',
-          description: 'JS formula string, e.g. "variables[\'UUID\'] === \'active\'" or "context?.item?.data?.inStock". Pass "" to remove. NEVER pass "true" — that is a no-op; just omit set_condition if the node should always be visible.',
+          description: 'JS expression, e.g. "variables[\'UUID\'] === \'active\'" or "context?.item?.data?.inStock". Pass "" to remove. NEVER pass "true" — that is a no-op; just omit set_condition if the node should always be visible.',
         },
       },
       required: ['nodeId', 'condition'],
@@ -857,7 +901,7 @@ const logicTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
-        mapPath: { type: 'string', description: 'State path to the array, e.g. "variables[\'varId\']" or "collections.UUID.data.items". For nested repeat (sub-list field on each outer item), use "context.item.data.fieldName". For nested repeat over a separate array-of-arrays variable, use "getByIndex(variables[\'FEATURES_UUID\'], context?.item?.data?.index)". Omit mapPath or pass empty string to remove repeat.' },
+        mapPath: { type: 'string', description: 'State path to the array. Use plain dot notation (no optional chaining): "variables[\'varId\']" or "context.item.data.fieldName" for nested repeats. Optional chaining (context?.item) in mapPath breaks scope resolution — use it everywhere else but NOT here. For a separate array-of-arrays variable: "getByIndex(variables[\'UUID\'], context?.item?.data?.index)". Pass empty string to remove repeat.' },
         keyField: { type: 'string', description: 'Field to use as React key. Use "id" when items are objects with an id field. Use "index" when items are plain strings or numbers (primitive arrays).' },
       },
       required: ['nodeId'],
@@ -871,6 +915,10 @@ const logicTools: BuilderTool[] = [
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
         workflowName: { type: 'string', description: 'Name of the workflow to bind, e.g. "onSubmitContactForm".' },
+        trigger: {
+          type: 'string',
+          description: 'Optional — explicitly set the trigger event for this binding (overrides the workflow default). Common values: click, change, submit, valueChange, enterKey, mouseEnter, mouseLeave, swipeLeft, swipeRight, swipeUp, swipeDown, dragStart, dragUpdate, dragEnd, focus, blur, scroll. Or a SC custom-trigger id when binding inside a shared component.',
+        },
       },
       required: ['nodeId', 'workflowName'],
     },
@@ -899,20 +947,39 @@ const logicTools: BuilderTool[] = [
         },
         trigger: {
           type: 'string',
-          enum: ['click', 'change', 'submit', 'created', 'valueChange', 'enterKey'],
-          description: 'When this workflow fires. Default "click".',
+          description: 'When this workflow fires. DOM events: click, change, submit, valueChange, enterKey, dragStart, dragUpdate, dragEnd, mouseEnter, mouseLeave, swipeLeft, swipeRight, swipeUp, swipeDown. Trigger-workflow events: appLoadBefore, appLoad, pageLoadBefore, pageLoad, pageUnload, scroll, resize, keydown, keyup, collectionFetchError. Shared-component lifecycle: execution, created, mounted, beforeUnmount, propertyChange. Or any declared SC custom-trigger id. Default "click".',
         },
-        steps: {
-          type: 'array',
-          description: 'Array of step objects. Each step needs a unique "id" string plus "type" and "config".',
-          items: { type: 'object' },
+        isTrigger: {
+          type: 'boolean',
+          description: 'Mark this workflow as a trigger workflow (runs on app/page lifecycle events instead of user interaction).',
+        },
+        isAppTrigger: {
+          type: 'boolean',
+          description: 'When true, this trigger workflow runs in the app shell (e.g. appLoadBefore, appLoad). Implies isTrigger: true.',
+        },
+        pageScope: {
+          type: 'string',
+          description: 'When set, this trigger workflow only runs on the page with this id (e.g. pageLoad on a specific page). Implies isTrigger: true.',
+        },
+        scope: {
+          type: 'string',
+          enum: ['page', 'global', 'component'],
+          description: 'Workflow storage scope. Default "page" (writes to pageWorkflows). "global" writes to project-level workflows. "component" writes to model.workflows[uuid] — requires componentModelId.',
+        },
+        componentModelId: {
+          type: 'string',
+          description: 'Required when scope is "component" — the SharedComponentModel id whose workflow you are creating.',
+        },
+        folder: {
+          type: 'string',
+          description: 'Optional folder name for organising workflows.',
         },
         bindToNodeId: {
           type: 'string',
           description: 'Optional — immediately binds this workflow to that node after creation.',
         },
       },
-      required: ['name', 'steps'],
+      required: ['name'],
     },
   },
   {
@@ -924,6 +991,107 @@ const logicTools: BuilderTool[] = [
         workflowName: { type: 'string', description: 'Exact name of the workflow to delete.' },
       },
       required: ['workflowName'],
+    },
+  },
+  {
+    name: 'update_workflow_steps',
+    description: TOOL_DESCRIPTIONS['update_workflow_steps'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        workflowName: { type: 'string', description: 'Existing page-scoped workflow name.' },
+        steps: {
+          type: 'array',
+          description: 'Full replacement steps array (same shape as create_workflow.steps).',
+          items: { type: 'object' },
+        },
+      },
+      required: ['workflowName', 'steps'],
+    },
+  },
+  {
+    name: 'add_workflow_step',
+    description: TOOL_DESCRIPTIONS['add_workflow_step'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        workflowId: { type: 'string', description: 'Workflow UUID from the WORKFLOW ROSTER in your message.' },
+        stepId:       { type: 'string', description: 'Unique step ID string, e.g. "s1", "s-digit-1". Must be unique within the entire workflow.' },
+        type:         { type: 'string', enum: ['changeVariableValue', 'resetVariableValue', 'branch', 'multiOptionBranch', 'passThroughCondition', 'forEach', 'whileLoop', 'breakLoop', 'continueLoop', 'navigateTo', 'navigatePrev', 'fetchData', 'graphql', 'fetchCollection', 'updateCollection', 'runJavaScript', 'timeDelay', 'copyToClipboard', 'runProjectWorkflow', 'setFormState', 'resetForm', 'returnValue', 'executeComponentAction', 'pickFile', 'printPdf', 'downloadFileFromUrl', 'createUrlFromBase64', 'encodeFileAsBase64', 'stopPropagation'], description: 'Step type. See per-field descriptions for which params each type uses.' },
+        parentStepId: { type: 'string', description: 'ID of the parent container step. Omit (or null) to add at root level. Only branch, multiOptionBranch, forEach, and whileLoop are valid parents. To add multiple sequential steps at the same level, repeat the same parentStepId + branchKey for each — they are appended in order.' },
+        branchKey:    { type: 'string', description: 'Where inside the parent to insert. Values: "trueBranch" or "falseBranch" (inside a branch); "branches.{matchValue}" (inside a multiOptionBranch — creates the entry if missing); "defaultBranch" (multiOptionBranch fallback — REQUIRED for every multiOptionBranch, add it even with an empty step to make the no-match case explicit); "loopBody" (inside forEach/whileLoop). There is no "null" branchKey.' },
+        // changeVariableValue / resetVariableValue
+        variableName: { type: 'string', description: 'changeVariableValue / resetVariableValue: UUID of the target variable. Use dot-notation "UUID.fieldName" to update one field of an object variable without touching siblings.' },
+        value:        { type: 'string', description: 'changeVariableValue: a JS expression that evaluates to the new value. String literals need quotes: \'hello\' not hello. Booleans: true/false. Numbers: 42. Variable access: variables[\'UUID\']. Compound: variables[\'UUID\'] + 1.' },
+        defaultValue: { type: 'string', description: 'resetVariableValue: optional override default value.' },
+        // branch / multiOptionBranch / whileLoop / passThroughCondition
+        condition:    { type: 'string', description: 'branch / multiOptionBranch / whileLoop / passThroughCondition: JS expression that evaluates to true/false or the match value.' },
+        // forEach
+        listPath:     { type: 'string', description: 'forEach: variable UUID or state path whose value is the array to iterate.' },
+        // navigateTo
+        navPath:      { type: 'string', description: 'navigateTo: internal route path (e.g. "/products") or use navExternalUrl for external.' },
+        navExternalUrl: { type: 'string', description: 'navigateTo: external URL.' },
+        navLinkType:  { type: 'string', description: 'navigateTo: "internal" (default) or "external".' },
+        navNewTab:    { type: 'boolean', description: 'navigateTo: open in new tab.' },
+        navQueryParamsJson: { type: 'string', description: 'navigateTo: JSON string of [{name, value}] query params, e.g. \'[{"name":"slug","value":"my-product"}]\'.' },
+        navReplace:   { type: 'boolean', description: 'navigateTo: replace history entry.' },
+        navDefaultPath: { type: 'string', description: 'navigatePrev: fallback path if no history.' },
+        // runJavaScript
+        code:         { type: 'string', description: 'runJavaScript: the JS function body. Available globals: fns (formula functions — fns.toText, fns.toNumber, fns.formatCurrency, fns.clamp, fns.round, etc.), wwLib (wwLib.variables.get/set, wwLib.navigate.to/prev, wwLib.scroll.to(nodeId) [nodeId = UUID of target page node — use this to scroll to a section], wwLib.collections.refetch, wwLib.clipboard.copy, wwLib.timing.delay, wwLib.workflows.run, wwLib.event.stopPropagation). Return value is stored in context.workflow[stepId].result. Forbidden: fetch, document, window, eval, localStorage, require, import.' },
+        isAsync:      { type: 'boolean', description: 'runJavaScript: defaults true.' },
+        // timeDelay
+        delayMs:      { type: 'number', description: 'timeDelay: delay in milliseconds.' },
+        // copyToClipboard / returnValue
+        copyValue:    { type: 'string', description: 'copyToClipboard: text to copy.' },
+        // fetchData
+        fetchUrl:     { type: 'string', description: 'fetchData: request URL.' },
+        fetchMethod:  { type: 'string', description: 'fetchData: HTTP method (GET/POST/PUT/DELETE/PATCH). Default GET.' },
+        fetchBody:    { type: 'string', description: 'fetchData: raw request body string.' },
+        fetchContentType: { type: 'string', description: 'fetchData: Content-Type header.' },
+        // graphql
+        gqlEndpoint:  { type: 'string', description: 'graphql: endpoint URL.' },
+        gqlQuery:     { type: 'string', description: 'graphql: the GraphQL query or mutation string.' },
+        // fetchCollection / fetchCollectionsParallel / updateCollection
+        collectionId: { type: 'string', description: 'fetchCollection / updateCollection: datasource UUID. For fetching multiple collections in parallel, pass collectionIds instead.' },
+        collectionIds: { type: 'string', description: 'fetchCollection: comma-separated list of datasource UUIDs to refetch in parallel. Replaces fetchCollectionsParallel.' },
+        updateType:   { type: 'string', description: 'updateCollection: "insert", "update", "delete", or "replaceAll".' },
+        collectionData: { type: 'string', description: 'updateCollection: JSON string of the item to insert/update/replace.' },
+        idKey:        { type: 'string', description: 'updateCollection: field name to match for update/delete (e.g. "id").' },
+        idValue:      { type: 'string', description: 'updateCollection: value of idKey to find the target item.' },
+        // runProjectWorkflow
+        projectWorkflowId: { type: 'string', description: 'runProjectWorkflow: name of the workflow to call.' },
+        // setFormState
+        formIsSubmitting: { type: 'boolean', description: 'setFormState: isSubmitting value.' },
+        formIsSubmitted:  { type: 'boolean', description: 'setFormState: isSubmitted value.' },
+        // pickFile
+        pickAccept:   { type: 'string', description: 'pickFile: accepted file types (e.g. "image/*").' },
+        pickMultiple: { type: 'boolean', description: 'pickFile: allow multiple files.' },
+        pickStoreIn:  { type: 'string', description: 'pickFile: variable ID to store picked files array.' },
+        // createUrlFromBase64 / encodeFileAsBase64
+        base64:        { type: 'string', description: 'createUrlFromBase64: base64 string.' },
+        mimeType:      { type: 'string', description: 'createUrlFromBase64: MIME type (e.g. "image/png").' },
+        storeIn:       { type: 'string', description: 'createUrlFromBase64 / encodeFileAsBase64 / pickFile: variable ID to store result.' },
+        dataUrl:       { type: 'string', description: 'encodeFileAsBase64: data URL string.' },
+        // downloadFileFromUrl
+        downloadUrl:   { type: 'string', description: 'downloadFileFromUrl: file URL to download.' },
+      },
+      required: ['workflowName', 'stepId', 'type'],
+    },
+  },
+  {
+    name: 'set_workflow_params',
+    description: TOOL_DESCRIPTIONS['set_workflow_params'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        workflowName: { type: 'string', description: 'Exact name of the workflow to declare params on.' },
+        params: {
+          type: 'array',
+          description: 'Ordered list of typed input parameters. Each: { name: string, type: "string"|"number"|"boolean"|"object"|"array", description?: string, defaultValue?: any }.',
+          items: { type: 'object' },
+        },
+      },
+      required: ['workflowName', 'params'],
     },
   },
   {
@@ -1009,8 +1177,8 @@ const logicTools: BuilderTool[] = [
         },
         scroll: {
           type: 'string',
-          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'blurIn'],
-          description: 'Scroll-triggered enter animation — fires when the element scrolls into the viewport.',
+          enum: ['none', 'fadeIn', 'slideInUp', 'slideInDown', 'slideInLeft', 'slideInLeftSubtle', 'slideInRight', 'riseFade', 'dropIn', 'zoomIn', 'expandIn', 'bounceIn', 'flipInX', 'flipInY', 'flipIn3D', 'tiltIn', 'skewIn', 'skewInY', 'blurIn', 'glowIn', 'rollIn', 'revealUp', 'charFall', 'charBounce'],
+          description: 'Scroll-triggered enter animation — fires when the element scrolls into the viewport. Same enum as enter.',
         },
         scrollDuration: { type: 'number', description: 'Scroll animation duration in ms. Default 500.' },
         scrollDelay: { type: 'number', description: 'Delay before the scroll animation starts (ms).' },
@@ -1056,20 +1224,127 @@ const logicTools: BuilderTool[] = [
         gradientColors: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Array of ≥2 hex colors for an animated flowing gradient background. Automatically sets loop to "gradientDrift". E.g. ["#667eea","#764ba2","#f64f59"]. Web only.',
+          description: 'Array of ≥2 CSS color values (hex, rgba, or theme token) for an animated flowing gradient background. Automatically sets loop to "gradientDrift". E.g. ["#000000","#ffffff"]. Web only.',
         },
         imperativeTrigger: {
           type: 'object',
-          description: 'Re-play a one-shot animation whenever a variable changes (e.g. shake on validation error). watchVar must be a formula expression like "variables[\'UUID\']". Use Date.now() as the variable value to guarantee a change on every trigger.',
+          description: 'Re-play a one-shot animation whenever a variable changes (e.g. shake on validation error). watchVar must be a JS expression like "variables[\'UUID\']". Use Date.now() as the variable value to guarantee a change on every trigger.',
           properties: {
-            type: { type: 'string', enum: ['pulse', 'breathe', 'float', 'shake', 'wiggle', 'wobble', 'swing', 'spin', 'bounce', 'heartbeat', 'flash', 'ripple', 'glowPulse'], description: 'Animation type to replay.' },
-            watchVar: { type: 'string', description: 'Formula expression to watch, e.g. "variables[\'UUID\']".' },
+            type: {
+              type: 'string',
+              description: 'Animation type to replay. Loop types: pulse | breathe | float | shake | wiggle | wobble | swing | spin | ticker | bounce | heartbeat | flash | ripple | glowPulse | gradientDrift. Or any enter type: fadeIn | slideInUp | slideInDown | slideInLeft | slideInLeftSubtle | slideInRight | riseFade | dropIn | zoomIn | expandIn | bounceIn | flipInX | flipInY | flipIn3D | tiltIn | skewIn | skewInY | blurIn | glowIn | rollIn | revealUp | charFall | charBounce.',
+            },
+            watchVar: { type: 'string', description: 'JS expression to watch, e.g. "variables[\'UUID\']".' },
             duration: { type: 'number', description: 'Animation duration in ms. Default 500.' },
+            easing: { type: 'string', description: 'Optional easing curve.' },
           },
           required: ['type', 'watchVar'],
         },
+
+        // ── Advanced surfaces (nested objects, mirror panel sections) ────────
+        tilt: {
+          type: 'object',
+          description: 'Mouse-follow 3D tilt. Properties: { enabled, maxX, maxY, perspective, scale, duration, reset }.',
+        },
+        mouseParallax: {
+          type: 'object',
+          description: 'Cursor-driven parallax shift. Properties: { enabled, strength, axis: "both"|"x"|"y" }.',
+        },
+        focus: {
+          type: 'object',
+          description: 'Animated focus ring (form inputs). Properties: { enabled, color, blur, spread, duration }.',
+        },
+        flip: {
+          type: 'object',
+          description: 'Card flip. Properties: { trigger: "hover"|"click", duration, perspective }.',
+        },
+        parallax: {
+          type: 'object',
+          description: 'Scroll-driven parallax. Properties: { enabled, speed, direction: "vertical"|"horizontal", clamp }.',
+        },
+        scrollProgress: {
+          type: 'object',
+          description: 'Scroll-progress driven property animation. Properties: { enabled, property, from, to, unit, start, end, pin, useWindowScroll, rgb }.',
+        },
+        color: {
+          type: 'object',
+          description: 'Animated color transition. Properties: { enabled, property, from, to, trigger: "enter"|"loop", duration, easing, loop }.',
+        },
+        layout: {
+          type: 'object',
+          description: 'Reanimated layout animation when children reorder. Properties: { enabled, type: "linear"|"spring"|"sequenced"|"fading", duration }.',
+        },
+        morphShape: {
+          type: 'object',
+          description: 'Border-radius morph. Properties: { enabled, from, to, steps[], duration, easing, loop }.',
+        },
+        drag: {
+          type: 'object',
+          description: 'Drag-and-drop. Properties: { enabled, axis: "both"|"x"|"y", bounds: {top,bottom,left,right}, snapBack, springBack, slotHeight, slotWidth, onDragStart, onDragUpdate, onDragEnd, noVisualMove }. Pair with workflows that read event.translationX/Y/percentX/percentY.',
+        },
+        splitText: {
+          type: 'object',
+          description: 'Split text into chars/words/lines and animate each unit. Properties: { text, split: "char"|"word"|"line", type, duration, stagger, delay, easing, className, unitClass }.',
+        },
+        states: {
+          type: 'object',
+          description: 'State-machine animation: snapshots interpolated when watchVar changes. Properties: { watchVar (JS expression), duration, easing, defaultState, states: { stateName: { property: value } } }.',
+        },
+        gesture: {
+          type: 'object',
+          description: 'Swipe gesture (animation-driven swiper / Tinder card stack). Properties: { enabled, swipe, swipeThreshold, velocityThreshold, onSwipeLeft/Right/Up/Down (workflow ids), animationDuration, dragFeedback, loop }. Pair with cycleIndex action steps to advance an index variable.',
+        },
+        particles: {
+          type: 'object',
+          description: 'Particle background effect. Properties: { count, color, background, speed, maxRadius, connectDistance, interactive }.',
+        },
+        noise: {
+          type: 'object',
+          description: 'SVG noise filter. Properties: { baseFrequency, numOctaves, opacity, color, animate, animateDuration, type: "fractalNoise"|"turbulence" }.',
+        },
+        svgStroke: {
+          type: 'object',
+          description: 'SVG stroke draw-on animation. Properties: { enabled, length, duration, delay, easing, loop }.',
+        },
+        gradientAnimation: {
+          type: 'object',
+          description: 'Animated gradient background. Properties: { enabled, type: "linear"|"radial"|"conic", colors[], angle, duration, animateAngle, animateColors, loop }.',
+        },
+        clipPath: {
+          type: 'object',
+          description: 'CSS clip-path morph. Properties: { enabled, from, to, trigger: "enter"|"hover"|"always", duration, easing }.',
+        },
+        mask: {
+          type: 'object',
+          description: 'CSS mask animation. Properties: { enabled, image, size, position, animateSize, duration, easing }.',
+        },
+        pseudoElement: {
+          type: 'object',
+          description: '::before / ::after styling + hover transitions (e.g. animated underlines). Properties: { enabled, target, content, background, width, height, position, top/right/bottom/left, transition, trigger, hoverWidth, hoverOpacity, hoverBackground }.',
+        },
+        timeline: {
+          type: 'array',
+          description: 'Multi-step CSS timeline. Array of { property, from, to, startMs, endMs, easing, loop }.',
+          items: { type: 'object' },
+        },
+        customBezier: {
+          type: 'array',
+          description: 'Cubic-bezier easing override applied to enter/loop. Array of 4 numbers [x1, y1, x2, y2] (each between 0–1).',
+          items: { type: 'number' },
+        },
       },
       required: ['nodeId'],
+      // Phase 4a: schema-enforce required companion params for specific loop types
+      allOf: [
+        {
+          if: { properties: { loop: { enum: ['glowPulse', 'ripple'] } }, required: ['loop'] },
+          then: { required: ['loopColor'] },
+        },
+        {
+          if: { properties: { loop: { const: 'gradientDrift' } }, required: ['loop'] },
+          then: { required: ['gradientColors'] },
+        },
+      ],
     },
   },
   {
@@ -1079,10 +1354,28 @@ const logicTools: BuilderTool[] = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'Node ID.' },
+        trigger: {
+          type: 'string',
+          enum: ['submit', 'change'],
+          description: 'When the rules run. "submit" (default) — only on form submit. "change" — live as the user types.',
+        },
         rules: {
           type: 'array',
-          description: 'Validation rules. E.g. [{"type":"required","message":"Required"},{"type":"email","message":"Invalid email"}].',
-          items: { type: 'object' },
+          description: 'Ordered list of rules. Each rule has type+message; some types require value or formula.',
+          items: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['required', 'email', 'phone', 'url', 'minLength', 'maxLength', 'pattern', 'formula', 'equalsField'],
+                description: 'Rule type. minLength/maxLength → value:number. pattern → value:string regex. formula → formula:"...". equalsField → value:"<otherFieldName>".',
+              },
+              message: { type: 'string', description: 'Error message shown when this rule fails.' },
+              value: { description: 'Rule operand: number for minLength/maxLength, string regex for pattern, string field name for equalsField.' },
+              formula: { type: 'string', description: 'Formula expression evaluated for type:"formula". Truthy = valid, falsy = invalid.' },
+            },
+            required: ['type', 'message'],
+          },
         },
       },
       required: ['nodeId', 'rules'],
@@ -1109,7 +1402,7 @@ const logicTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         disabled: {
           type: ['boolean', 'string'],
-          description: 'true/false to statically disable, or a JS formula string e.g. "variables[\'uuid\'] === \'loading\'" for conditional disabling.',
+          description: 'true/false to disable, or a JS expression for conditional disabling.',
         },
       },
       required: ['nodeId', 'disabled'],
@@ -1124,8 +1417,12 @@ const logicTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         state: {
           type: 'string',
-          enum: ['Loading', 'Empty', 'Default', 'Custom', 'None'],
-          description: '"Loading" = shown during data fetch; "Empty" = shown when list is empty; "Default" = always shown; "None" removes the tag.',
+          enum: ['loading', 'empty', 'default', 'custom', 'none'],
+          description: '"loading" = shown during data fetch; "empty" = shown when list is empty; "default" = always shown; "custom" = use customStateName; "none" removes the tag.',
+        },
+        customStateName: {
+          type: 'string',
+          description: 'When state="custom", the custom state tag name (free-form string).',
         },
       },
       required: ['nodeId', 'state'],
@@ -1143,11 +1440,31 @@ const variableTools: BuilderTool[] = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Display name, e.g. "Show Modal", "Cart Count".' },
-        type: { type: 'string', enum: ['string', 'number', 'boolean', 'object', 'array'] },
-        initialValue: { description: 'Initial value.' },
+        type: {
+          type: 'string',
+          enum: ['string', 'number', 'boolean', 'object', 'array', 'form'],
+          description: 'string, number, boolean, object, array, or form (a structured form-state variable with declared fields[]).',
+        },
+        initialValue: { description: 'Initial value (ignored for type="form" — use fields[] instead).' },
         variableId: {
           type: 'string',
           description: 'Pre-assign a hex UUID (8-4-4-4-12 format, hex characters only). Use this SAME UUID as variableName in create_workflow changeVariableValue steps and in variables[\'UUID\'] bindings in the same batch.',
+        },
+        label: { type: 'string', description: 'Optional human-readable label shown in the right panel.' },
+        description: { type: 'string', description: 'Optional description for documentation.' },
+        saveInLocalStorage: { type: 'boolean', description: 'When true, the variable is persisted to localStorage and rehydrated on page load.' },
+        folder: { type: 'string', description: 'Optional folder name. The executor auto-creates the folder if it does not exist.' },
+        folderId: { type: 'string', description: 'Optional folder id (use when the folder already exists).' },
+        scope: {
+          type: 'string',
+          enum: ['app', 'page', 'component'],
+          description: 'Variable scope. "app" — global app state. "page" (default) — per-page. "component" — local to a shared component (requires componentModelId).',
+        },
+        componentModelId: { type: 'string', description: 'Required when scope="component" — the SharedComponentModel id this variable belongs to.' },
+        fields: {
+          type: 'array',
+          description: 'For type="form": declared fields [{ name, type: "string"|"number"|"boolean", defaultValue? }].',
+          items: { type: 'object' },
         },
       },
       required: ['name', 'type'],
@@ -1161,8 +1478,15 @@ const variableTools: BuilderTool[] = [
       properties: {
         variableId: { type: 'string', description: 'Variable ID (as returned by add_variable or get_variables).' },
         name: { type: 'string', description: 'New display name.' },
-        type: { type: 'string', enum: ['string', 'number', 'boolean', 'object', 'array'], description: 'New type.' },
+        type: { type: 'string', enum: ['string', 'number', 'boolean', 'object', 'array', 'form'], description: 'New type.' },
         initialValue: { description: 'New initial value.' },
+        label: { type: 'string' },
+        description: { type: 'string' },
+        saveInLocalStorage: { type: 'boolean' },
+        folderId: { type: 'string' },
+        fields: { type: 'array', items: { type: 'object' }, description: 'For type="form" — replace the field list.' },
+        scope: { type: 'string', enum: ['app', 'page', 'component'] },
+        componentModelId: { type: 'string', description: 'Required when scope="component".' },
       },
       required: ['variableId'],
     },
@@ -1174,8 +1498,96 @@ const variableTools: BuilderTool[] = [
       type: 'object',
       properties: {
         variableId: { type: 'string', description: 'Variable ID to delete.' },
+        scope: { type: 'string', enum: ['app', 'page', 'component'], description: 'Optional — required for component-scope vars.' },
+        componentModelId: { type: 'string', description: 'Required when scope="component".' },
       },
       required: ['variableId'],
+    },
+  },
+  {
+    name: 'update_variable_initial_value',
+    description: TOOL_DESCRIPTIONS['update_variable_initial_value'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string' },
+        initialValue: { description: 'New initial value.' },
+        scope: { type: 'string', enum: ['app', 'page', 'component'] },
+        componentModelId: { type: 'string' },
+      },
+      required: ['variableId'],
+    },
+  },
+  {
+    name: 'patch_variable_item',
+    description: TOOL_DESCRIPTIONS['patch_variable_item'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string', description: 'Variable ID or name (must be an array variable).' },
+        index: { type: 'number', description: 'Zero-based index of the array item to update.' },
+        fields: { type: 'object', description: 'Partial object — only these keys are merged into array[index]. All other keys in the item are preserved.' },
+      },
+      required: ['variableId', 'index', 'fields'],
+    },
+  },
+  {
+    name: 'patch_variable_items',
+    description: TOOL_DESCRIPTIONS['patch_variable_items'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string', description: 'Variable ID or name (must be an array variable).' },
+        updates: {
+          type: 'array',
+          description: 'List of {index, fields} patches to apply in order.',
+          items: {
+            type: 'object',
+            properties: {
+              index: { type: 'number', description: 'Zero-based index of the item.' },
+              fields: { type: 'object', description: 'Partial object to merge into that item.' },
+            },
+            required: ['index', 'fields'],
+          },
+        },
+      },
+      required: ['variableId', 'updates'],
+    },
+  },
+  {
+    name: 'patch_variable_fields',
+    description: TOOL_DESCRIPTIONS['patch_variable_fields'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string', description: 'Variable ID or name (object variable).' },
+        fields: { type: 'object', description: 'Top-level keys to merge into the variable\'s initialValue object. Only listed keys change.' },
+      },
+      required: ['variableId', 'fields'],
+    },
+  },
+  {
+    name: 'append_variable_item',
+    description: TOOL_DESCRIPTIONS['append_variable_item'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string', description: 'Variable ID or name (must be an array variable).' },
+        item: { description: 'New item to push onto the end of the array.' },
+      },
+      required: ['variableId', 'item'],
+    },
+  },
+  {
+    name: 'remove_variable_item',
+    description: TOOL_DESCRIPTIONS['remove_variable_item'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        variableId: { type: 'string', description: 'Variable ID or name (must be an array variable).' },
+        index: { type: 'number', description: 'Zero-based index of the item to remove.' },
+      },
+      required: ['variableId', 'index'],
     },
   },
 ];
@@ -1192,12 +1604,48 @@ const dataTools: BuilderTool[] = [
         name: { type: 'string', description: 'Human-readable name, e.g. "Products API", "User Profile".' },
         type: { type: 'string', enum: ['rest', 'graphql'], description: 'Data source type.' },
         url: { type: 'string', description: 'REST endpoint URL (required when type is "rest").' },
-        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE'], description: 'HTTP method. Default "GET".' },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], description: 'HTTP method. Default "GET".' },
         endpoint: { type: 'string', description: 'GraphQL endpoint URL (required when type is "graphql").' },
         query: { type: 'string', description: 'GraphQL query string (required when type is "graphql").' },
+        variables: {
+          type: 'object',
+          description: 'GraphQL variables. Pass JSON object.',
+        },
+        headers: {
+          type: 'object',
+          description: 'Request headers as a key→value map.',
+        },
+        body: {
+          description: 'Request body (object/string). For REST POST/PUT/PATCH, prefer a JSON object; the executor stringifies it.',
+        },
+        queryParams: {
+          type: 'object',
+          description: 'URL query params as key→value map.',
+        },
+        auth: {
+          type: 'object',
+          description: 'Auth: { type: "bearer"|"basic"|"apiKey", token?, username?, password?, header? }.',
+        },
+        responsePath: { type: 'string', description: 'Dot-path inside the response to extract before storing. E.g. "data.products".' },
         storeIn: { type: 'string', description: 'Dot-path key inside the response to expose. E.g. "products" to access as collections[\'id\'].data.products.' },
         trigger: { type: 'string', enum: ['mount', 'action'], description: '"mount" = auto-fetch on page load. "action" = only fetch when a workflow step calls fetchCollection. Default "mount".' },
+        triggerActionName: { type: 'string', description: 'Optional named action to bind for trigger="action".' },
+        proxy: { type: 'boolean', description: 'When true, route the request through the project proxy (CORS/server-side fetch).' },
+        sendCredentials: { type: 'boolean', description: 'When true, include cookies (credentials: "include").' },
+        cacheTag: { type: 'string', description: 'GraphQL only — cache invalidation tag.' },
+        cacheTTL: { type: 'number', description: 'GraphQL only — cache time-to-live in milliseconds.' },
+        cacheKeyVars: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'GraphQL only — variable names that participate in the cache key.',
+        },
+        folder: { type: 'string', description: 'Optional folder name. Auto-created if missing.' },
+        folderId: { type: 'string', description: 'Optional folder id when the folder already exists.' },
         dataSourceId: { type: 'string', description: 'Optional: pre-assign a short ID like "products-api". Becomes the collections[\'id\'] key in formulas.' },
+        schema: {
+          type: 'string',
+          description: 'TypeScript-like type string describing the response shape at the path exposed via `storeIn`.',
+        },
       },
       required: ['name', 'type'],
     },
@@ -1213,9 +1661,280 @@ const dataTools: BuilderTool[] = [
       required: ['sourceId'],
     },
   },
+  {
+    name: 'update_data_source_schema',
+    description: TOOL_DESCRIPTIONS['update_data_source_schema'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        sourceId: { type: 'string', description: 'Data source id.' },
+        name: { type: 'string' },
+        type: { type: 'string', enum: ['rest', 'graphql'] },
+        url: { type: 'string' },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] },
+        endpoint: { type: 'string' },
+        query: { type: 'string' },
+        variables: { type: 'object' },
+        headers: { type: 'object' },
+        body: {},
+        queryParams: { type: 'object' },
+        auth: { type: 'object' },
+        responsePath: { type: 'string' },
+        storeIn: { type: 'string' },
+        trigger: { type: 'string', enum: ['mount', 'action'] },
+      },
+      required: ['sourceId'],
+    },
+  },
 ];
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
+// ─── Global formulas ──────────────────────────────────────────────────────────
+
+const formulaTools: BuilderTool[] = [
+  {
+    name: 'add_formula',
+    description: TOOL_DESCRIPTIONS['add_formula'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        formulaId: { type: 'string', description: 'Optional pre-minted id — key in globalFormulas map.' },
+        name: { type: 'string', description: 'Display/function name (no spaces).' },
+        params: {
+          type: 'array',
+          description: 'Positional parameters { name, type: Text|Number|Boolean|Object|Array, testValue? }',
+          items: { type: 'object' },
+        },
+        formula: { type: 'string', description: 'Body expression referencing parameters.' },
+        folder: { type: 'string' },
+        description: { type: 'string' },
+      },
+      required: ['name', 'formula'],
+    },
+  },
+  {
+    name: 'update_formula',
+    description: TOOL_DESCRIPTIONS['update_formula'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        formulaId: { type: 'string', description: 'Key in globalFormulas.' },
+        name: { type: 'string' },
+        params: { type: 'array', items: { type: 'object' } },
+        formula: { type: 'string' },
+        folder: { type: 'string' },
+        description: { type: 'string' },
+      },
+      required: ['formulaId'],
+    },
+  },
+  {
+    name: 'update_formula_body',
+    description: TOOL_DESCRIPTIONS['update_formula_body'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        formulaId: { type: 'string' },
+        formula: { type: 'string', description: 'New body only.' },
+      },
+      required: ['formulaId', 'formula'],
+    },
+  },
+  {
+    name: 'delete_formula',
+    description: TOOL_DESCRIPTIONS['delete_formula'],
+    input_schema: {
+      type: 'object',
+      properties: { formulaId: { type: 'string' } },
+      required: ['formulaId'],
+    },
+  },
+];
+
+const appConfigTools: BuilderTool[] = [
+  {
+    name: 'set_app_config',
+    description: TOOL_DESCRIPTIONS['set_app_config'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        projectAppName: { type: 'string' },
+        appPreviewData: { type: 'object', description: 'Replace global preview data object when set.' },
+        graphqlEndpoint: { type: 'string' },
+        graphqlHeaders: { type: 'object' },
+        graphqlCredentials: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'set_auth_config',
+    description: TOOL_DESCRIPTIONS['set_auth_config'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        patch: {
+          type: 'object',
+          description: 'Partial AuthConfig — merged into existing authConfig.',
+        },
+      },
+      required: ['patch'],
+    },
+  },
+  {
+    name: 'create_folder',
+    description: TOOL_DESCRIPTIONS['create_folder'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['variables', 'workflows', 'data-sources', 'colors'] },
+        name: { type: 'string' },
+        folderId: { type: 'string', description: 'Optional pre-minted folder id (UUID).' },
+        parentId: { type: 'string', description: 'Optional parent folder id.' },
+      },
+      required: ['kind', 'name'],
+    },
+  },
+  {
+    name: 'rename_folder',
+    description: TOOL_DESCRIPTIONS['rename_folder'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['variables', 'workflows', 'data-sources', 'colors'] },
+        folderId: { type: 'string' },
+        name: { type: 'string' },
+      },
+      required: ['kind', 'folderId', 'name'],
+    },
+  },
+  {
+    name: 'delete_folder',
+    description: TOOL_DESCRIPTIONS['delete_folder'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['variables', 'workflows', 'data-sources', 'colors'] },
+        folderId: { type: 'string' },
+      },
+      required: ['kind', 'folderId'],
+    },
+  },
+];
+
+const sharedComponentAuthoringTools: BuilderTool[] = [
+  {
+    name: 'create_shared_component',
+    description: TOOL_DESCRIPTIONS['create_shared_component'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string', description: 'Optional pre-minted model id.' },
+        name: { type: 'string' },
+        folder: { type: 'string' },
+        description: { type: 'string' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'update_shared_component_metadata',
+    description: TOOL_DESCRIPTIONS['update_shared_component_metadata'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string' },
+        name: { type: 'string' },
+        folder: { type: 'string' },
+        description: { type: 'string' },
+        valueVariable: { type: 'string', description: 'Variable UUID key or empty to clear.' },
+      },
+      required: ['modelId'],
+    },
+  },
+  {
+    name: 'delete_shared_component',
+    description: TOOL_DESCRIPTIONS['delete_shared_component'],
+    input_schema: {
+      type: 'object',
+      properties: { modelId: { type: 'string' } },
+      required: ['modelId'],
+    },
+  },
+  {
+    name: 'update_shared_component_properties',
+    description: TOOL_DESCRIPTIONS['update_shared_component_properties'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string' },
+        ops: { type: 'array', items: { type: 'object' }, description: '{ op: add|update|remove, property?, propertyId? }' },
+      },
+      required: ['modelId', 'ops'],
+    },
+  },
+  {
+    name: 'update_shared_component_variables',
+    description: TOOL_DESCRIPTIONS['update_shared_component_variables'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string' },
+        ops: { type: 'array', items: { type: 'object' } },
+      },
+      required: ['modelId', 'ops'],
+    },
+  },
+  {
+    name: 'update_shared_component_formulas',
+    description: TOOL_DESCRIPTIONS['update_shared_component_formulas'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string' },
+        ops: { type: 'array', items: { type: 'object' } },
+      },
+      required: ['modelId', 'ops'],
+    },
+  },
+  {
+    name: 'update_shared_component_triggers',
+    description: TOOL_DESCRIPTIONS['update_shared_component_triggers'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        modelId: { type: 'string' },
+        ops: { type: 'array', items: { type: 'object' } },
+      },
+      required: ['modelId', 'ops'],
+    },
+  },
+  {
+    name: 'enter_shared_component_edit',
+    description: TOOL_DESCRIPTIONS['enter_shared_component_edit'],
+    input_schema: {
+      type: 'object',
+      properties: { modelId: { type: 'string' } },
+      required: ['modelId'],
+    },
+  },
+  {
+    name: 'exit_shared_component_edit',
+    description: TOOL_DESCRIPTIONS['exit_shared_component_edit'],
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'set_instance_controlled',
+    description: TOOL_DESCRIPTIONS['set_instance_controlled'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        instanceId: { type: 'string' },
+        controlled: { type: 'boolean' },
+        varKey: { type: 'string' },
+      },
+      required: ['instanceId', 'controlled'],
+    },
+  },
+];
 
 const themeTools: BuilderTool[] = [
   {
@@ -1232,6 +1951,63 @@ const themeTools: BuilderTool[] = [
         mode: { type: 'string', enum: ['light', 'dark'], description: 'Which color mode. Default "light".' },
       },
       required: ['variable', 'value'],
+    },
+  },
+  {
+    name: 'set_theme_mode',
+    description: TOOL_DESCRIPTIONS['set_theme_mode'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        mode: {
+          type: 'string',
+          enum: ['light', 'dark', 'system'],
+          description: 'Runtime color mode. "system" follows OS preference.',
+        },
+      },
+      required: ['mode'],
+    },
+  },
+  {
+    name: 'apply_theme_preset',
+    description: TOOL_DESCRIPTIONS['apply_theme_preset'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        presetName: {
+          type: 'string',
+          description: 'Name of a built-in theme preset (e.g. "Default", "Dark", "Sunset"). Lists are project-defined.',
+        },
+      },
+      required: ['presetName'],
+    },
+  },
+  {
+    name: 'add_custom_color',
+    description: TOOL_DESCRIPTIONS['add_custom_color'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Display name for the custom color, e.g. "Brand Coral", "Accent Indigo".' },
+        light: { type: 'string', description: 'Light-mode value (hex/rgba).' },
+        dark: { type: 'string', description: 'Dark-mode value (hex/rgba).' },
+        label: { type: 'string', description: 'Optional UI label (defaults to name).' },
+        description: { type: 'string', description: 'Optional documentation note.' },
+        folderId: { type: 'string', description: 'Optional color folder id.' },
+        colorId: { type: 'string', description: 'Optional pre-minted id for the color (slug or UUID).' },
+      },
+      required: ['name', 'light', 'dark'],
+    },
+  },
+  {
+    name: 'delete_custom_color',
+    description: TOOL_DESCRIPTIONS['delete_custom_color'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        colorId: { type: 'string', description: 'Custom color id to remove.' },
+      },
+      required: ['colorId'],
     },
   },
 ];
@@ -1295,6 +2071,23 @@ const pageTools: BuilderTool[] = [
         description: { type: 'string', description: 'Page SEO meta description for search engines.' },
         ogImage: { type: 'string', description: 'Open Graph image URL for social sharing.' },
         onMountWorkflow: { type: 'string', description: 'Name of a workflow to run automatically when the page loads. Must exist in the project — use get_workflows() to check.' },
+        access: {
+          type: 'string',
+          enum: ['public', 'authenticated', 'guest'],
+          description: 'Page access policy. "public" (default) — anyone may view. "authenticated" — only logged-in users (auth.user must be truthy). "guest" — only signed-out users (e.g. login/signup pages). Pair with accessCondition / guestOnly redirects for fine-grained control.',
+        },
+        accessCondition: {
+          type: 'string',
+          description: 'Optional JS expression evaluated when access="authenticated". Must return truthy to allow the user. E.g. "auth?.user?.role === \'admin\'".',
+        },
+        guestOnly: {
+          type: 'boolean',
+          description: 'When true, this page only renders for guests; logged-in users are redirected to the post-login page. Use for /login or /signup screens.',
+        },
+        redirectTo: {
+          type: 'string',
+          description: 'Page id to redirect to when access policy fails (e.g. "/login" for authenticated pages, "/dashboard" for guestOnly pages).',
+        },
       },
     },
   },
@@ -1380,8 +2173,22 @@ const batchTools: BuilderTool[] = [
             name: { type: 'string', description: 'Semantic name for this node.' },
             text: { type: 'string', description: 'Static text content — Text nodes only.' },
             icon: { type: 'string', description: 'Iconify icon name (Icon nodes only, e.g. "lucide:check").' },
-            searchQuery: { type: 'string', description: 'Visual search query for Image/Video nodes.' },
+            searchQuery: { type: 'string', description: 'Visual search query for Image/Video nodes OUTSIDE a repeat template.' },
             bgImage: { type: 'string', description: 'Background image search query for Box nodes.' },
+            loop: { type: 'boolean', description: 'Set to true on the loop template node (the child that repeats). Image/Video children of a loop template must NOT have searchQuery — declare image needs in the parent variable\'s mediaHints instead.' },
+            placeholder: { type: 'string', description: 'Placeholder text for Input/Textarea nodes.' },
+            actions: {
+              type: 'array',
+              description: 'Workflow triggers for this node. One entry per trigger. Mint a UUID per workflowId the same way you mint variable uuids. Only declare actions on truly interactive nodes (buttons, cards that tap, links, inputs). Display-only nodes (output panels, info text, badges) declare none.',
+              items: {
+                type: 'object',
+                properties: {
+                  workflowId: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12) for the workflow stub.' },
+                  trigger: { type: 'string', enum: ['click', 'change', 'submit', 'enterKey', 'valueChange', 'mouseEnter', 'mouseLeave'] },
+                },
+                required: ['workflowId', 'trigger'],
+              },
+            },
             children: { type: 'array', description: 'Child nodes — same structure as this node.' },
           },
           required: ['label'],
@@ -1398,8 +2205,32 @@ const batchTools: BuilderTool[] = [
               uuid: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12 format, hex chars only). Use this SAME UUID in repeat fields as variables[\'UUID\'].' },
               description: { type: 'string', description: 'Brief usage hint for downstream agents — what this variable stores and when it should be updated (e.g. "Left operand — updated after every intermediate calculation result").' },
               folder: { type: 'string', description: 'Folder/group name for organizing variables in the builder panel (e.g. "Calculator", "Cart"). Use the feature name.' },
+              mediaHints: {
+                type: 'array',
+                description: 'For array variables: declare fields that need stock photo search. One entry per image-URL field. The media agent will call patch_variable_items to fill in real URLs.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    field:       { type: 'string', description: 'Field name in each array item that holds the image URL, e.g. "avatarUrl", "photoSrc".' },
+                    searchQuery: { type: 'string', description: 'Visual description for the stock photo search, e.g. "professional headshot portrait".' },
+                  },
+                  required: ['field', 'searchQuery'],
+                },
+              },
             },
             required: ['name', 'type', 'uuid'],
+          },
+        },
+        pageActions: {
+          type: 'array',
+          description: 'Page-lifecycle workflows. Mint a UUID per workflowId. Only include when the page needs logic at this lifecycle event (e.g. fetch on load). Purely presentational pages omit this.',
+          items: {
+            type: 'object',
+            properties: {
+              workflowId: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12) for the workflow stub.' },
+              trigger: { type: 'string', enum: ['pageLoadBefore', 'pageLoad', 'pageUnload', 'scroll', 'resize', 'keydown', 'keyup', 'collectionFetchError'] },
+            },
+            required: ['workflowId', 'trigger'],
           },
         },
         parentId: {
@@ -1434,12 +2265,12 @@ const setStyleTool: BuilderTool[] = [
         breakpoint: { type: 'string', enum: ['desktop', 'laptop', 'tablet', 'mobile'], description: 'Target responsive breakpoint. Omit or "desktop" for base styles. Set to "tablet" or "mobile" to make styles apply only at that breakpoint and smaller (desktop-first cascade).' },
 
         // ── Layout (flex/grid direction, alignment) ───────────────────────────
-        direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (align-items). Accepts formula string.' },
-        justify: { description: 'justify-content value (start, center, end, between, around, evenly). Accepts formula string.' },
+        direction: { type: 'string', enum: ['row', 'column'], description: 'flex-direction — only applies to flex containers. Do NOT combine with gridCols: grid containers ignore flex-direction entirely.' },
+        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (align-items).' },
+        justify: { description: 'justify-content value (start, center, end, between, around, evenly).' },
         self: { type: 'string', enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'], description: 'Self cross-axis alignment (align-self).' },
         cursor: { type: 'string', enum: ['pointer', 'default', 'not-allowed', 'grab', 'crosshair', 'text'], description: 'CSS cursor.' },
-        gridCols: { description: 'Number of columns (integer) or fr-unit template string (e.g. \'3fr 2fr\'). Fr strings are written as inline gridTemplateColumns.' },
+        gridCols: { description: 'grid-template-columns. Switches container to CSS grid. Integer or fr-unit string (e.g. \'3fr 2fr\').' },
         gridRows: { description: 'Number of grid rows.' },
         gridFlow: { type: 'string', enum: ['row', 'col', 'row-dense', 'col-dense'], description: 'grid-auto-flow direction.' },
         colSpan: { description: 'Number of grid columns this item spans.' },
@@ -1447,7 +2278,7 @@ const setStyleTool: BuilderTool[] = [
         flex: { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
 
         // ── Spacing ───────────────────────────────────────────────────────────
-        gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px (number, e.g. 20). Never pass strings like "20px".' },
+        gap: { type: 'number', minimum: 0, description: 'Gap between flex/grid children in px (uniform, e.g. 20). Never pass strings like "20px".' },
         p:   { type: 'number', description: 'Padding all sides in px (number, e.g. 16). Never pass strings like "16px".' },
         px:  { type: 'number', description: 'Horizontal padding (left + right) in px (number, e.g. 32).' },
         py:  { type: 'number', description: 'Vertical padding (top + bottom) in px (number, e.g. 14).' },
@@ -1474,7 +2305,7 @@ const setStyleTool: BuilderTool[] = [
         // ── Typography (Text nodes only) ───────────────────────────────────
         fontSize:      { type: 'number', description: 'Font size in px as a number (e.g. 56 for 56px). Never pass strings like "56px" or Tailwind tokens like "lg" — the builder exclusively uses the text-[Npx] format.' },
         weight:        { type: 'string', enum: ['thin', 'extralight', 'light', 'normal', 'medium', 'semibold', 'bold', 'extrabold', 'black'], description: 'Font weight.' },
-        textAlign:     { type: 'string', enum: ['left', 'center', 'right', 'justify'], description: 'Text alignment.' },
+        textAlign:     { type: 'string', enum: ['left', 'center', 'right', 'justify'], description: 'Text alignment — valid ONLY on Text nodes. Setting this on a Box has NO effect (text-align does not cascade to children).' },
         leading:       { type: 'string', description: 'Line height (tight, snug, normal, relaxed, loose or number).' },
         tracking:      { type: 'string', description: 'Letter spacing (tighter, tight, normal, wide, wider, widest).' },
         italic:        { type: 'boolean', description: 'Italic text.' },
@@ -1497,7 +2328,7 @@ const setStyleTool: BuilderTool[] = [
         pointerEvents: { type: 'string', enum: ['none', 'auto'], description: 'Pointer events.' },
 
         // ── Background ────────────────────────────────────────────────────────
-        bg:          { type: 'string', description: 'Solid color only — theme token, hex, rgb/rgba, or formula. For gradients use the gradient param or bgImage.' },
+        bg:          { type: 'string', description: 'Solid color only — theme token, hex, rgb/rgba. For gradients use the gradient param or bgImage.' },
         fillOpacity: { type: 'number', description: 'Background fill opacity 0-100.' },
         bgImage:     { type: 'string', description: 'Background-image URL or CSS gradient string (e.g. linear-gradient(...)). Do NOT wrap in url() — the executor handles that for URLs automatically.' },
         bgSize:      { type: 'string', description: 'background-size (cover, contain, auto, CSS value).' },
@@ -1513,12 +2344,12 @@ const setStyleTool: BuilderTool[] = [
         },
 
         // ── Text Color ────────────────────────────────────────────────────────
-        color: { type: 'string', description: 'Text/icon color (theme token, hex, formula). Theme tokens: foreground, primary, muted-foreground, etc.' },
+        color: { type: 'string', description: 'Text/icon color — theme token, hex. Theme tokens: foreground, primary, muted-foreground, etc.' },
 
         // ── Border ────────────────────────────────────────────────────────────
         borderWidth: { description: 'Border width in px (number) or 0 to remove.' },
         borderStyle: { type: 'string', enum: ['solid', 'dashed', 'dotted', 'none'], description: 'Border style.' },
-        borderColor: { type: 'string', description: 'Border color (theme token, hex, formula).' },
+        borderColor: { type: 'string', description: 'Border color — theme token or hex.' },
         radius:    { description: 'Border radius in px (number, e.g. 8 = rounded-[8px]). IMPORTANT: pair with overflow:"clip" to clip child content.' },
         radiusTL:  { description: 'Top-left radius px.' },
         radiusTR:  { description: 'Top-right radius px.' },
@@ -1559,6 +2390,20 @@ const setStyleTool: BuilderTool[] = [
         flipY:      { type: 'boolean', description: 'Flip vertically (scaleY(-1)).' },
         translateX: { description: 'Horizontal translate (number = px or CSS string).' },
         translateY: { description: 'Vertical translate (number = px or CSS string).' },
+
+        // ── Batched responsive overrides ──────────────────────────────────────
+        // Use this instead of making 3-4 separate set_style calls per node.
+        // Each key is a breakpoint; the value is a style object with the same
+        // properties as the base call (excluding nodeId and breakpoints itself).
+        breakpoints: {
+          type: 'object',
+          description: 'Apply responsive overrides for multiple breakpoints in one call. Keys: laptop, tablet, mobile. Each value is a style object with the same properties as the base call. ALWAYS use this instead of making separate set_style calls per breakpoint.',
+          properties: {
+            laptop: { type: 'object', additionalProperties: true, description: 'Styles applied at laptop breakpoint and smaller.' },
+            tablet: { type: 'object', additionalProperties: true, description: 'Styles applied at tablet breakpoint and smaller.' },
+            mobile: { type: 'object', additionalProperties: true, description: 'Styles applied at mobile breakpoint and smaller.' },
+          },
+        },
       },
       required: ['nodeId'],
     },
@@ -1582,11 +2427,16 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
   // Style — semantic design controls (mirror right-panel sections)
   ...semanticDesignTools,
   ...layoutTools,
+  // Compound styling — single-call multi-property setter
+  ...setStyleTool,
   // Behavior — logic, animations, forms
   ...logicTools,
   // State — variables and data sources
   ...variableTools,
   ...dataTools,
+  ...formulaTools,
+  ...appConfigTools,
+  ...sharedComponentAuthoringTools,
   // Theme
   ...themeTools,
   // Pages
@@ -1607,11 +2457,12 @@ export const ALL_BUILDER_TOOLS: BuilderTool[] = [
  *  - set_icon_src → icon name set by tree manifest or media agent; color/size via set_style. */
 export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
   ...pageTools.filter(t => t.name === 'switch_page'),
-  // Exclude set_submit (form behavior), set_input_props (input structure), set_spacing (merged into set_layout) from styling phase
-  // Note: set_typography and set_size are kept as backward-compat aliases in Phase 3 (single-agent edit mode)
+  // Exclude set_submit (form behavior), set_input_props (input structure) from styling phase
   ...semanticDesignTools
-    .filter(t => !['set_submit', 'set_input_props', 'set_spacing'].includes(t.name)),
+    .filter(t => !['set_submit', 'set_input_props'].includes(t.name)),
   ...layoutTools,
+  // Compound styling — preferred for >=3 visual properties at once
+  ...setStyleTool,
   ...logicTools.filter(t => ['set_condition', 'set_animation'].includes(t.name)),
   // set_icon_src for Phase 3: icon name only (color/size handled via set_style)
   ...textTools.filter(t => t.name === 'set_icon_src'),
@@ -1621,8 +2472,7 @@ export const PHASE3_BUILDER_TOOLS: BuilderTool[] = [
 /** Phase W (workflow) tools — runs in parallel with Phase 3 after structure is built. */
 export const PHASE_W_TOOLS: BuilderTool[] = [
   ...pageTools.filter(t => t.name === 'switch_page'),
-  ...readTools.filter(t => ['get_variables', 'get_workflows'].includes(t.name)),
-  ...logicTools.filter(t => ['create_workflow', 'bind_action'].includes(t.name)),
+  ...logicTools.filter(t => ['add_workflow_step', 'update_workflow_steps', 'set_workflow_params', 'delete_workflow'].includes(t.name)),
 ];
 
 // ─── Parallel Agent Tool Collections ─────────────────────────────────────────
@@ -1632,30 +2482,25 @@ export const STRUCTURE_AGENT_TOOLS: BuilderTool[] = [
   ...batchTools, // generate_structure (includes variables array)
 ];
 
-/** Binding Agent — connects data to UI nodes (text, repeat, condition, disabled, icon name). */
+/** Binding Agent — connects data to UI nodes (text, repeat, condition, disabled, icon name).
+ *  get_shared_components: needed to read internal node IDs for SC instance overrides.
+ *  set_component_props: sets declared property overrides on SC instances (Path 1). */
 export const BINDING_AGENT_TOOLS: BuilderTool[] = [
+  ...readTools.filter(t => t.name === 'get_shared_components'),
+  ...addTools.filter(t => t.name === 'set_component_props'),
   ...textTools.filter(t => ['set_text', 'set_src'].includes(t.name)),
   ...logicTools.filter(t => ['set_condition', 'set_repeat', 'set_disabled'].includes(t.name)),
   ...textTools.filter(t => t.name === 'set_icon_src'),
 ];
 
-// ─── Styling Sub-Agent Tool Collections (3-way parallel split) ───────────────
-
-/** Layout Sub-Agent — layout, spacing, sizing, typography, position, overflow, transform. */
-export const LAYOUT_AGENT_TOOLS: BuilderTool[] = [
-  ...layoutTools, // set_layout (includes layout, spacing, size, typography params)
-  ...semanticDesignTools.filter(t => ['set_overflow'].includes(t.name)),
-  ...semanticDesignTools.filter(t => t.name === 'set_transform'),
+/** Data Agent — owns project-level datasource creation (REST + GraphQL).
+ *  Runs in parallel with the per-page UI agents. Predicted dataSourceIds are
+ *  passed through from the planner / structure step so binders can reference
+ *  collections['…'] in formulas before this agent finishes. */
+export const DATA_AGENT_TOOLS: BuilderTool[] = [
+  ...readTools.filter(t => ['get_variables', 'get_data_sources'].includes(t.name)),
+  ...dataTools, // add_data_source, delete_data_source, update_data_source_schema
 ];
-
-/** Colors Sub-Agent — backgrounds, text color, borders, shadows, opacity, animation. */
-export const COLORS_AGENT_TOOLS: BuilderTool[] = [
-  ...semanticDesignTools.filter(t => ['set_background', 'set_text_color', 'set_border', 'set_shadow', 'set_opacity'].includes(t.name)),
-  ...logicTools.filter(t => t.name === 'set_animation'),
-];
-
-/** Typography + Animation Sub-Agent — removed (merged into layout + colors agents). */
-export const TYPO_ANIM_AGENT_TOOLS: BuilderTool[] = [];
 
 // ─── Merged Styling Agent Tool Collections ────────────────────────────────────
 
@@ -1666,7 +2511,8 @@ export const STYLING_AGENT_TOOLS: BuilderTool[] = [
   ...setStyleTool,
 ];
 
-/** Animation Agent — set_animation for loop/enter/exit/hover/press. */
+/** Animation Agent — set_animation only.
+ *  No read tools: the full page tree chunk is already in the user message. */
 export const ANIMATION_AGENT_TOOLS: BuilderTool[] = [
   ...logicTools.filter(t => t.name === 'set_animation'),
 ];
@@ -1679,5 +2525,41 @@ export const MEDIA_AGENT_TOOLS: BuilderTool[] = [
   ...assetTools, // search_images, search_videos, search_icons
   ...textTools.filter(t => ['set_src', 'set_icon_src'].includes(t.name)),
   ...semanticDesignTools.filter(t => t.name === 'set_background'),
+  // patch_variable_items — used for loop Image/Video nodes to inject real URLs into array variable items
+  ...variableTools.filter(t => t.name === 'patch_variable_items'),
+];
+
+/** Combined Agent — merges styling + animation + workflows + binding into one agent.
+ *  Used when planner picks dispatchMode "combined_per_page" or "global_combined".
+ *  Tool surface = union of all four families. Families actually used are controlled
+ *  by the system prompt (buildCombinedPageAgentPrompt) and the planner's agents keys. */
+export const COMBINED_AGENT_TOOLS: BuilderTool[] = [
+  // Read (get_workflows intentionally excluded — combined agents know their workflow names from create_workflow results)
+  ...readTools.filter(t => ['get_variables', 'get_formulas'].includes(t.name)),
+  // Styling
+  ...setStyleTool,
+  // Animation
+  ...logicTools.filter(t => t.name === 'set_animation'),
+  // Workflows
+  ...pageTools.filter(t => t.name === 'switch_page'),
+  ...logicTools.filter(t => ['create_workflow', 'add_workflow_step', 'bind_action', 'update_workflow_steps', 'set_workflow_params'].includes(t.name)),
+  // Binding — set_src included so the agent can bind per-item image sources inside repeat templates
+  ...textTools.filter(t => ['set_text', 'set_src', 'set_icon_src'].includes(t.name)),
+  ...logicTools.filter(t => ['set_condition', 'set_repeat', 'set_disabled'].includes(t.name)),
+];
+
+/** Shared Components Agent — edits EXISTING SC models only (enter/exit scope + primitives).
+ *  SC shells are pre-minted by the structure step; this agent is NOT involved in creation.
+ *  create_shared_component excluded — this agent never creates SC models.
+ *  set_icon_src excluded — icon names are managed by the media/binding agents.
+ *  add_shared_component_instance excluded — placement done by structure. */
+export const SC_AGENT_TOOLS: BuilderTool[] = [
+  ...readTools.filter(t => ['get_shared_components', 'get_variables'].includes(t.name)),
+  ...sharedComponentAuthoringTools.filter(t => t.name !== 'create_shared_component'),
+  // Primitives allowed inside the enter/exit scope:
+  ...addTools.filter(t => t.name === 'add_component'),
+  ...setStyleTool,
+  ...textTools.filter(t => ['set_text', 'set_src'].includes(t.name)),
+  ...logicTools.filter(t => ['set_repeat', 'set_condition', 'set_animation', 'create_workflow', 'add_workflow_step', 'bind_action', 'update_workflow_steps'].includes(t.name)),
 ];
 

@@ -45,14 +45,17 @@ export function emitChangeVariableValue(step: ChangeVarStep, symbols: SymbolMap)
   const cfg = step.config ?? {};
   const nameOrUuid = cfg.variableName ?? '';
   const rawValue = cfg.value;
-  const ident = symbols.vars.get(nameOrUuid) ?? toIdent(nameOrUuid);
-  // Skip if no valid variable name — generates broken syntax otherwise
-  if (!ident) {
+  // Declared variables are stored with their camelCase identifier key (consistent with JSX dot-notation reads).
+  // Undeclared variables (not in symbols.vars) are stored with the original name as a quoted key
+  // because JSX reads them via bracket notation: state.variables['original-name'].
+  const ident = symbols.vars.get(nameOrUuid);
+  if (!ident && !nameOrUuid) {
     return `/* changeVariableValue: skipped — no variableName configured */`;
   }
   // Use rewritePropValue — it already handles formula/js with IIFE wrapping for multi-statement code
   const finalValue = rewritePropValue(rawValue, symbols);
-  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${ident}: ${finalValue} } }));`;
+  const keyExpr = ident ?? JSON.stringify(nameOrUuid); // camelCase for declared, quoted original for undeclared
+  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${keyExpr}: ${finalValue} } }));`;
 }
 
 // ── fetchCollection ───────────────────────────────────────────────────────────
@@ -373,11 +376,12 @@ export function emitPassThrough(step: Record<string, unknown>, symbols: SymbolMa
 export function emitResetVariableValue(step: Record<string, unknown>, symbols: SymbolMap): string {
   const cfg = step.config as Record<string, unknown> | undefined ?? {};
   const nameOrUuid = cfg.variableName as string ?? '';
-  const ident = symbols.vars.get(nameOrUuid) ?? toIdent(nameOrUuid);
-  if (!ident) return `/* resetVariableValue: skipped — no variableName configured */`;
+  if (!nameOrUuid) return `/* resetVariableValue: skipped — no variableName configured */`;
+  const ident = symbols.vars.get(nameOrUuid);
+  const keyExpr = ident ?? JSON.stringify(nameOrUuid);
   const def = cfg.defaultValue;
   const defaultExpr = def !== undefined ? rewritePropValue(def, symbols) : 'undefined';
-  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${ident}: ${defaultExpr} } }));`;
+  return `useStore.setState(s => ({ ...s, variables: { ...s.variables, ${keyExpr}: ${defaultExpr} } }));`;
 }
 
 // ── fetchData ────────────────────────────────────────────────────────────────

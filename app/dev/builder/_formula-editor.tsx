@@ -10,7 +10,7 @@
  *   Header:   label | Formula ▾ | Unbind | ↗ | ×
  *   Input:    monospace formula textarea
  *   Preview:  Current value  |  Expected format ?
- *   Tabs:     {x} Variables  |  ≡ Data  |  ƒ Formulas
+ *   Tabs:     {x} Variables  |  ≡ Data  |  Auth
  *   Body:     Searchable collapsible function categories or variable tree
  *   Footer:   Operators bar  =  !=  and  or  +  -  *
  */
@@ -30,7 +30,7 @@ export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, 
   BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection, AuthDataSection,
   type VarRowItem } from './_formula-editor-tabs';
 import {
-  Tooltip, VariableTree, CollectionEntry, FunctionLibrary,
+  Tooltip, VariableTree, CollectionEntry,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
   SharedComponentContextSection, AuthDataSection, ParametersSection,
@@ -96,7 +96,7 @@ import { isJsBoundValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'formulas' | 'quick' | 'workflow' | 'auth';
+type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth';
 
 export interface FormulaEditorProps {
   label: string;
@@ -1494,7 +1494,6 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           ...(showQuickTab ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
           { id: 'data' as Tab, icon: '≡', label: 'Data' },
-          { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
           { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
@@ -1516,7 +1515,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder={tab === 'formulas' ? 'Search functions…' : 'Search variables…'}
+          placeholder='Search variables…'
           style={{
             width: '100%', boxSizing: 'border-box', background: '#1f2937',
             border: '1px solid #374151', borderRadius: 3, color: '#d1d5db',
@@ -1555,9 +1554,6 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {tab === 'data' && (
           <CollectionsDataTab onInsert={insertChip} search={search} />
-        )}
-        {tab === 'formulas' && (
-          <FunctionLibrary onInsert={insertAtCursor} onInsertFn={insertFunction} search={search} globalFormulas={globalFormulas} />
         )}
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>

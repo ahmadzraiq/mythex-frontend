@@ -101,6 +101,14 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
     out = out.replace(/\$index\b/g, 'index');
   }
 
+  // Form validation error state — engine stores errors as local.data.form.fields.X.isValid
+  // In the exported app, this maps to RHF's errors object (errors.X?.message)
+  // Note: `isValid` in this engine context actually stores the ERROR MESSAGE, not a boolean
+  out = out.replace(
+    /(?:state\??\.)?local\??\.data\??\.form\??\.fields\??\.?(\w+)\??\.isValid/g,
+    (_, field) => `(errors as any)?.[${JSON.stringify(field)}]?.message`,
+  );
+
   // context?.component?.* — engine self-prop reference not available post-inline; substitute undefined
   // Consume the entire chain after context?.component to avoid dangling ?.something
   out = out.replace(/\bcontext\??\.component(?:\??\.(?:[a-zA-Z_$][a-zA-Z0-9_$]*)|\??\[[^\]]*\])*/g, 'undefined');
@@ -159,6 +167,20 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
   });
   // Fallback: bare `local?.` with no identifier after (edge case)
   out = out.replace(/(?<![.\w])\blocal\?\./g, 'state.local?.');
+
+  // FormContainer live state: state.local?.data?.form?.* → RHF reactive vars
+  // These are generated after `local.*` → `state.local?.*` rewrites above.
+  // formData: live field values from form.watch()
+  out = out.replace(/\bstate\.local\?\.data\?\.form\?\.formData\b/g, '_formData');
+  // isSubmitted: from RHF formState
+  out = out.replace(/\bstate\.local\?\.data\?\.form\?\.isSubmitted\b/g, '_formIsSubmitted');
+  // Aggregate fields object → build from RHF errors (only covers error fields; valid fields absent).
+  // isValid maps to the error message string (matching SDUI engine's convention) or false if no message.
+  out = out.replace(
+    /\bstate\.local\?\.data\?\.form\?\.fields\b/g,
+    // eslint-disable-next-line no-useless-escape
+    '(Object.fromEntries(Object.entries(form?.formState?.errors??{}).map(([_fk,_fv]):[string,{isValid:unknown}]=>[_fk,{isValid:(_fv as any)?.message||false}])))',
+  );
 
   // route.* or route?.* → state.route.*
   out = out.replace(/\broute\??\./, 'state.route?.');
@@ -308,7 +330,7 @@ function rewriteTemplate(template: string, symbols: SymbolMap, inMapScope: boole
  * When inMapScope=true, paths starting with "item" resolve to the loop variable `_item`.
  */
 export function pathToExpr(path: string, symbols: SymbolMap, inMapScope = false): string {
-  // Check if it's a variable reference by UUID
+  // Check if it's a variable reference by UUID — resolved to camelCase ident for dot-notation access
   if (symbols.vars.has(path)) {
     return `state.variables.${symbols.vars.get(path)}`;
   }

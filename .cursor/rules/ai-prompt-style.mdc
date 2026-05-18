@@ -1,0 +1,67 @@
+---
+description: Standard for writing AI agent prompts and tool descriptions in the builder system
+globs: lib/ai/**,app/api/ai/**
+alwaysApply: false
+---
+
+# AI Prompt & Tool-Description Standard
+
+## Principle 0 — The engine matches standard web. No invented restrictions.
+
+HTML, CSS, React, JavaScript, and Tailwind are the shared vocabulary. If something is valid CSS (e.g. background and box-shadow on a text element, `display: grid` on any block, opacity on anything), our engine must respect it. If the engine drops or rewrites that value, the fix is in the engine — NOT in adding a prompt rule or validator that codifies the invented restriction.
+
+This decides where every rule belongs:
+
+- **Invented restriction** (engine drops valid CSS) → fix the engine, delete any prompt rule that taught the restriction.
+- **Real web/React/CSS/Tailwind fact** → delete the prompt rule. Claude already knows it.
+- **System-specific fact** (UUID variable access, our workflow step names, our trigger names, `{{variables['UUID']}}` template syntax) → keep in the prompt.
+
+## Three ownership zones
+
+| Zone | File(s) | Owns |
+|---|---|---|
+| **Tool schema** | `lib/ai/builder-tools.ts` `description` + per-property `description` | Parameter shapes, value constraints, what each field does. Everything needed to call ONE tool correctly. |
+| **Executor validators** | `lib/ai/tool-executor.ts` | System-specific enforceable rules only: multiOptionBranch coverage, navigateTo route in pages list, unknown step type, UUID format, set_text on void HTML elements. Validators do NOT codify invented CSS restrictions. |
+| **Agent prompts** | `lib/ai/agents/*/prompt.ts` | Which tools this agent uses. System-specific facts (UUID access, trigger names, REPEAT/CONDITION tree annotations). References to shared snippets only. |
+
+## Prompt must NOT contain
+
+- General programming knowledge: JS syntax, async/await, regex, JSON structure, ECMAScript primer, "what `Math.max` does".
+- General design guidance: contrast theory, accessibility, when to use a grid, Tailwind class names.
+- Domain content: `Cart`, `Product`, `Vendure`, `Tinder cards`, `Carousel`. This is an app-agnostic builder.
+- **Tool-surface re-statement.** If the rule names a tool's parameters or value constraints → tool schema.
+- **Invented CSS restrictions.** Tables like "Text → typography only, skip background/shadow/width" encode artificial limits. Delete them and fix the engine.
+- **Skill recipes.** "If you see X then do Y" paragraphs: (a) executor-checkable → validator; (b) genuine taste decision → ONE terse bullet; (c) general knowledge → delete.
+- Duplication. If two prompts say the same thing → shared module in `lib/ai/agents/shared/`.
+
+## Self-test for any new prompt line
+
+1. Could Claude derive this from CSS / React / Tailwind / JS? → **cut**
+2. Does it name a tool's parameter or constraint? → **tool schema**
+3. Does it encode an artificial restriction on valid CSS? → **fix engine, cut rule**
+4. Is it a system-specific concept (UUID, step type, trigger name)? → **keep**
+
+## No self-correction
+
+Executor validators fail the tool with a clear error. That is the end of that operation. Prompts must not lean on "the AI will retry".
+
+## Audit checklist — tool description
+
+- [ ] ≤ 3 lines unless the schema is genuinely novel
+- [ ] Describes write target and output (no general JS/CSS tutorials)
+- [ ] Per-field `description` covers value constraints (not prose in the agent prompt)
+- [ ] Node-type constraints backed by an executor validator, not just described in prose
+
+## Audit checklist — agent prompt
+
+- [ ] Header block lists exact tool names from `lib/ai/builder-tools.ts` exports
+- [ ] System-specific facts only (UUIDs, our trigger names, REPEAT/CONDITION annotations)
+- [ ] Shared snippets imported from `lib/ai/agents/shared/` (not copy-pasted)
+- [ ] Dynamic block: only per-request context (page name, app description)
+- [ ] No general-knowledge paragraphs
+- [ ] No per-component CSS restriction table
+- [ ] Length ≤ 80 lines; if over, add an executor validator so the prompt can shrink
+
+## Migration rule
+
+Any time a prompt grows beyond ~80 lines, an executor validator must be added or extended so the prompt can shrink back. The validator catches the runtime mistake; the prompt loses the prose that explained it.

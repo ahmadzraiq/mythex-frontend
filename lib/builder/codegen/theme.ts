@@ -12,6 +12,7 @@
 import type { CodegenCtx } from './types';
 import { NAMED_KEYFRAMES } from './animations';
 import themeJson from '@/config/theme.json';
+import { resolveProjectFonts } from './files/static-files';
 
 function hexToRgb(hex: string): string {
   const h = hex.replace('#', '');
@@ -62,8 +63,15 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   const themeColorsDark  = (tj.colorsDark  as Record<string, string> | undefined) ?? {};
 
   // Merge: base → user overrides (user overrides win)
-  const lightVars = { ...baseLight, ...(store.themeOverrides ?? {}) };
+  // Strip font-body / font-heading from themeOverrides — those are handled separately as CSS vars below.
+  const rawLightOverrides = { ...(store.themeOverrides ?? {}) } as Record<string, string>;
+  delete rawLightOverrides['font-body'];
+  delete rawLightOverrides['font-heading'];
+  const lightVars = { ...baseLight, ...rawLightOverrides };
   const darkVars  = { ...baseDark,  ...(store.themeDarkOverrides ?? {}) };
+
+  // Font resolution
+  const { bodyVarKey, headingVarKey } = resolveProjectFonts(ctx);
 
   lines.push(`@tailwind base;`);
   lines.push(`@tailwind components;`);
@@ -109,6 +117,38 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   }
 
   lines.push(`  }`);
+  lines.push('');
+
+  // Typography base styles.
+  // IMPORTANT: --font-body / --font-heading are declared on `body` (NOT :root) so that
+  // var(--font-body) can reference --font-space-grotesk which next/font sets via a
+  // class on <body>. A :root declaration cannot see a descendant's custom property, so
+  // the reference would be IACVT (Invalid At Computed Value Time) and fall back to system-ui.
+  lines.push(`  body {`);
+  if (bodyVarKey) {
+    lines.push(`    --font-body:    var(--${bodyVarKey});`);
+  }
+  lines.push(`    font-family: var(--font-body, system-ui), system-ui, -apple-system, sans-serif;`);
+  lines.push(`    -webkit-font-smoothing: antialiased;`);
+  lines.push(`    -moz-osx-font-smoothing: grayscale;`);
+  lines.push(`  }`);
+  lines.push('');
+  lines.push(`  h1, h2, h3, h4, h5, h6 {`);
+  if (headingVarKey) {
+    lines.push(`    --font-heading: var(--${headingVarKey});`);
+  }
+  lines.push(`    font-family: var(--font-heading, var(--font-body, system-ui)), system-ui, -apple-system, sans-serif;`);
+  // Reset browser-default heading margins — Gluestack's Text/Heading components apply my-0
+  // as a base class, so removing the margin here keeps spacing consistent with the builder.
+  lines.push(`    margin: 0;`);
+  lines.push(`  }`);
+  lines.push('');
+  // RNW's Text component always applies whiteSpace:'pre-wrap' as a base style.
+  // Mirror this in the exported app so text wrapping behaviour is identical.
+  lines.push(`  span, p, h1, h2, h3, h4, h5, h6, label {`);
+  lines.push(`    white-space: pre-wrap;`);
+  lines.push(`  }`);
+
   lines.push(`}`);
   lines.push('');
 

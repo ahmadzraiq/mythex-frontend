@@ -20,6 +20,49 @@ import { rewritePropValue, rewriteTextValue, rewriteFormula, pathToExpr } from '
 import { resolveExpr } from './actions/misc';
 import type { SymbolMap } from './types';
 
+/** Convert an SDUI _validation array into react-hook-form register rules code string */
+export function buildRhfRulesStr(validation: unknown): string | null {
+  // Support both flat array format AND { trigger, rules: [...] } object format
+  let rulesArray: unknown = validation;
+  if (validation && typeof validation === 'object' && !Array.isArray(validation)) {
+    rulesArray = (validation as Record<string, unknown>).rules ?? [];
+  }
+  if (!Array.isArray(rulesArray) || rulesArray.length === 0) return null;
+  const parts: string[] = [];
+  for (const v of rulesArray as Array<{ rule: string; message?: string; value?: unknown; formula?: string }>) {
+    if (!v?.rule) continue;
+    const msg = JSON.stringify(v.message ?? 'Invalid value');
+    switch (v.rule) {
+      case 'required':
+        parts.push(`required: ${JSON.stringify(v.message ?? 'This field is required')}`);
+        break;
+      case 'formula':
+        // Custom formula validation: `value === true`, `value.length > 0`, etc.
+        if (v.formula) parts.push(`validate: (value: unknown) => (${v.formula}) || ${msg}`);
+        break;
+      case 'email':
+        parts.push(`pattern: { value: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/, message: ${msg} }`);
+        break;
+      case 'minLength':
+        parts.push(`minLength: { value: ${Number(v.value ?? 1)}, message: ${msg} }`);
+        break;
+      case 'maxLength':
+        parts.push(`maxLength: { value: ${Number(v.value ?? 255)}, message: ${msg} }`);
+        break;
+      case 'min':
+        parts.push(`min: { value: ${Number(v.value ?? 0)}, message: ${msg} }`);
+        break;
+      case 'max':
+        parts.push(`max: { value: ${Number(v.value ?? 100)}, message: ${msg} }`);
+        break;
+      case 'pattern':
+        if (v.value) parts.push(`pattern: { value: new RegExp(${JSON.stringify(String(v.value))}), message: ${msg} }`);
+        break;
+    }
+  }
+  return parts.length > 0 ? `{ ${parts.join(', ')} }` : null;
+}
+
 /** Resolve a node's `map` value to a valid JavaScript list expression */
 function resolveMapExpr(map: unknown, symbols: SymbolMap, inMapScope = false): string {
   if (typeof map === 'string') return rewriteFormula(map, symbols, inMapScope);
@@ -71,10 +114,19 @@ export function emitNode(
   const inner = emitNodeInner(node, ctx, imports, usedAnimations, inMapScope, depth, formDepth);
 
   if (condExpr) {
-    return {
-      jsx: `${ind}{(${condExpr}) && (\n${inner.jsx}\n${ind})}`,
-      useEffects: inner.useEffects,
-    };
+    // Sub-components extracted for form-data display nodes handle their own condition internally
+    // (they subscribe directly to Zustand). Skip the outer wrapper so the page's stale equality
+    // check doesn't prevent the sub-component from mounting when form state changes.
+    const nodeId = typeof node.id === 'string' ? node.id : undefined;
+    const isExtractedSubComp =
+      (nodeId && ctx.formDataDisplayNodeIds?.has(nodeId)) ||
+      (nodeId && ctx.liveIndicatorNodeIds?.has(nodeId));
+    if (!isExtractedSubComp) {
+      return {
+        jsx: `${ind}{(${condExpr}) && (\n${inner.jsx}\n${ind})}`,
+        useEffects: inner.useEffects,
+      };
+    }
   }
 
   return inner;
@@ -94,13 +146,20 @@ function emitMapNode(
   const listExpr = resolveMapExpr(node.map, ctx.symbols, inMapScope);
   const keyField = ((node.map as unknown as Record<string, unknown>)?.keyField as string) ?? (node as Record<string, unknown>).mapKey as string ?? 'id';
 
+  // Formula/JS map expressions generate raw items; the SDUI engine wraps these in {data: item}.
+  // Collection-based maps (path) already store items as {id, data} in the store.
+  const mapObj = node.map as unknown as Record<string, unknown>;
+  const isFormulaMap = mapObj && typeof mapObj === 'object' && ('formula' in mapObj || 'js' in mapObj);
+
   // Emit the template node (with map scope active)
   const templateNode = { ...node, map: undefined, mapKey: undefined } as AnyNode;
   const templateResult = emitNodeInner(templateNode, ctx, imports, usedAnimations, true, depth + 1, formDepth);
 
-  const keyExpr = /^\d+$/.test(keyField)
-    ? `index`
-    : `String(item?.${keyField} ?? index)`;
+  const keyExpr = isFormulaMap
+    ? `index`  // formula items don't have a natural id; use array index
+    : /^\d+$/.test(keyField)
+      ? `index`
+      : `String(item?.${keyField} ?? index)`;
 
   // If listExpr mixes || / && with the upcoming ??, wrap to satisfy operator precedence rules
   const safeListExpr = /\|\||&&/.test(listExpr) ? `(${listExpr})` : listExpr;
@@ -111,9 +170,17 @@ function emitMapNode(
     `$1 key={${keyExpr}}`,
   );
 
+  // For formula maps: wrap raw items in {data: item} to match engine's {data: ...} convention.
+  // Templates access _item?.data?.field because the engine wraps repeater items this way.
+  const itemAlias = isFormulaMap
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? `const _item = { data: item, id: index } as any;`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    : `const _item = item as any;`;
+
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jsx: `${ind}{(${safeListExpr} ?? []).map((item: unknown, index: number) => {\n${ind}  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n${ind}  const _item = item as any;\n${ind}  return (\n${jsxWithKey}\n${ind}  );\n${ind}})}`,
+    jsx: `${ind}{(${safeListExpr} ?? []).map((item: unknown, index: number) => {\n${ind}  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n${ind}  ${itemAlias}\n${ind}  return (\n${jsxWithKey}\n${ind}  );\n${ind}})}`,
     useEffects: [],
   };
 }
@@ -130,6 +197,27 @@ function emitNodeInner(
   const ind = '  '.repeat(depth);
   const childInd = '  '.repeat(depth + 1);
   const useEffects: string[] = [];
+
+  // Sub-component extraction: if this node has been extracted into a narrow-selector component,
+  // emit a call to that component instead of inlining the full element. This prevents the
+  // 3000+ line page from re-rendering when input values change — only the tiny sub-component does.
+  // Mirror the syncId fallback used in the Input onChange path: node.id ?? node._inputValueId
+  const _nodeId = (node.id ?? (node as Record<string, unknown>)._inputValueId) as string | undefined;
+  if (_nodeId && ctx.inputVarNodeIds?.has(_nodeId)) {
+    const _info = ctx.inputVarInfoMap!.get(_nodeId)!;
+    return { jsx: `${ind}<${_info.subCompName} />`, useEffects: [] };
+  }
+  // Live indicators always have an explicit id, so just use node.id
+  const _liveNodeId = typeof node.id === 'string' ? node.id : undefined;
+  if (_liveNodeId && ctx.liveIndicatorNodeIds?.has(_liveNodeId)) {
+    const _info = ctx.liveIndicatorNodeIds!.get(_liveNodeId)!;
+    return { jsx: `${ind}<${_info.subCompName} />`, useEffects: [] };
+  }
+  // Form-data display nodes (inside FormContainer, show _formData) are extracted as sub-components.
+  if (_liveNodeId && ctx.formDataDisplayNodeIds?.has(_liveNodeId)) {
+    const _info = ctx.formDataDisplayNodeIds!.get(_liveNodeId)!;
+    return { jsx: `${ind}<${_info.subCompName} />`, useEffects: [] };
+  }
 
   const prim = getPrimitive(node.type as string);
   let tag = prim.tag;
@@ -197,7 +285,47 @@ function emitNodeInner(
   }
 
   // className
-  const className = (node.props?.className as string) ?? '';
+  let className = (node.props?.className as string) ?? '';
+  // For Icon nodes, strip ALL text-[...] arbitrary classes.
+  // The builder renders icons as <img> via IconifyIcon.tsx — size comes from width/height
+  // attributes, not font-size, so text-[Npx] has no effect. Color classes (text-[#hex]) are
+  // also stripped: they don't affect <img> CDN URL color in the builder (which uses
+  // ?color=currentColor), so emitting them to @iconify/react would create a mismatch.
+  // Icon color comes solely from the explicit `color` prop on the node (handled below).
+  if (node.type === 'Icon' && className) {
+    className = className
+      .split(/\s+/)
+      .filter(cls => !cls.startsWith('text-['))
+      .join(' ');
+  }
+
+  // For Input/InputField/Textarea/TextareaInput nodes, convert `placeholderTextColor`
+  // (React Native prop) to a Tailwind placeholder color class for plain HTML inputs.
+  const INPUT_TYPES = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput']);
+  if (INPUT_TYPES.has(node.type)) {
+    // Default to #737373 when no explicit prop — matches the component-level default in InputWithField/TextareaWithInput.
+    const ptc = (node.props?.placeholderTextColor as string | undefined) ?? '#737373';
+    // Encode the color for Tailwind arbitrary value syntax (e.g. #9ca3af → #9ca3af is safe,
+    // rgba(...) needs underscores for spaces: rgba(0,0,0,0.5) → rgba(0,0,0,0.5))
+    const encoded = ptc.replace(/\s/g, '_');
+    className = (className ? `${className} ` : '') + `placeholder-[${encoded}]`;
+  }
+
+  // RNW always injects resize:none on TextInput; exported <textarea> needs the same.
+  if (node.type === 'Textarea' || node.type === 'TextareaInput') {
+    className = (className ? `${className} ` : '') + 'resize-none';
+  }
+
+  // Mirror builder Video default: objectFit='cover'. Add object-cover unless the node
+  // already has an explicit objectFit in its inline style.
+  if (node.type === 'Video') {
+    const nodeStyle = (node.props as Record<string, unknown>)?.style as Record<string, unknown> | undefined;
+    const hasObjectFit = nodeStyle && Object.prototype.hasOwnProperty.call(nodeStyle, 'objectFit');
+    if (!hasObjectFit) {
+      className = (className ? `${className} ` : '') + 'object-cover';
+    }
+  }
+
   if (className) {
     propsLines.push(`className="${className}"`);
   }
@@ -236,13 +364,42 @@ function emitNodeInner(
       if (RN_STYLE_PROPS.has(k)) continue;
       // Collect RN transform shorthands to merge with any existing transform
       if (RN_TRANSFORM_FUNS[k]) {
-        const val = String(v ?? '0');
-        transformParts.push(`${RN_TRANSFORM_FUNS[k]}(${val})`);
+        if (v && typeof v === 'object' && ('formula' in (v as object) || 'js' in (v as object))) {
+          // Formula/JS binding — emit as a dynamic expression: translateX(${expr})
+          const expr = rewritePropValue(v, ctx.symbols, inMapScope);
+          styleParts.push(`"transform": \`${RN_TRANSFORM_FUNS[k]}(\${${expr}})\``);
+        } else {
+          const val = String(v ?? '0');
+          transformParts.push(`${RN_TRANSFORM_FUNS[k]}(${val})`);
+        }
         continue;
       }
       // Capture existing transform separately so we can merge RN transforms into it
       if (k === 'transform') {
-        existingTransform = String(v ?? '');
+        if (typeof v === 'string') {
+          existingTransform = v;
+        } else if (v && typeof v === 'object') {
+          const obj = v as Record<string, unknown>;
+          // Formula/JS binding — rewrite to expression
+          if ('formula' in obj || 'js' in obj) {
+            const expr = rewritePropValue(v, ctx.symbols, inMapScope);
+            styleParts.push(`"transform": ${expr}`);
+          }
+          // RN transform array: [{translateX: 10}, {rotate: '45deg'}]
+          else if (Array.isArray(v)) {
+            const parts = (v as Record<string, unknown>[]).map(t => {
+              const [tnKey, tnVal] = Object.entries(t)[0] ?? [];
+              if (tnKey) return `${tnKey}(${tnVal})`;
+              return '';
+            }).filter(Boolean);
+            if (parts.length) existingTransform = parts.join(' ');
+          }
+          // Single RN transform object {translateX: 10}
+          else {
+            const parts = Object.entries(obj).map(([tnKey, tnVal]) => `${tnKey}(${tnVal})`);
+            if (parts.length) existingTransform = parts.join(' ');
+          }
+        }
         continue;
       }
       // Always run through rewritePropValue so formula/js bindings become live expressions
@@ -283,18 +440,29 @@ function emitNodeInner(
     const icon = rewritePropValue(node.props?.icon ?? node.props?.name ?? 'mdi:circle', ctx.symbols, inMapScope);
     propsLines.push(`icon={${icon}}`);
     const rawSize = node.props?.size ?? node.props?.width ?? node.props?.height;
-    // Convert Tailwind size tokens to pixel numbers; fall back to 24 for unknown tokens
+    // Convert Tailwind size tokens to pixel numbers
     const ICON_SIZE_MAP: Record<string, number> = {
       xs: 12, sm: 16, md: 20, base: 20, lg: 24, xl: 32, '2xl': 40, '3xl': 48, '4xl': 56,
     };
     const resolvedSize = typeof rawSize === 'string' && ICON_SIZE_MAP[rawSize]
       ? ICON_SIZE_MAP[rawSize]
       : rawSize;
-    if (resolvedSize !== undefined && resolvedSize !== null) {
-      propsLines.push(`width={${rewritePropValue(resolvedSize, ctx.symbols, inMapScope)}}`);
-      propsLines.push(`height={${rewritePropValue(resolvedSize, ctx.symbols, inMapScope)}}`);
+    // Always emit width/height. Default to 24 to match IconifyIcon.tsx's `size = 24` default.
+    // text-[Npx] is stripped from className (it only sets font-size on <img>, not box size),
+    // so explicit props or this fallback are the only size source.
+    const finalSize = resolvedSize ?? 24;
+    propsLines.push(`width={${rewritePropValue(finalSize, ctx.symbols, inMapScope)}}`);
+    propsLines.push(`height={${rewritePropValue(finalSize, ctx.symbols, inMapScope)}}`);
+    // Emit `color` only from the explicit node prop — this mirrors how IconifyIcon.tsx embeds
+    // the color in the CDN URL (?color=encodedHex). Colors that only exist as text-[#hex]
+    // className classes are stripped above and NOT emitted here: in the builder those classes
+    // have no effect on the <img> CDN URL (which uses ?color=currentColor), so we preserve that
+    // black/inherited-color behavior rather than unexpectedly coloring the icon in the export.
+    const iconColor = node.props?.color as string | undefined;
+    if (iconColor) {
+      propsLines.push(`color={${rewritePropValue(iconColor, ctx.symbols, inMapScope)}}`);
     }
-    skipProps.add('icon').add('name').add('size').add('width').add('height');
+    skipProps.add('icon').add('name').add('size').add('width').add('height').add('color');
   }
 
   if (node.type === 'Image') {
@@ -312,7 +480,12 @@ function emitNodeInner(
   if (node.type === 'Video') {
     const src = rewritePropValue(node.props?.src ?? '', ctx.symbols, inMapScope);
     if (src) propsLines.push(`src={${src}}`);
-    skipProps.add('src');
+    // Always add playsInline so autoPlay works on iOS without entering full-screen
+    propsLines.push(`playsInline`);
+    // Mirror builder Video default: muted=true (browser default is unmuted).
+    const hasMuted = Object.prototype.hasOwnProperty.call(node.props ?? {}, 'muted');
+    if (!hasMuted) propsLines.push(`muted`);
+    skipProps.add('src').add('playsInline');
   }
 
   if (node.type === 'Iframe') {
@@ -346,16 +519,55 @@ function emitNodeInner(
       : rewritePropValue(node.props?.type ?? node.props?.inputType ?? 'text', ctx.symbols, inMapScope);
     propsLines.push(`type={${inputType}}`);
     if (placeholder !== "''") propsLines.push(`placeholder={${placeholder}}`);
+
+    // Wire RHF register() for inputs inside a FormContainer
+    const fieldName = (node.props?.name ?? node.props?.formFieldName ?? (node as Record<string, unknown>).name) as string | undefined;
+    if (formDepth > 0 && fieldName) {
+      const rulesStr = buildRhfRulesStr((node as Record<string, unknown>)._validation);
+      const registerArgs = rulesStr
+        ? `${JSON.stringify(fieldName)}, ${rulesStr}`
+        : JSON.stringify(fieldName);
+      propsLines.push(`{...form?.register?.(${registerArgs})}`);
+    } else {
+      // Outside a FormContainer: sync value to state.variables['{nodeId}-value'] on change.
+      // If the node was extracted as a sub-component (_inputVarNodeIds), emitNodeInner already
+      // returned early above — this branch only runs for inputs that couldn't be extracted
+      // (e.g. dynamic className/placeholder). For those, emit a plain direct setState.
+      // node.id may be absent for template nodes — fall back to _inputValueId injected by resolve.ts.
+      const syncId = node.id ?? (node as Record<string, unknown>)._inputValueId;
+      if (syncId) {
+        const varKey = JSON.stringify(`${syncId}-value`);
+        propsLines.push(`onChange={(e: any) => { const _v = e?.target?.value; useStore.setState((s) => ({ ...s, variables: { ...s.variables, ${varKey}: _v } })); }}`);
+      }
+    }
+
     // Skip RN-specific props that have no HTML equivalent
     ['type', 'inputType', 'placeholder', 'secureTextEntry', 'keyboardType',
-      'placeholderTextColor', 'size', 'variant', 'format',
+      'placeholderTextColor', 'size', 'variant', 'format', 'name', 'formFieldName',
     ].forEach(p => skipProps.add(p));
   }
 
   if (node.type === 'Textarea' || node.type === 'TextareaInput') {
     const placeholder = rewritePropValue(node.props?.placeholder ?? '', ctx.symbols, inMapScope);
     if (placeholder !== "''") propsLines.push(`placeholder={${placeholder}}`);
-    skipProps.add('placeholder');
+
+    // Wire RHF register() for textareas inside a FormContainer
+    const textareaFieldName = (node.props?.name ?? (node as Record<string, unknown>).name) as string | undefined;
+    if (formDepth > 0 && textareaFieldName) {
+      const rulesStr2 = buildRhfRulesStr((node as Record<string, unknown>)._validation);
+      const regArgs2 = rulesStr2
+        ? `${JSON.stringify(textareaFieldName)}, ${rulesStr2}`
+        : JSON.stringify(textareaFieldName);
+      propsLines.push(`{...form?.register?.(${regArgs2})}`);
+    } else {
+      const taSyncId = node.id ?? (node as Record<string, unknown>)._inputValueId;
+      if (taSyncId) {
+        const taVarKey = JSON.stringify(`${taSyncId}-value`);
+        propsLines.push(`onChange={(e: any) => { const _v = e?.target?.value; useStore.setState((s) => ({ ...s, variables: { ...s.variables, ${taVarKey}: _v } })); }}`);
+      }
+    }
+
+    skipProps.add('placeholder').add('name').add('formFieldName');
   }
 
   if (node.type === 'HtmlContent') {
@@ -365,6 +577,8 @@ function emitNodeInner(
   }
 
   if (node.type === 'FormContainer') {
+    // Prevent default browser form submission; RHF handles validation via register/handleSubmit
+    propsLines.push(`onSubmit={(e?: unknown) => { (e as Event)?.preventDefault?.(); }}`);
     // These are engine/RHF internal props that have no valid HTML attribute or React DOM equivalent
     ['initialFormData', 'onValidationErrorAction', 'triggerOnChange',
       'validationMode', 'revalidateMode', 'resolver', 'formId',
@@ -463,9 +677,16 @@ function emitNodeInner(
     );
   }
 
-  // Build children
-  const childNodes = (node.children ?? []) as AnyNode[];
-  const childResults: NodeEmitResult[] = childNodes.map(child =>
+  // Build children — for popover nodes, separate trigger children from _popoverContent children
+  const allChildNodes = (node.children ?? []) as AnyNode[];
+  let triggerChildNodes = allChildNodes;
+  let popoverContentNodes: AnyNode[] = [];
+  if (node.popover) {
+    triggerChildNodes = allChildNodes.filter(c => !c._popoverContent);
+    popoverContentNodes = allChildNodes.filter(c => c._popoverContent);
+  }
+
+  const childResults: NodeEmitResult[] = triggerChildNodes.map(child =>
     emitNode(child, ctx, imports, usedAnimations, inMapScope, depth + 1, nextFormDepth),
   );
   const childJsx = childResults.map(r => r.jsx).join('\n');
@@ -484,14 +705,14 @@ function emitNodeInner(
 
   // Popover wrapping
   if (node.popover) {
-    return emitPopoverNode(node, propsLines, tag, textContent, childJsx, ctx, imports, useEffects, ind, childInd, depth);
+    return emitPopoverNode(node, propsLines, tag, textContent, childJsx, popoverContentNodes, ctx, imports, useEffects, ind, childInd, depth, inMapScope);
   }
 
   // Build the JSX element
   const propsStr = propsLines.length > 0 ? '\n' + propsLines.map(p => `${childInd}${p}`).join('\n') + '\n' + ind : '';
   const hasContent = textContent || childJsx;
 
-  if (!hasContent && (prim.selfClose || childNodes.length === 0 && !textContent)) {
+  if (!hasContent && (prim.selfClose || triggerChildNodes.length === 0 && !textContent)) {
     return { jsx: `${ind}<${tag}${propsStr}/>`, useEffects };
   }
 
@@ -507,40 +728,66 @@ function emitPopoverNode(
   tag: string,
   textContent: string,
   childJsx: string,
+  popoverContentNodes: AnyNode[],
   ctx: CodegenCtx,
   imports: ImportsTracker,
   useEffects: string[],
   ind: string,
   childInd: string,
   depth: number,
+  inMapScope: boolean,
 ): NodeEmitResult {
   imports.addNamed('@radix-ui/react-popover', 'Popover', 'PopoverTrigger', 'PopoverContent');
+  // useStore is always imported by routing.ts with the correct relative prefix — no need to add it here
 
   // Use the node's id for controlled mode (workflows can target it by ID).
   // If no id, fall back to uncontrolled mode so multiple instances don't share state.
   const nodeId = node.id && node.id !== 'root' ? node.id : null;
 
-  // The trigger is the node itself; content is in popover.content
   const popsConfig = node.popover as unknown as Record<string, unknown>;
-  const contentChildren = (popsConfig?.content ?? popsConfig?.children) as AnyNode[] | undefined;
-  const side = popsConfig?.side ?? 'bottom';
-  const align = popsConfig?.align ?? 'center';
+  const side = popsConfig?.side ?? popsConfig?.placement?.toString().split('-')[0] ?? 'bottom';
+  const align = (() => {
+    const placement = popsConfig?.placement?.toString() ?? '';
+    if (placement.endsWith('-start')) return 'start';
+    if (placement.endsWith('-end')) return 'end';
+    return popsConfig?.align ?? 'center';
+  })();
 
-  const triggerContent = textContent || childJsx || `${childInd}${tag}`;
+  const triggerContent = textContent || childJsx;
+
+  // Popover content: prefer nodes with _popoverContent:true, then popover.content children
+  const configContentChildren = (popsConfig?.content ?? popsConfig?.children) as AnyNode[] | undefined;
+  const allPopoverContent = [
+    ...popoverContentNodes,
+    ...(configContentChildren ?? []),
+  ];
 
   let popoverContentJsx = '';
-  if (contentChildren) {
-    popoverContentJsx = contentChildren.map(c =>
-      emitNode(c, ctx, imports, new Set(), false, depth + 2).jsx
+  if (allPopoverContent.length > 0) {
+    popoverContentJsx = allPopoverContent.map(c =>
+      emitNode(c, ctx, imports, new Set(), inMapScope, depth + 2).jsx
     ).join('\n');
   }
 
-  const openProps = nodeId
-    ? `open={popoverState[${JSON.stringify(nodeId)}]} onOpenChange={(o) => setPopoverState(s => ({ ...s, ${JSON.stringify(nodeId)}: o }))}`
-    : `onOpenChange={(o) => {}}`;
+  // For matchTriggerWidth popovers (like Select), use a relative-positioned wrapper
+  const matchWidth = popsConfig?.matchTriggerWidth === true;
+  const popoverContentProps = matchWidth
+    ? `side="${side}" align="${align}" className="w-[var(--radix-popover-trigger-width)] p-0"`
+    : `side="${side}" align="${align}"`;
+
+  // Prefer componentVars-controlled open state (for shared components with an *-open variable)
+  const controlled = (node as Record<string, unknown>)._popoverControlled as
+    | { instanceId: string; openVar: string }
+    | undefined;
+
+  const openProps = controlled
+    ? `open={state?.componentVars?.[${JSON.stringify(controlled.instanceId)}]?.[${JSON.stringify(controlled.openVar)}] ?? false} onOpenChange={(o) => useStore.setState(s => ({ ...s, componentVars: { ...s.componentVars, ${JSON.stringify(controlled.instanceId)}: { ...(s.componentVars?.[${JSON.stringify(controlled.instanceId)}] ?? {}), ${JSON.stringify(controlled.openVar)}: o } } }))}`
+    : nodeId
+      ? `open={popoverState[${JSON.stringify(nodeId)}]} onOpenChange={(o) => setPopoverState(s => ({ ...s, ${JSON.stringify(nodeId)}: o }))}`
+      : `onOpenChange={(o) => {}}`;
 
   return {
-    jsx: `${ind}<Popover ${openProps}>\n${childInd}<PopoverTrigger asChild>\n${childInd}  <${tag} ${propsLines.join(' ')}>\n${triggerContent}\n${childInd}  </${tag}>\n${childInd}</PopoverTrigger>\n${childInd}<PopoverContent side="${side}" align="${align}">\n${popoverContentJsx}\n${childInd}</PopoverContent>\n${ind}</Popover>`,
+    jsx: `${ind}<Popover ${openProps}>\n${childInd}<PopoverTrigger asChild>\n${childInd}  <${tag} ${propsLines.join(' ')}>\n${triggerContent ? triggerContent + '\n' : ''}${childInd}  </${tag}>\n${childInd}</PopoverTrigger>\n${childInd}<PopoverContent ${popoverContentProps}>\n${popoverContentJsx}\n${childInd}</PopoverContent>\n${ind}</Popover>`,
     useEffects,
   };
 }

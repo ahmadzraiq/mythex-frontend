@@ -110,7 +110,7 @@ export const InputWithField = React.forwardRef<
     );
   }
 
-  const { className, ...restWithoutClass } = rest as Record<string, unknown> & { className?: string };
+  const { className, placeholderTextColor = '#737373', ...restWithoutClass } = rest as Record<string, unknown> & { className?: string; placeholderTextColor?: string };
 
   const hasExternalControl = value !== undefined;
   const [localValue, setLocalValue] = React.useState('');
@@ -161,6 +161,7 @@ export const InputWithField = React.forwardRef<
     <Input ref={ref} {...(restWithoutClass as React.ComponentProps<typeof Input>)} className={className}>
       <InputField
         placeholder={placeholder as string}
+        placeholderTextColor={placeholderTextColor}
         value={displayValue as string | undefined}
         defaultValue={displayValue === undefined ? defaultValue : undefined}
         editable={readOnly ? false : undefined}

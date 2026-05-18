@@ -16,7 +16,7 @@
 import type { ActionHandlerContext, ActionDef } from './types';
 import { evaluateFormula } from '../../formula-evaluator';
 import { evaluateJsAsync } from '../../javascript-evaluator';
-import { getGlobalVariableStore } from '../../global-variable-store';
+import { getGlobalVariableStore, getVariableInitialValue } from '../../global-variable-store';
 import { setNestedValue } from '../../nested-utils';
 import { buildAuthHeaders, clearStoredToken, setStoredToken, setStoredAuthSnapshot, clearStoredAuthSnapshot, getStoredAuthSnapshot } from '../../auth-token-storage';
 import { SUPPORTED_WORKFLOW_STEP_TYPES } from '@/app/dev/builder/_workflow-types';
@@ -92,7 +92,18 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'fetchData':
       return { type: 'fetch', ...cfg };
     case 'fetchCollection':
-      // New format (builder): cfg.collectionId = datasource UUID → trigger refetch directly
+      // Phase 9: collectionIds (comma-separated or array) → parallel refetch
+      if (cfg.collectionIds) {
+        const ids = typeof cfg.collectionIds === 'string'
+          ? (cfg.collectionIds as string).split(',').map(s => s.trim()).filter(Boolean)
+          : (cfg.collectionIds as string[]);
+        if (ids.length > 1) {
+          const acts = ids.map(id => ({ type: 'refetchDataSource', name: id }));
+          return { type: 'runMultiple', actions: acts };
+        }
+        if (ids.length === 1) return { type: 'refetchDataSource', name: ids[0] };
+      }
+      // Single collectionId
       if (cfg.collectionId) {
         return { type: 'refetchDataSource', name: cfg.collectionId as string };
       }
@@ -130,8 +141,17 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       // variableName may be a formula object { formula: "..." } — setVarHandler will evaluate it.
       return { type: 'setVar', path: (cfg.variableName ?? cfg.variable) as unknown as string, value: unwrapFormulaValue(cfg.value) };
     case 'resetVariableValue':
-    case 'resetVariable':
-      return { type: 'setVar', path: (cfg.variableName ?? cfg.path) as string, value: cfg.defaultValue ?? null };
+    case 'resetVariable': {
+      const varId = (cfg.variableName ?? cfg.path) as string;
+      let resetValue: unknown = cfg.defaultValue ?? null;
+      if (cfg.defaultValue === undefined) {
+        const iv = getVariableInitialValue(varId);
+          if (iv !== undefined) {
+          try { resetValue = JSON.parse(JSON.stringify(iv)); } catch { resetValue = iv; }
+        }
+      }
+      return { type: 'setVar', path: varId, value: resetValue };
+    }
 
     // ── Project workflow reference (legacy builder format) ───────────────────
     case 'runProjectWorkflow': {
@@ -176,6 +196,13 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: 'setVar', path: '__wfReturn', value: cfg.value };
 
     // ── Shared Component ─────────────────────────────────────────────────────
+    // Phase 9: unified type; legacy aliases below for backward compat
+    case 'modifySharedComponent': {
+      const scAction = (cfg.action as string | undefined) ?? 'add';
+      if (scAction === 'delete') return { type: 'deleteSharedComponent', ...cfg };
+      if (scAction === 'deleteAll') return { type: 'deleteAllSharedComponents', ...cfg };
+      return { type: 'addSharedComponent', ...cfg };
+    }
     case 'addSharedComponent':
       return { type: 'addSharedComponent', ...cfg };
     case 'deleteSharedComponent':
@@ -184,6 +211,13 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
       return { type: 'deleteAllSharedComponents', ...cfg };
 
     // ── Popover ───────────────────────────────────────────────────────────
+    // Phase 9: unified type; legacy aliases below for backward compat
+    case 'controlPopover': {
+      const mode = (cfg.mode as string | undefined) ?? 'toggle';
+      if (mode === 'open') return { type: 'openPopover', ...cfg };
+      if (mode === 'close') return { type: 'closePopover', ...cfg };
+      return { type: 'togglePopover', ...cfg };
+    }
     case 'openPopover':
       return { type: 'openPopover', ...cfg };
     case 'closePopover':
@@ -736,7 +770,29 @@ async function runSteps(
       continue;
     }
 
-    // ── Trigger animation on a target node by ID ─────────────────────────────
+    // ── Phase 9: unified animation control ───────────────────────────────────
+    // action: 'enter' | 'exit' | 'startLoop' | 'stopLoop' | 'trigger' (default)
+    if (step.type === 'controlAnimation') {
+      const targetId = String(step.config?.targetNodeId ?? '');
+      const action   = String(step.config?.action ?? 'trigger');
+      const duration = Number(step.config?.duration ?? 400);
+      if (targetId) {
+        if (action === 'exit') {
+          await triggerExitAnimation(targetId);
+        } else if (action === 'startLoop') {
+          startLoopOnNode(targetId, String(step.config?.loopType ?? 'pulse'), duration);
+        } else if (action === 'stopLoop') {
+          stopLoopOnNode(targetId);
+        } else if (action === 'enter') {
+          playEnterOnNode(targetId, String(step.config?.enterType ?? 'fadeIn'), duration);
+        } else {
+          triggerAnimationNode(targetId, String(step.config?.animation ?? 'pulse'), duration);
+        }
+      }
+      continue;
+    }
+
+    // ── Legacy animation step types — kept for backward compat ───────────────
     if (step.type === 'animate') {
       const targetId = String(step.config?.targetNodeId ?? '');
       const animationType = String(step.config?.animation ?? 'pulse');
@@ -745,14 +801,12 @@ async function runSteps(
       continue;
     }
 
-    // ── Trigger exit animation and await completion ───────────────────────────
     if (step.type === 'triggerExitAnimation') {
       const targetId = String(step.config?.targetNodeId ?? '');
       if (targetId) await triggerExitAnimation(targetId);
       continue;
     }
 
-    // ── Imperatively start a loop animation on a node ────────────────────────
     if (step.type === 'startLoop') {
       const targetId = String(step.config?.targetNodeId ?? '');
       const loopType = String(step.config?.loopType ?? 'pulse');
@@ -761,14 +815,12 @@ async function runSteps(
       continue;
     }
 
-    // ── Imperatively stop a loop animation on a node ─────────────────────────
     if (step.type === 'stopLoop') {
       const targetId = String(step.config?.targetNodeId ?? '');
       if (targetId) stopLoopOnNode(targetId);
       continue;
     }
 
-    // ── Play an enter animation on a node (overrideable type + duration) ──────
     if (step.type === 'playEnterAnimation') {
       const targetId  = String(step.config?.targetNodeId ?? '');
       const enterType = String(step.config?.enterType ?? 'fadeIn');

@@ -27,7 +27,7 @@ import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { AuthConfig } from '@/lib/sdui/engine-types';
 import appConfig from '@/config/app';
-import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { useSduiStore } from '@/store/sdui-store';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
@@ -226,8 +226,11 @@ function seedCustomVars(cfg: ProjectConfig) {
   const fullState = vs.getFullState() as Record<string, unknown>;
   const patches: Record<string, unknown> = {};
   for (const v of vars) {
-    if (v.id && !(v.id in fullState)) {
-      patches[v.id] = v.initialValue ?? null;
+    if (v.id) {
+      registerVariableInitialValue(v.id, v.initialValue);
+      if (!(v.id in fullState)) {
+        patches[v.id] = v.initialValue ?? null;
+      }
     }
   }
   if (Object.keys(patches).length > 0) {

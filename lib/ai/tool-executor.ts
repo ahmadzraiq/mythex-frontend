@@ -10,10 +10,20 @@
  */
 
 import type { SDUINode } from '@/lib/sdui/types/node';
-import type { BuilderStore, CustomVar, DataSourceConfig } from '@/app/dev/builder/_store-types';
+import type { BuilderStore, CustomVar, DataSourceConfig, GlobalFormulaDef, GlobalFormulaParam } from '@/app/dev/builder/_store-types';
 import { COMPONENT_SCHEMA } from './sdui-component-schema';
-import { validateWorkflowFormulas, findProhibitedStep } from './workflow-validator';
+import {
+  validateWorkflowFormulas,
+  findProhibitedStep,
+  validateStepTypes,
+  validateMultiOptionBranches,
+  validateChangeVariableUUIDs,
+  SUPPORTED_STEP_TYPES,
+} from './workflow-validator';
 import { replaceTwToken, removeTwToken } from '@/app/dev/builder/_tw-utils';
+import { getSharedComponents, createSharedComponent, updateSharedComponent, deleteSharedComponent } from '@/lib/builder/shared-component-data';
+import { cloneWithFreshIdsKeepSharedKey, stampSharedKeys } from '@/app/dev/builder/_store-node-helpers';
+import { findThemePreset, THEME_PRESETS } from '@/lib/builder/theme-presets';
 import {
   type ToolGroup,
   getCapabilities,
@@ -35,15 +45,20 @@ export type StoreGetter = () => BuilderStore;
 // validateFormula, validateWorkflowFormulas, findProhibitedStep, and
 // PROHIBITED_STEP_TYPES are imported from ./workflow-validator (shared with route.ts).
 
-// Converts "{ formula: \"...\" }" strings to proper { formula: "..." } objects.
-// The AI sometimes stringifies the formula wrapper instead of emitting a real JSON object.
+// Converts stringified binding wrappers to proper objects.
+// The AI sometimes stringifies the binding wrapper instead of emitting a real JSON object.
+// Handles both legacy "{ formula: \"...\" }" and modern "{ js: \"...\" }" strings.
 function tryCoerceStringFormula(value: unknown): unknown {
   if (typeof value !== 'string') return value;
   const trimmed = value.trim();
+  const jsMatch = trimmed.match(/^\{\s*js:\s*"([\s\S]*)"\s*\}$/);
+  if (jsMatch) return { js: jsMatch[1].replace(/\\"/g, '"') };
+  const jsSqMatch = trimmed.match(/^\{\s*js:\s*'([\s\S]*)'\s*\}$/);
+  if (jsSqMatch) return { js: jsSqMatch[1].replace(/\\'/g, "'") };
   const dqMatch = trimmed.match(/^\{\s*formula:\s*"([\s\S]*)"\s*\}$/);
-  if (dqMatch) return { formula: dqMatch[1].replace(/\\"/g, '"') };
+  if (dqMatch) return { js: dqMatch[1].replace(/\\"/g, '"') };
   const sqMatch = trimmed.match(/^\{\s*formula:\s*'([\s\S]*)'\s*\}$/);
-  if (sqMatch) return { formula: sqMatch[1].replace(/\\'/g, "'") };
+  if (sqMatch) return { js: sqMatch[1].replace(/\\'/g, "'") };
   return value;
 }
 
@@ -150,6 +165,31 @@ function findNode(nodes: SDUINode[], id: string): SDUINode | null {
 }
 
 
+/**
+ * Locate a node anywhere in the project — focused page first, then every other
+ * page, then canvas roots. Used by tool handlers so the AI agent can mutate
+ * nodes on a non-focused page without the canvas having to switch focus
+ * (the store's `patchAnyNode` writes to `pages[i].nodes` directly when the
+ * node lives off-screen).
+ *
+ * Returning the focused page first keeps the common interactive-edit path
+ * O(1) on tree traversal — only AI multi-page tool calls fall through to the
+ * cross-page scan.
+ */
+function findNodeInStore(store: BuilderStore, id: string): SDUINode | null {
+  const focused = findNode(store.pageNodes as SDUINode[], id);
+  if (focused) return focused;
+  const pages = (store as { pages?: Array<{ id: string; nodes?: SDUINode[] }> }).pages ?? [];
+  const focusedPageId = (store as { focusedPageId?: string }).focusedPageId;
+  for (const p of pages) {
+    if (p.id === focusedPageId) continue;
+    const found = findNode((p.nodes ?? []) as SDUINode[], id);
+    if (found) return found;
+  }
+  return null;
+}
+
+
 // ─── Require a node to exist — used by all setter tools ──────────────────────
 
 function requireNode(
@@ -157,10 +197,10 @@ function requireNode(
   nodeId: string | undefined,
 ): { success: false; error: string } | null {
   if (!nodeId) return { success: false, error: 'nodeId is required.' };
-  if (!findNode(store.pageNodes as SDUINode[], nodeId)) {
+  if (!findNodeInStore(store, nodeId)) {
     return {
       success: false,
-      error: `Node "${nodeId}" not found on the current page. Call get_page_tree first to get valid node IDs, or check whether a prior add_component step failed.`,
+      error: `Node "${nodeId}" not found in any page. Call get_page_tree first to get valid node UUIDs, or check whether a prior add_component step failed.`,
     };
   }
   return null;
@@ -178,7 +218,7 @@ function checkCapability(
   nodeId: string,
   group: ToolGroup,
 ): { success: false; error: string } | null {
-  const node = findNode(store.pageNodes as SDUINode[], nodeId);
+  const node = findNodeInStore(store, nodeId);
   if (!node) return null; // requireNode handles the missing-node error
   const componentType = (node.type as string | undefined) ?? 'Unknown';
   const caps = getCapabilities(componentType);
@@ -191,6 +231,49 @@ function checkCapability(
         `"${group}" tools are not supported on ${componentType}. ${suggestion} ` +
         `${buildCapabilityNote(componentType)}`,
     };
+  }
+  return null;
+}
+
+// ─── Navigate path validator — checks navigateTo.config.path against known pages ──
+
+function validateNavigatePaths(
+  steps: Array<Record<string, unknown>>,
+  store: BuilderStore,
+): string | null {
+  const pages = (store as { pages?: Array<{ route?: string }> }).pages ?? [];
+  const knownRoutes = new Set(pages.map(p => p.route).filter(Boolean));
+  // Only validate when at least one page has a defined route.
+  if (knownRoutes.size === 0) return null;
+
+  for (const step of steps) {
+    if (step.type === 'navigateTo') {
+      const stepId = (step.id as string | undefined) ?? '?';
+      const cfg = step.config as Record<string, unknown> | undefined;
+      const path = cfg?.path as string | undefined;
+      if (path && typeof path === 'string' && !path.startsWith('{{') && !path.includes('?')) {
+        // Strip trailing slash for comparison
+        const normalised = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
+        if (!knownRoutes.has(normalised) && !knownRoutes.has(path)) {
+          const suggestions = Array.from(knownRoutes).slice(0, 8).join(', ');
+          return `Step "${stepId}" (navigateTo): path "${path}" does not match any known page route. Known routes: ${suggestions}. Call get_pages to see all pages.`;
+        }
+      }
+    }
+    for (const branch of ['trueBranch', 'falseBranch', 'loopBody', 'defaultBranch'] as const) {
+      if (Array.isArray(step[branch])) {
+        const err = validateNavigatePaths(step[branch] as Array<Record<string, unknown>>, store);
+        if (err) return err;
+      }
+    }
+    if (Array.isArray(step.branches)) {
+      for (const b of step.branches as Array<Record<string, unknown>>) {
+        if (Array.isArray(b.steps)) {
+          const err = validateNavigatePaths(b.steps as Array<Record<string, unknown>>, store);
+          if (err) return err;
+        }
+      }
+    }
   }
   return null;
 }
@@ -269,9 +352,9 @@ function summarizeNode(n: SDUINode, depth: number): unknown {
     // Row/grid/gap layout for arranging multiple items belongs on the PARENT, not here.
     map: node.map,
     // tools lists the capability groups this component supports.
-    // Universal tools (set_opacity, set_position, set_animation, set_condition,
-    // set_repeat, bind_action, rename_node, set_transform) are always available
-    // and are not listed here to keep the output compact.
+    // Universal tools (set_opacity, set_animation, set_condition, set_repeat,
+    // bind_action, rename_node, set_transform) are always available and are
+    // not listed here to keep the output compact.
     tools: caps ?? 'all',
   };
   if (depth > 0 && n.children?.length) {
@@ -334,7 +417,7 @@ function buildLayoutClass(input: ToolInput, current = ''): string {
 // ─── Semantic design helpers ──────────────────────────────────────────────────
 
 function getNodeClassName(store: BuilderStore, nodeId: string): string {
-  const node = findNode(store.pageNodes as SDUINode[], nodeId);
+  const node = findNodeInStore(store, nodeId);
   return (node?.props as { className?: string })?.className ?? '';
 }
 
@@ -344,7 +427,7 @@ function setNodeClassName(store: BuilderStore, nodeId: string, cls: string): voi
 
 // Helper: read the node's current inline style object.
 function getNodeStyle(store: BuilderStore, nodeId: string): Record<string, unknown> {
-  const node = findNode(store.pageNodes as SDUINode[], nodeId);
+  const node = findNodeInStore(store, nodeId);
   return { ...((node?.props as { style?: Record<string, unknown> })?.style ?? {}) };
 }
 
@@ -611,6 +694,11 @@ function spacingToken(prefix: string, value: number): string {
 
 type Handler = (input: ToolInput, getStore: StoreGetter) => Promise<ToolResult> | ToolResult;
 
+/** Coerce handler result — set_style delegates only sync handlers. */
+function asSyncResult(r: ToolResult | Promise<ToolResult>): ToolResult {
+  return r as ToolResult;
+}
+
 const handlers: Record<string, Handler> = {
 
   // ── Context reads ──────────────────────────────────────────────────────────
@@ -632,7 +720,7 @@ const handlers: Record<string, Handler> = {
     const found: SDUINode[] = [];
     const missing: string[] = [];
     for (const id of ids) {
-      const node = findNode(store.pageNodes, id);
+      const node = findNodeInStore(store, id);
       if (node) found.push(node);
       else missing.push(id);
     }
@@ -661,49 +749,6 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: store.customVars };
   },
 
-  get_formula_context(input, getStore) {
-    const store = getStore();
-    // Support single nodeId or batch nodeIds array
-    const nodeId = input.nodeId as string | undefined;
-    const nodeIds = input.nodeIds as string[] | undefined;
-    const ids = nodeIds ?? (nodeId ? [nodeId] : []);
-
-    if (ids.length === 0) {
-      return {
-        success: true,
-        data: {
-          note: 'Pass nodeId or nodeIds to get scope info. Variables and data sources are already in your context.',
-          nodes: [],
-        },
-      };
-    }
-
-    const results: Record<string, { repeatDepth: number; scopePath: string; parentScopePath: string | null; repeatContext: Array<{ level: number; path: string; note?: string }> | null }> = {};
-    for (const id of ids) {
-      const ancestors = getRepeatAncestors(store.pageNodes as SDUINode[], id) ?? [];
-      const depth = ancestors.length;
-      const repeatContext = buildRepeatContext(ancestors);
-      results[id] = {
-        repeatDepth: depth,
-        scopePath: depth > 0 ? 'context?.item?.data?.*' : '(none — not inside any repeat)',
-        parentScopePath: depth >= 2 ? 'context?.item?.parent?.data?.*' : null,
-        repeatContext,
-      };
-    }
-
-    // If single node requested, also expose flat fields for convenience
-    const single = ids.length === 1 ? results[ids[0]] : null;
-
-    return {
-      success: true,
-      data: {
-        note: 'Use scopePath for this node\'s own fields. parentScopePath is only valid when repeatDepth >= 2 (nested repeat). Never use .parent.data.* when repeatDepth is 1.',
-        ...(single ?? {}),
-        nodes: results,
-      },
-    };
-  },
-
   get_workflows(_, getStore) {
     const store = getStore();
     // Include both page-scoped and global workflows
@@ -730,6 +775,447 @@ const handlers: Record<string, Handler> = {
         path: `collections['${ds.id}'].data`,
       })),
     };
+  },
+
+  get_formulas(_, getStore) {
+    const store = getStore();
+    return { success: true, data: store.globalFormulas ?? {} };
+  },
+
+  add_formula(input, getStore) {
+    const store = getStore();
+    const name = input.name as string;
+    const formulaBody = (input.formula as string) ?? '';
+    if (!name) return { success: false, error: 'add_formula requires name.' };
+    const formulaId =
+      (input.formulaId as string | undefined) && typeof input.formulaId === 'string'
+        ? (input.formulaId as string)
+        : crypto.randomUUID();
+    const rawParams = (input.params as GlobalFormulaParam[] | undefined) ?? [];
+    const params: GlobalFormulaParam[] = rawParams.map((p, i) => ({
+      id: typeof p?.id === 'string' ? p.id : `p${i}`,
+      name: typeof p?.name === 'string' ? p.name : `arg${i}`,
+      type: (p?.type as GlobalFormulaParam['type']) ?? 'Text',
+      testValue: p?.testValue,
+    }));
+    const def: GlobalFormulaDef = {
+      name,
+      params,
+      formula: formulaBody,
+      folder: input.folder as string | undefined,
+      description: input.description as string | undefined,
+    };
+    store.setGlobalFormula(formulaId, def);
+    return { success: true, data: { formulaId, name } };
+  },
+
+  update_formula(input, getStore) {
+    const store = getStore();
+    const formulaId = input.formulaId as string;
+    const prev = store.globalFormulas?.[formulaId];
+    if (!prev) return { success: false, error: `Formula "${formulaId}" not found.` };
+    const next: GlobalFormulaDef = {
+      ...prev,
+      ...(input.name != null ? { name: input.name as string } : {}),
+      ...(input.params != null ? { params: input.params as GlobalFormulaParam[] } : {}),
+      ...(input.formula != null ? { formula: input.formula as string } : {}),
+      ...(input.folder != null ? { folder: input.folder as string | undefined } : {}),
+      ...(input.description != null ? { description: input.description as string | undefined } : {}),
+    };
+    store.setGlobalFormula(formulaId, next);
+    return { success: true, data: { formulaId } };
+  },
+
+  update_formula_body(input, getStore) {
+    const store = getStore();
+    const formulaId = input.formulaId as string;
+    const body = input.formula as string;
+    const prev = store.globalFormulas?.[formulaId];
+    if (!prev) return { success: false, error: `Formula "${formulaId}" not found.` };
+    store.setGlobalFormula(formulaId, { ...prev, formula: body });
+    return { success: true, data: { formulaId } };
+  },
+
+  delete_formula(input, getStore) {
+    const store = getStore();
+    const formulaId = input.formulaId as string;
+    if (!store.globalFormulas?.[formulaId]) {
+      return { success: false, error: `Formula "${formulaId}" not found.` };
+    }
+    store.removeGlobalFormula(formulaId);
+    return { success: true, data: { formulaId } };
+  },
+
+  set_app_config(input, getStore) {
+    const store = getStore();
+    if (typeof input.projectAppName === 'string') {
+      store.setProjectContext({ appName: input.projectAppName });
+    }
+    if (input.appPreviewData && typeof input.appPreviewData === 'object') {
+      store.setAppPreviewData(input.appPreviewData as Record<string, unknown>);
+    }
+    const conv: Record<string, unknown> = {};
+    if (typeof input.graphqlEndpoint === 'string') conv.graphqlEndpoint = input.graphqlEndpoint;
+    if (input.graphqlHeaders && typeof input.graphqlHeaders === 'object') {
+      conv.graphqlHeaders = input.graphqlHeaders;
+    }
+    if (typeof input.graphqlCredentials === 'string') conv.graphqlCredentials = input.graphqlCredentials;
+    if (Object.keys(conv).length) {
+      store.patchEngineConventions(conv as Parameters<typeof store.patchEngineConventions>[0]);
+    }
+    return { success: true, data: { message: 'App config updated.' } };
+  },
+
+  set_auth_config(input, getStore) {
+    const store = getStore();
+    const patch = input.patch as Record<string, unknown> | undefined;
+    if (!patch || typeof patch !== 'object') {
+      return { success: false, error: 'set_auth_config requires { patch: object }.' };
+    }
+    store.setAuthConfig({ ...(store.authConfig ?? {}), ...patch } as Parameters<typeof store.setAuthConfig>[0]);
+    return { success: true, data: { message: 'Auth config merged.' } };
+  },
+
+  create_folder(input, getStore) {
+    const store = getStore();
+    const kind = input.kind as string;
+    const name = input.name as string;
+    const folderId = (input.folderId as string | undefined) ?? crypto.randomUUID();
+    const parentId = (input.parentId as string | null | undefined) ?? null;
+    if (!name) return { success: false, error: 'create_folder requires name.' };
+    if (kind === 'variables') {
+      store.addVarFolder({ id: folderId, name, parentId });
+      return { success: true, data: { folderId, kind } };
+    }
+    if (kind === 'data-sources') {
+      store.addDsFolder({ id: folderId, name, parentId });
+      return { success: true, data: { folderId, kind } };
+    }
+    if (kind === 'colors') {
+      store.addColorFolder({ id: folderId, name, parentId });
+      return { success: true, data: { folderId, kind } };
+    }
+    return { success: false, error: `Folder kind "${kind}" is not supported yet (use variables, data-sources, colors).` };
+  },
+
+  rename_folder(input, getStore) {
+    const store = getStore();
+    const kind = input.kind as string;
+    const folderId = input.folderId as string;
+    const name = input.name as string;
+    if (kind === 'variables') store.updateVarFolder(folderId, name);
+    else if (kind === 'data-sources') store.updateDsFolder(folderId, name);
+    else if (kind === 'colors') store.updateColorFolder(folderId, name);
+    else return { success: false, error: `Unknown folder kind "${kind}".` };
+    return { success: true, data: { folderId, name } };
+  },
+
+  delete_folder(input, getStore) {
+    const store = getStore();
+    const kind = input.kind as string;
+    const folderId = input.folderId as string;
+    if (kind === 'variables') store.removeVarFolder(folderId);
+    else if (kind === 'data-sources') store.removeDsFolder(folderId);
+    else if (kind === 'colors') store.removeColorFolder(folderId);
+    else return { success: false, error: `Unknown folder kind "${kind}".` };
+    return { success: true, data: { folderId } };
+  },
+
+  update_data_source_schema(input, getStore) {
+    const store = getStore();
+    const sourceId = input.sourceId as string;
+    const list = store.pageDataSources ?? [];
+    const idx = list.findIndex((d: DataSourceConfig) => d.id === sourceId);
+    if (idx < 0) return { success: false, error: `Data source "${sourceId}" not found.` };
+    const cur = list[idx] as DataSourceConfig;
+    const patch: Partial<DataSourceConfig> = {};
+    const assign = <K extends keyof DataSourceConfig>(k: K, v: unknown) => {
+      if (v !== undefined) (patch as Record<string, unknown>)[k as string] = v;
+    };
+    assign('name', input.name);
+    assign('_label', input.name);
+    assign('type', input.type);
+    assign('url', input.url);
+    assign('method', input.method);
+    assign('endpoint', input.endpoint);
+    assign('query', input.query);
+    assign('variables', input.variables);
+    assign('headers', input.headers);
+    assign('body', input.body);
+    assign('queryParams', input.queryParams);
+    assign('auth', input.auth);
+    assign('responsePath', input.responsePath);
+    assign('storeIn', input.storeIn);
+    assign('trigger', input.trigger);
+    store.updatePageDataSource(sourceId, { ...cur, ...patch });
+    return { success: true, data: { sourceId } };
+  },
+
+  update_variable_initial_value(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const v = input.initialValue;
+    const custom = store.customVars ?? [];
+    const found = custom.find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    store.updateCustomVar(found.name, { initialValue: v });
+    return { success: true, data: { variableId: found.id, name: found.name } };
+  },
+
+  patch_variable_item(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const index = input.index as number;
+    const fields = input.fields as Record<string, unknown>;
+    const found = (store.customVars ?? []).find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    const arr = Array.isArray(found.initialValue) ? [...(found.initialValue as unknown[])] : [];
+    if (index < 0 || index >= arr.length) return { success: false, error: `index ${index} out of range (array length ${arr.length}).` };
+    arr[index] = { ...(arr[index] as object), ...fields };
+    store.updateCustomVar(found.name, { initialValue: arr });
+    return { success: true, data: { variableId: found.id, name: found.name, index, updatedKeys: Object.keys(fields) } };
+  },
+
+  patch_variable_items(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const updates = input.updates as Array<{ index: number; fields: Record<string, unknown> }>;
+    const found = (store.customVars ?? []).find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    const arr = Array.isArray(found.initialValue) ? [...(found.initialValue as unknown[])] : [];
+    const errors: string[] = [];
+    for (const { index, fields } of updates) {
+      if (index < 0 || index >= arr.length) { errors.push(`index ${index} out of range`); continue; }
+      arr[index] = { ...(arr[index] as object), ...fields };
+    }
+    store.updateCustomVar(found.name, { initialValue: arr });
+    return { success: true, data: { variableId: found.id, name: found.name, patchedCount: updates.length - errors.length, errors } };
+  },
+
+  patch_variable_fields(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const fields = input.fields as Record<string, unknown>;
+    const found = (store.customVars ?? []).find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    const current = (typeof found.initialValue === 'object' && found.initialValue !== null && !Array.isArray(found.initialValue))
+      ? found.initialValue as Record<string, unknown>
+      : {};
+    store.updateCustomVar(found.name, { initialValue: { ...current, ...fields } });
+    return { success: true, data: { variableId: found.id, name: found.name, updatedKeys: Object.keys(fields) } };
+  },
+
+  append_variable_item(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const item = input.item;
+    const found = (store.customVars ?? []).find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    const arr = Array.isArray(found.initialValue) ? [...(found.initialValue as unknown[])] : [];
+    arr.push(item);
+    store.updateCustomVar(found.name, { initialValue: arr });
+    return { success: true, data: { variableId: found.id, name: found.name, newLength: arr.length, newIndex: arr.length - 1 } };
+  },
+
+  remove_variable_item(input, getStore) {
+    const store = getStore();
+    const variableId = input.variableId as string;
+    const index = input.index as number;
+    const found = (store.customVars ?? []).find(x => x.id === variableId || x.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    const arr = Array.isArray(found.initialValue) ? [...(found.initialValue as unknown[])] : [];
+    if (index < 0 || index >= arr.length) return { success: false, error: `index ${index} out of range (array length ${arr.length}).` };
+    arr.splice(index, 1);
+    store.updateCustomVar(found.name, { initialValue: arr });
+    return { success: true, data: { variableId: found.id, name: found.name, removedIndex: index, newLength: arr.length } };
+  },
+
+  update_workflow_steps(input, getStore) {
+    const store = getStore();
+    const workflowName = input.workflowName as string;
+    let rawSteps = input.steps as Array<Record<string, unknown>>;
+    if (typeof rawSteps === 'string') {
+      try {
+        const parsed = JSON.parse(rawSteps as unknown as string);
+        if (Array.isArray(parsed)) rawSteps = parsed;
+      } catch { /* noop */ }
+    }
+    if (!Array.isArray(rawSteps)) {
+      return { success: false, error: 'update_workflow_steps requires steps array.' };
+    }
+    const steps = coerceStepFormulas(rawSteps.map((s, i) => ({
+      id: (s.id as string) ?? `step-${i + 1}`,
+      ...s,
+    })));
+    const formulaError = validateWorkflowFormulas(steps);
+    if (formulaError) return { success: false, error: formulaError };
+    const prohibitedError = findProhibitedStep(steps);
+    if (prohibitedError) return { success: false, error: prohibitedError };
+    if (!store.pageWorkflows?.[workflowName]) {
+      return { success: false, error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.` };
+    }
+    store.setPageWorkflow(workflowName, steps as object[]);
+    return { success: true, data: { workflowName, stepCount: steps.length } };
+  },
+
+  create_shared_component(input, getStore) {
+    void getStore;
+    const name = input.name as string;
+    if (!name) return { success: false, error: 'create_shared_component requires name.' };
+    const modelId = (input.id as string | undefined) ?? (input.modelId as string | undefined) ?? crypto.randomUUID();
+    createSharedComponent({
+      id: modelId,
+      name,
+      folder: input.folder as string | undefined,
+      description: input.description as string | undefined,
+      content: input.content as Record<string, unknown> | undefined,
+      properties: input.properties as Parameters<typeof createSharedComponent>[0]['properties'] | undefined,
+      variables: input.variables as Parameters<typeof createSharedComponent>[0]['variables'] | undefined,
+      formulas: input.formulas as Parameters<typeof createSharedComponent>[0]['formulas'] | undefined,
+      workflows: input.workflows as Parameters<typeof createSharedComponent>[0]['workflows'] | undefined,
+      triggers: input.triggers as Parameters<typeof createSharedComponent>[0]['triggers'] | undefined,
+    });
+    return { success: true, data: { modelId, name } };
+  },
+
+  update_shared_component_metadata(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    const prev = getSharedComponents()[modelId];
+    if (!prev) return { success: false, error: `Shared component "${modelId}" not found.` };
+    const patch: Record<string, unknown> = { id: modelId };
+    if (input.name != null) patch.name = input.name;
+    if (input.folder != null) patch.folder = input.folder;
+    if (input.description != null) patch.description = input.description;
+    if (input.valueVariable !== undefined) {
+      patch.valueVariable = input.valueVariable === '' ? undefined : input.valueVariable;
+    }
+    updateSharedComponent(patch as Parameters<typeof updateSharedComponent>[0]);
+    return { success: true, data: { modelId } };
+  },
+
+  delete_shared_component(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    if (!deleteSharedComponent(modelId)) {
+      return { success: false, error: `Shared component "${modelId}" not found.` };
+    }
+    return { success: true, data: { modelId } };
+  },
+
+  update_shared_component_properties(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    const model = getSharedComponents()[modelId];
+    if (!model) return { success: false, error: `Model "${modelId}" not found.` };
+    const ops = input.ops as Array<Record<string, unknown>>;
+    let props = [...(model.properties ?? [])];
+    for (const op of ops) {
+      const kind = op.op as string;
+      if (kind === 'add' && op.property) {
+        props.push(op.property as never);
+      } else if (kind === 'remove' && op.propertyId) {
+        props = props.filter(p => (p as { id?: string }).id !== op.propertyId);
+      } else if (kind === 'update' && op.propertyId && op.property) {
+        props = props.map(p =>
+          (p as { id?: string }).id === op.propertyId ? { ...p, ...(op.property as object) } : p,
+        );
+      }
+    }
+    updateSharedComponent({ id: modelId, properties: props });
+    return { success: true, data: { modelId, count: props.length } };
+  },
+
+  update_shared_component_variables(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    const model = getSharedComponents()[modelId];
+    if (!model) return { success: false, error: `Model "${modelId}" not found.` };
+    const vars = { ...(model.variables ?? {}) };
+    const ops = input.ops as Array<Record<string, unknown>>;
+    for (const op of ops) {
+      const kind = op.op as string;
+      if (kind === 'add' && op.variable && op.uuid) {
+        vars[op.uuid as string] = op.variable as never;
+      } else if (kind === 'remove' && op.uuid) {
+        delete vars[op.uuid as string];
+      } else if (kind === 'update' && op.uuid && op.variable) {
+        vars[op.uuid as string] = { ...vars[op.uuid as string], ...(op.variable as object) } as never;
+      }
+    }
+    updateSharedComponent({ id: modelId, variables: vars });
+    return { success: true, data: { modelId } };
+  },
+
+  update_shared_component_formulas(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    const model = getSharedComponents()[modelId];
+    if (!model) return { success: false, error: `Model "${modelId}" not found.` };
+    const fms = { ...(model.formulas ?? {}) };
+    const ops = input.ops as Array<Record<string, unknown>>;
+    for (const op of ops) {
+      const kind = op.op as string;
+      if (kind === 'add' && op.formula && op.formulaId) {
+        fms[op.formulaId as string] = op.formula as never;
+      } else if (kind === 'remove' && op.formulaId) {
+        delete fms[op.formulaId as string];
+      } else if (kind === 'update' && op.formulaId && op.formula) {
+        fms[op.formulaId as string] = { ...fms[op.formulaId as string], ...(op.formula as object) } as never;
+      }
+    }
+    updateSharedComponent({ id: modelId, formulas: fms });
+    return { success: true, data: { modelId } };
+  },
+
+  update_shared_component_triggers(input, getStore) {
+    void getStore;
+    const modelId = input.modelId as string;
+    const model = getSharedComponents()[modelId];
+    if (!model) return { success: false, error: `Model "${modelId}" not found.` };
+    let triggers = [...(model.triggers ?? [])];
+    const ops = input.ops as Array<Record<string, unknown>>;
+    for (const op of ops) {
+      const kind = op.op as string;
+      if (kind === 'add' && op.trigger) {
+        triggers.push(op.trigger as never);
+      } else if (kind === 'remove' && op.triggerId) {
+        triggers = triggers.filter(t => (t as { id?: string }).id !== op.triggerId);
+      } else if (kind === 'update' && op.triggerId && op.trigger) {
+        triggers = triggers.map(t =>
+          (t as { id?: string }).id === op.triggerId ? { ...t, ...(op.trigger as object) } : t,
+        );
+      }
+    }
+    updateSharedComponent({ id: modelId, triggers });
+    return { success: true, data: { modelId } };
+  },
+
+  enter_shared_component_edit(input, getStore) {
+    const store = getStore();
+    const modelId = input.modelId as string;
+    const model = getSharedComponents()[modelId];
+    if (!model) return { success: false, error: `Model "${modelId}" not found.` };
+    store.enterSharedComponentEdit(modelId, model.content as unknown as SDUINode, model as unknown as Record<string, unknown>, undefined, true, 'shared');
+    return { success: true, data: { modelId } };
+  },
+
+  exit_shared_component_edit(_input, getStore) {
+    getStore().exitSharedComponentEdit();
+    return { success: true, data: { message: 'Exited shared component edit mode.' } };
+  },
+
+  set_instance_controlled(input, getStore) {
+    const store = getStore();
+    const instanceId = input.instanceId as string;
+    const controlled = input.controlled as boolean;
+    const node = findNodeInStore(store, instanceId);
+    if (!node) return { success: false, error: `Node "${instanceId}" not found.` };
+    const rec = node as unknown as Record<string, unknown>;
+    const shared = rec._shared as { id?: string } | undefined;
+    if (!shared?.id) return { success: false, error: 'set_instance_controlled requires a shared-component instance node.' };
+    store.patchNodeField(instanceId, '_controlled', controlled);
+    return { success: true, data: { instanceId, controlled } };
   },
 
   // ── Add component (palette-based, no JSON) ─────────────────────────────────
@@ -766,7 +1252,7 @@ const handlers: Record<string, Handler> = {
     // Guard: if parentId is given but doesn't exist in the current page, the node would be
     // silently dropped (insertNode returns the unchanged tree). Return an error so the AI
     // can call get_page_tree to get valid IDs and retry.
-    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+    if (parentId && !findNodeInStore(store, parentId)) {
       return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
     }
 
@@ -779,7 +1265,7 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
     const parentId = (input.parentId as string | null) ?? null;
-    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+    if (parentId && !findNodeInStore(store, parentId)) {
       return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
     }
     const node = {
@@ -800,7 +1286,7 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
     const parentId = (input.parentId as string | null) ?? null;
-    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+    if (parentId && !findNodeInStore(store, parentId)) {
       return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
     }
     const node = {
@@ -821,7 +1307,7 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeId = (input._assignedNodeId as string | undefined) ?? uuid();
     const parentId = (input.parentId as string | null) ?? null;
-    if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+    if (parentId && !findNodeInStore(store, parentId)) {
       return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
     }
     const node = {
@@ -891,7 +1377,7 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: 'wrap_in_container requires at least one nodeId.' };
     }
     const rootIds = new Set((store.pageNodes ?? []).map(n => n.id).filter(Boolean) as string[]);
-    const missing = ids.filter(id => !findNode(store.pageNodes as SDUINode[], id));
+    const missing = ids.filter(id => !findNodeInStore(store, id));
     if (missing.length > 0) {
       return { success: false, error: `Nodes not found: ${missing.join(', ')}. Call get_page_tree() to get valid IDs.` };
     }
@@ -928,9 +1414,9 @@ const handlers: Record<string, Handler> = {
     // Sanitize before formula detection so the evaluator sees valid JS single-quoted strings.
     text = text.replace(/\\"([^"\\]*?)\\"/g, "'$1'");
 
-    // Convert to { formula: expr } when the text is a formula expression.
+    // Convert to { js: expr } when the text is a formula expression.
     // Three cases:
-    //   1. Pure {{expression}} wrapper — strip braces, store as formula.
+    //   1. Pure {{expression}} wrapper — strip braces, store as { js }.
     //   2. Plain formula expression (no {{...}}) — detected by known scope identifiers.
     //      Only applies when there are no {{ }} template interpolation markers present,
     //      so "Our {{variables['count-uuid']}} Features" stays as a template string
@@ -967,19 +1453,13 @@ const handlers: Record<string, Handler> = {
   set_src(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const node = findNodeInStore(store, nodeId);
     if (!node) return { success: false, error: `Node "${nodeId}" not found on the current page.` };
-    // Capability check replaces the old hand-written Image/Video guard.
-    // Also provides the full "supported groups" list in the error message.
-    const capErr = checkCapability(store, nodeId, 'src');
-    if (capErr) {
-      // Append the specific usage hint for set_src so the AI knows what to do.
-      return {
-        success: false,
-        error: capErr.error +
-          ' For a full-bleed photo behind content, use an Image layer with absolute positioning and object-cover. To set a CSS background-image on a Box, use set_background(boxId, { bgImage: "url(...)" }) instead.',
-      };
-    }
+    // Phase 4c: set_src accepts a static URL or JS expression on any node type.
+    // The capabilities check for 'src' is intentionally NOT called here — the media
+    // agent and binding agent both call set_src; restricting by node type was an invented
+    // rule. The engine stores a static string or { formula } and ignores it on nodes that
+    // don't render src.
     const nodeType = node.type as string | undefined;
     // Image nodes store URL at top-level src; Video uses props.src.
     // Formula expressions (e.g. "context?.item?.data?.avatar") are stored as { formula }
@@ -987,14 +1467,18 @@ const handlers: Record<string, Handler> = {
     if (input.src !== undefined) {
       const srcVal = input.src as string;
       const isFormula = isFormulaExpression(srcVal) || srcVal.startsWith('context');
-      const stored = isFormula ? { formula: srcVal } : srcVal;
+      const stored = isFormula ? { js: srcVal } : srcVal;
       if (nodeType === 'Image') {
         store.patchProp(nodeId, 'src', stored);
       } else {
         store.patchProp(nodeId, 'props.src', stored);
       }
     }
-    if (input.alt        !== undefined) store.patchProp(nodeId, 'props.alt',       input.alt);
+    if (input.alt !== undefined) {
+      const altVal = input.alt as string;
+      const isAltFormula = isFormulaExpression(altVal) || altVal.startsWith('context');
+      store.patchProp(nodeId, 'props.alt', isAltFormula ? { js: altVal } : altVal);
+    }
     if (input.objectFit  !== undefined) store.patchProp(nodeId, 'props.objectFit', input.objectFit);
     if (input.poster     !== undefined) store.patchProp(nodeId, 'props.poster',    input.poster);
     return { success: true, data: { message: 'Updated source' } };
@@ -1017,7 +1501,7 @@ const handlers: Record<string, Handler> = {
     let iconLabel = '';
     if (isFormulaExpression(input.icon as string)) {
       // Store as props.icon formula so resolveProps evaluates it with full repeat scope.
-      store.patchProp(nodeId, 'props.icon', { formula: input.icon as string });
+      store.patchProp(nodeId, 'props.icon', { js: input.icon as string });
       iconLabel = '(formula)';
     } else {
       store.patchProp(nodeId, 'props.icon', input.icon);
@@ -1061,10 +1545,10 @@ const handlers: Record<string, Handler> = {
       if (scopeErr) return scopeErr;
       if (isFormulaExpression(bgVal)) {
         const sanitized = resolveFormulaTokens(bgVal);
-        patchNodeStyle(store, nodeId, { backgroundColor: { formula: sanitized } });
+        patchNodeStyle(store, nodeId, { backgroundColor: { js: sanitized } });
         cls = replaceTwToken(cls, 'bg-', '');
         setNodeClassName(store, nodeId, cls);
-        return { success: true, data: { message: 'Updated background (formula)' } };
+        return { success: true, data: { message: 'Updated background (js)' } };
       }
       // rgb()/rgba()/hsl() — store as inline backgroundColor (arbitrary values not reliable in Tailwind JIT)
       if (bgVal.startsWith('rgb(') || bgVal.startsWith('rgba(') || bgVal.startsWith('hsl(') || bgVal.startsWith('hsla(')) {
@@ -1175,7 +1659,7 @@ const handlers: Record<string, Handler> = {
           ? `radial-gradient(circle at center, ${colorList})`
           : `linear-gradient(${dir}, ${colorList})`;
         patchNodeStyle(store, nodeId, { backgroundImage: gradientStr, backgroundRepeat: 'no-repeat' });
-        const node = findNode(store.pageNodes as SDUINode[], nodeId);
+        const node = findNodeInStore(store, nodeId);
         const existingAnim = ((node as unknown as Record<string, unknown>)?.animation ?? {}) as Record<string, unknown>;
         const loop = existingAnim.loop as { type?: string } | undefined;
         if (loop?.type !== 'gradientDrift') {
@@ -1206,8 +1690,8 @@ const handlers: Record<string, Handler> = {
     const colorVal = unwrapSerializedFormula(input.color as string);
     if (isFormulaExpression(colorVal)) {
       const sanitized = resolveFormulaTokens(colorVal);
-      patchNodeStyle(store, nodeId, { color: { formula: sanitized } });
-      return { success: true, data: { message: 'Set text color (formula)' } };
+      patchNodeStyle(store, nodeId, { color: { js: sanitized } });
+      return { success: true, data: { message: 'Set text color (js)' } };
     }
     // Always use ! prefix so Gluestack's default typography color tokens (text-typography-900 etc.)
     // don't override the explicitly requested color on Heading/Text components.
@@ -1223,17 +1707,6 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: `Set text color to "${input.color}"` } };
   },
 
-  // set_typography is kept as a backward-compat alias — remaps old param names and delegates to set_layout.
-  // Old param names: size→fontSize, align→textAlign, transform→textTransform, overflow→textOverflow
-  set_typography(input, getStore) {
-    const remapped: Record<string, unknown> = { ...input };
-    if ('size'      in remapped) { remapped.fontSize      = remapped.size;      delete remapped.size; }
-    if ('align'     in remapped) { remapped.textAlign     = remapped.align;     delete remapped.align; }
-    if ('transform' in remapped) { remapped.textTransform = remapped.transform; delete remapped.transform; }
-    if ('overflow'  in remapped) { remapped.textOverflow  = remapped.overflow;  delete remapped.overflow; }
-    return handlers.set_layout(remapped, getStore);
-  },
-
   set_border(input, getStore) {
     const store = getStore();
     const nodeId = input.nodeId as string;
@@ -1246,7 +1719,7 @@ const handlers: Record<string, Handler> = {
     if (input.width != null) {
       const widthRaw = input.width as string | number;
       if (typeof widthRaw === 'string' && isFormulaExpression(widthRaw)) {
-        patchNodeStyle(store, nodeId, { borderWidth: { formula: widthRaw } });
+        patchNodeStyle(store, nodeId, { borderWidth: { js: widthRaw } });
       } else {
         // Use parseFloat so "2px" strings are handled correctly (Number("2px") = NaN)
         const widthPx = parseFloat(String(widthRaw));
@@ -1266,7 +1739,7 @@ const handlers: Record<string, Handler> = {
       if (isDivider) {
         if (isFormulaExpression(colorRaw)) {
           const sanitized = resolveFormulaTokens(colorRaw);
-          patchNodeStyle(store, nodeId, { backgroundColor: { formula: sanitized } });
+          patchNodeStyle(store, nodeId, { backgroundColor: { js: sanitized } });
           removeNodeStyleKeys(store, nodeId, ['borderColor']);
         } else {
           const bgClass = resolveColorClass(colorRaw, 'bg');
@@ -1275,7 +1748,7 @@ const handlers: Record<string, Handler> = {
         }
       } else if (isFormulaExpression(colorRaw)) {
         const sanitized = resolveFormulaTokens(colorRaw);
-        patchNodeStyle(store, nodeId, { borderColor: { formula: sanitized } });
+        patchNodeStyle(store, nodeId, { borderColor: { js: sanitized } });
       } else {
         const borderColorClass = resolveColorClass(colorRaw, 'border');
         cls = stripBorderColorTokens(cls);
@@ -1335,7 +1808,7 @@ const handlers: Record<string, Handler> = {
       if (input[key] != null) {
         const colorRaw = input[key] as string;
         if (isFormulaExpression(colorRaw)) {
-          patchNodeStyle(store, nodeId, { [styleProp]: { formula: resolveFormulaTokens(colorRaw) } });
+          patchNodeStyle(store, nodeId, { [styleProp]: { js: resolveFormulaTokens(colorRaw) } });
         } else {
           const colorClass = resolveColorClass(colorRaw, 'border');
           // e.g. "border-red-500" → "border-t-red-500"
@@ -1359,7 +1832,7 @@ const handlers: Record<string, Handler> = {
     if (capErr) return capErr;
 
     if (input.remove) {
-      const node = findNode(store.pageNodes as SDUINode[], nodeId);
+      const node = findNodeInStore(store, nodeId);
       const currentStyle = { ...((node?.props as Record<string, unknown>)?.style as Record<string, unknown> ?? {}) };
       delete currentStyle.boxShadow;
       delete currentStyle.shadowColor;
@@ -1388,8 +1861,8 @@ const handlers: Record<string, Handler> = {
     if (boxShadowRaw) {
       if (isFormulaExpression(boxShadowRaw)) {
         const sanitized = resolveFormulaTokens(boxShadowRaw);
-        patchNodeStyle(store, nodeId, { boxShadow: { formula: sanitized } });
-        return { success: true, data: { message: 'Set shadow (formula)' } };
+        patchNodeStyle(store, nodeId, { boxShadow: { js: sanitized } });
+        return { success: true, data: { message: 'Set shadow (js)' } };
       }
       // Static CSS boxShadow string — parse x/y/blur/spread/color for RN shadow props
       const m = boxShadowRaw.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
@@ -1453,11 +1926,6 @@ const handlers: Record<string, Handler> = {
     return { success: true, data: { message: `Set opacity to ${value}%` } };
   },
 
-  // set_spacing is kept as a backward-compat alias — delegates to set_layout.
-  set_spacing(input, getStore) {
-    return handlers.set_layout(input, getStore);
-  },
-
   // set_size is kept as a backward-compat alias — delegates to set_layout.
   // (size params width/height/minWidth/maxWidth/minHeight/maxHeight are now handled in set_layout)
   set_size(input, getStore) {
@@ -1468,7 +1936,7 @@ const handlers: Record<string, Handler> = {
     const capErr = checkCapability(store, nodeId, 'size');
     if (capErr) return capErr;
 
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const node = findNodeInStore(store, nodeId);
     const isImage = node?.type === 'Image';
 
     // Normalise number → px string. Strings pass through as-is (CSS values).
@@ -1489,7 +1957,7 @@ const handlers: Record<string, Handler> = {
         stripImageStyleWidth = true;
       } else {
         if (isFormulaExpression(w)) {
-          stylePatch.width = { formula: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
+          stylePatch.width = { js: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
         } else {
           stylePatch.width = w;
         }
@@ -1506,7 +1974,7 @@ const handlers: Record<string, Handler> = {
         stripImageStyleHeight = true;
       } else {
         if (isFormulaExpression(h)) {
-          stylePatch.height = { formula: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
+          stylePatch.height = { js: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
         } else {
           stylePatch.height = h;
         }
@@ -1533,79 +2001,6 @@ const handlers: Record<string, Handler> = {
     if (Object.keys(stylePatch).length > 0) patchNodeStyle(store, nodeId, stylePatch);
     setNodeClassName(store, nodeId, cls);
     return { success: true, data: { message: 'Updated size' } };
-  },
-
-  set_position(input, getStore) {
-    const store = getStore();
-    const nodeId = input.nodeId as string;
-    const nodeErr = requireNode(store, nodeId);
-    if (nodeErr) return nodeErr;
-    let cls = getNodeClassName(store, nodeId);
-
-    if (input.position) cls = replaceTokenGroup(cls, POSITION_TOKENS, input.position as string);
-    if (input.zIndex != null) {
-      const zNum = Number(input.zIndex);
-      cls = replaceTokenGroup(cls, Z_PREFIXES, ''); // strip scale tokens (z-0, z-10, …)
-      cls = removeAllWithPrefix(cls, 'z-[');        // strip existing arbitrary z-[N]
-      if (!Number.isNaN(zNum)) cls = `${cls} z-[${Math.round(zNum)}]`.trim();
-    }
-
-    // Inset: formula values stored in props.style, plain integers as Tailwind classes
-    const parseInset = (v: unknown): number | null => {
-      if (v == null) return null;
-      if (typeof v === 'number') return v;
-      const strVal = String(v).replace(/^px:/, '');
-      const rawPx = strVal.match(/^(-?\d+(?:\.\d+)?)px$/)?.[1];
-      const n = rawPx != null ? Number(rawPx) : Number(strVal);
-      return Number.isNaN(n) ? null : n;
-    };
-    const insetStylePatch: Record<string, unknown> = {};
-    const insetKeysToRemoveFromStyle: string[] = [];
-    for (const [key, val] of [['top', input.top], ['right', input.right], ['bottom', input.bottom], ['left', input.left]] as [string, unknown][]) {
-      if (val == null) continue;
-      if (typeof val === 'string' && isFormulaExpression(val)) {
-        const sanitized = resolveFormulaTokens(val);
-        insetStylePatch[key] = { formula: sanitized };
-        cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
-      } else if (typeof val === 'string' && /^\d+(\.\d+)?%$/.test(val)) {
-        cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
-        cls = `${cls} ${key}-[${val}]`.trim();
-        insetKeysToRemoveFromStyle.push(key);
-      } else {
-        const px = parseInset(val);
-        if (px != null) {
-          cls = cls.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
-          cls = `${cls} ${key}-[${px}px]`.trim();
-          insetKeysToRemoveFromStyle.push(key);
-        }
-      }
-    }
-    if (Object.keys(insetStylePatch).length > 0) patchNodeStyle(store, nodeId, insetStylePatch);
-    if (insetKeysToRemoveFromStyle.length > 0) removeNodeStyleKeys(store, nodeId, insetKeysToRemoveFromStyle);
-    setNodeClassName(store, nodeId, cls);
-
-    const finalCls = getNodeClassName(store, nodeId);
-    const hasAbsolute = /\babsolute\b/.test(finalCls);
-    const hasHorizInset =
-      /(?:^|\s)(?:left|right)-/.test(finalCls) ||
-      /(?:^|\s)inset-x-/.test(finalCls) ||
-      /(?:^|\s)inset-0\b/.test(finalCls) ||
-      /(?:^|\s)inset-\[/.test(finalCls);
-    const hasVertInset =
-      /(?:^|\s)(?:top|bottom)-/.test(finalCls) ||
-      /(?:^|\s)inset-y-/.test(finalCls) ||
-      /(?:^|\s)inset-0\b/.test(finalCls) ||
-      /(?:^|\s)inset-\[/.test(finalCls);
-    let msg = 'Updated position';
-    if (hasAbsolute && !hasHorizInset) {
-      msg +=
-        ' — WARNING: absolute node has no horizontal inset (left/right, inset-x, or inset). Placement may drift; call set_position again.';
-    }
-    if (hasAbsolute && !hasVertInset) {
-      msg +=
-        ' — WARNING: absolute node has no vertical inset (top/bottom, inset-y, or inset). Placement may drift; call set_position again.';
-    }
-    return { success: true, data: { message: msg } };
   },
 
   set_transform(input, getStore) {
@@ -1650,6 +2045,9 @@ const handlers: Record<string, Handler> = {
 
     if (input.rotate != null) {
       const deg = Number(input.rotate);
+      if (Number.isNaN(deg)) {
+        return { success: false, error: `set_transform rotate must be a plain number in degrees, not a string or expression. Got: "${input.rotate}". Use a literal number like 5 or -12.` };
+      }
       // Write to style.transform (matches the panel's patchStyle behaviour — any degree value supported)
       stylePatch.transform = deg === 0 ? '' : `rotate(${deg}deg)`;
       // Clear any Tailwind rotate-* class that would conflict
@@ -1674,7 +2072,7 @@ const handlers: Record<string, Handler> = {
         // Plain CSS values like "-50%", "100px" must stay as strings so the renderer
         // can compose them into transform: "translateX(-50%)" correctly.
         if (isFormulaExpression(txVal)) {
-          patchNodeStyle(store, nodeId, { translateX: { formula: txVal } });
+          patchNodeStyle(store, nodeId, { translateX: { js: txVal } });
         } else {
           patchNodeStyle(store, nodeId, { translateX: txVal });
         }
@@ -1690,7 +2088,7 @@ const handlers: Record<string, Handler> = {
         // Plain CSS values like "-50%", "100px" must stay as strings so the renderer
         // can compose them into transform: "translateY(-50%)" correctly.
         if (isFormulaExpression(tyVal)) {
-          patchNodeStyle(store, nodeId, { translateY: { formula: tyVal } });
+          patchNodeStyle(store, nodeId, { translateY: { js: tyVal } });
         } else {
           patchNodeStyle(store, nodeId, { translateY: tyVal });
         }
@@ -1834,7 +2232,7 @@ const handlers: Record<string, Handler> = {
       };
     }
 
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const node = findNodeInStore(store, nodeId);
     const componentType = (node?.type as string | undefined) ?? 'Unknown';
     const caps = getCapabilities(componentType); // null = no restriction
     const has = (group: ToolGroup): boolean => caps === null || caps.includes(group);
@@ -1864,7 +2262,7 @@ const handlers: Record<string, Handler> = {
         const colorInput = unwrapSerializedFormula(input.color as string);
         if (isFormulaExpression(colorInput)) {
           const sanitized = resolveFormulaTokens(colorInput);
-          store.patchProp(nodeId, 'props.color', { formula: sanitized });
+          store.patchProp(nodeId, 'props.color', { js: sanitized });
         } else {
           let colorKey = colorInput;
           if (colorKey.startsWith('theme:')) colorKey = colorKey.slice(6);
@@ -1908,7 +2306,7 @@ const handlers: Record<string, Handler> = {
     const subErrors: string[] = [];
 
     if (hasLayoutSub) {
-      const r = handlers.set_layout(layoutSub, getStore);
+      const r = asSyncResult(handlers.set_layout(layoutSub, getStore));
       if (r && !r.success && r.error) {
         subErrors.push(r.error);
       } else {
@@ -1921,7 +2319,7 @@ const handlers: Record<string, Handler> = {
       const overflowSub: Record<string, unknown> = { nodeId };
       if ('overflow' in input) overflowSub.mode = input.overflow;
       if ('pointerEvents' in input) overflowSub.pointerEvents = input.pointerEvents;
-      const r = handlers.set_overflow(overflowSub, getStore);
+      const r = asSyncResult(handlers.set_overflow(overflowSub, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('overflow');
     }
 
@@ -1931,13 +2329,13 @@ const handlers: Record<string, Handler> = {
     let hasBg = false;
     for (const k of BG_KEYS) if (k in input) { bgSub[k] = input[k]; hasBg = true; }
     if (hasBg && has('background')) {
-      const r = handlers.set_background(bgSub, getStore);
+      const r = asSyncResult(handlers.set_background(bgSub, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('background');
     }
 
     // ── Text color (capability-gated via 'typography') ─────────────────────────
     if ('color' in input && has('typography')) {
-      const r = handlers.set_text_color({ nodeId, color: input.color }, getStore);
+      const r = asSyncResult(handlers.set_text_color({ nodeId, color: input.color }, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('color');
     }
 
@@ -1959,20 +2357,20 @@ const handlers: Record<string, Handler> = {
       if (from in input) { borderSub[to] = input[from]; hasBorder = true; }
     }
     if (hasBorder && has('border')) {
-      const r = handlers.set_border(borderSub, getStore);
+      const r = asSyncResult(handlers.set_border(borderSub, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('border');
     }
 
     // ── Shadow (capability-gated) ─────────────────────────────────────────────
     if ('shadow' in input && has('shadow')) {
       const shadowData = (input.shadow as Record<string, unknown>) ?? {};
-      const r = handlers.set_shadow({ nodeId, ...shadowData }, getStore);
+      const r = asSyncResult(handlers.set_shadow({ nodeId, ...shadowData }, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('shadow');
     }
 
     // ── Opacity (universal — no capability check) ─────────────────────────────
     if ('opacity' in input) {
-      const r = handlers.set_opacity({ nodeId, opacity: input.opacity }, getStore);
+      const r = asSyncResult(handlers.set_opacity({ nodeId, opacity: input.opacity }, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('opacity');
     }
 
@@ -1982,15 +2380,66 @@ const handlers: Record<string, Handler> = {
     let hasTransform = false;
     for (const k of TRANSFORM_KEYS) if (k in input) { transformSub[k] = input[k]; hasTransform = true; }
     if (hasTransform) {
-      const r = handlers.set_transform(transformSub, getStore);
+      const r = asSyncResult(handlers.set_transform(transformSub, getStore));
       if (r && !r.success && r.error) subErrors.push(r.error); else msgs.push('transform');
     }
 
-    const typoWarnings = droppedTypoKeys.length > 0
-      ? [`WARNING: ${droppedTypoKeys.join(', ')} not applied — only Text nodes support typography. Apply these props to each Text child instead.`]
+    // ── Auto-cascade typography keys from non-text containers to Text children ──
+    // The agent often passes textAlign / fontSize / weight on the parent Box (because
+    // that's how CSS works). Instead of silently dropping it, propagate it to every
+    // direct Text child that doesn't already define the same key. This eliminates the
+    // "WARNING: textAlign not applied" noise without forcing the agent to enumerate
+    // every leaf Text node by hand.
+    const cascadedTypoKeys: string[] = [];
+    if (droppedTypoKeys.length > 0) {
+      const parent = findNodeInStore(store, nodeId);
+      const directChildren = (parent?.children as SDUINode[] | undefined) ?? [];
+      for (const child of directChildren) {
+        if (!child?.id || child.type !== 'Text') continue;
+        const childCaps = getCapabilities(child.type as string);
+        if (childCaps !== null && !childCaps.includes('typography')) continue;
+        const childInput: Record<string, unknown> = { nodeId: child.id };
+        let any = false;
+        for (const k of droppedTypoKeys) {
+          if (input[k] === undefined) continue;
+          // Don't overwrite a value the styling agent has already set on the child.
+          const existing = (child.props as Record<string, unknown> | undefined)?.[k];
+          if (existing !== undefined) continue;
+          childInput[k] = input[k];
+          any = true;
+        }
+        if (any) {
+          asSyncResult(handlers.set_layout(childInput, getStore));
+          for (const k of droppedTypoKeys) {
+            if (k in childInput && !cascadedTypoKeys.includes(k)) cascadedTypoKeys.push(k);
+          }
+        }
+      }
+    }
+
+    const stillDroppedTypoKeys = droppedTypoKeys.filter(k => !cascadedTypoKeys.includes(k));
+    const typoWarnings = stillDroppedTypoKeys.length > 0
+      ? [`WARNING: ${stillDroppedTypoKeys.join(', ')} not applied — only Text nodes support typography. Apply these props to each Text child instead.`]
       : [];
+    if (cascadedTypoKeys.length > 0) {
+      msgs.push(`typography (cascaded to Text children: ${cascadedTypoKeys.join(', ')})`);
+    }
 
     const allWarnings = [...typoWarnings, ...subErrors.map(e => `ERROR: ${e}`)];
+
+    // ── Batched breakpoints dict ──────────────────────────────────────────────
+    // When the agent passes { breakpoints: { tablet: {...}, mobile: {...} } }
+    // we process each breakpoint entry by re-invoking the handler with the
+    // breakpoint set — this takes the responsive routing branch above.
+    if (input.breakpoints && typeof input.breakpoints === 'object') {
+      const bpsInput = input.breakpoints as Record<string, Record<string, unknown>>;
+      const BP_ORDER: Array<'laptop' | 'tablet' | 'mobile'> = ['laptop', 'tablet', 'mobile'];
+      for (const bpName of BP_ORDER) {
+        const bpStyles = bpsInput[bpName];
+        if (!bpStyles || typeof bpStyles !== 'object') continue;
+        asSyncResult(handlers.set_style({ ...bpStyles, nodeId, breakpoint: bpName }, getStore));
+      }
+    }
 
     return {
       success: true,
@@ -2039,12 +2488,12 @@ const handlers: Record<string, Handler> = {
     if (input.autocomplete !== undefined) store.patchProp(targetId, 'props.autoComplete', input.autocomplete ? 'on' : 'off');
     if (input.validationTrigger !== undefined) {
       // Read existing _validation and update trigger
-      const node = findNode(store.pageNodes as SDUINode[], targetId);
+      const node = findNodeInStore(store, targetId);
       const existing = ((node as unknown as Record<string, unknown>)?._validation ?? {}) as Record<string, unknown>;
       store.patchNodeField(targetId, '_validation', { ...existing, trigger: input.validationTrigger });
     }
     if (input.debounce !== undefined || input.debounceEnabled !== undefined) {
-      const node = findNode(store.pageNodes as SDUINode[], targetId);
+      const node = findNodeInStore(store, targetId);
       const existingDebounce = ((node as unknown as Record<string, unknown>)?._debounce ?? {}) as Record<string, unknown>;
       const newDebounce: Record<string, unknown> = { ...existingDebounce };
       if (input.debounce !== undefined) newDebounce.delay = Number(input.debounce);
@@ -2089,7 +2538,7 @@ const handlers: Record<string, Handler> = {
       if (capErr) return capErr;
     }
 
-    const node = findNode(store.pageNodes, nodeId);
+    const node = findNodeInStore(store, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
 
     // Formula-expression guard: justify and align can receive ternary strings.
@@ -2107,15 +2556,15 @@ const handlers: Record<string, Handler> = {
     let updated = buildLayoutClass(layoutInput, current);
 
     if (isJustifyFormula) {
-      patchNodeStyle(store, nodeId, { justifyContent: { formula: justifyVal } });
+      patchNodeStyle(store, nodeId, { justifyContent: { js: justifyVal } });
       updated = updated.split(' ').filter(t => !/^justify-/.test(t)).join(' ').trim();
     }
     if (isAlignFormula) {
-      patchNodeStyle(store, nodeId, { alignItems: { formula: alignVal } });
+      patchNodeStyle(store, nodeId, { alignItems: { js: alignVal } });
       updated = updated.split(' ').filter(t => !/^items-/.test(t)).join(' ').trim();
     }
 
-    // ── Spacing (padding, margin, gap) — same logic as set_spacing ────────────
+    // ── Spacing (padding, margin, gap) ────────────────────────────────────────
     // Normalise any spacing value: 40 → 40, "40px" → 40, "40" → 40.
     // "auto" and non-numeric strings return null (no-op) — the builder has no auto-spacing support.
     const normalizeSpacingVal = (v: unknown): number | null => {
@@ -2206,9 +2655,12 @@ const handlers: Record<string, Handler> = {
       const n = normalizeSpacingVal(input.gap);
       if (n !== null) {
         if (n < 0) {
-          return { success: false, error: 'gap must be >= 0. Use set_position with offsets for overlapping elements.' };
+          return { success: false, error: 'gap must be >= 0. Use set_layout with offsets (top/right/bottom/left) for overlapping elements.' };
         }
-        updated = applySpacingTok(updated.split(' ').filter(t => !/^gap-/.test(t)).join(' ').trim(), /^gap-/, 'gap', n);
+        updated = applySpacingTok(
+          updated.split(' ').filter(t => !/^gap-/.test(t) && !/^gap-[xy]-/.test(t)).join(' ').trim(),
+          /^gap-/, 'gap', n,
+        );
       }
     }
 
@@ -2225,7 +2677,7 @@ const handlers: Record<string, Handler> = {
     if (input.self) {
       const selfVal = input.self as string;
       if (isFormulaExpression(selfVal)) {
-        patchNodeStyle(store, nodeId, { alignSelf: { formula: selfVal } });
+        patchNodeStyle(store, nodeId, { alignSelf: { js: selfVal } });
         updated = updated.split(' ').filter(t => !/^self-/.test(t)).join(' ').trim();
       } else {
         updated = replaceTokenGroup(updated, SELF_PREFIXES, `self-${selfVal}`);
@@ -2287,7 +2739,7 @@ const handlers: Record<string, Handler> = {
         // Strip existing width/grow/flex-1/min-w classes first
         updated = updated.split(' ').filter(t => !/^w-/.test(t) && !/^grow$/.test(t) && !/^min-w-/.test(t)).join(' ').trim();
         if (isFormulaExpression(w)) {
-          sizePatch.width = { formula: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
+          sizePatch.width = { js: resolveFormulaTokens(w, SIZE_WIDTH_TOKEN_MAP) };
         } else {
           const twClass = W_KEYWORDS[w] ?? `w-[${w}]`;
           updated = `${updated} ${twClass}`.trim();
@@ -2300,7 +2752,7 @@ const handlers: Record<string, Handler> = {
         // Strip existing height/grow/min-h/self-stretch classes first
         updated = updated.split(' ').filter(t => !/^h-/.test(t) && !/^grow$/.test(t) && !/^min-h-/.test(t) && t !== 'self-stretch').join(' ').trim();
         if (isFormulaExpression(h)) {
-          sizePatch.height = { formula: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
+          sizePatch.height = { js: resolveFormulaTokens(h, SIZE_HEIGHT_TOKEN_MAP) };
         } else {
           const twClass = H_KEYWORDS[h] ?? `h-[${h}]`;
           updated = `${updated} ${twClass}`.trim();
@@ -2363,7 +2815,7 @@ const handlers: Record<string, Handler> = {
       if (input.textAlign) {
         const alignRaw = input.textAlign as string;
         if (isFormulaExpression(alignRaw)) {
-          patchNodeStyle(store, nodeId, { textAlign: { formula: alignRaw } });
+          patchNodeStyle(store, nodeId, { textAlign: { js: alignRaw } });
           updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, '');
         } else {
           updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, `text-${alignRaw}`);
@@ -2428,7 +2880,7 @@ const handlers: Record<string, Handler> = {
     for (const [key, val] of [['top', input.top], ['right', input.right], ['bottom', input.bottom], ['left', input.left]] as [string, unknown][]) {
       if (val == null) continue;
       if (typeof val === 'string' && isFormulaExpression(val)) {
-        insetStylePatch[key] = { formula: resolveFormulaTokens(val) };
+        insetStylePatch[key] = { js: resolveFormulaTokens(val) };
         updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
       } else if (typeof val === 'string' && /^\d+(\.\d+)?%$/.test(val)) {
         updated = updated.split(' ').filter(t => !new RegExp(`^-?${key}-`).test(t)).join(' ').trim();
@@ -2491,6 +2943,17 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+    // Image, Video, and Icon nodes cannot serve as repeat templates — they have no children
+    // to template over. The correct pattern is to place set_repeat on the Box wrapper that
+    // contains them, then use set_src/set_icon_src with formula expressions for per-item data.
+    const node = findNodeInStore(store, nodeId);
+    const nodeType = (node?.type as string | undefined) ?? '';
+    if (['Image', 'Video', 'Icon'].includes(nodeType)) {
+      return {
+        success: false,
+        error: `set_repeat is not valid on ${nodeType} nodes. ${nodeType} cannot be a repeat template. Place set_repeat on the Box wrapper that contains the ${nodeType}, then use ${nodeType === 'Icon' ? 'set_icon_src with a formula expression' : 'set_src with a formula expression'} for per-item data.`,
+      };
+    }
     // Accept `expression` as an alias for `mapPath` — Phase 3 Haiku may call with the wrong key.
     // Empty string/null removes repeat binding.
     const rawMapPath = (input.mapPath ?? input.expression) as string | undefined | null;
@@ -2529,17 +2992,40 @@ const handlers: Record<string, Handler> = {
     if (!wfExists) {
       return {
         success: false,
-        error: `Workflow "${workflowName}" not found. Create it with create_workflow first, then call bind_action.`,
+        error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.`,
       };
     }
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
-    const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
-    // Append only if not already bound
-    if (!existing.some(a => a.action === workflowName)) {
-      const updated = [...existing, { action: workflowName }];
-      store.patchActions(nodeId, updated as unknown as Record<string, unknown>);
+    const trigger = (input.trigger as string | undefined)?.trim();
+    const node = findNodeInStore(store, nodeId);
+    const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string; trigger?: string }>)] : [];
+    // Phase 4c: idempotent — if this workflow+trigger is already bound, succeed silently
+    // instead of erroring. The compact tree annotates existing bindings so the AI rarely
+    // re-binds, but when it does, a no-op success is safer than a hard failure.
+    const matches = (a: { action: string; trigger?: string }) =>
+      a.action === workflowName && (a.trigger ?? null) === (trigger ?? null);
+    if (existing.some(matches)) {
+      return {
+        success: true,
+        data: {
+          message: trigger
+            ? `Workflow "${workflowName}" already bound to node on trigger "${trigger}" — no change.`
+            : `Workflow "${workflowName}" already bound to node — no change.`,
+        },
+      };
     }
-    return { success: true, data: { message: `Bound workflow "${workflowName}" to node` } };
+    const next: { action: string; trigger?: string } = trigger
+      ? { action: workflowName, trigger }
+      : { action: workflowName };
+    const updated = [...existing, next];
+    store.patchActions(nodeId, updated as unknown as Record<string, unknown>);
+    return {
+      success: true,
+      data: {
+        message: trigger
+          ? `Bound workflow "${workflowName}" to node on trigger "${trigger}"`
+          : `Bound workflow "${workflowName}" to node`,
+      },
+    };
   },
 
   unbind_action(input, getStore) {
@@ -2548,7 +3034,7 @@ const handlers: Record<string, Handler> = {
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const node = findNodeInStore(store, nodeId);
     const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
     const updated = existing.filter(a => a.action !== workflowName);
     store.patchActions(nodeId, updated as unknown as Record<string, unknown>);
@@ -2564,18 +3050,24 @@ const handlers: Record<string, Handler> = {
     if (!name || typeof name !== 'string') {
       return { success: false, error: 'create_workflow requires a non-empty "name".' };
     }
+    // steps is now optional — agents may use add_workflow_step calls instead.
+    if (rawSteps === undefined || rawSteps === null) {
+      rawSteps = [];
+    }
     // The AI sometimes serializes the steps array as a JSON string instead of a real array.
-    // Parse it silently so the workflow is not lost.
     if (typeof rawSteps === 'string') {
       try {
         const parsed = JSON.parse(rawSteps as unknown as string);
         if (Array.isArray(parsed)) rawSteps = parsed;
-      } catch {
-        // fall through to the array check below which will return a proper error
+      } catch (e) {
+        return {
+          success: false,
+          error: `"steps" was passed as a JSON string but could not be parsed: ${(e as Error).message}. Pass steps as a real JSON array, not a string.`,
+        };
       }
     }
     if (!Array.isArray(rawSteps)) {
-      return { success: false, error: 'create_workflow requires a "steps" array.' };
+      rawSteps = [];
     }
 
     const steps = coerceStepFormulas(rawSteps.map((s, i) => ({
@@ -2593,8 +3085,38 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: prohibitedError };
     }
 
+    const stepTypeError = validateStepTypes(steps);
+    if (stepTypeError) {
+      return { success: false, error: stepTypeError };
+    }
+
+    const multiOptionError = validateMultiOptionBranches(steps);
+    if (multiOptionError) {
+      return { success: false, error: multiOptionError };
+    }
+
+    const uuidError = validateChangeVariableUUIDs(steps);
+    if (uuidError) {
+      return { success: false, error: uuidError };
+    }
+
+    const navError = validateNavigatePaths(steps, store);
+    if (navError) {
+      return { success: false, error: navError };
+    }
+
     store.setPageWorkflow(name, steps);
-    store.setPageWorkflowMeta(name, { id: name, name, trigger });
+    const meta: Record<string, unknown> = { id: name, name, trigger };
+    if (input.isTrigger || input.isAppTrigger || input.pageScope) {
+      meta.isTrigger = true;
+    }
+    if (input.isAppTrigger) {
+      meta.isAppTrigger = true;
+    } else if (input.pageScope) {
+      meta.pageScope = input.pageScope as string;
+    }
+    if (input.folder) meta.folder = input.folder as string;
+    store.setPageWorkflowMeta(name, meta as Parameters<typeof store.setPageWorkflowMeta>[1]);
 
     if (input.bindToNodeId) {
       const nodeId = input.bindToNodeId as string;
@@ -2613,6 +3135,10 @@ const handlers: Record<string, Handler> = {
       freshStore.patchActions(nodeId, newActions as unknown as Record<string, unknown>);
     }
 
+    const bindHint = !input.bindToNodeId
+      ? `To bind to a node: call bind_action({ nodeId: "<nodeId>", workflowName: "${name}", trigger: "${trigger}" })`
+      : undefined;
+
     return {
       success: true,
       data: {
@@ -2620,6 +3146,7 @@ const handlers: Record<string, Handler> = {
         trigger,
         stepCount: steps.length,
         message: `Created workflow "${name}" (trigger: ${trigger}, ${steps.length} step${steps.length !== 1 ? 's' : ''})${input.bindToNodeId ? ` and bound to node` : ''}`,
+        ...(bindHint ? { bindHint } : {}),
       },
     };
   },
@@ -2633,6 +3160,333 @@ const handlers: Record<string, Handler> = {
     }
     store.removePageWorkflow(workflowName);
     return { success: true, data: { message: `Deleted workflow "${workflowName}"` } };
+  },
+
+  add_workflow_step(input, getStore) {
+    const store = getStore();
+    const workflowId = (input.workflowId ?? input.workflowName) as string;
+    const stepId = input.stepId as string;
+    const type = input.type as string;
+
+    if (!workflowId) return { success: false, error: 'add_workflow_step requires workflowId.' };
+    if (!stepId) return { success: false, error: 'add_workflow_step requires stepId.' };
+    if (!type) return { success: false, error: 'add_workflow_step requires type.' };
+
+    const pageWorkflows = (store.pageWorkflows ?? {}) as Record<string, unknown>;
+    const pageWorkflowMeta = (store.pageWorkflowMeta ?? {}) as Record<string, { id?: string }>;
+
+    // Resolve workflowId → actual store key (workflowName).
+    // The ROSTER shows the UUID minted by the structure agent (e.g. "wf-hero-cta-primary").
+    // The store key is the derived human-readable name (e.g. "cta_primary_onClick").
+    // Try direct key match first (handles models that pass the name), then UUID match via meta.
+    let workflowName: string | undefined;
+    if (workflowId in pageWorkflows) {
+      workflowName = workflowId;
+    } else {
+      const entry = Object.entries(pageWorkflowMeta).find(([, m]) => m.id === workflowId);
+      if (entry) workflowName = entry[0];
+    }
+    if (!workflowName) {
+      return {
+        success: false,
+        error: `Workflow "${workflowId}" not found. Use the exact workflowId from your WORKFLOW ROSTER.`,
+      };
+    }
+    // Build the step config from flat params.
+    const config: Record<string, unknown> = {};
+    const step: Record<string, unknown> = { id: stepId, type };
+
+    switch (type) {
+      case 'changeVariableValue': {
+        if (!input.variableName) return { success: false, error: 'add_workflow_step: changeVariableValue requires variableName.' };
+        config.variableName = input.variableName;
+        const rawVal = input.value as string | undefined;
+        const normalized = (rawVal ?? '').trim();
+        // changeVariableValue value is always a JS expression to evaluate, never a code block.
+        // Explicitly wrap with return() so ensureReturn doesn't skip multi-line literals (arrays, objects).
+        const isCodeBlock = !normalized || /\breturn\b/.test(normalized) || /^(const|let|var)\b/m.test(normalized);
+        config.value = { js: isCodeBlock ? normalized : `return (${normalized});` };
+        break;
+      }
+      case 'resetVariableValue': {
+        if (!input.variableName) return { success: false, error: 'add_workflow_step: resetVariableValue requires variableName.' };
+        config.variableName = input.variableName;
+        if (input.defaultValue !== undefined) config.defaultValue = input.defaultValue;
+        break;
+      }
+      case 'branch': {
+        if (!input.condition) return { success: false, error: 'add_workflow_step: branch requires condition.' };
+        config.condition = input.condition;
+        step.trueBranch = [];
+        step.falseBranch = [];
+        break;
+      }
+      case 'multiOptionBranch': {
+        if (!input.condition) return { success: false, error: 'add_workflow_step: multiOptionBranch requires condition.' };
+        config.condition = input.condition;
+        step.branches = [];
+        step.defaultBranch = [];
+        break;
+      }
+      case 'passThroughCondition': {
+        if (!input.condition) return { success: false, error: 'add_workflow_step: passThroughCondition requires condition.' };
+        config.condition = input.condition;
+        break;
+      }
+      case 'forEach': {
+        if (!input.listPath) return { success: false, error: 'add_workflow_step: forEach requires listPath.' };
+        config.listPath = input.listPath;
+        step.loopBody = [];
+        break;
+      }
+      case 'whileLoop': {
+        if (!input.condition) return { success: false, error: 'add_workflow_step: whileLoop requires condition.' };
+        config.condition = input.condition;
+        step.loopBody = [];
+        break;
+      }
+      case 'breakLoop':
+      case 'continueLoop':
+      case 'printPdf':
+      case 'stopPropagation':
+      case 'resetForm':
+        // no config needed
+        break;
+      case 'navigateTo': {
+        if (input.navPath) config.path = input.navPath;
+        if (input.navExternalUrl) config.externalUrl = input.navExternalUrl;
+        config.linkType = (input.navLinkType as string) ?? 'internal';
+        if (input.navNewTab) config.newTab = input.navNewTab;
+        if (input.navReplace) config.replace = input.navReplace;
+        if (input.navQueryParamsJson) {
+          try { config.queryParams = JSON.parse(input.navQueryParamsJson as string); } catch { /* ignore */ }
+        }
+        break;
+      }
+      case 'navigatePrev': {
+        if (input.navDefaultPath) config.defaultPath = input.navDefaultPath;
+        break;
+      }
+      case 'runJavaScript': {
+        if (!input.code) return { success: false, error: 'add_workflow_step: runJavaScript requires code.' };
+        config.code = input.code;
+        config.async = (input.isAsync as boolean) ?? true;
+        break;
+      }
+      case 'timeDelay': {
+        config.time = Number(input.delayMs ?? 0);
+        break;
+      }
+      case 'copyToClipboard': {
+        config.value = input.copyValue ?? '';
+        break;
+      }
+      case 'fetchData': {
+        if (!input.fetchUrl) return { success: false, error: 'add_workflow_step: fetchData requires fetchUrl.' };
+        config.url = input.fetchUrl;
+        config.method = (input.fetchMethod as string) ?? 'GET';
+        if (input.fetchBody) config.body = input.fetchBody;
+        if (input.fetchContentType) config.contentType = input.fetchContentType;
+        break;
+      }
+      case 'graphql': {
+        if (!input.gqlEndpoint) return { success: false, error: 'add_workflow_step: graphql requires gqlEndpoint.' };
+        if (!input.gqlQuery) return { success: false, error: 'add_workflow_step: graphql requires gqlQuery.' };
+        config.endpoint = input.gqlEndpoint;
+        config.query = input.gqlQuery;
+        break;
+      }
+      case 'fetchCollection': {
+        if (!input.collectionId) return { success: false, error: 'add_workflow_step: fetchCollection requires collectionId.' };
+        config.collectionId = input.collectionId;
+        break;
+      }
+      case 'fetchCollectionsParallel': {
+        if (!input.collectionIds) return { success: false, error: 'add_workflow_step: fetchCollectionsParallel requires collectionIds.' };
+        config.collections = (input.collectionIds as string).split(',').map(s => s.trim()).filter(Boolean);
+        break;
+      }
+      case 'updateCollection': {
+        if (!input.collectionId) return { success: false, error: 'add_workflow_step: updateCollection requires collectionId.' };
+        config.collectionId = input.collectionId;
+        if (input.updateType) config.updateType = input.updateType;
+        if (input.collectionData) config.data = input.collectionData;
+        if (input.idKey) config.idKey = input.idKey;
+        if (input.idValue) config.idValue = input.idValue;
+        break;
+      }
+      case 'runProjectWorkflow': {
+        if (!input.projectWorkflowId) return { success: false, error: 'add_workflow_step: runProjectWorkflow requires projectWorkflowId.' };
+        config.workflowId = input.projectWorkflowId;
+        break;
+      }
+      case 'setFormState': {
+        if (input.formIsSubmitting !== undefined) config.isSubmitting = input.formIsSubmitting;
+        if (input.formIsSubmitted !== undefined) config.isSubmitted = input.formIsSubmitted;
+        break;
+      }
+      case 'pickFile': {
+        if (!input.pickStoreIn) return { success: false, error: 'add_workflow_step: pickFile requires pickStoreIn.' };
+        config.storeIn = input.pickStoreIn;
+        if (input.pickAccept) config.accept = input.pickAccept;
+        if (input.pickMultiple !== undefined) config.multiple = input.pickMultiple;
+        break;
+      }
+      case 'addSharedComponent': {
+        if (!input.scComponentId) return { success: false, error: 'add_workflow_step: addSharedComponent requires scComponentId.' };
+        config.componentId = input.scComponentId;
+        if (input.scWaitClose !== undefined) config.waitClose = input.scWaitClose;
+        break;
+      }
+      case 'deleteSharedComponent':
+      case 'deleteAllSharedComponents':
+        break;
+      case 'emitComponentTrigger': {
+        if (!input.emitTriggerId) return { success: false, error: 'add_workflow_step: emitComponentTrigger requires emitTriggerId.' };
+        config.triggerId = input.emitTriggerId;
+        if (input.emitPayload !== undefined) config.payload = input.emitPayload;
+        break;
+      }
+      case 'returnValue': {
+        if (input.copyValue !== undefined) config.value = input.copyValue;
+        break;
+      }
+      case 'createUrlFromBase64': {
+        if (!input.base64) return { success: false, error: 'add_workflow_step: createUrlFromBase64 requires base64.' };
+        config.base64 = input.base64;
+        if (input.mimeType) config.mimeType = input.mimeType;
+        if (input.storeIn) config.storeIn = input.storeIn;
+        break;
+      }
+      case 'encodeFileAsBase64': {
+        if (!input.dataUrl) return { success: false, error: 'add_workflow_step: encodeFileAsBase64 requires dataUrl.' };
+        config.dataUrl = input.dataUrl;
+        if (input.storeIn) config.storeIn = input.storeIn;
+        break;
+      }
+      case 'downloadFileFromUrl': {
+        if (!input.downloadUrl) return { success: false, error: 'add_workflow_step: downloadFileFromUrl requires downloadUrl.' };
+        config.url = input.downloadUrl;
+        break;
+      }
+      default:
+        // Unknown type — store with empty config and let validator decide
+        break;
+    }
+
+    if (Object.keys(config).length > 0) {
+      step.config = config;
+    }
+
+    // ── Locate the target array and insert the step ──────────────────────────
+    const currentSteps = (store.pageWorkflows![workflowName] ?? []) as Array<Record<string, unknown>>;
+    const cloned = JSON.parse(JSON.stringify(currentSteps)) as Array<Record<string, unknown>>;
+
+    const parentStepId = input.parentStepId as string | undefined;
+    const branchKey = input.branchKey as string | undefined;
+
+    /** Recursively find a step by id in a steps array and all nested branches. */
+    function findStepById(
+      steps: Array<Record<string, unknown>>,
+      id: string,
+    ): Record<string, unknown> | null {
+      for (const s of steps) {
+        if (s.id === id) return s;
+        // Check all possible sub-arrays
+        for (const key of ['trueBranch', 'falseBranch', 'defaultBranch', 'loopBody']) {
+          if (Array.isArray(s[key])) {
+            const found = findStepById(s[key] as Array<Record<string, unknown>>, id);
+            if (found) return found;
+          }
+        }
+        if (Array.isArray(s.branches)) {
+          for (const b of s.branches as Array<Record<string, unknown>>) {
+            if (Array.isArray(b.steps)) {
+              const found = findStepById(b.steps as Array<Record<string, unknown>>, id);
+              if (found) return found;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    let targetArray: Array<Record<string, unknown>>;
+
+    if (!parentStepId) {
+      // Root level
+      targetArray = cloned;
+    } else {
+      const parentStep = findStepById(cloned, parentStepId);
+      if (!parentStep) {
+        return {
+          success: false,
+          error: `add_workflow_step: parent step "${parentStepId}" not found in workflow "${workflowName}".`,
+        };
+      }
+
+      if (!branchKey) {
+        return {
+          success: false,
+          error: 'add_workflow_step: branchKey is required when parentStepId is provided. Use "trueBranch", "falseBranch", "branches.{match}", "defaultBranch", or "loopBody".',
+        };
+      }
+
+      if (branchKey.startsWith('branches.')) {
+        // multiOptionBranch — find or create the branch entry
+        const matchValue = branchKey.slice('branches.'.length);
+        if (!Array.isArray(parentStep.branches)) parentStep.branches = [];
+        const branches = parentStep.branches as Array<Record<string, unknown>>;
+        let branchEntry = branches.find(b => b.match === matchValue) as Record<string, unknown> | undefined;
+        if (!branchEntry) {
+          branchEntry = { match: matchValue, steps: [] };
+          branches.push(branchEntry);
+        }
+        if (!Array.isArray(branchEntry.steps)) branchEntry.steps = [];
+        targetArray = branchEntry.steps as Array<Record<string, unknown>>;
+      } else {
+        // trueBranch, falseBranch, defaultBranch, loopBody
+        if (!Array.isArray(parentStep[branchKey])) parentStep[branchKey] = [];
+        targetArray = parentStep[branchKey] as Array<Record<string, unknown>>;
+      }
+    }
+
+    // Validate the NEW step's type before pushing — do NOT validate pre-existing
+    // steps in the workflow. Stale steps (e.g. set_repeat from a prior build)
+    // must not block valid new additions.
+    const newStepType = step.type as string | undefined;
+    if (newStepType && !SUPPORTED_STEP_TYPES.has(newStepType)) {
+      return {
+        success: false,
+        error: `Step type "${newStepType}" is not a supported workflow step type. Did you mean one of: changeVariableValue, navigateTo, branch, multiOptionBranch, forEach, runJavaScript, fetchData, graphql, fetchCollection? See the full list in the workflow step reference.`,
+      };
+    }
+
+    targetArray.push(step);
+
+    // Run formula + prohibited validators on the full updated tree.
+    // validateStepTypes is intentionally NOT run on the full tree — only the new step was validated above.
+    const coerced = coerceStepFormulas(cloned);
+    const formulaError = validateWorkflowFormulas(coerced);
+    if (formulaError) return { success: false, error: formulaError };
+    const prohibitedError = findProhibitedStep(coerced);
+    if (prohibitedError) return { success: false, error: prohibitedError };
+
+    store.setPageWorkflow(workflowName, coerced as object[]);
+
+    const location = parentStepId
+      ? `${branchKey} of step "${parentStepId}"`
+      : 'root';
+    return {
+      success: true,
+      data: {
+        workflowName,
+        stepId,
+        type,
+        location,
+        message: `Added "${type}" step "${stepId}" to workflow "${workflowName}" at ${location}.`,
+      },
+    };
   },
 
   set_animation(input, getStore) {
@@ -2662,7 +3516,7 @@ const handlers: Record<string, Handler> = {
     if (enumErr) return enumErr;
 
     // Read existing animation to merge (preserve unspecified fields)
-    const node = findNode(store.pageNodes as SDUINode[], nodeId);
+    const node = findNodeInStore(store, nodeId);
     const existing = ((node as unknown as Record<string, unknown>)?.animation ?? {}) as Record<string, unknown>;
     const animation: Record<string, unknown> = { ...existing };
 
@@ -2894,6 +3748,32 @@ const handlers: Record<string, Handler> = {
       };
     }
 
+    // ── Nested config passthrough (Phase D+) ────────────────────────────────
+    // Advanced animation surfaces are accepted as nested objects so the AI can
+    // configure every panel feature without exploding flat-prop count. Each
+    // accepted key maps 1:1 to AnimationConfig in lib/sdui/components/animated-node.tsx.
+    const NESTED_KEYS = [
+      'tilt', 'mouseParallax', 'focus', 'flip', 'parallax', 'scrollProgress',
+      'color', 'layout', 'morphShape', 'drag', 'splitText', 'states',
+      'gesture', 'particles', 'noise', 'svgStroke', 'gradientAnimation',
+      'clipPath', 'mask', 'pseudoElement', 'timeline', 'imperativeTrigger',
+      'customBezier',
+    ] as const;
+    for (const key of NESTED_KEYS) {
+      const raw = (input as Record<string, unknown>)[key];
+      if (raw === undefined) continue;
+      if (raw === null || raw === false) {
+        delete animation[key];
+      } else if (typeof raw === 'object') {
+        const next = { ...((animation[key] as Record<string, unknown> | undefined) ?? {}), ...(raw as Record<string, unknown>) };
+        animation[key] = next;
+      } else if (Array.isArray(raw)) {
+        animation[key] = raw;
+      } else {
+        animation[key] = raw;
+      }
+    }
+
     if (Object.keys(animation).length === 0) {
       store.patchNodeField(nodeId, 'animation', null);
       return { success: true, data: { message: 'Removed all animations' } };
@@ -2909,11 +3789,33 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const capErr = checkCapability(store, input.nodeId as string, 'input-props');
     if (capErr) return capErr;
-    store.patchNodeField(input.nodeId as string, '_validation', {
-      trigger: 'submit',
-      rules: input.rules,
-    });
-    return { success: true, data: { message: `Set ${(input.rules as unknown[]).length} validation rule(s)` } };
+    const trigger = input.trigger === 'change' ? 'change' : 'submit';
+    const VALID_RULE_TYPES = new Set(['required', 'email', 'phone', 'url', 'minLength', 'maxLength', 'pattern', 'formula', 'equalsField']);
+    const rules = (input.rules as Array<Record<string, unknown>> | undefined) ?? [];
+    for (let i = 0; i < rules.length; i++) {
+      const r = rules[i];
+      const t = String(r?.type ?? '');
+      if (!VALID_RULE_TYPES.has(t)) {
+        return { success: false, error: `rules[${i}].type "${t}" is invalid. Valid: ${[...VALID_RULE_TYPES].join(', ')}.` };
+      }
+      if (typeof r.message !== 'string' || !r.message) {
+        return { success: false, error: `rules[${i}] requires a non-empty "message".` };
+      }
+      if ((t === 'minLength' || t === 'maxLength') && typeof r.value !== 'number') {
+        return { success: false, error: `rules[${i}] of type "${t}" requires numeric "value".` };
+      }
+      if (t === 'pattern' && typeof r.value !== 'string') {
+        return { success: false, error: `rules[${i}] of type "pattern" requires string "value" (regex source).` };
+      }
+      if (t === 'formula' && typeof r.formula !== 'string') {
+        return { success: false, error: `rules[${i}] of type "formula" requires string "formula".` };
+      }
+      if (t === 'equalsField' && typeof r.value !== 'string') {
+        return { success: false, error: `rules[${i}] of type "equalsField" requires string "value" (other field name).` };
+      }
+    }
+    store.patchNodeField(input.nodeId as string, '_validation', { trigger, rules });
+    return { success: true, data: { message: `Set ${rules.length} validation rule(s) (trigger: ${trigger})` } };
   },
 
   rename_node(input, getStore) {
@@ -2938,9 +3840,22 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const nodeErr = requireNode(store, input.nodeId as string | undefined);
     if (nodeErr) return nodeErr;
-    const state = input.state as string;
-    store.patchNodeField(input.nodeId as string, '_stateTag', state === 'None' ? null : state);
-    return { success: true, data: { message: state === 'None' ? 'Removed state tag' : `Set state tag to "${state}"` } };
+    const rawState = String(input.state ?? '').trim();
+    // Backward-compat: accept legacy capitalised values like "Loading" / "None".
+    const lower = rawState.toLowerCase();
+    const VALID = new Set(['loading', 'empty', 'default', 'custom', 'none']);
+    if (!VALID.has(lower)) {
+      return { success: false, error: `Unknown state "${rawState}". Use one of: loading, empty, default, custom, none.` };
+    }
+    let stored: string | null;
+    if (lower === 'none') stored = null;
+    else if (lower === 'custom') {
+      const name = (input.customStateName as string | undefined)?.trim();
+      if (!name) return { success: false, error: 'state="custom" requires a non-empty "customStateName".' };
+      stored = name;
+    } else stored = lower;
+    store.patchNodeField(input.nodeId as string, '_stateTag', stored);
+    return { success: true, data: { message: stored === null ? 'Removed state tag' : `Set state tag to "${stored}"` } };
   },
 
   // ── Variables ──────────────────────────────────────────────────────────────
@@ -2951,9 +3866,14 @@ const handlers: Record<string, Handler> = {
       ?? (input._assignedVarId as string | undefined)
       ?? uuid();
 
-    // Detect intra-build UUID collision — assign fresh UUID if already taken
-    const alreadyUsed = store.customVars?.some((cv: { id: string }) => cv.id === requestedId);
-    const id = alreadyUsed ? uuid() : requestedId;
+    // If the variable already exists with this ID, return it as-is (idempotent).
+    // Previously this generated a new UUID, which orphaned the new variable and left
+    // the varRoster referencing the old ID — causing agents to write to stale state.
+    const existingVar = store.customVars?.find((cv: CustomVar) => cv.id === requestedId);
+    if (existingVar) {
+      return { success: true, data: { id: requestedId, name: existingVar.name, message: `Variable "${existingVar.name}" (${requestedId}) already exists — reusing.` } };
+    }
+    const id = requestedId;
 
     // Resolve folder name → folderId (auto-create folder entity if it doesn't exist yet)
     let folderId: string | undefined;
@@ -2969,14 +3889,20 @@ const handlers: Record<string, Handler> = {
       }
     }
 
-    const v: CustomVar = {
+    const vBase: Record<string, unknown> = {
       id,
       name: input.name as string,
       type: input.type as CustomVar['type'],
       initialValue: input.initialValue,
       description: (input.description as string) || undefined,
-      folderId,
+      folderId: (input.folderId as string | undefined) ?? folderId,
     };
+    if (input.label !== undefined) vBase.label = input.label;
+    if (typeof input.saveInLocalStorage === 'boolean') vBase.saveInLocalStorage = input.saveInLocalStorage;
+    if (input.fields !== undefined) vBase.fields = input.fields;
+    if (input.scope !== undefined) vBase.scope = input.scope;
+    if (input.componentModelId !== undefined) vBase.componentModelId = input.componentModelId;
+    const v = vBase as unknown as CustomVar;
     store.addCustomVar(v);
     return { success: true, data: { id, name: v.name, message: `Created variable "${v.name}" (${id})` } };
   },
@@ -2984,18 +3910,32 @@ const handlers: Record<string, Handler> = {
   update_variable(input, getStore) {
     const store = getStore();
     const variableId = input.variableId as string;
-    const patch: Partial<CustomVar> = {};
-    if (input.name !== undefined)         patch.name = input.name as string;
-    if (input.type !== undefined)         patch.type = input.type as CustomVar['type'];
-    if (input.initialValue !== undefined) patch.initialValue = input.initialValue;
-    store.updateCustomVar(variableId, patch);
+    const patchBase: Record<string, unknown> = {};
+    if (input.name !== undefined)               patchBase.name = input.name as string;
+    if (input.type !== undefined)               patchBase.type = input.type as CustomVar['type'];
+    if (input.initialValue !== undefined)       patchBase.initialValue = input.initialValue;
+    if (input.label !== undefined)              patchBase.label = input.label;
+    if (input.description !== undefined)        patchBase.description = input.description as string;
+    if (typeof input.saveInLocalStorage === 'boolean') patchBase.saveInLocalStorage = input.saveInLocalStorage;
+    if (input.folderId !== undefined)           patchBase.folderId = input.folderId as string;
+    if (input.fields !== undefined)             patchBase.fields = input.fields;
+    if (input.scope !== undefined)              patchBase.scope = input.scope;
+    if (input.componentModelId !== undefined)   patchBase.componentModelId = input.componentModelId;
+    const found = store.customVars?.find(cv => cv.id === variableId || cv.name === variableId);
+    if (!found) {
+      return { success: false, error: `Variable "${variableId}" not found. Call get_variables.` };
+    }
+    store.updateCustomVar(found.name, patchBase as unknown as Partial<CustomVar>);
     return { success: true, data: { message: `Updated variable "${variableId}"` } };
   },
 
   delete_variable(input, getStore) {
     const store = getStore();
-    store.removeCustomVar(input.variableId as string);
-    return { success: true, data: { message: `Deleted variable "${input.variableId}"` } };
+    const variableId = input.variableId as string;
+    const found = store.customVars?.find(cv => cv.id === variableId || cv.name === variableId);
+    if (!found) return { success: false, error: `Variable "${variableId}" not found.` };
+    store.removeCustomVar(found.name);
+    return { success: true, data: { message: `Deleted variable "${found.name}"` } };
   },
 
   // ── Data Sources ───────────────────────────────────────────────────────────
@@ -3003,6 +3943,25 @@ const handlers: Record<string, Handler> = {
   add_data_source(input, getStore) {
     const store = getStore();
     const id = (input.dataSourceId as string | undefined) ?? uuid();
+
+    // Resolve folder name → folderId (auto-create)
+    let folderId = input.folderId as string | undefined;
+    const folderName = (input.folder as string | undefined) ?? undefined;
+    if (folderName && !folderId) {
+      const folders = (store as unknown as { dataSourceFolders?: Array<{ id: string; name: string; parentId: string | null }>; addDataSourceFolder?: (f: { id: string; name: string; parentId: string | null }) => void })
+        .dataSourceFolders ?? [];
+      const existing = folders.find(f => f.name === folderName);
+      if (existing) folderId = existing.id;
+      else {
+        const newFolderId = uuid();
+        const adder = (store as unknown as { addDataSourceFolder?: (f: { id: string; name: string; parentId: string | null }) => void }).addDataSourceFolder;
+        if (typeof adder === 'function') {
+          adder({ id: newFolderId, name: folderName, parentId: null });
+          folderId = newFolderId;
+        }
+      }
+    }
+
     const cfg: DataSourceConfig = {
       id,
       name: input.name as string,
@@ -3014,7 +3973,32 @@ const handlers: Record<string, Handler> = {
       storeIn: input.storeIn as string | undefined,
       trigger: (input.trigger as 'mount' | 'action') ?? 'mount',
     };
+    const extras = cfg as unknown as Record<string, unknown>;
+    if (input.headers !== undefined)         extras.headers = input.headers;
+    if (input.body !== undefined)            extras.body = input.body;
+    if (input.queryParams !== undefined)     extras.queryParams = input.queryParams;
+    if (input.auth !== undefined)            extras.auth = input.auth;
+    if (input.variables !== undefined)       extras.variables = input.variables;
+    if (input.responsePath !== undefined)    extras.responsePath = input.responsePath;
+    if (input.proxy !== undefined)           extras.proxy = !!input.proxy;
+    if (input.sendCredentials !== undefined) extras.sendCredentials = !!input.sendCredentials;
+    if (folderId)                            extras.folderId = folderId;
+    if (input.triggerActionName !== undefined) extras.triggerActionName = input.triggerActionName;
+    if (input.cacheTag !== undefined)        extras.cacheTag = input.cacheTag;
+    if (typeof input.cacheTTL === 'number')  extras.cacheTTL = input.cacheTTL;
+    if (Array.isArray(input.cacheKeyVars))   extras.cacheKeyVars = input.cacheKeyVars;
+
     store.addPageDataSource(cfg);
+
+    // Auto-fetch for mount-mode REST GET sources so the result panel and schema
+    // inference are immediately populated without a manual "Run" click.
+    if (cfg.type === 'rest' && cfg.url && (cfg.method ?? 'GET') === 'GET' && cfg.trigger !== 'action') {
+      fetch(cfg.url)
+        .then(r => r.json())
+        .then(data => store.updatePageDataSource(id, { _lastFetch: { status: 'success', data, fetchedAt: Date.now() } }))
+        .catch(err => store.updatePageDataSource(id, { _lastFetch: { status: 'error', error: String(err), fetchedAt: Date.now() } }));
+    }
+
     return { success: true, data: { id, message: `Added data source "${cfg.name}" (${id}). Use collections['${id}'].data in formulas.` } };
   },
 
@@ -3031,6 +4015,71 @@ const handlers: Record<string, Handler> = {
     const mode = (input.mode as 'light' | 'dark') || 'light';
     store.patchTheme(input.variable as string, input.value as string, mode);
     return { success: true, data: { message: `Set ${mode} --${input.variable} = ${input.value}` } };
+  },
+
+  set_theme_mode(input) {
+    const mode = input.mode as 'light' | 'dark' | 'system';
+    if (!['light', 'dark', 'system'].includes(mode)) {
+      return { success: false, error: 'mode must be "light", "dark", or "system".' };
+    }
+    if (typeof document !== 'undefined' && document.documentElement) {
+      const root = document.documentElement;
+      const resolved = mode === 'system'
+        ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : mode;
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
+      root.style.colorScheme = resolved;
+    }
+    return { success: true, data: { message: `Set theme mode to "${mode}"` } };
+  },
+
+  apply_theme_preset(input, getStore) {
+    const store = getStore();
+    const presetName = input.presetName as string;
+    if (!presetName || typeof presetName !== 'string') {
+      return { success: false, error: 'apply_theme_preset requires a non-empty "presetName".' };
+    }
+    const preset = findThemePreset(presetName);
+    if (!preset) {
+      const known = THEME_PRESETS.map(p => p.name).join(', ');
+      return { success: false, error: `Unknown theme preset "${presetName}". Available: ${known}.` };
+    }
+    store.applyThemePreset(preset.light, preset.dark, preset.fonts);
+    return {
+      success: true,
+      data: { message: `Applied theme preset "${preset.name}"`, presetId: preset.id, presetName: preset.name },
+    };
+  },
+
+  add_custom_color(input, getStore) {
+    const store = getStore();
+    const name = input.name as string;
+    const light = input.light as string;
+    const dark = input.dark as string;
+    if (!name || !light || !dark) {
+      return { success: false, error: 'add_custom_color requires "name", "light", and "dark".' };
+    }
+    const id = (input.colorId as string | undefined) || `color-${uuid()}`;
+    const color = {
+      id,
+      name,
+      light,
+      dark,
+      ...(input.label ? { label: input.label as string } : {}),
+      ...(input.description ? { description: input.description as string } : {}),
+      ...(input.folderId ? { folderId: input.folderId as string } : {}),
+    } as Parameters<typeof store.addCustomColor>[0];
+    store.addCustomColor(color);
+    return { success: true, data: { id, message: `Added custom color "${name}" (${id})` } };
+  },
+
+  delete_custom_color(input, getStore) {
+    const store = getStore();
+    const colorId = input.colorId as string;
+    if (!colorId) return { success: false, error: 'delete_custom_color requires "colorId".' };
+    store.removeCustomColor(colorId);
+    return { success: true, data: { message: `Deleted custom color "${colorId}"` } };
   },
 
   // ── Pages ──────────────────────────────────────────────────────────────────
@@ -3081,7 +4130,195 @@ const handlers: Record<string, Handler> = {
     if (input.onMountWorkflow) {
       store.setCurrentPageInteractions({ mount: { workflow: input.onMountWorkflow as string } });
     }
+    // Map external "public" → internal "everyone"; "guest" maps to access:"everyone" + guestOnly:true.
+    const rawAccess = input.access as string | undefined;
+    if (rawAccess !== undefined || input.accessCondition !== undefined || input.guestOnly !== undefined) {
+      let accessFlag: 'everyone' | 'authenticated' = 'everyone';
+      let guestOnly = !!input.guestOnly;
+      if (rawAccess === 'authenticated') accessFlag = 'authenticated';
+      else if (rawAccess === 'guest') { accessFlag = 'everyone'; guestOnly = true; }
+      else if (rawAccess === 'public') { accessFlag = 'everyone'; guestOnly = !!input.guestOnly; }
+      const condition = typeof input.accessCondition === 'string' ? (input.accessCondition as string) : undefined;
+      store.setCurrentPageAccess(accessFlag, guestOnly, condition);
+    }
     return { success: true, data: { message: `Updated page config` } };
+  },
+
+  // ── Shared Components ──────────────────────────────────────────────────────
+
+  get_shared_components() {
+    const map = getSharedComponents();
+    const list = Object.values(map).map(m => ({
+      id: m.id,
+      name: m.name,
+      folder: m.folder,
+      description: m.description,
+      properties: m.properties ?? [],
+      variables: m.variables ?? {},
+      formulas: m.formulas ?? {},
+      workflows: m.workflows ?? {},
+      triggers: m.triggers ?? [],
+      valueVariable: (m as { valueVariable?: string }).valueVariable,
+    }));
+    return { success: true, data: { sharedComponents: list, count: list.length } };
+  },
+
+  add_shared_component_instance(input, getStore) {
+    const store = getStore();
+    const modelId = input.modelId as string;
+    const requestedId = input.nodeId as string | undefined;
+    if (!modelId) return { success: false, error: 'add_shared_component_instance requires "modelId".' };
+    if (!requestedId || !isUUIDFormat(requestedId)) {
+      return { success: false, error: 'add_shared_component_instance requires a pre-minted UUID "nodeId".' };
+    }
+    const model = getSharedComponents()[modelId];
+    if (!model) {
+      return { success: false, error: `Shared component "${modelId}" not found. Call get_shared_components() to list available models.` };
+    }
+    const parentId = (input.parentId as string | null) ?? null;
+    if (parentId && !findNodeInStore(store, parentId)) {
+      return { success: false, error: `Parent node "${parentId}" not found in the current page.` };
+    }
+
+    const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
+    stampSharedKeys(modelContent);
+    const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
+    cloned.id = requestedId;
+    cloned._shared = { id: model.id, name: model.name };
+    cloned._overrides = [];
+    if (input.name && typeof input.name === 'string') {
+      cloned.name = input.name;
+    }
+    if (input.props && typeof input.props === 'object') {
+      const existing = (cloned.props ?? {}) as Record<string, unknown>;
+      cloned.props = { ...existing, ...(input.props as Record<string, unknown>) };
+    }
+    const atIdx = input.atIndex as number | undefined;
+    store.addNode(cloned as unknown as SDUINode, parentId, atIdx);
+    return {
+      success: true,
+      data: {
+        nodeId: requestedId,
+        modelId,
+        message: `Placed shared component "${model.name}" with nodeId ${requestedId}`,
+      },
+    };
+  },
+
+  set_component_props(input, getStore) {
+    const store = getStore();
+    const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const node = findNodeInStore(store, nodeId);
+    const sharedRef = (node as { _shared?: { id?: string } } | null)?._shared;
+    if (!sharedRef?.id) {
+      return {
+        success: false,
+        error: `Node "${nodeId}" is not a shared-component instance. set_component_props is only for nodes whose _shared metadata is set — use set_style / set_text on regular nodes.`,
+      };
+    }
+    const incoming = input.props as Record<string, unknown> | undefined;
+    if (!incoming || typeof incoming !== 'object') {
+      return { success: false, error: 'set_component_props requires a "props" object.' };
+    }
+    const model = getSharedComponents()[sharedRef.id];
+    if (model) {
+      const declared = new Set((model.properties ?? []).map(p => p.name));
+      const unknownKeys = Object.keys(incoming).filter(k => !declared.has(k));
+      if (unknownKeys.length > 0) {
+        return {
+          success: false,
+          error: `Unknown property keys for shared component "${model.name}": ${unknownKeys.join(', ')}. Declared: ${[...declared].join(', ') || '(none)'}.`,
+        };
+      }
+    }
+    for (const [key, value] of Object.entries(incoming)) {
+      store.patchProp(nodeId, `props.${key}`, value);
+    }
+    return { success: true, data: { message: `Updated component props on node` } };
+  },
+
+  // ── Responsive overrides ──────────────────────────────────────────────────
+
+  set_responsive_override(input, getStore) {
+    const store = getStore();
+    const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const breakpoint = input.breakpoint as 'laptop' | 'tablet' | 'mobile';
+    if (!['laptop', 'tablet', 'mobile'].includes(breakpoint)) {
+      return { success: false, error: 'breakpoint must be "laptop", "tablet", or "mobile" (desktop is the base — no override).' };
+    }
+    const field = input.field as string;
+    if (!field || typeof field !== 'string') {
+      return { success: false, error: 'set_responsive_override requires a non-empty "field" path.' };
+    }
+    const value = input.value;
+    if (value === undefined) {
+      return { success: false, error: 'set_responsive_override requires a "value" (use clear_responsive_override to delete).' };
+    }
+    store.patchResponsive(nodeId, breakpoint, field, value);
+    return { success: true, data: { message: `Set responsive override [${breakpoint}].${field}` } };
+  },
+
+  clear_responsive_override(input, getStore) {
+    const store = getStore();
+    const nodeId = input.nodeId as string;
+    const nodeErr = requireNode(store, nodeId);
+    if (nodeErr) return nodeErr;
+    const breakpoint = input.breakpoint as 'laptop' | 'tablet' | 'mobile';
+    if (!['laptop', 'tablet', 'mobile'].includes(breakpoint)) {
+      return { success: false, error: 'breakpoint must be "laptop", "tablet", or "mobile".' };
+    }
+    const field = (input.field as string | undefined) ?? undefined;
+    store.removeResponsiveOverride(nodeId, breakpoint, field);
+    return {
+      success: true,
+      data: { message: field ? `Cleared [${breakpoint}].${field}` : `Cleared [${breakpoint}] override slice` },
+    };
+  },
+
+  set_workflow_params(input, getStore) {
+    const store = getStore();
+    const workflowName = input.workflowName as string;
+    if (!workflowName) return { success: false, error: 'set_workflow_params requires "workflowName".' };
+    const wfExists = !!store.pageWorkflows?.[workflowName];
+    if (!wfExists) {
+      return { success: false, error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.` };
+    }
+    const params = input.params;
+    if (!Array.isArray(params)) {
+      return { success: false, error: 'set_workflow_params requires "params" to be an array.' };
+    }
+    const TYPE_ALIASES: Record<string, 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array'> = {
+      string: 'Text', text: 'Text', Text: 'Text',
+      number: 'Number', Number: 'Number',
+      boolean: 'Boolean', Boolean: 'Boolean',
+      object: 'Object', Object: 'Object',
+      array: 'Array', Array: 'Array',
+    };
+    const cleaned = params.map((p, i) => {
+      const obj = (p ?? {}) as Record<string, unknown>;
+      const name = typeof obj.name === 'string' ? obj.name : '';
+      const rawType = typeof obj.type === 'string' ? obj.type : 'string';
+      const type = TYPE_ALIASES[rawType] ?? 'Text';
+      if (!name) throw new Error(`Param at index ${i} requires "name".`);
+      const id = typeof obj.id === 'string' ? obj.id : `param-${i + 1}`;
+      const out = { id, name, type } as { id: string; name: string; type: typeof type; allowMultiple?: boolean; testValue?: unknown };
+      if (typeof obj.allowMultiple === 'boolean') out.allowMultiple = obj.allowMultiple;
+      if ('defaultValue' in obj) out.testValue = obj.defaultValue;
+      else if ('testValue' in obj) out.testValue = obj.testValue;
+      return out;
+    });
+    store.setPageWorkflowMeta(workflowName, { params: cleaned });
+    return {
+      success: true,
+      data: {
+        message: `Declared ${cleaned.length} param${cleaned.length === 1 ? '' : 's'} on "${workflowName}"`,
+        paramCount: cleaned.length,
+      },
+    };
   },
 
   // ── Canvas ─────────────────────────────────────────────────────────────────
@@ -3130,6 +4367,20 @@ export async function executeTool(
     return { success: false, error: `Unknown tool: "${toolName}"` };
   }
   try {
+    // Multi-page support: tool inputs may carry `_pageId` when the AI is editing a node
+    // that lives on a non-focused page. We deliberately do NOT switch the focused page
+    // here — the canvas should stay on whatever the user picked while parallel agents
+    // build pages in the background. The two pieces that actually make this work:
+    //
+    //   • `findNodeInStore` (this file) scans non-focused pages, so `requireNode` /
+    //     `checkCapability` find cross-page targets.
+    //   • `patchAnyNode` (in `_store.ts`) writes through to `pages[i].nodes` directly
+    //     when the node lives off-screen, leaving `pageNodes` (the focused page)
+    //     untouched.
+    //
+    // `generate_structure` is the one exception: it inserts a brand-new tree onto a
+    // specific page and intentionally navigates to it, so we just let its handler run.
+
     return await handler(input, getStore);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -3176,8 +4427,8 @@ const FORMULA_SCOPE_RE = /variables\s*\[|context[?.]+item|context\s*\.\s*item|th
 function toTextValue(raw: string): unknown {
   const templateMatch = raw.match(/^\{\{([\s\S]+)\}\}$/);
   const hasTemplateMarkers = /\{\{/.test(raw);
-  if (templateMatch) return { formula: templateMatch[1] };
-  if (FORMULA_SCOPE_RE.test(raw) && !hasTemplateMarkers) return { formula: raw };
+  if (templateMatch) return { js: templateMatch[1] };
+  if (FORMULA_SCOPE_RE.test(raw) && !hasTemplateMarkers) return { js: raw };
   return raw;
 }
 
@@ -3189,7 +4440,7 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   const parentId = (input.parentId as string | null) ?? null;
   const atIdx = input.atIndex as number | undefined;
 
-  if (parentId && !findNode(store.pageNodes as SDUINode[], parentId)) {
+  if (parentId && !findNodeInStore(store, parentId)) {
     return { success: false, error: `Parent node "${parentId}" not found in the current page. Call get_page_tree first to get valid node IDs, or omit parentId to add at the page root.` };
   }
 
@@ -3306,7 +4557,12 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     if (node.text) {
       const textVal = toTextValue(node.text as string);
       base.text = textVal;
-      (base.props as Record<string, unknown>).text = textVal;
+    }
+
+    // Apply placeholder for Input / Textarea nodes — without this the field renders
+    // completely blank with no hint text for the user.
+    if (node.placeholder && (label === 'Input' || label === 'Textarea')) {
+      (base.props as Record<string, unknown>).placeholder = node.placeholder as string;
     }
 
     // Allow user-pasted src on Image nodes; strip from Video so AI is forced to call search_videos.
@@ -3333,8 +4589,6 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       if (textChild) {
         const textVal = toTextValue(node.text as string);
         textChild.text = textVal;
-        if (!textChild.props) textChild.props = {};
-        (textChild.props as Record<string, unknown>).text = textVal;
       }
     }
 
@@ -3437,10 +4691,12 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   if (targetPageId) {
     const pageExists = (store.pages as Array<{ id: string }>).some(p => p.id === targetPageId);
     if (pageExists) {
+      // Insert directly into the target page. We do NOT call navigatePage here —
+      // findNodeInStore + patchAnyNode now resolve nodes across pages, so follow-up
+      // tools (set_style, set_animation, etc.) reach the inserted nodes regardless
+      // of which page is focused. Keeping focus stable means parallel multi-page
+      // builds don't make the canvas flicker between pages.
       store.insertNodeIntoPage(targetPageId, materializedTree);
-      // Switch the active page immediately so that set_text / set_repeat calls
-      // in the same batch can find the newly-inserted nodes via store.pageNodes.
-      store.navigatePage(targetPageId);
     } else {
       // _pageId points to a non-existent page (e.g. AI hallucinated the ID).
       // Fall back to inserting into the current page so nodes remain findable.
@@ -3473,7 +4729,82 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
   }
 
   void autoFixedSearchQuery; // unused — kept for future warning extension
-  return { success: true, data: { message: 'Structure inserted.' } };
+
+  // ── Mint empty workflow stubs from declared actions[] / pageActions[] ─────────
+  // The structure agent pre-assigns UUIDs and triggers in the tree. We create empty
+  // workflows here (deterministically, no AI model involved) and bind them to their
+  // nodes so the workflows agent only has to add steps — it never calls create_workflow
+  // or bind_action.
+  const mintedStubs: Array<{ workflowId: string; name: string; trigger: string; attachedTo?: string }> = [];
+
+  // Walk treeInput (raw AI input), not materializedTree — materialize() never copies the
+  // `actions` field to the SDUI node base, so walking the materialized tree always sees
+  // n.actions === undefined and mints nothing. treeInput preserves id, name, and actions.
+  function mintNodeActions(n: Record<string, unknown>) {
+    const nodeActions = Array.isArray(n.actions) ? n.actions as Array<{ workflowId?: string; trigger?: string }> : [];
+    for (const act of nodeActions) {
+      const wfId = act.workflowId;
+      const trigger = act.trigger ?? 'click';
+      if (!wfId || typeof wfId !== 'string') continue;
+      // Idempotency: skip if this UUID is already registered
+      if ((getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) continue;
+      // Derive a human-readable display name (stored in meta.name, NOT as the store key).
+      const nodeName = (n.name as string | undefined) ?? (n.type as string | undefined) ?? 'Node';
+      const displayName = `${nodeName}_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
+      const freshStore = getStore();
+      // Store under the UUID — add_workflow_step's first check (workflowId in pageWorkflows)
+      // succeeds immediately without any meta.id bridge. Matches the globalWorkflows convention.
+      freshStore.setPageWorkflow(wfId, []);
+      const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
+      const meta: Record<string, unknown> = { id: wfId, name: displayName, trigger };
+      if (effectivePageId) meta.pageScope = effectivePageId;
+      freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
+      // Bind to node: push { action: wfId, trigger } — UUID is both the store key and the action ref
+      const nodeId = (n.id as string | undefined);
+      if (nodeId) {
+        const latestStore = getStore();
+        const existingNodeActions = Array.isArray((findNode(latestStore.pageNodes as SDUINode[], nodeId) as unknown as Record<string, unknown> | undefined)?.['actions'])
+          ? [...((findNode(latestStore.pageNodes as SDUINode[], nodeId) as unknown as Record<string, unknown>)['actions'] as unknown[])]
+          : [];
+        const alreadyBound = (existingNodeActions as Array<{ action?: string }>).some(a => a.action === wfId);
+        if (!alreadyBound) {
+          latestStore.patchActions(nodeId, [...existingNodeActions, { action: wfId, trigger }] as unknown as Record<string, unknown>);
+        }
+      }
+      mintedStubs.push({ workflowId: wfId, name: displayName, trigger, attachedTo: n.id as string | undefined });
+    }
+    if (Array.isArray(n.children)) {
+      for (const child of n.children as Record<string, unknown>[]) mintNodeActions(child);
+    }
+  }
+
+  mintNodeActions(treeInput);
+
+  // Page-lifecycle workflows (pageActions at generate_structure top level)
+  const pageActionsInput = Array.isArray(input.pageActions) ? input.pageActions as Array<{ workflowId?: string; trigger?: string }> : [];
+  for (const pa of pageActionsInput) {
+    const wfId = pa.workflowId;
+    const trigger = pa.trigger ?? 'pageLoad';
+    if (!wfId || typeof wfId !== 'string') continue;
+    // Idempotency: skip if this UUID is already registered
+    if ((getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) continue;
+    const displayPageName = `Page_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
+    const freshStore = getStore();
+    freshStore.setPageWorkflow(wfId, []);
+    const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
+    const meta: Record<string, unknown> = { id: wfId, name: displayPageName, trigger, isTrigger: true };
+    if (effectivePageId) meta.pageScope = effectivePageId;
+    freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
+    mintedStubs.push({ workflowId: wfId, name: displayPageName, trigger });
+  }
+
+  return {
+    success: true,
+    data: {
+      message: 'Structure inserted.',
+      mintedWorkflows: mintedStubs.length > 0 ? mintedStubs : undefined,
+    },
+  };
 };
 
 
@@ -3482,20 +4813,33 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
 export const CLIENT_SIDE_TOOLS = new Set([
   'generate_structure',
   'add_component', 'add_icon', 'add_image', 'add_video',
+  'add_shared_component_instance', 'set_component_props',
   'delete_node', 'duplicate_node', 'move_node_up', 'move_node_down', 'move_node', 'wrap_in_container',
   'set_text', 'set_placeholder', 'set_href', 'set_src', 'set_icon_src', 'set_video_props',
-  'set_background', 'set_text_color', 'set_typography', 'set_border', 'set_shadow',
-  'set_opacity', 'set_spacing', 'set_size', 'set_position', 'set_transform', 'set_overflow',
+  'set_background', 'set_text_color', 'set_border', 'set_shadow',
+  'set_opacity', 'set_size', 'set_transform', 'set_overflow',
   'set_submit', 'set_input_props',
   'set_layout',
   'set_style',
+  'set_responsive_override', 'clear_responsive_override',
   'set_condition', 'set_repeat', 'bind_action', 'unbind_action', 'create_workflow',
-  'delete_workflow', 'set_animation', 'set_validation',
+  'add_workflow_step', 'delete_workflow', 'set_workflow_params', 'set_animation', 'set_validation',
   'rename_node', 'set_disabled', 'set_loading_state',
-  'get_formula_context', 'get_workflows', 'get_data_sources',
-  'add_variable', 'update_variable', 'delete_variable',
-  'add_data_source', 'delete_data_source',
-  'set_theme_color',
+  'get_workflows', 'get_data_sources', 'get_shared_components', 'get_formulas',
+  'add_variable', 'update_variable', 'delete_variable', 'update_variable_initial_value',
+  'patch_variable_item', 'patch_variable_items', 'patch_variable_fields',
+  'append_variable_item', 'remove_variable_item',
+  'add_data_source', 'delete_data_source', 'update_data_source_schema',
+  'add_formula', 'update_formula', 'update_formula_body', 'delete_formula',
+  'set_app_config', 'set_auth_config',
+  'create_folder', 'rename_folder', 'delete_folder',
+  'create_shared_component', 'update_shared_component_metadata', 'delete_shared_component',
+  'update_shared_component_properties', 'update_shared_component_variables',
+  'update_shared_component_formulas', 'update_shared_component_triggers',
+  'enter_shared_component_edit', 'exit_shared_component_edit', 'set_instance_controlled',
+  'update_workflow_steps',
+  'set_theme_color', 'set_theme_mode', 'apply_theme_preset',
+  'add_custom_color', 'delete_custom_color',
   'add_page', 'switch_page', 'rename_page', 'remove_page', 'set_page_config',
   'select_node', 'undo',
 ]);
