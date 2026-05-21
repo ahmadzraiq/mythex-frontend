@@ -14,9 +14,18 @@ import datasourcesJson from '@/config/datasources.json';
 import routesJson from '@/config/routes.json';
 import customColorsJson from '@/config/custom-colors.json';
 import themeJson from '@/config/theme.json';
+import root from '@/config/root';
+import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
+import type { ConfigRegistry } from '@/lib/sdui/config-resolver';
 
 import type { BuilderStore, CustomVar, DataSourceConfig } from '@/app/dev/builder/_store-types';
 import type { SDUINode } from '@/lib/sdui/types/node';
+
+// Registry matches what the builder uses in _store.ts (_fragmentRegistry)
+const _registry: ConfigRegistry = {
+  layouts: root.layouts as ConfigRegistry['layouts'],
+  fragments: (root.fragments ?? {}) as ConfigRegistry['fragments'],
+};
 
 type VariablesDef = {
   variables?: Record<string, {
@@ -38,6 +47,10 @@ type DataSourcesDef = Record<string, {
   method?: string;
   storeIn?: string;
   responsePath?: string;
+  headers?: Record<string, string> | Array<{ key: string; value: string; enabled?: boolean }>;
+  variables?: Record<string, unknown>;
+  proxy?: boolean;
+  sendCredentials?: boolean;
 }>;
 
 type RoutesDef = {
@@ -94,8 +107,14 @@ function loadScreenNodes(configName: string): SDUINode[] {
 
   const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, unknown>;
 
-  // Root may be under 'ui' or 'content'
-  const rootNode = (raw.ui ?? raw.content) as SDUINode | null | undefined;
+  // Apply layout composition (e.g. "layout": "store" injects navbar/footer via $slot),
+  // exactly as the builder does via resolveScreenConfig in _store.ts.
+  const resolved = resolveScreenConfig(
+    raw as Parameters<typeof resolveScreenConfig>[0],
+    _registry,
+  );
+
+  const rootNode = (resolved.ui ?? resolved.content) as SDUINode | null | undefined;
   if (!rootNode || typeof rootNode !== 'object') return [];
 
   return [rootNode];
@@ -194,19 +213,33 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
 
   // ── Datasources ────────────────────────────────────────────────────────────
   const dsRaw = datasourcesJson as DataSourcesDef;
-  const pageDataSources: DataSourceConfig[] = Object.entries(dsRaw).map(([uuid, def]) => ({
-    id: uuid,
-    _label: def.label ?? def.name ?? uuid,
-    name: def.name ?? uuid,
-    type: def.type ?? 'rest',
-    url: def.url,
-    endpoint: def.endpoint,
-    query: def.query,
-    method: (def.method as DataSourceConfig['method']) ?? 'GET',
-    storeIn: def.storeIn ?? `collections.${uuid}`,
-    responsePath: def.responsePath,
-    headers: [],
-  }));
+  const pageDataSources: DataSourceConfig[] = Object.entries(dsRaw).map(([uuid, def]) => {
+    // Normalize headers: datasources.json stores them as a plain { key: value } object,
+    // but DataSourceConfig expects DataSourceHeader[] ({ key, value, enabled? }[]).
+    const rawH = def.headers;
+    const headers = Array.isArray(rawH)
+      ? rawH as import('@/app/dev/builder/_store-types').DataSourceHeader[]
+      : rawH && typeof rawH === 'object'
+        ? Object.entries(rawH as Record<string, string>).map(([k, v]) => ({ key: k, value: v, enabled: true }))
+        : [];
+
+    return {
+      id: uuid,
+      _label: def.label ?? def.name ?? uuid,
+      name: def.name ?? uuid,
+      type: def.type ?? 'rest',
+      url: def.url,
+      endpoint: def.endpoint,
+      query: def.query,
+      method: (def.method as DataSourceConfig['method']) ?? 'GET',
+      storeIn: def.storeIn ?? `collections.${uuid}`,
+      responsePath: def.responsePath,
+      variables: def.variables as Record<string, unknown> | undefined,
+      proxy: def.proxy,
+      sendCredentials: def.sendCredentials,
+      headers,
+    };
+  });
 
   // ── Pages (with actual node trees) ────────────────────────────────────────
   const routesDef = routesJson as RoutesDef;
@@ -222,10 +255,26 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     };
   });
 
-  // ── Workflows (from per-page action files) ────────────────────────────────
+  // ── Workflows ─────────────────────────────────────────────────────────────
+  // Load ALL action files: shared layout/cart/auth/etc. files PLUS per-page
+  // files. Shared files (e.g. layout.json) hold the navbar/footer workflows
+  // referenced by every page that uses the store layout.
   const pageWorkflows: Record<string, object[]> = {};
   const pageWorkflowMeta: Record<string, { name: string; trigger: string }> = {};
 
+  // 1. Shared / non-route action files first (so per-page entries can override)
+  const routeConfigs = new Set((routesDef.routes ?? []).map(r => normalizeKey(r.config ?? '')));
+  for (const [normalizedName, filePath] of actionsIndex) {
+    if (routeConfigs.has(normalizedName)) continue; // handled in step 2
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
+    const configName = path.basename(filePath, '.json');
+    const { workflows, workflowMeta } = loadActions(configName);
+    void raw;
+    Object.assign(pageWorkflows, workflows);
+    Object.assign(pageWorkflowMeta, workflowMeta);
+  }
+
+  // 2. Per-route action files
   for (const r of routesDef.routes ?? []) {
     const cfg = r.config ?? '';
     const { workflows, workflowMeta } = loadActions(cfg);

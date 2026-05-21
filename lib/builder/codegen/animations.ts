@@ -27,29 +27,40 @@ export const NAMED_KEYFRAMES: Record<string, string> = {
   ping: `@keyframes ping {
   75%, 100% { transform: scale(2); opacity: 0; }
 }`,
+  // Trigger-style bounce (pixel-based, matches builder's an-bounce)
   bounce: `@keyframes bounce {
-  0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-  50% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-14px); }
+  70% { transform: translateY(-5px); }
+  85% { transform: translateY(0); }
+  95% { transform: translateY(-3px); }
 }`,
+  // Scale pulse — matches builder's an-pulse (scale(1)→scale(1.12)→scale(1))
   pulse: `@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
 }`,
+  // Trigger-style fadeIn — matches builder's an-fadeIn (opacity+scale)
   fadeIn: `@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  0% { opacity: 0; transform: scale(0.95); }
+  60% { opacity: 1; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1); }
 }`,
+  // Trigger-style fadeOut — matches builder's an-fadeOut (goes back to opacity 1)
   fadeOut: `@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  0% { opacity: 1; }
+  60% { opacity: 0; }
+  100% { opacity: 1; }
 }`,
+  // Trigger-style slideUp — bounce upward (matches builder's an-slideUp)
   slideUp: `@keyframes slideUp {
-  from { transform: translateY(16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }`,
+  // Trigger-style slideDown — bounce downward (matches builder's an-slideDown)
   slideDown: `@keyframes slideDown {
-  from { transform: translateY(-16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(12px); }
 }`,
   slideLeft: `@keyframes slideLeft {
   from { transform: translateX(16px); opacity: 0; }
@@ -63,18 +74,52 @@ export const NAMED_KEYFRAMES: Record<string, string> = {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }`,
-  zoomOut: `@keyframes zoomOut {
-  from { transform: scale(1.1); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}`,
+  // Trigger-style shake — matches builder's an-shake (more keyframe stops)
   shake: `@keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
 }`,
   float: `@keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}`,
+  heartbeat: `@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  20% { transform: scale(1.06); }
+  40% { transform: scale(1); }
+  60% { transform: scale(1.10); }
+  80% { transform: scale(1); }
+}`,
+  // Enter-style animations (used with slideInUp, etc. for enter/exit transitions)
+  slideInUp: `@keyframes slideInUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}`,
+  bounceIn: `@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 1; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}`,
+  slideOutUp: `@keyframes slideOutUp {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-24px); opacity: 0; }
+}`,
+  slideOutDown: `@keyframes slideOutDown {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(24px); opacity: 0; }
+}`,
+  zoomOut: `@keyframes zoomOut {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.9); opacity: 0; }
+}`,
+  bounceOut: `@keyframes bounceOut {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.05); }
+  100% { transform: scale(0.3); opacity: 0; }
 }`,
 };
 

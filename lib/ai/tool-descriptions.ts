@@ -39,7 +39,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'set_video_props':     'Set Video playback props. Supported: autoPlay, loop, muted, controls.',
   'set_icon_src':        'Set icon name (static Iconify string or JS expression). Color and size are set via set_style.',
   'set_condition':       'Set a visibility condition (JS expression).',
-  'set_repeat':          'Make a node repeat over a list. Can also be set inline in generate_structure via repeat/keyField fields.',
+  'set_repeat':          'Make a node repeat over a list. Can also be set inline in generate_structure via repeat/keyField fields. Only call this when the target node is annotated REPEAT(...) in the compact tree.',
   'set_disabled':        'Set disabled state. Boolean or JS expression string.',
   'set_loading_state':   'Set visibility state tag — one of loading/empty/default/custom/none.',
 

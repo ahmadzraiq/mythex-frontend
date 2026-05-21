@@ -172,8 +172,8 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
   // These are generated after `local.*` → `state.local?.*` rewrites above.
   // formData: live field values from form.watch()
   out = out.replace(/\bstate\.local\?\.data\?\.form\?\.formData\b/g, '_formData');
-  // isSubmitted: from RHF formState
-  out = out.replace(/\bstate\.local\?\.data\?\.form\?\.isSubmitted\b/g, '_formIsSubmitted');
+  // isSubmitted: only true when the form was submitted and validation passed
+  out = out.replace(/\bstate\.local\?\.data\?\.form\?\.isSubmitted\b/g, '_formIsSubmitSuccessful');
   // Aggregate fields object → build from RHF errors (only covers error fields; valid fields absent).
   // isValid maps to the error message string (matching SDUI engine's convention) or false if no message.
   out = out.replace(
@@ -370,7 +370,7 @@ export function pathToExpr(path: string, symbols: SymbolMap, inMapScope = false)
 function isCSSLiteral(expr: string): boolean {
   const s = expr.trim();
   // Has runtime JS references — keep as expression
-  if (s.includes('state.') || s.includes('_item') || s.includes('variables.') || s.includes('collections.')) return false;
+  if (s.includes('state.') || s.includes('_item') || s.includes('variables.') || s.includes('collections.') || s.includes('_globalCtx') || s.includes('context.') || s.includes('router.') || s.includes('api.')) return false;
   // CSS function calls: calc(), rgb(), rgba(), hsl(), linear-gradient(), var(), env()
   if (/^(calc|rgb|rgba|hsl|hsla|linear-gradient|radial-gradient|conic-gradient|var|env|min|max|clamp|url)\s*\(/.test(s)) return true;
   // CSS dimension or percentage: 60px, 2.5rem, 100%, 1em, 50vw, etc.

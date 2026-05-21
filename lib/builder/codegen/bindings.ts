@@ -41,9 +41,10 @@ function eventToProp(event: string, componentType?: string): string | null {
 
 /**
  * Given an action ref, build the handler body that calls the workflow.
- * The workflow function receives (state, dispatch, { router, api, form, popover }).
+ * When inMapScope=true the handler is inside a .map() iteration, so _item is in scope.
+ * We pass context: { item: _item } so workflows can access context?.item?.data?.* formulas.
  */
-function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap): string {
+function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap, inMapScope = false): string {
   const stop = actionRef.stopPropagation ? 'e.stopPropagation();\n  ' : '';
   // __inlineCode from shared-component workflows takes priority (avoids round-trip through lib/workflows.ts)
   if (actionRef.__inlineCode) {
@@ -54,18 +55,21 @@ function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap): string {
     // Inline action with no workflow — should not happen in normal flow
     return `/* unknown workflow: ${actionRef.action} */`;
   }
-  return `${stop}await ${wfName}({ state: useStore.getState(), dispatch: useStore.setState, router, api, form, popover, event: e });`;
+  const contextArg = inMapScope ? `, context: { item: _item }` : '';
+  return `${stop}await ${wfName}({ state: useStore.getState(), dispatch: useStore.setState, router, api, form, popover, event: e${contextArg} });`;
 }
 
 /**
  * Build event-handler prop strings for a node's actions.
  * Returns an array of strings like: `onClick={async (e) => { ... }}`
+ * Pass inMapScope=true when the node is inside a .map() so _item context is forwarded to workflows.
  */
 export function buildActionProps(
   actions: Record<string, unknown> | unknown[] | undefined,
   symbols: SymbolMap,
   workflowMeta: Record<string, { trigger?: string }>,
   componentType?: string,
+  inMapScope = false,
 ): string[] {
   if (!actions) return [];
   const props: Record<string, string[]> = {};
@@ -79,7 +83,7 @@ export function buildActionProps(
       const propName = eventToProp(trigger, componentType);
       if (!propName) continue;
       if (!props[propName]) props[propName] = [];
-      props[propName]!.push(buildHandlerBody(ref, symbols));
+      props[propName]!.push(buildHandlerBody(ref, symbols, inMapScope));
     }
   } else if (typeof actions === 'object') {
     for (const [event, action] of Object.entries(actions as Record<string, unknown>)) {
@@ -87,7 +91,7 @@ export function buildActionProps(
       if (!propName) continue;
       const ref = { action: String((action as ActionRef).action ?? action), ...(action as object) } as ActionRef;
       if (!props[propName]) props[propName] = [];
-      props[propName]!.push(buildHandlerBody(ref, symbols));
+      props[propName]!.push(buildHandlerBody(ref, symbols, inMapScope));
     }
   }
 

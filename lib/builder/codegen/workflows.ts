@@ -9,7 +9,28 @@
  */
 
 import type { CodegenCtx } from './types';
+import type { BuilderStore } from '../_store-types';
 import { emitStep } from './actions/index';
+
+/** Walk the store's page nodes to find a node by id */
+function findNodeById(store: BuilderStore, id: string): Record<string, unknown> | null {
+  function walk(nodes: unknown[]): Record<string, unknown> | null {
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue;
+      const n = node as Record<string, unknown>;
+      if (n.id === id) return n;
+      const children = (n.children ?? []) as unknown[];
+      const found = walk(children);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const page of (store.pages ?? []) as Array<Record<string, unknown>>) {
+    const found = walk((page.nodes ?? []) as unknown[]);
+    if (found) return found;
+  }
+  return null;
+}
 
 export interface WorkflowCtxType {
   state: string;
@@ -25,7 +46,7 @@ export function emitWorkflows(ctx: CodegenCtx): string {
   const { store, symbols } = ctx;
 
   const lines: string[] = [];
-  lines.push(`import { useStore } from './store';`);
+  lines.push(`import { useStore, buildQueryString } from './store';`);
   lines.push(`import type { AppRouter } from './types';`);
   lines.push('');
   lines.push(`export interface WorkflowCtx {`);
@@ -38,6 +59,8 @@ export function emitWorkflows(ctx: CodegenCtx): string {
   lines.push(`  form?: import('react-hook-form').UseFormReturn<Record<string, unknown>>;`);
   lines.push(`  popover?: [Record<string, boolean>, (fn: (s: Record<string, boolean>) => Record<string, boolean>) => void];`);
   lines.push(`  event?: unknown;`);
+  lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
+  lines.push(`  context?: Record<string, any>;`);
   lines.push(`}`);
   lines.push('');
 
@@ -56,7 +79,7 @@ export function emitWorkflows(ctx: CodegenCtx): string {
     // _results tracks each step's return value; `context` mirrors the builder engine's
     // context.workflow.<stepId>.result pattern so formulas using it compile correctly.
     lines.push(`  const _results: Record<string, { result?: unknown }> = {};`);
-    lines.push(`  const context = { workflow: _results, event };`);
+    lines.push(`  const context = { ...(ctx.context ?? {}), workflow: _results, event };`);
     lines.push(`  void context;`);
     // wwLib polyfill — maps WeWeb engine API calls to exported app equivalents
     lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
@@ -108,7 +131,27 @@ export function emitWorkflows(ctx: CodegenCtx): string {
     lines.push('');
 
     try {
-      for (const step of steps as Record<string, unknown>[]) {
+      for (let step of steps as Record<string, unknown>[]) {
+        // Pre-process triggerExitAnimation: resolve the target node's exit animation config
+        // since the step's config doesn't store the animation type — it's on the node itself.
+        if (step.type === 'triggerExitAnimation') {
+          const cfg = (step.config ?? {}) as Record<string, unknown>;
+          if (!cfg.animation) {
+            const targetId = cfg.targetNodeId as string | undefined;
+            if (targetId) {
+              const found = findNodeById(store, targetId);
+              const exitAnim = (found as Record<string, unknown> | null)?.animation as Record<string, unknown> | undefined
+                            ?? (found as Record<string, unknown> | null)?.props as Record<string, unknown> | undefined;
+              const exitCfg = (exitAnim?.exit ?? (exitAnim as Record<string, unknown> | undefined)?.animation?.exit) as Record<string, unknown> | undefined;
+              if (exitCfg?.type) {
+                step = { ...step, config: { ...cfg, animation: exitCfg.type, duration: exitCfg.duration ?? cfg.duration ?? 300 } };
+              } else {
+                step = { ...step, config: { ...cfg, animation: 'fadeOut', duration: cfg.duration ?? 300 } };
+              }
+            }
+          }
+        }
+
         const stepId = step.id as string | undefined;
         const stepType = step.type as string | undefined;
         const code = emitStep(step, symbols);

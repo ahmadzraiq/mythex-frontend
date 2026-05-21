@@ -74,6 +74,9 @@ interface BuildUnit {
   layout?: string;
   /** Machine-readable layout pattern key emitted by the classify agent when a specific tree shape is required. */
   structureHint?: 'layered-absolute' | 'grid' | 'flex-row';
+  /** Aggregated briefings from all specialist agents (styling, animation, binding, media) for this section.
+   *  Passed to the structure agent so it builds a DOM that every specialist can work with upfront. */
+  agentContext?: string;
 }
 
 
@@ -535,6 +538,7 @@ async function runHaikuAgentLoop(
 
   const resolvedLoopModel = (modelId && VALID_MODELS.has(modelId)) ? modelId : 'claude-haiku-4-5';
   const loopSupportsThinking = THINKING_MODELS.has(resolvedLoopModel);
+  let lastStopReason = '';
 
   try {
   while (rounds < maxRounds) {
@@ -625,6 +629,7 @@ async function runHaikuAgentLoop(
     currentMessages.push({ role: 'assistant', content: finalMessage.content });
 
     // No tools called → the agent is done
+    lastStopReason = stopReason;
     if (toolUseBlocks.length === 0) break;
 
     const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
@@ -756,7 +761,21 @@ async function runHaikuAgentLoop(
     // Only stop when the model explicitly ends the turn (end_turn).
     if (stopReason !== 'tool_use' && stopReason !== 'max_tokens') break;
   }
+  } catch (e) {
+    if (phase) {
+      send({ type: 'agent_error', agent: phase, message: e instanceof Error ? e.message : String(e) });
+    }
+    throw e;
   } finally {
+    if (toolChoice && localToolCount === 0) {
+      console.error('[builder] forced tool_choice produced 0 tool calls', {
+        phase,
+        rounds,
+        toolChoice,
+        lastStopReason,
+        messagesCount: currentMessages.length,
+      });
+    }
     if (phase) {
       send({ type: 'agent_complete', agent: phase, rounds, toolCallCount: localToolCount, duration: Date.now() - startedAt, endedAt: Date.now() });
     }
@@ -770,10 +789,13 @@ async function runHaikuAgentLoop(
  *  rather than a Planner-generated SDUI description that may use wrong node terminology.
  *  For multi-page builds, prepends a page scope line so the agent knows which page to build. */
 function buildStructureUserRequest(message: string, unit: BuildUnit, totalUnits: number): string {
-  if (totalUnits > 1 && unit.pageName && unit.pageRoute) {
-    return `Page: ${unit.pageName} (${unit.pageRoute})\n\n${message}`;
+  let base = totalUnits > 1 && unit.pageName && unit.pageRoute
+    ? `Page: ${unit.pageName} (${unit.pageRoute})\n\n${message}`
+    : message;
+  if (unit.agentContext) {
+    base += `\n\nWhat each specialist agent will do with the tree you build — create the DOM structure to support all of these:\n${unit.agentContext}`;
   }
-  return message;
+  return base;
 }
 
 async function runStructureAgent(
@@ -1357,6 +1379,22 @@ export async function POST(req: NextRequest) {
       // The Planner outputs pageRoute + pageName per operation; we derive units from
       // that rather than defaulting everything to the current page.
       if (manifestOperations.length > 0) {
+        // Collect all specialist briefings per route so the structure agent knows
+        // what every downstream agent will do with its tree before building it.
+        const agentContextByRoute = new Map<string, string[]>();
+        const BRIEFING_AGENTS = ['styling', 'animation', 'binding', 'media'] as const;
+        for (const op of manifestOperations) {
+          const route = op.pageRoute ?? currentPage.route;
+          if (!route) continue;
+          for (const agentKey of BRIEFING_AGENTS) {
+            const brief = (op.agents?.[agentKey] as { briefing?: string } | undefined)?.briefing;
+            if (brief) {
+              if (!agentContextByRoute.has(route)) agentContextByRoute.set(route, []);
+              agentContextByRoute.get(route)!.push(`[${agentKey}]: ${brief}`);
+            }
+          }
+        }
+
         const routeMap = new Map<string, BuildUnit>();
         for (const op of manifestOperations) {
           const route = op.pageRoute ?? currentPage.route;
@@ -1367,6 +1405,7 @@ export async function POST(req: NextRequest) {
             pageName: op.pageName ?? (route === currentPage.route ? currentPage.name : undefined),
             description: op.summary,
             sectionCount: 1,
+            agentContext: agentContextByRoute.get(route)?.join('\n') ?? undefined,
           });
         }
         if (routeMap.size > 0) {
@@ -2511,7 +2550,7 @@ ${effectiveMessage}`,
           ...(shouldAnimation
           ? styleChunks.map(chunk => ({
               agent: chunk.animationAgentName,
-              promise: runHaikuAgentLoop(chunk.animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, chunk.animationAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap, { type: 'any' }),
+              promise: runHaikuAgentLoop(chunk.animationMessages, animationSystemBlocks, ANIMATION_AGENT_TOOLS.map(toToolParam), buildReadHandlers, send, allExecutedTools, 10, chunk.animationAgentName, modelSignalCtl.signal, undefined, undefined, undefined, nodeIdToPageMap, { type: 'tool', name: 'set_animation' }),
               }))
             : []),
           ...(shouldBind

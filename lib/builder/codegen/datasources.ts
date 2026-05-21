@@ -110,6 +110,35 @@ function emitRestFn(lines: string[], ds: DataSourceConfig, fnName: string): void
 function emitGraphQLFn(lines: string[], ds: DataSourceConfig, fnName: string): void {
   const endpointEnvKey = `NEXT_PUBLIC_GRAPHQL_ENDPOINT`;
 
+  // Build static extra headers from the datasource definition (e.g. vendure-token, api-key).
+  // These are inlined directly — they are channel/tenant config, not secrets.
+  const extraHeaders: Record<string, string> = {};
+  const rawHeaders = ds.headers;
+  if (Array.isArray(rawHeaders)) {
+    for (const h of rawHeaders) {
+      if (h.enabled !== false && h.key?.trim()) extraHeaders[h.key] = h.value ?? '';
+    }
+  } else if (rawHeaders && typeof rawHeaders === 'object') {
+    for (const [k, v] of Object.entries(rawHeaders as Record<string, string>)) {
+      if (k && v) extraHeaders[k] = v;
+    }
+  }
+  const headersObj = { 'Content-Type': 'application/json', ...extraHeaders };
+  const headersLiteral = JSON.stringify(headersObj);
+
+  // Default variables: static-only configs are inlined; formula-based ones use {}
+  // because the page component evaluates them at runtime and passes them as the explicit argument.
+  function hasFormula(v: unknown): boolean {
+    if (!v || typeof v !== 'object') return false;
+    if (Array.isArray(v)) return v.some(hasFormula);
+    const o = v as Record<string, unknown>;
+    if ('formula' in o || 'js' in o || 'var' in o) return true;
+    return Object.values(o).some(hasFormula);
+  }
+  const defaultVars = (ds.variables && typeof ds.variables === 'object' && !Array.isArray(ds.variables) && !hasFormula(ds.variables))
+    ? JSON.stringify(ds.variables)
+    : '{}';
+
   lines.push(`async function ${fnName}(variables?: Record<string, unknown>): Promise<unknown> {`);
   lines.push(`  const endpoint = process.env.${endpointEnvKey} ?? ${JSON.stringify(ds.endpoint ?? '')};`);
   lines.push(`  const query = ${JSON.stringify(ds.query ?? '')};`);
@@ -118,9 +147,9 @@ function emitGraphQLFn(lines: string[], ds: DataSourceConfig, fnName: string): v
   lines.push(`  if (cached) return cached;`);
   lines.push(`  const res = await fetch(endpoint, {`);
   lines.push(`    method: 'POST',`);
-  lines.push(`    headers: { 'Content-Type': 'application/json' },`);
+  lines.push(`    headers: ${headersLiteral},`);
   if (ds.sendCredentials) lines.push(`    credentials: 'include',`);
-  lines.push(`    body: JSON.stringify({ query, variables: variables ?? ${JSON.stringify(ds.variables ?? '{}')} }),`);
+  lines.push(`    body: JSON.stringify({ query, variables: variables ?? ${defaultVars} }),`);
   lines.push(`  });`);
   lines.push(`  if (!res.ok) throw new Error(\`${fnName}: HTTP \${res.status}\`);`);
   lines.push(`  const json = await res.json();`);
@@ -131,8 +160,11 @@ function emitGraphQLFn(lines: string[], ds: DataSourceConfig, fnName: string): v
     lines.push(`  cacheSet(cacheKey, result);`);
     lines.push(`  return result;`);
   } else {
-    lines.push(`  cacheSet(cacheKey, json?.data);`);
-    lines.push(`  return json?.data;`);
+    // Return the full raw response (including the { data: {...} } GraphQL wrapper).
+    // The builder's named-datasource-fetcher stores the raw response at collections.UUID,
+    // so formulas like collections.UUID.data.activeOrder work correctly.
+    lines.push(`  cacheSet(cacheKey, json);`);
+    lines.push(`  return json;`);
   }
   lines.push(`}`);
 }

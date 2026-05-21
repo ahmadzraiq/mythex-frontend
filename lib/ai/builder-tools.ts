@@ -16,7 +16,6 @@ interface BuilderTool {
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
-    allOf?: Array<{ if: unknown; then: unknown }>;
   };
 }
 
@@ -1334,17 +1333,6 @@ const logicTools: BuilderTool[] = [
         },
       },
       required: ['nodeId'],
-      // Phase 4a: schema-enforce required companion params for specific loop types
-      allOf: [
-        {
-          if: { properties: { loop: { enum: ['glowPulse', 'ripple'] } }, required: ['loop'] },
-          then: { required: ['loopColor'] },
-        },
-        {
-          if: { properties: { loop: { const: 'gradientDrift' } }, required: ['loop'] },
-          then: { required: ['gradientColors'] },
-        },
-      ],
     },
   },
   {
@@ -2385,7 +2373,7 @@ const setStyleTool: BuilderTool[] = [
 
         // ── Transform ────────────────────────────────────────────────────────
         transform:  { type: 'string', description: 'CSS transform string — parsed automatically. e.g. "translate(-50%, -50%)" sets both translateX and translateY; "rotate(45deg)" sets rotation. Use this instead of separate translateX/translateY.' },
-        rotate:     { description: 'Rotation in degrees (number) or CSS string.' },
+        rotate:     { description: 'Rotation. Pass a plain number for literal degrees (e.g. -8 → rotate(-8deg)). Pass a CSS angle string ("5deg") or a formula/js object (e.g. { formula: "variables[\'UUID\'] + \'deg\'" }) for dynamic values. Any non-number is stored as-is in style.rotate and evaluated at render time.' },
         flipX:      { type: 'boolean', description: 'Flip horizontally (scaleX(-1)).' },
         flipY:      { type: 'boolean', description: 'Flip vertically (scaleY(-1)).' },
         translateX: { description: 'Horizontal translate (number = px or CSS string).' },
@@ -2397,7 +2385,7 @@ const setStyleTool: BuilderTool[] = [
         // properties as the base call (excluding nodeId and breakpoints itself).
         breakpoints: {
           type: 'object',
-          description: 'Apply responsive overrides for multiple breakpoints in one call. Keys: laptop, tablet, mobile. Each value is a style object with the same properties as the base call. ALWAYS use this instead of making separate set_style calls per breakpoint.',
+          description: 'Apply responsive overrides for multiple breakpoints in one call. Keys: laptop (≥1024px), tablet (≥768px), mobile (<768px). Base styles (no breakpoint key) apply at desktop — ≥1280px with no upper limit, so they must work at any width. ALWAYS use this instead of making separate set_style calls per breakpoint.',
           properties: {
             laptop: { type: 'object', additionalProperties: true, description: 'Styles applied at laptop breakpoint and smaller.' },
             tablet: { type: 'object', additionalProperties: true, description: 'Styles applied at tablet breakpoint and smaller.' },

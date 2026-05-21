@@ -19,6 +19,25 @@ import type { CodegenCtx } from './types';
 import { rewritePropValue, rewriteTextValue, rewriteFormula, pathToExpr } from './formula-rewrite';
 import { resolveExpr } from './actions/misc';
 import type { SymbolMap } from './types';
+import { twMerge } from 'tailwind-merge';
+
+/**
+ * NativeWind-aware Tailwind merge.
+ *
+ * NativeWind converts arbitrary-value classes (e.g. `text-[24px]`, `text-[var(--c)]`) to
+ * React Native inline styles, which have higher specificity than stylesheet-based classes.
+ * This means an arbitrary class always beats a conflicting regular utility regardless of order.
+ *
+ * We replicate this by moving all arbitrary-value classes after all regular utilities before
+ * handing off to twMerge (which uses last-wins within each CSS-property group).
+ * Relative order is preserved within each group.
+ */
+function nwMerge(className: string): string {
+  const classes = className.trim().split(/\s+/).filter(Boolean);
+  const regular = classes.filter(c => !c.includes('['));
+  const arbitrary = classes.filter(c => c.includes('['));
+  return twMerge([...regular, ...arbitrary].join(' '));
+}
 
 /** Convert an SDUI _validation array into react-hook-form register rules code string */
 export function buildRhfRulesStr(validation: unknown): string | null {
@@ -155,11 +174,10 @@ function emitMapNode(
   const templateNode = { ...node, map: undefined, mapKey: undefined } as AnyNode;
   const templateResult = emitNodeInner(templateNode, ctx, imports, usedAnimations, true, depth + 1, formDepth);
 
-  const keyExpr = isFormulaMap
-    ? `index`  // formula items don't have a natural id; use array index
-    : /^\d+$/.test(keyField)
-      ? `index`
-      : `String(item?.${keyField} ?? index)`;
+  // Use the raw `item` (before _item wrapping) for the key — item is the plain object from the array.
+  const keyExpr = /^\d+$/.test(keyField)
+    ? `index`
+    : `String((item as Record<string,unknown>)?.[${JSON.stringify(keyField)}] ?? index)`;
 
   // If listExpr mixes || / && with the upcoming ??, wrap to satisfy operator precedence rules
   const safeListExpr = /\|\||&&/.test(listExpr) ? `(${listExpr})` : listExpr;
@@ -170,13 +188,12 @@ function emitMapNode(
     `$1 key={${keyExpr}}`,
   );
 
-  // For formula maps: wrap raw items in {data: item} to match engine's {data: ...} convention.
-  // Templates access _item?.data?.field because the engine wraps repeater items this way.
-  const itemAlias = isFormulaMap
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ? `const _item = { data: item, id: index } as any;`
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    : `const _item = item as any;`;
+  // The SDUI engine ALWAYS wraps map items as { data: rawItem } for the template context,
+  // for both formula maps AND path-based maps. Templates access _item?.data?.field everywhere.
+  // Spread `index` into data so `_item?.data?.index` resolves to the loop position.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const itemAlias = `const _item = { data: { ...(item as Record<string, unknown>), index }, id: (item as Record<string, unknown>)?.['id'] ?? index } as any;`;
+  void isFormulaMap; // kept for future use
 
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -326,8 +343,51 @@ function emitNodeInner(
     }
   }
 
+  // Resolve conflicting Tailwind utilities to match NativeWind's behavior:
+  // NativeWind converts arbitrary value classes (text-[24px]) to inline styles, giving them
+  // higher specificity than regular utilities (text-base). We replicate this by sorting all
+  // arbitrary classes after regular ones before passing to twMerge (which uses last-wins),
+  // so arbitrary always beats a conflicting regular utility — just like NativeWind.
   if (className) {
+    className = nwMerge(className);
     propsLines.push(`className="${className}"`);
+  }
+
+  // animation.states → computed inline style parts (state-machine driven CSS, e.g. Kanban column bg, Carousel slide transform)
+  const _statesCfg = (animConfig as Record<string, unknown> | null | undefined)?.states as {
+    watchVar: string;
+    duration?: number;
+    easing?: string;
+    defaultState?: string;
+    states: Record<string, Record<string, string>>;
+  } | undefined;
+  const animStatesParts: string[] = [];
+  if (_statesCfg?.watchVar && _statesCfg?.states && typeof _statesCfg.states === 'object') {
+    const _allProps = new Set<string>();
+    for (const sv of Object.values(_statesCfg.states)) {
+      if (sv && typeof sv === 'object') Object.keys(sv).forEach(p => _allProps.add(p));
+    }
+    const _watchExpr = rewriteFormula(_statesCfg.watchVar, ctx.symbols, inMapScope);
+    const _defaultKey = _statesCfg.defaultState ?? Object.keys(_statesCfg.states)[0] ?? '';
+    for (const _prop of _allProps) {
+      const _stateMap: Record<string, string> = {};
+      for (const [sk, sv] of Object.entries(_statesCfg.states)) {
+        if (sv && typeof sv === 'object' && _prop in sv) _stateMap[sk] = (sv as Record<string, string>)[_prop];
+      }
+      const _defVal = _stateMap[_defaultKey] ?? Object.values(_stateMap)[0] ?? '';
+      animStatesParts.push(`${JSON.stringify(_prop)}: (${JSON.stringify(_stateMap)})[${_watchExpr}] ?? ${JSON.stringify(_defVal)}`);
+    }
+    if (_statesCfg.duration && _allProps.size > 0) {
+      const _tf = _statesCfg.easing === 'easeInOut' ? 'ease-in-out'
+                : _statesCfg.easing === 'easeIn' ? 'ease-in'
+                : _statesCfg.easing === 'easeOut' ? 'ease-out'
+                : (_statesCfg.easing ?? 'ease');
+      const _trans = [..._allProps].map(p => {
+        const cssProp = p.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
+        return `${cssProp} ${_statesCfg.duration}ms ${_tf}`;
+      });
+      animStatesParts.push(`"transition": "${_trans.join(', ')}"`);
+    }
   }
 
   // style (inline) — emit as a proper JS object so dynamic values are expressions, not strings
@@ -337,7 +397,11 @@ function emitNodeInner(
     // evaluate it as a whole and spread into style={{}} rather than treating "js" as a CSS property name.
     if ('js' in styleObj || 'formula' in styleObj || 'var' in styleObj) {
       const styleExpr = rewritePropValue(styleObj, ctx.symbols, inMapScope);
-      propsLines.push(`style={${styleExpr}}`);
+      if (animStatesParts.length > 0) {
+        propsLines.push(`style={{ ...${styleExpr}, ${animStatesParts.join(', ')} }}`);
+      } else {
+        propsLines.push(`style={${styleExpr}}`);
+      }
       // skip per-property iteration below
     } else {
     const styleParts: string[] = [];
@@ -414,10 +478,13 @@ function emitNodeInner(
     if (allTransforms.length > 0) {
       styleParts.push(`"transform": "${allTransforms.join(' ')}"`);
     }
-    if (styleParts.length > 0) {
-      propsLines.push(`style={{ ${styleParts.join(', ')} }}`);
+    if (styleParts.length > 0 || animStatesParts.length > 0) {
+      propsLines.push(`style={{ ${[...styleParts, ...animStatesParts].join(', ')} }}`);
     }
     } // end else (per-property style iteration)
+  } else if (animStatesParts.length > 0) {
+    // No static style on this node, but animation.states contributes dynamic styles
+    propsLines.push(`style={{ ${animStatesParts.join(', ')} }}`);
   }
 
   // Component-specific props
@@ -470,10 +537,33 @@ function emitNodeInner(
     const alt = rewritePropValue(node.props?.alt ?? '', ctx.symbols, inMapScope);
     propsLines.push(`src={${src}}`);
     propsLines.push(`alt={${alt}}`);
-    const w = node.props?.width ?? 400;
-    const h = node.props?.height ?? 300;
-    propsLines.push(`width={${rewritePropValue(w, ctx.symbols, inMapScope)}}`);
-    propsLines.push(`height={${rewritePropValue(h, ctx.symbols, inMapScope)}}`);
+
+    // Next.js Image: `fill` and `width`/`height` are mutually exclusive.
+    // When fill=true the image fills its parent container (parent must be position:relative).
+    const isFill = !!(node.props as Record<string, unknown>)?.fill;
+    if (!isFill) {
+      const w = node.props?.width ?? 400;
+      const h = node.props?.height ?? 300;
+      propsLines.push(`width={${rewritePropValue(w, ctx.symbols, inMapScope)}}`);
+      propsLines.push(`height={${rewritePropValue(h, ctx.symbols, inMapScope)}}`);
+    }
+
+    // NativeWind's Image component defaults: resizeMode=cover (→ objectFit:cover) + display:block.
+    // display:block removes the inline-baseline gap browsers add below <img> elements.
+    // fill images are positioned absolute by Next.js so display:block is redundant; only add
+    // objectFit as a style default for fill images. Both are overridden if the node has
+    // explicit style props — those are merged in the CSS_ONLY_PROPS block below.
+    const hasExplicitObjectFit = Object.prototype.hasOwnProperty.call(node.props ?? {}, 'objectFit');
+    if (isFill) {
+      if (!hasExplicitObjectFit) propsLines.push(`style={{ objectFit: 'cover' }}`);
+    } else {
+      if (!hasExplicitObjectFit) {
+        propsLines.push(`style={{ objectFit: 'cover', display: 'block' }}`);
+      } else {
+        propsLines.push(`style={{ display: 'block' }}`);
+      }
+    }
+
     skipProps.add('src').add('uri').add('alt').add('width').add('height');
   }
 
@@ -662,8 +752,182 @@ function emitNodeInner(
     ctx.symbols,
     allWorkflowMeta,
     node.type as string,
+    inMapScope,
   );
   propsLines.push(...actionProps);
+
+  // Drag-with-noVisualMove → pointer event handler (e.g. Slider track).
+  // Builder uses Framer Motion drag + dragUpdate/dragStart/dragEnd with event.percentX.
+  // In the export we use pointer events + getBoundingClientRect to compute the same percentX,
+  // then run the __inlineCode that was pre-compiled by inlineScWorkflows (which references `event`).
+  const dragCfg = (node.animation as Record<string, unknown> | undefined)?.drag as Record<string, unknown> | undefined;
+  if (dragCfg?.enabled && dragCfg?.noVisualMove && Array.isArray(node.actions)) {
+    type DragActionRef = { action?: string; trigger?: string; __inlineCode?: string };
+    const dragActions = node.actions as DragActionRef[];
+    const getCode = (trigger: string): string | null => {
+      for (const a of dragActions) {
+        const t = a.trigger ?? allWorkflowMeta[a.action ?? '']?.trigger;
+        if (t === trigger && a.__inlineCode) return a.__inlineCode;
+      }
+      return null;
+    };
+    const startCode = getCode('dragStart');
+    const updateCode = getCode('dragUpdate');
+    const endCode = getCode('dragEnd');
+
+    if (startCode || updateCode || endCode) {
+      const handlerLines: string[] = [];
+      handlerLines.push(`async (e: React.PointerEvent<HTMLDivElement>) => {`);
+      handlerLines.push(`  e.currentTarget.setPointerCapture(e.pointerId);`);
+      handlerLines.push(`  const _el = e.currentTarget;`);
+      handlerLines.push(`  const _pct = (cx: number) => { const _r = _el.getBoundingClientRect(); return Math.max(0, Math.min(1, (cx - _r.left) / (_r.width || 1))); };`);
+      if (startCode) {
+        handlerLines.push(`  { const event = { percentX: _pct(e.clientX) }; void event; ${startCode} }`);
+      }
+      if (updateCode) {
+        handlerLines.push(`  const _mv = (me: PointerEvent) => { const event = { percentX: _pct(me.clientX) }; void event; ${updateCode} };`);
+        handlerLines.push(`  window.addEventListener('pointermove', _mv);`);
+      }
+      const upLines: string[] = [];
+      upLines.push(`  const _up = (ue: PointerEvent) => {`);
+      if (endCode) upLines.push(`    const event = { percentX: _pct(ue.clientX) }; void event; ${endCode}`);
+      if (updateCode) upLines.push(`    window.removeEventListener('pointermove', _mv);`);
+      upLines.push(`    window.removeEventListener('pointerup', _up);`);
+      upLines.push(`  };`);
+      upLines.push(`  window.addEventListener('pointerup', _up);`);
+      handlerLines.push(...upLines);
+      handlerLines.push(`}`);
+      propsLines.push(`onPointerDown={${handlerLines.join('\n')}}`);
+    }
+  }
+
+  // Standard drag (e.g. Kanban cards) — translationX/Y + containerWidth event shape.
+  // Used when drag.enabled is true but noVisualMove is NOT set (Framer Motion visual drag).
+  // Actions reference external workflow functions (not __inlineCode), so we call them directly
+  // with { translationX, translationY, containerWidth } matching Framer Motion's event shape.
+  if (dragCfg?.enabled && !dragCfg?.noVisualMove && Array.isArray(node.actions)) {
+    type DragActionRef = { action?: string; trigger?: string; __inlineCode?: string };
+    const dragActions = node.actions as DragActionRef[];
+    const getWfName = (trigger: string): string | null => {
+      for (const a of dragActions) {
+        const t = a.trigger ?? allWorkflowMeta[a.action ?? '']?.trigger;
+        if (t !== trigger) continue;
+        // Prefer inlined code, fall back to workflow function name
+        if (a.__inlineCode) return `__inline__:${a.__inlineCode}`;
+        const fn = a.action ? ctx.symbols.workflows.get(a.action) : null;
+        if (fn) return fn;
+      }
+      return null;
+    };
+    const startWf  = getWfName('dragStart');
+    const updateWf = getWfName('dragUpdate');
+    const endWf    = getWfName('dragEnd');
+
+    if (startWf || updateWf || endWf) {
+      // inMapScope means _item is available — pass it as context so workflows can read context.item.data
+      const itemCtxExpr = inMapScope ? `, context: { item: _item }` : '';
+      const wfCall = (wf: string, evtExpr: string): string => {
+        if (wf.startsWith('__inline__:')) {
+          const code = wf.slice('__inline__:'.length);
+          return `{ const event = ${evtExpr}; void event; ${code} }`;
+        }
+        imports.addNamed('../../lib/workflows', wf);
+        return `void ${wf}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: ${evtExpr}${itemCtxExpr} });`;
+      };
+      const evtStart  = `{ translationX: 0, translationY: 0, containerWidth: _cw }`;
+      const evtMove   = `{ translationX: me.clientX - _sx, translationY: me.clientY - _sy, containerWidth: _cw }`;
+      const evtEnd    = `{ translationX: ue.clientX - _sx, translationY: ue.clientY - _sy, containerWidth: _cw }`;
+
+      const h: string[] = [];
+      h.push(`async (e: React.PointerEvent<HTMLDivElement>) => {`);
+      h.push(`  e.preventDefault();`);
+      h.push(`  e.currentTarget.setPointerCapture(e.pointerId);`);
+      h.push(`  const _el = e.currentTarget as HTMLElement;`);
+      h.push(`  const _sx = e.clientX, _sy = e.clientY;`);
+      h.push(`  const _rect = _el.getBoundingClientRect();`);
+      h.push(`  const _cw = (_el.closest('[class*="flex-1"]') as HTMLElement|null)?.getBoundingClientRect().width ?? 200;`);
+      // Create a fixed-position clone that follows the pointer (fully opaque drag preview).
+      // The original element stays in its slot and shows as the ghost (React renders opacity:0.3 on it).
+      h.push(`  const _clone = _el.cloneNode(true) as HTMLElement;`);
+      h.push(`  _clone.style.cssText = 'position:fixed;left:'+_rect.left+'px;top:'+_rect.top+'px;width:'+_rect.width+'px;pointer-events:none;z-index:1000;opacity:1;margin:0;box-sizing:border-box;';`);
+      h.push(`  document.body.appendChild(_clone);`);
+      // Hide the original slot element so it appears empty (only the clone is visible)
+      h.push(`  _el.style.setProperty('opacity', '0', 'important');`);
+      h.push(`  document.body.style.cursor = 'grabbing';`);
+      if (startWf)  h.push(`  ${wfCall(startWf, evtStart)}`);
+      if (updateWf) {
+        h.push(`  const _mv = async (me: PointerEvent) => {`);
+        h.push(`    const _tx = me.clientX - _sx, _ty = me.clientY - _sy;`);
+        h.push(`    _clone.style.transform = \`translate(\${_tx}px, \${_ty}px)\`;`);
+        h.push(`    ${wfCall(updateWf, `{ translationX: me.clientX - _sx, translationY: me.clientY - _sy, containerWidth: _cw }`)}`);
+        h.push(`  };`);
+        h.push(`  window.addEventListener('pointermove', _mv as EventListener);`);
+      }
+      h.push(`  const _up = async (ue: PointerEvent) => {`);
+      h.push(`    _clone.remove();`);
+      h.push(`    _el.style.removeProperty('opacity');`);
+      h.push(`    document.body.style.cursor = '';`);
+      if (endWf)    h.push(`    ${wfCall(endWf, evtEnd)}`);
+      if (updateWf) h.push(`    window.removeEventListener('pointermove', _mv as EventListener);`);
+      h.push(`    window.removeEventListener('pointerup', _up as EventListener);`);
+      h.push(`  };`);
+      h.push(`  window.addEventListener('pointerup', _up as EventListener);`);
+      h.push(`}`);
+      propsLines.push(`onPointerDown={${h.join('\n')}}`);
+    }
+  }
+
+  // Swipe gesture (e.g. Carousel) — animation.gesture.swipe: true with onSwipeLeftAction / onSwipeRightAction.
+  // Converts pointer events into a left/right swipe with a 50px threshold.
+  const swipeCfg = (animConfig as Record<string, unknown> | undefined)?.gesture as Record<string, unknown> | undefined;
+  if (swipeCfg?.swipe === true) {
+    const leftAction  = swipeCfg.onSwipeLeftAction  as string | undefined;
+    const rightAction = swipeCfg.onSwipeRightAction as string | undefined;
+    const leftFn  = leftAction  ? ctx.symbols.workflows.get(leftAction)  : null;
+    const rightFn = rightAction ? ctx.symbols.workflows.get(rightAction) : null;
+    if (leftFn || rightFn) {
+      if (leftFn)  imports.addNamed(`../../lib/workflows`, leftFn);
+      if (rightFn) imports.addNamed(`../../lib/workflows`, rightFn);
+      const leftCall  = leftFn  ? `void ${leftFn}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: undefined });` : '';
+      const rightCall = rightFn ? `void ${rightFn}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: undefined });` : '';
+      const h: string[] = [];
+      h.push(`(e: React.PointerEvent<HTMLDivElement>) => {`);
+      h.push(`  e.preventDefault();`);
+      h.push(`  e.currentTarget.setPointerCapture(e.pointerId);`);
+      h.push(`  const _el = e.currentTarget as HTMLElement;`);
+      h.push(`  const _sx = e.clientX;`);
+      // Slide width = the overflow container's width (one slide at a time is visible)
+      h.push(`  const _slideW = (_el.parentElement?.offsetWidth ?? _el.offsetWidth) || 1;`);
+      // Read current translateX% from the React-applied inline style (e.g. "translateX(-100%)")
+      h.push(`  const _curM = (_el.style.transform || '').match(/translateX\\((-?[\\d.]+)%\\)/);`);
+      h.push(`  const _curPct = _curM ? parseFloat(_curM[1]) : 0;`);
+      // Disable transition so dragging feels instant
+      h.push(`  _el.style.transition = 'none';`);
+      // Live drag: track follows the pointer
+      h.push(`  const _mv = (me: PointerEvent) => {`);
+      h.push(`    const _dx = me.clientX - _sx;`);
+      h.push(`    _el.style.transform = \`translateX(calc(\${_curPct}% + \${_dx}px))\`;`);
+      h.push(`  };`);
+      h.push(`  window.addEventListener('pointermove', _mv as EventListener);`);
+      h.push(`  const _up = (ue: PointerEvent) => {`);
+      h.push(`    window.removeEventListener('pointermove', _mv as EventListener);`);
+      h.push(`    window.removeEventListener('pointerup', _up as EventListener);`);
+      h.push(`    const _dx = ue.clientX - _sx;`);
+      // Determine target percentage, clamp to valid range
+      h.push(`    const _tgtPct = _dx < -50 ? _curPct - 100 : _dx > 50 ? _curPct + 100 : _curPct;`);
+      // Clamp: assumes slides are at 0%, -100%, -200%, etc. Max negative = -(slideCount-1)*100%
+      h.push(`    const _clampedPct = Math.max(-200, Math.min(0, _tgtPct));`);
+      // Snap to target with transition, then call workflow to sync React state
+      h.push(`    _el.style.transition = 'transform 400ms ease-in-out';`);
+      h.push(`    _el.style.transform = \`translateX(\${_clampedPct}%)\`;`);
+      if (leftFn)  h.push(`    if (_dx < -50) { ${leftCall} }`);
+      if (rightFn) h.push(`    if (_dx > 50)  { ${rightCall} }`);
+      h.push(`  };`);
+      h.push(`  window.addEventListener('pointerup', _up as EventListener);`);
+      h.push(`}`);
+      propsLines.push(`onPointerDown={${h.join('\n')}}`);
+    }
+  }
 
   // Lifecycle triggers → useEffect entries
   const lifecycleTriggers = extractLifecycleTriggers(
@@ -737,14 +1001,9 @@ function emitPopoverNode(
   depth: number,
   inMapScope: boolean,
 ): NodeEmitResult {
-  imports.addNamed('@radix-ui/react-popover', 'Popover', 'PopoverTrigger', 'PopoverContent');
-  // useStore is always imported by routing.ts with the correct relative prefix — no need to add it here
-
-  // Use the node's id for controlled mode (workflows can target it by ID).
-  // If no id, fall back to uncontrolled mode so multiple instances don't share state.
-  const nodeId = node.id && node.id !== 'root' ? node.id : null;
-
   const popsConfig = node.popover as unknown as Record<string, unknown>;
+  const isHoverTrigger = popsConfig?.trigger === 'hover';
+
   const side = popsConfig?.side ?? popsConfig?.placement?.toString().split('-')[0] ?? 'bottom';
   const align = (() => {
     const placement = popsConfig?.placement?.toString() ?? '';
@@ -769,11 +1028,68 @@ function emitPopoverNode(
     ).join('\n');
   }
 
+  // Hover-trigger → pure CSS/JS tooltip, no library needed.
+  // `relative` + `w-max` are injected into the trigger's own className so the absolute-positioned
+  // tooltip is always anchored to the trigger's actual size, not a stretched flex-item wrapper.
+  if (isHoverTrigger) {
+    const nodeId = node.id && node.id !== 'root' ? node.id : `tooltip-${Math.random().toString(36).slice(2, 8)}`;
+    const offset = Number(popsConfig?.offset ?? 6);
+
+    // Map side+align → Tailwind position classes for the floating content div
+    const posClass = (() => {
+      const s = String(side);
+      const a = String(align);
+      const alignClsH = a === 'start' ? 'left-0' : a === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2';
+      const alignClsV = a === 'start' ? 'top-0' : a === 'end' ? 'bottom-0' : 'top-1/2 -translate-y-1/2';
+      if (s === 'top')    return `bottom-full mb-[${offset}px] ${alignClsH}`;
+      if (s === 'bottom') return `top-full mt-[${offset}px] ${alignClsH}`;
+      if (s === 'left')   return `right-full mr-[${offset}px] ${alignClsV}`;
+      if (s === 'right')  return `left-full ml-[${offset}px] ${alignClsV}`;
+      return `bottom-full mb-[${offset}px] ${alignClsH}`;
+    })();
+
+    const openExpr = `popoverState[${JSON.stringify(nodeId)}]`;
+    const showFn   = `() => setPopoverState(s => ({ ...s, ${JSON.stringify(nodeId)}: true }))`;
+    const hideFn   = `() => setPopoverState(s => ({ ...s, ${JSON.stringify(nodeId)}: false }))`;
+
+    // Inject `relative w-max` into the trigger element's className so it sizes to its content
+    // (prevents stretching as a flex item) and acts as the positioning context for the tooltip.
+    const updatedProps = propsLines.map(p =>
+      /^className=/.test(p)
+        ? p.replace(/className="([^"]*)"/, (_, cls) => `className="${cls.trim()} relative w-max"`)
+        : p
+    );
+    if (!updatedProps.some(p => /^className=/.test(p))) {
+      updatedProps.push(`className="relative w-max"`);
+    }
+
+    return {
+      jsx: [
+        `${ind}<${tag} ${updatedProps.join(' ')} onMouseEnter={${showFn}} onMouseLeave={${hideFn}}>`,
+        triggerContent ?? '',
+        `${childInd}{${openExpr} && (`,
+        `${childInd}  <div className="absolute ${posClass} z-50 pointer-events-none">`,
+        popoverContentJsx,
+        `${childInd}  </div>`,
+        `${childInd})}`,
+        `${ind}</${tag}>`,
+      ].filter(l => l !== '').join('\n'),
+      useEffects,
+    };
+  }
+
+  // Click-trigger (default) → @radix-ui/react-popover
+  imports.addNamed('@radix-ui/react-popover', 'Popover', 'PopoverTrigger', 'PopoverContent');
+
+  // Use the node's id for controlled mode (workflows can target it by ID).
+  // If no id, fall back to uncontrolled mode so multiple instances don't share state.
+  const nodeId = node.id && node.id !== 'root' ? node.id : null;
+
   // For matchTriggerWidth popovers (like Select), use a relative-positioned wrapper
   const matchWidth = popsConfig?.matchTriggerWidth === true;
   const popoverContentProps = matchWidth
-    ? `side="${side}" align="${align}" className="w-[var(--radix-popover-trigger-width)] p-0"`
-    : `side="${side}" align="${align}"`;
+    ? `side="${side}" align="${align}" className="w-[var(--radix-popover-trigger-width)] p-0 outline-none"`
+    : `side="${side}" align="${align}" className="outline-none"`;
 
   // Prefer componentVars-controlled open state (for shared components with an *-open variable)
   const controlled = (node as Record<string, unknown>)._popoverControlled as

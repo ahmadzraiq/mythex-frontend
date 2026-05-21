@@ -2045,11 +2045,16 @@ const handlers: Record<string, Handler> = {
 
     if (input.rotate != null) {
       const deg = Number(input.rotate);
-      if (Number.isNaN(deg)) {
-        return { success: false, error: `set_transform rotate must be a plain number in degrees, not a string or expression. Got: "${input.rotate}". Use a literal number like 5 or -12.` };
+      if (!Number.isNaN(deg)) {
+        // Literal number — build the CSS transform string (existing behaviour)
+        stylePatch.transform = deg === 0 ? '' : `rotate(${deg}deg)`;
+      } else {
+        // CSS angle string ("5deg"), formula/js object, or expression string —
+        // pass through as-is to style.rotate. resolveProps evaluates formula/js
+        // objects at render time. Agent is responsible for the correct CSS value
+        // (e.g. { formula: "variables['UUID'] + 'deg'" }).
+        stylePatch.rotate = input.rotate;
       }
-      // Write to style.transform (matches the panel's patchStyle behaviour — any degree value supported)
-      stylePatch.transform = deg === 0 ? '' : `rotate(${deg}deg)`;
       // Clear any Tailwind rotate-* class that would conflict
       cls = cls.split(' ').filter(t => !/^-?rotate-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
     }

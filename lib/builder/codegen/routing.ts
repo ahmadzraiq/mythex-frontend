@@ -14,6 +14,8 @@ import { routeToFilePath, routeToComponentName } from './identifiers';
 import { resolvePageNodes, collectScVarsInits } from './resolve';
 import { emitNode, buildRhfRulesStr } from './nodes';
 import { ImportsTracker } from './tsx-builder';
+import { rewritePropValue } from './formula-rewrite';
+import type { SymbolMap } from './types';
 
 /** All function names exported from lib/utils.ts that might appear in JSX formulas */
 const UTILS_FN_NAMES = new Set([
@@ -51,6 +53,60 @@ function detectUsedUtilsFns(jsx: string): string[] {
     }
   }
   return used;
+}
+
+/**
+ * Emit app/_layout-shell.tsx — a client component that wraps every page with
+ * canvas nodes (freeform nodes placed outside page frames in the builder, e.g. navbar/footer SCs).
+ * Canvas nodes with lower _cy (Y position) are rendered above children; higher _cy below.
+ * Returns null if there are no canvas nodes to render.
+ */
+export function emitLayoutShell(ctx: CodegenCtx, usedAnimations: Set<string>): EmittedFile | null {
+  const rawCanvasNodes = ((ctx.store as unknown as Record<string, unknown>).canvasNodes ?? []) as Array<Record<string, unknown>>;
+  if (rawCanvasNodes.length === 0) return null;
+
+  // Sort by _cy ascending: lower Y = visually above pages (header), higher Y = below (footer)
+  const sorted = [...rawCanvasNodes].sort((a, b) => (Number(a._cy) || 0) - (Number(b._cy) || 0));
+
+  // Estimate the midpoint between pages to split header vs footer nodes.
+  // Use 0 as the split: _cy < 0 → header (placed above the page frame), else footer.
+  // If all are >= 0, treat the first half as header.
+  const midY = sorted.some(n => (Number(n._cy) || 0) < 0) ? 0 : Infinity;
+  const headerNodes = sorted.filter(n => (Number(n._cy) || 0) < midY);
+  const footerNodes = sorted.filter(n => (Number(n._cy) || 0) >= midY);
+
+  const imports = new ImportsTracker();
+  imports.addNamed('react', 'useState', 'useEffect');
+  imports.addNamed('../lib/store', 'useStore');
+
+  const resolvedHeader = resolvePageNodes(headerNodes as SDUINode[]);
+  const resolvedFooter = resolvePageNodes(footerNodes as SDUINode[]);
+
+  const headerJsx = resolvedHeader.map(n =>
+    emitNode(n as Record<string, unknown> & SDUINode, ctx, imports, usedAnimations, false, 1).lines.join('\n')
+  ).join('\n');
+  const footerJsx = resolvedFooter.map(n =>
+    emitNode(n as Record<string, unknown> & SDUINode, ctx, imports, usedAnimations, false, 1).lines.join('\n')
+  ).join('\n');
+
+  const lines: string[] = [];
+  lines.push(`'use client';`);
+  lines.push('');
+  lines.push(imports.render());
+  lines.push('');
+  lines.push(`export function LayoutShell({ children }: { children: React.ReactNode }) {`);
+  lines.push(`  const state = useStore();`);
+  lines.push(`  void state;`);
+  lines.push(`  return (`);
+  lines.push(`    <>`);
+  if (headerJsx) lines.push(headerJsx);
+  lines.push(`      <main style={{ flex: 1 }}>{children}</main>`);
+  if (footerJsx) lines.push(footerJsx);
+  lines.push(`    </>`);
+  lines.push(`  );`);
+  lines.push(`}`);
+
+  return { path: 'app/_layout-shell.tsx', content: lines.join('\n') };
 }
 
 export function emitPages(ctx: CodegenCtx, usedAnimations: Set<string>): EmittedFile[] {
@@ -188,9 +244,15 @@ function emitPage(
     allUseEffects.push(...result.useEffects);
   }
 
-  // Auto-detect which utils formula functions are used and add a named import
+  // Auto-detect which utils formula functions are used and add a named import.
+  // Also scan datasource variable expressions so helpers like lookupMap/remove/split
+  // referenced in formula variables are included.
   const allJsx = nodeJsxParts.join('\n');
-  const usedUtils = detectUsedUtilsFns(allJsx);
+  const dsVarsExpressions = (ctx.store.pageDataSources ?? [])
+    .filter(ds => hasFormulaVars(ds.variables))
+    .map(ds => emitVarsExpression(ds.variables, ctx.symbols))
+    .join('\n');
+  const usedUtils = detectUsedUtilsFns(allJsx + '\n' + dsVarsExpressions);
   if (usedUtils.length > 0) {
     imports.addNamed(`${relPrefix}lib/utils`, ...usedUtils);
   }
@@ -248,9 +310,9 @@ function emitPage(
     const controlledFields = findControlledFields(resolvedNodes as unknown as Record<string, unknown>[]);
 
     // Also include native Input/Textarea fields inside FormContainer with a `name` prop.
-    // Pre-declaring them with "" ensures they appear in getValues() from mount,
-    // so formData always contains bio, email, etc. alongside the controlled fields.
-    const nativeFormFieldNames = new Set<string>();
+    // Pre-declaring them with their _initialValue (or "") ensures they appear in getValues()
+    // from mount, so formData always contains bio, email, etc. alongside the controlled fields.
+    const nativeFormFields = new Map<string, string>(); // name → initial value
     (function scanNativeFormFields(nodes: Record<string, unknown>[], inForm: boolean) {
       for (const node of nodes) {
         const t = node.type as string | undefined;
@@ -258,20 +320,27 @@ function emitPage(
         const nowInForm = inForm || isFC;
         if (nowInForm && !isFC) {
           if (t === 'Input' || t === 'InputField' || t === 'Textarea' || t === 'TextareaInput') {
-            const name = (node.props as Record<string, unknown> | undefined)?.name;
-            if (typeof name === 'string' && name) nativeFormFieldNames.add(name);
+            const name = (node.props as Record<string, unknown> | undefined)?.name
+              ?? (node as Record<string, unknown>).name;
+            if (typeof name === 'string' && name && !nativeFormFields.has(name)) {
+              const rawInit = (node as Record<string, unknown>)._initialValue;
+              const initStr = typeof rawInit === 'string' ? rawInit
+                : typeof rawInit === 'number' || typeof rawInit === 'boolean' ? String(rawInit)
+                : '';
+              nativeFormFields.set(name, initStr);
+            }
           }
         }
         scanNativeFormFields((node.children ?? []) as Record<string, unknown>[], nowInForm);
       }
     })(resolvedNodes as unknown as Record<string, unknown>[], false);
 
-    // Build merged defaultValues: controlled fields + native text fields (default "") + attachment ([])
+    // Build merged defaultValues: controlled fields + native text fields + attachment ([])
     const allDefaultLines: string[] = [];
-    // Native text/textarea fields: default ""
-    for (const name of nativeFormFieldNames) {
+    // Native text/textarea fields: use _initialValue if present, else ""
+    for (const [name, initVal] of nativeFormFields) {
       if (!controlledFields.some(cf => cf.name === name)) {
-        allDefaultLines.push(`      ${JSON.stringify(name)}: ""`);
+        allDefaultLines.push(`      ${JSON.stringify(name)}: ${JSON.stringify(initVal)}`);
       }
     }
     // Controlled fields with known initial values
@@ -284,13 +353,16 @@ function emitPage(
       }
     }
 
+    // reValidateMode: 'onSubmit' matches the builder engine which only validates on submit,
+    // never on field change. Without this, RHF's default 'onChange' reValidateMode causes
+    // fields to re-validate on every keystroke after the first failed submit attempt.
     lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
     if (allDefaultLines.length > 0) {
-      lines.push(`  const _rhf = useForm<any>({ defaultValues: {\n${allDefaultLines.join(',\n')}\n    } });`);
+      lines.push(`  const _rhf = useForm<any>({ reValidateMode: 'onSubmit', defaultValues: {\n${allDefaultLines.join(',\n')}\n    } });`);
     } else {
-      lines.push(`  const _rhf = useForm<any>();`);
+      lines.push(`  const _rhf = useForm<any>({ reValidateMode: 'onSubmit' });`);
     }
-    lines.push(`  const { register, handleSubmit, formState: { errors, isSubmitted: _formIsSubmitted }, reset, watch, setValue } = _rhf;`);
+    lines.push(`  const { register, handleSubmit, formState: { errors, isSubmitted: _formIsSubmitted, isSubmitSuccessful: _formIsSubmitSuccessful }, reset, watch, setValue } = _rhf;`);
     // Register controlled fields that have _validation rules so RHF validates them on submit.
     // Controlled fields use setValue (no DOM ref). Calling _rhf.register(name, rules) in the
     // component body (not in JSX) tells RHF to include them in validation — just like
@@ -318,7 +390,7 @@ function emitPage(
     }
     lines.push(`  void setValue;`);
     lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
-    lines.push(`  const form: any = { register, handleSubmit, formState: { errors, isSubmitted: _formIsSubmitted }, reset, watch, setValue };`);
+    lines.push(`  const form: any = { register, handleSubmit, formState: { errors, isSubmitted: _formIsSubmitted, isSubmitSuccessful: _formIsSubmitSuccessful }, reset, watch, setValue };`);
     // Seed initial state.variables['{id}-value'] for plain _controlled nodes (non-SC, e.g. priority
     // buttons). SC-based controlled nodes are already seeded via the componentVars init useEffect
     // (valueVarInits). Without this, the visual state (button highlight) stays unset on first load.
@@ -380,7 +452,7 @@ function emitPage(
       lines.push(`        return [k, { value: data[k], isValid: _e ? (_e.message ?? false) : '' }];`);
       lines.push(`      }));`);
       for (const key of formStoreKeys) {
-        lines.push(`      useStore.setState(s => ({ ...s, variables: { ...s.variables, ${key}: { formData: data, isSubmitted: _rhf.formState.isSubmitted, fields: _fields } } }));`);
+        lines.push(`      useStore.setState(s => ({ ...s, variables: { ...s.variables, ${key}: { formData: data, isSubmitted: _rhf.formState.isSubmitSuccessful, fields: _fields } } }));`);
       }
     }
     lines.push(`    };`);
@@ -419,10 +491,10 @@ function emitPage(
       lines.push(`      return [k, { value: _data[k], isValid: _e ? (_e.message ?? false) : '' }];`);
       lines.push(`    }));`);
       for (const key of formStoreKeys) {
-        lines.push(`    useStore.setState(s => ({ ...s, variables: { ...s.variables, ${key}: { formData: _data, isSubmitted: _formIsSubmitted, fields: _fields } } }));`);
+        lines.push(`    useStore.setState(s => ({ ...s, variables: { ...s.variables, ${key}: { formData: _data, isSubmitted: _formIsSubmitSuccessful, fields: _fields } } }));`);
       }
       lines.push(`  // eslint-disable-next-line react-hooks/exhaustive-deps`);
-      lines.push(`  }, [_formIsSubmitted]);`);
+      lines.push(`  }, [_formIsSubmitted, _formIsSubmitSuccessful]);`);
     }
   } else {
     lines.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
@@ -466,6 +538,33 @@ function emitPage(
       lines.push(`    } }));`);
     }
     lines.push(`  }, []);`);
+  }
+
+  // Auto-fetch datasources referenced in this page's node tree (mirrors builder's useNamedDataSourceFetcher).
+  // Any datasource UUID appearing in {{collections.UUID.*}} expressions is fetched on mount and stored
+  // at state.collections.{fnName} so formulas like state.collections.cart?.data resolve correctly.
+  if (ctx.flags.hasFetch || ctx.flags.hasGraphQL) {
+    const referencedDsIds = collectReferencedDataSources(resolvedNodes as unknown as Record<string, unknown>[], ctx);
+    if (referencedDsIds.length > 0) {
+      lines.push(`  // Auto-fetch datasources referenced on this page`);
+      lines.push(`  useEffect(() => {`);
+      for (const { fnName, variables } of referencedDsIds) {
+        // Evaluate dynamic (formula-based) variables at runtime so they pick up URL params
+        // and Zustand state. Static-only variables are passed as a literal object.
+        const hasFormulas = hasFormulaVars(variables);
+        const varsArg = (variables && typeof variables === 'object' && !Array.isArray(variables))
+          ? (hasFormulas
+            ? emitVarsExpression(variables, ctx.symbols)
+            : JSON.stringify(variables))
+          : null;
+        const callExpr = varsArg ? `api.${fnName}(${varsArg})` : `api.${fnName}()`;
+        lines.push(`    ${callExpr}.then(data => {`);
+        lines.push(`      useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
+        lines.push(`    }).catch(console.error);`);
+      }
+      lines.push(`  // eslint-disable-next-line react-hooks/exhaustive-deps`);
+      lines.push(`  }, []);`);
+    }
   }
 
   // Page mount workflow
@@ -524,6 +623,92 @@ function collectUsedWorkflows(
   for (const child of (node.children ?? []) as Record<string, unknown>[]) {
     collectUsedWorkflows(child, workflowMeta, ctx, out);
   }
+}
+
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+/**
+ * Scan a page's resolved node tree for referenced datasource UUIDs.
+ * Matches `collections.UUID` and `collections['UUID']` patterns embedded anywhere
+ * in string values (prop values, formula expressions, etc.).
+ * Returns [{id, fnName}] for each unique datasource found.
+ */
+/**
+ * Recursively convert a datasource variables config to a JS object-literal expression.
+ * Values that are { formula: "..." } objects are evaluated via rewritePropValue so that
+ * runtime references like globalContext?.browser?.query?.slug resolve correctly in the
+ * page component's useEffect where _globalCtx is in scope.
+ */
+function emitVarsExpression(vars: unknown, symbols: SymbolMap): string {
+  if (vars === null || vars === undefined) return 'undefined';
+  if (typeof vars === 'boolean' || typeof vars === 'number') return String(vars);
+  if (typeof vars === 'string') return rewritePropValue(vars, symbols);
+  if (Array.isArray(vars)) {
+    return `[${vars.map(v => emitVarsExpression(v, symbols)).join(', ')}]`;
+  }
+  if (typeof vars === 'object') {
+    const obj = vars as Record<string, unknown>;
+    // Formula / js / var shorthand — delegate to rewritePropValue
+    if ('formula' in obj || 'js' in obj || 'var' in obj) {
+      return rewritePropValue(obj, symbols);
+    }
+    // Plain object — recurse into each key
+    const entries = Object.entries(obj)
+      .map(([k, v]) => `${JSON.stringify(k)}: ${emitVarsExpression(v, symbols)}`);
+    return `{ ${entries.join(', ')} }`;
+  }
+  return JSON.stringify(vars);
+}
+
+/** Returns true if the variables config contains any formula/js/var objects. */
+function hasFormulaVars(vars: unknown): boolean {
+  if (!vars || typeof vars !== 'object') return false;
+  if (Array.isArray(vars)) return vars.some(hasFormulaVars);
+  const obj = vars as Record<string, unknown>;
+  if ('formula' in obj || 'js' in obj || 'var' in obj) return true;
+  return Object.values(obj).some(hasFormulaVars);
+}
+
+function collectReferencedDataSources(
+  nodes: Record<string, unknown>[],
+  ctx: CodegenCtx,
+): Array<{ id: string; fnName: string; variables?: unknown }> {
+  const referenced = new Set<string>();
+  const dsIds = new Set((ctx.store.pageDataSources ?? []).map(ds => ds.id.toLowerCase()));
+
+  function scan(val: unknown): void {
+    if (!val) return;
+    if (typeof val === 'string') {
+      // Match collections.UUID or collections['UUID'] or collections["UUID"]
+      const matches = val.matchAll(/collections[\.\[]['"]?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})['"]?[\.\]]/gi);
+      for (const m of matches) {
+        const uuid = m[1].toLowerCase();
+        if (dsIds.has(uuid)) referenced.add(uuid);
+      }
+      // Also match bare UUIDs adjacent to collections keyword (formula shorthand)
+      if (val.includes('collections')) {
+        for (const m of val.matchAll(UUID_PATTERN)) {
+          const uuid = m[0].toLowerCase();
+          if (dsIds.has(uuid)) referenced.add(uuid);
+        }
+      }
+    } else if (Array.isArray(val)) {
+      for (const item of val) scan(item);
+    } else if (typeof val === 'object') {
+      for (const v of Object.values(val as Record<string, unknown>)) scan(v);
+    }
+  }
+
+  for (const node of nodes) scan(node);
+
+  const result: Array<{ id: string; fnName: string; variables?: unknown }> = [];
+  for (const id of referenced) {
+    const fnName = ctx.symbols.collections.get(id) ?? ctx.symbols.collections.get(id.toLowerCase());
+    if (!fnName) continue;
+    const ds = (ctx.store.pageDataSources ?? []).find(d => d.id.toLowerCase() === id);
+    result.push({ id, fnName, variables: ds?.variables });
+  }
+  return result;
 }
 
 function hasPopoverInTree(node: Record<string, unknown>): boolean {
@@ -789,9 +974,13 @@ function collectInputVarNodes(resolvedNodes: Record<string, unknown>[]): {
           const varKey = `${nodeId}-value`;
           const prefix = isTextarea ? '_TextareaLive' : '_InputLive';
           const subCompName = `${prefix}_${nodeIdToSafeIdent(nodeId)}`;
+          const rawInit = node._initialValue;
+          const initialValue = typeof rawInit === 'string' ? rawInit
+            : typeof rawInit === 'number' || typeof rawInit === 'boolean' ? String(rawInit)
+            : undefined;
           inputs.set(nodeId, {
             nodeId, varKey, subCompName, isTextarea,
-            className, typeAttr, placeholder,
+            className, typeAttr, placeholder, initialValue,
           });
         }
       }
@@ -882,18 +1071,19 @@ function emitInputSubComponents(
   parts.push('');
 
   for (const info of inputs.values()) {
-    const { nodeId, varKey, subCompName, isTextarea, className, typeAttr, placeholder } = info;
+    const { nodeId, varKey, subCompName, isTextarea, className, typeAttr, placeholder, initialValue } = info;
     const varKeyJson = JSON.stringify(varKey);
     const classAttr = className ? ` className="${className}"` : '';
     const phAttr = placeholder ? ` placeholder="${placeholder.replace(/"/g, '\\"')}"` : '';
     const tag = isTextarea ? 'textarea' : 'input';
     const typeAttrHtml = isTextarea ? '' : ` type="${typeAttr}"`;
+    const fallbackExpr = initialValue !== undefined ? JSON.stringify(initialValue) : '""';
 
     // The sub-component subscribes only to its own value variable — typing in this field
     // re-renders ONLY this tiny component, not the 3000+ line page component.
     parts.push(`const ${subCompName} = memo(function ${subCompName}() {`);
     parts.push(`  // eslint-disable-next-line @typescript-eslint/no-explicit-any`);
-    parts.push(`  const _val = useStore((s: any) => (s.variables?.[${varKeyJson}] as string) ?? "");`);
+    parts.push(`  const _val = useStore((s: any) => (s.variables?.[${varKeyJson}] as string) ?? ${fallbackExpr});`);
     parts.push(`  return (`);
     if (isTextarea) {
       parts.push(`    <textarea`);

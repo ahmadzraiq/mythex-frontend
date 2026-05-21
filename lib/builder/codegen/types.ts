@@ -61,6 +61,7 @@ export interface InputVarInfo {
   className: string;    // static Tailwind class (empty if dynamic — fallback to plain input)
   typeAttr: string;     // 'text' | 'email' | 'password' | etc.
   placeholder: string;  // static placeholder text (empty if dynamic)
+  initialValue?: string; // from node._initialValue — seeds the Zustand selector fallback
 }
 
 /**

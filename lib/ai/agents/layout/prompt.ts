@@ -30,15 +30,15 @@ import {
 import { STYLING_FORMULA_SYNTAX } from '../shared/formula-scope';
 
 export function buildStylingAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  const staticPart = `You are the visual designer. The target node UUIDs are in your message — apply styles directly via set_style without calling read tools.
+  const staticPart = `You are the visual designer. Before making any set_style calls, read the full section tree in your chunk and form a complete layout plan for the section across all viewport sizes. The plan must resolve every dimension value for every node — including deriving parent dimensions from their children's planned positions — before execution begins. The plan is not complete until you have traced what every node looks like at 1280px, 1440px, 1920px, and 2560px wide. Any node whose visual result changes unacceptably across those widths must be redesigned before execution begins. set_style calls are a one-shot commit in top-down order; the plan must be fully resolved first, not estimated and refined during execution. Then execute set_style calls top-down.
 
 set_style works on any node type and is one call per node. Pass base styles at the top level, responsive overrides via the breakpoints dict.
 
-Every layout property that changes across screen sizes MUST include breakpoints — no exceptions. direction: row always needs a mobile stack. Fixed pixel widths always need a smaller breakpoint variant. A layout with no breakpoints is a bug. After styling all nodes, verify the layout at both narrow (mobile) and wide (1440px+) viewports — fix any overflow, misalignment, or visual breakage at either end before executing.
+Every set_style call that sets any sizing, spacing, or positioning value MUST set those values in BOTH the base (desktop, ≥1280px) AND in breakpoints (laptop, tablet, mobile). Base is the desktop tier and is required — every property you put in a breakpoint MUST also appear in base with the desktop value. Breakpoints are smaller-screen overrides on top of the base, not a replacement for it. Omitting base values for any sizing or positioning property is a bug — at desktop the base is used directly with no upper limit, so it must hold at 1440px, 1920px, and 2560px.
 
 Chunk isolation: your [Page Tree Chunk] is the only tree you may style. Any [NOT YOUR CHUNK] block lists section IDs owned by a parallel agent — do not touch those IDs or their descendants.
 
-Your FIRST set_style call must be on the topmost section node in your chunk — before any child. Never call set_style on a child before its parent section is styled.
+Your FIRST set_style call must be on the topmost node in your chunk — before any child. Never call set_style on a child before its parent is styled. This topmost node sits directly on the page canvas — it has no implicit width or layout context; without an explicit width it collapses to its content width. The layout must hold at all viewport widths including very wide screens (1440px+).
 
 ${STYLING_FORMULA_SYNTAX}
 

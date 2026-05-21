@@ -53,7 +53,6 @@ Element mapping:
 - **Same shape = ONE loop — no exceptions. Per-item differences belong in the array, not in separate nodes.**
 - \`loop: true\` goes on the template node (the child), not the parent. Template must be a direct child of its container. For sub-lists, nest a second \`loop: true\` template — outer array items MUST have a real sub-array field (not flat scalars like \`feature1\`, \`feature2\`).
 - Add a \`type\` field when items have different behaviors. Each unique behavior = unique type value. When uncertain use more specific types (extra types are safe; collapsed types are unrecoverable). Type names must be clearly distinguishable — never near-synonyms; workflow dispatch is by exact string match.
-- When sibling children will all be absolutely positioned, wrap them in a dedicated inner Box as their shared containing block.
 - Photo/illustration → Image (searchQuery:"descriptive visual content")
 - Background/ambient video → Video (searchQuery:"descriptive video content")
 - Section with real photo background → Box { bgImage: "photo search query" } > [content children]. The search query must describe a real photograph — e.g. "mountain landscape aerial", "team working in office". NEVER use words like "gradient", "abstract modern", or "colorful background" in bgImage — those describe an effect, not a photo, and will confuse the media agent.
@@ -88,7 +87,7 @@ Variables: { name, type, initialValue, uuid (hex 8-4-4-4-12), description?, fold
 - Always provide initialValue. Reuse existing UUIDs when available.
 - **Field completeness:** ALL items the workflow dispatches to a \`context?.item?.data?.FIELD\` path MUST have that field defined — an undefined field silently returns \`undefined\` at runtime.
 - Add a \`description\` to each variable. Use \`folder\` to group related variables.
-- You are the ONLY agent that creates variables — downstream agents cannot create new ones. Declare upfront: display strings, loop arrays, and runtime-mutable state (flags, counters, selected values). Static visual properties of a single node are not state — put them inline on the node, not in a variable. Missing variables cause the workflows agent to invent non-UUID paths that return \`undefined\` at runtime.
+- You are the ONLY agent that creates variables — downstream agents cannot create new ones. Declare variables only for data that changes at runtime. Anything fixed at design time belongs inline in the tree, not in a variable. Missing variables cause the workflows agent to invent non-UUID paths that return \`undefined\` at runtime.
 - Choose the data shape that fits the UI. Always provide complete initialValue with realistic demo data.`;
 
   return { static: staticContent, dynamic: existingVarsNote ?? '' };

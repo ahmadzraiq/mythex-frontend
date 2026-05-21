@@ -24,14 +24,36 @@ import { emitStep } from './index';
 
 interface NavigateToStep {
   type: 'navigateTo';
-  config?: { path?: string; url?: string; linkType?: string; newTab?: boolean };
+  config?: {
+    path?: string;
+    url?: string;
+    linkType?: string;
+    newTab?: boolean;
+    queryParams?: Record<string, unknown>;
+  };
 }
 
 export function emitNavigateTo(step: NavigateToStep, symbols: SymbolMap): string {
   const cfg = step.config ?? {};
   const path = cfg.path ?? cfg.url ?? '';
-  if (cfg.newTab) return `window.open(${JSON.stringify(path)}, '_blank');`;
-  return `router.push(${JSON.stringify(path)});`;
+
+  const pathStr = String(path ?? '');
+  const pathExpr = pathStr.includes('{{') ? rewritePropValue(pathStr, symbols) : JSON.stringify(pathStr);
+
+  if (cfg.queryParams && Object.keys(cfg.queryParams).length > 0) {
+    // Build an object literal where each value is run through rewritePropValue so that
+    // formula values (e.g. { formula: "context?.item?.data?.slug" }) and template strings
+    // (e.g. "{{state.variables.id}}") are both correctly resolved at runtime.
+    const entries = Object.entries(cfg.queryParams)
+      .map(([k, v]) => `${JSON.stringify(k)}: ${rewritePropValue(v, symbols)}`)
+      .join(', ');
+    const queryObj = `{ ${entries} }`;
+    if (cfg.newTab) return `window.open(${pathExpr} + buildQueryString(${queryObj}), '_blank');`;
+    return `router.push(${pathExpr} + buildQueryString(${queryObj}));`;
+  }
+
+  if (cfg.newTab) return `window.open(${pathExpr}, '_blank');`;
+  return `router.push(${pathExpr});`;
 }
 
 // ── changeVariableValue ───────────────────────────────────────────────────────
@@ -270,6 +292,18 @@ export function emitAnimateStep(step: AnimateStep): string {
         `  }`,
         `}`,
       ].join('\n');
+    case 'triggerExitAnimation':
+      // Apply exit animation with `forwards` fill so element stays in final state until hidden
+      return [
+        `{`,
+        `  const _el = document.getElementById(${JSON.stringify(id)});`,
+        `  if (_el) {`,
+        `    _el.style.animation = 'none';`,
+        `    _el.offsetHeight; // reflow`,
+        `    _el.style.animation = '${animType} ${dur}ms ease-in-out forwards';`,
+        `  }`,
+        `}`,
+      ].join('\n');
     case 'startLoop':
       return [
         `{`,
@@ -278,7 +312,6 @@ export function emitAnimateStep(step: AnimateStep): string {
         `}`,
       ].join('\n');
     case 'stopLoop':
-    case 'triggerExitAnimation':
       return [
         `{`,
         `  const _el = document.getElementById(${JSON.stringify(id)});`,

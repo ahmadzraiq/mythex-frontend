@@ -28,7 +28,7 @@ export function buildAnimationAgentPrompt(context: StylingSubAgentContext): { st
 
 ## Hover and press — the most common animation tasks
 
-Cards and buttons almost always need hover effects. The node IDs are in your [Page Tree Chunk] — find the nodes mentioned in the briefing by their name and call set_animation with their exact UUID.
+The node IDs are in your [Page Tree Chunk] — find the nodes mentioned in the briefing by their name and call set_animation with their exact UUID.
 
 All fields are flat — do NOT nest objects inside hover/press/enter:
 

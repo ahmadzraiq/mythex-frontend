@@ -91,9 +91,11 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   }
 
   // Custom color tokens (light)
+  // --{name}: RGB triplet for Tailwind opacity utilities (e.g. bg-[rgb(var(--brand)/50)])
+  // --theme-{name}: hex value for direct CSS var() usage (e.g. backgroundColor: var(--theme-brand))
   for (const color of customColors) {
     lines.push(`  ${cssVarEntry(color.name, color.light)}`);
-    lines.push(`  ${cssVarEntry(`theme-${color.name}`, color.light)}`);
+    lines.push(`    --theme-${color.name}: ${color.light};`);
   }
 
   lines.push(`  }`);
@@ -113,7 +115,7 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   // Custom color tokens (dark)
   for (const color of customColors) {
     lines.push(`  ${cssVarEntry(color.name, color.dark)}`);
-    lines.push(`  ${cssVarEntry(`theme-${color.name}`, color.dark)}`);
+    lines.push(`    --theme-${color.name}: ${color.dark};`);
   }
 
   lines.push(`  }`);
@@ -131,6 +133,10 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   lines.push(`    font-family: var(--font-body, system-ui), system-ui, -apple-system, sans-serif;`);
   lines.push(`    -webkit-font-smoothing: antialiased;`);
   lines.push(`    -moz-osx-font-smoothing: grayscale;`);
+  // Apply the theme background to the body so the exported app matches the builder preview.
+  // --background is stored as RGB triplets; rgb(var(--background)) is valid modern CSS.
+  lines.push(`    background-color: rgb(var(--background));`);
+  lines.push(`    color: rgb(var(--foreground));`);
   lines.push(`  }`);
   lines.push('');
   lines.push(`  h1, h2, h3, h4, h5, h6 {`);
@@ -152,8 +158,10 @@ export function emitGlobalsCss(ctx: CodegenCtx, usedAnimations: Set<string>): st
   lines.push(`}`);
   lines.push('');
 
-  // Named animation @keyframes
-  for (const animName of usedAnimations) {
+  // Always emit ALL named keyframes — both static loop nodes and workflow-triggered
+  // animations (trigger/enter/exit/loop control) reference them by name at runtime.
+  const allAnimNames = new Set([...Object.keys(NAMED_KEYFRAMES), ...usedAnimations]);
+  for (const animName of allAnimNames) {
     const kf = NAMED_KEYFRAMES[animName];
     if (kf) {
       lines.push(kf);

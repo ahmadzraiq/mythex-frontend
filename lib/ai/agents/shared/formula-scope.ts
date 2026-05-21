@@ -13,7 +13,7 @@ Scope identifiers:
 
 - variables['UUID']                   — declared variable value
 - collections['UUID']?.data?.field    — datasource value
-- context?.item?.data?.field          — current repeat-item field
+- context?.item?.data?.field          — current repeat-item field. context ONLY has .item — no other sub-properties exist. Never use context?.variableName or context?.anyOtherPath — those resolve to undefined. variables['UUID'] is the only way to access any declared variable.
 - context?.item?.parent?.data?.field  — outer-repeat field (nested repeats only; .parent is NOT valid at depth 1)
 - context?.item?.data?.value          — primitive value when iterating a primitive array
 - context?.item?.data?.index          — 0-based index in the current repeat

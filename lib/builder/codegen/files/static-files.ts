@@ -55,8 +55,12 @@ function fontRefToCssVarKey(ref: string): string | null {
   return null;
 }
 
-/** Read body/heading font CSS-var keys from theme.json + store themeOverrides. */
-export function resolveProjectFonts(ctx: CodegenCtx): { bodyVarKey: string | null; headingVarKey: string | null } {
+/** Read body/heading/mono font CSS-var keys from theme.json + store themeOverrides. */
+export function resolveProjectFonts(ctx: CodegenCtx): {
+  bodyVarKey: string | null;
+  headingVarKey: string | null;
+  monoVarKey: string | null;
+} {
   const store = ctx.store as Record<string, unknown>;
   const themeOverrides = (store.themeOverrides ?? {}) as Record<string, string>;
   const tj = themeJson as Record<string, unknown>;
@@ -65,10 +69,12 @@ export function resolveProjectFonts(ctx: CodegenCtx): { bodyVarKey: string | nul
   // themeOverrides takes precedence over theme.json defaults
   const bodyRef    = themeOverrides['font-body']    || themeFonts.body    || '';
   const headingRef = themeOverrides['font-heading'] || themeFonts.heading || '';
+  const monoRef    = themeOverrides['font-mono']    || themeFonts.mono    || '';
 
   return {
     bodyVarKey:    fontRefToCssVarKey(bodyRef),
     headingVarKey: fontRefToCssVarKey(headingRef),
+    monoVarKey:    fontRefToCssVarKey(monoRef),
   };
 }
 
@@ -175,6 +181,7 @@ export function emitNextConfig(ctx: CodegenCtx): EmittedFile {
   lines.push(`  images: {`);
   lines.push(`    remotePatterns: [`);
   lines.push(`      { protocol: 'https', hostname: '**' },`);
+  lines.push(`      { protocol: 'http', hostname: '**' },`);
   lines.push(`    ],`);
   lines.push(`  },`);
   lines.push(`};`);
@@ -186,7 +193,7 @@ export function emitNextConfig(ctx: CodegenCtx): EmittedFile {
 
 export function emitTailwindConfig(ctx: CodegenCtx): EmittedFile {
   const { customColors } = ctx;
-  const { bodyVarKey, headingVarKey } = resolveProjectFonts(ctx);
+  const { bodyVarKey, headingVarKey, monoVarKey } = resolveProjectFonts(ctx);
 
   const customColorTokens: Record<string, string> = {};
   for (const color of customColors) {
@@ -210,13 +217,24 @@ export function emitTailwindConfig(ctx: CodegenCtx): EmittedFile {
     lines.push(`      colors: ${JSON.stringify(customColorTokens, null, 6).replace(/^/gm, '      ')},`);
   }
 
-  // fontFamily — mirrors the builder's tailwind.config.js so `font-body`/`font-heading` classes work
+  // fontFamily — mirrors the builder's tailwind.config.js so `font-body`/`font-heading` classes work.
+  // `mono: undefined` matches the builder which removes the default .font-mono CSS rule so that
+  // elements using font-mono inherit the project body font rather than the browser's system monospace.
+  // If the project explicitly configures a mono font, it is applied instead.
   const bodyFontFamily    = bodyVarKey    ? `var(--${bodyVarKey})`    : 'system-ui';
   const headingFontFamily = headingVarKey ? `var(--${headingVarKey})` : 'system-ui';
   lines.push(`      fontFamily: {`);
   lines.push(`        body:    ['${bodyFontFamily}',    'system-ui', 'sans-serif'],`);
   lines.push(`        heading: ['${headingFontFamily}', 'system-ui', 'sans-serif'],`);
   lines.push(`        sans:    ['${bodyFontFamily}',    'system-ui', 'sans-serif'],`);
+  if (monoVarKey) {
+    // Project has an explicit mono font — use it for font-mono class
+    lines.push(`        mono:    ['var(--${monoVarKey})',    'ui-monospace', 'monospace'],`);
+  } else {
+    // No mono font configured: remove the default .font-mono CSS rule to match builder behaviour
+    // where font-mono elements inherit the body font (the builder sets mono: undefined in its config)
+    lines.push(`        mono:    undefined,`);
+  }
   lines.push(`      },`);
 
   // Named animation utilities
@@ -246,8 +264,9 @@ export function emitPostcssConfig(): EmittedFile {
   };
 }
 
-export function emitRootLayout(ctx: CodegenCtx): EmittedFile {
-  const { bodyVarKey, headingVarKey } = resolveProjectFonts(ctx);
+export function emitRootLayout(ctx: CodegenCtx, hasLayoutShell = false): EmittedFile {
+  const { bodyVarKey, headingVarKey, monoVarKey: _monoVarKey } = resolveProjectFonts(ctx);
+  void _monoVarKey;
 
   // Collect unique CSS-var keys that need to be loaded as fonts
   const fontVarKeys = Array.from(new Set([bodyVarKey, headingVarKey].filter(Boolean))) as string[];
@@ -278,6 +297,9 @@ export function emitRootLayout(ctx: CodegenCtx): EmittedFile {
   lines.push(`import type { Metadata } from 'next';`);
   lines.push(`import { ThemeProvider } from 'next-themes';`);
   lines.push(`import './globals.css';`);
+  if (hasLayoutShell) {
+    lines.push(`import { LayoutShell } from './_layout-shell';`);
+  }
   lines.push('');
 
   for (const init of fontInits) {
@@ -300,7 +322,11 @@ export function emitRootLayout(ctx: CodegenCtx): EmittedFile {
     : '';
   lines.push(`      <body${bodyClassName}>`);
   lines.push(`        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>`);
-  lines.push(`          {children}`);
+  if (hasLayoutShell) {
+    lines.push(`          <LayoutShell>{children}</LayoutShell>`);
+  } else {
+    lines.push(`          {children}`);
+  }
   lines.push(`        </ThemeProvider>`);
   lines.push(`      </body>`);
   lines.push(`    </html>`);

@@ -15,7 +15,7 @@
 import type { BuilderStore } from '@/app/dev/builder/_store-types';
 import type { EmittedFile } from './types';
 import { buildCodegenCtx } from './plan';
-import { emitPages } from './routing';
+import { emitPages, emitLayoutShell } from './routing';
 import { emitWorkflows } from './workflows';
 import { emitStoreTs } from './store';
 import { emitApiTs, emitEnvExample, emitProxyRoutes } from './datasources';
@@ -65,7 +65,10 @@ export function codegenProject(
   files.push(emitGitignore());
 
   // ── App shell ────────────────────────────────────────────────────────────────
-  files.push(emitRootLayout(ctx));
+  // Layout shell is emitted first (before pages) so usedAnimations picks up canvas node animations.
+  const layoutShellFile = emitLayoutShell(ctx, usedAnimations);
+  files.push(emitRootLayout(ctx, !!layoutShellFile));
+  if (layoutShellFile) files.push(layoutShellFile);
 
   // ── Pages (must run before globals.css since it collects usedAnimations) ─────
   const pageFiles = emitPages(ctx, usedAnimations);

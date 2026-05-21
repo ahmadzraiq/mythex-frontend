@@ -2461,6 +2461,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
     const t = (node.props as { style?: Record<string, unknown> })?.style?.transform;
     return typeof t === 'string' ? t : '';
   })();
+  // Raw stored value — preserves formula/js objects so FieldWithBinding can detect bindings.
+  const rawTransform = rOvr('transform') ?? (node.props as { style?: Record<string, unknown> })?.style?.transform ?? '';
   const rotateDeg = (() => {
     // Try inline style first: "rotate(16deg)" → 16
     const styleMatch = styleTransform.match(/rotate\(([-\d.]+)deg\)/);
@@ -3597,7 +3599,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
       <div style={SECTION_STYLE}>
         <SectionHeader title="Transform" overriddenBreakpoints={getSectionOverriddenBps(['transform','translateX','translateY'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['transform','translateX','translateY'])} onResetAll={() => resetSectionResponsive(['transform','translateX','translateY'])} />
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-          <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={(styleTransform ?? '') as FormulaValue} onChange={v => bindOrPatch('transform', v)} responsiveOverrides={getOverriddenBps('transform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="transform">
+          <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={rawTransform as FormulaValue} onChange={v => bindOrPatch('transform', v)} responsiveOverrides={getOverriddenBps('transform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="transform">
             <NumberInput
               label="Rotate °"
               cssProp="transform"

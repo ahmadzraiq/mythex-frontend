@@ -135,12 +135,17 @@ function compileScStep(
     const valueKey = JSON.stringify(`${instanceId}-value`);
     // For form.setValue, store a plain-object snapshot instead of the raw File (which JSON.stringify
     // serialises as {}) so the live form-state display shows something meaningful.
-    const rhfSetCode = rhfName
-      ? `\n  form?.setValue?.(${JSON.stringify(rhfName)}, { name: file.name, size: file.size, type: file.type, lastModified: file.lastModified });`
-      : '';
+    // The value stored in variables[valueKey] is synced to form.setValue by a controlled-field
+    // useEffect in routing.ts. Store the formatted array (not the raw File) so the sync sets
+    // the correct value. componentVars still holds the raw File for the upload-box display.
+    const filePayloadExpr = rhfName
+      ? `[{ name: file.name, size: file.size, type: file.type, lastModified: file.lastModified, file }]`
+      : 'file';
     const storeCode = storeKey
-      ? `useStore.setState(s => ({ ...s, componentVars: { ...s.componentVars, ${instanceKey}: { ...(s.componentVars?.[${instanceKey}] ?? {}), ${storeKey}: file } } }));\n  useStore.setState(s => ({ ...s, variables: { ...s.variables, ${valueKey}: file } }));${rhfSetCode}`
-      : rhfSetCode.trim();
+      ? `useStore.setState(s => ({ ...s, componentVars: { ...s.componentVars, ${instanceKey}: { ...(s.componentVars?.[${instanceKey}] ?? {}), ${storeKey}: file } } }));\n  useStore.setState(s => ({ ...s, variables: { ...s.variables, ${valueKey}: ${filePayloadExpr} } }));`
+      : rhfName
+        ? `form?.setValue?.(${JSON.stringify(rhfName)}, ${filePayloadExpr});`
+        : '';
     return `(function _pickFile() {
   const _inp = document.createElement('input'); _inp.type = 'file'; _inp.accept = ${acceptStr};
   _inp.onchange = () => { const file = _inp.files?.[0]; if (!file) return; ${storeCode} };
