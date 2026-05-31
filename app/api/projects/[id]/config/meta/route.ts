@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  return proxyToBackend(req, `/projects/${id}/config/meta`);
+  return proxyToBackend(req, `/v1/projects/${id}/config/meta`);
 }
 
 export async function PATCH(
@@ -14,5 +14,5 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  return proxyToBackend(req, `/projects/${id}/config/meta`);
+  return proxyToBackend(req, `/v1/projects/${id}/config/meta`);
 }

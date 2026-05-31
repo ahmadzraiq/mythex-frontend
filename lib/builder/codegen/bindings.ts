@@ -55,7 +55,8 @@ function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap, inMapScope =
     // Inline action with no workflow — should not happen in normal flow
     return `/* unknown workflow: ${actionRef.action} */`;
   }
-  const contextArg = inMapScope ? `, context: { item: _item }` : '';
+  // Pass item + parentItemId so workflows can access $parent.id via context.parentItemId
+  const contextArg = inMapScope ? `, context: { item: _item, parentItemId: (_parentItemId ?? null) as unknown }` : '';
   return `${stop}await ${wfName}({ state: useStore.getState(), dispatch: useStore.setState, router, api, form, popover, event: e${contextArg} });`;
 }
 

@@ -48,3 +48,6 @@ lib/ai/eval/ai-responses*.jsonl
 lib/ai/eval/failures.json
 lib/ai/eval/pending-corrections.json
 lib/ai/eval/screenshots/
+
+# Local debug dumps from STYLING_DEBUG_LOG=1
+tmp/

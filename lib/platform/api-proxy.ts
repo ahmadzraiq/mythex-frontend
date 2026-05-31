@@ -13,8 +13,14 @@ export interface PaginatedResponse<T> {
 }
 
 /** Build shared auth headers from an incoming Next.js request. */
-function buildAuthHeaders(req: NextRequest): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+function buildAuthHeaders(req: NextRequest, hasBody = false): Record<string, string> {
+  const headers: Record<string, string> = {};
+  // Only forward Content-Type when there is actually a body — Fastify rejects
+  // requests that declare application/json but send an empty body.
+  if (hasBody) {
+    const ct = req.headers.get('content-type');
+    headers['Content-Type'] = ct ?? 'application/json';
+  }
   const cookie = req.headers.get('cookie');
   if (cookie) headers['cookie'] = cookie;
   const auth = req.headers.get('authorization');
@@ -36,16 +42,17 @@ export async function proxyToBackend(
   const qs = reqUrl.searchParams.toString();
   const url = `${BACKEND_URL}${backendPath}${qs ? `?${qs}` : ''}`;
 
-  const headers = buildAuthHeaders(req);
-
   let body: string | undefined;
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     try {
-      body = await req.text();
+      const text = await req.text();
+      body = text || undefined; // treat empty string as no body
     } catch {
       body = undefined;
     }
   }
+
+  const headers = buildAuthHeaders(req, !!body);
 
   try {
     const upstream = await fetch(url, {
@@ -105,7 +112,7 @@ export async function paginatedProxyToBackend<T = unknown>(
   backendParams.set(limitParam, String(requestedLimit + 1));
 
   const url = `${BACKEND_URL}${backendPath}?${backendParams.toString()}`;
-  const headers = buildAuthHeaders(req);
+  const headers = buildAuthHeaders(req, false);
 
   try {
     const upstream = await fetch(url, { method: 'GET', headers });

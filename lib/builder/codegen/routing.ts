@@ -30,7 +30,7 @@ const UTILS_FN_NAMES = new Set([
   // formatting
   'formatCurrency', 'formatNumber', 'formatDate', 'formatRelativeTime',
   // array
-  'add', 'contains', 'includes', 'createArray', 'distinct', 'filterByKey', 'findIndex',
+  'add', 'at', 'contains', 'includes', 'createArray', 'distinct', 'filterByKey', 'findIndex',
   'getByIndex', 'join', 'length', 'lookup', 'merge', 'prepend', 'remove', 'removeByIndex',
   'reverse', 'slice', 'sort', 'flat', 'arrayIncludes', 'arrayLength', 'toggleInArray',
   // object
@@ -142,7 +142,7 @@ function emitPage(
   const imports = new ImportsTracker();
   imports.addNamed('react', 'useEffect', 'useState', 'memo');
   imports.addNamed(`${relPrefix}lib/store`, 'useStore');
-  imports.addNamed('next/navigation', 'useRouter');
+  imports.addNamed('next/navigation', 'useRouter', 'useSearchParams');
 
   if (ctx.flags.hasAnimations) {
     imports.addNamed('framer-motion', 'AnimatePresence');
@@ -296,6 +296,7 @@ function emitPage(
   }
 
   lines.push(`  const router = useRouter();`);
+  lines.push(`  const searchParams = useSearchParams();`);
   // Always declare — workflow call-sites use these even when not all are needed on this page
   lines.push(`  const [popoverState, setPopoverState] = useState<Record<string, boolean>>({});`);
   lines.push(`  const popover: [Record<string, boolean>, typeof setPopoverState] = [popoverState, setPopoverState];`);
@@ -506,10 +507,14 @@ function emitPage(
     lines.push(`  const _formIsSubmitted = false;`);
     lines.push(`  void _formData; void _formIsSubmitted;`);
   }
-  // globalContext polyfill — reads URL search params / window size for SSR-safe access
-  lines.push(`  const _globalCtx = typeof window !== 'undefined'`);
-  lines.push(`    ? { browser: { query: Object.fromEntries(new URLSearchParams(window.location.search)), breakpoint: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop' } }`);
-  lines.push(`    : { browser: { query: {} as Record<string, string>, breakpoint: 'desktop' as string } };`);
+  // globalContext polyfill — uses useSearchParams() so re-renders when URL params change,
+  // ensuring datasource fetches and formula expressions always see the current query string.
+  lines.push(`  const _globalCtx = {`);
+  lines.push(`    browser: {`);
+  lines.push(`      query: Object.fromEntries(searchParams.entries()) as Record<string, string>,`);
+  lines.push(`      breakpoint: typeof window !== 'undefined' ? (window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop') : 'desktop' as string,`);
+  lines.push(`    },`);
+  lines.push(`  };`);
 
   // Seed component-level variables into the store on first mount.
   // Also initializes state.variables[instanceId-value] for SC instances that have a valueVariable
@@ -546,11 +551,25 @@ function emitPage(
   if (ctx.flags.hasFetch || ctx.flags.hasGraphQL) {
     const referencedDsIds = collectReferencedDataSources(resolvedNodes as unknown as Record<string, unknown>[], ctx);
     if (referencedDsIds.length > 0) {
-      lines.push(`  // Auto-fetch datasources referenced on this page`);
-      lines.push(`  useEffect(() => {`);
-      for (const { fnName, variables } of referencedDsIds) {
-        // Evaluate dynamic (formula-based) variables at runtime so they pick up URL params
-        // and Zustand state. Static-only variables are passed as a literal object.
+      // Separate datasources into URL-param-dependent and static.
+      // URL-param-dependent ones must re-fetch whenever the query string changes.
+      const urlDepDs  = referencedDsIds.filter(({ variables }) => hasFormulaVars(variables) && JSON.stringify(variables ?? '').includes('_globalCtx'));
+      const staticDs  = referencedDsIds.filter(({ variables }) => !urlDepDs.some(d => d.fnName === (variables as unknown)));
+
+      // Emit separate useEffects so static datasources (no URL deps) only fetch on mount.
+      // URL-dependent ones re-fetch on every searchParams change.
+
+      // eslint helper used in all effects
+      const noDepLint = `  // eslint-disable-next-line react-hooks/exhaustive-deps`;
+
+      // Check if a variables config references URL query params (raw config uses "globalContext")
+      const refsUrlParams = (variables: unknown) => {
+        const s = JSON.stringify(variables ?? '');
+        return s.includes('globalContext') || s.includes('_globalCtx') || s.includes('browser.query') || s.includes('browser?.query');
+      };
+
+      // Helper to emit a single ds fetch line
+      const emitFetch = (fnName: string, variables: unknown) => {
         const hasFormulas = hasFormulaVars(variables);
         const varsArg = (variables && typeof variables === 'object' && !Array.isArray(variables))
           ? (hasFormulas
@@ -558,12 +577,79 @@ function emitPage(
             : JSON.stringify(variables))
           : null;
         const callExpr = varsArg ? `api.${fnName}(${varsArg})` : `api.${fnName}()`;
-        lines.push(`    ${callExpr}.then(data => {`);
-        lines.push(`      useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
-        lines.push(`    }).catch(console.error);`);
+        // For pure-static datasources (no formulas, no URL deps), skip re-fetch when data is
+        // already in the Zustand store from a previous page navigation. This prevents the navbar
+        // from briefly going blank while the same data re-fetches on every page transition.
+        const skipIfLoaded = !hasFormulas && !refsUrlParams(variables);
+        if (skipIfLoaded) {
+          lines.push(`    if (!useStore.getState().collections?.[${JSON.stringify(fnName)}]) {`);
+          lines.push(`      ${callExpr}.then(data => {`);
+          lines.push(`        useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
+          lines.push(`      }).catch(console.error);`);
+          lines.push(`    }`);
+        } else {
+          lines.push(`    ${callExpr}.then(data => {`);
+          lines.push(`      useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
+          lines.push(`    }).catch(console.error);`);
+        }
+      };
+
+      // Check if variables reference another collection (e.g. productDetail).
+      // Returns the collection ident name if found (first match), else null.
+      const refsCollection = (variables: unknown): string | null => {
+        const s = JSON.stringify(variables ?? '');
+        // Match: collections?.['uuid'], collections['name'], collections?.name, collections.name
+        const m = s.match(/collections\??\.?\[['"]([^'"]+)['"]\]|collections\??\.([a-zA-Z_$][a-zA-Z0-9_$]*)/);
+        if (!m) return null;
+        const rawId = m[1] ?? m[2] ?? '';
+        return ctx.symbols.collections.get(rawId) ?? rawId;
+      };
+
+      // Categorize datasources:
+      // 1. URL-param-dependent → re-fetch on searchParams change
+      // 2. Collection-dependent → re-fetch when referenced collection loads
+      // 3. Static → fetch once on mount
+      const urlParamDs = referencedDsIds.filter(({ variables }) => refsUrlParams(variables));
+      const collDepDs  = referencedDsIds.filter(({ variables }) => !refsUrlParams(variables) && refsCollection(variables) !== null);
+      const onlyStaticDs = referencedDsIds.filter(({ variables }) => !refsUrlParams(variables) && refsCollection(variables) === null);
+
+      // Static fetches — run once on mount (no URL param dependency)
+      if (onlyStaticDs.length > 0) {
+        lines.push(`  // Auto-fetch static datasources (no URL params dependency)`);
+        lines.push(`  useEffect(() => {`);
+        for (const { fnName, variables } of onlyStaticDs) emitFetch(fnName, variables);
+        lines.push(noDepLint);
+        lines.push(`  }, []);`);
       }
-      lines.push(`  // eslint-disable-next-line react-hooks/exhaustive-deps`);
-      lines.push(`  }, []);`);
+
+      // URL-param-dependent fetches — re-run whenever the query string changes
+      if (urlParamDs.length > 0) {
+        lines.push(`  // Auto-fetch URL-param-dependent datasources — re-fetches on every navigation`);
+        lines.push(`  useEffect(() => {`);
+        for (const { fnName, variables } of urlParamDs) emitFetch(fnName, variables);
+        lines.push(noDepLint);
+        lines.push(`  }, [searchParams]);`);
+      }
+
+      // Collection-dependent fetches — re-run when the referenced collection data becomes available
+      // Group by dependency collection so we don't emit redundant effects
+      const collDepGroups = new Map<string, typeof collDepDs>();
+      for (const ds of collDepDs) {
+        const dep = refsCollection(ds.variables)!;
+        if (!collDepGroups.has(dep)) collDepGroups.set(dep, []);
+        collDepGroups.get(dep)!.push(ds);
+      }
+      for (const [depIdent, dsGroup] of collDepGroups) {
+        lines.push(`  // Auto-fetch collection-dependent datasources (depend on "${depIdent}" data)`);
+        lines.push(`  useEffect(() => {`);
+        lines.push(`    if (!state.collections?.${depIdent}) return;`);
+        for (const { fnName, variables } of dsGroup) emitFetch(fnName, variables);
+        lines.push(noDepLint);
+        lines.push(`  // eslint-disable-next-line react-hooks/exhaustive-deps`);
+        lines.push(`  }, [state.collections?.${depIdent}]);`);
+      }
+
+      void urlDepDs; void staticDs; // suppress unused warning
     }
   }
 

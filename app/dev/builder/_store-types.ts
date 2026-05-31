@@ -17,7 +17,6 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 
 export const BUILDER_MODELS = [
   { id: 'claude-haiku-4-5',  label: 'Haiku',  description: 'Fast & efficient', supportsThinking: false },
-  { id: 'claude-sonnet-4-5', label: 'Sonnet', description: 'Smart + reasoning',  supportsThinking: true  },
 ] as const;
 
 export type BuilderModelId = typeof BUILDER_MODELS[number]['id'];
@@ -154,7 +153,7 @@ export interface AiChatMessage {
   isThinking?: boolean;
   /** Whether this message is in edit-rewind mode (user clicked ✎) */
   isEditing?: boolean;
-  /** Extended thinking text (Sonnet only) — streamed via thinking_delta events */
+  /** Extended thinking text (debug only; Haiku via STYLING_DEBUG_LOG=1) — streamed via thinking_delta events */
   thinkingContent?: string;
   /** Image search results from search_images tool */
   imageResults?: AiImageResult[];
@@ -481,7 +480,9 @@ export type WorkflowCanvasTarget =
   | { kind: 'pageWorkflow'; name: string; isNew?: boolean; nodeId?: string }
   | { kind: 'globalWorkflow'; id: string; isNew?: boolean }
   /** A workflow scoped to a shared component model. */
-  | { kind: 'componentWorkflow'; modelId: string; workflowId: string; isNew?: boolean };
+  | { kind: 'componentWorkflow'; modelId: string; workflowId: string; isNew?: boolean }
+  /** A server-side backend workflow stored in the data plane. */
+  | { kind: 'serverWorkflow'; workflowId: string; projectId: string };
 
 // ─── Full store shape ──────────────────────────────────────────────────────────
 

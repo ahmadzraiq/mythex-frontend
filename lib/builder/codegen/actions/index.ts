@@ -64,7 +64,7 @@ import {
   emitCustomJavaScript,
 } from './misc';
 
-export function emitStep(step: Record<string, unknown>, symbols: SymbolMap): string {
+export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMapScope = false): string {
   const type = step.type as string;
 
   switch (type) {
@@ -74,7 +74,7 @@ export function emitStep(step: Record<string, unknown>, symbols: SymbolMap): str
     case 'setVar':
       return emitSetVar(step as never, symbols);
     case 'mergeAtPath':
-      return emitMergeAtPath(step as never, symbols);
+      return emitMergeAtPath(step as never, symbols, inMapScope);
     case 'appendToPath':
       return emitAppendToPath(step as never, symbols);
     case 'removeAt':

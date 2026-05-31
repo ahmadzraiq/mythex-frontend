@@ -19,7 +19,7 @@ export type { SDUINode };
 import routesConfig from '@/config/routes.json';
 import root from '@/config/root';
 import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
-import { updateSharedComponent, getSharedComponents, loadSharedComponents } from '@/lib/builder/shared-component-data';
+import { updateSharedComponent, getSharedComponents, loadSharedComponents, clearSharedComponents, initialSharedComponentIds } from '@/lib/builder/shared-component-data';
 import { getBuilderConfig } from '@/lib/builder/config-data';
 import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
@@ -3698,54 +3698,31 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     // backend — never fall through to static config.
     if (projectId && projectId !== 'admin') {
       try {
-        // ── Step 1: Load metadata (page list without nodes) + all non-page data
-        const metaRes = await fetch(`/api/projects/${projectId}/config/meta`, { credentials: 'include' });
-        const saved = metaRes.ok
-          ? ((await metaRes.json() as { config?: Record<string, unknown> }).config ?? null)
+        // ── Load full project config (pages with nodes + all metadata) ──────────
+        const configRes = await fetch(`/api/projects/${projectId}/config`, { credentials: 'include' });
+        const saved = configRes.ok
+          ? ((await configRes.json() as { config?: Record<string, unknown> }).config ?? null)
           : null;
 
-        // Extract page stubs from whatever the backend returned (may be empty array for new project)
-        const pageStubs = (saved?.pages ?? []) as Array<{ id: string; name: string; route?: string }>;
+        // Extract pages from the full config blob (includes nodes)
+        const pageStubs = (saved?.pages ?? []) as Array<{ id: string; name: string; route?: string; nodes?: SDUINode[]; wx?: number; wy?: number }>;
 
         if (pageStubs.length > 0) {
-          // ── Existing project — load pages ────────────────────────────────────
-          // Always fetch ALL pages in parallel — every page in the canvas shows
-          // its content immediately after load (no "Empty page" stubs).
-          const fetchPageNodes = async (pageId: string): Promise<SDUINode[]> => {
-            try {
-              const pageRes = await fetch(`/api/projects/${projectId}/pages/${pageId}`, { credentials: 'include' });
-              if (pageRes.ok) {
-                const pageData = await pageRes.json() as { page?: { nodes?: SDUINode[] } };
-                const rawNodes = (pageData.page?.nodes ?? []) as SDUINode[];
-                // Ensure every node has a UUID id so the builder can stamp
-                // data-builder-id and selection/hover works. Nodes seeded from
-                // the static config (home.json etc.) have no ids.
-                return _assignIds(rawNodes, pageId, { n: 0 });
-              }
-            } catch { /* ignore fetch errors — page stays empty */ }
-            return [];
-          };
-
-          const fetchedNodesList = await Promise.all(pageStubs.map(s => fetchPageNodes(s.id)));
-
-          const nodesByPageId = new Map<string, SDUINode[]>();
-          pageStubs.forEach((stub, i) => nodesByPageId.set(stub.id, fetchedNodesList[i]));
-
-          const firstPageId = pageStubs[0].id;
-          const firstPageNodes = nodesByPageId.get(firstPageId) ?? [];
-
-          // Restore positions from saved config if available
-          const savedPositions = (saved?.pagePositions ?? {}) as Record<string, { wx: number; wy: number }>;
           const vpWidth = VIEWPORT_WIDTHS['desktop'];
           const GAP = 80;
-          const rawPages: BuilderPage[] = pageStubs.map((stub, i) => ({
-            id: stub.id,
-            name: stub.name,
-            route: stub.route,
-            nodes: nodesByPageId.get(stub.id) ?? [],
-            wx: savedPositions[stub.id]?.wx ?? (i * (vpWidth + GAP)),
-            wy: savedPositions[stub.id]?.wy ?? 0,
+          // Restore canvas positions — prefer saved pagePositions, fall back to per-page coords
+          const savedPositions = (saved?.pagePositions ?? {}) as Record<string, { wx: number; wy: number }>;
+
+          const rawPages: BuilderPage[] = pageStubs.map((page, i) => ({
+            id: page.id,
+            name: page.name,
+            route: page.route,
+            nodes: _assignIds((page.nodes ?? []) as SDUINode[], page.id, { n: 0 }),
+            wx: savedPositions[page.id]?.wx ?? page.wx ?? (i * (vpWidth + GAP)),
+            wy: savedPositions[page.id]?.wy ?? page.wy ?? 0,
           }));
+
+          const firstPageNodes = rawPages[0]?.nodes ?? [];
           const pages = assignDefaultPagePositions(rawPages, vpWidth);
 
           set(s => {
@@ -3847,15 +3824,32 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
               }
             }
           }
-        } else {
-          // ── Brand new project (no pages) — seed a default Home page ──────────
+          // ── Restore shared components (user-imported only) ───────────────────
+          // Always start from a clean slate — the static config/shared-components.json
+          // data must NOT be visible in real projects unless the user imported it.
+          clearSharedComponents();
+          if (saved?.sharedComponents && typeof saved.sharedComponents === 'object') {
+            // Filter out any static SCs that old autosaves may have baked in.
+            const userSCs = Object.fromEntries(
+              Object.entries(saved.sharedComponents as Record<string, unknown>)
+                .filter(([id]) => !initialSharedComponentIds.has(id))
+            );
+            if (Object.keys(userSCs).length > 0) {
+              loadSharedComponents(userSCs);
+            }
+          }
+        } else if (configRes.ok && saved !== null) {
+          // ── Brand new project confirmed by backend (zero pages) ───────────────
+          // Only seed when the backend explicitly returned an empty pages array.
+          // Never seed if the config fetch failed — that would overwrite real data.
+          clearSharedComponents();
           const homeId = crypto.randomUUID();
           const homePage: BuilderPage = { id: homeId, name: 'Home', route: '/', nodes: [], wx: 0, wy: 0 };
 
           set(() => ({
             pages: [homePage],
             focusedPageId: homeId,
-            currentPageId: homeId,  // keep deprecated alias in sync
+            currentPageId: homeId,
             pageNodes: [],
             history: [EMPTY_SNAPSHOT],
             historyIdx: 0,
@@ -3874,8 +3868,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             themeDarkOverrides: {},
           }));
 
-          // Persist the default page immediately so the autosave baseline and
-          // the backend are in sync from the very first load.
+          // Persist the default page so autosave baseline and backend stay in sync.
           try {
             const { serializeBuilderState } = await import('@/lib/builder/autosave');
             const config = serializeBuilderState(useBuilderStore.getState());
@@ -3886,6 +3879,18 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
               credentials: 'include',
             });
           } catch { /* non-fatal — autosave will retry on next change */ }
+        } else {
+          // Config fetch failed — show empty canvas, do NOT overwrite DB.
+          console.warn('[builder] Could not load project config, showing empty canvas.');
+          set(() => ({
+            pages: [],
+            focusedPageId: '',
+            currentPageId: '',
+            pageNodes: [],
+            history: [EMPTY_SNAPSHOT],
+            historyIdx: 0,
+            loadedPageIds: new Set<string>(),
+          }));
         }
         // Do NOT fall through to the static config loader.
         return;

@@ -43,6 +43,13 @@ for (const [id, raw] of Object.entries(initialData as Record<string, Record<stri
 let _store: Record<string, SharedComponentModel> = _initialNormalised;
 const _subscribers = new Set<() => void>();
 
+/**
+ * IDs of shared components that ship with the static config file.
+ * Used to filter them out when persisting real-project state so new projects
+ * don't inherit template SCs the user never imported.
+ */
+export const initialSharedComponentIds: ReadonlySet<string> = new Set(Object.keys(_initialNormalised));
+
 function _notify() {
   _subscribers.forEach(cb => cb());
 }

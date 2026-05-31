@@ -159,6 +159,11 @@ export const filterByKey = (arr: Record<string, unknown>[], key: string, val: un
   arr.filter(o => o[key] === val);
 export const findIndex = (arr: unknown[], val: unknown): number => arr.indexOf(val);
 export const getByIndex = (arr: unknown[], i: number): unknown => arr[i];
+/** Return the element at index i (supports negative indices like Array.prototype.at) */
+export const at = (arr: unknown[] | null | undefined, i: number): unknown => {
+  if (!Array.isArray(arr)) return undefined;
+  return i < 0 ? arr[arr.length + i] : arr[i];
+};
 export const join = (arr: unknown[], sep = ','): string => arr.join(String(sep));
 export const length = (arr: unknown): number =>
   Array.isArray(arr) ? arr.length : typeof arr === 'string' ? arr.length : 0;
@@ -233,14 +238,12 @@ export const getFromMap = (map: unknown, key: unknown): unknown => {
 /** Get a value from an object by key (alias for getFromMap) */
 export const getKeyValue = getFromMap;
 
-/** Find the first item in an array whose id/ID/_id matches the given value */
-export const findItemById = (arr: unknown, id: unknown): unknown => {
+/** Find the first item in an array whose id field matches the given value (string-coerced) */
+export const findItemById = (arr: unknown, id: unknown, idField?: unknown): unknown => {
   if (!Array.isArray(arr)) return undefined;
-  return arr.find((x: unknown) => {
-    if (!x || typeof x !== 'object') return false;
-    const o = x as Record<string, unknown>;
-    return o.id === id || o.ID === id || o._id === id;
-  });
+  const target = String(id ?? '');
+  const field = String(idField ?? 'id').trim();
+  return arr.find((x: unknown) => x && typeof x === 'object' && String((x as Record<string, unknown>)[field] ?? '') === target) ?? null;
 };
 
 /** Clamp a number within a range */
@@ -328,26 +331,52 @@ export const filterExcludeByFieldAndSlice = (
   arr: unknown,
   field: string,
   value: unknown,
-  start?: number,
+  countOrStart?: number,
   end?: number,
 ): unknown[] => {
   if (!Array.isArray(arr)) return [];
   const filtered = arr.filter(item => getNested(item, field) !== value);
-  return start != null || end != null ? filtered.slice(start, end) : filtered;
+  // When called with one numeric arg it is the MAX COUNT (not a start offset).
+  // When called with two numeric args the first is start and second is end.
+  if (countOrStart != null && end == null) return filtered.slice(0, countOrStart);
+  if (countOrStart != null && end != null) return filtered.slice(countOrStart, end);
+  return filtered;
 };
 
-/** Find an item by matching any of the option field values */
+/**
+ * Find the variant whose options match the selectedOptions map.
+ * Mirrors the SDUI engine's findItemByOptionsMatch:
+ *   (items, optionGroups, selectedOptions, optionsKey?, optionIdKey?, groupIdKey?, returnField?)
+ * Returns the matched item's returnField value (default: 'id').
+ */
 export const findItemByOptionsMatch = (
-  arr: unknown,
-  optionsPath: string,
-  ...matchValues: unknown[]
+  items: unknown,
+  optionGroups: unknown,
+  selectedOptions: unknown,
+  optionsKey?: unknown,
+  optionIdKey?: unknown,
+  groupIdKey?: unknown,
+  returnField?: unknown,
 ): unknown => {
-  if (!Array.isArray(arr)) return undefined;
-  return arr.find(item => {
-    const opts = getNested(item, optionsPath);
-    if (!Array.isArray(opts)) return false;
-    return matchValues.some(v => opts.includes(v));
+  const arr   = Array.isArray(items) ? (items as Record<string, unknown>[]) : [];
+  const groups = Array.isArray(optionGroups) ? (optionGroups as Record<string, unknown>[]) : [];
+  const sel    = (selectedOptions && typeof selectedOptions === 'object' && !Array.isArray(selectedOptions))
+    ? (selectedOptions as Record<string, string>) : {};
+  const optKey  = String(optionsKey  ?? 'options').trim();
+  const optIdKey = String(optionIdKey ?? 'id').trim();
+  const grpIdKey = String(groupIdKey  ?? 'id').trim();
+  const retKey  = String(returnField  ?? 'id').trim();
+  if (arr.length === 1) return (arr[0])[retKey] ?? null;
+  const selectedIds = groups
+    .map(g => sel[String(g[grpIdKey] ?? '')])
+    .filter(Boolean);
+  if (selectedIds.length !== groups.length) return null;
+  const match = arr.find(item => {
+    const opts = (Array.isArray(item[optKey]) ? item[optKey] : []) as Record<string, unknown>[];
+    const itemOptIds = opts.map(o => String(o[optIdKey] ?? ''));
+    return selectedIds.every(id => itemOptIds.includes(id));
   });
+  return (match && match[retKey]) ?? null;
 };
 `;
 

@@ -43,13 +43,10 @@ For small edits → 1 op total, only the needed agent.
 
 Rules:
 - Set \`pageRoute\` AND \`pageName\` on EVERY op.
-- Set \`briefing\` on every agent EXCEPT \`structure\` and \`workflows\` — both read the original user message directly. Omit the \`briefing\` key on those entries entirely.
-- Omit \`briefing\` from the \`workflows\` agent entry entirely — do NOT include a behavioral summary. The workflow agent reads the Original request directly for all behavioral spec. A condensed briefing is a lossy override that causes wrong implementation choices.
+- Omit \`briefing\` from every agent entry. Every agent reads the original request directly.
 - \`binding\`, \`media\`, and \`data\` go inside the structure op — NEVER in a standalone op.
 - \`animation\` goes inside the styling op(s) — NEVER in a standalone op.
 - \`workflows\` goes inside the structure op when interactions are needed.
-- Animation briefings MUST use direct imperative language: "Apply ...", "Add ...". Never use "optional", "consider", "if appropriate", or any qualifier — every task listed in an animation briefing is mandatory.
-- Animation briefings MUST name the specific UI elements to animate using their descriptive node names (e.g. "feature-card", "hero-cta-button", "testimonial-card") — never just say "cards" or "buttons" without specifying which section they belong to. The animation agent searches the page tree by node name to find the right UUIDs.
 
 ## Pre-resolved context
 
@@ -103,13 +100,13 @@ NEVER emit "agentScopes". That field does not exist. Every operation MUST have a
       "resolvedNodeIds": [],
       "agents": {
         "structure"?:        {},
-        "binding"?:          { "briefing": "..." },
-        "media"?:            { "briefing": "..." },
-        "data"?:             { "briefing": "..." },
+        "binding"?:          {},
+        "media"?:            {},
+        "data"?:             {},
         "workflows"?:        {},
-        "styling"?:          { "briefing": "Names the sections this op covers" },
-        "animation"?:        { "briefing": "..." },
-        "sharedComponents"?: { "briefing": "...", "context"?: { "scName": "..." } }
+        "styling"?:          {},
+        "animation"?:        {},
+        "sharedComponents"?: { "context"?: { "scName": "..." } }
       }
     }
   ]
@@ -117,7 +114,6 @@ NEVER emit "agentScopes". That field does not exist. Every operation MUST have a
 
 Rules:
 - NEVER emit "agentScopes" — use "agents" object only.
-- Every agent entry EXCEPT "structure" and "workflows" MUST have a "briefing" — never omit it on binding, media, styling, animation, data, sharedComponents.
 - Omit any agent key whose work is NOT needed.
 - Do NOT emit dispatchMode, type, or rounds at the op level.
 - Operations array must be non-empty unless needsClarification is set.`;

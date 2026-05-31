@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   workspaces as workspacesApi,
   projects as projectsApi,
+  backendTables,
+  backendWorkflows,
   type Workspace,
   type WorkspaceMember,
   type Project,
@@ -209,6 +211,27 @@ function EditAppModal({
 
 // ── Project card ─────────────────────────────────────────────────────────────
 
+interface BackendStats {
+  tables:    number;
+  endpoints: number;
+}
+
+function useBackendStats(projectId: string): BackendStats {
+  const [stats, setStats] = useState<BackendStats>({ tables: 0, endpoints: 0 });
+  useEffect(() => {
+    void Promise.all([
+      backendTables.list(projectId).catch(() => ({ tables: [] })),
+      backendWorkflows.list(projectId, { kind: 'API_ENDPOINT' }).catch(() => ({ workflows: [] })),
+    ]).then(([t, w]) => {
+      setStats({
+        tables:    (t as { tables: unknown[] }).tables?.length ?? 0,
+        endpoints: (w as { workflows: unknown[] }).workflows?.length ?? 0,
+      });
+    });
+  }, [projectId]);
+  return stats;
+}
+
 function ProjectCard({
   project,
   onOpen,
@@ -225,6 +248,7 @@ function ProjectCard({
   deleting?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const backendStats = useBackendStats(project.id);
 
   return (
     <div style={{
@@ -278,6 +302,21 @@ function ProjectCard({
         >
           {project.name}
         </button>
+        {/* Backend stats badges */}
+        {(backendStats.tables > 0 || backendStats.endpoints > 0) && (
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            {backendStats.tables > 0 && (
+              <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: '#172554', color: '#60a5fa', fontWeight: 600 }}>
+                {backendStats.tables}⊞
+              </span>
+            )}
+            {backendStats.endpoints > 0 && (
+              <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: '#14532d', color: '#4ade80', fontWeight: 600 }}>
+                {backendStats.endpoints}⟶
+              </span>
+            )}
+          </div>
+        )}
 
         <div style={{ position: 'relative' }}>
           <button

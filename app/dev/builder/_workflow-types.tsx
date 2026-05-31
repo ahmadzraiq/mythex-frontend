@@ -90,6 +90,26 @@ export type ActionStepType =
   | 'runProjectWorkflow'
   // Code
   | 'runJavaScript'
+  // ── Backend (server-context) actions ─────────────────────────────
+  | 'runApiEndpoint'       // Call a published API Endpoint from client
+  | 'tablesInsert'         // Server: insert row(s)
+  | 'tablesGet'            // Server: get row by id
+  | 'tablesList'           // Server: list rows
+  | 'tablesUpdate'         // Server: update row
+  | 'tablesDelete'         // Server: delete row
+  | 'sendEmailAction'      // Server: send email
+  | 'serverJavaScript'     // Server: run server-side JS (isolated-vm)
+  // ── New server-context actions ────────────────────────────────────
+  | 'sendResponse'         // Server: send HTTP response
+  | 'sendStreamingResponse'// Server: send SSE streaming response
+  | 'middlewareNext'       // Server: pass to next middleware/handler
+  | 'workflowResult'       // Server: return value from a FUNCTION workflow
+  | 'runServerFunction'    // Server: call a FUNCTION-kind workflow
+  | 'executeSQL'           // Server: execute raw SQL
+  | 'runFormula'           // Server: evaluate a formula expression
+  | 'throwError'           // Server: throw an error
+  | 'tryCatch'             // Server: try/catch structural block
+  | 'createWorkflowVariable' // Server: declare a workflow-scoped variable
   // Placeholder — new step not yet configured
   | 'unconfigured';
 
@@ -121,6 +141,10 @@ export interface ActionStep {
   branches?: BranchDef[];
   defaultBranch?: ActionStep[];
   loopBody?: ActionStep[];
+  // tryCatch branches
+  tryBody?: ActionStep[];
+  catchBody?: ActionStep[];
+  finallyBody?: ActionStep[];
 }
 
 // ─── Trigger definitions ──────────────────────────────────────────────────────
@@ -449,9 +473,12 @@ export interface ActionTypeDef {
   label: string;
   icon: string;
   isStructural?: boolean;
+  description?: string;
+  /** 'client' = only in page workflows, 'server' = only in backend workflows, undefined = both */
+  context?: 'client' | 'server';
 }
 
-export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] = [
+export const ACTION_CATEGORIES: { category: string; context?: 'client' | 'server'; items: ActionTypeDef[] }[] = [
   {
     category: 'Branching',
     items: [
@@ -471,6 +498,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
   },
   {
     category: 'Navigation',
+    context: 'client',
     items: [
       { type: 'navigateTo', label: 'Navigate to', icon: '🔗' },
       { type: 'navigatePrev', label: 'Navigate to previous page', icon: '↩' },
@@ -480,17 +508,17 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
     category: 'Actions',
     items: [
       // runProjectWorkflow is NOT listed here — it appears dynamically as "Project workflows"
-      { type: 'changeVariableValue', label: 'Change variable value', icon: '⇄' },
-      { type: 'fetchCollection', label: 'Fetch collection(s)', icon: '🗄' },
+      { type: 'changeVariableValue', label: 'Change variable value', icon: '⇄', context: 'client' },
+      { type: 'fetchCollection', label: 'Fetch collection(s)', icon: '🗄', context: 'client' },
       // fetchCollectionsParallel kept for backward compat — use fetchCollection with collectionIds array
-      { type: 'updateCollection', label: 'Update collection', icon: '🗄' },
-      { type: 'resetVariableValue', label: 'Reset variable value', icon: '⇄' },
-      { type: 'executeComponentAction', label: 'Execute component action', icon: '⚡' },
-      { type: 'emitComponentTrigger', label: 'Emit component trigger', icon: '⚡' },
+      { type: 'updateCollection', label: 'Update collection', icon: '🗄', context: 'client' },
+      { type: 'resetVariableValue', label: 'Reset variable value', icon: '⇄', context: 'client' },
+      { type: 'executeComponentAction', label: 'Execute component action', icon: '⚡', context: 'client' },
+      { type: 'emitComponentTrigger', label: 'Emit component trigger', icon: '⚡', context: 'client' },
 
       { type: 'returnValue', label: 'Return a value', icon: '⚡' },
       { type: 'timeDelay', label: 'Time delay', icon: '⏱' },
-      { type: 'pickFile', label: 'Pick file', icon: '⬆' },
+      { type: 'pickFile', label: 'Pick file', icon: '⬆', context: 'client' },
     ],
   },
   // "Project workflows" is injected dynamically in AddActionPopover (not a fixed category)
@@ -514,6 +542,7 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
   },
   {
     category: 'Advanced actions',
+    context: 'client',
     items: [
       { type: 'stopPropagation', label: 'Stop click propagation', icon: '🖱' },
       { type: 'printPdf', label: 'Print PDF', icon: '🖨' },
@@ -527,12 +556,14 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
   },
   {
     category: 'Shared Component',
+    context: 'client',
     items: [
       { type: 'modifySharedComponent', label: 'Modify shared component', icon: '⧉' },
     ],
   },
   {
     category: 'Popover',
+    context: 'client',
     items: [
       { type: 'controlPopover', label: 'Control popover', icon: '◱' },
     ],
@@ -547,7 +578,100 @@ export const ACTION_CATEGORIES: { category: string; items: ActionTypeDef[] }[] =
       // backward-compat with existing config/actions/auth.json workflows
     ],
   },
+  // ── Backend / Data & API (client-side calls to server endpoints) ──────────
+  {
+    category: 'Backend',
+    context: 'client',
+    items: [
+      { type: 'runApiEndpoint', label: 'Run API Endpoint', icon: '⟶', description: 'Call a published server API Endpoint and bind its output to variables.' },
+    ],
+  },
+  // ── Server-side actions (only available in server workflow context) ────────
+  {
+    category: 'Tables',
+    context: 'server',
+    items: [
+      { type: 'tablesList',   label: 'List rows',    icon: '⊞' },
+      { type: 'tablesGet',    label: 'Get row',      icon: '⊡' },
+      { type: 'tablesInsert', label: 'Insert row',   icon: '+' },
+      { type: 'tablesUpdate', label: 'Update row',   icon: '✎' },
+      { type: 'tablesDelete', label: 'Delete row',   icon: '✕' },
+    ],
+  },
+  {
+    category: 'Server Email',
+    context: 'server',
+    items: [
+      { type: 'sendEmailAction', label: 'Send email', icon: '✉' },
+    ],
+  },
+  {
+    category: 'Server Code',
+    context: 'server',
+    items: [
+      { type: 'serverJavaScript', label: 'Server JavaScript', icon: '</>' },
+    ],
+  },
 ];
+
+// ─── Server action categories (WeWeb-style) ──────────────────────────────────
+
+type ServerWorkflowKind = 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE';
+
+/** Returns the action palette categories for server workflows, parameterized by workflow kind. */
+export function getServerActionCategories(kind: ServerWorkflowKind): { category: string; items: ActionTypeDef[] }[] {
+  // Flow (Logic) terminating actions differ by kind
+  const terminators: ActionTypeDef[] = kind === 'FUNCTION'
+    ? [{ type: 'workflowResult',  label: 'Workflow result',          icon: '⚡' }]
+    : kind === 'MIDDLEWARE'
+      ? [
+          { type: 'middlewareNext',       label: 'Next',                    icon: '→' },
+          { type: 'sendResponse',         label: 'Send Response',           icon: '⬆' },
+          { type: 'sendStreamingResponse',label: 'Send Streaming Response', icon: '⇈' },
+        ]
+      : /* API_ENDPOINT */ [
+          { type: 'sendResponse',         label: 'Send Response',           icon: '⬆' },
+          { type: 'sendStreamingResponse',label: 'Send Streaming Response', icon: '⇈' },
+        ];
+
+  const flowLogic: ActionTypeDef[] = [
+    ...terminators,
+    { type: 'passThroughCondition',    label: 'Pass through condition',    icon: '▽' },
+    { type: 'branch',                  label: 'True/False split',          icon: '⟐', isStructural: true },
+    { type: 'multiOptionBranch',       label: 'Multi-option split',        icon: '⟐', isStructural: true },
+    { type: 'tryCatch',                label: 'Try/Catch',                 icon: '⚡', isStructural: true },
+    { type: 'forEach',                 label: 'Iterator (for loop)',        icon: '↻', isStructural: true },
+    { type: 'whileLoop',               label: 'While loop',                icon: '∞', isStructural: true },
+    { type: 'breakLoop',               label: 'Break loop',                icon: '⊙' },
+    { type: 'continueLoop',            label: 'Continue loop',             icon: '→' },
+    { type: 'throwError',              label: 'Throw error',               icon: '⚠' },
+    { type: 'createWorkflowVariable',  label: 'Create workflow variable',  icon: '(x)' },
+    { type: 'changeVariableValue',     label: 'Change variable value',     icon: '⇄' },
+    { type: 'resetVariableValue',      label: 'Reset variable value',      icon: '↺' },
+    { type: 'timeDelay',               label: 'Time delay',                icon: '⏱' },
+  ];
+
+  return [
+    { category: 'Flow (Logic)', items: flowLogic },
+    { category: 'Tables', items: [
+      { type: 'tablesList',   label: 'Get rows',    icon: '⊞' },
+      { type: 'tablesInsert', label: 'Insert rows', icon: '⊞' },
+      { type: 'tablesUpdate', label: 'Update rows', icon: '⊞' },
+      { type: 'tablesDelete', label: 'Delete rows', icon: '⊞' },
+      { type: 'executeSQL',   label: 'Execute SQL', icon: '⊞' },
+    ]},
+    { category: 'Functions', items: [
+      { type: 'runFormula', label: 'Run formula', icon: 'ƒ' },
+      // runServerFunction items are injected dynamically (like runProjectWorkflow)
+    ]},
+    { category: 'Advanced', items: [
+      { type: 'serverJavaScript', label: 'Custom JavaScript', icon: 'JS' },
+    ]},
+    { category: 'HTTP Request', items: [
+      { type: 'fetchData', label: 'HTTP Request', icon: '⬡' },
+    ]},
+  ];
+}
 
 // Form-specific actions — injected into TypeSearchDropdown only when inside a FormContainer
 export const FORM_ACTION_CATEGORY: { category: string; items: ActionTypeDef[] } = {
@@ -633,6 +757,9 @@ export function deserializeStep(raw: unknown, id: string, directActionsMap?: Rec
   if (Array.isArray(obj.falseBranch)) step.falseBranch = deserializeStepArray(obj.falseBranch, directActionsMap);
   if (Array.isArray(obj.loopBody)) step.loopBody = deserializeStepArray(obj.loopBody, directActionsMap);
   if (Array.isArray(obj.defaultBranch)) step.defaultBranch = deserializeStepArray(obj.defaultBranch, directActionsMap);
+  if (Array.isArray(obj.tryBody)) step.tryBody = deserializeStepArray(obj.tryBody, directActionsMap);
+  if (Array.isArray(obj.catchBody)) step.catchBody = deserializeStepArray(obj.catchBody, directActionsMap);
+  if (Array.isArray(obj.finallyBody)) step.finallyBody = deserializeStepArray(obj.finallyBody, directActionsMap);
   if (Array.isArray(obj.branches)) {
     step.branches = (obj.branches as Array<{ match?: string; label?: string; steps: unknown[] }>).map(b => ({
       match: b.match ?? b.label ?? '',
@@ -661,9 +788,25 @@ export const RUN_PROJECT_WORKFLOW_DEF: ActionTypeDef = {
 
 // ─── Step query helpers ───────────────────────────────────────────────────────
 
+// Static defs for server types not in ACTION_CATEGORIES
+const SERVER_TYPE_DEFS: Record<string, ActionTypeDef> = {
+  sendResponse:          { type: 'sendResponse',          label: 'Send Response',            icon: '⬆' },
+  sendStreamingResponse: { type: 'sendStreamingResponse', label: 'Send Streaming Response',  icon: '⇈' },
+  middlewareNext:        { type: 'middlewareNext',         label: 'Next',                     icon: '→' },
+  workflowResult:        { type: 'workflowResult',         label: 'Workflow result',           icon: '⚡' },
+  runServerFunction:     { type: 'runServerFunction',      label: 'Run server function',       icon: 'ƒ' },
+  executeSQL:            { type: 'executeSQL',             label: 'Execute SQL',               icon: '⊞' },
+  runFormula:            { type: 'runFormula',             label: 'Run formula',               icon: 'ƒ' },
+  throwError:            { type: 'throwError',             label: 'Throw error',               icon: '⚠' },
+  tryCatch:              { type: 'tryCatch',               label: 'Try/Catch',                 icon: '⚡', isStructural: true },
+  createWorkflowVariable:{ type: 'createWorkflowVariable', label: 'Create workflow variable',  icon: '(x)' },
+};
+
 export function getActionDef(type: ActionStepType): ActionTypeDef | undefined {
   // runProjectWorkflow is not in ACTION_CATEGORIES (it's injected dynamically) — resolve here
   if (type === 'runProjectWorkflow') return RUN_PROJECT_WORKFLOW_DEF;
+  // Server-only types not in ACTION_CATEGORIES
+  if (type in SERVER_TYPE_DEFS) return SERVER_TYPE_DEFS[type];
   // Search FORM_ACTION_CATEGORY first so form types resolve their human labels
   const formFound = FORM_ACTION_CATEGORY.items.find(i => i.type === type);
   if (formFound) return formFound;
@@ -775,6 +918,29 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'setFormState':
       // complete when at least one flag is explicitly set (false is a valid value)
       return cfg.isSubmitting !== undefined || cfg.isSubmitted !== undefined;
+    // Server types completeness
+    case 'tablesList':
+      return Boolean(cfg.table);
+    case 'tablesInsert':
+      return Boolean(cfg.table);
+    case 'tablesUpdate':
+      return Boolean(cfg.table) && (Boolean(cfg.rowId) || Boolean(cfg.filters));
+    case 'tablesDelete':
+      return Boolean(cfg.table) && (Boolean(cfg.rowId) || Boolean(cfg.filters));
+    case 'executeSQL':
+      return Boolean(typeof cfg.query === 'string' && (cfg.query as string).trim().length > 0);
+    case 'sendResponse':
+      return Boolean(cfg.status) && Boolean(cfg.bodyType);
+    case 'workflowResult':
+      return Boolean(cfg.resultType);
+    case 'runServerFunction':
+      return Boolean(cfg.functionId);
+    case 'throwError':
+      return Boolean(cfg.message);
+    case 'createWorkflowVariable':
+      return Boolean(cfg.variableName) && Boolean(cfg.variableType);
+    case 'serverJavaScript':
+      return Boolean(typeof cfg.code === 'string' && (cfg.code as string).trim().length > 0);
     // These are self-contained — no config needed
     case 'submitForm':
     case 'navigatePrev':
@@ -787,6 +953,9 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'resetForm':
     case 'encodeFileAsBase64':
     case 'createUrlFromBase64':
+    case 'sendStreamingResponse':
+    case 'middlewareNext':
+    case 'tryCatch':
       return true;
     default:
       return true;

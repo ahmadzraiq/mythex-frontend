@@ -13,5 +13,5 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return proxyToBackend(req, `/projects/${id}/preview-config`);
+  return proxyToBackend(req, `/v1/projects/${id}/preview-config`);
 }

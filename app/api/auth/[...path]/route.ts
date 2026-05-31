@@ -12,7 +12,7 @@ async function handler(
   context: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await context.params;
-  const backendPath = `/auth/${path.join('/')}`;
+  const backendPath = `/v1/auth/${path.join('/')}`;
   return proxyToBackend(req, backendPath);
 }
 

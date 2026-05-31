@@ -191,6 +191,18 @@ function loadActions(configName: string): {
     };
   }
 
+  // Also register standalone atomic actions as single-step workflows.
+  // Nodes can reference atomic action IDs directly (without a parent workflow).
+  for (const [id, action] of Object.entries(atomicActions)) {
+    if (workflows[id]) continue; // already registered (shouldn't happen but guard)
+    const { name, trigger, ...stepFields } = action as Record<string, unknown>;
+    workflows[id] = [{ ...stepFields, id }];
+    workflowMeta[id] = {
+      name: String(name ?? id),
+      trigger: String(trigger ?? 'click'),
+    };
+  }
+
   return { workflows, workflowMeta };
 }
 

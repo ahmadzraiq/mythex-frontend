@@ -22,6 +22,7 @@ import { useBuilderStore } from './_store';
 import { useAiChat } from './_use-ai-chat';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
 import { BUILDER_MODELS, type BuilderModelId } from './_store-types';
+import { AgentDebugOverlay, type DebugSnapshot } from './_agent-debug-overlay';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -695,7 +696,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
 }
 
 // ---------------------------------------------------------------------------
-// ThinkingBlock — collapsible extended-thinking display (Sonnet only)
+// ThinkingBlock — collapsible extended-thinking display (debug only; Haiku via STYLING_DEBUG_LOG=1)
 // ---------------------------------------------------------------------------
 
 function ThinkingBlock({ content, streaming }: { content: string; streaming?: boolean }) {
@@ -1071,7 +1072,7 @@ function MessageBubble({
             </div>
           )}
 
-          {/* Extended thinking block (Sonnet) — shown only for AI messages */}
+          {/* Extended thinking block (debug only) — shown only for AI messages */}
           {!isUser && msg.thinkingContent && (
             <ThinkingBlock content={msg.thinkingContent} streaming={isThisStreaming && !renderedContent} />
           )}
@@ -1533,6 +1534,7 @@ export function AiChatPanel() {
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
   // @-mention typeahead state.
   const [mentionState, setMentionState] = useState<{ open: boolean; query: string; anchor: number } | null>(null);
+  const [debugSnapshot, setDebugSnapshot] = useState<DebugSnapshot | null>(null);
 
   const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel, pages, currentPageId } = store;
   const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? 'Home';
@@ -1760,7 +1762,166 @@ export function AiChatPanel() {
     }
   }, [copyToolsLabel, getDebugInfo, aiChatHistory]);
 
+  // ── Debug visualizer — open overlay with last turn's agent data ─────────
+  const handleOpenDebugViz = useCallback(() => {
+    // Find the last assistant message with any debug data (agentDebugInfo OR debug envelope)
+    let lastMsg = aiChatHistory[aiChatHistory.length - 1];
+    for (let i = aiChatHistory.length - 1; i >= 0; i--) {
+      const m = aiChatHistory[i];
+      if (m.agentDebugInfo || m.debug) { lastMsg = m; break; }
+    }
+
+    const agentInfo = lastMsg?.agentDebugInfo ?? {};
+    const dbg = lastMsg?.debug;
+    const agents: Record<string, import('./_agent-debug-overlay').DebugAgentData> = {};
+
+    // 1. Context agent — from debug.context (has its own tool calls like search/read)
+    if (dbg?.context) {
+      const c = dbg.context;
+      agents['context'] = agents['context'] ?? {
+        agent: 'context',
+        displayLabel: 'Context',
+        duration: c.duration,
+        status: c.status === 'done' ? 'completed' : c.status,
+        toolCallCount: c.toolCalls?.length ?? 0,
+        toolCalls: (c.toolCalls ?? []).map(tc => ({
+          name: tc.name, status: 'success', input: tc.input, result: tc.result,
+        })),
+        extra: {
+          skippedSearch: c.skippedSearch,
+          resolvedNodeCount: c.resolvedNodeCount,
+        },
+      } as import('./_agent-debug-overlay').DebugAgentData;
+    }
+
+    // 2. Planner — from debug.planner (has intent + operations manifest)
+    if (dbg?.planner) {
+      const p = dbg.planner;
+      const manifest = p.manifest;
+      agents['planner'] = agents['planner'] ?? {
+        agent: 'planner',
+        displayLabel: 'Planner',
+        duration: p.duration,
+        status: p.status === 'done' ? 'completed' : p.status,
+        toolCallCount: manifest?.operations?.length ?? 0,
+        // Encode manifest as a synthetic tool call — strip null briefings from agents
+        toolCalls: manifest ? [{
+          name: 'planner_complete',
+          status: 'success',
+          input: { intent: manifest.intent ?? '—' },
+          result: {
+            operations: (manifest.operations ?? []).map(op => ({
+              id: op.id,
+              summary: op.summary,
+              pageRoute: op.pageRoute,
+              pageName: op.pageName,
+              // Only include agents that have an actual briefing
+              ...(op.agents && Object.values(op.agents).some(v => v?.briefing)
+                ? {
+                    agents: Object.fromEntries(
+                      Object.entries(op.agents).filter(([, v]) => v?.briefing)
+                    ),
+                  }
+                : {}),
+            })),
+            ...(manifest.needsClarification ? { needsClarification: manifest.needsClarification } : {}),
+          },
+        }] : [],
+        // Store manifest — strip null briefings so neither tab shows them
+        manifest: manifest ? {
+          ...manifest,
+          operations: (manifest.operations ?? []).map(op => ({
+            ...op,
+            agents: op.agents
+              ? Object.fromEntries(Object.entries(op.agents).filter(([, v]) => v?.briefing))
+              : undefined,
+          })),
+        } : undefined,
+      } as import('./_agent-debug-overlay').DebugAgentData;
+    }
+
+    // 3. Structure agent — from debug.structure
+    if (dbg?.structure) {
+      const s = dbg.structure;
+      if (!agents['structure']) {
+        agents['structure'] = {
+          agent: 'structure',
+          displayLabel: 'Structure',
+          duration: s.duration,
+          status: s.status === 'done' ? 'completed' : s.status,
+          toolCallCount: 0,
+          toolCalls: [{
+            name: 'generate_structure',
+            status: 'success',
+            input: {},
+            result: {
+              nodes: s.nodes ?? 0,
+              variables: s.variables ?? 0,
+              formulas: s.formulas ?? 0,
+              workflows: s.workflows ?? 0,
+              dataSources: s.dataSources ?? 0,
+            },
+          }],
+        };
+      }
+    }
+
+    // 4. All agents that ran through agent_context events (styling, animation, binding, etc.)
+    for (const [name, a] of Object.entries(agentInfo)) {
+      agents[name] = {
+        agent: name,
+        displayLabel: a.displayLabel,
+        rounds: a.rounds,
+        toolCallCount: a.toolCallCount,
+        duration: a.duration,
+        tools: a.tools,
+        systemPrompt: a.systemPrompt,
+        userMessage: a.userMessage ?? undefined,
+        status: 'completed',
+        toolCalls: (a.toolCalls ?? []).map(t => ({
+          name: t.name, status: t.status, input: t.input, result: t.result,
+          round: t.round, aiBlind: t.aiBlind || undefined,
+        })),
+      };
+    }
+
+    // 5. Fill in any agents tracked in debug.agents but missing from agentDebugInfo
+    for (const [name, info] of Object.entries(dbg?.agents ?? {})) {
+      if (!agents[name]) {
+        agents[name] = {
+          agent: name,
+          displayLabel: info.displayLabel,
+          rounds: info.rounds,
+          toolCallCount: info.toolCallCount,
+          duration: info.duration,
+          status: info.status,
+          tools: info.tools,
+          toolCalls: [],
+        };
+      }
+    }
+
+    const allToolCalls = lastMsg?.toolCalls ?? [];
+    const snapshot: DebugSnapshot = {
+      agents,
+      timing: dbg?.stats?.totalDurationMs != null ? { totalDurationMs: dbg.stats.totalDurationMs } : undefined,
+      stats: {
+        totalTools: allToolCalls.length,
+        agents: Object.keys(agents).length,
+        blindFailures: allToolCalls.filter(t => t.aiBlind).length,
+      },
+    };
+    setDebugSnapshot(snapshot);
+  }, [aiChatHistory]);
+
   return (
+    <>
+    {debugSnapshot && (
+      <AgentDebugOverlay
+        snapshot={debugSnapshot}
+        onClose={() => setDebugSnapshot(null)}
+      />
+    )}
     <div
       style={{ width: 440, display: 'flex', flexDirection: 'column', background: '#0a0f1e', borderLeft: '1px solid #1e293b', overflow: 'hidden', height: '100%' }}
       data-testid="ai-chat-panel"
@@ -1783,6 +1944,26 @@ export function AiChatPanel() {
 
         {/* Model selector */}
         <ModelSelector value={aiSelectedModel} onChange={id => store.setAiSelectedModel(id)} />
+
+        {/* Debug Visualizer — open /dev/agent-debug with current turn data */}
+        <button
+          data-testid="ai-debug-viz-btn"
+          onClick={() => void handleOpenDebugViz()}
+          title="Open agent debug visualizer (React Flow)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 9px', borderRadius: 6,
+            border: '1px solid #334155',
+            background: '#1e293b',
+            color: '#64748b',
+            fontSize: 11, fontWeight: 500, cursor: 'pointer',
+            fontFamily: 'inherit', transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#7c3aed'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
+        >
+          ⬡ Debug
+        </button>
 
         {/* Copy Log — conversation history + all phase prompts & tool lists */}
         <button
@@ -2151,5 +2332,6 @@ export function AiChatPanel() {
         [data-testid="ai-thread-menu"] > div::-webkit-scrollbar { width: 3px; }
       `}</style>
     </div>
+    </>
   );
 }

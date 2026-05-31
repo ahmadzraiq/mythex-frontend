@@ -373,19 +373,19 @@ export default function AppPreviewPage() {
       return;
     }
 
-    // Bust the sessionStorage cache on explicit page reloads (F5 / Cmd+R) so
-    // the user always sees the latest saved changes from the builder.
+    // Bust the sessionStorage cache when:
+    //  - the user explicitly reloads (F5 / Cmd+R), OR
+    //  - the preview was opened from the builder (carries ?_t= cache-bust param)
     const isReload =
       typeof performance !== 'undefined' &&
       (
-        // Modern Navigation Timing API
         (performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[] | undefined)
           ?.[0]?.type === 'reload' ||
-        // Legacy fallback
         (performance.navigation as { type?: number } | undefined)?.type === 1
       );
+    const hasBuilderBust = params.has('_t');
 
-    void fetchConfig(projectId, isReload);
+    void fetchConfig(projectId, isReload || hasBuilderBust);
   }, [fetchConfig]);
 
   // Find the page matching the current app path

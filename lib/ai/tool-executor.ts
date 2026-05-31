@@ -164,6 +164,8 @@ function findNode(nodes: SDUINode[], id: string): SDUINode | null {
   return null;
 }
 
+/** Find the direct parent of a node by childId. */
+
 
 /**
  * Locate a node anywhere in the project — focused page first, then every other
@@ -2053,7 +2055,7 @@ const handlers: Record<string, Handler> = {
         // pass through as-is to style.rotate. resolveProps evaluates formula/js
         // objects at render time. Agent is responsible for the correct CSS value
         // (e.g. { formula: "variables['UUID'] + 'deg'" }).
-        stylePatch.rotate = input.rotate;
+        stylePatch.rotate = input.rotate as string;
       }
       // Clear any Tailwind rotate-* class that would conflict
       cls = cls.split(' ').filter(t => !/^-?rotate-/.test(t)).join(' ').replace(/\s+/g, ' ').trim();
@@ -2165,6 +2167,8 @@ const handlers: Record<string, Handler> = {
     const nodeId = input.nodeId as string;
     const nodeErr = requireNode(store, nodeId);
     if (nodeErr) return nodeErr;
+
+    const bpGuard = (input.breakpoint as string | undefined);
 
     // ── Responsive breakpoint routing ──────────────────────────────────────────
     // When a non-desktop breakpoint is specified, route style overrides to

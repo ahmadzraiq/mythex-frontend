@@ -5,7 +5,7 @@
 
 export const TOOL_DESCRIPTIONS: Record<string, string> = {
   // ── Read ──────────────────────────────────────────────────────────────────
-  'get_page_tree':       'Read the current page structure — names, IDs, types. Call first when modifying existing content.',
+  'get_page_tree':       'Read the current page structure — names, IDs, types.',
   'get_node_details':    'Get props, styles, and direct children of nodes by id.',
   'get_pages':           'List all pages with IDs, names, routes.',
   'get_theme':           'Get current theme token values (colors and fonts).',
@@ -18,8 +18,8 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
 
   // ── Structure ─────────────────────────────────────────────────────────────
   'add_component':       'Add a component by palette label. Pre-assign nodeId (UUID) to use as parentId for children in the same batch.',
-  'add_icon':            'Add an icon node. Use search_icons first.',
-  'add_image':           'Add an image node. Use search_images first.',
+  'add_icon':            'Add an icon node.',
+  'add_image':           'Add an image node.',
   'add_video':           'Add a video node. Defaults: autoPlay=true, loop=true, muted=true, controls=false.',
   'add_shared_component_instance': 'Place an existing shared component on the current page as a Box with _shared metadata.',
   'set_component_props': 'Set instance props (Path 1 override) on an existing shared-component node. Use for declared-property overrides. Also use set_style/set_animation/set_text on internal node IDs (Path 2) or on the instance wrapper (Path 3).',

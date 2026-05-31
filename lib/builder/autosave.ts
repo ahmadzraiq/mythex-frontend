@@ -32,7 +32,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { BuilderStore, BuilderPage } from '@/app/dev/builder/_store-types';
 import { useBuilderStore } from '@/app/dev/builder/_store';
-import { getSharedComponents } from '@/lib/builder/shared-component-data';
+import { getSharedComponents, initialSharedComponentIds } from '@/lib/builder/shared-component-data';
+
+/** Returns only the SCs the user explicitly created/imported — never the static initial ones. */
+function getUserSharedComponents(): Record<string, import('@/lib/builder/shared-component-data').SharedComponentModel> {
+  const all = getSharedComponents();
+  return Object.fromEntries(Object.entries(all).filter(([id]) => !initialSharedComponentIds.has(id)));
+}
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -68,7 +74,7 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
     colorFolders: store.colorFolders,
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
-    sharedComponents: getSharedComponents(),
+    sharedComponents: getUserSharedComponents(),
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
@@ -91,7 +97,7 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
     colorFolders: store.colorFolders,
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
-    sharedComponents: getSharedComponents(),
+    sharedComponents: getUserSharedComponents(),
     pages: store.pages.map(({ id, name, route }) => ({ id, name, route })),
   };
   const pm = serializeProjectMeta(store);

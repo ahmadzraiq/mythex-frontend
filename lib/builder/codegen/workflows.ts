@@ -46,7 +46,7 @@ export function emitWorkflows(ctx: CodegenCtx): string {
   const { store, symbols } = ctx;
 
   const lines: string[] = [];
-  lines.push(`import { useStore, buildQueryString } from './store';`);
+  lines.push(`import { useStore, buildQueryString, mergeAtPath, setNestedValue, cycleAtPath, appendToPath, removeAtPath, toggleAtPath, bumpAtPath } from './store';`);
   lines.push(`import type { AppRouter } from './types';`);
   lines.push('');
   lines.push(`export interface WorkflowCtx {`);

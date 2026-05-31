@@ -16,6 +16,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
 import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store';
+import { backendWorkflows } from '@/lib/platform/api-client';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
 import type { SharedComponentModel } from '@/config/shared-component-types';
 import { useSduiStore } from '@/store/sdui-store';
@@ -35,13 +36,14 @@ function workflowIdFromTarget(t: WorkflowCanvasTarget): string {
     case 'pageWorkflow':       return `pageWorkflow:${t.name}`;
     case 'globalWorkflow':     return `globalWorkflow:${t.id}`;
     case 'componentWorkflow':  return `componentWorkflow:${t.modelId}:${t.workflowId}`;
+    case 'serverWorkflow':     return `serverWorkflow:${t.workflowId}`;
   }
 }
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import {
   type ActionStepType, type BranchDef, type ActionStep, type ActionTypeDef,
-  ACTION_CATEGORIES, FORM_ACTION_CATEGORY,
+  ACTION_CATEGORIES, FORM_ACTION_CATEGORY, getServerActionCategories,
   getTriggerCategories, getTriggerLabel, getTriggerIcon, TI,
   TRIGGER_WORKFLOW_CATEGORIES, COMPONENT_TRIGGER_CATEGORIES,
   getActionDef, getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
@@ -198,7 +200,10 @@ function AddActionPopover({
   onPaste,
   onClose,
   isFormContext = false,
+  isServerContext = false,
+  serverWfKind = 'API_ENDPOINT',
   globalWorkflows = [],
+  serverFunctions = [],
 }: {
   copiedStep: ActionStep | null;
   onSelect: (type: ActionStepType) => void;
@@ -206,7 +211,10 @@ function AddActionPopover({
   onPaste: () => void;
   onClose: () => void;
   isFormContext?: boolean;
+  isServerContext?: boolean;
+  serverWfKind?: 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE';
   globalWorkflows?: { id: string; name: string }[];
+  serverFunctions?: { id: string; name: string }[];
 }) {
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -221,9 +229,14 @@ function AddActionPopover({
     return () => window.removeEventListener('mousedown', handler, true);
   }, [onClose]);
 
-  const allCategories = isFormContext
+  const baseCategories = (isFormContext
     ? [FORM_ACTION_CATEGORY, ...ACTION_CATEGORIES]
-    : ACTION_CATEGORIES;
+    : ACTION_CATEGORIES) as Array<{ category: string; context?: 'client' | 'server'; items: ActionTypeDef[] }>;
+
+  // In server context use WeWeb-style server categories
+  const allCategories = isServerContext
+    ? getServerActionCategories(serverWfKind)
+    : baseCategories;
 
   const q = search.toLowerCase();
   const filtered = allCategories.map(cat => ({
@@ -234,6 +247,11 @@ function AddActionPopover({
   // Filter global workflows by search query
   const filteredWorkflows = globalWorkflows.filter(w =>
     !q || w.name.toLowerCase().includes(q)
+  );
+
+  // Filter server functions by search query
+  const filteredServerFunctions = serverFunctions.filter(f =>
+    !q || f.name.toLowerCase().includes(q)
   );
 
   // Inject "Project workflows" between Actions and GraphQL when any workflows match
@@ -299,6 +317,19 @@ function AddActionPopover({
             >
               <span style={{ fontSize: 12 }}>{item.icon}</span>
               <span>{item.label}</span>
+            </button>
+          ))}
+          {/* Inject server functions into the Functions category */}
+          {isServerContext && cat.category === 'Functions' && filteredServerFunctions.map(fn => (
+            <button
+              key={fn.id}
+              style={S.dropdownItem(false)}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onClick={() => { onSelectWorkflow(fn.id, fn.name); onClose(); }}
+            >
+              <span style={{ fontSize: 12 }}>ƒ</span>
+              <span>{fn.name}</span>
             </button>
           ))}
             </>
@@ -387,7 +418,7 @@ function WorkflowOptionsMenu({
   onClose: () => void;
   onDelete: () => void;
 }) {
-  const canDelete = target.kind === 'pageWorkflow' || target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow';
+  const canDelete = target.kind === 'pageWorkflow' || target.kind === 'globalWorkflow' || target.kind === 'componentWorkflow' || target.kind === 'serverWorkflow';
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -436,9 +467,11 @@ function WorkflowOptionsMenu({
 export interface WorkflowCanvasProps {
   target: WorkflowCanvasTarget;
   onClose: () => void;
+  /** When true, renders as a flex child filling its container instead of a fixed full-screen overlay. */
+  inline?: boolean;
 }
 
-export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanvasProps) {
   const store = useBuilderStore();
 
   // ── Global workflows list for "Project workflows" section in AddActionPopover ─
@@ -449,8 +482,23 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     }));
   }, [store.globalWorkflowMeta]);
 
+  // Server FUNCTION-kind workflows for injection into Functions category
+  const [serverFunctionsList, setServerFunctionsList] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (target.kind !== 'serverWorkflow') return;
+    backendWorkflows.list(target.projectId).then((res) => {
+      setServerFunctionsList(
+        (res.workflows ?? [])
+          .filter((w: { kind: string }) => w.kind === 'FUNCTION')
+          .map((w: { id: string; name: string }) => ({ id: w.id, name: w.name }))
+      );
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : null]);
+
   // ── Local state ─────────────────────────────────────────────────────────────
   const [steps, setSteps] = useState<ActionStep[]>([]);
+  const [serverWfKind, setServerWfKind] = useState<'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE'>('API_ENDPOINT');
   const [selectedPath, setSelectedPath] = useState<(string | number)[] | null>(null);
   const [zoomDisplay, setZoomDisplay] = useState(1);
   const zoomRef = useRef(1);
@@ -541,6 +589,17 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
       });
       initialSteps = wf?.steps ? deserializeStepArray(wf.steps as unknown[], store.directActionsMap) : [];
       setSteps(initialSteps);
+    } else if (target.kind === 'serverWorkflow') {
+      backendWorkflows.get(target.projectId, target.workflowId).then((res) => {
+        const wf = res.workflow;
+        setWorkflowMeta({ id: wf.id, name: wf.name });
+        if (wf.kind) setServerWfKind(wf.kind as 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE');
+        const rawGraph = Array.isArray(wf.graph) ? wf.graph as unknown[] : [];
+        const loaded = deserializeStepArray(rawGraph, store.directActionsMap);
+        setSteps(loaded);
+        historyRef.current = [loaded];
+        historyIdxRef.current = 0;
+      }).catch(() => {/* workflow may not exist yet — start empty */});
     }
     // Seed history with the initial state so undo never goes past it
     historyRef.current = [initialSteps];
@@ -599,6 +658,11 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
           },
         });
       }
+    } else if (target.kind === 'serverWorkflow') {
+      void backendWorkflows.update(target.projectId, target.workflowId, {
+        graph: steps.map(serializeStep) as unknown,
+        name: workflowMeta.name,
+      });
     }
     onClose();
   }
@@ -638,11 +702,13 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     if (compHit) return compHit.label;
     return getTriggerLabel(v, undefined);
   };
-  const triggerLabel = isFixedTrigger
-    ? 'On execution'
-    : isComponentWorkflow
-      ? componentTriggerLabel(triggerValue)
-      : getTriggerLabel(triggerValue, targetNodeType, targetCustomTriggers);
+  const triggerLabel = target.kind === 'serverWorkflow'
+    ? (serverWfKind === 'API_ENDPOINT' ? 'On API request' : 'On execution')
+    : isFixedTrigger
+      ? 'On execution'
+      : isComponentWorkflow
+        ? componentTriggerLabel(triggerValue)
+        : getTriggerLabel(triggerValue, targetNodeType, targetCustomTriggers);
   // Trigger workflows (from the Triggers tab) use a restricted set of trigger options
   const isTriggerWorkflow = target.kind === 'pageWorkflow' && !!store.pageWorkflowMeta?.[target.name]?.isTrigger;
   const triggerCategories = isComponentWorkflow
@@ -701,6 +767,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
         { match: 'Third value', steps: [createPlaceholderStep()] },
       ] : undefined,
       loopBody: (type === 'forEach' || type === 'whileLoop') ? [createPlaceholderStep()] : undefined,
+      tryBody:  type === 'tryCatch' ? [createPlaceholderStep()] : undefined,
+      catchBody: type === 'tryCatch' ? [createPlaceholderStep()] : undefined,
+      config: type === 'tryCatch' ? { catchEnabled: true, finallyEnabled: false } : undefined,
     };
     const cur = stepsRef.current;
     const next = pathPrefix.length === 0
@@ -771,6 +840,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
     if (tag === 'false' && step.falseBranch) return getStepFromPath(step.falseBranch, subPath);
     if (tag === 'loop' && step.loopBody) return getStepFromPath(step.loopBody, subPath);
     if (tag === 'default' && step.defaultBranch) return getStepFromPath(step.defaultBranch, subPath);
+    if (tag === 'try' && step.tryBody) return getStepFromPath(step.tryBody, subPath);
+    if (tag === 'catch' && step.catchBody) return getStepFromPath(step.catchBody, subPath);
+    if (tag === 'finally' && step.finallyBody) return getStepFromPath(step.finallyBody, subPath);
     if (tag?.startsWith('branch-') && step.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return getStepFromPath(step.branches[bIdx]?.steps ?? [], subPath);
@@ -1005,13 +1077,13 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div data-testid="workflow-canvas" style={S.overlay} onClick={() => { setTriggerDropdownOpen(false); setAddPopoverState(null); setContextMenuState(null); }}>
+    <div data-testid="workflow-canvas" style={inline ? { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: '#0f172a' } : S.overlay} onClick={() => { setTriggerDropdownOpen(false); setAddPopoverState(null); setContextMenuState(null); }}>
       {/* Top bar */}
       <div style={S.topBar} onClick={e => e.stopPropagation()}>
         {/* Left: workflow name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
+            {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow' || target.kind === 'serverWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
         </div>
         {/* Copy JSON */}
@@ -1171,6 +1243,8 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                       const { [target.workflowId]: _removed, ...rest } = scModel.workflows;
                       updateLinkedModel({ id: target.modelId, workflows: rest });
                     }
+                  } else if (target.kind === 'serverWorkflow') {
+                    void backendWorkflows.delete(target.projectId, target.workflowId);
                   }
                   onClose();
                 }}
@@ -1201,6 +1275,9 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
                       ? (getLinkedModel(target.modelId)?.triggers ?? [])
                       : undefined
                   }
+                  isServerContext={target.kind === 'serverWorkflow'}
+                  projectId={target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : undefined}
+                  serverFunctions={serverFunctionsList}
                 />
               </>
             ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow') ? (
@@ -1258,7 +1335,10 @@ export function WorkflowCanvas({ target, onClose }: WorkflowCanvasProps) {
             onPaste={() => { pasteStep(addPopoverState.insertIdx, addPopoverState.pathPrefix); setAddPopoverState(null); }}
             onClose={() => setAddPopoverState(null)}
             isFormContext={isFormContext}
+            isServerContext={target.kind === 'serverWorkflow'}
+            serverWfKind={serverWfKind}
             globalWorkflows={globalWorkflowsList}
+            serverFunctions={serverFunctionsList}
           />
         </div>
       )}

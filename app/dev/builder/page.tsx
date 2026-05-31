@@ -72,6 +72,7 @@ import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
 import { useBuilderAutosave, type SaveStatus } from '@/lib/builder/autosave';
 import { useShallow } from 'zustand/react/shallow';
+import { DataApiTab } from './_data-api-tab';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -697,11 +698,15 @@ function TopBar({
   onSeed,
   saveStatus,
   projectId,
+  mainMode,
+  onMainModeChange,
 }: {
   onPreview: () => void | Promise<void>;
   onSeed: () => Promise<void>;
   saveStatus: SaveStatus;
   projectId: string | null;
+  mainMode: 'interface' | 'data-api';
+  onMainModeChange: (mode: 'interface' | 'data-api') => void;
 }) {
   const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
     useShallow(s => ({
@@ -772,6 +777,55 @@ function TopBar({
 
       {/* URL query parameter definitions for the current page */}
       <URLParamsPopover />
+
+      <div style={{ width: 1, height: 20, background: '#1f2937' }} />
+
+      {/* Mode switcher — icon-only */}
+      {([
+        {
+          id: 'interface' as const,
+          title: 'Interface',
+          icon: (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+              <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+              <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+              <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+            </svg>
+          ),
+        },
+        {
+          id: 'data-api' as const,
+          title: 'Data & API',
+          icon: (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <ellipse cx="7" cy="3.5" rx="5" ry="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+              <path d="M2 3.5v3.5c0 1.1 2.24 2 5 2s5-.9 5-2V3.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+              <path d="M2 7v3c0 1.1 2.24 2 5 2s5-.9 5-2V7" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+            </svg>
+          ),
+        },
+      ] as const).map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onMainModeChange(tab.id)}
+          title={tab.title}
+          style={{
+            width: 28, height: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: mainMode === tab.id ? '#1d4ed8' : 'transparent',
+            border: `1px solid ${mainMode === tab.id ? '#3b82f6' : 'transparent'}`,
+            borderRadius: 5,
+            color: mainMode === tab.id ? '#fff' : '#6b7280',
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { if (mainMode !== tab.id) { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = '#d1d5db'; } }}
+          onMouseLeave={e => { if (mainMode !== tab.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6b7280'; } }}
+        >
+          {tab.icon}
+        </button>
+      ))}
 
       <div style={{ flex: 1 }} />
 
@@ -1081,6 +1135,7 @@ export default function BuilderPage() {
   const aiMode = useBuilderStore(s => s.aiMode);
   const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
+  const [mainMode, setMainMode] = useState<'interface' | 'data-api'>('interface');
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
   const [rightSlide, setRightSlide] = useState<RightSlideState>(null);
@@ -1346,8 +1401,12 @@ export default function BuilderPage() {
       // The middleware detects the {projectId}.* subdomain pattern and sets
       // the preview_project_id cookie automatically — no query param needed.
       let previewUrl = `${window.location.protocol}//${projectId}.${baseHost}${pageRoute}`;
+      // Always include a cache-bust timestamp so the preview tab fetches fresh
+      // data from the backend instead of serving a stale sessionStorage hit.
+      const sep = pageRoute.includes('?') ? '&' : '?';
+      previewUrl += `${sep}_t=${Date.now()}`;
       if (previewToken) {
-        previewUrl += `?token=${encodeURIComponent(previewToken)}`;
+        previewUrl += `&token=${encodeURIComponent(previewToken)}`;
       }
       if (previewWin) {
         previewWin.location.href = previewUrl;
@@ -1501,8 +1560,16 @@ export default function BuilderPage() {
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <TopBar onPreview={openPreview} onSeed={handleSeed} saveStatus={saveStatus} projectId={projectId} />
+      <TopBar onPreview={openPreview} onSeed={handleSeed} saveStatus={saveStatus} projectId={projectId} mainMode={mainMode} onMainModeChange={setMainMode} />
 
+      {/* ── Data & API full-screen view ────────────────────────────────────── */}
+      {mainMode === 'data-api' && projectId && (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <DataApiTab projectId={projectId} />
+        </div>
+      )}
+
+      {mainMode === 'interface' && (
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <PanelLeft
           dataSlideState={leftSlide?.kind === 'data' ? leftSlide.subState : null}
@@ -1597,6 +1664,7 @@ export default function BuilderPage() {
 
         <PanelRight />
       </div>
+      )} {/* end mainMode === 'interface' */}
 
       {/* Workflow canvas overlay — full-screen, mounts above everything */}
       {workflowCanvasTarget && (

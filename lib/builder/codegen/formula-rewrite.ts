@@ -137,8 +137,15 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
 
   // get('path') — engine formula accessor → resolve against symbol map or fall back to local scope
   out = out.replace(/\bget\s*\(\s*['"]([^'"]+)['"]\s*\)/g, (_, path) => {
+    if (path.startsWith('$parent.')) {
+      // $parent.FIELD — refers to the enclosing map item (outer _item in nested maps).
+      // inMapScope=true → JSX context, _parentItem is captured; else workflow context.
+      const field = path.slice('$parent.'.length);
+      if (inMapScope) return field === 'id' ? '_parentItemId' : `_parentItem?.data?.${field}`;
+      return field === 'id' ? '(context as any)?.parentItemId' : `(context as any)?.parentItem?.data?.${field}`;
+    }
     if (path.startsWith('$')) {
-      // $parent.id etc — not resolvable statically; emit undefined
+      // Other $-prefixed context refs — not resolvable statically
       return 'undefined /* get($context) */';
     }
     // Try global variables map first
@@ -151,6 +158,18 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
     let expr = '(state.local as Record<string, unknown>)';
     for (const p of parts) expr += /^\d+$/.test(p) ? `?.[${p}]` : `?.${p}`;
     return expr;
+  });
+
+  // $parent.FIELD — bare usage (e.g. in template strings {{$parent.id}}) that wasn't
+  // inside a get('...') call. Must run AFTER the get() handler above so that
+  // get('$parent.id') is handled first and doesn't leave $parent.id for this rule.
+  // When inMapScope=true (JSX with _parentItem captured): use _parentItemId / _parentItem?.data?.FIELD.
+  // When inMapScope=false (workflow function body): use (context as any)?.parentItemId passed via ctx.
+  out = out.replace(/\$parent\.([a-zA-Z_$][a-zA-Z0-9_$]*)/g, (_, field) => {
+    if (inMapScope) {
+      return field === 'id' ? '_parentItemId' : `_parentItem?.data?.${field}`;
+    }
+    return field === 'id' ? '(context as any)?.parentItemId' : `(context as any)?.parentItem?.data?.${field}`;
   });
 
   // Rename reserved-word formula functions — ONLY the functional form `if(cond, a, b)`
@@ -311,10 +330,14 @@ function rewriteTemplate(template: string, symbols: SymbolMap, inMapScope: boole
       let expr = rewriteFormula(raw, symbols, inMapScope);
 
       // JS keywords / literals should never be passed to pathToExpr
-      const JS_LITERALS = new Set(['undefined', 'null', 'true', 'false', 'NaN', 'Infinity', '_item', 'index']);
+      const JS_LITERALS = new Set(['undefined', 'null', 'true', 'false', 'NaN', 'Infinity', '_item', '_parentItem', '_parentItemId', 'index']);
+      // Runtime identifiers: expressions starting with these are already valid JS and must NOT
+      // be processed by pathToExpr (which would prepend `state?.`).
+      const RUNTIME_PREFIXES = new Set(['state', 'context', 'router', 'api', '_item', '_parentItem', '_parentItemId', 'useStore', 'index', 'event', 'form', 'popover', 'wwLib']);
+      const topIdent = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/.exec(expr)?.[1] ?? '';
       // If the expression is still a simple dotted path (no parens, operators, etc.)
       // treat it as a state path and run it through pathToExpr (which handles map scope)
-      if (!JS_LITERALS.has(expr) && /^[a-zA-Z_$][a-zA-Z0-9_.]*$/.test(expr) && !expr.startsWith('state')) {
+      if (!JS_LITERALS.has(expr) && /^[a-zA-Z_$][a-zA-Z0-9_.]*$/.test(expr) && !RUNTIME_PREFIXES.has(topIdent)) {
         expr = pathToExpr(expr, symbols, inMapScope);
       }
 

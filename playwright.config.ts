@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3001',
+    url: 'http://localhost:3001/_next/static/chunks/webpack.js',
     reuseExistingServer: true,
     timeout: 60_000,
   },

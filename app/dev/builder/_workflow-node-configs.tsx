@@ -37,6 +37,11 @@ import {
   getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
 } from './_workflow-types';
 import type { WorkflowMeta, WorkflowParam } from './_store';
+import { backendTables } from '@/lib/platform/api-client';
+import {
+  type FilterCondition, type FilterGroup, type SortSpec,
+  FilterPanel, SortPanel, uid,
+} from './_filter-sort-panels';
 
 /** Convert camelCase / snake_case / kebab-case names to human-readable text. */
 export function toHumanName(name: string): string {
@@ -4333,6 +4338,789 @@ function RunJavaScriptConfig({
   );
 }
 
+// ─── Server action config panels ─────────────────────────────────────────────
+
+/** Shared server config field label style */
+const SL = { ...S.fieldLabel, marginTop: 12 } as React.CSSProperties;
+
+/** Collapsible section with optional/incomplete status label */
+function CollapsibleSection({
+  title, status = 'Optional', defaultOpen = false, children,
+}: {
+  title: string; status?: string; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const color = status === 'Incomplete' ? '#f59e0b' : status === 'Optional' ? '#6b7280' : '#34d399';
+  return (
+    <div style={{ marginTop: 14, border: '1px solid #1e293b', borderRadius: 6, overflow: 'hidden' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', cursor: 'pointer', background: '#0f172a' }}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#e2e8f0' }}>{title}</span>
+        <span style={{ fontSize: 11, color, marginRight: 8 }}>{status}</span>
+        <span style={{ fontSize: 11, color: '#6b7280' }}>{open ? '▲' : '▼'}</span>
+      </div>
+      {open && (
+        <div style={{ padding: '10px 12px', borderTop: '1px solid #1e293b' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Table picker dropdown — loads project tables on mount */
+function TablePicker({
+  projectId, value, onChange,
+}: {
+  projectId: string; value: string; onChange: (v: string) => void;
+}) {
+  const [tables, setTables] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!projectId) return;
+    backendTables.list(projectId).then(res => {
+      setTables((res.tables ?? []).map((t: { id: string; name: string }) => ({ id: t.name, name: t.name })));
+    }).catch(() => {});
+  }, [projectId]);
+
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }}
+    >
+      <option value="">Select a table…</option>
+      {tables.map(t => (
+        <option key={t.id} value={t.name}>
+          public • {t.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Key-value builder row editor */
+function KeyValueBuilderField({
+  label, value, onChange,
+}: {
+  label?: string;
+  value: Record<string, unknown>;
+  onChange: (v: Record<string, unknown>) => void;
+}) {
+  const entries = Object.entries(value ?? {});
+  const addRow = () => onChange({ ...value, '': '' });
+  const updateKey = (oldKey: string, newKey: string) => {
+    const next: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value ?? {})) {
+      next[k === oldKey ? newKey : k] = v;
+    }
+    onChange(next);
+  };
+  const updateVal = (key: string, newVal: string) => onChange({ ...value, [key]: newVal });
+  const removeRow = (key: string) => {
+    const next = { ...value };
+    delete next[key];
+    onChange(next);
+  };
+
+  return (
+    <div>
+      {label && <label style={SL}>{label}</label>}
+      {entries.map(([k, v]) => (
+        <div key={k} style={{ display: 'flex', gap: 4, marginTop: 4, alignItems: 'center' }}>
+          <button
+            onClick={() => removeRow(k)}
+            style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}
+          >−</button>
+          <input
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={k}
+            placeholder="Key"
+            onChange={e => updateKey(k, e.target.value)}
+          />
+          <input
+            style={{ ...S.fieldInput, flex: 1 }}
+            value={typeof v === 'string' ? v : JSON.stringify(v)}
+            placeholder="Value"
+            onChange={e => updateVal(k, e.target.value)}
+          />
+        </div>
+      ))}
+      <button
+        onClick={addRow}
+        style={{ marginTop: 6, fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer' }}
+      >+ Add Property</button>
+    </div>
+  );
+}
+
+// ─── TablesListConfig (Get rows) ──────────────────────────────────────────────
+
+function TablesListConfig({
+  cfg, setCfg, step, projectId, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (k: string, v: unknown) => void;
+  step: ActionStep;
+  projectId?: string;
+  workflowTrigger?: string;
+}) {
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
+  const [sorts, setSorts] = useState<SortSpec[]>((cfg.sorts as SortSpec[]) ?? []);
+  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
+  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
+  const [pendingSorts, setPendingSorts] = useState<SortSpec[]>([]);
+  const pagEnabled = (cfg.paginationEnabled as boolean) ?? false;
+
+  return (
+    <>
+      <label style={SL}>Table *</label>
+      <TablePicker
+        projectId={projectId ?? ''}
+        value={(cfg.table as string) ?? ''}
+        onChange={v => setCfg('table', v)}
+      />
+
+      <CollapsibleSection title="Data" status="Optional">
+        <label style={SL}>Columns</label>
+        <select style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }} value={(cfg.columns as string) ?? 'all'} onChange={e => setCfg('columns', e.target.value)}>
+          <option value="all">All columns</option>
+          <option value="custom">Custom selection</option>
+        </select>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Filters & Sort" status="Optional">
+        <div style={{ position: 'relative', marginBottom: 6 }}>
+          <button
+            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); setSortOpen(false); }}
+            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
+          >
+            ▽ Configure Filter {conditions.length + groups.length > 0 ? `(${conditions.length + groups.length})` : ''}
+          </button>
+          {filterOpen && (
+            <FilterPanel
+              conditions={pendingConditions}
+              groups={pendingGroups}
+              allCols={[]}
+              onChange={setPendingConditions}
+              onChangeGroups={setPendingGroups}
+              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
+              onSave={() => {
+                setConditions(pendingConditions);
+                setGroups(pendingGroups);
+                setCfg('filterConditions', pendingConditions);
+                setCfg('filterGroups', pendingGroups);
+                setFilterOpen(false);
+              }}
+            />
+          )}
+        </div>
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => { setPendingSorts([...sorts]); setSortOpen(o => !o); setFilterOpen(false); }}
+            style={{ ...S.toggleBtn(sorts.length > 0), width: '100%', justifyContent: 'flex-start' }}
+          >
+            ↕ Configure Sort {sorts.length > 0 ? `(${sorts.length})` : ''}
+          </button>
+          {sortOpen && (
+            <SortPanel
+              pending={pendingSorts}
+              allCols={[]}
+              onChange={setPendingSorts}
+              onReset={() => setPendingSorts([])}
+              onSave={() => {
+                setSorts(pendingSorts);
+                setCfg('sorts', pendingSorts);
+                setSortOpen(false);
+              }}
+            />
+          )}
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Pagination" status={pagEnabled ? 'Optional' : 'Optional'}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>Enable pagination</span>
+          <OnOffToggle value={pagEnabled} onChange={v => setCfg('paginationEnabled', v)} />
+        </div>
+        {pagEnabled && (
+          <>
+            <BoundField
+              label="Limit"
+              value={cfg.limit as FormulaValue | undefined}
+              onChange={v => setCfg('limit', v)}
+              placeholder="Number of records to return"
+              workflowTrigger={workflowTrigger}
+            />
+            <BoundField
+              label="Offset"
+              value={cfg.offset as FormulaValue | undefined}
+              onChange={v => setCfg('offset', v)}
+              placeholder="Number of records to skip"
+              workflowTrigger={workflowTrigger}
+            />
+            <label style={SL}>Include Total Count</label>
+            <OnOffToggle
+              value={(cfg.includeTotalCount as boolean) ?? false}
+              onChange={v => setCfg('includeTotalCount', v)}
+            />
+          </>
+        )}
+      </CollapsibleSection>
+    </>
+  );
+}
+
+// ─── TablesInsertConfig ───────────────────────────────────────────────────────
+
+function TablesInsertConfig({
+  cfg, setCfg, projectId, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
+  projectId?: string; workflowTrigger?: string;
+}) {
+  const insertMode = (cfg.insertMode as string) ?? 'single';
+  return (
+    <>
+      <label style={SL}>Table *</label>
+      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
+
+      <label style={SL}>Insert mode</label>
+      <div style={S.toggleGroup}>
+        <button style={S.toggleBtn(insertMode === 'single')} onClick={() => setCfg('insertMode', 'single')}>Single</button>
+        <button style={S.toggleBtn(insertMode === 'multiple')} onClick={() => setCfg('insertMode', 'multiple')}>Multiple</button>
+      </div>
+
+      <CollapsibleSection title="Data" status={cfg.data ? 'Optional' : 'Incomplete'} defaultOpen>
+        <BoundField
+          label="Data"
+          required
+          value={cfg.data as FormulaValue | undefined}
+          onChange={v => setCfg('data', v)}
+          placeholder="Record data as object / array"
+          workflowTrigger={workflowTrigger}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Options" status="Optional">
+        <label style={SL}>Return Inserted Data</label>
+        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
+        <label style={SL}>Upsert Mode</label>
+        <OnOffToggle value={(cfg.upsert as boolean) ?? false} onChange={v => setCfg('upsert', v)} />
+      </CollapsibleSection>
+    </>
+  );
+}
+
+// ─── TablesUpdateConfig ───────────────────────────────────────────────────────
+
+function TablesUpdateConfig({
+  cfg, setCfg, projectId, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
+  projectId?: string; workflowTrigger?: string;
+}) {
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
+  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
+  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
+  const updateMode = (cfg.updateMode as string) ?? 'byId';
+
+  return (
+    <>
+      <label style={SL}>Table *</label>
+      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
+
+      <label style={SL}>Update mode</label>
+      <div style={S.toggleGroup}>
+        <button style={S.toggleBtn(updateMode === 'byId')} onClick={() => setCfg('updateMode', 'byId')}>By ID</button>
+        <button style={S.toggleBtn(updateMode === 'byFilters')} onClick={() => setCfg('updateMode', 'byFilters')}>By Filters</button>
+      </div>
+
+      {updateMode === 'byId' && (
+        <BoundField
+          label="Row ID *"
+          required
+          value={cfg.rowId as FormulaValue | undefined}
+          onChange={v => setCfg('rowId', v)}
+          placeholder="Enter ID to identify record"
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+
+      {updateMode === 'byFilters' && (
+        <div style={{ position: 'relative', marginTop: 8 }}>
+          <button
+            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
+            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
+          >
+            ▽ Configure Filter *
+          </button>
+          {filterOpen && (
+            <FilterPanel
+              conditions={pendingConditions}
+              groups={pendingGroups}
+              allCols={[]}
+              onChange={setPendingConditions}
+              onChangeGroups={setPendingGroups}
+              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
+              onSave={() => {
+                setConditions(pendingConditions);
+                setGroups(pendingGroups);
+                setCfg('filterConditions', pendingConditions);
+                setCfg('filterGroups', pendingGroups);
+                setFilterOpen(false);
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      <CollapsibleSection title="Data" status="Optional">
+        <BoundField
+          label="Data"
+          value={cfg.data as FormulaValue | undefined}
+          onChange={v => setCfg('data', v)}
+          placeholder="Fields to update as object"
+          workflowTrigger={workflowTrigger}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Options" status="Optional">
+        <label style={SL}>Return Updated Data</label>
+        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
+      </CollapsibleSection>
+    </>
+  );
+}
+
+// ─── TablesDeleteConfig ───────────────────────────────────────────────────────
+
+function TablesDeleteConfig({
+  cfg, setCfg, projectId, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
+  projectId?: string; workflowTrigger?: string;
+}) {
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
+  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
+  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
+  const deleteMode = (cfg.deleteMode as string) ?? 'byId';
+
+  return (
+    <>
+      <label style={SL}>Table *</label>
+      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
+
+      <label style={SL}>Delete mode</label>
+      <div style={S.toggleGroup}>
+        <button style={S.toggleBtn(deleteMode === 'byId')} onClick={() => setCfg('deleteMode', 'byId')}>By ID</button>
+        <button style={S.toggleBtn(deleteMode === 'byFilters')} onClick={() => setCfg('deleteMode', 'byFilters')}>By Filters</button>
+      </div>
+
+      {deleteMode === 'byId' && (
+        <BoundField
+          label="Row ID *"
+          required
+          value={cfg.rowId as FormulaValue | undefined}
+          onChange={v => setCfg('rowId', v)}
+          placeholder="Enter the ID of the record to delete"
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+
+      {deleteMode === 'byFilters' && (
+        <div style={{ position: 'relative', marginTop: 8 }}>
+          <button
+            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
+            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
+          >
+            ▽ Configure Filter * (required)
+          </button>
+          {filterOpen && (
+            <FilterPanel
+              conditions={pendingConditions}
+              groups={pendingGroups}
+              allCols={[]}
+              onChange={setPendingConditions}
+              onChangeGroups={setPendingGroups}
+              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
+              onSave={() => {
+                setConditions(pendingConditions);
+                setGroups(pendingGroups);
+                setCfg('filterConditions', pendingConditions);
+                setCfg('filterGroups', pendingGroups);
+                setFilterOpen(false);
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      <CollapsibleSection title="Options" status="Optional">
+        <label style={SL}>Return Deleted Data</label>
+        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
+      </CollapsibleSection>
+    </>
+  );
+}
+
+// ─── ExecuteSQLConfig ─────────────────────────────────────────────────────────
+
+function ExecuteSQLConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <BoundField
+      label="SQL Query *"
+      required
+      value={cfg.query as FormulaValue | undefined}
+      onChange={v => setCfg('query', v)}
+      placeholder="SELECT * FROM ..."
+      workflowTrigger={workflowTrigger}
+    />
+  );
+}
+
+// ─── SendResponseConfig ───────────────────────────────────────────────────────
+
+const HTTP_STATUS_OPTIONS = [
+  { value: '200', label: '200 - OK' },
+  { value: '201', label: '201 - Created' },
+  { value: '204', label: '204 - No Content' },
+  { value: '400', label: '400 - Bad Request' },
+  { value: '401', label: '401 - Unauthorized' },
+  { value: '403', label: '403 - Forbidden' },
+  { value: '404', label: '404 - Not Found' },
+  { value: '418', label: "418 - I'm a teapot" },
+  { value: '422', label: '422 - Unprocessable Entity' },
+  { value: '500', label: '500 - Internal Server Error' },
+];
+
+const BODY_TYPES = ['JSON', 'Plain Text', 'HTML', 'XML', 'CSV'];
+
+function SendResponseConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <>
+      <label style={SL}>Status *</label>
+      <select
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.status ? '#ef4444' : '#334155' }}
+        value={(cfg.status as string) ?? ''}
+        onChange={e => setCfg('status', e.target.value)}
+      >
+        <option value="">Select status…</option>
+        {HTTP_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {!cfg.status && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+
+      <CollapsibleSection title="Data" status={cfg.bodyType ? 'Optional' : 'Incomplete'} defaultOpen>
+        <label style={SL}>Type *</label>
+        <select
+          style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.bodyType ? '#ef4444' : '#334155' }}
+          value={(cfg.bodyType as string) ?? ''}
+          onChange={e => setCfg('bodyType', e.target.value)}
+        >
+          <option value="">Select type…</option>
+          {BODY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {!cfg.bodyType && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+        <KeyValueBuilderField
+          label="Body"
+          value={(cfg.body as Record<string, unknown>) ?? {}}
+          onChange={v => setCfg('body', v)}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Headers" status="Optional">
+        <KeyValueBuilderField
+          value={(cfg.headers as Record<string, unknown>) ?? {}}
+          onChange={v => setCfg('headers', v)}
+        />
+      </CollapsibleSection>
+    </>
+  );
+}
+
+// ─── SendStreamingResponseConfig ─────────────────────────────────────────────
+
+function SendStreamingResponseConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <KeyValueBuilderField
+      label="Event Data"
+      value={(cfg.eventData as Record<string, unknown>) ?? {}}
+      onChange={v => setCfg('eventData', v)}
+    />
+  );
+}
+
+// ─── ThrowErrorConfig ─────────────────────────────────────────────────────────
+
+function ThrowErrorConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <>
+      <BoundField
+        label="Message"
+        value={cfg.message as FormulaValue | undefined}
+        onChange={v => setCfg('message', v)}
+        placeholder="Error message"
+        workflowTrigger={workflowTrigger}
+      />
+      <BoundField
+        label="Cause"
+        value={cfg.cause as FormulaValue | undefined}
+        onChange={v => setCfg('cause', v)}
+        placeholder="Error cause (optional)"
+        workflowTrigger={workflowTrigger}
+      />
+    </>
+  );
+}
+
+// ─── TryCatchConfig ───────────────────────────────────────────────────────────
+
+function TryCatchConfig({
+  step, onUpdate,
+}: {
+  step: ActionStep; onUpdate: (patch: Partial<ActionStep>) => void;
+}) {
+  const cfg = step.config ?? {};
+  const catchEnabled = (cfg.catchEnabled as boolean) !== false;
+  const finallyEnabled = (cfg.finallyEnabled as boolean) === true;
+
+  const updateCfg = (key: string, v: unknown) => onUpdate({ config: { ...cfg, [key]: v } });
+
+  return (
+    <>
+      <label style={SL}>Catch branch</label>
+      <OnOffToggle value={catchEnabled} onChange={v => updateCfg('catchEnabled', v)} />
+      <label style={SL}>Finally branch</label>
+      <OnOffToggle value={finallyEnabled} onChange={v => updateCfg('finallyEnabled', v)} />
+    </>
+  );
+}
+
+// ─── CreateWorkflowVariableConfig ─────────────────────────────────────────────
+
+function CreateWorkflowVariableConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <>
+      <label style={SL}>Variable name *</label>
+      <input
+        style={{ ...S.fieldInput, marginTop: 4, borderColor: !cfg.variableName ? '#ef4444' : '#334155' }}
+        value={(cfg.variableName as string) ?? ''}
+        placeholder="myVariable"
+        onChange={e => setCfg('variableName', e.target.value)}
+      />
+      {!cfg.variableName && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+      <label style={SL}>Type *</label>
+      <select
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.variableType ? '#ef4444' : '#334155' }}
+        value={(cfg.variableType as string) ?? ''}
+        onChange={e => setCfg('variableType', e.target.value)}
+      >
+        <option value="">Select type…</option>
+        {['String', 'Number', 'Boolean', 'Object', 'Array'].map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <BoundField
+        label="Initial value"
+        value={cfg.initialValue as FormulaValue | undefined}
+        onChange={v => setCfg('initialValue', v)}
+        placeholder="Enter a value"
+        workflowTrigger={workflowTrigger}
+      />
+    </>
+  );
+}
+
+// ─── WorkflowResultConfig ─────────────────────────────────────────────────────
+
+function WorkflowResultConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  const resultType = (cfg.resultType as string) ?? 'Object';
+  return (
+    <>
+      <label style={SL}>Type</label>
+      <select
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }}
+        value={resultType}
+        onChange={e => setCfg('resultType', e.target.value)}
+      >
+        {['Object', 'String', 'Number', 'Boolean', 'Array'].map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+      {resultType === 'Object' ? (
+        <KeyValueBuilderField
+          label="Result"
+          value={(cfg.result as Record<string, unknown>) ?? {}}
+          onChange={v => setCfg('result', v)}
+        />
+      ) : (
+        <BoundField
+          label="Result"
+          value={cfg.result as FormulaValue | undefined}
+          onChange={v => setCfg('result', v)}
+          placeholder="Return value"
+          workflowTrigger={workflowTrigger}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── RunServerFunctionConfig ──────────────────────────────────────────────────
+
+function RunServerFunctionConfig({
+  cfg, setCfg, workflowTrigger, serverFunctions = [],
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
+  workflowTrigger?: string; serverFunctions?: { id: string; name: string }[];
+}) {
+  return (
+    <>
+      <label style={SL}>Function *</label>
+      <select
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.functionId ? '#ef4444' : '#334155' }}
+        value={(cfg.functionId as string) ?? ''}
+        onChange={e => setCfg('functionId', e.target.value)}
+      >
+        <option value="">Select a function…</option>
+        {serverFunctions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+      </select>
+      {!cfg.functionId && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+    </>
+  );
+}
+
+// ─── RunFormulaConfig (stub) ──────────────────────────────────────────────────
+
+function RunFormulaConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  return (
+    <BoundField
+      label="Formula"
+      value={cfg.formula as FormulaValue | undefined}
+      onChange={v => setCfg('formula', v)}
+      placeholder="Enter formula expression"
+      workflowTrigger={workflowTrigger}
+    />
+  );
+}
+
+// ─── ServerFetchDataConfig (HTTP Request for server context) ──────────────────
+
+const SERVER_HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+const RETRY_TYPES = ['Linear', 'Exponential'];
+
+function ServerFetchDataConfig({
+  cfg, setCfg, workflowTrigger,
+}: {
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+}) {
+  const authType = (cfg.authType as string) ?? 'None';
+  return (
+    <>
+      <label style={SL}>Method</label>
+      <select
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }}
+        value={(cfg.method as string) ?? 'GET'}
+        onChange={e => setCfg('method', e.target.value)}
+      >
+        {SERVER_HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+
+      <BoundField
+        label="URL *"
+        required
+        value={cfg.url as FormulaValue | undefined}
+        onChange={v => setCfg('url', v)}
+        placeholder="https://example.com/api/endpoint"
+        workflowTrigger={workflowTrigger}
+      />
+
+      <CollapsibleSection title="Data" status="Optional">
+        <KeyValueBuilderField
+          label="Query Parameters"
+          value={(cfg.queryParams as Record<string, unknown>) ?? {}}
+          onChange={v => setCfg('queryParams', v)}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Authentication" status="Optional">
+        <label style={SL}>Type</label>
+        <div style={S.toggleGroup}>
+          {['None', 'Basic', 'Bearer'].map(t => (
+            <button key={t} style={S.toggleBtn(authType === t)} onClick={() => setCfg('authType', t)}>{t}</button>
+          ))}
+        </div>
+        {authType === 'Basic' && (
+          <>
+            <BoundField label="Username" value={cfg.authUsername as FormulaValue | undefined} onChange={v => setCfg('authUsername', v)} placeholder="Username" workflowTrigger={workflowTrigger} />
+            <BoundField label="Password" value={cfg.authPassword as FormulaValue | undefined} onChange={v => setCfg('authPassword', v)} placeholder="Password" workflowTrigger={workflowTrigger} />
+          </>
+        )}
+        {authType === 'Bearer' && (
+          <BoundField label="Token" value={cfg.authToken as FormulaValue | undefined} onChange={v => setCfg('authToken', v)} placeholder="Bearer token" workflowTrigger={workflowTrigger} />
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Headers" status="Optional">
+        <KeyValueBuilderField
+          value={(cfg.headers as Record<string, unknown>) ?? {}}
+          onChange={v => setCfg('headers', v)}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Retry Configuration" status="Optional">
+        <label style={SL}>Max Attempts</label>
+        <input style={{ ...S.fieldInput, marginTop: 4 }} type="number" value={(cfg.retryMaxAttempts as number) ?? ''} placeholder="e.g. 0" onChange={e => setCfg('retryMaxAttempts', e.target.valueAsNumber)} />
+        <label style={SL}>Retry Type</label>
+        <select style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }} value={(cfg.retryType as string) ?? 'Linear'} onChange={e => setCfg('retryType', e.target.value)}>
+          {RETRY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <label style={SL}>Delay (ms)</label>
+        <input style={{ ...S.fieldInput, marginTop: 4 }} type="number" value={(cfg.retryDelay as number) ?? ''} placeholder="1000" onChange={e => setCfg('retryDelay', e.target.valueAsNumber)} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Advanced Options" status="Optional">
+        <label style={SL}>Throw on Error</label>
+        <OnOffToggle value={(cfg.throwOnError as boolean) ?? false} onChange={v => setCfg('throwOnError', v)} />
+        <label style={SL}>Timeout (ms)</label>
+        <input style={{ ...S.fieldInput, marginTop: 4 }} type="number" value={(cfg.timeout as number) ?? ''} placeholder="30000" onChange={e => setCfg('timeout', e.target.valueAsNumber)} />
+      </CollapsibleSection>
+    </>
+  );
+}
+
 // ─── NodePropsPanel ────────────────────────────────────────────────────────────
 
 export function NodePropsPanel({
@@ -4341,6 +5129,9 @@ export function NodePropsPanel({
   isFormContext = false,
   workflowTrigger,
   componentTriggers,
+  isServerContext = false,
+  projectId,
+  serverFunctions = [],
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
@@ -4352,6 +5143,12 @@ export function NodePropsPanel({
    * this component can actually fire.
    */
   componentTriggers?: Array<{ id: string; name: string }>;
+  /** True when the canvas is in server workflow context */
+  isServerContext?: boolean;
+  /** Project ID for server-context table pickers */
+  projectId?: string;
+  /** Available FUNCTION-kind workflows for runServerFunction picker */
+  serverFunctions?: { id: string; name: string }[];
 }) {
   const cfg = step.config ?? {};
 
@@ -5021,6 +5818,55 @@ export function NodePropsPanel({
 
       {step.type === 'playEnterAnimation' && (
         <PlayEnterAnimationConfig cfg={cfg} setCfg={setCfg} />
+      )}
+
+      {/* ── Server action config panels ─────────────────────────────────── */}
+      {step.type === 'tablesList' && (
+        <TablesListConfig cfg={cfg} setCfg={setCfg} step={step} projectId={projectId} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'tablesInsert' && (
+        <TablesInsertConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'tablesUpdate' && (
+        <TablesUpdateConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'tablesDelete' && (
+        <TablesDeleteConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'executeSQL' && (
+        <ExecuteSQLConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'sendResponse' && (
+        <SendResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'sendStreamingResponse' && (
+        <SendStreamingResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'throwError' && (
+        <ThrowErrorConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'tryCatch' && (
+        <TryCatchConfig step={step} onUpdate={onUpdate} />
+      )}
+      {step.type === 'createWorkflowVariable' && (
+        <CreateWorkflowVariableConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'workflowResult' && (
+        <WorkflowResultConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'runServerFunction' && (
+        <RunServerFunctionConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} serverFunctions={serverFunctions} />
+      )}
+      {step.type === 'runFormula' && (
+        <RunFormulaConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {/* serverJavaScript reuses the same RunJavaScriptConfig */}
+      {step.type === 'serverJavaScript' && (
+        <RunJavaScriptConfig step={step} onUpdate={onUpdate} workflowTrigger={workflowTrigger} />
+      )}
+      {/* For server context, fetchData uses the enhanced HTTP Request form */}
+      {step.type === 'fetchData' && isServerContext && (
+        <ServerFetchDataConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
 
       <label style={{ ...S.fieldLabel, marginTop: 12 }}>Description</label>

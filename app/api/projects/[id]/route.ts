@@ -13,7 +13,7 @@ async function handler(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  return proxyToBackend(req, `/projects/${id}`);
+  return proxyToBackend(req, `/v1/projects/${id}`);
 }
 
 export const GET = handler;

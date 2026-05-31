@@ -139,8 +139,8 @@ export function useAiChat() {
         credentials: 'include',
       });
       if (!res.ok) return;
-      const { items: messages, hasNextPage } = await res.json() as {
-        items: Array<{
+      const body = await res.json() as {
+        messages: Array<{
           id: string;
           role: string;
           content: string;
@@ -148,8 +148,9 @@ export function useAiChat() {
           metadata?: Record<string, unknown>;
           createdAt: string;
         }>;
-        hasNextPage: boolean;
+        total: number; limit: number; offset: number;
       };
+      const messages = body.messages ?? [];
 
       for (const m of messages) {
         useBuilderStore.getState().addAiChatMessage({
@@ -163,7 +164,7 @@ export function useAiChat() {
           createdAt: m.createdAt,
         });
       }
-      setHasMoreMessages(hasNextPage);
+      setHasMoreMessages((body.offset ?? 0) + messages.length < (body.total ?? 0));
     } catch {
       // silently ignore
     }
@@ -179,9 +180,10 @@ export function useAiChat() {
         { credentials: 'include' },
       );
       if (res.ok) {
-        const { items: data, hasNextPage } = await res.json() as { items: ChatThread[]; hasNextPage: boolean };
+        const body = await res.json() as { threads: ChatThread[]; total: number; limit: number; offset: number };
+        const data = body.threads ?? [];
         setThreads(data);
-        setHasMoreThreads(hasNextPage);
+        setHasMoreThreads((body.offset ?? 0) + data.length < (body.total ?? 0));
       }
     } catch {
       // silently ignore
@@ -202,12 +204,13 @@ export function useAiChat() {
         { credentials: 'include' },
       );
       if (res.ok) {
-        const { items: data, hasNextPage } = await res.json() as { items: ChatThread[]; hasNextPage: boolean };
+        const body = await res.json() as { threads: ChatThread[]; total: number; limit: number; offset: number };
+        const data = body.threads ?? [];
         setThreads(prev => {
           const existingIds = new Set(prev.map(t => t.id));
           return [...prev, ...data.filter(t => !existingIds.has(t.id))];
         });
-        setHasMoreThreads(hasNextPage);
+        setHasMoreThreads((body.offset ?? 0) + data.length < (body.total ?? 0));
       } else {
         setHasMoreThreads(false);
       }
@@ -235,8 +238,8 @@ export function useAiChat() {
       const url = `/api/projects/${projectId}/chat/threads/${threadId}/messages?limit=50&before=${encodeURIComponent(oldest.createdAt ?? '')}`;
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) { setHasMoreMessages(false); return; }
-      const { items: older, hasNextPage } = await res.json() as {
-        items: Array<{
+      const body = await res.json() as {
+        messages: Array<{
           id: string;
           role: string;
           content: string;
@@ -244,9 +247,10 @@ export function useAiChat() {
           metadata?: Record<string, unknown>;
           createdAt: string;
         }>;
-        hasNextPage: boolean;
+        total: number; limit: number; offset: number;
       };
-      setHasMoreMessages(hasNextPage);
+      const older = body.messages ?? [];
+      setHasMoreMessages((body.offset ?? 0) + older.length < (body.total ?? 0));
       if (older.length === 0) return;
       const mapped: AiChatMessage[] = older.map(m => ({
         id: m.id,
@@ -301,7 +305,7 @@ export function useAiChat() {
         body: JSON.stringify({ title: title ?? 'New Chat' }),
       });
       if (!res.ok) return null;
-      const thread = await res.json() as { id: string; title: string; createdAt: string; updatedAt: string };
+      const { thread } = await res.json() as { thread: { id: string; title: string; createdAt: string; updatedAt: string } };
       const newThread: ChatThread = { ...thread, messageCount: 0 };
       setThreads(prev => [newThread, ...prev]);
       store.setAiCurrentThreadId(thread.id);

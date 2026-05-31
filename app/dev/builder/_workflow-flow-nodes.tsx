@@ -69,6 +69,9 @@ export function updateStepAtPath(
     if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: updateStepAtPath(s.falseBranch, subPath, updater) };
     if (tag === 'loop' && s.loopBody) return { ...s, loopBody: updateStepAtPath(s.loopBody, subPath, updater) };
     if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: updateStepAtPath(s.defaultBranch, subPath, updater) };
+    if (tag === 'try' && s.tryBody) return { ...s, tryBody: updateStepAtPath(s.tryBody, subPath, updater) };
+    if (tag === 'catch' && s.catchBody) return { ...s, catchBody: updateStepAtPath(s.catchBody, subPath, updater) };
+    if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: updateStepAtPath(s.finallyBody, subPath, updater) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: updateStepAtPath(b.steps, subPath, updater) } : b) };
@@ -95,6 +98,9 @@ export function insertStepAtPath(
     if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: insertStepAtPath(s.falseBranch, subPath, newStep) };
     if (tag === 'loop' && s.loopBody) return { ...s, loopBody: insertStepAtPath(s.loopBody, subPath, newStep) };
     if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: insertStepAtPath(s.defaultBranch, subPath, newStep) };
+    if (tag === 'try' && s.tryBody) return { ...s, tryBody: insertStepAtPath(s.tryBody, subPath, newStep) };
+    if (tag === 'catch' && s.catchBody) return { ...s, catchBody: insertStepAtPath(s.catchBody, subPath, newStep) };
+    if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: insertStepAtPath(s.finallyBody, subPath, newStep) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: insertStepAtPath(b.steps, subPath, newStep) } : b) };
@@ -113,6 +119,9 @@ export function removeStepAtPath(steps: ActionStep[], path: number[]): ActionSte
     if (tag === 'false' && s.falseBranch) return { ...s, falseBranch: removeStepAtPath(s.falseBranch, subPath) };
     if (tag === 'loop' && s.loopBody) return { ...s, loopBody: removeStepAtPath(s.loopBody, subPath) };
     if (tag === 'default' && s.defaultBranch) return { ...s, defaultBranch: removeStepAtPath(s.defaultBranch, subPath) };
+    if (tag === 'try' && s.tryBody) return { ...s, tryBody: removeStepAtPath(s.tryBody, subPath) };
+    if (tag === 'catch' && s.catchBody) return { ...s, catchBody: removeStepAtPath(s.catchBody, subPath) };
+    if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: removeStepAtPath(s.finallyBody, subPath) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: removeStepAtPath(b.steps, subPath) } : b) };
@@ -216,7 +225,10 @@ export function FlowRenderer({
             {(step.type === 'passThroughCondition') && (
               <PassThroughNode step={step} stepPath={stepPath} isSelected={isSelected} onSelect={onSelect} onContextMenu={onContextMenu} />
             )}
-            {!['branch', 'multiOptionBranch', 'forEach', 'whileLoop', 'passThroughCondition'].includes(step.type) && (
+            {(step.type === 'tryCatch') && (
+              <TryCatchNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
+            )}
+            {!['branch', 'multiOptionBranch', 'forEach', 'whileLoop', 'passThroughCondition', 'tryCatch'].includes(step.type) && (
               <ActionNode step={step} stepPath={stepPath} isSelected={isSelected} onSelect={onSelect} onContextMenu={onContextMenu} />
             )}
 
@@ -683,6 +695,116 @@ export function MultiOptionBranchNode({
 }
 
 // ─── Loop node (Iterator / While) ─────────────────────────────────────────────
+
+export function TryCatchNode({
+  step, stepPath, isSelected, selectedPath, copiedStep,
+  onSelect, onInsert, onContextMenu, onUpdateStep,
+}: {
+  step: ActionStep; stepPath: (string | number)[]; isSelected: boolean;
+  selectedPath: (string | number)[] | null; copiedStep: ActionStep | null;
+  onSelect: (p: (string | number)[]) => void;
+  onInsert: (idx: number, prefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, s: ActionStep, p: (string | number)[]) => void;
+  onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
+}) {
+  const tryBody = step.tryBody ?? [];
+  const catchBody = step.catchBody ?? [];
+  const finallyBody = step.finallyBody ?? [];
+  const hasCatch = step.config?.catchEnabled !== false; // default on
+  const hasFinally = step.config?.finallyEnabled === true;
+
+  const BRANCH_W = 260;
+  const GAP = 40;
+  const cols = [tryBody, ...(hasCatch ? [catchBody] : []), ...(hasFinally ? [finallyBody] : [])];
+  const colLabels = ['try', ...(hasCatch ? ['catch'] : []), ...(hasFinally ? ['finally'] : [])];
+  const colPrefixes = ['try', ...(hasCatch ? ['catch'] : []), ...(hasFinally ? ['finally'] : [])];
+  const colColors = ['#60a5fa', '#f87171', '#fbbf24'];
+
+  const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [layout, setLayout] = useState<{ xCenters: number[]; heights: number[]; rowW: number }>({
+    xCenters: cols.map((_, i) => BRANCH_W / 2 + i * (BRANCH_W + GAP)),
+    heights: cols.map(() => 0),
+    rowW: cols.length * BRANCH_W + (cols.length - 1) * GAP,
+  });
+
+  useEffect(() => {
+    const measure = () => {
+      const row = rowRef.current;
+      if (!row) return;
+      const xCenters = colRefs.current.map(el =>
+        el ? (el.offsetLeft - row.offsetLeft) + el.offsetWidth / 2 : 0
+      );
+      const heights = colRefs.current.map(el => el?.offsetHeight ?? 0);
+      setLayout({ xCenters, heights, rowW: row.offsetWidth });
+    };
+    const observers: ResizeObserver[] = [];
+    const targets = [rowRef.current, ...colRefs.current].filter(Boolean) as HTMLDivElement[];
+    targets.forEach(el => { const ro = new ResizeObserver(measure); ro.observe(el); observers.push(ro); });
+    measure();
+    return () => observers.forEach(ro => ro.disconnect());
+  }, [hasCatch, hasFinally]);
+
+  const rowW = layout.rowW || cols.length * (BRANCH_W + GAP);
+  const xFirst = layout.xCenters[0] ?? BRANCH_W / 2;
+  const xLast = layout.xCenters[cols.length - 1] ?? rowW - BRANCH_W / 2;
+  const maxH = layout.heights.length ? Math.max(...layout.heights) : 0;
+
+  return (
+    <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Pill header with dashed border */}
+      <div
+        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid #6366f1' : '1.5px dashed #4b5563' }}
+        onClick={() => onSelect(stepPath)}
+      >
+        <span>⚡</span>
+        <span>{step.name || 'Try/Catch'}</span>
+        <button style={S.moreBtn} type="button" onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}>⋮</button>
+      </div>
+      {/* Top split */}
+      <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xFirst} y1={16} x2={xLast} y2={16} stroke="#4b5563" strokeWidth={1} />
+        {layout.xCenters.map((x, i) => (
+          <line key={i} x1={x} y1={16} x2={x} y2={32} stroke="#4b5563" strokeWidth={1} />
+        ))}
+      </svg>
+      {/* Branch columns */}
+      <div ref={rowRef} style={{ display: 'flex', alignItems: 'flex-start', gap: GAP }}>
+        {cols.map((colSteps, i) => (
+          <div
+            key={colLabels[i]}
+            ref={el => { colRefs.current[i] = el; }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 600, color: colColors[i], background: `${colColors[i]}22`, border: `1px solid ${colColors[i]}55`, borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>
+              {colLabels[i]}
+            </span>
+            <FlowRenderer
+              steps={colSteps}
+              pathPrefix={[...stepPath, colPrefixes[i]]}
+              selectedPath={selectedPath}
+              copiedStep={copiedStep}
+              onSelect={onSelect}
+              onInsert={onInsert}
+              onContextMenu={onContextMenu}
+              onUpdateStep={onUpdateStep}
+            />
+          </div>
+        ))}
+      </div>
+      {/* Rejoin SVG */}
+      <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
+        {layout.xCenters.map((x, i) => (
+          <line key={i} x1={x} y1={-(maxH - (layout.heights[i] ?? 0))} x2={x} y2={24} stroke="#4b5563" strokeWidth={1} />
+        ))}
+        <line x1={xFirst} y1={24} x2={xLast} y2={24} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+      </svg>
+      <Connector />
+    </div>
+  );
+}
 
 export function LoopNode({
   step, stepPath, isSelected, selectedPath, copiedStep,

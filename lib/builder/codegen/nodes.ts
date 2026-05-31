@@ -31,11 +31,19 @@ import { twMerge } from 'tailwind-merge';
  * We replicate this by moving all arbitrary-value classes after all regular utilities before
  * handing off to twMerge (which uses last-wins within each CSS-property group).
  * Relative order is preserved within each group.
+ *
+ * NativeWind (React Native) does NOT apply hover: or active: pseudo-class variants for
+ * background changes. Strip hover:bg-*, hover:!bg-*, active:bg-* so the exported web app
+ * visually matches the builder preview (where those classes have no effect).
+ * Non-background hover variants (hover:underline, hover:text-*, group-hover:opacity-*) are kept
+ * because they don't cause the jarring background-color flash seen on option buttons.
  */
 function nwMerge(className: string): string {
   const classes = className.trim().split(/\s+/).filter(Boolean);
-  const regular = classes.filter(c => !c.includes('['));
-  const arbitrary = classes.filter(c => c.includes('['));
+  // Strip hover/active background changes — NativeWind ignores these on React Native
+  const noHoverBg = classes.filter(c => !c.match(/^(?:hover|active):!?bg-/));
+  const regular = noHoverBg.filter(c => !c.includes('['));
+  const arbitrary = noHoverBg.filter(c => c.includes('['));
   return twMerge([...regular, ...arbitrary].join(' '));
 }
 
@@ -116,13 +124,18 @@ export function emitNode(
 ): NodeEmitResult {
   const ind = '  '.repeat(depth);
 
-  // Handle condition
-  const condExpr = node.condition != null
-    ? rewriteFormula(
-        typeof node.condition === 'string' ? node.condition : JSON.stringify(node.condition),
-        ctx.symbols,
-        inMapScope,
-      )
+  // Handle condition — unwrap {formula:"..."} objects before rewriting
+  const condRaw = node.condition != null
+    ? (typeof node.condition === 'string'
+        ? node.condition
+        : (node.condition !== null && typeof node.condition === 'object' && 'formula' in (node.condition as object))
+          ? String((node.condition as Record<string, unknown>).formula ?? '')
+          : (node.condition !== null && typeof node.condition === 'object' && 'js' in (node.condition as object))
+            ? String((node.condition as Record<string, unknown>).js ?? '')
+            : JSON.stringify(node.condition))
+    : null;
+  const condExpr = condRaw != null
+    ? rewriteFormula(condRaw, ctx.symbols, inMapScope)
     : null;
 
   // Handle map/repeat
@@ -195,9 +208,17 @@ function emitMapNode(
   const itemAlias = `const _item = { data: { ...(item as Record<string, unknown>), index }, id: (item as Record<string, unknown>)?.['id'] ?? index } as any;`;
   void isFormulaMap; // kept for future use
 
+  // For outer maps (not already inside a map): capture _parentItem = _item AFTER the _item alias
+  // so nested child maps can reference _parentItemId via closure without TDZ issues.
+  // Inner maps (inMapScope=true) do NOT redeclare _parentItem/Id — they read the outer
+  // scope's values through JS closure, which gives them the correct parent-item context.
+  const parentCapture = !inMapScope
+    ? `\n${ind}  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n${ind}  const _parentItem = _item as any; const _parentItemId = (_item as any)?.data?.id;`
+    : '';
+
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jsx: `${ind}{(${safeListExpr} ?? []).map((item: unknown, index: number) => {\n${ind}  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n${ind}  ${itemAlias}\n${ind}  return (\n${jsxWithKey}\n${ind}  );\n${ind}})}`,
+    jsx: `${ind}{(${safeListExpr} ?? []).map((item: unknown, index: number) => {\n${ind}  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n${ind}  ${itemAlias}${parentCapture}\n${ind}  return (\n${jsxWithKey}\n${ind}  );\n${ind}})}`,
     useEffects: [],
   };
 }
@@ -341,6 +362,17 @@ function emitNodeInner(
     if (!hasObjectFit) {
       className = (className ? `${className} ` : '') + 'object-cover';
     }
+  }
+
+  // Gluestack UI automatically reduces opacity on disabled components.
+  // Replicate that visual behaviour in the export: when a non-form node has `disabled: true`,
+  // add `opacity-50 cursor-not-allowed` to its className instead of emitting the (invalid on
+  // <div>) `disabled` HTML attribute.
+  const FORM_ELEMENTS = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput', 'Select']);
+  const nodeIsDisabled = (node.props as Record<string, unknown>)?.disabled === true;
+  const disabledIsOnFormEl = FORM_ELEMENTS.has(node.type as string);
+  if (nodeIsDisabled && !disabledIsOnFormEl && !className.includes('opacity-')) {
+    className = (className ? `${className} ` : '') + 'opacity-50';
   }
 
   // Resolve conflicting Tailwind utilities to match NativeWind's behavior:
@@ -493,6 +525,9 @@ function emitNodeInner(
     'className', 'style', 'role', 'as', 'children',
     // Handled separately via animationToMotionProps
     'animation',
+    // `disabled` on non-form elements is already handled as opacity-50 in className above.
+    // Only emit it as an HTML attribute on actual form elements.
+    ...(!disabledIsOnFormEl ? ['disabled'] : []),
     // React Native props
     'secureTextEntry', 'keyboardType', 'placeholderTextColor',
     'editable', 'numberOfLines', 'multiline', 'returnKeyType',

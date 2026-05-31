@@ -19,7 +19,6 @@
  *   `Build: {unit.name}\nDescription: {unit.description}`
  *   `\nSECTION LIMIT: Build EXACTLY {unit.sectionCount ?? 1} section(s). Do NOT add extra sections.`
  *   `\nLayout: {unit.layout}`  (if present)
- *   `\nStructurePattern: {unit.structureHint}`  (if present — e.g. "layered-absolute")
  *   "Build the tree and declare variables in one generate_structure call."
  *
  * ─── Read handlers ────────────────────────────────────────────────────────────
@@ -65,6 +64,7 @@ Element mapping:
 - Badge / chip / tag → Box > Text
 - Icon button → Box > Icon
 - Nav link → Box > Text (or Box > Icon + Text for icon+label)
+- Label values are identifiers, not layout intent. Do NOT embed positional words (top, bottom, left, right, middle, front, back, above, below) in \`label\`. Name nodes by visual content ("MountainVista", "HeadlineCopy") or by ordinal / function ("Image1", "TextColumn", "CTAButton") — never by where they sit on screen. Positioning is the styling agent's job.
 
 Actions:
 - Only mint a workflow stub when the trigger needs a DATA OPERATION: reading or writing state, navigation, or a network fetch. Trigger types that involve data: click, change, valueChange, enterKey, pageLoad, collectionFetchError, swipe, drag.
@@ -87,7 +87,7 @@ Variables: { name, type, initialValue, uuid (hex 8-4-4-4-12), description?, fold
 - Always provide initialValue. Reuse existing UUIDs when available.
 - **Field completeness:** ALL items the workflow dispatches to a \`context?.item?.data?.FIELD\` path MUST have that field defined — an undefined field silently returns \`undefined\` at runtime.
 - Add a \`description\` to each variable. Use \`folder\` to group related variables.
-- You are the ONLY agent that creates variables — downstream agents cannot create new ones. Declare variables only for data that changes at runtime. Anything fixed at design time belongs inline in the tree, not in a variable. Missing variables cause the workflows agent to invent non-UUID paths that return \`undefined\` at runtime.
+- You are the ONLY agent that creates variables. Variables are state (like useState) — only for values that change while the page runs. Static text goes inline in the node text field.
 - Choose the data shape that fits the UI. Always provide complete initialValue with realistic demo data.`;
 
   return { static: staticContent, dynamic: existingVarsNote ?? '' };

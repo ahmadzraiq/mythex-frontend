@@ -73,14 +73,14 @@ It classifies as `"edit"` only for small single changes (one color, one text edi
 ```mermaid
 flowchart LR
   subgraph inputs [Inputs]
-    U[BuildUnit — name, description, sectionCount, layout, structureHint, needsVariables]
+    U[BuildUnit — name, description, sectionCount, layout, needsVariables]
     V[Existing variables from client — reuse UUIDs]
     P[assignedPageId — target page for this section]
   end
 
   subgraph llm [Single LLM turn]
     SYS[system: static prompt + buildComponentList + dynamic existingVarsNote]
-    USR[user: Build + Description + SECTION LIMIT + Layout + StructurePattern + variables instruction]
+    USR[user: Build + Description + SECTION LIMIT + Layout + variables instruction]
     TOOL[Forced tool: generate_structure only]
   end
 

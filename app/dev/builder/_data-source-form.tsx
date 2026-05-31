@@ -545,31 +545,67 @@ export function SimpleToggleRow({ label, value, onChange }: { label: string; val
 
 // ─── Step 1: Type Picker ───────────────────────────────────────────────────────
 
-export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql') => void }) {
+export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'internal-view' | 'internal-table') => void }) {
+  const btnStyle = (hoverColor: string): React.CSSProperties => ({
+    display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px',
+    background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10,
+    cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s',
+  });
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px 16px', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px 16px', gap: 10 }}>
       <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Choose a data source type:</div>
+
+      {/* ── Internal types (project backend) ──────────────────────────── */}
+      <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Project Backend</div>
+
+      <button data-testid="ds-pick-internal-view" onClick={() => onSelect('internal-view')}
+        style={btnStyle('#3b82f6')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#172554', border: '1px solid #3b82f655', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>⊡</span>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>View</div>
+          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Connect to a server-side View — pre-filtered, sorted, and secured. Supports parameters for dynamic filtering.</div>
+        </div>
+      </button>
+
+      <button data-testid="ds-pick-internal-table" onClick={() => onSelect('internal-table')}
+        style={btnStyle('#8b5cf6')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = '#8b5cf6')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#2e1065', border: '1px solid #8b5cf655', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#a78bfa', fontWeight: 700 }}>⊞</span>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>Table</div>
+          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Direct access to a project table. Full CRUD with filters and sorting. Apply security at the View level.</div>
+        </div>
+      </button>
+
+      {/* ── External types ─────────────────────────────────────────────── */}
+      <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 6, marginBottom: 2 }}>External</div>
+
       <button data-testid="ds-pick-rest" onClick={() => onSelect('rest')}
-        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px', background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10, cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
+        style={btnStyle('#34d399')}
         onMouseEnter={e => (e.currentTarget.style.borderColor = '#34d399')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
         <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#06301e', border: '1px solid #34d39955', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#34d399', fontWeight: 700 }}>⇄</span>
-            <div>
+        <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>REST</div>
           <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Connect to any HTTP endpoint — GET, POST, PUT, DELETE. Supports query params, headers, and body.</div>
-              </div>
-                  </button>
+        </div>
+      </button>
+
       <button data-testid="ds-pick-graphql" onClick={() => onSelect('graphql')}
-        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px', background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10, cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
+        style={btnStyle('#f59e0b')}
         onMouseEnter={e => (e.currentTarget.style.borderColor = '#f59e0b')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
         <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#2a1a00', border: '1px solid #f59e0b55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#f59e0b', fontWeight: 700 }}>⬡</span>
-            <div>
+        <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>GraphQL</div>
           <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Write a query or mutation. Variables support <code style={{ color: '#818cf8' }}>{'{{formulas}}'}</code> for dynamic values.</div>
-              </div>
+        </div>
       </button>
-            </div>
+    </div>
   );
 }
 
@@ -1258,17 +1294,118 @@ interface DataSourceSlideContentProps extends DataSourceSlidePanelProps {
 }
 
 export function DataSourceSlideContent({ initial, onSave, onClose, onWidthChange }: DataSourceSlideContentProps) {
-  const initialType = (initial as { type?: string }).type as 'rest' | 'graphql' | undefined;
+  const initialType = (initial as { type?: string }).type as 'rest' | 'graphql' | 'internal-view' | 'internal-table' | undefined;
   const isEditing = !!(initial as { id?: string }).id;
-  const [type, setType] = useState<'rest' | 'graphql' | null>(isEditing ? (initialType ?? 'rest') : null);
+  const [type, setType] = useState<'rest' | 'graphql' | 'internal-view' | 'internal-table' | null>(isEditing ? (initialType ?? 'rest') : null);
 
   const handleBack = () => {
     if (isEditing) { onClose(); } else { setType(null); }
   };
 
   if (type === null) return <TypePicker onSelect={setType} />;
+  if (type === 'internal-view' || type === 'internal-table') {
+    return <InternalDataSourceForm type={type} initial={initial} onSave={onSave} onBack={handleBack} />;
+  }
   if (type === 'rest') return <RestForm initial={initial} onSave={onSave} onBack={handleBack} onWidthChange={onWidthChange} />;
   return <GraphQLForm initial={initial} onSave={onSave} onBack={handleBack} onWidthChange={onWidthChange} />;
+}
+
+// ─── Internal Data Source Form (View / Table) ──────────────────────────────────
+
+function InternalDataSourceForm({
+  type, initial, onSave, onBack,
+}: {
+  type: 'internal-view' | 'internal-table';
+  initial: Partial<DataSourceConfig>;
+  onSave: (cfg: DataSourceConfig) => void;
+  onBack: () => void;
+}) {
+  const [name, setName] = useState((initial as { name?: string }).name ?? '');
+  const [resourceId, setResourceId] = useState((initial as { resourceId?: string }).resourceId ?? '');
+  const [resourceName, setResourceName] = useState((initial as { resourceName?: string }).resourceName ?? '');
+
+  const isView = type === 'internal-view';
+  const accent = isView ? '#60a5fa' : '#a78bfa';
+
+  const handleSave = () => {
+    onSave({
+      ...initial,
+      type,
+      name: name || resourceName || (isView ? 'View' : 'Table'),
+      resourceId,
+      resourceName,
+    } as unknown as DataSourceConfig);
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: '#0f172a',
+    border: '1px solid #1f2937',
+    borderRadius: 6,
+    padding: '7px 10px',
+    fontSize: 12,
+    color: '#e2e8f0',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 16, gap: 14 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 16, padding: 0 }}>←</button>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>
+          {isView ? '⊡ View Data Source' : '⊞ Table Data Source'}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.6 }}>
+        {isView
+          ? 'Bind this data source to a server-side View. Filters, sort, and security are configured on the view.'
+          : 'Direct access to a project table with auto-generated CRUD endpoints.'}
+      </div>
+
+      <div>
+        <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4, fontWeight: 500 }}>Data source name</label>
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder={isView ? 'e.g. Products view' : 'e.g. Products table'}
+          style={inputStyle}
+        />
+      </div>
+
+      <div>
+        <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+          {isView ? 'View slug' : 'Table name'}
+        </label>
+        <input
+          value={resourceName}
+          onChange={e => setResourceName(e.target.value)}
+          placeholder={isView ? 'e.g. list-products' : 'e.g. products'}
+          style={{ ...inputStyle, fontFamily: 'monospace' }}
+        />
+        <div style={{ fontSize: 10, color: '#475569', marginTop: 4 }}>
+          {isView
+            ? 'The slug of the view defined in Data & API → Views.'
+            : 'The table name defined in Data & API → Tables.'}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+        <button
+          onClick={handleSave}
+          disabled={!resourceName.trim()}
+          style={{ flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, background: accent, color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: !resourceName.trim() ? 0.5 : 1 }}
+        >
+          Save
+        </button>
+        <button onClick={onBack} style={{ padding: '8px 14px', fontSize: 12, background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 6, cursor: 'pointer' }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── FolderPicker ─────────────────────────────────────────────────────────────
