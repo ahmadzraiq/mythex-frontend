@@ -147,6 +147,13 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     }
     else if (clean === 'text-ellipsis') { (style as Record<string, string>).textOverflow = 'ellipsis'; }
     else if (clean === 'text-clip')     { (style as Record<string, string>).textOverflow = 'clip'; }
+    // border-style keywords — needed so the outer Animated.View wrapper gets
+    // border-style when border-width comes from a formula (props.style.borderWidth).
+    // Without this, the outer wrapper has border-width but no border-style → no visible border.
+    else if (clean === 'border-solid')  { (style as Record<string, string>).borderStyle = 'solid'; consumed.add(tok); }
+    else if (clean === 'border-dashed') { (style as Record<string, string>).borderStyle = 'dashed'; consumed.add(tok); }
+    else if (clean === 'border-dotted') { (style as Record<string, string>).borderStyle = 'dotted'; consumed.add(tok); }
+    else if (clean === 'border-none')   { (style as Record<string, string>).borderStyle = 'none';   consumed.add(tok); }
     // flex-grow / flex-shrink bare keywords
     else if (clean === 'grow')     { (style as Record<string, string>).flexGrow = '1'; }
     else if (clean === 'grow-0')   { (style as Record<string, string>).flexGrow = '0'; }
@@ -774,7 +781,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   const _ctxControlled = _ctxControlledForDeps;
 
-  useVariablePaths(store, deps, effectiveScope, mergedStore);
+  const _trackerDeps = (CHANGE_TEXT_TYPES.has(node.type as string) && node.id)
+    ? [...deps, `${node.id}-value`]
+    : deps;
+  useVariablePaths(store, _trackerDeps, effectiveScope, mergedStore);
   // When inside an SC instance scope, replace the stale `context.component.variables` snapshot
   // on `effectiveScope` with a LIVE snapshot read from `_componentInstances.{instanceId}`.
   // This ensures children that re-render via `_componentInstances.*` subscriptions also see
@@ -1025,7 +1035,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // always visible on the canvas regardless of its runtime condition.
   const forceShow = builderMode && (node as { _forceShowInEditor?: boolean })._forceShowInEditor === true;
 
-  if (!forceShow) {
+  if (!forceShow && !node.map) {
     // Cast to unknown first — condition can be false at runtime (builder sets it) even though
     // the ConditionValue type doesn't include boolean.
     if ((node.condition as unknown) === false) return null;
@@ -1153,6 +1163,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       !k.startsWith('$')
       && k !== '_meta'
       && k !== 'animation'
+      && k !== 'classFormulas'
       && !(_scModelPropNames && _scModelPropNames.has(k))
     )
   ) as Record<string, unknown>;
@@ -1217,6 +1228,31 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   if ('onValueChange' in cleanProps && !_ACCEPTS_ON_VALUE_CHANGE.has(node.type as string)) {
     delete cleanProps.onValueChange;
+  }
+
+  // For Input/TextareaInput nodes: if node.text is a formula binding (set via set_text),
+  // evaluate it and inject as cleanProps.value so the field is controlled and clears
+  // correctly when the bound variable is reset (e.g. after send).
+  if (CHANGE_TEXT_TYPES.has(node.type as string) && node.text != null && cleanProps.value == null) {
+    const _nodeText = node.text;
+    const resolvedInputText =
+      typeof _nodeText === 'object' && _nodeText !== null &&
+      ('formula' in (_nodeText as object) || 'js' in (_nodeText as object))
+        ? evaluateFormula(_nodeText as object, stateWithScope).value
+        : (typeof _nodeText === 'string' ? _nodeText : undefined);
+    if (resolvedInputText != null) {
+      cleanProps.value = resolvedInputText;
+    }
+  }
+
+  // Input/TextareaInput: inject the {nodeId}-value tracker slot as the controlled value
+  // when the slot has been written (undefined = never touched → leave uncontrolled so
+  // the user can start typing; '' or any string = controlled for programmatic clearing).
+  if (CHANGE_TEXT_TYPES.has(node.type as string) && node.id && cleanProps.value == null) {
+    const _trackerVal = get(`${node.id}-value`);
+    if (_trackerVal !== undefined) {
+      cleanProps.value = _trackerVal as string;
+    }
   }
 
   // Pass the SDUI node ID to FormContainer so it can sync to variables['{id}-form'].
@@ -1328,7 +1364,8 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     children = PARENT_CONTEXT_PROVIDER_TYPES.has(node.type as string) && node.id
       ? <InputParentContext.Provider value={node.id}>{childElements}</InputParentContext.Provider>
       : childElements;
-  } else if (textContent !== undefined) {
+  } else if (textContent !== undefined && !CHANGE_TEXT_TYPES.has(node.type as string)) {
+    // Input/TextareaInput: node.text is injected as cleanProps.value above, not as children.
     children = textContent;
   }
 
@@ -1483,6 +1520,15 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
           for (const k of ['position', 'top', 'right', 'bottom', 'left', 'zIndex'] as const) {
             delete innerStyles[k];
           }
+          // Strip size constraints (maxWidth, minWidth, maxHeight, minHeight) — the outer wrapper
+          // already owns them (forwarded via sizeOverride). Keeping them on the inner creates a
+          // double constraint: the percentage resolves against the outer wrapper (the containing
+          // block), not the page — e.g. outer max-width:70% of parent + inner max-width:70% of
+          // outer = 49% of parent. Also breaks width:fit-content on the outer wrapper.
+          delete innerStyles.maxWidth;
+          delete innerStyles.minWidth;
+          delete innerStyles.maxHeight;
+          delete innerStyles.minHeight;
         }
         cleanProps.style = { ...innerStyles, ...(cleanProps.style as Record<string, unknown> ?? {}) };
       }
@@ -1620,7 +1666,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     // with flex-basis:auto only grows when the outer wrapper has extra space to fill.
     // Only needed in builder mode (animNodeOwnsId=true) since Reanimated's Animated.View
     // on web lacks RNW's default align-self:flex-start and can stretch unexpectedly.
-    if (_willOwn && !(cleanProps.style as Record<string, unknown>)?.height) {
+    //
+    // Skip when maxWidth is present: the outer wrapper gets width:fit-content so it shrinks
+    // to content, but flexGrow:1 on the inner element would grow to fill the parent anyway,
+    // making maxWidth act as a fixed width rather than an upper bound.
+    const _outerHasMaxW = arbStyles.maxWidth !== undefined;
+    if (_willOwn && !(cleanProps.style as Record<string, unknown>)?.height && !_outerHasMaxW) {
       cleanProps.style = {
         flexGrow: 1,
         ...((cleanProps.style as Record<string, unknown>) ?? {}),
@@ -2000,7 +2051,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       // Also forward borderRadius variants so box-shadow on the outer wrapper follows the node's
       // rounded corners. Without this the shadow is rectangular while the inner content is rounded,
       // creating a visible corner artifact in both preview and builder modes.
-      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'margin', 'marginHorizontal', 'marginVertical', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'] as const) {
+      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'margin', 'marginHorizontal', 'marginVertical', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'borderStyle', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'] as const) {
         if ((arbStyles as Record<string, unknown>)[key] !== undefined) {
           sizeOverride[key] = (arbStyles as Record<string, unknown>)[key];
         }

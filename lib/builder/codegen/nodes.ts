@@ -277,6 +277,11 @@ function emitNodeInner(
     tag = 'a';
   }
 
+  // Box with type="submit" inside a FormContainer → render as <button> so it actually submits the form
+  if ((node.type === 'Box' || node.type === 'View') && (node.props as Record<string, unknown>)?.type === 'submit') {
+    tag = 'button';
+  }
+
   // Register imports
   if (prim.importFrom) {
     if (prim.isDefaultImport) {
@@ -364,15 +369,28 @@ function emitNodeInner(
     }
   }
 
-  // Gluestack UI automatically reduces opacity on disabled components.
-  // Replicate that visual behaviour in the export: when a non-form node has `disabled: true`,
-  // add `opacity-50 cursor-not-allowed` to its className instead of emitting the (invalid on
-  // <div>) `disabled` HTML attribute.
+  // The engine's renderWithDisabledOverlay wraps disabled nodes in a relative container +
+  // absolutely-positioned rgba overlay (pointerEvents:'all' to block clicks).
+  // We replicate that at code-gen time: the element stays unchanged; the overlay is emitted
+  // around the final JSX string below. Collect the config here so we can use it later.
   const FORM_ELEMENTS = new Set(['Input', 'InputField', 'Textarea', 'TextareaInput', 'Select']);
-  const nodeIsDisabled = (node.props as Record<string, unknown>)?.disabled === true;
+  const rawDisabledProp = (node.props as Record<string, unknown>)?.disabled;
   const disabledIsOnFormEl = FORM_ELEMENTS.has(node.type as string);
-  if (nodeIsDisabled && !disabledIsOnFormEl && !className.includes('opacity-')) {
-    className = (className ? `${className} ` : '') + 'opacity-50';
+  // Static boolean disabled — always wrap. Formula disabled — emit conditional wrap.
+  const staticDisabled = rawDisabledProp === true && !disabledIsOnFormEl;
+  const formulaDisabledExpr = (!disabledIsOnFormEl && rawDisabledProp && typeof rawDisabledProp === 'object')
+    ? rewritePropValue(rawDisabledProp, ctx.symbols, inMapScope)
+    : null;
+
+  // React Native View (Box) defaults to flexDirection:'column'. In HTML a plain <div> has no
+  // flex context, so inline children (spans, inputs) flow on the same line instead of stacking.
+  // Inject 'flex flex-col' when the node is a Box/View and has no explicit flex direction set.
+  if (
+    (node.type === 'Box' || node.type === 'View') &&
+    tag === 'div' &&
+    !/(^|\s)(flex-row|flex-col|flex-wrap|grid\b|inline|hidden|contents)/.test(className ?? '')
+  ) {
+    className = className ? `flex flex-col ${className}` : 'flex flex-col';
   }
 
   // Resolve conflicting Tailwind utilities to match NativeWind's behavior:
@@ -525,8 +543,8 @@ function emitNodeInner(
     'className', 'style', 'role', 'as', 'children',
     // Handled separately via animationToMotionProps
     'animation',
-    // `disabled` on non-form elements is already handled as opacity-50 in className above.
-    // Only emit it as an HTML attribute on actual form elements.
+    // `disabled` on non-form elements is handled via the overlay wrapper below.
+    // On form elements it IS a valid HTML attribute and should be emitted.
     ...(!disabledIsOnFormEl ? ['disabled'] : []),
     // React Native props
     'secureTextEntry', 'keyboardType', 'placeholderTextColor',
@@ -539,7 +557,12 @@ function emitNodeInner(
   ]);
 
   if (node.type === 'Icon') {
-    const icon = rewritePropValue(node.props?.icon ?? node.props?.name ?? 'mdi:circle', ctx.symbols, inMapScope);
+    const rawIcon = node.props?.icon ?? node.props?.name;
+    // No icon name configured → render nothing (matches engine's IconifyIcon `if (!icon) return null`)
+    if (!rawIcon) {
+      return { jsx: '', imports, useEffects: [] };
+    }
+    const icon = rewritePropValue(rawIcon, ctx.symbols, inMapScope);
     propsLines.push(`icon={${icon}}`);
     const rawSize = node.props?.size ?? node.props?.width ?? node.props?.height;
     // Convert Tailwind size tokens to pixel numbers
@@ -702,12 +725,25 @@ function emitNodeInner(
   }
 
   if (node.type === 'FormContainer') {
-    // Prevent default browser form submission; RHF handles validation via register/handleSubmit
-    propsLines.push(`onSubmit={(e?: unknown) => { (e as Event)?.preventDefault?.(); }}`);
     // These are engine/RHF internal props that have no valid HTML attribute or React DOM equivalent
     ['initialFormData', 'onValidationErrorAction', 'triggerOnChange',
       'validationMode', 'revalidateMode', 'resolver', 'formId',
     ].forEach(p => skipProps.add(p));
+
+    // Fallback: if the FormContainer has no bound submit action, add a bare preventDefault handler
+    // so native form submission (page reload) never fires. When there IS a submit action, the
+    // binding handler already includes preventDefault (see bindings.ts).
+    // Note: allWorkflowMeta is defined below, so we build our own lookup from ctx.store here.
+    const _wfMeta = { ...(ctx.store.pageWorkflowMeta ?? {}), ...(ctx.store.globalWorkflowMeta ?? {}) } as Record<string, { trigger?: string }>;
+    const hasSubmitAction = Array.isArray(node.actions)
+      ? (node.actions as Array<{trigger?: string; action?: string}>).some(a => {
+          const trigger = a.trigger ?? _wfMeta[a.action ?? '']?.trigger;
+          return trigger === 'submit';
+        })
+      : node.actions != null && Object.keys(node.actions as object).includes('submit');
+    if (!hasSubmitAction) {
+      propsLines.push(`onSubmit={(e?: unknown) => { (e as Event)?.preventDefault?.(); }}`);
+    }
   }
 
   // Props that are CSS-only (not valid HTML attributes) → must go in style object
@@ -866,7 +902,7 @@ function emitNodeInner(
           const code = wf.slice('__inline__:'.length);
           return `{ const event = ${evtExpr}; void event; ${code} }`;
         }
-        imports.addNamed('../../lib/workflows', wf);
+        imports.addNamed('../../lib/actions', wf);
         return `void ${wf}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: ${evtExpr}${itemCtxExpr} });`;
       };
       const evtStart  = `{ translationX: 0, translationY: 0, containerWidth: _cw }`;
@@ -921,8 +957,8 @@ function emitNodeInner(
     const leftFn  = leftAction  ? ctx.symbols.workflows.get(leftAction)  : null;
     const rightFn = rightAction ? ctx.symbols.workflows.get(rightAction) : null;
     if (leftFn || rightFn) {
-      if (leftFn)  imports.addNamed(`../../lib/workflows`, leftFn);
-      if (rightFn) imports.addNamed(`../../lib/workflows`, rightFn);
+      if (leftFn)  imports.addNamed(`../../lib/actions`, leftFn);
+      if (rightFn) imports.addNamed(`../../lib/actions`, rightFn);
       const leftCall  = leftFn  ? `void ${leftFn}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: undefined });` : '';
       const rightCall = rightFn ? `void ${rightFn}({ state: useStore.getState(), dispatch: useStore.setState, router, api: {}, form, popover, event: undefined });` : '';
       const h: string[] = [];
@@ -1011,14 +1047,37 @@ function emitNodeInner(
   const propsStr = propsLines.length > 0 ? '\n' + propsLines.map(p => `${childInd}${p}`).join('\n') + '\n' + ind : '';
   const hasContent = textContent || childJsx;
 
-  if (!hasContent && (prim.selfClose || triggerChildNodes.length === 0 && !textContent)) {
-    return { jsx: `${ind}<${tag}${propsStr}/>`, useEffects };
+  const rawJsx = (!hasContent && (prim.selfClose || triggerChildNodes.length === 0 && !textContent))
+    ? `${ind}<${tag}${propsStr}/>`
+    : `${ind}<${tag}${propsStr}>\n${textContent ? childInd + textContent + '\n' : ''}${childJsx ? childJsx + '\n' : ''}${ind}</${tag}>`;
+
+  // Disabled overlay — mirrors renderWithDisabledOverlay in renderer-node-props.tsx.
+  // The engine wraps disabled nodes in position:relative + an absolutely-positioned
+  // semi-transparent overlay (rgba black at 30% by default) with pointerEvents:'all'
+  // to visually dim and block interaction. _disabledOverlay can customise color/opacity/blur.
+  if (staticDisabled || formulaDisabledExpr) {
+    const ov = (node as Record<string, unknown>)._disabledOverlay as
+      | { color?: string; opacity?: number; blur?: number } | undefined;
+    const hex   = ov?.color   ?? '#000000';
+    const alpha = ov?.opacity ?? 0.3;
+    const r = parseInt(hex.slice(1, 3) || '00', 16) || 0;
+    const g = parseInt(hex.slice(3, 5) || '00', 16) || 0;
+    const b = parseInt(hex.slice(5, 7) || '00', 16) || 0;
+    const blurStyle = ov?.blur ? `, backdropFilter: 'blur(${ov.blur}px)', WebkitBackdropFilter: 'blur(${ov.blur}px)'` : '';
+    const overlayDiv = `${ind}  <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'all', backgroundColor: 'rgba(${r}, ${g}, ${b}, ${alpha})', borderRadius: 'inherit'${blurStyle} }} />`;
+    const wrappedJsx = `${ind}<div style={{ position: 'relative' }} data-disabled="true">\n${rawJsx}\n${overlayDiv}\n${ind}</div>`;
+
+    if (staticDisabled) {
+      return { jsx: wrappedJsx, useEffects };
+    }
+    // Formula-based: conditionally wrap
+    return {
+      jsx: `${ind}{(${formulaDisabledExpr}) ? (\n${wrappedJsx}\n${ind}) : (\n${rawJsx}\n${ind})}`,
+      useEffects,
+    };
   }
 
-  return {
-    jsx: `${ind}<${tag}${propsStr}>\n${textContent ? childInd + textContent + '\n' : ''}${childJsx ? childJsx + '\n' : ''}${ind}</${tag}>`,
-    useEffects,
-  };
+  return { jsx: rawJsx, useEffects };
 }
 
 function emitPopoverNode(

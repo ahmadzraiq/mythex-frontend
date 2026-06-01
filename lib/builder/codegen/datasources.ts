@@ -124,7 +124,10 @@ function emitGraphQLFn(lines: string[], ds: DataSourceConfig, fnName: string): v
     }
   }
   const headersObj = { 'Content-Type': 'application/json', ...extraHeaders };
-  const headersLiteral = JSON.stringify(headersObj);
+  // Headers are built at call-time so the stored auth token can be injected dynamically.
+  // This ensures authenticated queries (activeCustomer, etc.) work after login.
+  const staticHeadersLiteral = JSON.stringify(headersObj);
+  const headersLiteral = `(() => { const _t = (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null); const _h = { ...${staticHeadersLiteral} }; if (_t) { _h['vendure-auth-token'] = _t; } return _h; })()`;
 
   // Default variables: static-only configs are inlined; formula-based ones use {}
   // because the page component evaluates them at runtime and passes them as the explicit argument.
@@ -147,8 +150,8 @@ function emitGraphQLFn(lines: string[], ds: DataSourceConfig, fnName: string): v
   lines.push(`  if (cached) return cached;`);
   lines.push(`  const res = await fetch(endpoint, {`);
   lines.push(`    method: 'POST',`);
+  lines.push(`    credentials: 'include',`);
   lines.push(`    headers: ${headersLiteral},`);
-  if (ds.sendCredentials) lines.push(`    credentials: 'include',`);
   lines.push(`    body: JSON.stringify({ query, variables: variables ?? ${defaultVars} }),`);
   lines.push(`  });`);
   lines.push(`  if (!res.ok) throw new Error(\`${fnName}: HTTP \${res.status}\`);`);

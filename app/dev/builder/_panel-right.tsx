@@ -1569,6 +1569,50 @@ export function DesignTab({ node }: { node: SDUINode }) {
     if (clsUnit?.unit === 'vw') return 'vw';
     return 'px';
   })();
+  const minWUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const s = String(nodeStyle.minWidth ?? '');
+    if (s.endsWith('%')) return '%';
+    if (s.endsWith('vh')) return 'vh';
+    if (s.endsWith('vw')) return 'vw';
+    const cu = parseTwArbitraryWithUnit(cls, 'min-w-');
+    if (cu?.unit === '%') return '%';
+    if (cu?.unit === 'vh') return 'vh';
+    if (cu?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
+  const maxWUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const s = String(nodeStyle.maxWidth ?? '');
+    if (s.endsWith('%')) return '%';
+    if (s.endsWith('vh')) return 'vh';
+    if (s.endsWith('vw')) return 'vw';
+    const cu = parseTwArbitraryWithUnit(cls, 'max-w-');
+    if (cu?.unit === '%') return '%';
+    if (cu?.unit === 'vh') return 'vh';
+    if (cu?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
+  const minHUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const s = String(nodeStyle.minHeight ?? '');
+    if (s.endsWith('%')) return '%';
+    if (s.endsWith('vh')) return 'vh';
+    if (s.endsWith('vw')) return 'vw';
+    const cu = parseTwArbitraryWithUnit(cls, 'min-h-');
+    if (cu?.unit === '%') return '%';
+    if (cu?.unit === 'vh') return 'vh';
+    if (cu?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
+  const maxHUnit: 'px' | '%' | 'vh' | 'vw' = (() => {
+    const s = String(nodeStyle.maxHeight ?? '');
+    if (s.endsWith('%')) return '%';
+    if (s.endsWith('vh')) return 'vh';
+    if (s.endsWith('vw')) return 'vw';
+    const cu = parseTwArbitraryWithUnit(cls, 'max-h-');
+    if (cu?.unit === '%') return '%';
+    if (cu?.unit === 'vh') return 'vh';
+    if (cu?.unit === 'vw') return 'vw';
+    return 'px';
+  })();
 
   // Remove height-mode tokens (h-fit, h-screen, any h-* class) AND flex-1 from a className.
   // Used when switching between H modes so old mode tokens don't linger.
@@ -1717,15 +1761,25 @@ export function DesignTab({ node }: { node: SDUINode }) {
       // value means "user cleared it — remove the Tailwind token". Convert to '' so
       // styleToClassName sees the key and calls removeTwToken. Plain '' from non-class
       // props is still filtered below so it never leaks into inline style.
-      const allStyle = Object.fromEntries(
-        Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
-          .map(([k, v]) => [k, STYLE_TO_CLASS_KEYS.has(k) && (v === undefined || v === null) ? '' : v])
-          .filter(([, v]) => typeof v === 'string'),
-      );
-      const newCls = styleToClassName(allStyle, nodeData.className);
+      //
+      // Formula objects ({ js: "..." }) in nodeData.style must survive the commit — they are
+      // NOT strings so the previous `typeof v === 'string'` filter silently discarded them,
+      // causing patchStyle to wipe alignSelf/backgroundColor/etc. when any other property
+      // was patched. We now split: string entries go through styleToClassName; formula
+      // objects bypass it and are written back to props.style unchanged.
+      const allEntries = Object.entries({ ...nodeData.style, ...pendingStyleRef.current })
+        .map(([k, v]) => [k, STYLE_TO_CLASS_KEYS.has(k) && (v === undefined || v === null) ? '' : v] as [string, unknown]);
+
+      const stringStyle = Object.fromEntries(allEntries.filter(([, v]) => typeof v === 'string')) as Record<string, string>;
+      const newCls = styleToClassName(stringStyle, nodeData.className);
       store.patchProp(id, 'props.className', newCls);
+
       const cleanStyle = Object.fromEntries(
-        Object.entries(allStyle).filter(([k]) => !STYLE_TO_CLASS_KEYS.has(k)),
+        allEntries.filter(([k, v]) =>
+          typeof v !== 'string'
+            ? v !== undefined && v !== null  // preserve formula objects (alignSelf, backgroundColor, etc.)
+            : !STYLE_TO_CLASS_KEYS.has(k),   // keep non-class string values
+        ),
       );
       store.patchProp(id, 'props.style', Object.keys(cleanStyle).length ? cleanStyle : {});
       pendingStyleRef.current = {};
@@ -3162,11 +3216,16 @@ export function DesignTab({ node }: { node: SDUINode }) {
   // A whole-string template expression like "{{variables['UUID']}}" or "{{collections['X'].data.y}}"
   // is treated as a formula binding so it shows "ƒ Edit formula" instead of a raw UUID textarea.
   // Mixed/partial templates like "Hello {{name}}" stay as plain strings.
-  function textToFormulaValue(text: string | { formula?: string } | unknown): FormulaValue {
+  function textToFormulaValue(text: string | { formula?: string; js?: string } | unknown): FormulaValue {
     if (!text) return text as FormulaValue;
-    // Already a formula object (e.g. { formula: "..." }) — pass through directly
-    if (typeof text === 'object' && text !== null && 'formula' in (text as object)) {
-      return text as unknown as FormulaValue;
+    // Already a formula object — pass through directly
+    if (typeof text === 'object' && text !== null) {
+      const obj = text as Record<string, unknown>;
+      if ('formula' in obj) return text as unknown as FormulaValue;
+      // { js: "..." } format (stored by set_text for JS formula expressions)
+      if ('js' in obj && typeof obj.js === 'string') {
+        return { formula: obj.js } as unknown as FormulaValue;
+      }
     }
     if (typeof text !== 'string') return String(text) as unknown as FormulaValue;
     const m = text.match(/^\{\{(.+)\}\}$/);
@@ -3231,7 +3290,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                   >
                     <textarea
                       data-testid="input-text-content"
-                      value={typeof rawText === 'string' ? rawText : ''}
+                      value={typeof rawText === 'string' ? rawText : (rawText && typeof rawText === 'object' && ('js' in (rawText as object) || 'formula' in (rawText as object))) ? ((rawText as Record<string, string>).js ?? (rawText as Record<string, string>).formula ?? '') : ''}
                       rows={2}
                       onChange={e => { patchText(e.target.value); }}
                       style={{
@@ -3314,6 +3373,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                     else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
                     else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
                     else /* % */ converted = Math.round(pxVal / parentW * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
                     patchStyle({ width: `${converted}${u}`, minWidth: '0' });
                     patchCls(clearWModeTokens(cls));
                   }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
@@ -3349,6 +3409,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                     else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
                     else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
                     else /* % */ converted = Math.round(pxVal / parentH * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
                     patchStyle({ height: `${converted}${u}`, minHeight: '0' });
                     patchCls(clearHModeTokens(cls));
                   }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
@@ -3520,40 +3581,132 @@ export function DesignTab({ node }: { node: SDUINode }) {
         {/* Min / Max constraints */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           <FieldWithBinding label="minWidth" displayLabel="Min W" cssProp="minWidth" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('minWidth', v)} responsiveOverrides={getOverriddenBps('minWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minWidth">
-            <NumberInput
-              label="Min W"
-              cssProp="minWidth"
-              testId="input-min-w"
-              value={(nodeStyle.minWidth ? parseInt(nodeStyle.minWidth) || 0 : parseTwArbitrary(cls, 'min-w-')) || 0}
-              onChange={px => patchStyle({ minWidth: px > 0 ? `${px}px` : '' })}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput
+                label="Min W"
+                cssProp="minWidth"
+                testId="input-min-w"
+                value={(nodeStyle.minWidth ? parseFloat(nodeStyle.minWidth) || 0 : parseTwArbitrary(cls, 'min-w-')) || 0}
+                onChange={px => { patchStyle({ minWidth: px > 0 ? `${px}${minWUnit}` : '' }); patchCls(removeTwToken(cls, 'min-w-')); }}
+              />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={minWUnit === u} onClick={() => {
+                    if (u === minWUnit) return;
+                    const cur = parseFloat(String(nodeStyle.minWidth ?? parseTwArbitrary(cls, 'min-w-') ?? 0)) || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                    const inPx = minWUnit === 'px' ? cur : minWUnit === '%' ? cur / 100 * parentW : minWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(inPx);
+                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                    else converted = Math.round(inPx / parentW * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
+                    patchStyle({ minWidth: converted > 0 ? `${converted}${u}` : '' });
+                    patchCls(removeTwToken(cls, 'min-w-'));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
           <FieldWithBinding label="maxWidth" displayLabel="Max W" cssProp="maxWidth" hint="e.g. 100%, 800px, none" value={(nodeStyle.maxWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('maxWidth', v)} responsiveOverrides={getOverriddenBps('maxWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxWidth">
-            <NumberInput
-              label="Max W"
-              cssProp="maxWidth"
-              testId="input-max-w"
-              value={(nodeStyle.maxWidth ? parseInt(nodeStyle.maxWidth) || 0 : parseTwArbitrary(cls, 'max-w-')) ?? 0}
-              onChange={px => patchStyle({ maxWidth: px > 0 ? `${px}px` : '' })}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput
+                label="Max W"
+                cssProp="maxWidth"
+                testId="input-max-w"
+                value={(nodeStyle.maxWidth ? parseFloat(nodeStyle.maxWidth) || 0 : parseTwArbitrary(cls, 'max-w-')) ?? 0}
+                onChange={px => { patchStyle({ maxWidth: px > 0 ? `${px}${maxWUnit}` : '' }); patchCls(removeTwToken(cls, 'max-w-')); }}
+              />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={maxWUnit === u} onClick={() => {
+                    if (u === maxWUnit) return;
+                    const cur = parseFloat(String(nodeStyle.maxWidth ?? parseTwArbitrary(cls, 'max-w-') ?? 0)) || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                    const inPx = maxWUnit === 'px' ? cur : maxWUnit === '%' ? cur / 100 * parentW : maxWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(inPx);
+                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                    else converted = Math.round(inPx / parentW * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
+                    patchStyle({ maxWidth: converted > 0 ? `${converted}${u}` : '' });
+                    patchCls(removeTwToken(cls, 'max-w-'));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
           <FieldWithBinding label="minHeight" displayLabel="Min H" cssProp="minHeight" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('minHeight', v)} responsiveOverrides={getOverriddenBps('minHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minHeight">
-            <NumberInput
-              label="Min H"
-              cssProp="minHeight"
-              testId="input-min-h"
-              value={(nodeStyle.minHeight ? parseInt(nodeStyle.minHeight) || 0 : parseTwArbitrary(cls, 'min-h-')) || 0}
-              onChange={px => patchStyle({ minHeight: px > 0 ? `${px}px` : '' })}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput
+                label="Min H"
+                cssProp="minHeight"
+                testId="input-min-h"
+                value={(nodeStyle.minHeight ? parseFloat(nodeStyle.minHeight) || 0 : parseTwArbitrary(cls, 'min-h-')) || 0}
+                onChange={px => { patchStyle({ minHeight: px > 0 ? `${px}${minHUnit}` : '' }); patchCls(removeTwToken(cls, 'min-h-')); }}
+              />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={minHUnit === u} onClick={() => {
+                    if (u === minHUnit) return;
+                    const cur = parseFloat(String(nodeStyle.minHeight ?? parseTwArbitrary(cls, 'min-h-') ?? 0)) || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                    const inPx = minHUnit === 'px' ? cur : minHUnit === '%' ? cur / 100 * parentH : minHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(inPx);
+                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                    else converted = Math.round(inPx / parentH * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
+                    patchStyle({ minHeight: converted > 0 ? `${converted}${u}` : '' });
+                    patchCls(removeTwToken(cls, 'min-h-'));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
           <FieldWithBinding label="maxHeight" displayLabel="Max H" cssProp="maxHeight" hint="e.g. 100px, 50vh, none" value={(nodeStyle.maxHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('maxHeight', v)} responsiveOverrides={getOverriddenBps('maxHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxHeight">
-            <NumberInput
-              label="Max H"
-              cssProp="maxHeight"
-              testId="input-max-h"
-              value={(nodeStyle.maxHeight ? parseInt(nodeStyle.maxHeight) || 0 : parseTwArbitrary(cls, 'max-h-')) ?? 0}
-              onChange={px => patchStyle({ maxHeight: px > 0 ? `${px}px` : '' })}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <NumberInput
+                label="Max H"
+                cssProp="maxHeight"
+                testId="input-max-h"
+                value={(nodeStyle.maxHeight ? parseFloat(nodeStyle.maxHeight) || 0 : parseTwArbitrary(cls, 'max-h-')) ?? 0}
+                onChange={px => { patchStyle({ maxHeight: px > 0 ? `${px}${maxHUnit}` : '' }); patchCls(removeTwToken(cls, 'max-h-')); }}
+              />
+              <div style={{ display: 'flex', gap: 2 }}>
+                {(['px', '%', 'vh', 'vw'] as const).map(u => (
+                  <ToggleBtn key={u} active={maxHUnit === u} onClick={() => {
+                    if (u === maxHUnit) return;
+                    const cur = parseFloat(String(nodeStyle.maxHeight ?? parseTwArbitrary(cls, 'max-h-') ?? 0)) || 0;
+                    const frame = document.querySelector('[data-builder-page-frame]');
+                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                    const inPx = maxHUnit === 'px' ? cur : maxHUnit === '%' ? cur / 100 * parentH : maxHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
+                    let converted: number;
+                    if (u === 'px') converted = Math.round(inPx);
+                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                    else converted = Math.round(inPx / parentH * 100 * 10) / 10;
+                    if (!isFinite(converted) || isNaN(converted)) return;
+                    patchStyle({ maxHeight: converted > 0 ? `${converted}${u}` : '' });
+                    patchCls(removeTwToken(cls, 'max-h-'));
+                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
+                ))}
+              </div>
+            </div>
           </FieldWithBinding>
         </div>
       </div>

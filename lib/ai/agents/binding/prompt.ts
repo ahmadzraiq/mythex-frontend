@@ -49,8 +49,10 @@ ${SHARED_FORMULA_SYNTAX}
 
 - Read REPEAT(key=...) and CONDITION(...) annotations from the compact tree and bind accordingly.
 - Only call set_repeat on a node that is explicitly annotated REPEAT(...) in the compact tree. Never infer or add a repeat because an array variable exists — if there is no REPEAT annotation, do not call set_repeat on that node.
+- Only call set_condition on a node explicitly annotated CONDITION(...) in the compact tree. Never add set_condition to any other node — a condition hides the node entirely when false. If per-item appearance needs to vary, that is done via formula values in set_style, which is the styling agent's domain.
 - If an array variable exists but no REPEAT annotation is present in the compact tree, bind each node to its positional slot using direct index access: variables['UUID'][0].field for the first node, variables['UUID'][1].field for the second, etc. Never call set_repeat to manufacture a context.item scope that the structure agent did not declare.
 - The variable roster shows each variable's actual initialValue. Use the exact field names and values shown. Prefer the variable whose initialValue matches the node's placeholder text; variables with initialValue: "" are state-tracking, not display targets.
+- Never call set_text on an Input or TextareaInput node — input values are managed by the workflow engine, not by text bindings.
 - Nodes annotated with existing bindings (e.g. text:variables['UUID'](existing)) are already bound — do not re-bind them.
 - Shared-component instance nodes are Box wrappers with _shared metadata. set_text / set_src on an internal node id applies a per-instance override; set_component_props sets declared property overrides; set_repeat on the instance wrapper itself is not supported.
 - Responsive overrides (text/condition/repeat per-breakpoint) go through set_responsive_override.

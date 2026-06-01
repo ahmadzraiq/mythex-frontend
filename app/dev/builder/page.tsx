@@ -135,7 +135,7 @@ const VIEWPORT_ICONS: Record<ViewportSize, string> = {
 
 // ─── Pages Picker Dropdown ────────────────────────────────────────────────────
 
-function PagesPicker() {
+function PagesPicker({ onOpenPageConfig }: { onOpenPageConfig: () => void }) {
   const { pages, currentPageId, addPage, navigatePage, renamePage, removePage } = useBuilderStore(
     useShallow(s => ({
       pages: s.pages, currentPageId: s.currentPageId,
@@ -306,10 +306,28 @@ function PagesPicker() {
                     )}
                   </div>
                   {!isRenaming && (
-                    <button title="Remove page" onClick={e => { e.stopPropagation(); removePage(page.id); }}
-                      style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}>×</button>
+                    <>
+                      <button
+                        title="Page settings"
+                        onClick={e => {
+                          e.stopPropagation();
+                          navigatePage(page.id);
+                          setOpen(false);
+                          onOpenPageConfig();
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 12, padding: '2px 4px', borderRadius: 3, flexShrink: 0, lineHeight: 1 }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                      </button>
+                      <button title="Remove page" onClick={e => { e.stopPropagation(); removePage(page.id); }}
+                        style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}>×</button>
+                    </>
                   )}
                 </div>
               );
@@ -695,24 +713,30 @@ function SaveStatusBadge({ status }: { status: SaveStatus }) {
 
 function TopBar({
   onPreview,
-  onSeed,
   saveStatus,
   projectId,
   mainMode,
   onMainModeChange,
+  leftTab,
+  onSetLeftTab,
+  onOpenAuthConfig,
+  onOpenPageConfig,
 }: {
   onPreview: () => void | Promise<void>;
-  onSeed: () => Promise<void>;
   saveStatus: SaveStatus;
   projectId: string | null;
   mainMode: 'interface' | 'data-api';
   onMainModeChange: (mode: 'interface' | 'data-api') => void;
+  leftTab: LeftTabId;
+  onSetLeftTab: (t: LeftTabId) => void;
+  onOpenAuthConfig: () => void;
+  onOpenPageConfig: () => void;
 }) {
-  const { undo, redo, historyIdx, history, selectedIds, pageNodes, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
+  const { undo, redo, historyIdx, history, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
     useShallow(s => ({
       undo: s.undo, redo: s.redo, historyIdx: s.historyIdx, history: s.history,
-      selectedIds: s.selectedIds, pageNodes: s.pageNodes, viewport: s.viewport,
-      setViewport: s.setViewport, pages: s.pages, currentPageId: s.currentPageId,
+      viewport: s.viewport, setViewport: s.setViewport,
+      pages: s.pages, currentPageId: s.currentPageId,
       aiMode: s.aiMode, toggleAiMode: s.toggleAiMode,
     }))
   );
@@ -725,8 +749,6 @@ function TopBar({
     : !currentPageForPreview?.route
       ? 'This page has no app route — select a routed page to preview'
       : 'Preview in new tab (⌘P)';
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
   return (
@@ -773,7 +795,7 @@ function TopBar({
       <div style={{ width: 1, height: 20, background: '#1f2937' }} />
 
       {/* Pages picker dropdown (replaces the static page name in the centre) */}
-      <PagesPicker />
+      <PagesPicker onOpenPageConfig={onOpenPageConfig} />
 
       {/* URL query parameter definitions for the current page */}
       <URLParamsPopover />
@@ -826,6 +848,96 @@ function TopBar({
           {tab.icon}
         </button>
       ))}
+
+      <div style={{ width: 1, height: 20, background: '#1f2937' }} />
+
+      {/* ── Left-panel overlay tabs: Triggers / Assets / Theme ── */}
+      {([
+        {
+          id: 'triggers' as LeftTabId,
+          title: 'App Triggers',
+          icon: (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M8 1.5L3.5 7.5H7L5 13l6-8H8l0-3.5z" fill="currentColor"/>
+            </svg>
+          ),
+        },
+        {
+          id: 'assets' as LeftTabId,
+          title: 'Assets',
+          icon: (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1.5" y="2.5" width="11" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+              <circle cx="5" cy="5.5" r="1.1" fill="currentColor"/>
+              <path d="M1.5 9.5L4.5 6.5 7 9 9.5 6.5 12.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+          ),
+        },
+        {
+          id: 'theme' as LeftTabId,
+          title: 'Theme',
+          icon: (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+              <circle cx="5" cy="5" r="1.2" fill="currentColor"/>
+              <circle cx="9" cy="5" r="1.2" fill="currentColor"/>
+              <circle cx="5" cy="9" r="1.2" fill="currentColor"/>
+              <circle cx="9" cy="9" r="1.2" fill="currentColor"/>
+            </svg>
+          ),
+        },
+      ] as const).map(btn => {
+        const isActive = leftTab === btn.id && mainMode === 'interface';
+        return (
+          <button
+            key={btn.id}
+            data-testid={`navbar-tab-${btn.id}`}
+            onClick={() => {
+              if (mainMode !== 'interface') onMainModeChange('interface');
+              onSetLeftTab(isActive && leftTab === btn.id ? 'components' : btn.id);
+            }}
+            title={btn.title}
+            style={{
+              width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: isActive ? '#1d4ed8' : 'transparent',
+              border: `1px solid ${isActive ? '#3b82f6' : 'transparent'}`,
+              borderRadius: 5,
+              color: isActive ? '#fff' : '#6b7280',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = '#d1d5db'; } }}
+            onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6b7280'; } }}
+          >
+            {btn.icon}
+          </button>
+        );
+      })}
+
+      {/* Auth settings icon button */}
+      <button
+        data-testid="navbar-auth-btn"
+        onClick={onOpenAuthConfig}
+        title="Auth settings (token, user endpoint, redirects)"
+        style={{
+          width: 28, height: 28,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'transparent',
+          border: '1px solid transparent',
+          borderRadius: 5,
+          color: '#6b7280',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = '#d1d5db'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6b7280'; }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </button>
 
       <div style={{ flex: 1 }} />
 
@@ -939,118 +1051,6 @@ function TopBar({
 
       {/* Autosave status */}
       <SaveStatusBadge status={saveStatus} />
-
-      {/* Node count */}
-      <span style={{ fontSize: 10, color: '#4b5563' }}>
-        {pageNodes.length} section{pageNodes.length !== 1 ? 's' : ''}
-      </span>
-
-      {selectedIds.length > 0 && (
-        <span style={{ fontSize: 10, color: '#3b82f6' }}>
-          · {selectedIds.length} selected
-        </span>
-      )}
-
-      {/* ⋮ project menu — only shown when a project is open */}
-      {projectId && (
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            title="Project options"
-            style={{
-              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: menuOpen ? '#1f2937' : 'transparent',
-              border: 'none', borderRadius: 5, cursor: 'pointer',
-              color: '#6b7280', fontSize: 16, fontFamily: 'system-ui',
-              transition: 'background 120ms',
-            }}
-            onMouseEnter={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
-            onMouseLeave={e => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-          >
-            ⋮
-          </button>
-
-          {menuOpen && (
-            <>
-              {/* Click-outside backdrop */}
-              <div
-                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                onClick={() => setMenuOpen(false)}
-              />
-              {/* Dropdown */}
-              <div style={{
-                position: 'absolute', right: 0, top: 32, zIndex: 50,
-                width: 200, background: '#1e293b',
-                border: '1px solid #334155', borderRadius: 8,
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                overflow: 'hidden', fontFamily: 'system-ui',
-              }}>
-                {/* Section label */}
-                <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: '#475569', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  Project
-                </div>
-
-                {/* Seed from template */}
-                <button
-                  disabled={seeding}
-                  onClick={async () => {
-                    setMenuOpen(false);
-                    if (!confirm('This will replace ALL current content with the default template config.\n\nContinue?')) return;
-                    setSeeding(true);
-                    try {
-                      await onSeed();
-                    } finally {
-                      setSeeding(false);
-                    }
-                  }}
-                  style={{
-                    width: '100%', padding: '9px 12px', textAlign: 'left',
-                    background: 'none', border: 'none', cursor: seeding ? 'not-allowed' : 'pointer',
-                    fontSize: 12.5, color: seeding ? '#475569' : '#e2e8f0',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    opacity: seeding ? 0.6 : 1,
-                    transition: 'background 100ms',
-                  }}
-                  onMouseEnter={e => { if (!seeding) (e.currentTarget as HTMLButtonElement).style.background = '#0f172a'; }}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                >
-                  {seeding ? (
-                    <>
-                      <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                      Seeding…
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontSize: 14 }}>🌱</span>
-                      Seed from template
-                    </>
-                  )}
-                </button>
-
-                <div style={{ height: 1, background: '#334155', margin: '4px 0' }} />
-
-                {/* Open preview */}
-                <button
-                  disabled={!canPreview}
-                  onClick={() => { if (!canPreview) return; setMenuOpen(false); void onPreview(); }}
-                  style={{
-                    width: '100%', padding: '9px 12px', textAlign: 'left',
-                    background: 'none', border: 'none', cursor: canPreview ? 'pointer' : 'not-allowed',
-                    fontSize: 12.5, color: canPreview ? '#e2e8f0' : '#4b5563',
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    transition: 'background 100ms',
-                  }}
-                  onMouseEnter={e => { if (canPreview) (e.currentTarget as HTMLButtonElement).style.background = '#0f172a'; }}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
-                >
-                  <span style={{ fontSize: 14 }}>↗</span>
-                  Open preview
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -1098,6 +1098,8 @@ function TopBarBtn({
 
 // ─── Left slide state ─────────────────────────────────────────────────────────
 
+type LeftTabId = 'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme';
+
 type LeftSlideState =
   | { kind: 'data'; subState: DataTabSlideState }
   | { kind: 'logic'; subState: LogicSlideState }
@@ -1136,6 +1138,7 @@ export default function BuilderPage() {
   const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
   const [mainMode, setMainMode] = useState<'interface' | 'data-api'>('interface');
+  const [leftTab, setLeftTab] = useState<LeftTabId>('components');
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
   const [rightSlide, setRightSlide] = useState<RightSlideState>(null);
@@ -1154,6 +1157,23 @@ export default function BuilderPage() {
   const previewWinRef = useRef<Window | null>(null);
 
   const projectId = useProjectId();
+
+  // Sync left-panel tab from custom events (e.g. "Open Theme tab" from right-click menu)
+  useEffect(() => {
+    const handleOpenTheme = () => setLeftTab('theme');
+    const handleOpenLeftTab = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail as LeftTabId;
+      if (['triggers', 'layers', 'components', 'data', 'logic', 'assets', 'theme'].includes(detail)) {
+        setLeftTab(detail);
+      }
+    };
+    window.addEventListener('builder:open-theme-tab', handleOpenTheme);
+    window.addEventListener('builder:open-left-tab', handleOpenLeftTab);
+    return () => {
+      window.removeEventListener('builder:open-theme-tab', handleOpenTheme);
+      window.removeEventListener('builder:open-left-tab', handleOpenLeftTab);
+    };
+  }, []);
 
   // Install Gluestack primary token bridge immediately on mount so Checkbox,
   // Radio, Switch etc. reflect --primary even before a preset is applied.
@@ -1245,36 +1265,6 @@ export default function BuilderPage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [projectId]);
-
-  /**
-   * Seed the project with all screens / actions / variables / data sources
-   * from config/root.ts.  Saves to the backend then reloads the store so
-   * the builder shows the seeded content coming from the backend.
-   */
-  const handleSeed = useCallback(async () => {
-    if (!projectId) return;
-    setSaveStatus('saving');
-    try {
-      const { buildSeedConfig } = await import('@/lib/builder/seed-from-config');
-      const seedData = buildSeedConfig();
-
-      const res = await fetch(`/api/projects/${projectId}/config`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(seedData),
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setSaveStatus('saved');
-
-      // Reload builder state from the freshly saved backend config.
-      await loadFromConfig(projectId);
-      seedAutosaveBaseline(useBuilderStore.getState());
-    } catch (err) {
-      console.error('[builder] Seed failed:', err);
-      setSaveStatus('error');
-    }
-  }, [projectId, loadFromConfig, seedAutosaveBaseline, setSaveStatus]);
 
   // Hydrate SDUI store from persisted preview data so Run/Use-as-preview data survives refresh.
   // Migrate any legacy flat-UUID keys (stored before the collections.UUID convention) on the fly.
@@ -1560,7 +1550,17 @@ export default function BuilderPage() {
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      <TopBar onPreview={openPreview} onSeed={handleSeed} saveStatus={saveStatus} projectId={projectId} mainMode={mainMode} onMainModeChange={setMainMode} />
+      <TopBar
+        onPreview={openPreview}
+        saveStatus={saveStatus}
+        projectId={projectId}
+        mainMode={mainMode}
+        onMainModeChange={setMainMode}
+        leftTab={leftTab}
+        onSetLeftTab={setLeftTab}
+        onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
+        onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
+      />
 
       {/* ── Data & API full-screen view ────────────────────────────────────── */}
       {mainMode === 'data-api' && projectId && (
@@ -1572,6 +1572,8 @@ export default function BuilderPage() {
       {mainMode === 'interface' && (
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <PanelLeft
+          activeTab={leftTab}
+          onTabChange={setLeftTab}
           dataSlideState={leftSlide?.kind === 'data' ? leftSlide.subState : null}
           onSetDataSlide={s => {
             // Reset width to default when switching to a non-datasource slide (e.g. variable)
@@ -1580,8 +1582,6 @@ export default function BuilderPage() {
           }}
           logicSlideState={leftSlide?.kind === 'logic' ? leftSlide.subState : null}
           onSetLogicSlide={s => { setLeftSlideWidth(320); setLeftSlide(s ? { kind: 'logic', subState: s } : null); }}
-          onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
-          onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
           onWidthChange={setLeftSlideWidth}
           onOpenColorSlide={setRightSlide}
         />

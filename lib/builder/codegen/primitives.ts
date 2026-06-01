@@ -144,8 +144,13 @@ export function resolveTextTag(props: Record<string, unknown>): string {
   if (role === 'h6') return 'h6';
   if (role === 'label') return 'label';
   if (role === 'p' || role === 'paragraph') return 'p';
-  // Heuristic: Tailwind font-size classes suggest heading
+  // Heuristic: Tailwind font-size classes suggest block-level text
   const cls = (props.className as string) ?? '';
   if (/text-[3-9]xl/.test(cls) || /text-2xl/.test(cls)) return 'p';
+  // Arbitrary pixel sizes: text-[24px], text-[30px], etc. — treat any >= 18px as block-level
+  const pxMatch = cls.match(/text-\[(\d+(?:\.\d+)?)px\]/);
+  if (pxMatch && parseFloat(pxMatch[1]) >= 18) return 'p';
+  // Any arbitrary rem/em size also treated as block-level styled text
+  if (/text-\[\d+(?:\.\d+)?r?em\]/.test(cls)) return 'p';
   return 'span';
 }

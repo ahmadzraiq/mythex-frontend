@@ -115,7 +115,6 @@ export default function BuilderCanvas() {
   const currentPageId = useBuilderStore(s => s.currentPageId);
   const _focusedPageId = useBuilderStore(s => s.focusedPageId);
   const pendingFitToPage = useBuilderStore(s => s.pendingFitToPage);
-  const showInteractionLines = useBuilderStore(s => s.showInteractionLines);
   const activePreviewStates = useBuilderStore(s => s.activePreviewStates);
   const canvasNodes = useBuilderStore(s => s.canvasNodes);
   // Actions (stable references — never trigger re-renders)
@@ -135,7 +134,6 @@ export default function BuilderCanvas() {
   const focusPage = useBuilderStore(s => s.focusPage);
   const movePagePosition = useBuilderStore(s => s.movePagePosition);
   const clearPendingFit = useBuilderStore(s => s.clearPendingFit);
-  const setShowInteractionLines = useBuilderStore(s => s.setShowInteractionLines);
   const duplicateNodes = useBuilderStore(s => s.duplicateNodes);
   const deleteNodes = useBuilderStore(s => s.deleteNodes);
   const selectParent = useBuilderStore(s => s.selectParent);
@@ -242,7 +240,6 @@ export default function BuilderCanvas() {
         // Logic shortcuts
         if (e.key === 'i' || e.key === 'I') { openLogicSection('interactions'); window.dispatchEvent(new CustomEvent('builder:open-logic-tab', { detail: { section: 'interactions' } })); return; }
         if (e.key === 'b' || e.key === 'B') { openLogicSection('binding'); window.dispatchEvent(new CustomEvent('builder:open-logic-tab', { detail: { section: 'binding' } })); return; }
-        if (e.key === 'v' || e.key === 'V') { setShowInteractionLines(!showInteractionLines); return; }
         if (e.key === 's' || e.key === 'S') {
           if (e.shiftKey) { window.dispatchEvent(new CustomEvent('builder:open-state-picker', {})); return; }
           const states = ['normal', 'hover', 'loading', 'error', 'empty', 'disabled'];
@@ -278,7 +275,7 @@ export default function BuilderCanvas() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedIds, showInteractionLines, setShowInteractionLines, duplicateNodes, deleteNodes, selectParent, selectFirstChild, copyToClipboard, pasteFromClipboard, setPreviewState, openLogicSection]);
+  }, [selectedIds, duplicateNodes, deleteNodes, selectParent, selectFirstChild, copyToClipboard, pasteFromClipboard, setPreviewState, openLogicSection]);
 
   // ── World transform helpers ───────────────────────────────────────────────
   //
@@ -3305,32 +3302,12 @@ export default function BuilderCanvas() {
       })()}
 
       {/* ── Zoom controls ── */}
-      <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
+      <div style={{ position: 'absolute', bottom: 52, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
         <ZoomBtn label="−" testId="zoom-out" onClick={() => setZoom(Math.max(MIN_ZOOM, zoom / 1.25))} />
         <button data-testid="zoom-label" style={{ fontSize: 11, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', minWidth: 40, textAlign: 'center' }} onClick={fitToCanvas}>
           {Math.round(zoom * 100)}%
         </button>
         <ZoomBtn label="+" testId="zoom-in" onClick={() => setZoom(Math.min(MAX_ZOOM, zoom * 1.25))} />
-      </div>
-
-      {/* ── Show Interactions toggle ── */}
-      {/* Positioned above the state bar (bottom: ~40px) so it's not covered */}
-      <div style={{ position: 'absolute', bottom: 52, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, pointerEvents: 'all', zIndex: 9991 }}>
-        <button
-          data-testid="toggle-interaction-lines"
-          onClick={() => setShowInteractionLines(!showInteractionLines)}
-          style={{
-            background: showInteractionLines ? '#1d4ed8' : '#1f2937',
-            border: `1px solid ${showInteractionLines ? '#3b82f6' : '#374151'}`,
-            borderRadius: 6,
-            color: showInteractionLines ? '#bfdbfe' : '#9ca3af',
-            fontSize: 10,
-            padding: '4px 10px',
-            cursor: 'pointer',
-          }}
-        >
-          ⚡ {showInteractionLines ? 'Hide' : 'Show'} interactions (V)
-        </button>
       </div>
 
       {/* ── State Bar ── */}

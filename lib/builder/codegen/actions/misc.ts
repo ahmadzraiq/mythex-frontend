@@ -37,8 +37,10 @@ export function emitNavigateTo(step: NavigateToStep, symbols: SymbolMap): string
   const cfg = step.config ?? {};
   const path = cfg.path ?? cfg.url ?? '';
 
-  const pathStr = String(path ?? '');
-  const pathExpr = pathStr.includes('{{') ? rewritePropValue(pathStr, symbols) : JSON.stringify(pathStr);
+  // path may be a formula object { formula: "..." }, a template "{{...}}", or a plain string
+  const pathExpr = (typeof path === 'object' && path !== null)
+    ? rewritePropValue(path, symbols)
+    : (String(path).includes('{{') ? rewritePropValue(String(path), symbols) : JSON.stringify(String(path)));
 
   if (cfg.queryParams && Object.keys(cfg.queryParams).length > 0) {
     // Build an object literal where each value is run through rewritePropValue so that
@@ -200,8 +202,10 @@ function hasTopLevelMixedNullish(expr: string): boolean {
 export function emitBranch(step: BranchStep, symbols: SymbolMap): string {
   const condExpr = resolveConditionExpr(step.config?.condition, symbols);
 
-  const trueLines = (step.trueBranch ?? []).map(s => `  ${emitStep(s, symbols)}`).join('\n');
-  const falseLines = (step.falseBranch ?? []).map(s => `  ${emitStep(s, symbols)}`).join('\n');
+  // Pass the sub-step's own id so result-producing steps (graphql, fetch, etc.) store
+  // their result in the parent workflow's _results under the correct step ID.
+  const trueLines = (step.trueBranch ?? []).map(s => `  ${emitStep(s, symbols, false, (s as Record<string, unknown>).id as string | undefined)}`).join('\n');
+  const falseLines = (step.falseBranch ?? []).map(s => `  ${emitStep(s, symbols, false, (s as Record<string, unknown>).id as string | undefined)}`).join('\n');
 
   if (falseLines.trim()) {
     return `if (${condExpr}) {\n${trueLines}\n} else {\n${falseLines}\n}`;

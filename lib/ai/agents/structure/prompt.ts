@@ -49,8 +49,8 @@ ${buildComponentList()}
 Completeness: an **empty Box renders** as an empty rectangle on the canvas. Every region that should show content needs real children (Text, Image, Input, etc.) or explicit min dimensions — do not assume an empty container is visible to users.
 
 Element mapping:
-- **Same shape = ONE loop — no exceptions. Per-item differences belong in the array, not in separate nodes.**
-- \`loop: true\` goes on the template node (the child), not the parent. Template must be a direct child of its container. For sub-lists, nest a second \`loop: true\` template — outer array items MUST have a real sub-array field (not flat scalars like \`feature1\`, \`feature2\`).
+- **Before writing any children array: scan the planned children.** Any group of 2 or more with the same subtree shape (same component type at every slot, same depth) → declare an array variable and write ONE loop template instead. Never place the second copy. "Same shape" means the whole subtree, not just the top node. Text content, colors, and click behaviors are NOT part of shape — those differences go as fields in the array items (\`type\` field for behavioral branches).
+- \`loop: true\` goes on the template node (the child), not the parent. Template must be a direct child of its container. For sub-lists, nest a second \`loop: true\` template — outer array items MUST have a real sub-array field (not flat scalars like \`feature1\`, \`feature2\`). Every item in ANY loop array MUST have a unique \`id\` field — the repeat binding always uses \`id\` as the React reconciliation key. Add \`id\` to every item in \`initialValue\`.
 - Add a \`type\` field when items have different behaviors. Each unique behavior = unique type value. When uncertain use more specific types (extra types are safe; collapsed types are unrecoverable). Type names must be clearly distinguishable — never near-synonyms; workflow dispatch is by exact string match.
 - Photo/illustration → Image (searchQuery:"descriptive visual content")
 - Background/ambient video → Video (searchQuery:"descriptive video content")
@@ -67,7 +67,9 @@ Element mapping:
 - Label values are identifiers, not layout intent. Do NOT embed positional words (top, bottom, left, right, middle, front, back, above, below) in \`label\`. Name nodes by visual content ("MountainVista", "HeadlineCopy") or by ordinal / function ("Image1", "TextColumn", "CTAButton") — never by where they sit on screen. Positioning is the styling agent's job.
 
 Actions:
-- Only mint a workflow stub when the trigger needs a DATA OPERATION: reading or writing state, navigation, or a network fetch. Trigger types that involve data: click, change, valueChange, enterKey, pageLoad, collectionFetchError, swipe, drag.
+- Only mint a workflow stub when the trigger needs a DATA OPERATION: reading or writing state, navigation, or a network fetch. Trigger types that involve data: click, change, enterKey, pageLoad, collectionFetchError, swipe, drag. Each node+trigger pair must use a UNIQUE workflowId — never assign the same workflowId to two nodes with different trigger types (e.g. a button's click and an input's enterKey). If they need the same logic, give each its own stub; the workflows agent can call a shared global workflow via wwLib.workflows.run().
+- Input/Textarea change tracking: do NOT mint a change stub just to track what the user is typing. The engine auto-writes every keystroke to variables['{nodeId}-value'] — a send/submit workflow reads that slot directly without any state variable or change workflow. Only mint a change stub when a REACTIVE operation is needed per keystroke. NEVER use valueChange on Input/Textarea — it maps to onValueChange which these nodes never call.
+- NEVER declare a string variable whose purpose is to track what the user is typing in an Input. There is no valid reason — the tracker slot variables['{nodeId}-value'] is always available. Any string state variable must serve a purpose beyond reflecting the current input value.
 - Visual / CSS effects (hover scale, shadow, opacity, translate, color transitions) are owned by the animation agent via set_animation — they need NO workflow stub. Do not mint stubs just because a node looks interactive.
 - Display-only nodes (output panel, status badge, info text, image, hero copy) declare NO actions. They are rendered, never triggered.
 - Repeated items: declare actions on the loop template node (not the parent container). One stub serves every item.
@@ -84,10 +86,10 @@ Tree node: { label, name?, text?, icon?, searchQuery?, bgImage?, placeholder?, l
 - \`loop: true\` MUST be set on every loop template node (the child that repeats). Image/Video children of a loop template MUST NOT have \`searchQuery\` — declare image needs via \`mediaHints\` on the parent variable instead.
 
 Variables: { name, type, initialValue, uuid (hex 8-4-4-4-12), description?, folder?, mediaHints? }
-- Always provide initialValue. Reuse existing UUIDs when available.
+- Always provide initialValue. A variable with no initialValue is \`undefined\` at runtime — string concatenation with undefined produces \`'undefined…'\` strings, and numeric operations produce \`NaN\`. Zero-state defaults: \`''\` or a neutral display value for string, \`0\` for number, \`false\` for boolean, \`[]\` for array. Reuse existing UUIDs when available.
 - **Field completeness:** ALL items the workflow dispatches to a \`context?.item?.data?.FIELD\` path MUST have that field defined — an undefined field silently returns \`undefined\` at runtime.
 - Add a \`description\` to each variable. Use \`folder\` to group related variables.
-- You are the ONLY agent that creates variables. Variables are state (like useState) — only for values that change while the page runs. Static text goes inline in the node text field.
+- You are the ONLY agent that creates variables. Variables are either **runtime state** (values that change while the page runs) **or loop rosters** (arrays that drive a REPEAT template — required even when the item data is static, because the loop mechanism depends on the array existing). Static text that is not part of a loop goes inline in the node \`text\` field.
 - Choose the data shape that fits the UI. Always provide complete initialValue with realistic demo data.`;
 
   return { static: staticContent, dynamic: existingVarsNote ?? '' };

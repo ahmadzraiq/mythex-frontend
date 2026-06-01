@@ -148,6 +148,12 @@ function emitPage(
     imports.addNamed('framer-motion', 'AnimatePresence');
   }
 
+  // Protected page — import auth guard hook
+  const isProtectedPage = !!(page.meta as Record<string, unknown> | undefined)?.isProtected;
+  if (isProtectedPage && ctx.flags.hasAuth) {
+    imports.addNamed(`${relPrefix}components/AuthSync`, 'useAuthGuard');
+  }
+
   const resolvedNodes = resolvePageNodes(page.nodes ?? [] as SDUINode[]);
   const scVarsInits = collectScVarsInits(resolvedNodes);
   const allUseEffects: string[] = [];
@@ -170,7 +176,7 @@ function emitPage(
   }
 
   if (usedWorkflows.size > 0) {
-    imports.addNamed(`${relPrefix}lib/workflows`, ...usedWorkflows);
+    imports.addNamed(`${relPrefix}lib/actions`, ...usedWorkflows);
   }
 
   if (ctx.flags.hasFetch || ctx.flags.hasGraphQL) {
@@ -297,6 +303,10 @@ function emitPage(
 
   lines.push(`  const router = useRouter();`);
   lines.push(`  const searchParams = useSearchParams();`);
+  // Protected pages: redirect to sign-in if not authenticated
+  if (isProtectedPage && ctx.flags.hasAuth) {
+    lines.push(`  useAuthGuard();`);
+  }
   // Always declare — workflow call-sites use these even when not all are needed on this page
   lines.push(`  const [popoverState, setPopoverState] = useState<Record<string, boolean>>({});`);
   lines.push(`  const popover: [Record<string, boolean>, typeof setPopoverState] = [popoverState, setPopoverState];`);
@@ -568,6 +578,11 @@ function emitPage(
         return s.includes('globalContext') || s.includes('_globalCtx') || s.includes('browser.query') || s.includes('browser?.query');
       };
 
+      // Helper: emit setState that sets loading:true for a datasource
+      const emitSetLoading = (fnName: string, indent: string, value: boolean) => {
+        lines.push(`${indent}useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: { ...s.collections?.[${JSON.stringify(fnName)}], loading: ${value} } } }));`);
+      };
+
       // Helper to emit a single ds fetch line
       const emitFetch = (fnName: string, variables: unknown) => {
         const hasFormulas = hasFormulaVars(variables);
@@ -582,14 +597,18 @@ function emitPage(
         // from briefly going blank while the same data re-fetches on every page transition.
         const skipIfLoaded = !hasFormulas && !refsUrlParams(variables);
         if (skipIfLoaded) {
-          lines.push(`    if (!useStore.getState().collections?.[${JSON.stringify(fnName)}]) {`);
+          // Check for `.data` (not the whole entry) since the store now initialises all
+          // collections as `{ loading: true }` — a truthy object that has no data yet.
+          lines.push(`    if (!useStore.getState().collections?.[${JSON.stringify(fnName)}]?.data) {`);
+          emitSetLoading(fnName, '      ', true);
           lines.push(`      ${callExpr}.then(data => {`);
-          lines.push(`        useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
+          lines.push(`        useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: { ...data, loading: false } } }));`);
           lines.push(`      }).catch(console.error);`);
           lines.push(`    }`);
         } else {
+          emitSetLoading(fnName, '    ', true);
           lines.push(`    ${callExpr}.then(data => {`);
-          lines.push(`      useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: data } }));`);
+          lines.push(`      useStore.setState(s => ({ ...s, collections: { ...s.collections, ${JSON.stringify(fnName)}: { ...data, loading: false } } }));`);
           lines.push(`    }).catch(console.error);`);
         }
       };
@@ -622,7 +641,9 @@ function emitPage(
         lines.push(`  }, []);`);
       }
 
-      // URL-param-dependent fetches — re-run whenever the query string changes
+      // URL-param-dependent fetches — re-run whenever the query string changes.
+      // The store initialises all collections as { loading: true } so the skeleton is
+      // already visible on the very first render — no useLayoutEffect trick needed.
       if (urlParamDs.length > 0) {
         lines.push(`  // Auto-fetch URL-param-dependent datasources — re-fetches on every navigation`);
         lines.push(`  useEffect(() => {`);

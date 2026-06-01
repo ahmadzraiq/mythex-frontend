@@ -64,7 +64,7 @@ import {
   emitCustomJavaScript,
 } from './misc';
 
-export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMapScope = false): string {
+export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMapScope = false, stepId?: string): string {
   const type = step.type as string;
 
   switch (type) {
@@ -93,9 +93,9 @@ export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMa
     case 'showToast':
       return emitShowToast(step as never, symbols);
     case 'fetch':
-      return emitFetch(step as never, symbols);
+      return emitFetch(step as never, symbols, stepId);
     case 'graphql':
-      return emitGraphQL(step as never, symbols);
+      return emitGraphQL(step as never, symbols, stepId);
     case 'refetchDataSource':
       return emitRefetch(step as never, symbols);
     case 'validate':

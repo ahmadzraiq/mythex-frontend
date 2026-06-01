@@ -46,7 +46,7 @@ function eventToProp(event: string, componentType?: string): string | null {
  */
 function buildHandlerBody(actionRef: ActionRef, symbols: SymbolMap, inMapScope = false): string {
   const stop = actionRef.stopPropagation ? 'e.stopPropagation();\n  ' : '';
-  // __inlineCode from shared-component workflows takes priority (avoids round-trip through lib/workflows.ts)
+  // __inlineCode from shared-component workflows takes priority (avoids round-trip through lib/actions/)
   if (actionRef.__inlineCode) {
     return `${stop}${actionRef.__inlineCode}`;
   }
@@ -97,8 +97,10 @@ export function buildActionProps(
   }
 
   return Object.entries(props).map(([propName, bodies]) => {
+    // onSubmit handlers must always call preventDefault to prevent native browser form submission
+    const prefix = propName === 'onSubmit' ? `(e as Event)?.preventDefault?.();\n  ` : '';
     const body = bodies.join('\n  ');
-    return `${propName}={async (e?: unknown) => {\n  ${body}\n}}`;
+    return `${propName}={async (e?: unknown) => {\n  ${prefix}${body}\n}}`;
   });
 }
 

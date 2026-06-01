@@ -6,15 +6,20 @@ import type { CodegenCtx, EmittedFile } from './types';
 import type { AuthConfig } from '@/app/dev/builder/_store-types';
 
 export function emitAuthFiles(ctx: CodegenCtx): EmittedFile[] {
-  if (!ctx.flags.hasAuth || !ctx.store.authConfig) return [];
+  if (!ctx.flags.hasAuth) return [];
 
   const files: EmittedFile[] = [];
-  const ac = ctx.store.authConfig;
+  const ac = ctx.store.authConfig ?? { unauthenticatedRedirect: '/sign-in' };
 
   files.push(emitAuthTs(ac));
-  if (ac.unauthenticatedRedirect || ac.unauthorizedRedirect) {
-    files.push(emitMiddleware(ac));
-  }
+
+  // Collect protected paths from page meta (set by config-to-state from routes.json auth: true)
+  const protectedPaths = (ctx.store.pages ?? [])
+    .filter(p => (p as unknown as Record<string, unknown>).meta && ((p as unknown as Record<string, unknown>).meta as Record<string, unknown>)?.isProtected)
+    .map(p => (p as unknown as Record<string, unknown>).route as string)
+    .filter(Boolean);
+
+  files.push(emitMiddleware(ac, protectedPaths));
 
   return files;
 }
@@ -59,34 +64,32 @@ export async function fetchCurrentUser(): Promise<unknown> {
   return { path: 'lib/auth.ts', content };
 }
 
-function emitMiddleware(ac: AuthConfig): EmittedFile {
-  const unauthRedirect = ac.unauthenticatedRedirect ?? '/login';
-  const authRedirect = ac.authenticatedRedirect ?? '/';
+function emitMiddleware(ac: AuthConfig, protectedPaths: string[] = []): EmittedFile {
+  const unauthRedirect = ac.unauthenticatedRedirect ?? '/sign-in';
+  const tokenKey = ac.tokenStorageKey ?? 'auth_token';
+
+  // Middleware can only read cookies, not localStorage. The client-side AuthSync component
+  // handles localStorage-based session restoration. Middleware protects SSR for cookie-based auth.
+  // Note: since this app stores tokens in localStorage (not cookies), middleware protection is a
+  // best-effort guard — the real auth guard is the useAuthGuard() hook in each protected page.
+  const pathsExpr = JSON.stringify(protectedPaths.length > 0 ? protectedPaths : []);
 
   const content = `import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { AUTH_TOKEN_KEY } from './lib/auth';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get(${JSON.stringify(ac.tokenStorageKey ?? 'auth_token')})?.value
+  const token = request.cookies.get(${JSON.stringify(tokenKey)})?.value
     ?? request.headers.get('authorization')?.replace('Bearer ', '');
 
   const isAuthenticated = !!token;
   const { pathname } = request.nextUrl;
 
-  // Pages that require auth
-  const protectedPaths = ${JSON.stringify(
-    // Derive from page access settings — hardcode as we emit per-page metadata
-    ['/dashboard', '/profile', '/account'],
-  )};
-  const guestOnlyPaths = ${JSON.stringify([unauthRedirect])};
+  // Pages that require auth — redirect to sign-in if no token cookie is present.
+  // Note: token is primarily in localStorage; this covers cookie-based sessions.
+  const protectedPaths = ${pathsExpr};
 
-  if (protectedPaths.some(p => pathname.startsWith(p)) && !isAuthenticated) {
+  if (protectedPaths.some((p: string) => pathname.startsWith(p)) && !isAuthenticated) {
     return NextResponse.redirect(new URL(${JSON.stringify(unauthRedirect)}, request.url));
-  }
-
-  if (guestOnlyPaths.some(p => pathname.startsWith(p)) && isAuthenticated) {
-    return NextResponse.redirect(new URL(${JSON.stringify(authRedirect)}, request.url));
   }
 
   return NextResponse.next();

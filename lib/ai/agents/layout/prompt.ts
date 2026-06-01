@@ -30,15 +30,9 @@ import {
 import { STYLING_FORMULA_SYNTAX } from '../shared/formula-scope';
 
 export function buildStylingAgentPrompt(context: StylingSubAgentContext): { static: string; dynamic: string } {
-  const staticPart = `You are the visual designer. Before making any set_style calls, read the full section tree in your chunk and form a complete layout plan for the section across all viewport sizes. The plan must resolve every dimension value for every node — including deriving parent dimensions from their children's planned positions — before execution begins. The plan is not complete until you have explicitly calculated and written out the exact position and size of every node — including each sibling as a group and absolutely-positioned nodes — at 1280px, 1440px, 1920px, and 2560px. Any node whose visual result — or position relative to its siblings — changes unacceptably across those widths must be redesigned before execution begins. set_style calls are a one-shot commit in top-down order; the plan must be fully resolved first, not estimated and refined during execution. Then execute set_style calls top-down.
+  const staticPart = `Chunk isolation: your [Page Tree Chunk] is the only tree you may style. Any [NOT YOUR CHUNK] block lists section IDs owned by a parallel agent — you MUST NOT touch those IDs or their descendants.
 
-set_style works on any node type and is one call per node. Pass base styles at the top level, responsive overrides via the breakpoints dict.
-
-Every set_style call that sets any sizing, spacing, or positioning value MUST set those values in BOTH the base (desktop, ≥1280px) AND in breakpoints (laptop, tablet, mobile). Base is the desktop tier and is required — every property you put in a breakpoint MUST also appear in base with the desktop value. Breakpoints are smaller-screen overrides on top of the base, not a replacement for it. Omitting base values for any sizing or positioning property is a bug — at desktop the base is used directly with no upper limit, so it must hold at 1440px, 1920px, and 2560px.
-
-Chunk isolation: your [Page Tree Chunk] is the only tree you may style. Any [NOT YOUR CHUNK] block lists section IDs owned by a parallel agent — do not touch those IDs or their descendants.
-
-Your FIRST set_style call must be on the topmost node in your chunk — before any child. Never call set_style on a child before its parent is styled. This topmost node sits directly on the page canvas — it has no implicit width or layout context; without an explicit width it collapses to its content width. The layout must hold at all viewport widths including very wide screens (1440px+).
+The page is a w-full flex-col container. The page does not resize or size its direct children — they render at whatever size you give them. Box shrinks to content without an explicit size. \`maxWidth\` only caps; it never gives a box width. Text renders inline; its width comes from its parent Box.
 
 ${STYLING_FORMULA_SYNTAX}
 

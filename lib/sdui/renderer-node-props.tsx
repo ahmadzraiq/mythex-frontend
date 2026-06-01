@@ -175,13 +175,16 @@ export function applyClassFormulas(
   cleanProps: Record<string, unknown>,
   sduiContext: SDUIContext,
 ): void {
-  const classFormulas = node.props?.classFormulas as Record<string, { formula?: string }> | undefined;
+  const classFormulas = node.props?.classFormulas as Record<string, { formula?: string; js?: string }> | undefined;
   if (!classFormulas) return;
   let extraCls = '';
   for (const [, fv] of Object.entries(classFormulas)) {
-    if (fv && typeof fv === 'object' && typeof fv.formula === 'string') {
-      const { value } = evaluateFormula(fv.formula, (sduiContext as { state?: Record<string, unknown> }).state ?? {});
-      if (typeof value === 'string' && value) extraCls += ' ' + value;
+    if (fv && typeof fv === 'object') {
+      const formulaStr = fv.formula ?? fv.js;
+      if (typeof formulaStr === 'string' && formulaStr) {
+        const { value } = evaluateFormula(formulaStr, (sduiContext as { state?: Record<string, unknown> }).state ?? {});
+        if (typeof value === 'string' && value) extraCls += ' ' + value;
+      }
     }
   }
   if (extraCls) {

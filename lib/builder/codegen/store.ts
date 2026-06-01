@@ -108,11 +108,12 @@ export function emitStoreTs(ctx: CodegenCtx): EmittedFile {
     if (v.saveInLocalStorage) persistedVarNames.push(ident);
   }
 
-  // Collections initial state
+  // Collections initial state — start with loading:true so the skeleton is shown on the
+  // very first render (before any useEffect/useLayoutEffect fires), avoiding the empty-state flash.
   const collInitials: Record<string, unknown> = {};
   for (const ds of store.pageDataSources ?? []) {
     const ident = symbols.collections.get(ds.id) ?? ds.name;
-    if (ident) collInitials[ident] = null;
+    if (ident) collInitials[ident] = { loading: true };
   }
 
   lines.push(`export interface AppState {`);
@@ -186,6 +187,28 @@ export function emitStoreTs(ctx: CodegenCtx): EmittedFile {
     lines.push(`export const useStore = create<AppState>()(() => initialState);`);
   }
 
+  lines.push('');
+
+  // ── Typed selectors ─────────────────────────────────────────────────────────
+  // Use these in components instead of reading raw state to get typed access
+  // without verbose optional chaining (e.g. `useAuth()` vs `state.auth`).
+  lines.push(`// ── Typed selectors ──────────────────────────────────────────────────────────`);
+  lines.push('');
+  lines.push(`/** Read the current auth state (token + user) from anywhere in the component tree. */`);
+  lines.push(`export const useAuth = () => useStore(s => s.auth);`);
+  lines.push('');
+  lines.push(`/** Read the variables slice of the store. */`);
+  lines.push(`export const useVariables = () => useStore(s => s.variables);`);
+  lines.push('');
+  lines.push(`/**`);
+  lines.push(` * Read a single collection by its store key (e.g. "activeOrder", "productDetail").`);
+  lines.push(` * Returns \`{ loading: true }\` while the fetch is in progress, then the full data object.`);
+  lines.push(` */`);
+  lines.push(`export const useCollection = (name: string) => useStore(s => s.collections?.[name] as Record<string, unknown> | undefined);`);
+  lines.push('');
+  lines.push(`/** Shorthand that extracts \`.data\` from a collection, typed as an arbitrary record. */`);
+  lines.push(`// eslint-disable-next-line @typescript-eslint/no-explicit-any`);
+  lines.push(`export const useCollectionData = (name: string): any => useStore(s => (s.collections?.[name] as Record<string, unknown> | undefined)?.data);`);
   lines.push('');
 
   return { path: 'lib/store.ts', content: lines.join('\n') };

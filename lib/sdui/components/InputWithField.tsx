@@ -95,7 +95,7 @@ export const InputWithField = React.forwardRef<
   React.ComponentRef<typeof Input>,
   InputWithFieldProps
 >(function InputWithField(props, ref) {
-  const { placeholder, value, defaultValue, readOnly, format, onChange, onChangeText, children, ...rest } = props as InputWithFieldProps & { defaultValue?: string };
+  const { placeholder, value, defaultValue, readOnly, format, onChange, onChangeText, onKeyDown, onKeyPress, onSubmitEditing, children, ...rest } = props as InputWithFieldProps & { defaultValue?: string; onKeyDown?: unknown; onKeyPress?: unknown; onSubmitEditing?: unknown };
 
   if (children) {
     // With children: pass everything through except format (not a native prop)
@@ -167,6 +167,9 @@ export const InputWithField = React.forwardRef<
         editable={readOnly ? false : undefined}
         onChange={handleChange as React.ComponentProps<typeof InputField>['onChange']}
         onChangeText={handleChange as React.ComponentProps<typeof InputField>['onChangeText']}
+        onKeyDown={onKeyDown as React.ComponentProps<typeof InputField>['onKeyDown']}
+        onKeyPress={onKeyPress as React.ComponentProps<typeof InputField>['onKeyPress']}
+        onSubmitEditing={onSubmitEditing as React.ComponentProps<typeof InputField>['onSubmitEditing']}
       />
     </Input>
   );

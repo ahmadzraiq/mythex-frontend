@@ -27,6 +27,10 @@ export function rewriteFormula(formula: string, symbols: SymbolMap, inMapScope =
 
   let out = formula;
 
+  // Builder formula helpers that have no direct JS equivalent
+  // not(expr) → !(expr)
+  out = out.replace(/\bnot\s*\(/g, '!(');
+
   // variables['UUID'] or variables?.['UUID'] or variables["UUID"] → state.variables.<ident>
   out = out.replace(/\bvariables\s*(?:\?\.)?\[\s*['"]([^'"]+)['"]\s*\]/g, (_, uuid) => {
     const ident = symbols.vars.get(uuid);
@@ -446,8 +450,15 @@ export function rewritePropValue(
     }
     // Action callback — wired by action emitter
     if ('action' in obj) return `() => { /* action: ${String(obj.action)} */ }`;
-    // Plain object
-    return JSON.stringify(value);
+    // Plain object — recurse into values so {{template}} strings and formula objects inside are resolved
+    if (Array.isArray(value)) {
+      const items = (value as unknown[]).map(v => rewritePropValue(v, symbols, inMapScope));
+      return `[${items.join(', ')}]`;
+    }
+    const entries = Object.entries(obj)
+      .map(([k, v]) => `${JSON.stringify(k)}: ${rewritePropValue(v, symbols, inMapScope)}`)
+      .join(', ');
+    return `{ ${entries} }`;
   }
   return JSON.stringify(value);
 }

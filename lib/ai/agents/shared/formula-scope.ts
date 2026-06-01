@@ -7,13 +7,13 @@
 
 const SCOPE_REFERENCE = `## Binding language: native JavaScript
 
-Every string-typed value field in every tool is a JS expression in this scope. Bare literals are valid expressions. Conditional or per-item values: write a ternary.
+Every value field in every tool is a JS expression in this scope. Bare literals are valid expressions. Conditional or per-item values: write a ternary.
 
 Scope identifiers:
 
 - variables['UUID']                   — declared variable value
 - collections['UUID']?.data?.field    — datasource value
-- context?.item?.data?.field          — current repeat-item field. context ONLY has .item — no other sub-properties exist. Never use context?.variableName or context?.anyOtherPath — those resolve to undefined. variables['UUID'] is the only way to access any declared variable.
+- context?.item?.data?.field          — current repeat-item field. context ONLY has .item — no other sub-properties exist. Never use context?.variableName or context?.anyOtherPath — those resolve to undefined. variables['UUID'] is the only way to access any declared variable. This scope is available on the REPEAT-annotated node AND every descendant rendered within that repeat scope.
 - context?.item?.parent?.data?.field  — outer-repeat field (nested repeats only; .parent is NOT valid at depth 1)
 - context?.item?.data?.value          — primitive value when iterating a primitive array
 - context?.item?.data?.index          — 0-based index in the current repeat
@@ -30,7 +30,7 @@ Scope identifiers:
       swipe                                           →  event.direction ("left"|"right"|"up"|"down"), event.velocityX/Y
 - context?.item?.data?.<field>  — value of the item that triggered a workflow bound to a repeat template.
     The workflow runs in the item's scope. event has no item info.
-- 'theme:tokenName'                   — theme color reference (anywhere a color string is valid)
+- 'theme:tokenName'                   — theme color reference (anywhere a color string is valid). For conditional theme colors each branch must be a complete string literal: condition ? 'theme:primary' : 'theme:muted' ✅ — never 'theme:' + name ❌ (concatenation is not resolved)
 
 IDs are UUIDs from the variables roster, datasource roster, or page tree. Never invent IDs.
 
@@ -40,9 +40,11 @@ Use step type runJavaScript when a single changeVariableValue formula is not eno
 
 - variables['UUID']  — read (same as formulas)
 - variables['UUID'] = value  — write via Proxy; updates the global store immediately
+- variables['{inputNodeUuid}-value']  — the ONLY correct way to read an Input node's current text in a send/submit workflow. The UUID is the Input node's UUID from the page tree (NOT a variables-roster UUID). Example: tree shows [295aab82...] Input "MessageInput" → use variables['295aab82...-value']. No state variable or change workflow is needed — this slot is auto-written every keystroke by the engine. To clear the Input after send, write variables['{inputNodeUuid}-value'] = '' in the runJavaScript step.
 - wwLib.variables.get(nameOrUuid) / .set(nameOrUuid, value) / .reset(nameOrUuid) — alternative write API
 - wwLib.navigate.to(path) / .prev() — navigation
 - wwLib.workflows.run(name, params?) — call another workflow by name
+- wwLib has ONLY .variables, .navigate, and .workflows — there is no wwLib.scroll, wwLib.dom, wwLib.ui, or any other sub-property. Calling an undefined sub-property throws at runtime.
 - context, globalContext, auth, event — same as formulas (read-only)
 
 Return a value from the step body — it is stored at context.workflow['stepId'].result.

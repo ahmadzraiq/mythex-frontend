@@ -289,6 +289,8 @@ export function emitRootLayout(ctx: CodegenCtx, hasLayoutShell = false): Emitted
     fontVarNames.push(`_${instanceName}.variable`);
   }
 
+  const hasThemeActions = ctx.flags.hasThemeActions;
+  const hasAuth = ctx.flags.hasAuth;
   const lines: string[] = [];
 
   if (fontImports.length > 0) {
@@ -299,6 +301,12 @@ export function emitRootLayout(ctx: CodegenCtx, hasLayoutShell = false): Emitted
   lines.push(`import './globals.css';`);
   if (hasLayoutShell) {
     lines.push(`import { LayoutShell } from './_layout-shell';`);
+  }
+  if (hasThemeActions) {
+    lines.push(`import { ThemeSync } from '../components/ThemeSync';`);
+  }
+  if (hasAuth) {
+    lines.push(`import { AuthSync } from '../components/AuthSync';`);
   }
   lines.push('');
 
@@ -322,6 +330,12 @@ export function emitRootLayout(ctx: CodegenCtx, hasLayoutShell = false): Emitted
     : '';
   lines.push(`      <body${bodyClassName}>`);
   lines.push(`        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>`);
+  if (hasThemeActions) {
+    lines.push(`          <ThemeSync />`);
+  }
+  if (hasAuth) {
+    lines.push(`          <AuthSync />`);
+  }
   if (hasLayoutShell) {
     lines.push(`          <LayoutShell>{children}</LayoutShell>`);
   } else {
@@ -334,6 +348,236 @@ export function emitRootLayout(ctx: CodegenCtx, hasLayoutShell = false): Emitted
   lines.push(`}`);
 
   return { path: 'app/layout.tsx', content: lines.join('\n') };
+}
+
+/** lib/theme.ts — module-level setTheme bridge usable outside React components */
+export function emitThemeTs(): EmittedFile {
+  return {
+    path: 'lib/theme.ts',
+    content: `let _setTheme: ((theme: string) => void) | null = null;
+
+export function registerSetTheme(fn: (theme: string) => void): void {
+  _setTheme = fn;
+}
+
+export function setTheme(theme: string): void {
+  if (_setTheme) {
+    _setTheme(theme);
+    return;
+  }
+  // Fallback when hook hasn't mounted yet: manually sync next-themes storage + class
+  if (typeof localStorage !== 'undefined') localStorage.setItem('theme', theme);
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('light', 'dark');
+    if (theme !== 'system') document.documentElement.classList.add(theme);
+  }
+}
+`,
+  };
+}
+
+/** components/ThemeSync.tsx — registers next-themes setTheme into the module bridge */
+export function emitThemeSyncComponent(): EmittedFile {
+  return {
+    path: 'components/ThemeSync.tsx',
+    content: `'use client';
+import { useTheme } from 'next-themes';
+import { registerSetTheme } from '../lib/theme';
+import { useEffect } from 'react';
+
+export function ThemeSync() {
+  const { setTheme } = useTheme();
+  useEffect(() => {
+    registerSetTheme(setTheme);
+  }, [setTheme]);
+  return null;
+}
+`,
+  };
+}
+
+/**
+ * components/AuthSync.tsx
+ * Runs once on app mount to restore auth session from localStorage.
+ * Reads auth_token, sets it in the store, then fetches the current user.
+ */
+export function emitAuthSyncComponent(unauthRedirect = '/sign-in'): EmittedFile {
+  return {
+    path: 'components/AuthSync.tsx',
+    content: `'use client';
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStore } from '../lib/store';
+import { restoresession, activecustomerquery } from '../lib/actions';
+
+export function AuthSync() {
+  const router = useRouter();
+  const restored = useRef(false);
+
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+
+    const api: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
+    const ctx = { state: useStore.getState(), dispatch: useStore.setState, router, api };
+
+    restoresession(ctx).then(async () => {
+      const token = useStore.getState().auth?.token;
+      if (token) {
+        // Re-fetch the active customer so state.auth.user is populated
+        await activecustomerquery(ctx).catch(() => {});
+      }
+    }).catch(() => {});
+  }, [router]);
+
+  return null;
+}
+
+/** Call on protected pages to redirect unauthenticated users to sign-in */
+export function useAuthGuard(redirectTo = ${JSON.stringify(unauthRedirect)}) {
+  const router = useRouter();
+  useEffect(() => {
+    const token = useStore.getState().auth?.token;
+    if (!token) {
+      // Save current path for redirect-after-login
+      if (typeof window !== 'undefined') {
+        useStore.setState((s: ReturnType<typeof useStore.getState>) => ({
+          ...s,
+          variables: { ...s.variables, redirectAfterLogin: window.location.pathname + window.location.search },
+        }));
+      }
+      router.push(redirectTo);
+    }
+  }, [router, redirectTo]);
+}
+`,
+  };
+}
+
+/**
+ * lib/action-ctx.ts — Shared factory that every generated action function uses.
+ *
+ * Instead of duplicating ~60 lines of boilerplate in every function, each
+ * generated action calls `const wwLib = createActionCtx(ctx)` at its top.
+ * The returned object is the same shape as the old per-function `wwLib` object
+ * so any raw JS workflow blocks that reference `wwLib.*` continue to work.
+ */
+export function emitActionCtxTs(): EmittedFile {
+  return {
+    path: 'lib/action-ctx.ts',
+    content: `import { useStore } from './store';
+import type { AppRouter } from './types';
+
+export interface ActionCtx {
+  router: AppRouter;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  api?: Record<string, (...args: any[]) => Promise<any>>;
+  form?: import('react-hook-form').UseFormReturn<Record<string, unknown>>;
+  popover?: [Record<string, boolean>, (fn: (s: Record<string, boolean>) => Record<string, boolean>) => void];
+  event?: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context?: Record<string, any>;
+  state?: ReturnType<typeof useStore.getState>;
+  dispatch?: typeof useStore.setState;
+}
+
+/**
+ * createActionCtx — Builds the runtime helpers that generated action functions
+ * receive as their \`wwLib\` variable.
+ *
+ * Keeping the variable name \`wwLib\` in generated code means any raw JavaScript
+ * workflow blocks that explicitly reference \`wwLib.navigate.to()\` continue to
+ * work without modification.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createActionCtx(ctx: ActionCtx): any {
+  const { router, form, popover } = ctx;
+  return {
+    variables: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      get: (name: string) => (useStore.getState().variables as any)[name],
+      set: (name: string, value: unknown) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        useStore.setState((s: any) => ({ ...s, variables: { ...s.variables, [name]: value } })),
+    },
+    navigate: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      to: (opts: any) => {
+        if (opts?.linkType === 'external') {
+          if (typeof window !== 'undefined') window.open(opts.externalUrl, opts.newTab ? '_blank' : '_self');
+        } else {
+          const qs = opts?.queryParams ? '?' + new URLSearchParams(opts.queryParams).toString() : '';
+          router.push((opts?.path ?? '/') + qs);
+        }
+      },
+      prev: (defaultPath?: string) => {
+        try { router.back(); } catch { if (defaultPath) router.push(defaultPath); }
+      },
+    },
+    collections: {
+      refetch: (_name: string) => Promise.resolve(),
+      update: (_name: string, _mode: string, _item: unknown, _key?: string) => Promise.resolve(),
+    },
+    workflows: {
+      run: (_name: string, _params?: unknown) => Promise.resolve(),
+    },
+    popovers: {
+      open: (id: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (popover) { const [, set] = popover; set((s: any) => ({ ...s, [id]: true })); }
+      },
+      close: (id: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (popover) { const [, set] = popover; set((s: any) => ({ ...s, [id]: false })); }
+      },
+      toggle: (id: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (popover) { const [s, set] = popover; set((st: any) => ({ ...st, [id]: !s[id] })); }
+      },
+    },
+    forms: {
+      setState: (_formId: string, _st: unknown) => {},
+      reset: (_formId: string) => { form?.reset(); },
+    },
+    auth: {
+      authenticate: (_opts: unknown) => Promise.resolve(null),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setUser: (user: unknown) => useStore.setState((s: any) => ({ ...s, auth: { ...s.auth, user } })),
+      clearSession: () => {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('access_token');
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        useStore.setState((s: any) => ({ ...s, auth: { ...s.auth, token: null, user: null } }));
+      },
+      restoreSession: () => Promise.resolve(null),
+    },
+    actions: { run: (_step: unknown) => Promise.resolve() },
+    event: { stopPropagation: () => {} },
+    scroll: {
+      to: (_selector: string) => {
+        if (typeof document !== 'undefined') document.querySelector(_selector)?.scrollIntoView({ behavior: 'smooth' });
+      },
+    },
+    print: { pdf: () => { if (typeof window !== 'undefined') window.print(); } },
+    clipboard: { copy: (text: string) => navigator?.clipboard?.writeText(text) },
+    timing: { delay: (ms: number) => new Promise(r => setTimeout(r, ms)) },
+    files: {
+      download: (url: string, filename?: string) => {
+        const a = document.createElement('a');
+        a.href = url;
+        if (filename) a.download = filename;
+        a.click();
+      },
+      fromBase64: (b64: string, type = 'application/octet-stream') => \`data:\${type};base64;\${b64}\`,
+    },
+    shared: { add: () => {}, delete: () => {}, deleteAll: () => {} },
+    components: { run: () => Promise.resolve(), emit: () => {} },
+  };
+}
+`,
+  };
 }
 
 export function emitGitignore(): EmittedFile {
@@ -409,7 +653,7 @@ export function emitReadme(ctx: CodegenCtx, appName: string): EmittedFile {
   lines.push('## Notes');
   lines.push('');
   lines.push('- This is a snapshot export. Re-exporting from the builder will overwrite these files.');
-  lines.push('- All state is managed in `lib/store.ts`. Workflows live in `lib/workflows.ts`.');
+  lines.push('- All state is managed in `lib/store.ts`. Action handlers live in `lib/actions/` (one file per domain).');
   lines.push('- Icons use [@iconify/react](https://iconify.design).');
 
   return { path: 'README.md', content: lines.join('\n') };

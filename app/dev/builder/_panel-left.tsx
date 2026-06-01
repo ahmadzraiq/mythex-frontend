@@ -1389,52 +1389,37 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
   );
 }
 
+type LeftTabId = 'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme';
+
 interface PanelLeftProps {
+  activeTab: LeftTabId;
+  onTabChange: (t: LeftTabId) => void;
   dataSlideState: DataTabSlideState;
   onSetDataSlide: (s: DataTabSlideState) => void;
   logicSlideState: LogicSlideState;
   onSetLogicSlide: (s: LogicSlideState) => void;
-  onOpenPageConfig: () => void;
-  onOpenAuthConfig: () => void;
   onWidthChange?: (w: number) => void;
   /** Called by ThemePanel to open the right slide panel for custom color add/edit. */
   onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
 }
 
 export default function PanelLeft({
+  activeTab,
+  onTabChange,
   dataSlideState,
   onSetDataSlide,
   logicSlideState,
   onSetLogicSlide,
-  onOpenPageConfig,
-  onOpenAuthConfig,
   onWidthChange,
   onOpenColorSlide,
 }: PanelLeftProps) {
-  const [tab, setTab] = useState<'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme'>('components');
+  const tab = activeTab;
+  const setTab = onTabChange;
   const [search, setSearch] = useState('');
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [layerDrag, setLayerDrag] = useState<LayerDragState>({ dragId: null, dropTargetId: null, dropPosition: 'above' });
 
   const store = useBuilderStore();
-
-  // Listen for external requests to open the Theme tab or a specific left tab
-  useEffect(() => {
-    const handleOpenTheme = () => setTab('theme');
-    const handleOpenLeftTab = (e: Event) => {
-      const detail = (e as CustomEvent<string>).detail;
-      if (detail === 'triggers' || detail === 'layers' || detail === 'components' ||
-          detail === 'data' || detail === 'logic' || detail === 'assets' || detail === 'theme') {
-        setTab(detail);
-      }
-    };
-    window.addEventListener('builder:open-theme-tab', handleOpenTheme);
-    window.addEventListener('builder:open-left-tab', handleOpenLeftTab);
-    return () => {
-      window.removeEventListener('builder:open-theme-tab', handleOpenTheme);
-      window.removeEventListener('builder:open-left-tab', handleOpenLeftTab);
-    };
-  }, []);
 
   // (Removed: no longer auto-switching to layers when entering edit mode)
 
@@ -1544,51 +1529,62 @@ export default function PanelLeft({
     show: (id: string, x: number, y: number) => setContextMenu({ id, x, y }),
   }), []);
 
-  const pages = useBuilderStore(s => s.pages);
-  const currentPageId = useBuilderStore(s => s.currentPageId);
-  const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? '';
-
   return (
     <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
-      {/* Page settings bar — only shown when a page exists */}
-      {pages.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-          <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📄</span>
-          <span style={{ flex: 1, fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {currentPageName}
-          </span>
-          <button
-            data-testid="auth-config-btn"
-            onClick={onOpenAuthConfig}
-            title="Auth settings (token, user endpoint, redirects)"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
-          >
-            🔐
-          </button>
-          <button
-            data-testid="page-config-btn"
-            onClick={onOpenPageConfig}
-            title="Page settings (name, SEO meta, interactions)"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
-          >
-            ⚙
-          </button>
-        </div>
-      )}
-      {/* Tab bar */}
+      {/* Tab bar — 4 icon-only tabs, styled to match the right panel */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        {((['layers', 'components', 'data', 'logic', 'triggers', 'assets', 'theme'] as const).map(t => ({
-          id: t,
-          label: t === 'triggers' ? 'App Triggers' : t,
-        }))).map(({ id: t, label }) => (
+        {([
+          {
+            id: 'layers' as LeftTabId,
+            title: 'Layers',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="2" y="2.5" width="10" height="2" rx="1" fill="currentColor"/>
+                <rect x="2" y="6" width="10" height="2" rx="1" fill="currentColor" opacity="0.7"/>
+                <rect x="2" y="9.5" width="10" height="2" rx="1" fill="currentColor" opacity="0.45"/>
+              </svg>
+            ),
+          },
+          {
+            id: 'components' as LeftTabId,
+            title: 'Components',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor"/>
+                <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor"/>
+                <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor"/>
+                <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor"/>
+              </svg>
+            ),
+          },
+          {
+            id: 'data' as LeftTabId,
+            title: 'Data',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <ellipse cx="7" cy="3.5" rx="4.5" ry="1.6" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                <path d="M2.5 3.5v3c0 .88 2.015 1.6 4.5 1.6s4.5-.72 4.5-1.6v-3" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                <path d="M2.5 6.5v3c0 .88 2.015 1.6 4.5 1.6s4.5-.72 4.5-1.6v-3" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+              </svg>
+            ),
+          },
+          {
+            id: 'logic' as LeftTabId,
+            title: 'Logic',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 3v2.5M3 8.5V11M3 5.5L7.5 7M3 8.5L7.5 7M7.5 7H11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <circle cx="3" cy="3" r="1.3" fill="currentColor"/>
+                <circle cx="3" cy="11" r="1.3" fill="currentColor"/>
+                <circle cx="11" cy="7" r="1.3" fill="currentColor"/>
+              </svg>
+            ),
+          },
+        ] as const).map(({ id: t, title, icon }) => (
           <button
             key={t}
             data-testid={`tab-${t}`}
-            title={label}
+            title={title}
             style={{
               flex: 1,
               padding: '9px 0',
@@ -1596,17 +1592,13 @@ export default function PanelLeft({
               border: 'none',
               borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent',
               color: tab === t ? '#f3f4f6' : '#6b7280',
-              fontSize: 9,
               cursor: 'pointer',
-              textTransform: 'capitalize',
               marginBottom: -1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             onClick={() => setTab(t)}
           >
-            {label}
+            {icon}
           </button>
         ))}
       </div>

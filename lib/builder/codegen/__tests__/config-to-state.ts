@@ -134,13 +134,15 @@ type RawWorkflow = {
  * Load an actions JSON file and return:
  *  - `workflows`: Record<workflowId, resolvedSteps[]>
  *  - `workflowMeta`: Record<workflowId, { name, trigger }>
+ *  - `workflowIds`: all workflow IDs defined in this config file (for domain grouping in codegen)
  */
 function loadActions(configName: string): {
   workflows: Record<string, object[]>;
   workflowMeta: Record<string, { name: string; trigger: string }>;
+  workflowIds: string[];
 } {
   const file = findActionsFile(configName);
-  if (!file) return { workflows: {}, workflowMeta: {} };
+  if (!file) return { workflows: {}, workflowMeta: {}, workflowIds: [] };
 
   const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, unknown>;
 
@@ -161,28 +163,45 @@ function loadActions(configName: string): {
   const workflows: Record<string, object[]> = {};
   const workflowMeta: Record<string, { name: string; trigger: string }> = {};
 
-  for (const [wfId, wf] of Object.entries(rawWorkflows)) {
-    const resolvedSteps: object[] = [];
-
-    for (const step of wf.steps ?? []) {
-      const actionId = step.action;
-      const actionDef = (actionId && atomicActions[actionId]) ? atomicActions[actionId] : {};
-      // Merge: step fields take precedence over action definition,
-      // except we use the action's `type`/`config` when the step doesn't override them
-      const resolved = { ...actionDef, ...step };
-      // Normalize: the codegen emitStep() looks for `type` and `config`
-      // Many actions store their params at root level — wrap them in `config`
-      if (typeof resolved.type === 'string' && !resolved.config) {
-        const { id, type, name, action, trigger, ...rest } = resolved as Record<string, unknown>;
-        resolved.config = rest;
-        // Re-attach non-config fields
-        (resolved as Record<string, unknown>).id = id;
-        (resolved as Record<string, unknown>).type = type;
-        (resolved as Record<string, unknown>).name = name;
-        (resolved as Record<string, unknown>).action = action;
-      }
-      resolvedSteps.push(resolved);
+  // Recursively resolve action references in a step tree (including trueBranch, falseBranch,
+  // branches, forEach steps, etc.) so nested action IDs get their type/config merged in.
+  function resolveStepTree(step: Record<string, unknown>): Record<string, unknown> {
+    const actionId = step.action as string | undefined;
+    const actionDef = (actionId && atomicActions[actionId]) ? atomicActions[actionId] : {};
+    const resolved = { ...actionDef, ...step } as Record<string, unknown>;
+    // Normalize: wrap root-level params into `config` when the step has a type but no config
+    if (typeof resolved.type === 'string' && !resolved.config) {
+      const { id, type, name, action, trigger, trueBranch, falseBranch, branches, steps: _steps, ...rest } = resolved;
+      resolved.config = rest;
+      (resolved as Record<string, unknown>).id = id;
+      (resolved as Record<string, unknown>).type = type;
+      (resolved as Record<string, unknown>).name = name;
+      (resolved as Record<string, unknown>).action = action;
+      if (trueBranch !== undefined) (resolved as Record<string, unknown>).trueBranch = trueBranch;
+      if (falseBranch !== undefined) (resolved as Record<string, unknown>).falseBranch = falseBranch;
+      if (branches !== undefined) (resolved as Record<string, unknown>).branches = branches;
+      if (_steps !== undefined) (resolved as Record<string, unknown>).steps = _steps;
     }
+    // Recurse into nested step arrays
+    for (const key of ['trueBranch', 'falseBranch', 'steps'] as const) {
+      const nested = resolved[key];
+      if (Array.isArray(nested)) {
+        resolved[key] = nested.map(s => resolveStepTree(s as Record<string, unknown>));
+      }
+    }
+    if (Array.isArray(resolved.branches)) {
+      resolved.branches = (resolved.branches as Record<string, unknown>[]).map(b => ({
+        ...b,
+        steps: Array.isArray(b.steps)
+          ? (b.steps as Record<string, unknown>[]).map(s => resolveStepTree(s))
+          : b.steps,
+      }));
+    }
+    return resolved;
+  }
+
+  for (const [wfId, wf] of Object.entries(rawWorkflows)) {
+    const resolvedSteps = (wf.steps ?? []).map(step => resolveStepTree(step));
 
     workflows[wfId] = resolvedSteps;
     workflowMeta[wfId] = {
@@ -203,7 +222,7 @@ function loadActions(configName: string): {
     };
   }
 
-  return { workflows, workflowMeta };
+  return { workflows, workflowMeta, workflowIds: Object.keys(workflows) };
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
@@ -263,7 +282,10 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
       name: cfg || r.path,
       route: r.path,
       nodes,
-      meta: undefined,
+      meta: {
+        isProtected: r.auth === true,
+        guestOnly: r.guestOnly === true,
+      },
     };
   });
 
@@ -273,6 +295,8 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
   // referenced by every page that uses the store layout.
   const pageWorkflows: Record<string, object[]> = {};
   const pageWorkflowMeta: Record<string, { name: string; trigger: string }> = {};
+  // Groups workflows by source config filename so codegen can split into domain files.
+  const pageWorkflowGroups: Record<string, string[]> = {};
 
   // 1. Shared / non-route action files first (so per-page entries can override)
   const routeConfigs = new Set((routesDef.routes ?? []).map(r => normalizeKey(r.config ?? '')));
@@ -280,18 +304,24 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     if (routeConfigs.has(normalizedName)) continue; // handled in step 2
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
     const configName = path.basename(filePath, '.json');
-    const { workflows, workflowMeta } = loadActions(configName);
+    const { workflows, workflowMeta, workflowIds } = loadActions(configName);
     void raw;
     Object.assign(pageWorkflows, workflows);
     Object.assign(pageWorkflowMeta, workflowMeta);
+    if (workflowIds.length > 0) {
+      pageWorkflowGroups[configName] = [...(pageWorkflowGroups[configName] ?? []), ...workflowIds];
+    }
   }
 
   // 2. Per-route action files
   for (const r of routesDef.routes ?? []) {
     const cfg = r.config ?? '';
-    const { workflows, workflowMeta } = loadActions(cfg);
+    const { workflows, workflowMeta, workflowIds } = loadActions(cfg);
     Object.assign(pageWorkflows, workflows);
     Object.assign(pageWorkflowMeta, workflowMeta);
+    if (workflowIds.length > 0) {
+      pageWorkflowGroups[cfg] = [...(pageWorkflowGroups[cfg] ?? []), ...workflowIds];
+    }
   }
 
   // ── Theme ──────────────────────────────────────────────────────────────────
@@ -309,6 +339,12 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     dark: c.dark ?? '#000000',
   }));
 
+  // ── Auth config (synthesized from routes.json if protected routes exist) ───
+  const protectedRoutes = (routesDef.routes ?? []).filter(r => r.auth === true);
+  const syntheticAuthConfig = protectedRoutes.length > 0 ? {
+    unauthenticatedRedirect: routesDef.defaultRedirect ?? '/sign-in',
+  } : undefined;
+
   return {
     pages,
     customVars,
@@ -319,6 +355,8 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     pageWorkflows,
     globalWorkflows: {},
     pageWorkflowMeta,
+    pageWorkflowGroups,
     globalWorkflowMeta: {},
+    authConfig: syntheticAuthConfig,
   };
 }

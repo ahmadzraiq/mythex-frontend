@@ -3,13 +3,18 @@ import { rewritePropValue } from '../formula-rewrite';
 
 interface FetchStep { type: 'fetch'; url?: string; method?: string; body?: unknown; headers?: unknown; storeIn?: string; responsePath?: string; dataSourceId?: string; collectionName?: string; payload?: Record<string, unknown> }
 
-export function emitFetch(step: FetchStep, symbols: SymbolMap): string {
+export function emitFetch(step: FetchStep, symbols: SymbolMap, stepId?: string): string {
   const dsId = step.dataSourceId ?? step.collectionName ?? step.payload?.dataSourceId as string ?? '';
   const dsIdent = symbols.collections.get(dsId);
 
   if (dsIdent) {
     // Known datasource — use the generated api function
-    return `{\n  const result = await api.${dsIdent}();\n  useStore.setState(s => ({ ...s, collections: { ...s.collections, ${dsIdent}: result } }));\n}`;
+    let lines = `const result = await api.${dsIdent}();\n`;
+    lines += `useStore.setState(s => ({ ...s, collections: { ...s.collections, ${dsIdent}: result } }));`;
+    if (stepId) {
+      lines += `\n_results[${JSON.stringify(stepId)}] = { result };`;
+    }
+    return `{\n${lines.split('\n').map(l => '  ' + l).join('\n')}\n}`;
   }
 
   // Inline fetch
@@ -28,6 +33,9 @@ export function emitFetch(step: FetchStep, symbols: SymbolMap): string {
   if (storeIn) {
     const parts = storeIn.split('.').map(p => JSON.stringify(p));
     lines += `\nuseStore.setState(s => setNestedValue(s, [${parts.join(', ')}], fetchData));`;
+  }
+  if (stepId) {
+    lines += `\n_results[${JSON.stringify(stepId)}] = { result: fetchData };`;
   }
   return `{\n${lines.split('\n').map(l => '  ' + l).join('\n')}\n}`;
 }

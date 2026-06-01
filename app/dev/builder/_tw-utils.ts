@@ -276,8 +276,9 @@ export function parseRoundedNamedTokenPx(className: string, prefix: string): num
  */
 export function parseTwArbitrary(className: string, prefix: string): number | null {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Match px, %, vh, and vw units
-  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
+  // (?:^|(?<=\s)) instead of \b: '-' is a word boundary so \bw-[ would match
+  // inside max-w-[70%], returning the max-width value as the plain width.
+  const match = className.match(new RegExp(`(?:^|(?<=\\s))${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
   return match ? parseFloat(match[1]) : null;
 }
 
@@ -289,7 +290,7 @@ export function parseTwArbitrary(className: string, prefix: string): number | nu
  */
 export function parseTwArbitraryWithUnit(className: string, prefix: string): { value: number; unit: string } | null {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
+  const match = className.match(new RegExp(`(?:^|(?<=\\s))${escaped}\\[(\\d+(?:\\.\\d+)?)(px|%|vh|vw)\\]`));
   if (match) return { value: parseFloat(match[1]), unit: match[2] };
   return null;
 }
@@ -301,7 +302,7 @@ export function parseTwArbitraryWithUnit(className: string, prefix: string): { v
  */
 export function parseTwArbitraryPx(className: string, prefix: string): number | undefined {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const m = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
+  const m = className.match(new RegExp(`(?:^|(?<=\\s))${escaped}\\[(\\d+(?:\\.\\d+)?)px\\]`));
   return m ? parseFloat(m[1]) : undefined;
 }
 
@@ -312,7 +313,7 @@ export function parseTwArbitraryPx(className: string, prefix: string): number | 
  */
 export function parseTwArbitraryNum(className: string, prefix: string): number | undefined {
   const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const m = className.match(new RegExp(`\\b${escaped}\\[(\\d+(?:\\.\\d+)?)\\]`));
+  const m = className.match(new RegExp(`(?:^|(?<=\\s))${escaped}\\[(\\d+(?:\\.\\d+)?)\\]`));
   return m ? parseFloat(m[1]) : undefined;
 }
 

@@ -759,13 +759,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     let contextParentItem: Record<string, unknown> | undefined;
     const selectedId = selectedIds[0];
     if (selectedId) {
-      // Collect map ancestors (innermost first), skipping the selected node's own map —
-      // a node's map defines scope for its children, not for itself.
+      // Collect map ancestors (innermost first). The selected node's own map is also
+      // included — at runtime, conditions on a REPEAT node are evaluated per-item (inside
+      // the item's scope), so the preview should match that by using the first item's context.
       const mapAncestors: string[] = [];
       let walkNode = findNode(pageNodes, selectedId);
-      const selectedNode = walkNode;
       while (walkNode) {
-        if (walkNode.map && walkNode !== selectedNode) {
+        if (walkNode.map) {
           const raw = walkNode.map;
           const mapStr = typeof raw === 'string'
             ? raw

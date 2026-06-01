@@ -16,7 +16,7 @@ import type { BuilderStore } from '@/app/dev/builder/_store-types';
 import type { EmittedFile } from './types';
 import { buildCodegenCtx } from './plan';
 import { emitPages, emitLayoutShell } from './routing';
-import { emitWorkflows } from './workflows';
+import { emitWorkflowFiles } from './workflows';
 import { emitStoreTs } from './store';
 import { emitApiTs, emitEnvExample, emitProxyRoutes } from './datasources';
 import { emitGlobalsCss } from './theme';
@@ -31,6 +31,10 @@ import {
   emitRootLayout,
   emitGitignore,
   emitReadme,
+  emitThemeTs,
+  emitThemeSyncComponent,
+  emitAuthSyncComponent,
+  emitActionCtxTs,
 } from './files/static-files';
 import { emitUtilsTs } from './files/utils-template';
 
@@ -83,22 +87,29 @@ export function codegenProject(
   // ── Library files ────────────────────────────────────────────────────────────
   files.push(emitStoreTs(ctx));
   files.push(emitUtilsTs());
+  if (ctx.flags.hasThemeActions) {
+    files.push(emitThemeTs());
+    files.push(emitThemeSyncComponent());
+  }
+  if (ctx.flags.hasAuth) {
+    const unauthRedirect = (ctx.store.authConfig as Record<string, string> | undefined)?.unauthenticatedRedirect ?? '/sign-in';
+    files.push(emitAuthSyncComponent(unauthRedirect));
+  }
 
   if (ctx.flags.hasFetch || ctx.flags.hasGraphQL || (ctx.store.pageDataSources ?? []).length > 0) {
     files.push(emitApiTs(ctx));
     files.push(...emitProxyRoutes(ctx));
   }
 
-  // ── Workflow functions ────────────────────────────────────────────────────────
+  // ── Action functions (split into lib/actions/<domain>.ts files) ──────────────
   const allWorkflows = {
     ...(store.pageWorkflows ?? {}),
     ...(store.globalWorkflows ?? {}),
   };
   if (Object.keys(allWorkflows).length > 0) {
-    files.push({
-      path: 'lib/workflows.ts',
-      content: emitWorkflows(ctx),
-    });
+    // Shared context factory (lib/action-ctx.ts) must come before action files
+    files.push(emitActionCtxTs());
+    files.push(...emitWorkflowFiles(ctx));
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────────

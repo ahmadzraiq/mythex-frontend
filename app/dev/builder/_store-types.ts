@@ -816,6 +816,8 @@ export interface BuilderStore {
   pageWorkflows: Record<string, object[]>;
   /** Metadata (name, trigger, description) for each named workflow, keyed by name */
   pageWorkflowMeta: Record<string, WorkflowMeta>;
+  /** Maps source config filename (without .json) to the list of workflow IDs it defines. Used by codegen to split actions into domain files. */
+  pageWorkflowGroups?: Record<string, string[]>;
   /**
    * Direct actions (graphql, fetch, navigateTo, etc.) from config/actions/*.json, keyed by UUID.
    * Used by the workflow canvas to resolve ActionRefs to their real type (e.g. graphql)

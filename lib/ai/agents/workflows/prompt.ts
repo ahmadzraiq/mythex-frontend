@@ -47,7 +47,7 @@ export function buildWorkflowsAgentPrompt(context: {
 
 Unimplementable stubs: if a stub cannot be implemented using only the sandbox identifiers (variables, wwLib, context, globalContext, auth, event, fetch) — for example because it would require reading or mutating the DOM, applying CSS, or calling any browser API — leave it empty. Do not attempt to work around the sandbox with runJavaScript. Visual effects on hover (scale, shadow, opacity, translate) are owned by the animation agent via set_animation; no workflow step can produce them.
 
-For every branch arm, verify each display-bound variable is updated in that arm — silent-skip arms freeze the UI on that path.
+For every branch arm, verify ALL variables the downstream logic reads are correctly set — not just display-bound ones. An internal state variable left unset in one branch silently produces wrong results on that path.
 
 ${SHARED_FORMULA_SYNTAX}
 

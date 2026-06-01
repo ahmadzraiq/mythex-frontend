@@ -720,8 +720,8 @@ const layoutTools: BuilderTool[] = [
         breakpoint: { type: 'string', enum: ['desktop', 'laptop', 'tablet', 'mobile'], description: 'Target responsive breakpoint. Omit or "desktop" for base styles.' },
         // ── Flex/Grid layout ──────────────────────────────────────────────────
         direction: { type: 'string', enum: ['row', 'column'], description: 'Flex direction.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (items-*).' },
-        justify: { description: 'justify-content value or Tailwind shorthand (between, around, evenly).' },
+        align: { type: 'string', enum: ['items-start', 'items-center', 'items-end', 'items-stretch', 'items-baseline'], description: 'Cross-axis alignment (align-items).' },
+        justify: { type: 'string', enum: ['justify-start', 'justify-center', 'justify-end', 'justify-between', 'justify-around', 'justify-evenly'], description: 'Main-axis alignment (justify-content).' },
         self: {
           type: 'string',
           enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'],
@@ -739,7 +739,7 @@ const layoutTools: BuilderTool[] = [
           enum: ['row', 'col', 'dense', 'row-dense', 'col-dense'],
           description: 'Grid auto-flow.',
         },
-        colSpan:  { type: 'number', description: 'How many columns this item spans (1-12). 13 = col-span-full.' },
+        colSpan:  { description: 'How many columns this item spans (1-12). 13 = col-span-full. Also accepts a JS formula string that evaluates to a number for per-item dynamic span inside a REPEAT.' },
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behavior.' },
         flex:     { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
         // ── Spacing (padding, margin, gap) ────────────────────────────────────
@@ -887,7 +887,7 @@ const logicTools: BuilderTool[] = [
         nodeId: { type: 'string', description: 'Node ID.' },
         condition: {
           type: 'string',
-          description: 'JS expression, e.g. "variables[\'UUID\'] === \'active\'" or "context?.item?.data?.inStock". Pass "" to remove. NEVER pass "true" — that is a no-op; just omit set_condition if the node should always be visible.',
+          description: 'JS expression. Pass "" to remove. NEVER pass "true" — that is a no-op; omit set_condition if the node should always be visible.',
         },
       },
       required: ['nodeId', 'condition'],
@@ -1017,7 +1017,7 @@ const logicTools: BuilderTool[] = [
         workflowId: { type: 'string', description: 'Workflow UUID from the WORKFLOW ROSTER in your message.' },
         stepId:       { type: 'string', description: 'Unique step ID string, e.g. "s1", "s-digit-1". Must be unique within the entire workflow.' },
         type:         { type: 'string', enum: ['changeVariableValue', 'resetVariableValue', 'branch', 'multiOptionBranch', 'passThroughCondition', 'forEach', 'whileLoop', 'breakLoop', 'continueLoop', 'navigateTo', 'navigatePrev', 'fetchData', 'graphql', 'fetchCollection', 'updateCollection', 'runJavaScript', 'timeDelay', 'copyToClipboard', 'runProjectWorkflow', 'setFormState', 'resetForm', 'returnValue', 'executeComponentAction', 'pickFile', 'printPdf', 'downloadFileFromUrl', 'createUrlFromBase64', 'encodeFileAsBase64', 'stopPropagation'], description: 'Step type. See per-field descriptions for which params each type uses.' },
-        parentStepId: { type: 'string', description: 'ID of the parent container step. Omit (or null) to add at root level. Only branch, multiOptionBranch, forEach, and whileLoop are valid parents. To add multiple sequential steps at the same level, repeat the same parentStepId + branchKey for each — they are appended in order.' },
+        parentStepId: { type: 'string', description: 'ID of the parent container step. Omit this field entirely for root-level steps — do NOT pass the string "null". Only branch, multiOptionBranch, forEach, and whileLoop are valid parents. To add multiple sequential steps at the same level, repeat the same parentStepId + branchKey for each — they are appended in order.' },
         branchKey:    { type: 'string', description: 'Where inside the parent to insert. Values: "trueBranch" or "falseBranch" (inside a branch); "branches.{matchValue}" (inside a multiOptionBranch — creates the entry if missing); "defaultBranch" (multiOptionBranch fallback — REQUIRED for every multiOptionBranch, add it even with an empty step to make the no-match case explicit); "loopBody" (inside forEach/whileLoop). There is no "null" branchKey.' },
         // changeVariableValue / resetVariableValue
         variableName: { type: 'string', description: 'changeVariableValue / resetVariableValue: UUID of the target variable. Use dot-notation "UUID.fieldName" to update one field of an object variable without touching siblings.' },
@@ -2172,7 +2172,7 @@ const batchTools: BuilderTool[] = [
                 type: 'object',
                 properties: {
                   workflowId: { type: 'string', description: 'Pre-assigned hex UUID (8-4-4-4-12) for the workflow stub.' },
-                  trigger: { type: 'string', enum: ['click', 'change', 'submit', 'enterKey', 'valueChange', 'mouseEnter', 'mouseLeave'] },
+                  trigger: { type: 'string', enum: ['click', 'change', 'submit', 'enterKey', 'valueChange', 'mouseEnter', 'mouseLeave'], description: 'For Input/Textarea: use "change" (not "valueChange" — it maps to onValueChange which InputWithField never calls). For send/submit patterns, no change stub is needed at all — the tracker slot variables["{nodeId}-value"] is auto-written every keystroke.' },
                 },
                 required: ['workflowId', 'trigger'],
               },
@@ -2254,14 +2254,14 @@ const setStyleTool: BuilderTool[] = [
 
         // ── Layout (flex/grid direction, alignment) ───────────────────────────
         direction: { type: 'string', enum: ['row', 'column'], description: 'flex-direction — only applies to flex containers. Do NOT combine with gridCols: grid containers ignore flex-direction entirely.' },
-        align: { type: 'string', enum: ['start', 'center', 'end', 'stretch', 'baseline'], description: 'Cross-axis alignment (align-items).' },
-        justify: { description: 'justify-content value (start, center, end, between, around, evenly).' },
+        align: { type: 'string', enum: ['items-start', 'items-center', 'items-end', 'items-stretch', 'items-baseline'], description: 'Cross-axis alignment (align-items).' },
+        justify: { type: 'string', enum: ['justify-start', 'justify-center', 'justify-end', 'justify-between', 'justify-around', 'justify-evenly'], description: 'Main-axis alignment (justify-content).' },
         self: { type: 'string', enum: ['auto', 'start', 'center', 'end', 'stretch', 'baseline'], description: 'Self cross-axis alignment (align-self).' },
         cursor: { type: 'string', enum: ['pointer', 'default', 'not-allowed', 'grab', 'crosshair', 'text'], description: 'CSS cursor.' },
         gridCols: { description: 'grid-template-columns. Switches container to CSS grid. Integer or fr-unit string (e.g. \'3fr 2fr\').' },
         gridRows: { description: 'Number of grid rows.' },
         gridFlow: { type: 'string', enum: ['row', 'col', 'row-dense', 'col-dense'], description: 'grid-auto-flow direction.' },
-        colSpan: { description: 'Number of grid columns this item spans.' },
+        colSpan: { description: 'Number of grid columns this item spans (1-12). Also accepts a JS formula string that evaluates to a number for per-item dynamic span inside a REPEAT.' },
         flexWrap: { type: 'string', enum: ['wrap', 'nowrap', 'wrap-reverse'], description: 'Flex wrap behaviour.' },
         flex: { type: 'number', enum: [1], description: 'Flex-grow. Only 1 is accepted.' },
 
@@ -2332,7 +2332,7 @@ const setStyleTool: BuilderTool[] = [
         },
 
         // ── Text Color ────────────────────────────────────────────────────────
-        color: { type: 'string', description: 'Text/icon color — theme token, hex. Theme tokens: foreground, primary, muted-foreground, etc.' },
+        color: { type: 'string', description: 'Text/icon color — ONLY valid on Text and Heading nodes. NEVER on a Box container — set it on the child Text node directly. Theme token, hex.' },
 
         // ── Border ────────────────────────────────────────────────────────────
         borderWidth: { description: 'Border width in px (number) or 0 to remove.' },

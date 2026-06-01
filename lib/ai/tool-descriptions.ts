@@ -38,7 +38,7 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'set_src':             'Set source URL or JS expression on Image/Video/Iframe. Accepts a static URL or a JS expression (e.g. `context?.item?.data?.avatar`). Also objectFit, alt, poster.',
   'set_video_props':     'Set Video playback props. Supported: autoPlay, loop, muted, controls.',
   'set_icon_src':        'Set icon name (static Iconify string or JS expression). Color and size are set via set_style.',
-  'set_condition':       'Set a visibility condition (JS expression).',
+  'set_condition':       'Set a visibility condition (JS expression). Only call when the node is explicitly annotated CONDITION(...) in the compact tree — never on a REPEAT node or any other node.',
   'set_repeat':          'Make a node repeat over a list. Can also be set inline in generate_structure via repeat/keyField fields. Only call this when the target node is annotated REPEAT(...) in the compact tree.',
   'set_disabled':        'Set disabled state. Boolean or JS expression string.',
   'set_loading_state':   'Set visibility state tag — one of loading/empty/default/custom/none.',

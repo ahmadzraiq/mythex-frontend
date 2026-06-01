@@ -370,6 +370,16 @@ function summarizeNode(n: SDUINode, depth: number): unknown {
 // ─── Apply set_layout helper ─────────────────────────────────────────────────
 
 /** Map CSS justify-content wording to Tailwind justify-* suffix (both forms accepted). */
+/** Strip CSS flex/space prefixes from quoted tokens inside a formula string
+ *  so the downstream prefix-regex always sees bare tokens.
+ *  e.g. 'flex-end' → 'end',  'space-between' → 'between'
+ */
+function normFormulaAlignTokens(formula: string): string {
+  return formula
+    .replace(/(['"])(flex-)(start|end)\1/g, '$1$3$1')
+    .replace(/(['"])(space-)(between|around|evenly)\1/g, '$1$3$1');
+}
+
 function normJustifyCssToTwSuffix(v: string): string {
   let s = v.trim().replace(/^space-/, '');
   // Strip leading "justify-" if the AI passes the full class name (e.g. "justify-between" → "between")
@@ -468,6 +478,18 @@ function isFormulaExpression(val: string): boolean {
     val.startsWith('theme[')
   );
 }
+
+/** Strip a stray trailing double-quote that the model sometimes appends to a formula string. */
+function sanitizeFormula(val: string): string {
+  // Only strip a trailing " when it is spurious (unbalanced) — i.e. when the total
+  // count of double-quote characters in the string is odd. This preserves legitimate
+  // closing quotes in formulas like: condition ? "items-end" : "items-start"
+  if (!val.endsWith('"')) return val;
+  const quoteCount = (val.match(/"/g) ?? []).length;
+  if (quoteCount % 2 === 1) return val.slice(0, -1).trimEnd();
+  return val;
+}
+
 
 /**
  * Unwraps a serialized formula object string that the AI sometimes produces
@@ -1689,7 +1711,7 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const capErr = checkCapability(store, nodeId, 'typography');
     if (capErr) return capErr;
-    const colorVal = unwrapSerializedFormula(input.color as string);
+    const colorVal = sanitizeFormula(unwrapSerializedFormula(input.color as string));
     if (isFormulaExpression(colorVal)) {
       const sanitized = resolveFormulaTokens(colorVal);
       patchNodeStyle(store, nodeId, { color: { js: sanitized } });
@@ -2241,6 +2263,30 @@ const handlers: Record<string, Handler> = {
       };
     }
 
+    // Normalize standard CSS property names to tool-schema aliases so agents can use
+    // either form (e.g. alignSelf or self) and both resolve correctly.
+    const CSS_ALIAS_MAP: Record<string, string> = {
+      alignSelf:           'self',
+      alignItems:          'align',
+      justifyContent:      'justify',
+      flexDirection:       'direction',
+      flexGrow:            'flex',
+      borderRadius:        'radius',
+      backgroundColor:     'bg',
+      fontWeight:          'weight',
+      lineHeight:          'leading',
+      letterSpacing:       'tracking',
+      gridTemplateColumns: 'gridCols',
+      gridTemplateRows:    'gridRows',
+    };
+    const normalizedInput = input as Record<string, unknown>;
+    for (const [cssName, alias] of Object.entries(CSS_ALIAS_MAP)) {
+      if (cssName in normalizedInput && !(alias in normalizedInput)) {
+        normalizedInput[alias] = normalizedInput[cssName];
+        delete normalizedInput[cssName];
+      }
+    }
+
     const node = findNodeInStore(store, nodeId);
     const componentType = (node?.type as string | undefined) ?? 'Unknown';
     const caps = getCapabilities(componentType); // null = no restriction
@@ -2550,11 +2596,27 @@ const handlers: Record<string, Handler> = {
     const node = findNodeInStore(store, nodeId);
     const current = (node?.props as { className?: string })?.className ?? '';
 
-    // Formula-expression guard: justify and align can receive ternary strings.
+    // Accumulate all style mutations so that multiple patchNodeStyle / removeNodeStyleKeys
+    // calls within this handler share the same read-modify-write cycle, avoiding the
+    // stale-snapshot problem (store = getStore() is captured once and does not reflect
+    // intermediate writes made later in this same call).
+    const styleAdd: Record<string, unknown> = {};
+    const styleRemoveSet = new Set<string>();
+    const addStyle = (patch: Record<string, unknown>) => Object.assign(styleAdd, patch);
+    const removeStyle = (...keys: string[]) => {
+      for (const k of keys) { styleRemoveSet.add(k); delete styleAdd[k]; }
+    };
+
+    // Formula-expression guard: justify, align, and self can receive ternary strings.
     // buildLayoutClass would blindly concatenate them into "justify-<formula>" — invalid Tailwind.
-    // Intercept them before the class builder runs, then write to inline style instead.
-    const justifyVal = input.justify as string | undefined;
-    const alignVal   = input.align   as string | undefined;
+    // Intercept them before the class builder runs and route to props.classFormulas so
+    // applyClassFormulas evaluates them per-item with context.item available.
+    const classFormulasPatch: Record<string, { js: string }> = {};
+    const addClassFormula = (key: string, val: string) => { classFormulasPatch[key] = { js: val }; };
+    const classFormulasRemoveKeys = new Set<string>();
+
+    const justifyVal = typeof input.justify === 'string' ? sanitizeFormula(input.justify) : (input.justify as string | undefined);
+    const alignVal   = typeof input.align   === 'string' ? sanitizeFormula(input.align)   : (input.align   as string | undefined);
     const isJustifyFormula = !!justifyVal && isFormulaExpression(justifyVal);
     const isAlignFormula   = !!alignVal   && isFormulaExpression(alignVal);
     const layoutInput = {
@@ -2564,13 +2626,24 @@ const handlers: Record<string, Handler> = {
     };
     let updated = buildLayoutClass(layoutInput, current);
 
+    let alignPrefixed: string | null = null;
+    let justifyPrefixed: string | null = null;
+
     if (isJustifyFormula) {
-      patchNodeStyle(store, nodeId, { justifyContent: { js: justifyVal } });
+      justifyPrefixed = normFormulaAlignTokens(justifyVal!).replace(/(['"])(start|center|end|between|around|evenly)\1/g, '$1justify-$2$1');
       updated = updated.split(' ').filter(t => !/^justify-/.test(t)).join(' ').trim();
     }
     if (isAlignFormula) {
-      patchNodeStyle(store, nodeId, { alignItems: { js: alignVal } });
+      alignPrefixed = normFormulaAlignTokens(alignVal!).replace(/(['"])(start|center|end|stretch|baseline)\1/g, '$1items-$2$1');
       updated = updated.split(' ').filter(t => !/^items-/.test(t)).join(' ').trim();
+    }
+
+    if (alignPrefixed && justifyPrefixed) {
+      classFormulasPatch['alignment'] = { js: `(${alignPrefixed}) + ' ' + (${justifyPrefixed})` };
+    } else if (alignPrefixed) {
+      classFormulasPatch['alignment'] = { js: alignPrefixed };
+    } else if (justifyPrefixed) {
+      classFormulasPatch['alignment'] = { js: justifyPrefixed };
     }
 
     // ── Spacing (padding, margin, gap) ────────────────────────────────────────
@@ -2675,19 +2748,27 @@ const handlers: Record<string, Handler> = {
 
     // Strip any residual inline spacing styles
     if (hasSpacingParam) {
-      removeNodeStyleKeys(store, nodeId, [
+      removeStyle(
         'paddingTop','paddingRight','paddingBottom','paddingLeft','paddingBlock','paddingInline',
         'marginTop','marginRight','marginBottom','marginLeft',
         'gap','columnGap','rowGap',
-      ]);
+      );
     }
     // ── End spacing ───────────────────────────────────────────────────────────
 
     if (input.self) {
-      const selfVal = input.self as string;
+      const selfVal = sanitizeFormula(input.self as string);
       if (isFormulaExpression(selfVal)) {
-        patchNodeStyle(store, nodeId, { alignSelf: { js: selfVal } });
+        // Store as inline style (alignSelf) using CSS values so it applies with full
+        // specificity in both builder and preview — identical to how backgroundColor
+        // and textAlign formulas work.
+        const cssFormula = normFormulaAlignTokens(selfVal).replace(
+          /(['"])(start|center|end|stretch|auto)\1/g,
+          (_, q, t) => t === 'start' ? `${q}flex-start${q}` : t === 'end' ? `${q}flex-end${q}` : `${q}${t}${q}`,
+        );
+        addStyle({ alignSelf: { js: cssFormula } });
         updated = updated.split(' ').filter(t => !/^self-/.test(t)).join(' ').trim();
+        classFormulasRemoveKeys.add('selfAlignment');
       } else {
         updated = replaceTokenGroup(updated, SELF_PREFIXES, `self-${selfVal}`);
       }
@@ -2699,10 +2780,10 @@ const handlers: Record<string, Handler> = {
       if (gridColsVal.includes(' ')) {
         // fr-unit template (e.g. "3fr 2fr") — cannot go in a class; write as inline style
         updated = updated.split(' ').filter(t => !/^grid-cols-/.test(t)).join(' ').trim();
-        patchNodeStyle(store, nodeId, { gridTemplateColumns: gridColsVal });
+        addStyle({ gridTemplateColumns: gridColsVal });
       } else {
         updated = replaceTwToken(updated, 'grid-cols-', `grid-cols-${gridColsVal}`);
-        removeNodeStyleKeys(store, nodeId, ['gridTemplateColumns']);
+        removeStyle('gridTemplateColumns');
       }
     }
     if (input.gridRows) updated = replaceTwToken(updated, 'grid-rows-', `grid-rows-${input.gridRows}`);
@@ -2711,15 +2792,23 @@ const handlers: Record<string, Handler> = {
       const GRID_FLOW_TOKENS = ['grid-flow-row', 'grid-flow-col', 'grid-flow-dense', 'grid-flow-row-dense', 'grid-flow-col-dense'];
       updated = replaceTokenGroup(updated, GRID_FLOW_TOKENS, `grid-flow-${input.gridFlow}`);
     }
-    if (input.colSpan) {
-      const span = input.colSpan as number;
-      updated = replaceTwToken(updated, 'col-span-', span > 12 ? 'col-span-full' : `col-span-${span}`);
+    if (input.colSpan != null) {
+      const spanRaw = input.colSpan;
+      if (typeof spanRaw === 'string' && isFormulaExpression(spanRaw)) {
+        // Dynamic colSpan — store as gridColumn inline style formula: 'span N'
+        addStyle({ gridColumn: { js: `'span ' + (${resolveFormulaTokens(spanRaw)})` } });
+        updated = updated.split(' ').filter(t => !/^col-span-/.test(t)).join(' ').trim();
+      } else {
+        const span = spanRaw as number;
+        updated = replaceTwToken(updated, 'col-span-', span > 12 ? 'col-span-full' : `col-span-${span}`);
+        removeStyle('gridColumn');
+      }
     }
     if (input.flexWrap) updated = replaceTokenGroup(updated, ['flex-wrap', 'flex-nowrap', 'flex-wrap-reverse'], `flex-${input.flexWrap}`);
     if (input.flex != null) {
       updated = updated.split(' ').filter(t => !/^flex-\d/.test(t) && !/^flex-\[/.test(t) && !/^grow$/.test(t)).join(' ').trim();
       updated = `${updated} flex-1`.trim();
-      removeNodeStyleKeys(store, nodeId, ['flex']);
+      removeStyle('flex');
     }
     // ── Size ──────────────────────────────────────────────────────────────────
     if (hasSizeParam) {
@@ -2790,14 +2879,10 @@ const handlers: Record<string, Handler> = {
         updated = `${updated} min-h-[${mh}]`.trim();
       }
 
-      if (stripSizeStyleWidth || stripSizeStyleHeight) {
-        removeNodeStyleKeys(store, nodeId, [
-          ...(stripSizeStyleWidth  ? ['width']  : []),
-          ...(stripSizeStyleHeight ? ['height'] : []),
-        ]);
-      }
-      removeNodeStyleKeys(store, nodeId, ['maxWidth', 'minWidth', 'maxHeight', 'minHeight']);
-      if (Object.keys(sizePatch).length > 0) patchNodeStyle(store, nodeId, sizePatch);
+      if (stripSizeStyleWidth)  removeStyle('width');
+      if (stripSizeStyleHeight) removeStyle('height');
+      removeStyle('maxWidth', 'minWidth', 'maxHeight', 'minHeight');
+      if (Object.keys(sizePatch).length > 0) addStyle(sizePatch);
     }
 
     // ── Typography ────────────────────────────────────────────────────────────
@@ -2824,7 +2909,7 @@ const handlers: Record<string, Handler> = {
       if (input.textAlign) {
         const alignRaw = input.textAlign as string;
         if (isFormulaExpression(alignRaw)) {
-          patchNodeStyle(store, nodeId, { textAlign: { js: alignRaw } });
+          addStyle({ textAlign: { js: alignRaw } });
           updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, '');
         } else {
           updated = replaceTokenGroup(updated, TEXT_ALIGN_PREFIXES, `text-${alignRaw}`);
@@ -2913,9 +2998,28 @@ const handlers: Record<string, Handler> = {
         }
       }
     }
-    if (Object.keys(insetStylePatch).length > 0) patchNodeStyle(store, nodeId, insetStylePatch);
-    if (insetKeysToRemoveFromStyle.length > 0) removeNodeStyleKeys(store, nodeId, insetKeysToRemoveFromStyle);
+    if (Object.keys(insetStylePatch).length > 0) addStyle(insetStylePatch);
+    if (insetKeysToRemoveFromStyle.length > 0) removeStyle(...insetKeysToRemoveFromStyle);
     // ── End position ──────────────────────────────────────────────────────────
+
+    // ── Flush accumulated style mutations (single atomic read-modify-write) ───
+    if (Object.keys(styleAdd).length > 0 || styleRemoveSet.size > 0) {
+      const existing = getNodeStyle(store, nodeId);
+      const merged = { ...existing, ...styleAdd };
+      for (const k of styleRemoveSet) delete merged[k];
+      const clean = Object.fromEntries(
+        Object.entries(merged).filter(([, v]) => v !== '' && v != null && v !== undefined)
+      );
+      store.patchProp(nodeId, 'props.style', clean);
+    }
+
+    // ── Flush classFormulas (align/justify formula → Tailwind class per item) ─
+    if (Object.keys(classFormulasPatch).length > 0 || classFormulasRemoveKeys.size > 0) {
+      const existingCF = (findNodeInStore(store, nodeId)?.props as Record<string, unknown>)?.classFormulas as Record<string, unknown> ?? {};
+      const merged = { ...existingCF, ...classFormulasPatch };
+      for (const k of classFormulasRemoveKeys) delete merged[k];
+      store.patchProp(nodeId, 'props.classFormulas', merged);
+    }
 
     store.patchProp(nodeId, 'props.className', updated);
 
@@ -3391,7 +3495,8 @@ const handlers: Record<string, Handler> = {
     const currentSteps = (store.pageWorkflows![workflowName] ?? []) as Array<Record<string, unknown>>;
     const cloned = JSON.parse(JSON.stringify(currentSteps)) as Array<Record<string, unknown>>;
 
-    const parentStepId = input.parentStepId as string | undefined;
+    const rawParentId = input.parentStepId as string | undefined;
+    const parentStepId = (rawParentId === 'null' || rawParentId === '') ? undefined : rawParentId;
     const branchKey = input.branchKey as string | undefined;
 
     /** Recursively find a step by id in a steps array and all nested branches. */
@@ -3438,6 +3543,14 @@ const handlers: Record<string, Handler> = {
         return {
           success: false,
           error: 'add_workflow_step: branchKey is required when parentStepId is provided. Use "trueBranch", "falseBranch", "branches.{match}", "defaultBranch", or "loopBody".',
+        };
+      }
+
+      const CONTAINER_STEP_TYPES = new Set(['branch', 'multiOptionBranch', 'passThroughCondition', 'forEach', 'whileLoop']);
+      if (!CONTAINER_STEP_TYPES.has(parentStep.type as string)) {
+        return {
+          success: false,
+          error: `add_workflow_step: step "${parentStepId}" has type "${parentStep.type}" which cannot contain children. Only branch, multiOptionBranch, forEach, and whileLoop steps are valid parents. To add sequential steps inside the same branch arm, repeat the same parentStepId + branchKey as the previous step — they are appended in order.`,
         };
       }
 
@@ -4755,20 +4868,23 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       const wfId = act.workflowId;
       const trigger = act.trigger ?? 'click';
       if (!wfId || typeof wfId !== 'string') continue;
-      // Idempotency: skip if this UUID is already registered
-      if ((getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) continue;
-      // Derive a human-readable display name (stored in meta.name, NOT as the store key).
-      const nodeName = (n.name as string | undefined) ?? (n.type as string | undefined) ?? 'Node';
-      const displayName = `${nodeName}_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
-      const freshStore = getStore();
-      // Store under the UUID — add_workflow_step's first check (workflowId in pageWorkflows)
-      // succeeds immediately without any meta.id bridge. Matches the globalWorkflows convention.
-      freshStore.setPageWorkflow(wfId, []);
-      const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
-      const meta: Record<string, unknown> = { id: wfId, name: displayName, trigger };
-      if (effectivePageId) meta.pageScope = effectivePageId;
-      freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
-      // Bind to node: push { action: wfId, trigger } — UUID is both the store key and the action ref
+      // Idempotency: only skip workflow CREATION if already registered — always bind the action to
+      // this node regardless, so two nodes sharing the same workflowId both get their action bound.
+      if (!(getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) {
+        // Derive a human-readable display name (stored in meta.name, NOT as the store key).
+        const nodeName = (n.name as string | undefined) ?? (n.type as string | undefined) ?? 'Node';
+        const displayName = `${nodeName}_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
+        const freshStore = getStore();
+        // Store under the UUID — add_workflow_step's first check (workflowId in pageWorkflows)
+        // succeeds immediately without any meta.id bridge. Matches the globalWorkflows convention.
+        freshStore.setPageWorkflow(wfId, []);
+        const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
+        const meta: Record<string, unknown> = { id: wfId, name: displayName, trigger };
+        if (effectivePageId) meta.pageScope = effectivePageId;
+        freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
+        mintedStubs.push({ workflowId: wfId, name: displayName, trigger, attachedTo: n.id as string | undefined });
+      }
+      // Bind to node: push { action: wfId, trigger } — always runs, even when workflow already existed
       const nodeId = (n.id as string | undefined);
       if (nodeId) {
         const latestStore = getStore();
@@ -4780,7 +4896,6 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
           latestStore.patchActions(nodeId, [...existingNodeActions, { action: wfId, trigger }] as unknown as Record<string, unknown>);
         }
       }
-      mintedStubs.push({ workflowId: wfId, name: displayName, trigger, attachedTo: n.id as string | undefined });
     }
     if (Array.isArray(n.children)) {
       for (const child of n.children as Record<string, unknown>[]) mintNodeActions(child);

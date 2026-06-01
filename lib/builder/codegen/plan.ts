@@ -100,7 +100,7 @@ function detectFeatures(store: BuilderStore): FeatureFlags {
     hasToast: actionTypes.has('showToast'),
     hasFetch: actionTypes.has('fetch') || (store.pageDataSources ?? []).some(ds => ds.type === 'rest'),
     hasGraphQL: actionTypes.has('graphql') || (store.pageDataSources ?? []).some(ds => ds.type === 'graphql'),
-    hasAuth: !!(store.authConfig),
+    hasAuth: !!(store.authConfig) || (store.pages ?? []).some(p => (p as unknown as Record<string, unknown>).meta && ((p as unknown as Record<string, unknown>).meta as Record<string, unknown>)?.isProtected) || actionTypes.has('authenticate') || actionTypes.has('restoreSession') || actionTypes.has('setUser'),
     hasGoogleMap: types.has('GoogleMap') || types.has('GoogleMapPlaces'),
     hasHtmlContent: types.has('HtmlContent'),
     hasVideo: types.has('Video'),
@@ -125,6 +125,14 @@ function collectSteps(steps: Record<string, unknown>[], out: Record<string, unkn
     out.push(s);
     if (Array.isArray(s.steps)) collectSteps(s.steps as Record<string, unknown>[], out);
     if (Array.isArray(s.actions)) collectSteps(s.actions as Record<string, unknown>[], out);
+    // Recurse into branch sub-steps so nested action types are detected for feature flags
+    if (Array.isArray(s.trueBranch)) collectSteps(s.trueBranch as Record<string, unknown>[], out);
+    if (Array.isArray(s.falseBranch)) collectSteps(s.falseBranch as Record<string, unknown>[], out);
+    if (Array.isArray(s.branches)) {
+      for (const b of s.branches as Record<string, unknown>[]) {
+        if (Array.isArray(b.steps)) collectSteps(b.steps as Record<string, unknown>[], out);
+      }
+    }
   }
 }
 

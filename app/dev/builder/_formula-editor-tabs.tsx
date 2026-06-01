@@ -1221,16 +1221,16 @@ export function ItemContextGroup({
   const vsData = getGlobalVariableStore()(state => state.data);
 
   // Find the nearest map ancestor (for inner repeat) and outer map ancestor (for nested repeat).
-  // The selected node's OWN map is skipped — it defines scope for children, not for itself.
+  // The selected node's OWN map is included — context.item is available on the REPEAT-annotated
+  // node itself AND every descendant rendered within that repeat scope.
   const { innerMap, outerMap } = useMemo(() => {
     const id = selectedIds[0];
     if (!id) return { innerMap: null, outerMap: null };
     let node = findNode(pageNodes, id);
-    const selectedNode = node;
     let inner: string | null = null;
     let outer: string | null = null;
     while (node) {
-      if (node.map && node !== selectedNode) {
+      if (node.map) {
         const mapVal = typeof node.map === 'string'
           ? node.map
           : (typeof node.map === 'object' && node.map !== null)
