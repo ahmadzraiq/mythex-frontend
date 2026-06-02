@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  AWS_REGION: us-west-2
+  AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: json-based-frontend
   DEPLOY_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
@@ -70,7 +70,8 @@ jobs:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          IS_PROD: ${{ github.ref_name == 'main' }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           ANTHROPIC_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_ANTHROPIC_API_KEY || secrets.STAGING_ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_OPENAI_API_KEY || secrets.STAGING_OPENAI_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ github.ref_name == 'main' && secrets.PROD_UNSPLASH_ACCESS_KEY || secrets.STAGING_UNSPLASH_ACCESS_KEY }}
@@ -80,11 +81,11 @@ jobs:
           host: ${{ github.ref_name == 'main' && secrets.PROD_EC2_IP || secrets.STAGING_EC2_IP }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ANTHROPIC_API_KEY,OPENAI_API_KEY,UNSPLASH_ACCESS_KEY,PEXELS_API_KEY,APP_DOMAIN
+          envs: AWS_REGION,AWS_ACCOUNT_ID,ANTHROPIC_API_KEY,OPENAI_API_KEY,UNSPLASH_ACCESS_KEY,PEXELS_API_KEY,APP_DOMAIN
           script: |
-            aws ecr get-login-password --region us-west-2 | \
+            aws ecr get-login-password --region $AWS_REGION | \
               docker login --username AWS --password-stdin \
-              948075159962.dkr.ecr.us-west-2.amazonaws.com
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
             printf 'ANTHROPIC_API_KEY=%s\nOPENAI_API_KEY=%s\nUNSPLASH_ACCESS_KEY=%s\nPEXELS_API_KEY=%s\nBACKEND_URL=http://backend:4000\nAPP_DOMAIN=%s\n' \
               "$ANTHROPIC_API_KEY" "$OPENAI_API_KEY" "$UNSPLASH_ACCESS_KEY" "$PEXELS_API_KEY" "$APP_DOMAIN" \
