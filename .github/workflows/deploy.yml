@@ -69,14 +69,32 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          IS_PROD: ${{ github.ref_name == 'main' }}
+          ANTHROPIC_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_ANTHROPIC_API_KEY || secrets.STAGING_ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_OPENAI_API_KEY || secrets.STAGING_OPENAI_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ github.ref_name == 'main' && secrets.PROD_UNSPLASH_ACCESS_KEY || secrets.STAGING_UNSPLASH_ACCESS_KEY }}
+          PEXELS_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_PEXELS_API_KEY || secrets.STAGING_PEXELS_API_KEY }}
+          APP_DOMAIN: ${{ github.ref_name == 'main' && secrets.PROD_APP_DOMAIN || secrets.STAGING_APP_DOMAIN }}
         with:
           host: ${{ github.ref_name == 'main' && secrets.PROD_EC2_IP || secrets.STAGING_EC2_IP }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ANTHROPIC_API_KEY,OPENAI_API_KEY,UNSPLASH_ACCESS_KEY,PEXELS_API_KEY,APP_DOMAIN
           script: |
             aws ecr get-login-password --region us-west-2 | \
               docker login --username AWS --password-stdin \
               948075159962.dkr.ecr.us-west-2.amazonaws.com
+
+            cat > /app/.env.frontend << EOF
+            ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+            OPENAI_API_KEY=${OPENAI_API_KEY}
+            UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+            PEXELS_API_KEY=${PEXELS_API_KEY}
+            BACKEND_URL=http://backend:4000
+            APP_DOMAIN=${APP_DOMAIN}
+            EOF
+
             cd /app
             docker compose pull frontend
             docker compose up -d frontend
