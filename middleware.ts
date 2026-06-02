@@ -51,6 +51,39 @@ function isIpHost(host: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host);
 }
 
+/**
+ * APP_DOMAIN — the base domain for this deployment (port stripped).
+ * When set (e.g. "zraiq.xyz" for staging/prod), subdomain detection uses it
+ * instead of the fallback localhost/IP heuristic.
+ * Set via APP_DOMAIN env var (e.g. "zraiq.xyz" or "staging.zraiq.xyz").
+ */
+const APP_DOMAIN_ENV = (process.env.APP_DOMAIN ?? '').split(':')[0].toLowerCase();
+
+/**
+ * Extract the first subdomain label for a given host, or empty string if this
+ * request is for the base/main domain.
+ *
+ * With APP_DOMAIN set:
+ *   "abc.zraiq.xyz:3000" → "abc"
+ *   "zraiq.xyz:3000"     → ""   (main domain)
+ *
+ * Without APP_DOMAIN (legacy fallback):
+ *   "localhost:3000"     → ""
+ *   "1.2.3.4:3000"       → ""
+ *   "abc.localhost:3000" → "abc"
+ */
+function getFirstLabel(host: string): string {
+  const h = host.split(':')[0].toLowerCase();
+  if (APP_DOMAIN_ENV) {
+    if (h === APP_DOMAIN_ENV) return '';
+    if (h.endsWith('.' + APP_DOMAIN_ENV)) return h.slice(0, -(APP_DOMAIN_ENV.length + 1));
+    return '';
+  }
+  // Legacy fallback
+  if (h === 'localhost' || /^\d+(\.\d+){3}$/.test(h)) return '';
+  return h.split('.')[0] ?? '';
+}
+
 /** Well-known subdomain prefixes that are NOT project IDs. */
 const RESERVED_SUBDOMAINS = ['builder-dev', 'preview-dev', 'preview', 'www'];
 
@@ -109,8 +142,8 @@ export function middleware(req: NextRequest): NextResponse {
 
   const isDev = process.env.NODE_ENV === 'development';
 
-  // Extract the first subdomain label (everything before the first dot)
-  const firstLabel = host.split('.')[0] ?? '';
+  // Extract the first subdomain label relative to the base domain
+  const firstLabel = getFirstLabel(host);
   const isReserved = RESERVED_SUBDOMAINS.includes(firstLabel);
 
   // {projectId}-dev.* — project-specific dev preview
