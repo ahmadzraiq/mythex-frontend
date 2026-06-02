@@ -162,7 +162,7 @@ export default function SignupPage() {
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Ahmad Zraiq"
+                placeholder="Jane Doe"
                 className="signup-fullname-input"
                 style={inputStyle}
                 onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}

@@ -1,32 +1,20 @@
-name: Deploy Frontend to ECS
+name: Deploy Frontend
 
 on:
   push:
     branches: [main, develop]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'staging'
-        type: choice
-        options: [staging, production]
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
   cancel-in-progress: false
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: us-west-2
   ECR_REPOSITORY: json-based-frontend
   DEPLOY_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-  ECS_CLUSTER: json-based-cluster
-  ECS_SERVICE: ${{ github.ref_name == 'main' && 'json-based-frontend' || 'json-based-frontend-staging' }}
-  CONTAINER_NAME: json-based-frontend
-  TASK_DEFINITION: ${{ github.ref_name == 'main' && 'infra/task-definition-frontend.json' || 'infra/task-definition-frontend-staging.json' }}
 
 jobs:
-  # ── 1. Build and push image to ECR ──────────────────────────────────────────
   build-push:
     name: Build & Push to ECR
     runs-on: ubuntu-latest
@@ -34,8 +22,7 @@ jobs:
       image: ${{ steps.build.outputs.image }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -48,31 +35,28 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to ECR
+      - name: Build, tag, and push image
         id: build
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
           ENV_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-                       -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG \
-                       --build-arg NEXT_PUBLIC_APP_ENV=${{ env.DEPLOY_ENV }} .
+          docker build \
+            --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-  # ── 2. Deploy to ECS ─────────────────────────────────────────────────────────
   deploy:
-    name: Deploy to ECS Fargate
+    name: Deploy to ${{ github.ref_name == 'main' && 'Production' || 'Staging' }} EC2
     needs: build-push
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -80,24 +64,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Fill in the new image in the ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ env.TASK_DEFINITION }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ needs.build-push.outputs.image }}
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Deploy ECS task definition (rolling update)
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
-          wait-for-minutes: 10
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "::error::Frontend deployment failed for commit ${{ github.sha }}"
+          host: ${{ github.ref_name == 'main' && secrets.PROD_EC2_IP || secrets.STAGING_EC2_IP }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region us-west-2 | \
+              docker login --username AWS --password-stdin \
+              948075159962.dkr.ecr.us-west-2.amazonaws.com
+            cd /app
+            docker compose pull frontend
+            docker compose up -d frontend
+            echo "Deployed frontend ${{ github.sha }} to ${{ env.DEPLOY_ENV }}"
