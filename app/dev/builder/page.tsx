@@ -1343,7 +1343,7 @@ function BuilderPageInner() {
       // URL: {projectId}.{baseHost}{pageRoute}
       // Each project has its own subdomain origin — localStorage is isolated
       // without any code-level namespacing.
-      const baseHost = (process.env.NEXT_PUBLIC_APP_DOMAIN ?? window.location.host)
+      const baseHost = window.location.host
         .replace(/^builder-dev\./, '')
         .replace(/^preview\./, '');
       const pageRoute = currentPage?.route ?? '/';

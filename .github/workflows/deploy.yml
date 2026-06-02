@@ -41,11 +41,9 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
           ENV_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
-          NEXT_PUBLIC_APP_DOMAIN: ${{ github.ref_name == 'main' && secrets.PROD_APP_DOMAIN || secrets.STAGING_APP_DOMAIN }}
         run: |
           docker build \
             --platform linux/amd64 \
-            --build-arg NEXT_PUBLIC_APP_DOMAIN=$NEXT_PUBLIC_APP_DOMAIN \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

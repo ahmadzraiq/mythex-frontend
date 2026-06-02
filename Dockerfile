@@ -17,8 +17,6 @@ COPY . .
 
 # Build-time env vars (public ones only — not secrets)
 ARG NEXT_PUBLIC_APP_ENV=production
-ARG NEXT_PUBLIC_APP_DOMAIN=
-ENV NEXT_PUBLIC_APP_DOMAIN=$NEXT_PUBLIC_APP_DOMAIN
 
 RUN npm run build
 
