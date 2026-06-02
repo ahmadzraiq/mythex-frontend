@@ -46,6 +46,11 @@ import { NextRequest, NextResponse } from 'next/server';
 const PREVIEW_COOKIE       = 'preview_project_id';
 const PREVIEW_TOKEN_COOKIE = 'preview_token';
 
+/** Returns true when the host is a bare IPv4 address (with optional port). */
+function isIpHost(host: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host);
+}
+
 /** Well-known subdomain prefixes that are NOT project IDs. */
 const RESERVED_SUBDOMAINS = ['builder-dev', 'preview-dev', 'preview', 'www'];
 
@@ -66,6 +71,35 @@ function isAllowedOnMainDomain(pathname: string): boolean {
 export function middleware(req: NextRequest): NextResponse {
   const host = req.headers.get('host') ?? '';
   const { pathname } = req.nextUrl;
+
+  // ── IP-address access — treat as main domain, skip subdomain routing ────────
+  if (isIpHost(host)) {
+    const authToken = req.cookies.get('auth_token')?.value;
+    if (pathname === '/') {
+      const url = req.nextUrl.clone();
+      url.pathname = authToken ? '/workspaces' : '/login';
+      return NextResponse.redirect(url);
+    }
+    if (pathname.startsWith('/workspaces') && !authToken) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+    if (pathname.startsWith('/builder')) {
+      const segments  = pathname.split('/').filter(Boolean);
+      const projectId = segments[1] ?? '';
+      if (!projectId || !authToken) {
+        const url = req.nextUrl.clone();
+        url.pathname = authToken ? '/workspaces' : '/login';
+        return NextResponse.redirect(url);
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = '/dev/builder';
+      url.search   = `?projectId=${projectId}`;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
+  }
 
   // ── Subdomains — checked first, most-specific to least-specific ────────────
 

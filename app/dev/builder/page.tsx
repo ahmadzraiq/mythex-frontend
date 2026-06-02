@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * /dev/builder — Figma-like visual page builder
  *
@@ -1128,7 +1130,7 @@ function rightSlideTitle(state: RightSlideState): string {
   return '';
 }
 
-export default function BuilderPage() {
+function BuilderPageInner() {
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
   const setProjectContext = useBuilderStore(s => s.setProjectContext);
@@ -1675,5 +1677,14 @@ export default function BuilderPage() {
       )}
 
     </div>
+  );
+}
+
+import { Suspense } from 'react';
+export default function BuilderPage() {
+  return (
+    <Suspense>
+      <BuilderPageInner />
+    </Suspense>
   );
 }
