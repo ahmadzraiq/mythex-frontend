@@ -86,14 +86,9 @@ jobs:
               docker login --username AWS --password-stdin \
               948075159962.dkr.ecr.us-west-2.amazonaws.com
 
-            cat > /app/.env.frontend << EOF
-            ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-            OPENAI_API_KEY=${OPENAI_API_KEY}
-            UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
-            PEXELS_API_KEY=${PEXELS_API_KEY}
-            BACKEND_URL=http://backend:4000
-            APP_DOMAIN=${APP_DOMAIN}
-            EOF
+            printf 'ANTHROPIC_API_KEY=%s\nOPENAI_API_KEY=%s\nUNSPLASH_ACCESS_KEY=%s\nPEXELS_API_KEY=%s\nBACKEND_URL=http://backend:4000\nAPP_DOMAIN=%s\n' \
+              "$ANTHROPIC_API_KEY" "$OPENAI_API_KEY" "$UNSPLASH_ACCESS_KEY" "$PEXELS_API_KEY" "$APP_DOMAIN" \
+              > /app/.env.frontend
 
             cd /app
             docker compose pull frontend
