@@ -33,7 +33,7 @@ import {
   Tooltip, VariableTree, CollectionEntry,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
-  SharedComponentContextSection, AuthDataSection, ParametersSection,
+  SharedComponentContextSection, AuthDataSection, ParametersSection, FunctionLibrary,
   type VarRowItem,
 } from './_formula-editor-tabs';
 import { useSduiStore } from '@/store/sdui-store';
@@ -96,7 +96,7 @@ import { isJsBoundValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth';
+type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth' | 'formulas';
 
 export interface FormulaEditorProps {
   label: string;
@@ -1494,6 +1494,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           ...(showQuickTab ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
           { id: 'data' as Tab, icon: '≡', label: 'Data' },
+          { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
           { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
@@ -1554,6 +1555,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {tab === 'data' && (
           <CollectionsDataTab onInsert={insertChip} search={search} />
+        )}
+        {tab === 'formulas' && (
+          <FunctionLibrary
+            onInsert={insertAtCursor}
+            onInsertFn={insertFunction}
+            search={search}
+            globalFormulas={globalFormulas ?? {}}
+          />
         )}
         {tab === 'quick' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>

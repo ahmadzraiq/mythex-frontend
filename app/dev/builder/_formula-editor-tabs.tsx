@@ -1271,10 +1271,28 @@ export function ItemContextGroup({
       const parentItemCtx = parentItem
         ? { data: { ...parentItem, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [parentItem] } }
         : undefined;
+      // Rebuild collections map from flat "collections.UUID" keys in the sdui store
+      // so formulas like collections['ds-xxx']?.todos resolve correctly.
+      const COLL_PFX = 'collections.';
+      const collectionsMap: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(zustandData)) {
+        if (k.startsWith(COLL_PFX)) {
+          const parts = k.slice(COLL_PFX.length).split('.');
+          let cur = collectionsMap;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+            cur = cur[parts[i]] as Record<string, unknown>;
+          }
+          cur[parts[parts.length - 1]] = v;
+        } else {
+          collectionsMap[k] = v;
+        }
+      }
       const snapshot: Record<string, unknown> = {
         ...zustandData,
         ...(vsData ?? {}),
         variables: vsData ?? {},
+        collections: collectionsMap,
         context: parentItemCtx ? { item: parentItemCtx, index: 0 } : {},
       };
       const value = evaluateFormula(mapBinding, snapshot).value;
