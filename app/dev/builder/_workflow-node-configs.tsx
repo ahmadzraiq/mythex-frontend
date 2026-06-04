@@ -5156,6 +5156,10 @@ export function NodePropsPanel({
     onUpdate({ config: { ...cfg, [key]: value } });
   }
 
+  function setCfgBatch(updates: Record<string, unknown>) {
+    onUpdate({ config: { ...cfg, ...updates } });
+  }
+
   const isStructuralNode = isStructural(step.type);
 
   return (
@@ -5416,9 +5420,7 @@ export function NodePropsPanel({
           <CollectionPickerDropdown
             value={(cfg.collectionId as string) ?? (cfg.collectionName as string) ?? ''}
             onChange={v => {
-              setCfg('collectionId', v);
-              // Clear old-format field so engine uses new collectionId path
-              setCfg('collectionName', undefined);
+              setCfgBatch({ collectionId: v, collectionName: undefined });
             }}
           />
         </>
@@ -5499,10 +5501,7 @@ export function NodePropsPanel({
             <CollectionPickerDropdown
               value={(cfg.collectionId as string) ?? (cfg.collectionName as string) ?? (cfg.name as string) ?? ''}
               onChange={v => {
-                setCfg('collectionId', v);
-                // Clear old-format fields so engine uses new collectionId path
-                setCfg('collectionName', undefined);
-                setCfg('name', undefined);
+                setCfgBatch({ collectionId: v, collectionName: undefined, name: undefined });
               }}
             />
 
