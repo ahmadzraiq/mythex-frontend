@@ -43,7 +43,10 @@ export interface FetchState {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function resolveStoreKey(key: string): string {
-  return UUID_RE.test(key) ? `collections.${key}` : key;
+  // Bare IDs (no dots, no slashes) are datasource identifiers — namespace them under
+  // collections so formulas like collections['ds-xxx']?.field resolve correctly.
+  const isBareId = UUID_RE.test(key) || (!key.includes('.') && !key.includes('/'));
+  return isBareId ? `collections.${key}` : key;
 }
 
 export function extractByPath(data: unknown, path: string): unknown {

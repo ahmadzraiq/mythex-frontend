@@ -59,6 +59,22 @@ interface WorkflowMeta {
   [key: string]: unknown;
 }
 
+interface ProjectDataSource {
+  id: string;
+  type: 'rest' | 'graphql';
+  url?: string;
+  method?: string;
+  headers?: Array<{ key: string; value: string; enabled?: boolean }>;
+  queryParams?: Array<{ key: string; value: string; enabled?: boolean }>;
+  body?: string;
+  endpoint?: string;
+  query?: string;
+  variables?: unknown;
+  responsePath?: string;
+  proxy?: boolean;
+  sendCredentials?: boolean;
+}
+
 interface ProjectConfig {
   pages?: BuilderPage[];
   pageWorkflows?: Record<string, unknown[]>;
@@ -71,6 +87,7 @@ interface ProjectConfig {
   customColors?: Array<{ name: string; light?: string; dark?: string }>;
   authConfig?: AuthConfig;
   sharedComponents?: Record<string, unknown>;
+  pageDataSources?: ProjectDataSource[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -238,6 +255,41 @@ function seedCustomVars(cfg: ProjectConfig) {
   }
 }
 
+
+import type { NamedDataSourceDef, RestNamedDataSourceDef } from '@/lib/sdui/engine-types';
+
+function buildDataSources(
+  pageDataSources: ProjectDataSource[] | undefined,
+): Record<string, NamedDataSourceDef> {
+  if (!pageDataSources?.length) return {};
+  const result: Record<string, NamedDataSourceDef> = {};
+  for (const ds of pageDataSources) {
+    if (ds.type === 'rest' && ds.url) {
+      result[ds.id] = {
+        type: 'rest',
+        url: ds.url,
+        method: ds.method as RestNamedDataSourceDef['method'],
+        headers: ds.headers,
+        queryParams: ds.queryParams,
+        body: ds.body,
+        responsePath: ds.responsePath,
+        proxy: ds.proxy,
+        sendCredentials: ds.sendCredentials,
+      };
+    } else if (ds.type === 'graphql' && ds.query && ds.endpoint) {
+      result[ds.id] = {
+        type: 'graphql',
+        endpoint: ds.endpoint,
+        query: ds.query,
+        variables: ds.variables as Record<string, unknown> | undefined,
+        responsePath: ds.responsePath,
+        proxy: ds.proxy,
+        sendCredentials: ds.sendCredentials,
+      };
+    }
+  }
+  return result;
+}
 
 function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
   const result: Record<string, unknown> = {};
@@ -479,6 +531,11 @@ export default function AppPreviewPage() {
     };
   }, [projectConfig]);
 
+  const dataSources = useMemo(() => ({
+    ...(app.dataSources ?? {}),
+    ...buildDataSources(projectConfig?.pageDataSources),
+  }), [projectConfig?.pageDataSources]);
+
   // ── Loading / error states ────────────────────────────────────────────────
 
   if (loading) {
@@ -537,7 +594,7 @@ export default function AppPreviewPage() {
       configName={appPath.replace(/[^a-zA-Z0-9]/g, '_') || 'preview'}
       actionsConfig={actionsConfig}
       routes={app.routes ?? []}
-      dataSources={app.dataSources ?? {}}
+      dataSources={dataSources}
       authConfig={authConfig}
     />
   );
