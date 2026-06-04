@@ -1,0 +1,663 @@
+{
+    "pages": [
+        {
+            "id": "7c390bdf-05cb-4004-be53-48b3840c8783",
+            "wx": -97.57464483612694,
+            "wy": 4.973799150320701e-14,
+            "name": "Home",
+            "nodes": [
+                {
+                    "id": "1c5fa0d9-ff29-445e-bb2d-a7b13fc19c61",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "border-[2px] border-[#543fb0] border-dashed flex flex-row absolute w-[137px] h-[28px] left-[622.0000274878174px] top-[253.00000174926367px]"
+                    },
+                    "popover": {
+                        "offset": 4,
+                        "trigger": "click",
+                        "placement": "bottom",
+                        "closeOnEscape": true,
+                        "closeOnOutsideClick": true
+                    },
+                    "children": [
+                        {
+                            "id": "81889750-ce14-4f3a-a3c7-a3761a7aa0f3",
+                            "type": "Icon",
+                            "props": {
+                                "icon": "at-icons:airplane",
+                                "size": 24,
+                                "color": "var(--theme-primary, currentColor)"
+                            }
+                        },
+                        {
+                            "id": "d3f5f1b3-35fe-48ff-b662-71e6b5f10e98",
+                            "text": "Click me",
+                            "type": "Text",
+                            "props": {
+                                "style": {},
+                                "className": "left-[19px] top-[11.499998990185446px] text-[var(--theme-primary)] text-center border-[#9186c2] w-[103px] h-[30px]"
+                            }
+                        },
+                        {
+                            "id": "10b4268e-8666-4d36-8e2c-e1de347e8728",
+                            "type": "Box",
+                            "props": {
+                                "style": {},
+                                "className": "bg-white rounded-lg shadow-lg border border-gray-200 p-2 w-[278px] h-[181px] absolute"
+                            },
+                            "popover": {
+                                "offset": 4,
+                                "trigger": "click",
+                                "placement": "bottom-start",
+                                "closeOnEscape": true,
+                                "closeOnOutsideClick": true
+                            },
+                            "children": [
+                                {
+                                    "id": "d495f4ad-c4b0-4776-a4e9-8658a4d0d641",
+                                    "text": {
+                                        "formula": "variables['f3d55f4f-1bb7-4135-a702-80128b36f7b6-value']  +  \" \"  +  \"Popover content\""
+                                    },
+                                    "type": "Text"
+                                },
+                                {
+                                    "id": "8214da21-5d64-40b9-9d5e-f7660282768e",
+                                    "type": "Box",
+                                    "props": {
+                                        "style": {},
+                                        "className": "bg-white rounded-lg shadow-lg border border-gray-200 p-2 w-[160px] h-[76px]"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "b3dba9c0-b22c-4851-a90d-178b1f828534",
+                                            "text": "Popover content",
+                                            "type": "Text"
+                                        }
+                                    ],
+                                    "_popoverContent": true
+                                }
+                            ],
+                            "_popoverContent": true
+                        }
+                    ]
+                },
+                {
+                    "id": "afc061a8-de61-4b07-828c-4667a4d2f0a8",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "border-[2px] border-[#543fb0] border-dashed flex flex-row absolute h-[28px] w-[300px] left-[620.9999813162476px] top-[212.24999928215024px]"
+                    },
+                    "actions": [
+                        {
+                            "action": "f2722b9b-32d3-479a-99f6-a18faf783138"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "id": "717d9c3d-39e1-4630-9558-c2402ff89b0a",
+                            "type": "Icon",
+                            "props": {
+                                "icon": "at-icons:airplane",
+                                "size": 24,
+                                "color": "var(--theme-primary, currentColor)"
+                            }
+                        },
+                        {
+                            "id": "234c5643-3946-44ae-b40a-f2920c00e160",
+                            "text": "Navigate to laith page",
+                            "type": "Text",
+                            "props": {
+                                "style": {},
+                                "className": "left-[19px] top-[11.499998990185446px] text-[var(--theme-primary)] text-center border-[#9186c2] w-[269px] h-[24px]"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "c991317c-31d8-47b3-9458-83994eb222e7",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "border-[2px] border-[#543fb0] border-dashed flex flex-row absolute w-[137px] h-[28px] left-[782.0000217087725px] top-[253.00000174926367px]"
+                    },
+                    "actions": [
+                        {
+                            "action": "af03dbf9-a70a-4df5-a1a4-08dcae278847"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "id": "ae857eca-8459-4681-8093-c69dd55dd6d3",
+                            "type": "Icon",
+                            "props": {
+                                "icon": "at-icons:airplane",
+                                "size": 24,
+                                "color": "var(--theme-primary, currentColor)"
+                            }
+                        },
+                        {
+                            "id": "6856d865-dd05-4df2-97ce-3ded4ad09a1b",
+                            "text": "Click me 2",
+                            "type": "Text",
+                            "props": {
+                                "style": {},
+                                "className": "left-[19px] top-[11.499998990185446px] text-[var(--theme-primary)] text-center border-[#9186c2] w-[99px] h-[23px]"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "f3d55f4f-1bb7-4135-a702-80128b36f7b6",
+                    "type": "Input",
+                    "props": {
+                        "style": {},
+                        "className": "absolute w-[181px] h-[28px] left-[672.4999677045261px] top-[442px]"
+                    }
+                },
+                {
+                    "id": "0ec98d00-cbd3-4b22-beaa-1a08e4664cdd",
+                    "type": "Icon",
+                    "props": {
+                        "icon": "lucide:star",
+                        "size": 24,
+                        "style": {},
+                        "className": "absolute w-[131px] h-[121px] left-[627.9999941317236px] top-[296.5000245896506px]"
+                    }
+                },
+                {
+                    "id": "9e98c2bd-5410-4207-be22-e2d6accc9732",
+                    "type": "Icon",
+                    "props": {
+                        "icon": "bi:2-circle-fill",
+                        "size": 24,
+                        "color": "var(--theme-primary, currentColor)",
+                        "style": {},
+                        "className": "absolute left-[759.0000764654266px] top-[393.49997866893204px]"
+                    }
+                },
+                {
+                    "id": "08b0f39f-840d-44fc-ba6c-dbde9e305ca2",
+                    "type": "Box",
+                    "props": {
+                        "className": "w-full h-[100px]"
+                    }
+                },
+                {
+                    "id": "3a64f8de-e721-4885-b38c-6f920b45eb5a",
+                    "type": "Icon",
+                    "props": {
+                        "icon": "lucide:star",
+                        "size": 24,
+                        "style": {},
+                        "className": "absolute w-[131px] h-[121px] left-[788.0000176494541px] top-[296.5000107452475px]"
+                    }
+                },
+                {
+                    "id": "97428135-38bc-4003-b2ba-33b7b3130203",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "flex flex-row w-[943px] h-[28px]"
+                    },
+                    "children": []
+                },
+                {
+                    "id": "7d4b5238-0bfe-498e-8529-d58a9ad6a616",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "flex flex-row h-[28px] w-[1141px]"
+                    },
+                    "children": []
+                }
+            ],
+            "route": "/"
+        },
+        {
+            "id": "page-1780601746340",
+            "wx": 1246.848060628388,
+            "wy": 0,
+            "name": "/laith",
+            "nodes": [
+                {
+                    "id": "c8967887-6b00-43f7-bc59-9ee56dfc129e",
+                    "type": "Icon",
+                    "props": {
+                        "icon": "lucide:star",
+                        "size": 24,
+                        "style": {},
+                        "className": "absolute w-[131px] h-[121px] left-[574.4999479517232px] top-[225px]"
+                    }
+                },
+                {
+                    "id": "9ddc259a-2eef-4792-8c9f-7454f4af954b",
+                    "type": "Box",
+                    "props": {
+                        "style": {},
+                        "className": "border-[2px] border-[#543fb0] border-dashed flex flex-row absolute h-[28px] w-[300px] left-[496px] top-[364px]"
+                    },
+                    "actions": [
+                        {
+                            "action": "818fa97e-fb4b-4c59-ad02-9256075c9b4d"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "id": "4b10dda8-c6ef-4d19-89ff-0e08fd2fd1a7",
+                            "type": "Icon",
+                            "props": {
+                                "icon": "at-icons:airplane",
+                                "size": 24,
+                                "color": "var(--theme-primary, currentColor)"
+                            }
+                        },
+                        {
+                            "id": "964652b3-bc23-4d1f-9b20-91b0d5cae756",
+                            "text": "return to root page",
+                            "type": "Text",
+                            "props": {
+                                "style": {},
+                                "className": "left-[19px] top-[11.499998990185446px] text-[var(--theme-primary)] text-center border-[#9186c2] w-[688px] h-[61px]"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "route": "/laith"
+        }
+    ],
+    "dsFolders": [],
+    "customVars": [],
+    "varFolders": [],
+    "colorFolders": [],
+    "customColors": [],
+    "pageWorkflows": {
+        "52aa0f18-1129-4104-9351-0adea7bad779": [
+            {
+                "id": "step-1780593809341-4tw9k",
+                "type": "branch",
+                "trueBranch": [
+                    {
+                        "id": "step-1780593809341-gsekn",
+                        "type": "unconfigured"
+                    }
+                ],
+                "falseBranch": [
+                    {
+                        "id": "step-1780593809341-qphdj",
+                        "type": "unconfigured"
+                    }
+                ]
+            }
+        ],
+        "756b1a10-a737-4494-a443-44cc8c7c8603": [],
+        "818fa97e-fb4b-4c59-ad02-9256075c9b4d": [
+            {
+                "id": "step-1780602499000-r5x5u",
+                "type": "navigateTo",
+                "config": {
+                    "path": "/"
+                }
+            }
+        ],
+        "9e92fa7f-06db-44ea-9e55-95bede8badcc": [],
+        "af03dbf9-a70a-4df5-a1a4-08dcae278847": [
+            {
+                "id": "step-1780596326200-nm5gl",
+                "type": "branch",
+                "config": {
+                    "condition": {
+                        "formula": "variables['f3d55f4f-1bb7-4135-a702-80128b36f7b6-value'] == \"laith\""
+                    }
+                },
+                "trueBranch": [
+                    {
+                        "id": "step-1780596326200-hf22t",
+                        "type": "printPdf"
+                    }
+                ],
+                "falseBranch": [
+                    {
+                        "id": "step-1780596326200-86hs6",
+                        "type": "copyToClipboard",
+                        "config": {
+                            "value": "laith"
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "step-1780596820323-l9os5",
+                "type": "branch",
+                "config": {
+                    "condition": {
+                        "formula": "variables['f3d55f4f-1bb7-4135-a702-80128b36f7b6-value'] == \"test\""
+                    }
+                },
+                "trueBranch": [
+                    {
+                        "id": "step-1780596820323-cf500",
+                        "type": "changeVariableValue",
+                        "config": {
+                            "value": "greateee",
+                            "variableName": "f3d55f4f-1bb7-4135-a702-80128b36f7b6-value"
+                        }
+                    }
+                ],
+                "falseBranch": [
+                    {
+                        "id": "step-1780596820323-ag5gq",
+                        "type": "unconfigured"
+                    }
+                ]
+            }
+        ],
+        "f2722b9b-32d3-479a-99f6-a18faf783138": [
+            {
+                "id": "step-1780602334719-m39nw",
+                "type": "navigateTo",
+                "config": {
+                    "path": "/laith"
+                }
+            }
+        ],
+        "f440ad54-9fd5-4a73-9d9d-5499bf782185": []
+    },
+    "themeOverrides": {
+        "card": "#ffffff",
+        "ring": "#ea580c",
+        "input": "#fed7aa",
+        "muted": "#fed7aa",
+        "accent": "#fde68a",
+        "border": "#fed7aa",
+        "popover": "#ffffff",
+        "primary": "#ea580c",
+        "font-body": "'Poppins', sans-serif",
+        "secondary": "#fff7ed",
+        "background": "#fffbeb",
+        "foreground": "#431407",
+        "destructive": "#dc2626",
+        "font-heading": "'Poppins', sans-serif",
+        "card-foreground": "#431407",
+        "muted-foreground": "#9a3412",
+        "accent-foreground": "#431407",
+        "popover-foreground": "#431407",
+        "primary-foreground": "#ffffff",
+        "secondary-foreground": "#431407",
+        "destructive-foreground": "#ffffff"
+    },
+    "globalWorkflows": {},
+    "pageDataSources": [
+        {
+            "id": "ds-1780590744051",
+            "url": "https://dummyjson.com/todos",
+            "name": "todos",
+            "type": "rest",
+            "proxy": false,
+            "method": "GET",
+            "headers": [],
+            "storeIn": "ds-1780590744051",
+            "_lastFetch": {
+                "data": {
+                    "skip": 0,
+                    "limit": 30,
+                    "todos": [
+                        {
+                            "id": 1,
+                            "todo": "Do something nice for someone you care about",
+                            "userId": 152,
+                            "completed": false
+                        },
+                        {
+                            "id": 2,
+                            "todo": "Memorize a poem",
+                            "userId": 13,
+                            "completed": true
+                        },
+                        {
+                            "id": 3,
+                            "todo": "Watch a classic movie",
+                            "userId": 68,
+                            "completed": true
+                        },
+                        {
+                            "id": 4,
+                            "todo": "Watch a documentary",
+                            "userId": 84,
+                            "completed": false
+                        },
+                        {
+                            "id": 5,
+                            "todo": "Invest in cryptocurrency",
+                            "userId": 163,
+                            "completed": false
+                        },
+                        {
+                            "id": 6,
+                            "todo": "Contribute code or a monetary donation to an open-source software project",
+                            "userId": 69,
+                            "completed": false
+                        },
+                        {
+                            "id": 7,
+                            "todo": "Solve a Rubik's cube",
+                            "userId": 76,
+                            "completed": true
+                        },
+                        {
+                            "id": 8,
+                            "todo": "Bake pastries for yourself and neighbor",
+                            "userId": 198,
+                            "completed": true
+                        },
+                        {
+                            "id": 9,
+                            "todo": "Go see a Broadway production",
+                            "userId": 7,
+                            "completed": false
+                        },
+                        {
+                            "id": 10,
+                            "todo": "Write a thank you letter to an influential person in your life",
+                            "userId": 9,
+                            "completed": true
+                        },
+                        {
+                            "id": 11,
+                            "todo": "Invite some friends over for a game night",
+                            "userId": 104,
+                            "completed": false
+                        },
+                        {
+                            "id": 12,
+                            "todo": "Have a football scrimmage with some friends",
+                            "userId": 32,
+                            "completed": false
+                        },
+                        {
+                            "id": 13,
+                            "todo": "Text a friend you haven't talked to in a long time",
+                            "userId": 2,
+                            "completed": true
+                        },
+                        {
+                            "id": 14,
+                            "todo": "Organize pantry",
+                            "userId": 46,
+                            "completed": false
+                        },
+                        {
+                            "id": 15,
+                            "todo": "Buy a new house decoration",
+                            "userId": 105,
+                            "completed": true
+                        },
+                        {
+                            "id": 16,
+                            "todo": "Plan a vacation you've always wanted to take",
+                            "userId": 162,
+                            "completed": true
+                        },
+                        {
+                            "id": 17,
+                            "todo": "Clean out car",
+                            "userId": 71,
+                            "completed": false
+                        },
+                        {
+                            "id": 18,
+                            "todo": "Draw and color a Mandala",
+                            "userId": 6,
+                            "completed": true
+                        },
+                        {
+                            "id": 19,
+                            "todo": "Create a cookbook with favorite recipes",
+                            "userId": 53,
+                            "completed": true
+                        },
+                        {
+                            "id": 20,
+                            "todo": "Bake a pie with some friends",
+                            "userId": 162,
+                            "completed": false
+                        },
+                        {
+                            "id": 21,
+                            "todo": "Create a compost pile",
+                            "userId": 13,
+                            "completed": false
+                        },
+                        {
+                            "id": 22,
+                            "todo": "Take a hike at a local park",
+                            "userId": 37,
+                            "completed": true
+                        },
+                        {
+                            "id": 23,
+                            "todo": "Take a class at local community center that interests you",
+                            "userId": 65,
+                            "completed": true
+                        },
+                        {
+                            "id": 24,
+                            "todo": "Research a topic interested in",
+                            "userId": 130,
+                            "completed": true
+                        },
+                        {
+                            "id": 25,
+                            "todo": "Plan a trip to another country",
+                            "userId": 140,
+                            "completed": false
+                        },
+                        {
+                            "id": 26,
+                            "todo": "Improve touch typing",
+                            "userId": 178,
+                            "completed": false
+                        },
+                        {
+                            "id": 27,
+                            "todo": "Learn Express.js",
+                            "userId": 194,
+                            "completed": false
+                        },
+                        {
+                            "id": 28,
+                            "todo": "Learn calligraphy",
+                            "userId": 80,
+                            "completed": false
+                        },
+                        {
+                            "id": 29,
+                            "todo": "Have a photo session with some friends",
+                            "userId": 91,
+                            "completed": true
+                        },
+                        {
+                            "id": 30,
+                            "todo": "Go to the gym",
+                            "userId": 142,
+                            "completed": true
+                        }
+                    ],
+                    "total": 254
+                },
+                "status": "success",
+                "fetchedAt": 1780595708649
+            },
+            "queryParams": [],
+            "sendCredentials": false
+        }
+    ],
+    "pageWorkflowMeta": {
+        "52aa0f18-1129-4104-9351-0adea7bad779": {
+            "id": "52aa0f18-1129-4104-9351-0adea7bad779",
+            "name": "New Workflow",
+            "trigger": "click"
+        },
+        "756b1a10-a737-4494-a443-44cc8c7c8603": {
+            "id": "756b1a10-a737-4494-a443-44cc8c7c8603",
+            "name": "New Workflow",
+            "trigger": "click"
+        },
+        "818fa97e-fb4b-4c59-ad02-9256075c9b4d": {
+            "id": "818fa97e-fb4b-4c59-ad02-9256075c9b4d",
+            "name": "New Workflow",
+            "trigger": "click"
+        },
+        "9e92fa7f-06db-44ea-9e55-95bede8badcc": {
+            "id": "9e92fa7f-06db-44ea-9e55-95bede8badcc",
+            "name": "Untitled trigger",
+            "trigger": "pageLoad",
+            "isTrigger": true,
+            "pageScope": "home",
+            "isAppTrigger": false
+        },
+        "af03dbf9-a70a-4df5-a1a4-08dcae278847": {
+            "id": "af03dbf9-a70a-4df5-a1a4-08dcae278847",
+            "name": "New Workflow",
+            "trigger": "click"
+        },
+        "f2722b9b-32d3-479a-99f6-a18faf783138": {
+            "id": "f2722b9b-32d3-479a-99f6-a18faf783138",
+            "name": "New Workflow",
+            "trigger": "click"
+        },
+        "f440ad54-9fd5-4a73-9d9d-5499bf782185": {
+            "id": "f440ad54-9fd5-4a73-9d9d-5499bf782185",
+            "name": "Untitled trigger",
+            "trigger": "pageLoad",
+            "isTrigger": true,
+            "pageScope": "home",
+            "isAppTrigger": false
+        }
+    },
+    "sharedComponents": {},
+    "globalWorkflowMeta": {},
+    "themeDarkOverrides": {
+        "card": "#2d1200",
+        "ring": "#fb923c",
+        "input": "#431407",
+        "muted": "#431407",
+        "accent": "#431407",
+        "border": "#431407",
+        "popover": "#2d1200",
+        "primary": "#fb923c",
+        "secondary": "#2d1200",
+        "background": "#1c0a00",
+        "foreground": "#fff7ed",
+        "destructive": "#ef4444",
+        "card-foreground": "#fff7ed",
+        "muted-foreground": "#fdba74",
+        "accent-foreground": "#fff7ed",
+        "popover-foreground": "#fff7ed",
+        "primary-foreground": "#1c0a00",
+        "secondary-foreground": "#fff7ed",
+        "destructive-foreground": "#fff7ed"
+    }
+}

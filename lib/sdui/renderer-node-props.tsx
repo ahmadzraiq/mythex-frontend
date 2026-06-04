@@ -42,6 +42,10 @@ export const ALREADY_CLICKABLE = new Set([
   // Layout primitives render as div (web) / View — they receive bubbled clicks directly.
   // Wrapping them duplicates onClick on an outer display:contents div → double workflow runs.
   'Box',
+  // Icon / Image attach onClick to the underlying <img>; an extra display:contents wrapper
+  // would fire the same handler twice (capture on img + bubble on wrapper) → +2 per click.
+  'Icon',
+  'Image',
 ]);
 
 // ── Standalone React component ────────────────────────────────────────────────
