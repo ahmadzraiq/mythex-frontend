@@ -32,6 +32,31 @@ export interface WorkspaceMember {
   joinedAt: string;
 }
 
+/** Raw shape the backend actually returns — user fields nested under `user` */
+interface RawWorkspaceMember {
+  userId: string;
+  workspaceId: string;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  joinedAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+}
+
+function normalizeMember(raw: RawWorkspaceMember): WorkspaceMember {
+  return {
+    id:        raw.user?.id ?? raw.userId,
+    name:      raw.user?.name ?? '',
+    email:     raw.user?.email ?? '',
+    avatarUrl: raw.user?.avatarUrl,
+    role:      raw.role,
+    joinedAt:  raw.joinedAt,
+  };
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -115,14 +140,18 @@ export const workspaces = {
   delete: (id: string) =>
     apiFetch<{ ok: boolean }>(`/api/workspaces/${id}`, { method: 'DELETE' }),
 
-  listMembers: (id: string) =>
-    apiFetch<{ members: WorkspaceMember[] }>(`/api/workspaces/${id}/members`),
+  listMembers: async (id: string) => {
+    const res = await apiFetch<{ members: RawWorkspaceMember[] }>(`/api/workspaces/${id}/members`);
+    return { members: res.members.map(normalizeMember) };
+  },
 
-  inviteMember: (id: string, body: { email: string; role?: 'EDITOR' | 'VIEWER' }) =>
-    apiFetch<{ member: WorkspaceMember }>(`/api/workspaces/${id}/members`, {
+  inviteMember: async (id: string, body: { email: string; role?: 'EDITOR' | 'VIEWER' }) => {
+    const res = await apiFetch<{ member: RawWorkspaceMember }>(`/api/workspaces/${id}/members`, {
       method: 'POST',
       body: JSON.stringify(body),
-    }),
+    });
+    return { member: normalizeMember(res.member) };
+  },
 
   updateMemberRole: (wsId: string, userId: string, role: 'EDITOR' | 'VIEWER') =>
     apiFetch<{ ok: boolean }>(`/api/workspaces/${wsId}/members/${userId}`, {

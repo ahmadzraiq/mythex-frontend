@@ -4580,7 +4580,7 @@
                           {
                             "type": "Box",
                             "props": { "className": "flex flex-row items-center gap-[6px] px-[12px] h-[36px] rounded-[8px] bg-[var(--theme-primary)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-scroll-to-form" }],
+                            "actions": [{ "trigger": "click", "action": "demo-scroll-to-form" }],
                             "children": [
                               { "type": "Icon", "props": { "icon": "lucide:arrow-down", "size": 14, "color": "var(--theme-primary-foreground)" } },
                               { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-primary-foreground)]" }, "text": "Scroll to Form" }
@@ -4589,7 +4589,7 @@
                           {
                             "type": "Box",
                             "props": { "className": "flex flex-row items-center gap-[6px] px-[12px] h-[36px] rounded-[8px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-scroll-to-top" }],
+                            "actions": [{ "trigger": "click", "action": "demo-scroll-to-top" }],
                             "children": [
                               { "type": "Icon", "props": { "icon": "lucide:arrow-up", "size": 14, "color": "var(--theme-foreground)" } },
                               { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-foreground)]" }, "text": "Scroll to Top" }
@@ -4632,19 +4632,19 @@
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none text-[12px] font-medium text-[var(--theme-foreground)]" },
-                            "actions": [{ "action": "demo-animate-badge" }],
+                            "actions": [{ "trigger": "click", "action": "demo-animate-badge" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Pulse" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-animate-shake" }],
+                            "actions": [{ "trigger": "click", "action": "demo-animate-shake" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Shake" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-animate-bounce" }],
+                            "actions": [{ "trigger": "click", "action": "demo-animate-bounce" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Bounce" }]
                           }
                         ]
@@ -4683,7 +4683,7 @@
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-exit-animation" }],
+                            "actions": [{ "trigger": "click", "action": "demo-exit-animation" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Trigger Exit" }]
                           }
                         ]
@@ -4727,25 +4727,25 @@
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-start-loop-spin" }],
+                            "actions": [{ "trigger": "click", "action": "demo-start-loop-spin" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Spin" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-start-loop-pulse" }],
+                            "actions": [{ "trigger": "click", "action": "demo-start-loop-pulse" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Pulse" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-start-loop-float" }],
+                            "actions": [{ "trigger": "click", "action": "demo-start-loop-float" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Float" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[color-mix(in_srgb,var(--theme-destructive)_15%,transparent)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-stop-loop" }],
+                            "actions": [{ "trigger": "click", "action": "demo-stop-loop" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-destructive)]" }, "text": "Stop" }]
                           }
                         ]
@@ -4783,25 +4783,25 @@
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-enter-fade" }],
+                            "actions": [{ "trigger": "click", "action": "demo-enter-fade" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Fade In" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-enter-slide" }],
+                            "actions": [{ "trigger": "click", "action": "demo-enter-slide" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Slide Up" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-enter-zoom" }],
+                            "actions": [{ "trigger": "click", "action": "demo-enter-zoom" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Zoom In" }]
                           },
                           {
                             "type": "Box",
                             "props": { "className": "px-[10px] h-[32px] flex flex-row items-center justify-center rounded-[6px] bg-[var(--theme-muted)] cursor-pointer select-none" },
-                            "actions": [{ "action": "demo-enter-bounce" }],
+                            "actions": [{ "trigger": "click", "action": "demo-enter-bounce" }],
                             "children": [{ "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-foreground)]" }, "text": "Bounce In" }]
                           }
                         ]
