@@ -672,6 +672,44 @@ export function setUserFormulaNames(names: string[]): void {
   _buildFnRegex();
 }
 
+// ─── String-literal-aware segment splitter ────────────────────────────────────
+
+/**
+ * Split text into alternating 'code' and 'literal' segments.
+ * Anything inside a double- or single-quoted string is a 'literal' and must not
+ * have its / or - (or any other operator character) converted to chips.
+ */
+function splitRespectingStrings(
+  text: string,
+): Array<{ type: 'literal' | 'code'; text: string }> {
+  const segments: Array<{ type: 'literal' | 'code'; text: string }> = [];
+  let i = 0;
+  let codeStart = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'") {
+      // Flush any preceding code segment
+      if (i > codeStart) segments.push({ type: 'code', text: text.slice(codeStart, i) });
+      const quote = ch;
+      let j = i + 1;
+      while (j < text.length) {
+        if (text[j] === '\\') { j += 2; }          // skip escaped char
+        else if (text[j] === quote) { j++; break; } // closing quote found
+        else { j++; }
+      }
+      // If j === text.length the string is unclosed — treat the rest as literal too
+      segments.push({ type: 'literal', text: text.slice(i, j) });
+      i = j;
+      codeStart = j;
+    } else {
+      i++;
+    }
+  }
+  if (codeStart < text.length) segments.push({ type: 'code', text: text.slice(codeStart) });
+  return segments;
+}
+
 // ─── Text segment helpers ─────────────────────────────────────────────────────
 
 export function appendTextSegment(el: HTMLElement, text: string): void {
@@ -689,23 +727,27 @@ export function appendTextSegment(el: HTMLElement, text: string): void {
 
 export function appendTextWithOperatorChips(el: HTMLElement, text: string): void {
   if (!text) return;
-  OP_TOKEN_RE.lastIndex = 0;
-  let lastEnd = 0;
-  let m: RegExpExecArray | null;
-  while ((m = OP_TOKEN_RE.exec(text)) !== null) {
-    if (m.index > lastEnd) {
-      appendTextSegment(el, text.slice(lastEnd, m.index));
-    }
-    const opDef = OP_INSERT_MAP.get(m[0]);
-    if (opDef) {
-      el.appendChild(buildOperatorChip(opDef.label, opDef.insert, opDef.category));
+  // Only chip operators that are OUTSIDE quoted string literals.
+  for (const part of splitRespectingStrings(text)) {
+    if (part.type === 'literal') {
+      // Inside a string literal — render as plain text, never as chips.
+      appendTextSegment(el, part.text);
     } else {
-      el.appendChild(document.createTextNode(m[0]));
+      OP_TOKEN_RE.lastIndex = 0;
+      let lastEnd = 0;
+      let m: RegExpExecArray | null;
+      while ((m = OP_TOKEN_RE.exec(part.text)) !== null) {
+        if (m.index > lastEnd) appendTextSegment(el, part.text.slice(lastEnd, m.index));
+        const opDef = OP_INSERT_MAP.get(m[0]);
+        if (opDef) {
+          el.appendChild(buildOperatorChip(opDef.label, opDef.insert, opDef.category));
+        } else {
+          el.appendChild(document.createTextNode(m[0]));
+        }
+        lastEnd = m.index + m[0].length;
+      }
+      if (lastEnd < part.text.length) appendTextSegment(el, part.text.slice(lastEnd));
     }
-    lastEnd = m.index + m[0].length;
-  }
-  if (lastEnd < text.length) {
-    appendTextSegment(el, text.slice(lastEnd));
   }
 }
 
@@ -726,37 +768,52 @@ export function rechipCurrentTextNode(editorEl: HTMLElement): boolean {
   const cursorOffset = range.startOffset;
   type Seg = { node: Node; srcLen: number };
   const segments: Seg[] = [];
-  let lastEnd = 0;
-  let m: RegExpExecArray | null;
+  let anyChip = false;
 
-  while ((m = AUTO_CHIP_RE.exec(text)) !== null) {
-    const beforeText = text.slice(lastEnd, m.index);
-    if (m[0] === '(' && beforeText) {
-      const fnMatch = FN_NAME_SUFFIX_RE.exec(beforeText);
-      if (fnMatch) {
-        const fnStart = fnMatch.index + (fnMatch[0].length - fnMatch[1].length);
-        const textBeforeFn = beforeText.slice(0, fnStart);
-        if (textBeforeFn) segments.push({ node: document.createTextNode(textBeforeFn), srcLen: textBeforeFn.length });
-        segments.push({ node: buildFunctionChip(fnMatch[1]), srcLen: fnMatch[1].length });
-        segments.push({ node: buildOperatorChip('(', '(', 'punct'), srcLen: 1 });
-        lastEnd = m.index + 1;
-        continue;
+  // Process each segment, skipping operator-chipping inside quoted string literals.
+  for (const part of splitRespectingStrings(text)) {
+    if (part.type === 'literal') {
+      // Inside "..." or '...' — never chip operators here.
+      segments.push({ node: document.createTextNode(part.text), srcLen: part.text.length });
+    } else {
+      let lastEnd = 0;
+      AUTO_CHIP_RE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = AUTO_CHIP_RE.exec(part.text)) !== null) {
+        const beforeText = part.text.slice(lastEnd, m.index);
+        if (m[0] === '(' && beforeText) {
+          const fnMatch = FN_NAME_SUFFIX_RE.exec(beforeText);
+          if (fnMatch) {
+            const fnStart = fnMatch.index + (fnMatch[0].length - fnMatch[1].length);
+            const textBeforeFn = beforeText.slice(0, fnStart);
+            if (textBeforeFn) segments.push({ node: document.createTextNode(textBeforeFn), srcLen: textBeforeFn.length });
+            segments.push({ node: buildFunctionChip(fnMatch[1]), srcLen: fnMatch[1].length });
+            segments.push({ node: buildOperatorChip('(', '(', 'punct'), srcLen: 1 });
+            lastEnd = m.index + 1;
+            anyChip = true;
+            continue;
+          }
+        }
+        if (beforeText) {
+          segments.push({ node: document.createTextNode(beforeText), srcLen: beforeText.length });
+        }
+        const def = AUTO_CHIP_TYPED_MAP[m[0]];
+        if (def) {
+          segments.push({ node: buildOperatorChip(def.label, def.insert, def.category), srcLen: m[0].length });
+          anyChip = true;
+        } else {
+          segments.push({ node: document.createTextNode(m[0]), srcLen: m[0].length });
+        }
+        lastEnd = m.index + m[0].length;
+      }
+      if (lastEnd < part.text.length) {
+        segments.push({ node: document.createTextNode(part.text.slice(lastEnd)), srcLen: part.text.length - lastEnd });
       }
     }
-    if (beforeText) {
-      segments.push({ node: document.createTextNode(beforeText), srcLen: beforeText.length });
-    }
-    const def = AUTO_CHIP_TYPED_MAP[m[0]];
-    if (def) {
-      segments.push({ node: buildOperatorChip(def.label, def.insert, def.category), srcLen: m[0].length });
-    } else {
-      segments.push({ node: document.createTextNode(m[0]), srcLen: m[0].length });
-    }
-    lastEnd = m.index + m[0].length;
   }
-  if (lastEnd < text.length) {
-    segments.push({ node: document.createTextNode(text.slice(lastEnd)), srcLen: text.length - lastEnd });
-  }
+
+  // If every operator was inside a string literal, nothing to chip — leave the DOM untouched.
+  if (!anyChip) return false;
 
   let consumed = 0;
   let newCursorNode: Node | null = null;
