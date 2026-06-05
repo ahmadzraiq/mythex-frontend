@@ -147,16 +147,38 @@ export function useBuilderAutosave(
     for (const page of s.pages) {
       const currentJson = JSON.stringify(page);
       const prevJson = pageSnapshotsRef.current.get(page.id) ?? '';
-      if (currentJson !== prevJson) {
-        dirtyPages.push(page);
+      if (currentJson === prevJson) continue;
+
+      // Integrity guard: if the saved baseline had real content but the outgoing
+      // state has almost nothing, this is a hot-reload stale-state flush, not a
+      // user action. Block it to prevent overwriting the user's work.
+      if (prevJson) {
+        const baselineNodeCount = (JSON.stringify(JSON.parse(prevJson).nodes ?? []).match(/"id"/g) ?? []).length;
+        const currentNodeCount  = (JSON.stringify(page.nodes ?? []).match(/"id"/g) ?? []).length;
+        if (baselineNodeCount > 3 && currentNodeCount <= 1) continue;
       }
+
+      dirtyPages.push(page);
     }
 
     // ── Check if metadata changed ────────────────────────────────────────────
     const currentMeta = JSON.stringify(serializeMeta(s));
     const metaDirty = currentMeta !== metaSnapshotRef.current;
 
-    if (dirtyPages.length === 0 && !metaDirty) return; // nothing to save
+    // Integrity guard: never overwrite non-empty customVars/dataSources with empty.
+    const metaSafe = !metaDirty ? false : (() => {
+      if (!metaSnapshotRef.current) return true;
+      const prev = JSON.parse(metaSnapshotRef.current) as Record<string, unknown>;
+      const next = JSON.parse(currentMeta) as Record<string, unknown>;
+      const prevVars = (prev.customVars as unknown[] | undefined)?.length ?? 0;
+      const nextVars = (next.customVars as unknown[] | undefined)?.length ?? 0;
+      const prevDS   = (prev.pageDataSources as unknown[] | undefined)?.length ?? 0;
+      const nextDS   = (next.pageDataSources as unknown[] | undefined)?.length ?? 0;
+      if ((prevVars > 0 && nextVars === 0) || (prevDS > 0 && nextDS === 0)) return false;
+      return true;
+    })();
+
+    if (dirtyPages.length === 0 && !metaSafe) return; // nothing to save
 
     onStatusRef.current('saving');
     const errors: string[] = [];
@@ -178,7 +200,7 @@ export function useBuilderAutosave(
     }));
 
     // ── Save metadata if dirty ────────────────────────────────────────────────
-    if (metaDirty) {
+    if (metaSafe) {
       try {
         const res = await fetch(`/api/projects/${projectId}/config/meta`, {
           method: 'PATCH',
