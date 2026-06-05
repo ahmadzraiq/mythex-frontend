@@ -368,10 +368,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   // Derive initial formula string from stored value
   const initialFormula = useMemo(() => {
     const raw = storedValueToFormula(value);
-    // When editing a formula/expression (non-string expected type, or hideUnbind which flags
-    // formula-only contexts like validation), never JSON.stringify — that wraps the expression
-    // in quotes, making it a string literal instead of a boolean/expression.
-    if (expectedType !== 'string' || hideUnbind) return raw;
+    // hideUnbind flags formula-only contexts (e.g. validation expressions) where the value
+    // must remain a bare expression — never wrap it in string-literal quotes there.
+    if (hideUnbind) return raw;
+    // When the stored value is a plain string (formulaToStoredValue stripped the surrounding
+    // quotes from a string literal like "/product-details"), we must re-add the quotes so the
+    // formula editor always shows the correct "…" / '…' syntax — regardless of expectedType.
+    // Without this, reopening a URL / path field would show /product-details instead of
+    // "/product-details", and re-saving would convert it to a JS expression (division / regex).
     if (raw && typeof value === 'string' && !isBoundValue(value)) {
       try {
         const parsed = JSON.parse(raw);
