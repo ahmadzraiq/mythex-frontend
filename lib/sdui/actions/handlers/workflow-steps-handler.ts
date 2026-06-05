@@ -90,7 +90,7 @@ function stepToSdui(step: WorkflowStep): Record<string, unknown> | null {
     case 'graphql':
       return { type: 'graphql', ...cfg };
     case 'fetchData':
-      return { type: 'fetch', ...cfg };
+      return { type: 'fetch', method: 'POST', ...cfg };
     case 'fetchCollection':
       // Phase 9: collectionIds (comma-separated or array) → parallel refetch
       if (cfg.collectionIds) {
