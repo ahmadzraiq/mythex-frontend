@@ -3399,6 +3399,7 @@ export function BoundField({
   workflowTrigger,
   expectedType,
   anchorRight,
+  serverContext,
 }: {
   label: string;
   required?: boolean;
@@ -3418,6 +3419,8 @@ export function BoundField({
    * flush against its left edge instead of leaving a visible gap.
    */
   anchorRight?: number;
+  /** When true, only the Workflow tab is shown in the FormulaEditor (server workflow context). */
+  serverContext?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   // Must be called unconditionally — used by CodeMirror when code=true
@@ -3508,6 +3511,7 @@ export function BoundField({
           anchorRight={anchorRight ?? 292}
           expectedType={expectedType}
           workflowTrigger={workflowTrigger}
+          serverContext={serverContext}
         />
       )}
     </>
@@ -4809,9 +4813,13 @@ const HTTP_STATUS_OPTIONS = [
 const BODY_TYPES = ['JSON', 'Plain Text', 'HTML', 'XML', 'CSV'];
 
 function SendResponseConfig({
-  cfg, setCfg, workflowTrigger,
+  cfg, setCfg, isServerContext,
 }: {
-  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
+  cfg: Record<string, unknown>;
+  setCfg: (k: string, v: unknown) => void;
+  workflowTrigger?: string;
+  isServerContext?: boolean;
+  priorSteps?: ActionStep[];
 }) {
   return (
     <>
@@ -4837,10 +4845,13 @@ function SendResponseConfig({
           {BODY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         {!cfg.bodyType && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
-        <KeyValueBuilderField
+
+        <BoundField
           label="Body"
-          value={(cfg.body as Record<string, unknown>) ?? {}}
+          value={cfg.body as FormulaValue | undefined}
           onChange={v => setCfg('body', v)}
+          anchorRight={292}
+          serverContext={isServerContext}
         />
       </CollapsibleSection>
 
@@ -5132,16 +5143,12 @@ export function NodePropsPanel({
   isServerContext = false,
   projectId,
   serverFunctions = [],
+  priorSteps = [],
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
   isFormContext?: boolean;
   workflowTrigger?: string;
-  /**
-   * Custom triggers declared on the ambient component model. Forwarded to the
-   * `emitComponentTrigger` config form so its dropdown lists the triggers that
-   * this component can actually fire.
-   */
   componentTriggers?: Array<{ id: string; name: string }>;
   /** True when the canvas is in server workflow context */
   isServerContext?: boolean;
@@ -5149,6 +5156,8 @@ export function NodePropsPanel({
   projectId?: string;
   /** Available FUNCTION-kind workflows for runServerFunction picker */
   serverFunctions?: { id: string; name: string }[];
+  /** Steps that appear before this one — used for server-side output binding */
+  priorSteps?: ActionStep[];
 }) {
   const cfg = step.config ?? {};
 
@@ -5837,7 +5846,7 @@ export function NodePropsPanel({
         <ExecuteSQLConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
       )}
       {step.type === 'sendResponse' && (
-        <SendResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+        <SendResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} isServerContext={isServerContext} priorSteps={priorSteps} />
       )}
       {step.type === 'sendStreamingResponse' && (
         <SendStreamingResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />

@@ -257,6 +257,7 @@ export interface BackendWorkflow {
   security: 'PUBLIC' | 'AUTHENTICATED' | 'ROLE';
   graph: unknown;
   createdAt: string;
+  autoGroupTableId?: string | null;
   securityPolicy?: { access: 'public' | 'authenticated'; middlewareIds: string[] };
 }
 
@@ -315,6 +316,15 @@ export const backendTables = {
 
   deleteColumn: (projectId: string, tableId: string, columnId: string) =>
     apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/tables/${tableId}/columns/${columnId}`, { method: 'DELETE' }),
+
+  importErd: (projectId: string, erd: string) =>
+    apiFetch<{ tables: BackendTable[]; workflowsCreated: number }>(
+      `/api/projects/${projectId}/tables/import-erd`,
+      { method: 'POST', body: JSON.stringify({ erd }) },
+    ),
+
+  deleteAll: (projectId: string) =>
+    apiFetch<{ deleted: number }>(`/api/projects/${projectId}/tables/all`, { method: 'DELETE' }),
 };
 
 // Views API
@@ -365,6 +375,9 @@ export const backendWorkflows = {
   delete: (projectId: string, workflowId: string) =>
     apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/workflows/${workflowId}`, { method: 'DELETE' }),
 
+  deleteAll: (projectId: string) =>
+    apiFetch<{ deleted: number }>(`/api/projects/${projectId}/workflows/all`, { method: 'DELETE' }),
+
   testRun: (projectId: string, workflowId: string, input?: Record<string, unknown>) =>
     apiFetch<{ runId: string; status: string }>(`/api/projects/${projectId}/workflows/${workflowId}/test`, {
       method: 'POST', body: JSON.stringify({ input }),
@@ -407,7 +420,7 @@ export const backendRows = {
     if (opts?.page !== undefined) params.page    = String(opts.page);
     if (opts?.pageSize !== undefined) params.pageSize = String(opts.pageSize);
     const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-    return apiFetch<{ rows: Record<string, unknown>[]; total: number; page: number; pageSize: number }>(
+    return apiFetch<{ data: Record<string, unknown>[]; total: number; page: number; pageSize: number; totalPages: number }>(
       `/api/projects/${projectId}/data/${tableName}${qs}`,
     );
   },

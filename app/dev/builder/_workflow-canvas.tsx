@@ -474,6 +474,16 @@ export interface WorkflowCanvasProps {
 export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanvasProps) {
   const store = useBuilderStore();
 
+  // Sync inline canvas target into the store so FormulaEditor can match test results
+  // and determine the correct workflow context (e.g. server workflows).
+  // Uses a dedicated field so it never triggers the fullscreen overlay in page.tsx.
+  useEffect(() => {
+    if (!inline) return;
+    store.setInlineWorkflowCanvasTarget(target);
+    return () => { store.setInlineWorkflowCanvasTarget(null); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inline, JSON.stringify(target)]);
+
   // ── Global workflows list for "Project workflows" section in AddActionPopover ─
   const globalWorkflowsList = useMemo(() => {
     return Object.entries(store.globalWorkflowMeta ?? {}).map(([id, meta]) => ({
@@ -1278,6 +1288,11 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                   isServerContext={target.kind === 'serverWorkflow'}
                   projectId={target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : undefined}
                   serverFunctions={serverFunctionsList}
+                  priorSteps={
+                    target.kind === 'serverWorkflow' && selectedPath
+                      ? currentSteps.slice(0, selectedPath[0] as number)
+                      : undefined
+                  }
                 />
               </>
             ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow') ? (

@@ -76,6 +76,30 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   }>({ id: '', name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' });
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // publish
+  const [publishing, setPublishing] = useState<string | null>(null); // wfId being published
+  const [copied, setCopied] = useState(false);
+
+  const togglePublish = async (wf: BackendWorkflow) => {
+    setPublishing(wf.id);
+    try {
+      const isPublished = wf.status === 'PUBLISHED';
+      const res = isPublished
+        ? await backendWorkflows.unpublish(projectId, wf.id)
+        : await backendWorkflows.publish(projectId, wf.id);
+      setWorkflows((prev) => prev.map((w) => w.id === wf.id ? res.workflow : w));
+    } catch (e) { setError((e as Error).message); }
+    finally { setPublishing(null); }
+  };
+
+  const copyEndpointUrl = (wf: BackendWorkflow) => {
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+    const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   // context menu
   const [ctxMenu, setCtxMenu]           = useState<{ wfId: string; x: number; y: number } | null>(null);
 
@@ -83,49 +107,6 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   const [secPopover, setSecPopover]     = useState<string | null>(null); // wfId
   const [securityState, setSecurityState] = useState<Record<string, { access: 'public' | 'authenticated'; middlewareIds: string[] }>>({});
 
-  // ── Seeding ───────────────────────────────────────────────────────────────
-  const [seeding, setSeeding] = useState(false);
-
-  const seedCrudWorkflows = useCallback(async (
-    tbls: BackendTable[], wfs: BackendWorkflow[],
-  ): Promise<BackendWorkflow[]> => {
-    const created: BackendWorkflow[] = [];
-    for (const t of tbls) {
-      const name = t.name;
-      const display = t.displayName ?? name;
-      const CRUD = [
-        {
-          slug: `${name}-get`, name: `Get ${display}`, method: 'GET', path: `/${name}`,
-          steps: [{ id: 's1', type: 'tablesList', name: 'Get rows', config: { table: name } }, { id: 's2', type: 'sendResponse', name: 'Send Response', config: { status: '200', bodyType: 'JSON' } }],
-        },
-        {
-          slug: `${name}-insert`, name: `Insert ${display}`, method: 'POST', path: `/${name}`,
-          steps: [{ id: 's1', type: 'tablesInsert', name: 'Insert row', config: { table: name } }, { id: 's2', type: 'sendResponse', name: 'Send Response', config: { status: '201', bodyType: 'JSON' } }],
-        },
-        {
-          slug: `${name}-update`, name: `Update ${display}`, method: 'PUT', path: `/${name}/:id`,
-          steps: [{ id: 's1', type: 'tablesUpdate', name: 'Update row', config: { table: name } }, { id: 's2', type: 'sendResponse', name: 'Send Response', config: { status: '200', bodyType: 'JSON' } }],
-        },
-        {
-          slug: `${name}-delete`, name: `Delete ${display}`, method: 'DELETE', path: `/${name}/:id`,
-          steps: [{ id: 's1', type: 'tablesDelete', name: 'Delete row', config: { table: name } }, { id: 's2', type: 'sendResponse', name: 'Send Response', config: { status: '200', bodyType: 'JSON' } }],
-        },
-      ];
-      for (const op of CRUD) {
-        const exists = wfs.some((w) => w.slug === op.slug);
-        if (!exists) {
-          try {
-            const res = await backendWorkflows.create(projectId, {
-              name: op.name, slug: op.slug, kind: 'API_ENDPOINT',
-              method: op.method, path: op.path, graph: op.steps as unknown,
-            });
-            created.push(res.workflow);
-          } catch { /* already exists or creation failed — ignore */ }
-        }
-      }
-    }
-    return created;
-  }, [projectId]);
 
   // ── Load ─────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -135,20 +116,11 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         backendWorkflows.list(projectId),
         backendTables.list(projectId),
       ]);
-      const wfs: BackendWorkflow[] = wfRes.workflows;
-      const tbls: BackendTable[]   = tbRes.tables;
-      setWorkflows(wfs);
-      setTables(tbls);
-      // Seed CRUD workflows in the background
-      if (tbls.length > 0) {
-        setSeeding(true);
-        seedCrudWorkflows(tbls, wfs).then((created) => {
-          if (created.length > 0) setWorkflows((prev) => [...prev, ...created]);
-        }).finally(() => setSeeding(false));
-      }
+      setWorkflows(wfRes.workflows);
+      setTables(tbRes.tables);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
-  }, [projectId, seedCrudWorkflows]);
+  }, [projectId]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -158,11 +130,11 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   const middlewares  = workflows.filter((w) => w.kind === 'MIDDLEWARE');
 
   type TableFolder = { tableName: string; displayName: string; items: BackendWorkflow[] };
-  // Group by slug prefix (e.g. "products-get" → folder "products")
+  // Group using autoGroupTableId set by the backend at table-creation time
   const tableFolders: TableFolder[] = tables.map((t) => ({
     tableName: t.name,
     displayName: t.displayName ?? t.name,
-    items: apiEndpoints.filter((w) => w.slug?.startsWith(`${t.name}-`)),
+    items: apiEndpoints.filter((w) => w.autoGroupTableId === t.id),
   }));
 
   const tableItemIds = new Set(tableFolders.flatMap((f) => f.items.map((w) => w.id)));
@@ -227,7 +199,6 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
     setShowSettings(true);
   };
 
-  const lastOpened = workflows.slice(-5).reverse();
 
   // ── Sub-components ────────────────────────────────────────────────────────
   const WfRow = ({ wf, indent = false }: { wf: BackendWorkflow; indent?: boolean }) => {
@@ -296,6 +267,18 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             />
             <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#475569', pointerEvents: 'none' }}>⌕</span>
           </div>
+          {workflows.length > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm('Delete ALL workflows? This cannot be undone.')) return;
+                await backendWorkflows.deleteAll(projectId).catch(() => {});
+                setWorkflows([]);
+                setSelectedId(null);
+              }}
+              title="Remove all workflows"
+              style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', fontSize: 12, background: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
+            >🗑</button>
+          )}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setShowAddMenu((v) => !v)}
@@ -319,13 +302,6 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             )}
           </div>
         </div>
-
-        {/* seeding indicator */}
-        {seeding && (
-          <div style={{ padding: '4px 12px', fontSize: 10, color: '#475569', background: 'rgba(79,70,229,0.06)' }}>
-            Seeding CRUD workflows…
-          </div>
-        )}
 
         {/* Workflow list */}
         <div style={{ flex: 1, overflow: 'auto' }}>
@@ -352,11 +328,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                           <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>📁 {folder.displayName}</span>
                           <span style={{ fontSize: 10, color: '#334155', marginLeft: 'auto' }}>{folder.items.length}</span>
                         </button>
-                        {!collapsed[folderKey] && (
-                          items.length > 0
-                            ? items.map((wf) => <WfRow key={wf.id} wf={wf} indent />)
-                            : <div style={{ padding: '4px 28px 6px', fontSize: 10, color: '#334155' }}>Seeding…</div>
-                        )}
+                        {!collapsed[folderKey] && items.map((wf) => <WfRow key={wf.id} wf={wf} indent />)}
                       </div>
                     );
                   })}
@@ -392,27 +364,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
           )}
         </div>
 
-        {/* Last opened */}
-        {lastOpened.length > 0 && (
-          <div style={{ borderTop: '1px solid #1e293b', padding: '8px 12px' }}>
-            <div style={{ fontSize: 10, color: '#334155', fontWeight: 600, marginBottom: 5 }}>Last opened workflows</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {lastOpened.map((wf) => (
-                <button key={wf.id} onClick={() => openCanvas(wf)}
-                  style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: selectedId === wf.id ? 'rgba(99,102,241,0.2)' : '#1e293b', color: selectedId === wf.id ? '#a5b4fc' : '#64748b', border: '1px solid #334155', cursor: 'pointer', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {wf.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Center: inline WorkflowCanvas or empty state ─────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header bar for selected workflow */}
         {selected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: '1px solid #1e293b', background: '#080d17', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: '1px solid #1e293b', background: '#080d17', flexShrink: 0, flexWrap: 'wrap' }}>
             {selected.method && (
               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: `${METHOD_COLORS[selected.method] ?? '#6b7280'}22`, color: METHOD_COLORS[selected.method] ?? '#6b7280' }}>
                 {selected.method}
@@ -425,9 +383,29 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: '#a78bfa' }}>MIDDLEWARE</span>
             )}
             <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', flex: 1 }}>{selected.name}</span>
-            {selected.path && (
-              <span style={{ fontSize: 11, color: '#475569', fontFamily: 'monospace' }}>{selected.path}</span>
+
+            {/* Status badge */}
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, letterSpacing: '0.05em',
+              background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.2)',
+              color: selected.status === 'PUBLISHED' ? '#4ade80' : '#64748b',
+              border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
+            }}>
+              {selected.status}
+            </span>
+
+            {/* Copy URL (only when published) */}
+            {selected.kind === 'API_ENDPOINT' && selected.status === 'PUBLISHED' && (
+              <button
+                onClick={() => copyEndpointUrl(selected)}
+                title="Copy endpoint URL"
+                style={{ ...BTN, fontSize: 11, padding: '3px 10px', background: 'rgba(15,23,42,0.8)', color: copied ? '#4ade80' : '#64748b', border: '1px solid #1e293b' }}
+              >
+                {copied ? '✓ Copied' : '⎘ Copy URL'}
+              </button>
             )}
+
+            {/* Security */}
             {selected.kind === 'API_ENDPOINT' && (
               <button
                 onClick={() => setSecPopover(selected.id)}
@@ -437,8 +415,24 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                   const sec = securityState[selected.id];
                   if (!sec) return '⊕ Public';
                   const mid = sec.middlewareIds.length > 0 ? '+WF' : '';
-                  return sec.access === 'authenticated' ? `👤 Authenticated${mid}` : `⊕ Public${mid}`;
+                  return sec.access === 'authenticated' ? `👤 Auth${mid}` : `⊕ Public${mid}`;
                 })()}
+              </button>
+            )}
+
+            {/* Publish / Unpublish */}
+            {selected.kind === 'API_ENDPOINT' && (
+              <button
+                onClick={() => void togglePublish(selected)}
+                disabled={publishing === selected.id}
+                style={{
+                  fontSize: 11, fontWeight: 600, padding: '3px 12px', borderRadius: 5, cursor: 'pointer',
+                  border: 'none', opacity: publishing === selected.id ? 0.6 : 1,
+                  background: selected.status === 'PUBLISHED' ? 'rgba(239,68,68,0.15)' : '#4f46e5',
+                  color: selected.status === 'PUBLISHED' ? '#f87171' : '#fff',
+                }}
+              >
+                {publishing === selected.id ? '…' : selected.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
               </button>
             )}
           </div>
@@ -609,10 +603,49 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               closeCtx();
             }}>Copy workflow</button>
             <button style={itemStyle} onClick={() => {
-              const url = `${window.location.origin}/api/run/${projectId}/${wf.slug ?? wf.id}`;
+              const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+              const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
               navigator.clipboard.writeText(url).catch(() => {});
               closeCtx();
-            }}>Copy webhook URL</button>
+            }}>Copy endpoint URL</button>
+            {wf.kind === 'API_ENDPOINT' && (
+              <button style={itemStyle} onClick={() => {
+                const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+                const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
+                const method = wf.method ?? 'GET';
+                const hasBody = ['POST', 'PUT', 'PATCH'].includes(method);
+                const isDelete = method === 'DELETE';
+                const hasId = wf.path?.includes(':id');
+
+                // Build body template from table columns
+                let bodyTemplate = '{}';
+                if (hasBody || isDelete) {
+                  const linkedTable = tables.find((t) => t.id === wf.autoGroupTableId);
+                  if (linkedTable?.columns?.length) {
+                    const userCols = linkedTable.columns.filter(
+                      (c) => !['id', 'created_at', 'updated_at'].includes(c.name),
+                    );
+                    if (isDelete || (hasId && !hasBody)) {
+                      bodyTemplate = JSON.stringify({ id: '' });
+                    } else {
+                      const sample: Record<string, string> = {};
+                      if (hasId) sample['id'] = '';
+                      userCols.forEach((c) => { sample[c.name] = ''; });
+                      bodyTemplate = JSON.stringify(sample, null, 2);
+                    }
+                  }
+                }
+
+                const curl = [
+                  `curl -X ${method}`,
+                  `  "${url}"`,
+                  `  -H "Content-Type: application/json"`,
+                  (hasBody || (isDelete && hasId)) ? `  -d '${bodyTemplate}'` : null,
+                ].filter(Boolean).join(' \\\n');
+                navigator.clipboard.writeText(curl).catch(() => {});
+                closeCtx();
+              }}>Copy as cURL</button>
+            )}
             <button style={{ ...itemStyle, color: '#ef4444' }} onClick={async () => {
               if (!confirm(`Delete "${wf.name}"?`)) return;
               await backendWorkflows.delete(projectId, wf.id).catch(() => {});

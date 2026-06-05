@@ -3494,6 +3494,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
   openWorkflowCanvas: (target) => set({ workflowCanvasTarget: target }),
   closeWorkflowCanvas: () => set({ workflowCanvasTarget: null, liveCanvasSteps: null }),
+  inlineWorkflowCanvasTarget: null,
+  setInlineWorkflowCanvasTarget: (target) => set({ inlineWorkflowCanvasTarget: target }),
   liveCanvasSteps: null,
   setLiveCanvasSteps: (steps) => set({ liveCanvasSteps: steps }),
   setGlobalFormula: (id, def) => {

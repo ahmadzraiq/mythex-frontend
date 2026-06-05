@@ -8,7 +8,9 @@
  *   B. Variables     — named typed variables (CustomVars)
  */
 
-import React, { useState, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useState, useCallback, useRef, lazy, Suspense, useEffect } from 'react';
+import { useSearchParams, usePathname } from 'next/navigation';
+import { backendWorkflows, type BackendWorkflow } from '@/lib/platform/api-client';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 
@@ -125,12 +127,172 @@ const SUB_HDR: React.CSSProperties = {
   letterSpacing: '0.07em', padding: '4px 12px 2px', background: '#0f172a',
 };
 
+// ─── BackendApisSection ───────────────────────────────────────────────────────
+// Shows only PUBLISHED API endpoints, grouped by table folder.
+// Per-item Add button + Add All button. Scrollable. Never causes PATCH calls.
+
+import { backendTables, type BackendTable } from '@/lib/platform/api-client';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+
+const METHOD_COLOR: Record<string, string> = {
+  GET: '#4ade80', POST: '#60a5fa', PUT: '#fbbf24', PATCH: '#c4b5fd', DELETE: '#f87171',
+};
+const METHOD_BG: Record<string, string> = {
+  GET: 'rgba(34,197,94,0.12)', POST: 'rgba(59,130,246,0.12)', PUT: 'rgba(245,158,11,0.12)',
+  PATCH: 'rgba(139,92,246,0.12)', DELETE: 'rgba(239,68,68,0.12)',
+};
+
+function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onAdd: () => void }) {
+  const m = wf.method ?? 'GET';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px 4px 22px', fontSize: 11 }}>
+      <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0 }}>
+        {m}
+      </span>
+      <span style={{ flex: 1, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {wf.name}
+      </span>
+      <button
+        onClick={onAdd}
+        disabled={added}
+        title={added ? 'Already added' : 'Add as data source'}
+        style={{
+          fontSize: 9, padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+          cursor: added ? 'default' : 'pointer',
+          background: added ? 'transparent' : 'rgba(99,102,241,0.15)',
+          color: added ? '#374151' : '#a5b4fc',
+          border: `1px solid ${added ? '#1f2937' : 'rgba(99,102,241,0.3)'}`,
+        }}
+      >{added ? '✓' : '+'}</button>
+    </div>
+  );
+}
+
+function BackendApisSection({ projectId, onAdd, onAddAll }: {
+  projectId: string;
+  onAdd: (wf: BackendWorkflow, folderId?: string) => void;
+  onAddAll: (wfs: BackendWorkflow[], tables: BackendTable[]) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [wfs, setWfs] = useState<BackendWorkflow[]>([]);
+  const [tables, setTables] = useState<BackendTable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [allAdded, setAllAdded] = useState(false);
+  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      backendWorkflows.list(projectId, { kind: 'API_ENDPOINT' }),
+      backendTables.list(projectId).catch(() => ({ tables: [] as BackendTable[] })),
+    ])
+      .then(([wfRes, tblRes]) => {
+        // Only show published endpoints
+        setWfs(wfRes.workflows.filter(w => w.status === 'PUBLISHED'));
+        setTables(tblRes.tables);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  if (!loading && wfs.length === 0) return null;
+
+  const tableItemIds = new Set(
+    tables.flatMap(t => wfs.filter(w => w.autoGroupTableId === t.id).map(w => w.id))
+  );
+  const standalone = wfs.filter(w => !tableItemIds.has(w.id));
+
+  const toggleFolder = (key: string) =>
+    setCollapsedFolders(s => ({ ...s, [key]: !s[key] }));
+
+  const handleAdd = (wf: BackendWorkflow, folderId?: string) => {
+    if (addedIds.has(wf.id)) return;
+    onAdd(wf, folderId);
+    setAddedIds(s => { const n = new Set(s); n.add(wf.id); return n; });
+  };
+
+  const handleAddAll = () => {
+    if (allAdded) return;
+    onAddAll(wfs, tables);
+    setAddedIds(new Set(wfs.map(w => w.id)));
+    setAllAdded(true);
+  };
+
+  return (
+    <div style={{ borderBottom: '2px solid #1f2937', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
+      <div style={{ ...SECTION_HDR, cursor: 'pointer', flexShrink: 0 }} onClick={() => setOpen(o => !o)}>
+        <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Chevron open={open} size={10} color="#6b7280" />
+          Backend APIs
+          {!loading && <span style={{ fontSize: 10, color: '#4b5563', fontWeight: 400 }}>({wfs.length})</span>}
+        </span>
+        {!loading && wfs.length > 0 && (
+          <div onClick={e => e.stopPropagation()}>
+            <button
+              onClick={handleAddAll}
+              disabled={allAdded}
+              style={{
+                fontSize: 10, padding: '2px 8px', borderRadius: 4, cursor: allAdded ? 'default' : 'pointer',
+                background: allAdded ? 'transparent' : 'rgba(99,102,241,0.15)',
+                color: allAdded ? '#374151' : '#a5b4fc',
+                border: `1px solid ${allAdded ? '#1f2937' : 'rgba(99,102,241,0.3)'}`,
+              }}
+            >{allAdded ? '✓ Added' : '+ Add All'}</button>
+          </div>
+        )}
+      </div>
+      {open && (
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 4 }}>
+          {loading ? (
+            <div style={{ padding: '8px 12px', fontSize: 11, color: '#4b5563' }}>Loading…</div>
+          ) : (
+            <>
+              {tables.map(t => {
+                const items = wfs.filter(w => w.autoGroupTableId === t.id);
+                if (items.length === 0) return null;
+                const key = t.id;
+                const folderOpen = !collapsedFolders[key];
+                return (
+                  <div key={key}>
+                    <div
+                      onClick={() => toggleFolder(key)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', cursor: 'pointer', userSelect: 'none' as const }}
+                    >
+                      <span style={{ fontSize: 9, color: '#475569', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}>▾</span>
+                      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>📁 {t.displayName}</span>
+                      <span style={{ fontSize: 10, color: '#334155', marginLeft: 'auto' }}>{items.length}</span>
+                    </div>
+                    {folderOpen && items.map(wf => (
+                      <WfItem key={wf.id} wf={wf} added={addedIds.has(wf.id)} onAdd={() => handleAdd(wf, `be-folder-${t.id}`)} />
+                    ))}
+                  </div>
+                );
+              })}
+              {standalone.map(wf => (
+                <WfItem key={wf.id} wf={wf} added={addedIds.has(wf.id)} onAdd={() => handleAdd(wf)} />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface DataTabProps {
   onSetSlide: (s: DataTabSlideState) => void;
   onWidthChange?: (w: number) => void;
 }
 
 export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname() ?? '';
+  const projectId = searchParams.get('projectId') ??
+    (pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null) ??
+    (pathname.startsWith('/dev/builder') ? (new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('projectId') ?? null) : null);
+
   const [dsSearch, setDsSearch] = useState('');
   const [varSearch, setVarSearch] = useState('');
   const [dsSearchOpen, setDsSearchOpen] = useState(false);
@@ -140,7 +302,8 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
   const [dsOpen, setDsOpen] = useState(true);
   const [varOpen, setVarOpen] = useState(true);
   const [activeDsId, setActiveDsId] = useState<string | null>(null);
-  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders, removeVarFolder } = useBuilderStore();
+  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders, removeVarFolder, addDsFolder } = useBuilderStore();
+
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [folderMenu, setFolderMenu] = useState<{ id: string; top: number; left: number } | null>(null);
   const folderMenuRef = useRef<HTMLDivElement>(null);
@@ -301,6 +464,20 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
+            {pageDataSources.length > 0 && (
+              <button
+                data-testid="remove-all-datasources-btn"
+                title="Remove all data sources"
+                onClick={() => { pageDataSources.forEach(d => removePageDataSource(d.id)); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                </svg>
+              </button>
+            )}
             <button data-testid="add-datasource-btn"
               onClick={() => onSetSlide({ kind: 'dataSource', editingId: null })}
               style={ADD_BTN}>
@@ -347,6 +524,53 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
           </>
         )}
       </div>
+
+      {/* ── Backend APIs — published only, folder view, loaded on mount ── */}
+      {projectId && (
+        <BackendApisSection
+          projectId={projectId}
+          onAdd={(wf, folderId) => {
+            const id = `backend-${wf.id}`;
+            if (pageDataSources.find(d => d.id === id)) return;
+            addPageDataSource({
+              id,
+              name: wf.name,
+              type: 'rest',
+              method: (wf.method ?? 'GET') as DataSourceConfig['method'],
+              url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
+              trigger: 'action',
+              storeIn: id,
+              folderId,
+            } as DataSourceConfig);
+          }}
+          onAddAll={(wfs, tables) => {
+            // Create one ds-folder per table, then add each workflow into the right folder
+            const folderIdMap: Record<string, string> = {};
+            tables.forEach(t => {
+              const folderId = `be-folder-${t.id}`;
+              if (!dsFolders.find(f => f.id === folderId)) {
+                addDsFolder({ id: folderId, name: t.displayName });
+              }
+              folderIdMap[t.id] = folderId;
+            });
+            wfs.forEach(wf => {
+              const id = `backend-${wf.id}`;
+              if (pageDataSources.find(d => d.id === id)) return;
+              const folderId = wf.autoGroupTableId ? folderIdMap[wf.autoGroupTableId] : undefined;
+              addPageDataSource({
+                id,
+                name: wf.name,
+                type: 'rest',
+                method: (wf.method ?? 'GET') as DataSourceConfig['method'],
+                url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
+                trigger: 'action',
+                storeIn: id,
+                folderId,
+              } as DataSourceConfig);
+            });
+          }}
+        />
+      )}
 
       {/* ── Bottom: Variables ── */}
       <div data-testid="variables-column"

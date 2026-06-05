@@ -856,6 +856,9 @@ export interface BuilderStore {
   workflowCanvasTarget: WorkflowCanvasTarget | null;
   openWorkflowCanvas: (target: WorkflowCanvasTarget) => void;
   closeWorkflowCanvas: () => void;
+  /** Target synced by an inline canvas (e.g. ServerWorkflowsPanel) — does NOT trigger the overlay */
+  inlineWorkflowCanvasTarget: WorkflowCanvasTarget | null;
+  setInlineWorkflowCanvasTarget: (target: WorkflowCanvasTarget | null) => void;
   /** Live step tree from the open canvas — updated on every step add/remove/reorder.
    *  Used by the formula editor to build accurate step-index chips without waiting for save. */
   liveCanvasSteps: object[] | null;

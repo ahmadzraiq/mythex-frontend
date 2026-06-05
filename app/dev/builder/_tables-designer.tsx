@@ -165,13 +165,26 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
   const [newTableName, setNewTableName] = useState('');
   const [creatingTable, setCreatingTable] = useState(false);
 
+  // import ERD
+  const [showErdModal, setShowErdModal] = useState(false);
+
   const [error, setError] = useState('');
 
   const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
 
-  const allCols = selectedTable
-    ? ['id', 'created_at', 'updated_at', ...selectedTable.columns.map((c) => c.name)]
-    : [];
+  const allCols = (() => {
+    if (!selectedTable) return [];
+    const userCols = selectedTable.columns.map((c) => c.name);
+    const userHas = (n: string) => userCols.includes(n);
+    // If the user explicitly defined id/created_at/updated_at (e.g. via ERD), respect their order.
+    // Otherwise prepend id and append created_at/updated_at as system columns.
+    const base: string[] = [];
+    if (!userHas('id')) base.push('id');
+    base.push(...userCols);
+    if (!userHas('created_at')) base.push('created_at');
+    if (!userHas('updated_at')) base.push('updated_at');
+    return base;
+  })();
 
   const colMeta = (name: string): Partial<BackendColumn> => {
     if (name === 'id') return { name: 'id', type: 'UUID' };
@@ -240,7 +253,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
         page, pageSize: pageSize === 0 ? undefined : pageSize,
       };
       const res = await backendRows.list(projectId, selectedTable.name, opts);
-      setRows(res.rows ?? []);
+      setRows(res.data ?? []);
       setTotalRows(res.total ?? 0);
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingRows(false); }
@@ -329,6 +342,17 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
     finally { setCreatingTable(false); }
   };
 
+  const handleErdImported = useCallback(async (firstTableId?: string) => {
+    // Reload the full table list so each table has .columns populated
+    try {
+      const res = await backendTables.list(projectId);
+      setTables(res.tables);
+      if (firstTableId) onSelectTable(firstTableId);
+      else if (res.tables.length > 0) onSelectTable(res.tables[0].id);
+    } catch { /* ignore */ }
+    setShowErdModal(false);
+  }, [projectId, onSelectTable]);
+
   const saveTableSettings = async () => {
     if (!selectedTableId) return;
     setSavingSettings(true);
@@ -344,6 +368,16 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
     try {
       await backendTables.delete(projectId, selectedTableId);
       setTables((prev) => prev.filter((t) => t.id !== selectedTableId));
+      onSelectTable(null);
+      setShowSettings(false);
+    } catch (e) { setError((e as Error).message); }
+  };
+
+  const deleteAllTables = async () => {
+    if (!confirm('Delete ALL tables and their data? This cannot be undone.')) return;
+    try {
+      await backendTables.deleteAll(projectId);
+      setTables([]);
       onSelectTable(null);
       setShowSettings(false);
     } catch (e) { setError((e as Error).message); }
@@ -394,6 +428,8 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
       setTables((prev) => prev.map((t) =>
         t.id === selectedTableId ? { ...t, columns: [...t.columns, res.column] } : t,
       ));
+      setVisibleCols((prev) => [...prev, res.column.name]);
+      setPendingVisibleCols((prev) => [...prev, res.column.name]);
       setNewCol({ type: 'TEXT', nullable: true });
       setShowAddColPanel(false);
     } catch (e) { setError((e as Error).message); }
@@ -433,7 +469,16 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
         onCreateTable={() => void createTable()}
         creatingTable={creatingTable}
         onCancelAddTable={() => { setShowAddTable(false); setNewTableName(''); }}
+        onImportErd={() => setShowErdModal(true)}
+        onDeleteAll={() => void deleteAllTables()}
       />
+      {showErdModal && (
+        <ImportErdModal
+          projectId={projectId}
+          onImported={handleErdImported}
+          onClose={() => setShowErdModal(false)}
+        />
+      )}
 
       {/* ── Main content ──────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
@@ -745,7 +790,7 @@ function RichTextArea({ value, onChange }: { value: string; onChange: (v: string
 function Sidebar({
   tables, tableSearch, onSearchChange, selectedTableId, onSelectTable,
   loadingTables, showAddTable, onToggleAddTable, newTableName, onNewTableNameChange,
-  onCreateTable, creatingTable, onCancelAddTable,
+  onCreateTable, creatingTable, onCancelAddTable, onImportErd, onDeleteAll,
 }: {
   tables: BackendTable[];
   tableSearch: string;
@@ -760,6 +805,8 @@ function Sidebar({
   onCreateTable: () => void;
   creatingTable: boolean;
   onCancelAddTable: () => void;
+  onImportErd: () => void;
+  onDeleteAll: () => void;
 }) {
   const sideInputStyle: React.CSSProperties = {
     background: '#111827', border: '1px solid #374151', borderRadius: 4,
@@ -771,7 +818,14 @@ function Sidebar({
     <div style={{ width: 220, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0 }}>
       <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0' }}>Tables</span>
-        <button onClick={onToggleAddTable} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+ Add Table</button>
+        <div style={{ display: 'flex', gap: 5 }}>
+          <button
+            onClick={onImportErd}
+            title="Import from ERD (dbdiagram.io)"
+            style={{ ...BTN, border: '1px solid #374151', padding: '3px 8px', fontSize: 11, color: '#94a3b8' }}
+          >⬆ ERD</button>
+          <button onClick={onToggleAddTable} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+ Add</button>
+        </div>
       </div>
       <div style={{ padding: '8px 10px', borderBottom: '1px solid #1e293b' }}>
         <input value={tableSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search tables" style={sideInputStyle} />
@@ -813,6 +867,16 @@ function Sidebar({
           );
         })}
       </div>
+      {tables.length > 0 && (
+        <div style={{ padding: '8px 12px', borderTop: '1px solid #1e293b' }}>
+          <button
+            onClick={onDeleteAll}
+            style={{ width: '100%', padding: '5px 0', fontSize: 11, background: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 5, cursor: 'pointer' }}
+          >
+            🗑 Remove All Tables
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1436,6 +1500,113 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
         <button onClick={onCancel} style={{ ...BTN, width: '100%', justifyContent: 'center', padding: '8px 0', fontSize: 12, marginTop: 6 }}>
           Cancel
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── ImportErdModal ───────────────────────────────────────────────────────────
+
+function ImportErdModal({ projectId, onImported, onClose }: {
+  projectId: string;
+  onImported: (firstTableId?: string) => void;
+  onClose: () => void;
+}) {
+  const [erd, setErd] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ tables: number; workflows: number } | null>(null);
+  const [err, setErr] = useState('');
+
+  const tableCount = (erd.match(/^\s*Table\s+\w+/gim) ?? []).length;
+
+  const handleImport = async () => {
+    if (!erd.trim()) return;
+    setLoading(true);
+    setErr('');
+    setResult(null);
+    try {
+      const res = await backendTables.importErd(projectId, erd);
+      setResult({ tables: res.tables.length, workflows: res.workflowsCreated });
+      onImported(res.tables[0]?.id);
+    } catch (e) {
+      setErr((e as Error).message ?? 'Import failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const OVERLAY: React.CSSProperties = {
+    position: 'fixed', inset: 0, zIndex: 9999,
+    background: 'rgba(0,0,0,0.65)', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+  };
+  const CARD: React.CSSProperties = {
+    background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10,
+    boxShadow: '0 24px 64px rgba(0,0,0,0.7)', width: 560, maxWidth: '95vw',
+    display: 'flex', flexDirection: 'column', overflow: 'hidden',
+  };
+  const INPUT: React.CSSProperties = {
+    background: '#111827', border: '1px solid #374151', borderRadius: 6,
+    color: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', padding: '10px 12px',
+    resize: 'vertical', outline: 'none', width: '100%', boxSizing: 'border-box',
+  };
+
+  return (
+    <div style={OVERLAY} onClick={onClose}>
+      <div style={CARD} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Import ERD</span>
+            <span style={{ marginLeft: 8, fontSize: 11, color: '#64748b' }}>dbdiagram.io / DBML format</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <textarea
+            value={erd}
+            onChange={e => setErd(e.target.value)}
+            placeholder={`Table users {\n  id int [pk]\n  name varchar\n  email varchar [unique]\n}\n\nTable orders {\n  id int [pk]\n  user_id int\n  total decimal\n}\n\nRef: orders.user_id > users.id`}
+            rows={12}
+            style={INPUT}
+            disabled={loading}
+          />
+
+          {/* Preview */}
+          {tableCount > 0 && !result && (
+            <div style={{ fontSize: 11, color: '#60a5fa', background: 'rgba(59,130,246,0.08)', borderRadius: 5, padding: '6px 10px' }}>
+              {tableCount} table{tableCount !== 1 ? 's' : ''} detected — will create tables + CRUD API endpoints
+            </div>
+          )}
+
+          {err && (
+            <div style={{ fontSize: 11, color: '#f87171', background: 'rgba(239,68,68,0.08)', borderRadius: 5, padding: '6px 10px' }}>{err}</div>
+          )}
+
+          {result && (
+            <div style={{ fontSize: 11, color: '#34d399', background: 'rgba(52,211,153,0.08)', borderRadius: 5, padding: '6px 10px' }}>
+              {result.tables} table{result.tables !== 1 ? 's' : ''} created · {result.workflows} CRUD workflows generated
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 18px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid #374151', borderRadius: 6, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
+            {result ? 'Close' : 'Cancel'}
+          </button>
+          {!result && (
+            <button
+              onClick={() => void handleImport()}
+              disabled={loading || !erd.trim()}
+              style={{ padding: '6px 16px', background: loading || !erd.trim() ? '#1e3a5f' : '#3b82f6', border: 'none', borderRadius: 6, color: loading || !erd.trim() ? '#4b5563' : '#fff', fontSize: 12, cursor: loading || !erd.trim() ? 'default' : 'pointer', fontWeight: 600 }}
+            >
+              {loading ? 'Importing…' : 'Import'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

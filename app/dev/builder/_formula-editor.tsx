@@ -148,6 +148,12 @@ export interface FormulaEditorProps {
    * Formulas, Quick) are available but the user can never switch into chip-formula mode.
    */
   lockToJs?: boolean;
+  /**
+   * When true (server workflow context), only the Workflow tab is shown.
+   * Variables, Data, Formulas, and Auth tabs are hidden since they are
+   * client-side only and irrelevant to server-side step binding.
+   */
+  serverContext?: boolean;
 }
 
 // ─── WorkflowResultsTab ───────────────────────────────────────────────────────
@@ -289,7 +295,7 @@ function WorkflowResultGroup({
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick, lockToJs }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick, lockToJs, serverContext = false }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -298,16 +304,20 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const historyIdxRef = useRef(-1);
   const isUndoRedoRef = useRef(false);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps, globalWorkflowMeta } = useBuilderStore(
+  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget: _overlayTarget, inlineWorkflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps, globalWorkflowMeta } = useBuilderStore(
     useShallow(s => ({
       globalFormulas: s.globalFormulas, pageDataSources: s.pageDataSources,
       customVars: s.customVars, varFolders: s.varFolders,
       workflowTestResults: s.workflowTestResults, workflowCanvasTarget: s.workflowCanvasTarget,
+      inlineWorkflowCanvasTarget: s.inlineWorkflowCanvasTarget,
       pageWorkflows: s.pageWorkflows, globalWorkflows: s.globalWorkflows,
       liveCanvasSteps: s.liveCanvasSteps,
       globalWorkflowMeta: s.globalWorkflowMeta,
     }))
   );
+  // Inline canvases (e.g. ServerWorkflowsPanel) sync via inlineWorkflowCanvasTarget to avoid
+  // triggering the fullscreen overlay. Use whichever is active.
+  const workflowCanvasTarget = _overlayTarget ?? inlineWorkflowCanvasTarget;
   const selectedIds = useBuilderStore(s => s.selectedIds);
   const selectedMapIndex = useBuilderStore(s => s.selectedMapIndex);
   const pageNodes = useBuilderStore(s => s.pageNodes);
@@ -408,10 +418,12 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     // Derive the same ID used by workflowIdFromTarget in _workflow-canvas.tsx
     const t = workflowCanvasTarget;
     let currentId: string;
-    if (t.kind === 'element')          currentId = `element:${t.nodeId}:${t.event}`;
-    else if (t.kind === 'pageTrigger') currentId = `pageTrigger:${t.trigger}`;
-    else if (t.kind === 'pageWorkflow') currentId = `pageWorkflow:${t.name}`;
-    else                               currentId = `globalWorkflow:${t.id}`;
+    if (t.kind === 'element')              currentId = `element:${t.nodeId}:${t.event}`;
+    else if (t.kind === 'pageTrigger')     currentId = `pageTrigger:${t.trigger}`;
+    else if (t.kind === 'pageWorkflow')    currentId = `pageWorkflow:${t.name}`;
+    else if (t.kind === 'serverWorkflow')  currentId = `serverWorkflow:${t.workflowId}`;
+    else if (t.kind === 'componentWorkflow') currentId = `componentWorkflow:${t.modelId}:${t.workflowId}`;
+    else                                   currentId = `globalWorkflow:${t.id}`;
     return Object.fromEntries(
       Object.entries(workflowTestResults).filter(([, entry]) => entry.workflowId === currentId)
     ) as typeof workflowTestResults;
@@ -473,14 +485,15 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   // Outside the workflow canvas (e.g. editing a shared-component prop formula) the Workflow
   // tab would otherwise leak in from unrelated cached test results — hide it entirely there.
   const isWorkflowContext = !!workflowCanvasTarget || hasEventContext || paramsForceWorkflow;
-  const showWorkflowTab = isWorkflowContext && (
+  const showWorkflowTab = serverContext || (isWorkflowContext && (
     hasEventContext ||
     Object.keys(currentWorkflowTestResults ?? {}).length > 0 ||
     isGlobalWorkflowWithParams ||
     paramsForceWorkflow
-  );
+  ));
 
   const [tab, setTab] = useState<Tab>(() => {
+    if (serverContext) return 'workflow';
     if (hasEventContext || paramsForceWorkflow) return 'workflow';
     if (paramsInQuick && hasFormulaParams) return 'quick';
     return 'variables';
@@ -1491,9 +1504,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         {([
-          ...(showQuickTab ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
-          { id: 'variables' as Tab, icon: '{x}', label: 'Variables' },
-          { id: 'data' as Tab, icon: '≡', label: 'Data' },
+          ...(showQuickTab && !serverContext ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
+          ...(!serverContext ? [{ id: 'variables' as Tab, icon: '{x}', label: 'Variables' }] : []),
+          ...(!serverContext ? [{ id: 'data' as Tab, icon: '≡', label: 'Data' }] : []),
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
           { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
