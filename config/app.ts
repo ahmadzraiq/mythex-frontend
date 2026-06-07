@@ -63,9 +63,7 @@ export default {
   /** Global authentication configuration passed to SDUIEngine. */
   authConfig: {
     tokenType: 'bearer' as const,
-    userQuery: '{ activeCustomer { id emailAddress firstName lastName } }',
-    userQueryEndpoint: 'http://localhost:3000/shop-api',
-    userQueryHeaders: { 'vendure-token': '__default_channel__' },
+    userEndpoint: 'http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me',
     unauthenticatedRedirect: '/sign-in',
     authenticatedRedirect: '/',
     unauthorizedRedirect: '/',

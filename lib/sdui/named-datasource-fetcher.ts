@@ -105,7 +105,7 @@ export function useNamedDataSourceFetcher(
 
     const sduiStore = useSduiStore.getState();
 
-    const triggeredNames = new Set(
+    const triggeredKeys = new Set(
       Object.keys(dsRefetchKeys).filter(n => dsRefetchKeys[n] !== (prevDsRefetchKeysRef.current[n] ?? 0))
     );
     prevDsRefetchKeysRef.current = { ...dsRefetchKeys };
@@ -113,12 +113,38 @@ export function useNamedDataSourceFetcher(
     const allNames = Object.keys(dataSources);
     const referencedNames = new Set(extractReferencedDataSources(config, allNames));
 
+    // Build a set of triggered datasource UUIDs. Entries in triggeredKeys may be
+    // either a datasource UUID (direct) or a cacheTag (from invalidateCache: ["tag"]).
+    // Helper to get cacheTag from either REST or GraphQL datasource def
+    const getDsCacheTag = (ds: NamedDataSourceDef): string | undefined =>
+      (ds as { cacheTag?: string }).cacheTag;
+
+    // Match both so invalidateCache works without knowing the UUID.
+    const triggeredNames = triggeredKeys.size > 0
+      ? new Set(
+          allNames.filter(n => {
+            const ds = dataSources[n];
+            const tag = ds ? getDsCacheTag(ds) : undefined;
+            return triggeredKeys.has(n) || (tag && triggeredKeys.has(tag));
+          })
+        )
+      : new Set<string>();
+
     // When explicitly triggered by a workflow action, fetch those datasources regardless
     // of whether they appear in the screen config — the user/workflow requested it explicitly.
     // Auto-fetches (no explicit trigger) are still filtered to only referenced datasources.
     const neededNames = triggeredNames.size > 0
       ? triggeredNames
       : referencedNames;
+
+    // Datasources triggered by cacheTag should bypass cache (same as UUID-triggered ones)
+    const forcedByTag = new Set(
+      allNames.filter(n => {
+        const ds = dataSources[n];
+        const tag = ds ? getDsCacheTag(ds) : undefined;
+        return tag && triggeredKeys.has(tag);
+      })
+    );
 
     Object.entries(dataSources)
       .filter(([name]) => neededNames.has(name))
@@ -136,11 +162,14 @@ export function useNamedDataSourceFetcher(
           if (cacheTag && cacheTTL > 0) {
             const keyParts = cacheKeyVars.map(p => String(getNestedValue(currentState, p) ?? ''));
             cacheKey = `ds:${cacheTag}:${keyParts.join(':')}`;
-            const cached = dsCacheGet(cacheKey);
-            if (cached !== undefined) {
-              sduiStore.setData(storeKey, cached);
-              sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
-              return;
+            const isForced = forcedByTag.has(name);
+            if (!isForced) {
+              const cached = dsCacheGet(cacheKey);
+              if (cached !== undefined) {
+                sduiStore.setData(storeKey, cached);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+                return;
+              }
             }
           }
 
@@ -155,6 +184,7 @@ export function useNamedDataSourceFetcher(
                 } catch { /* skip header if formula fails */ }
               } else {
                 const resolved = interpolate(String(v));
+                if (k.toLowerCase() === 'authorization' && /^bearer\s*$/i.test(resolved)) continue;
                 if (resolved) extraHeaders[k] = resolved;
               }
             }
@@ -218,15 +248,50 @@ export function useNamedDataSourceFetcher(
                   if (result != null) headers[k] = String(result);
                 } catch { /* skip header if formula fails */ }
               } else {
-                headers[k] = interpolate(String(v));
+                const resolved = interpolate(String(v));
+                // Skip Authorization header when the token is missing (e.g., guest users)
+                // to avoid sending "Bearer " and avoid an unnecessary preflight.
+                if (k.toLowerCase() === 'authorization' && /^bearer\s*$/i.test(resolved)) continue;
+                if (resolved) headers[k] = resolved;
               }
             }
           }
           const enabled = (ds.queryParams ?? []).filter(p => p.enabled !== false && p.key.trim());
-          let url = ds.url;
+          // Resolve URL: support formula objects { formula: "..." } and {{interpolation}} strings
+          let url: string;
+          const rawUrl = ds.url as unknown;
+          if (typeof rawUrl === 'object' && rawUrl !== null && 'formula' in (rawUrl as object)) {
+            try {
+              const resolved = evaluateFormula((rawUrl as { formula: string | object }).formula, currentState).value;
+              url = String(resolved ?? '');
+            } catch {
+              url = '';
+            }
+          } else {
+            url = interpolate(String(rawUrl ?? ''));
+          }
           if (enabled.length) {
             const qs = enabled.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
             url = `${url}${url.includes('?') ? '&' : '?'}${qs}`;
+          }
+
+          // REST cache — same logic as graphql branch
+          const restCacheTag = ds.cacheTag ?? '';
+          const restCacheTTL = Number(ds.cacheTTL ?? 0);
+          const restCacheKeyVars = (ds.cacheKeyVars ?? []) as string[];
+          let restCacheKey = '';
+          if (restCacheTag && restCacheTTL > 0) {
+            const keyParts = restCacheKeyVars.map(p => String(getNestedValue(currentState, p) ?? ''));
+            restCacheKey = `ds:${restCacheTag}:${keyParts.join(':')}`;
+            const isForced = forcedByTag.has(name);
+            if (!isForced) {
+              const cached = dsCacheGet(restCacheKey);
+              if (cached !== undefined) {
+                sduiStore.setData(storeKey, cached);
+                sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
+                return;
+              }
+            }
           }
 
           if (ds.proxy) {
@@ -245,6 +310,8 @@ export function useNamedDataSourceFetcher(
               .then(res => res.json())
               .then((json: unknown) => {
                 const result = extractPath(json, ds.responsePath);
+                if (result === null && ds.skipStoreWhenNull) return;
+                if (restCacheKey && restCacheTTL > 0) dsCacheSet(restCacheKey, result, restCacheTTL);
                 sduiStore.setData(storeKey, result);
                 sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
               })
@@ -262,6 +329,8 @@ export function useNamedDataSourceFetcher(
               .then(res => res.json())
               .then((json: unknown) => {
                 const result = extractPath(json, ds.responsePath);
+                if (result === null && ds.skipStoreWhenNull) return;
+                if (restCacheKey && restCacheTTL > 0) dsCacheSet(restCacheKey, result, restCacheTTL);
                 sduiStore.setData(storeKey, result);
                 sduiStore.setData(`${storeKey}.${loadingSuffix}`, false);
               })

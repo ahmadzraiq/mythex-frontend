@@ -118,6 +118,15 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       ]);
       setWorkflows(wfRes.workflows);
       setTables(tbRes.tables);
+      // Hydrate security state from DB values so the panel reflects what was saved.
+      const initial: Record<string, { access: 'public' | 'authenticated'; middlewareIds: string[] }> = {};
+      for (const wf of wfRes.workflows) {
+        initial[wf.id] = {
+          access: wf.security === 'AUTHENTICATED' ? 'authenticated' : 'public',
+          middlewareIds: wf.middlewareIds ?? [],
+        };
+      }
+      setSecurityState(initial);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }, [projectId]);
@@ -267,6 +276,16 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             />
             <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#475569', pointerEvents: 'none' }}>⌕</span>
           </div>
+          <button
+            onClick={() => {
+              const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+              window.open(`${base}/v1/projects/${projectId}/docs`, '_blank');
+            }}
+            title="Open interactive API docs (Swagger)"
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            <span style={{ fontSize: 13 }}>⚡</span> API Docs
+          </button>
           {workflows.length > 0 && (
             <button
               onClick={async () => {
@@ -413,9 +432,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               >
                 {(() => {
                   const sec = securityState[selected.id];
-                  if (!sec) return '⊕ Public';
-                  const mid = sec.middlewareIds.length > 0 ? '+WF' : '';
-                  return sec.access === 'authenticated' ? `👤 Auth${mid}` : `⊕ Public${mid}`;
+                  if (!sec || (sec.access === 'public' && sec.middlewareIds.length === 0)) return '⊕ Public';
+                  const hasMW = sec.middlewareIds.filter(Boolean).length > 0;
+                  if (sec.access === 'authenticated' || hasMW) {
+                    return hasMW ? `🔒 Protected (${sec.middlewareIds.filter(Boolean).length} MW)` : '👤 Authenticated';
+                  }
+                  return '⊕ Public';
                 })()}
               </button>
             )}
@@ -723,7 +745,10 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <button
                 onClick={async () => {
                   try {
-                    await backendWorkflows.update(projectId, secPopover, { securityPolicy: sec });
+                    await backendWorkflows.update(projectId, secPopover, {
+                      security:     sec.access === 'authenticated' ? 'AUTHENTICATED' : 'PUBLIC',
+                      middlewareIds: sec.middlewareIds.filter(Boolean),
+                    });
                     setSecPopover(null);
                   } catch { /* ignore */ }
                 }}

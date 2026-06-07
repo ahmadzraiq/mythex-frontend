@@ -13,7 +13,9 @@
  *  - filterPanelStyles (shared style constants)
  */
 
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import type { FormulaValue } from './_formula-editor';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,7 +23,8 @@ export interface FilterCondition {
   id: string;
   field: string;
   operator: string;
-  value: string;
+  /** Plain string or a formula object `{ formula: "..." }` (resolved at runtime by the interpreter). */
+  value: FormulaValue;
   active: boolean;
 }
 
@@ -122,28 +125,49 @@ export function PanelFooter({ onReset, onSave }: { onReset: () => void; onSave: 
 
 function FilterRow({
   cond, allCols, prefix, onChange, onRemove,
+  renderValue,
 }: {
   cond: FilterCondition; allCols: string[]; prefix: string;
   onChange: (p: Partial<FilterCondition>) => void; onRemove: () => void;
+  /** Optional custom renderer for the value field (e.g. BoundField in workflow context). */
+  renderValue?: (value: FormulaValue | undefined, onChange: (v: FormulaValue | undefined) => void) => React.ReactNode;
 }) {
   const { SELECT_STYLE, INPUT_STYLE } = filterPanelStyles;
   const s: React.CSSProperties = { ...SELECT_STYLE, fontSize: 11, padding: '3px 6px' };
+  const colOptions = allCols.includes(cond.field) || !cond.field
+    ? allCols
+    : [cond.field, ...allCols];
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px' }}>
       <span style={{ fontSize: 11, color: '#475569', width: 40 }}>{prefix}</span>
-      <select value={cond.field} onChange={(e) => onChange({ field: e.target.value })} style={{ ...s, width: 110 }}>
-        {allCols.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
+      {allCols.length > 0 ? (
+        <select value={cond.field} onChange={(e) => onChange({ field: e.target.value })} style={{ ...s, width: 110 }}>
+          {colOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      ) : (
+        <input
+          value={cond.field}
+          onChange={(e) => onChange({ field: e.target.value })}
+          placeholder="field"
+          style={{ ...filterPanelStyles.INPUT_STYLE, width: 110, fontSize: 11, padding: '3px 6px' }}
+        />
+      )}
       <select value={cond.operator} onChange={(e) => onChange({ operator: e.target.value })} style={{ ...s, width: 110 }}>
         {FILTER_OPERATORS.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
       {!['Is empty', 'Is not empty'].includes(cond.operator) && (
-        <input
-          value={cond.value}
-          onChange={(e) => onChange({ value: e.target.value })}
-          placeholder="Enter a value"
-          style={{ ...INPUT_STYLE, flex: 1, fontSize: 11, padding: '3px 6px' }}
-        />
+        renderValue
+          ? <div style={{ flex: 1 }}>{renderValue(
+              cond.value || undefined,
+              (v) => onChange({ value: v ?? '' }),
+            )}</div>
+          : <input
+              value={typeof cond.value === 'string' ? cond.value : ''}
+              onChange={(e) => onChange({ value: e.target.value })}
+              placeholder="Enter a value"
+              style={{ ...INPUT_STYLE, flex: 1, fontSize: 11, padding: '3px 6px' }}
+            />
       )}
       <Toggle on={cond.active} onClick={() => onChange({ active: !cond.active })} />
       <button onClick={onRemove} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 13 }}>⋮</button>
@@ -153,8 +177,58 @@ function FilterRow({
 
 // ─── FilterPanel ──────────────────────────────────────────────────────────────
 
+// ─── Portal floating panel ────────────────────────────────────────────────────
+// Renders content in document.body via a portal so it escapes overflow clipping.
+
+export function FloatingAnchor({
+  open, anchorRef, children, minWidth = 480,
+}: {
+  open: boolean;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  children: React.ReactNode;
+  minWidth?: number;
+}) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  // useLayoutEffect runs synchronously after DOM mutations, before paint,
+  // so the panel is positioned correctly on first render.
+  useLayoutEffect(() => {
+    if (open && anchorRef.current) {
+      setRect(anchorRef.current.getBoundingClientRect());
+    } else if (!open) {
+      setRect(null);
+    }
+  }, [open, anchorRef]);
+
+  if (!open || !rect) return null;
+
+  // Clamp left so the panel never goes off the right edge of the viewport
+  const clampedLeft = Math.min(rect.left, window.innerWidth - minWidth - 8);
+
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    // Must be above the canvas overlay (z-index: 9999) and any other fixed layers
+    zIndex: 99999,
+    top: rect.bottom + 4,
+    left: Math.max(8, clampedLeft),
+    minWidth,
+    maxHeight: 440,
+    overflow: 'auto',
+    background: '#0f172a',
+    border: '1px solid #1e293b',
+    borderRadius: 8,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+  };
+
+  return createPortal(
+    <div style={style}>{children}</div>,
+    document.body,
+  );
+}
+
 export function FilterPanel({
-  conditions, groups, allCols, onChange, onChangeGroups, onReset, onSave,
+  conditions, groups, allCols, onChange, onChangeGroups, onReset, onSave, asPopover = false,
+  renderValue,
 }: {
   conditions: FilterCondition[];
   groups: FilterGroup[];
@@ -163,19 +237,23 @@ export function FilterPanel({
   onChangeGroups: (v: FilterGroup[]) => void;
   onReset: () => void;
   onSave: () => void;
+  /** When true, wraps content in an absolutely-positioned popover panel (for tables designer). */
+  asPopover?: boolean;
+  /** Optional custom renderer for the value field in each filter row. */
+  renderValue?: (value: FormulaValue | undefined, onChange: (v: FormulaValue | undefined) => void) => React.ReactNode;
 }) {
   const { BTN, PANEL_STYLE, SELECT_STYLE } = filterPanelStyles;
   const addCondition = () =>
-    onChange([...conditions, { id: uid(), field: allCols[0] ?? 'id', operator: 'Is', value: '', active: true }]);
+    onChange([...conditions, { id: uid(), field: allCols[0] ?? '', operator: 'Is', value: '', active: true }]);
   const addGroup = () =>
     onChangeGroups([...groups, {
       id: uid(), logic: 'And',
-      conditions: [{ id: uid(), field: allCols[0] ?? 'id', operator: 'Is', value: '', active: true }],
+      conditions: [{ id: uid(), field: allCols[0] ?? '', operator: 'Is', value: '', active: true }],
     }]);
   const empty = conditions.length === 0 && groups.length === 0;
 
   return (
-    <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 560, maxHeight: 440, overflow: 'auto' }}>
+    <div style={asPopover ? { ...PANEL_STYLE, top: 0, left: 12, minWidth: 560, maxHeight: 440, overflow: 'auto' } : undefined}>
       {empty && (
         <div style={{ padding: '14px 16px', fontSize: 12, color: '#475569' }}>
           <strong style={{ color: '#94a3b8' }}>Use a filter to:</strong><br />
@@ -187,6 +265,7 @@ export function FilterPanel({
         <FilterRow key={cond.id} cond={cond} allCols={allCols} prefix="Where"
           onChange={(p) => onChange(conditions.map((c) => c.id === cond.id ? { ...c, ...p } : c))}
           onRemove={() => onChange(conditions.filter((c) => c.id !== cond.id))}
+          renderValue={renderValue}
         />
       ))}
       {groups.map((group) => (
@@ -234,18 +313,19 @@ export function FilterPanel({
 // ─── SortPanel ────────────────────────────────────────────────────────────────
 
 export function SortPanel({
-  pending, allCols, onChange, onReset, onSave,
+  pending, allCols, onChange, onReset, onSave, asPopover = false,
 }: {
   pending: SortSpec[];
   allCols: string[];
   onChange: (v: SortSpec[]) => void;
   onReset: () => void;
   onSave: () => void;
+  asPopover?: boolean;
 }) {
   const { BTN, PANEL_STYLE, SELECT_STYLE } = filterPanelStyles;
   const s: React.CSSProperties = { ...SELECT_STYLE, fontSize: 11, padding: '3px 6px' };
   return (
-    <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 400 }}>
+    <div style={asPopover ? { ...PANEL_STYLE, top: 0, left: 12, minWidth: 400 } : undefined}>
       <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {pending.length === 0 && <p style={{ fontSize: 12, color: '#475569', margin: 0 }}>No sorts applied.</p>}
         {pending.map((spec, i) => (

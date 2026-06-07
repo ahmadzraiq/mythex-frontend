@@ -18,7 +18,7 @@
  *  - NodePropsPanel      — main per-step config panel
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, createContext, useContext } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -37,11 +37,37 @@ import {
   getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
 } from './_workflow-types';
 import type { WorkflowMeta, WorkflowParam } from './_store';
+import type { GlobalFormulaParam } from './_store-types';
 import { backendTables } from '@/lib/platform/api-client';
 import {
   type FilterCondition, type FilterGroup, type SortSpec,
-  FilterPanel, SortPanel, uid,
+  FilterPanel, SortPanel, FloatingAnchor, uid,
 } from './_filter-sort-panels';
+
+// ─── Workflow params context ──────────────────────────────────────────────────
+// Allows NodePropsPanel to broadcast server-workflow context (params + isServer)
+// to every nested BoundField without prop-drilling through every config component.
+
+interface WorkflowCtxValue {
+  params: GlobalFormulaParam[];
+  isServerContext: boolean;
+}
+const WorkflowParamsCtx = createContext<WorkflowCtxValue>({ params: [], isServerContext: false });
+
+/** Wrap a subtree so all BoundField instances within it receive the params and server flag. */
+export function WorkflowParamsProvider({
+  params, isServerContext, children,
+}: {
+  params: GlobalFormulaParam[];
+  isServerContext: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <WorkflowParamsCtx.Provider value={{ params, isServerContext }}>
+      {children}
+    </WorkflowParamsCtx.Provider>
+  );
+}
 
 /** Convert camelCase / snake_case / kebab-case names to human-readable text. */
 export function toHumanName(name: string): string {
@@ -3400,6 +3426,8 @@ export function BoundField({
   expectedType,
   anchorRight,
   serverContext,
+  formulaParams,
+  paramsInQuick,
 }: {
   label: string;
   required?: boolean;
@@ -3421,25 +3449,50 @@ export function BoundField({
   anchorRight?: number;
   /** When true, only the Workflow tab is shown in the FormulaEditor (server workflow context). */
   serverContext?: boolean;
+  /** Declared workflow/formula parameters — surfaced in the formula editor's Parameters section. */
+  formulaParams?: GlobalFormulaParam[];
+  /** When true, params appear in the Quick tab (not the Workflow tab). */
+  paramsInQuick?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   // Must be called unconditionally — used by CodeMirror when code=true
   const handleCodeChange = useCallback((val: string) => onChange(val || undefined), [onChange]);
+
+  // Merge explicit props with context values (server workflow params + isServerContext flag).
+  const ctx = useContext(WorkflowParamsCtx);
+  const effectiveServerContext = serverContext ?? ctx.isServerContext;
+  const effectiveParams = (formulaParams?.length ? formulaParams : ctx.params.length ? ctx.params : undefined);
+  const effectiveParamsInQuick = paramsInQuick ?? (effectiveParams && effectiveParams.length > 0 ? true : undefined);
+
+  // Auto-migrate legacy $input.xxx plain strings to formula objects.
+  // This is necessary for seeded/old workflows that stored bare "$input.password" etc.
+  const migratedValue = React.useMemo<FormulaValue | undefined>(() => {
+    if (typeof value === 'string') {
+      const m = value.match(/^\$input\.(\w+)$/);
+      if (m) return { formula: `parameters?.['${m[1]}']` };
+    }
+    return value;
+  }, [value]);
+  // Persist the migration back to the config so it gets saved on next canvas save.
+  useEffect(() => {
+    if (migratedValue !== value) onChange(migratedValue);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Only formula objects (e.g. { formula: "..." }) are truly "bound" — plain text strings are not.
   // Using any non-empty string as isBound=true was making the icon appear active for plain text values.
-  const isBound = isBoundValue(value);
+  const isBound = isBoundValue(migratedValue);
   // strVal is the plain-text string shown in the textarea/input — only populated when not a formula object
-  const strVal = !isBoundValue(value) ? (value as string) ?? '' : '';
+  const strVal = !isBoundValue(migratedValue) ? (migratedValue as string) ?? '' : '';
   const isMultiline = multiline || code;
 
   // Save the value at the moment the formula editor opens.
   // When the user clicks "Unbind" (which fires onChange('')), we restore this saved value
   // if the original was plain text — preventing accidental loss of plain-text values.
-  const preEditValueRef = useRef<FormulaValue | undefined>(value);
+  const preEditValueRef = useRef<FormulaValue | undefined>(migratedValue);
   const handleOpenEditor = useCallback(() => {
-    preEditValueRef.current = value;
+    preEditValueRef.current = migratedValue;
     setOpen(v => !v);
-  }, [value]);
+  }, [migratedValue]);
 
   const handleFormulaChange = useCallback((v: FormulaValue | null) => {
     // Unbind fires onChange('') — if the original value was plain text (not a formula object),
@@ -3454,10 +3507,10 @@ export function BoundField({
 
   return (
     <>
-      <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}{required ? ' *' : ''}</label>
+      {label && <label style={{ ...S.fieldLabel, marginTop: 10 }}>{label}{required ? ' *' : ''}</label>}
       <div style={{ display: 'flex', alignItems: isMultiline ? 'flex-start' : 'center', gap: 6 }}>
         <BindingIcon isBound={isBound} onClick={handleOpenEditor} />
-        {isBoundValue(value) ? (
+        {isBoundValue(migratedValue) ? (
           <button
             type="button"
             onClick={handleOpenEditor}
@@ -3505,13 +3558,15 @@ export function BoundField({
       {open && (
         <FormulaEditor
           label={label}
-          value={value ?? null}
+          value={migratedValue ?? null}
           onChange={handleFormulaChange}
           onClose={() => setOpen(false)}
           anchorRight={anchorRight ?? 292}
           expectedType={expectedType}
           workflowTrigger={workflowTrigger}
-          serverContext={serverContext}
+          serverContext={effectiveServerContext}
+          formulaParams={effectiveParams}
+          paramsInQuick={effectiveParamsInQuick}
         />
       )}
     </>
@@ -4459,25 +4514,70 @@ function KeyValueBuilderField({
   );
 }
 
+// ─── Filter format helpers ────────────────────────────────────────────────────
+// Workflows seeded/created in code use `cfg.filters` (interpreter format):
+//   [{ column, operator, value }]
+// The UI panels use `cfg.filterConditions` (FilterCondition[] format):
+//   [{ id, field, operator, value, active }]
+// These helpers bridge the two so existing step configs display correctly.
+
+type RawFilter = { column?: string; field?: string; operator?: string; value?: unknown };
+
+function migrateFilterValue(v: unknown): FormulaValue {
+  if (typeof v === 'string') {
+    // Auto-migrate old $input.xxx syntax → parameters formula object
+    const m = v.match(/^\$input\.(\w+)$/);
+    if (m) return { formula: `parameters?.['${m[1]}']` };
+    return v;
+  }
+  if (v != null && typeof v === 'object' && 'formula' in v) return v as { formula: string };
+  if (v != null) return JSON.stringify(v);
+  return '';
+}
+
+function filtersToConditions(raw: RawFilter[] | undefined): FilterCondition[] {
+  if (!raw?.length) return [];
+  return raw.map(f => ({
+    id:       uid(),
+    field:    f.column ?? f.field ?? '',
+    operator: f.operator ?? '=',
+    value:    migrateFilterValue(f.value),
+    active:   true,
+  }));
+}
+
+function conditionsToFilters(conditions: FilterCondition[]): RawFilter[] {
+  return conditions.filter(c => c.active).map(c => ({ column: c.field, operator: c.operator, value: c.value }));
+}
+
+function initConditions(cfg: Record<string, unknown>): FilterCondition[] {
+  const ui = cfg.filterConditions as FilterCondition[] | undefined;
+  if (ui?.length) return ui;
+  return filtersToConditions(cfg.filters as RawFilter[] | undefined);
+}
+
 // ─── TablesListConfig (Get rows) ──────────────────────────────────────────────
 
 function TablesListConfig({
-  cfg, setCfg, step, projectId, workflowTrigger,
+  cfg, setCfg, step, projectId, workflowTrigger, formulaParams,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (k: string, v: unknown) => void;
   step: ActionStep;
   projectId?: string;
   workflowTrigger?: string;
+  formulaParams?: GlobalFormulaParam[];
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
   const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
   const [sorts, setSorts] = useState<SortSpec[]>((cfg.sorts as SortSpec[]) ?? []);
   const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
   const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
   const [pendingSorts, setPendingSorts] = useState<SortSpec[]>([]);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const sortBtnRef = useRef<HTMLButtonElement>(null);
   const pagEnabled = (cfg.paginationEnabled as boolean) ?? false;
 
   return (
@@ -4498,14 +4598,15 @@ function TablesListConfig({
       </CollapsibleSection>
 
       <CollapsibleSection title="Filters & Sort" status="Optional">
-        <div style={{ position: 'relative', marginBottom: 6 }}>
+        <div style={{ marginBottom: 6 }}>
           <button
+            ref={filterBtnRef}
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); setSortOpen(false); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
             ▽ Configure Filter {conditions.length + groups.length > 0 ? `(${conditions.length + groups.length})` : ''}
           </button>
-          {filterOpen && (
+          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
               conditions={pendingConditions}
               groups={pendingGroups}
@@ -4518,19 +4619,35 @@ function TablesListConfig({
                 setGroups(pendingGroups);
                 setCfg('filterConditions', pendingConditions);
                 setCfg('filterGroups', pendingGroups);
+                setCfg('filters', conditionsToFilters(pendingConditions));
                 setFilterOpen(false);
               }}
+              renderValue={formulaParams?.length
+                ? (val, onChg) => (
+                    <BoundField
+                      label=""
+                      value={val}
+                      onChange={onChg}
+                      workflowTrigger={workflowTrigger}
+                      serverContext
+                      formulaParams={formulaParams}
+                      paramsInQuick
+                      anchorRight={292}
+                    />
+                  )
+                : undefined}
             />
-          )}
+          </FloatingAnchor>
         </div>
-        <div style={{ position: 'relative' }}>
+        <div>
           <button
+            ref={sortBtnRef}
             onClick={() => { setPendingSorts([...sorts]); setSortOpen(o => !o); setFilterOpen(false); }}
             style={{ ...S.toggleBtn(sorts.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
             ↕ Configure Sort {sorts.length > 0 ? `(${sorts.length})` : ''}
           </button>
-          {sortOpen && (
+          <FloatingAnchor open={sortOpen} anchorRef={sortBtnRef} minWidth={400}>
             <SortPanel
               pending={pendingSorts}
               allCols={[]}
@@ -4542,7 +4659,7 @@ function TablesListConfig({
                 setSortOpen(false);
               }}
             />
-          )}
+          </FloatingAnchor>
         </div>
       </CollapsibleSection>
 
@@ -4623,16 +4740,18 @@ function TablesInsertConfig({
 // ─── TablesUpdateConfig ───────────────────────────────────────────────────────
 
 function TablesUpdateConfig({
-  cfg, setCfg, projectId, workflowTrigger,
+  cfg, setCfg, projectId, workflowTrigger, formulaParams,
 }: {
   cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
   projectId?: string; workflowTrigger?: string;
+  formulaParams?: GlobalFormulaParam[];
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
   const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
   const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
   const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
   const updateMode = (cfg.updateMode as string) ?? 'byId';
 
   return (
@@ -4658,14 +4777,15 @@ function TablesUpdateConfig({
       )}
 
       {updateMode === 'byFilters' && (
-        <div style={{ position: 'relative', marginTop: 8 }}>
+        <div style={{ marginTop: 8 }}>
           <button
+            ref={filterBtnRef}
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
             ▽ Configure Filter *
           </button>
-          {filterOpen && (
+          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
               conditions={pendingConditions}
               groups={pendingGroups}
@@ -4678,10 +4798,25 @@ function TablesUpdateConfig({
                 setGroups(pendingGroups);
                 setCfg('filterConditions', pendingConditions);
                 setCfg('filterGroups', pendingGroups);
+                setCfg('filters', conditionsToFilters(pendingConditions));
                 setFilterOpen(false);
               }}
+              renderValue={formulaParams?.length
+                ? (val, onChg) => (
+                    <BoundField
+                      label=""
+                      value={val}
+                      onChange={onChg}
+                      workflowTrigger={workflowTrigger}
+                      serverContext
+                      formulaParams={formulaParams}
+                      paramsInQuick
+                      anchorRight={292}
+                    />
+                  )
+                : undefined}
             />
-          )}
+          </FloatingAnchor>
         </div>
       )}
 
@@ -4706,16 +4841,18 @@ function TablesUpdateConfig({
 // ─── TablesDeleteConfig ───────────────────────────────────────────────────────
 
 function TablesDeleteConfig({
-  cfg, setCfg, projectId, workflowTrigger,
+  cfg, setCfg, projectId, workflowTrigger, formulaParams,
 }: {
   cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
   projectId?: string; workflowTrigger?: string;
+  formulaParams?: GlobalFormulaParam[];
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>((cfg.filterConditions as FilterCondition[]) ?? []);
+  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
   const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
   const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
   const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
   const deleteMode = (cfg.deleteMode as string) ?? 'byId';
 
   return (
@@ -4741,14 +4878,15 @@ function TablesDeleteConfig({
       )}
 
       {deleteMode === 'byFilters' && (
-        <div style={{ position: 'relative', marginTop: 8 }}>
+        <div style={{ marginTop: 8 }}>
           <button
+            ref={filterBtnRef}
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
             ▽ Configure Filter * (required)
           </button>
-          {filterOpen && (
+          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
               conditions={pendingConditions}
               groups={pendingGroups}
@@ -4761,10 +4899,25 @@ function TablesDeleteConfig({
                 setGroups(pendingGroups);
                 setCfg('filterConditions', pendingConditions);
                 setCfg('filterGroups', pendingGroups);
+                setCfg('filters', conditionsToFilters(pendingConditions));
                 setFilterOpen(false);
               }}
+              renderValue={formulaParams?.length
+                ? (val, onChg) => (
+                    <BoundField
+                      label=""
+                      value={val}
+                      onChange={onChg}
+                      workflowTrigger={workflowTrigger}
+                      serverContext
+                      formulaParams={formulaParams}
+                      paramsInQuick
+                      anchorRight={292}
+                    />
+                  )
+                : undefined}
             />
-          )}
+          </FloatingAnchor>
         </div>
       )}
 
@@ -4783,15 +4936,121 @@ function ExecuteSQLConfig({
 }: {
   cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
 }) {
+  // Accept both cfg.sql (primary) and cfg.query (legacy) — keep both in sync on change.
+  const sqlValue = (cfg.sql ?? cfg.query) as FormulaValue | undefined;
   return (
     <BoundField
       label="SQL Query *"
       required
-      value={cfg.query as FormulaValue | undefined}
-      onChange={v => setCfg('query', v)}
+      value={sqlValue}
+      onChange={v => { setCfg('sql', v); setCfg('query', v); }}
       placeholder="SELECT * FROM ..."
+      multiline
       workflowTrigger={workflowTrigger}
     />
+  );
+}
+
+// ─── HashPasswordConfig ───────────────────────────────────────────────────────
+
+function HashPasswordConfig({
+  cfg, setCfg,
+}: { cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void }) {
+  return (
+    <>
+      <BoundField
+        label="Password *"
+        required
+        value={cfg.password as FormulaValue | undefined}
+        onChange={v => setCfg('password', v)}
+        placeholder="Plain-text password to hash"
+      />
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
+        Result: <code style={{ color: '#c4b5fd' }}>result.hash</code> — bcrypt hash (cost 10)
+      </div>
+    </>
+  );
+}
+
+// ─── VerifyPasswordConfig ─────────────────────────────────────────────────────
+
+function VerifyPasswordConfig({
+  cfg, setCfg,
+}: { cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void }) {
+  return (
+    <>
+      <BoundField
+        label="Password *"
+        required
+        value={cfg.password as FormulaValue | undefined}
+        onChange={v => setCfg('password', v)}
+        placeholder="Plain-text password to verify"
+      />
+      <BoundField
+        label="Hash *"
+        required
+        value={cfg.hash as FormulaValue | undefined}
+        onChange={v => setCfg('hash', v)}
+        placeholder="Stored bcrypt hash to compare against"
+      />
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
+        Result: <code style={{ color: '#c4b5fd' }}>result.match</code> — boolean
+      </div>
+    </>
+  );
+}
+
+// ─── GenerateTokenConfig ──────────────────────────────────────────────────────
+
+function GenerateTokenConfig({
+  cfg, setCfg,
+}: { cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void }) {
+  return (
+    <>
+      <BoundField
+        label="Payload *"
+        required
+        value={cfg.payload as FormulaValue | undefined}
+        onChange={v => setCfg('payload', v)}
+        placeholder='e.g. { userId: ..., role: "admin" }'
+      />
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Expires in</label>
+        <input
+          style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '5px 8px', fontSize: 12, color: '#e2e8f0', outline: 'none', boxSizing: 'border-box' }}
+          value={(cfg.expiresIn as string | undefined) ?? '7d'}
+          onChange={e => setCfg('expiresIn', e.target.value)}
+          placeholder="7d, 1h, 30m …"
+        />
+      </div>
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
+        Result: <code style={{ color: '#c4b5fd' }}>result.token</code> — signed JWT<br />
+        All payload fields are also echoed on the result (e.g. <code style={{ color: '#c4b5fd' }}>result.userId</code>)
+      </div>
+    </>
+  );
+}
+
+// ─── VerifyTokenConfig ────────────────────────────────────────────────────────
+
+function VerifyTokenConfig({
+  cfg, setCfg,
+}: { cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void }) {
+  return (
+    <>
+      <BoundField
+        label="Token *"
+        required
+        value={cfg.token as FormulaValue | undefined}
+        onChange={v => setCfg('token', v)}
+        placeholder="JWT to verify (e.g. from Authorization header)"
+      />
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
+        Result: full decoded payload (all fields you put in <code style={{ color: '#c4b5fd' }}>generateToken</code>)<br />
+        e.g. <code style={{ color: '#c4b5fd' }}>result.userId</code>, <code style={{ color: '#c4b5fd' }}>result.role</code>, …<br />
+        <span style={{ color: '#7c3aed' }}>result.valid</span> — always <code>true</code>; throws 401 on invalid/expired
+      </div>
+    </>
   );
 }
 
@@ -5144,6 +5403,7 @@ export function NodePropsPanel({
   projectId,
   serverFunctions = [],
   priorSteps = [],
+  formulaParams = [],
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
@@ -5158,6 +5418,8 @@ export function NodePropsPanel({
   serverFunctions?: { id: string; name: string }[];
   /** Steps that appear before this one — used for server-side output binding */
   priorSteps?: ActionStep[];
+  /** Declared workflow parameters (for server workflows) — enables formula bind in filter rows. */
+  formulaParams?: GlobalFormulaParam[];
 }) {
   const cfg = step.config ?? {};
 
@@ -5172,6 +5434,7 @@ export function NodePropsPanel({
   const isStructuralNode = isStructural(step.type);
 
   return (
+    <WorkflowParamsProvider params={formulaParams} isServerContext={isServerContext}>
     <div>
       <label style={S.fieldLabel}>Name</label>
       <input
@@ -5830,19 +6093,31 @@ export function NodePropsPanel({
 
       {/* ── Server action config panels ─────────────────────────────────── */}
       {step.type === 'tablesList' && (
-        <TablesListConfig cfg={cfg} setCfg={setCfg} step={step} projectId={projectId} workflowTrigger={workflowTrigger} />
+        <TablesListConfig cfg={cfg} setCfg={setCfg} step={step} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
       )}
       {step.type === 'tablesInsert' && (
         <TablesInsertConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
       )}
       {step.type === 'tablesUpdate' && (
-        <TablesUpdateConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
+        <TablesUpdateConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
       )}
       {step.type === 'tablesDelete' && (
-        <TablesDeleteConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
+        <TablesDeleteConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
       )}
       {step.type === 'executeSQL' && (
         <ExecuteSQLConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+      {step.type === 'hashPassword' && (
+        <HashPasswordConfig cfg={cfg} setCfg={setCfg} />
+      )}
+      {step.type === 'verifyPassword' && (
+        <VerifyPasswordConfig cfg={cfg} setCfg={setCfg} />
+      )}
+      {step.type === 'generateToken' && (
+        <GenerateTokenConfig cfg={cfg} setCfg={setCfg} />
+      )}
+      {step.type === 'verifyToken' && (
+        <VerifyTokenConfig cfg={cfg} setCfg={setCfg} />
       )}
       {step.type === 'sendResponse' && (
         <SendResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} isServerContext={isServerContext} priorSteps={priorSteps} />
@@ -5885,6 +6160,7 @@ export function NodePropsPanel({
         onChange={e => onUpdate({ description: e.target.value })}
       />
     </div>
+    </WorkflowParamsProvider>
   );
 }
 

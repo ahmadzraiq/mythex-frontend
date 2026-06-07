@@ -14,7 +14,7 @@
     {
       "type": "Box",
       "_stateTag": "empty",
-      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && !collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
+      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && !collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product",
       "props": {
         "className": "container mx-auto px-[16px] py-[64px] text-center"
       },
@@ -108,7 +108,7 @@
     {
       "type": "Box",
       "_stateTag": "default",
-      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product",
+      "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.loading && collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product",
       "children": [
         {
           "type": "Box",
@@ -142,7 +142,7 @@
                           "children": [
                             {
                               "type": "Box",
-                              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+                              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets",
                               "props": {
                                 "className": "w-full h-full relative"
                               },
@@ -150,13 +150,13 @@
                                 {
                                   "type": "Image",
                                   "condition": {
-                                    "formula": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
+                                    "formula": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
                                   },
                                   "props": {
                                     "src": {
-                                      "formula": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
+                                      "formula": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
                                     },
-                                    "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                                    "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}",
                                     "fill": true,
                                     "className": "w-full h-full object-cover",
                                     "sizes": "(max-width: 1024px) 100vw, 50vw",
@@ -165,7 +165,7 @@
                                 },
                                 {
                                   "type": "Box",
-                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                                   "props": {
                                     "className": "absolute left-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
                                   },
@@ -194,7 +194,7 @@
                                 },
                                 {
                                   "type": "Box",
-                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                                   "props": {
                                     "className": "absolute right-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
                                   },
@@ -223,7 +223,7 @@
                                 },
                                 {
                                   "type": "Box",
-                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                                   "props": {
                                     "className": "absolute bottom-[16px] left-1/2 -translate-x-1/2 bg-[var(--theme-card)]/80 px-[12px] py-[4px] rounded-[9999px] text-[14px]"
                                   },
@@ -231,7 +231,7 @@
                                     {
                                       "type": "Text",
                                       "text": {
-                                        "formula": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length || 0)"
+                                        "formula": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length || 0)"
                                       }
                                     }
                                   ]
@@ -240,7 +240,7 @@
                             },
                             {
                               "type": "Box",
-                              "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+                              "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets",
                               "props": {
                                 "className": "w-full h-full flex items-center justify-center"
                               },
@@ -258,14 +258,14 @@
                         },
                         {
                           "type": "Box",
-                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                           "props": {
                             "className": "grid grid-cols-4 gap-[8px]"
                           },
                           "children": [
                             {
                               "type": "Box",
-                              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets",
+                              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.assets",
                               "key": "assetThumb",
                               "props": {
                                 "className": "contents"
@@ -286,7 +286,7 @@
                                       "type": "Image",
                                       "props": {
                                         "src": "{{context.item.data.preview}}",
-                                        "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                                        "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}",
                                         "fill": true,
                                         "className": "object-cover w-full h-full",
                                         "sizes": "25vw"
@@ -323,40 +323,40 @@
                               "props": {
                                 "className": "text-[30px] font-bold"
                               },
-                              "text": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}"
+                              "text": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}"
                             },
                             {
                               "type": "Text",
                               "condition": {
-                                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+                                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
                               },
                               "props": {
                                 "className": "text-[24px] font-bold mt-[8px]"
                               },
                               "text": {
-                                "formula": "formatCurrency(getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'priceWithTax') / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                "formula": "formatCurrency(getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'priceWithTax') / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                               }
                             }
                           ]
                         },
                         {
                           "type": "HtmlContent",
-                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.description",
+                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.description",
                           "props": {
-                            "html": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.description}}",
+                            "html": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.description}}",
                             "className": "prose prose-sm max-w-none text-[var(--theme-muted-foreground)]"
                           }
                         },
                         {
                           "type": "Box",
-                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups?.length > 0",
+                          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups?.length > 0",
                           "props": {
                             "className": "space-y-[16px]"
                           },
                           "children": [
                             {
                               "type": "Box",
-                              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups",
+                              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.optionGroups",
                               "key": "optionGroup",
                               "props": {
                                 "className": "space-y-[12px]"
@@ -430,13 +430,13 @@
                         {
                           "type": "Box",
                           "condition": {
-                            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+                            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
                           },
                           "children": [
                             {
                               "type": "Text",
                               "condition": {
-                                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+                                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
                               },
                               "props": {
                                 "className": "text-[14px] text-green-600 font-medium"
@@ -446,7 +446,7 @@
                             {
                               "type": "Text",
                               "condition": {
-                                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+                                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
                               },
                               "props": {
                                 "className": "text-[14px] text-red-600 font-medium"
@@ -464,7 +464,7 @@
                             {
                               "type": "Box",
                               "condition": {
-                                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+                                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
                               },
                               "props": {
                                 "className": "w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-[12px] rounded-[6px]"
@@ -487,7 +487,7 @@
                             {
                               "type": "Box",
                               "condition": {
-                                "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+                                "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
                               },
                               "props": {
                                 "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-[12px] rounded-[6px]",
@@ -500,7 +500,7 @@
                                     "className": "text-[var(--theme-muted-foreground)]"
                                   },
                                   "text": {
-                                    "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) ? 'Select Options' : 'Out of Stock'"
+                                    "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) ? 'Select Options' : 'Out of Stock'"
                                   }
                                 }
                               ]
@@ -510,7 +510,7 @@
                         {
                           "type": "Box",
                           "condition": {
-                            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+                            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
                           },
                           "children": [
                             {
@@ -519,7 +519,7 @@
                                 "className": "text-[12px] text-[var(--theme-muted-foreground)]"
                               },
                               "text": {
-                                "formula": "'SKU: ' + getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+                                "formula": "'SKU: ' + getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
                               }
                             }
                           ]
@@ -912,7 +912,7 @@
         {
           "type": "Box",
           "condition": {
-            "formula": "length(filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)) > 0"
+            "formula": "length(filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.id, 12)) > 0"
           },
           "props": {
             "className": "py-[48px] md:py-[64px]"
@@ -946,7 +946,7 @@
                     {
                       "type": "Box",
                       "map": {
-                        "formula": "filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.data?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.id, 12)"
+                        "formula": "filterExcludeByFieldAndSlice(collections['f6a7b8c9-d0e1-2345-fabc-456789012345']?.search?.items, 'productId', collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.id, 12)"
                       },
                       "key": "relatedProduct",
                       "props": {
@@ -1016,7 +1016,7 @@
                                     "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
                                   },
                                   "text": {
-                                    "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                    "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
                                   }
                                 }
                               ]

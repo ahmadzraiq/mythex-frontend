@@ -2165,7 +2165,7 @@
                       "className": "text-[12px] font-mono font-bold text-blue-500",
                       "data-testid": "out-update-count"
                     },
-                    "text": "{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.length}}"
+                    "text": "{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.length}}"
                   }
                 ]
               },

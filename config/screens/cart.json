@@ -21,7 +21,7 @@
         "props": {
           "className": "text-center py-[64px]"
         },
-        "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
+        "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -64,7 +64,7 @@
         "props": {
           "className": "grid lg:grid-cols-3 gap-[32px]"
         },
-        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
         "children": [
           {
             "type": "Box",
@@ -81,7 +81,7 @@
                 "props": {
                   "className": "flex flex-col gap-[16px] w-full"
                 },
-                "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
+                "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.lines",
                 "key": "cartLine",
                 "children": [
                   {
@@ -266,7 +266,7 @@
                                       "className": "font-semibold text-[18px]"
                                     },
                                     "text": {
-                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                                     }
                                   },
                                   {
@@ -275,7 +275,7 @@
                                       "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                                     },
                                     "text": {
-                                      "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
+                                      "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD') + ' each'"
                                     }
                                   }
                                 ]
@@ -296,7 +296,7 @@
                               "className": "font-semibold text-[18px]"
                             },
                             "text": {
-                              "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                             }
                           },
                           {
@@ -305,7 +305,7 @@
                               "className": "text-[14px] text-[var(--theme-muted-foreground)] mt-[4px]"
                             },
                             "text": {
-                              "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') + ' each'"
+                              "formula": "formatCurrency(context?.item?.data?.unitPriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD') + ' each'"
                             }
                           }
                         ]
@@ -357,7 +357,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -367,9 +367,9 @@
                         "props": {
                           "className": "contents"
                         },
-                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.discounts",
+                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.discounts",
                         "key": "discount",
-                        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.discounts?.length > 0",
+                        "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.discounts?.length > 0",
                         "children": [
                           {
                             "type": "Box",
@@ -384,7 +384,7 @@
                               {
                                 "type": "Text",
                                 "text": {
-                                  "formula": "formatCurrency(context?.item?.data?.amountWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                  "formula": "formatCurrency(context?.item?.data?.amountWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                                 }
                               }
                             ]
@@ -407,7 +407,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "formula": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax > 0 ? formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.shippingWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD') : 'Calculated at checkout'"
+                              "formula": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.shippingWithTax > 0 ? formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.shippingWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD') : 'Calculated at checkout'"
                             }
                           }
                         ]
@@ -433,7 +433,7 @@
                           {
                             "type": "Text",
                             "text": {
-                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                              "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                             }
                           }
                         ]
@@ -523,14 +523,14 @@
                     "props": {
                       "className": "space-y-[8px]"
                     },
-                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.couponCodes?.length > 0",
+                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.couponCodes?.length > 0",
                     "children": [
                       {
                         "type": "Box",
                         "props": {
                           "className": "contents"
                         },
-                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.couponCodes",
+                        "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.couponCodes",
                         "key": "code",
                         "children": [
                           {
@@ -593,7 +593,7 @@
                     "props": {
                       "className": "flex gap-[8px] flex-row"
                     },
-                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.couponCodes?.length || 0) === 0",
+                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.couponCodes?.length || 0) === 0",
                     "children": [
                       {
                         "type": "Input",

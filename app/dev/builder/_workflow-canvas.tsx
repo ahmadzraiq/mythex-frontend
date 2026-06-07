@@ -602,7 +602,11 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
     } else if (target.kind === 'serverWorkflow') {
       backendWorkflows.get(target.projectId, target.workflowId).then((res) => {
         const wf = res.workflow;
-        setWorkflowMeta({ id: wf.id, name: wf.name });
+        setWorkflowMeta({
+          id:     wf.id,
+          name:   wf.name,
+          params: (wf.inputSchema as WorkflowParam[] | undefined) ?? [],
+        });
         if (wf.kind) setServerWfKind(wf.kind as 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE');
         const rawGraph = Array.isArray(wf.graph) ? wf.graph as unknown[] : [];
         const loaded = deserializeStepArray(rawGraph, store.directActionsMap);
@@ -672,6 +676,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       void backendWorkflows.update(target.projectId, target.workflowId, {
         graph: steps.map(serializeStep) as unknown,
         name: workflowMeta.name,
+        inputSchema: (workflowMeta.params ?? []) as unknown,
       });
     }
     onClose();
@@ -1291,6 +1296,11 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                   priorSteps={
                     target.kind === 'serverWorkflow' && selectedPath
                       ? currentSteps.slice(0, selectedPath[0] as number)
+                      : undefined
+                  }
+                  formulaParams={
+                    target.kind === 'serverWorkflow'
+                      ? (workflowMeta.params ?? []) as import('./_store-types').GlobalFormulaParam[]
                       : undefined
                   }
                 />

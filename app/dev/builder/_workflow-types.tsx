@@ -110,6 +110,10 @@ export type ActionStepType =
   | 'throwError'           // Server: throw an error
   | 'tryCatch'             // Server: try/catch structural block
   | 'createWorkflowVariable' // Server: declare a workflow-scoped variable
+  | 'hashPassword'         // Server: bcrypt hash a password
+  | 'verifyPassword'       // Server: compare password against bcrypt hash
+  | 'generateToken'        // Server: sign a JWT
+  | 'verifyToken'          // Server: verify a JWT
   // Placeholder — new step not yet configured
   | 'unconfigured';
 
@@ -660,6 +664,12 @@ export function getServerActionCategories(kind: ServerWorkflowKind): { category:
       { type: 'tablesDelete', label: 'Delete rows', icon: '⊞' },
       { type: 'executeSQL',   label: 'Execute SQL', icon: '⊞' },
     ]},
+    { category: 'Auth', items: [
+      { type: 'hashPassword',   label: 'Hash password',    icon: '🔒' },
+      { type: 'verifyPassword', label: 'Verify password',  icon: '🔓' },
+      { type: 'generateToken',  label: 'Generate token',   icon: '🔑' },
+      { type: 'verifyToken',    label: 'Verify token',     icon: '🛡' },
+    ]},
     { category: 'Functions', items: [
       { type: 'runFormula', label: 'Run formula', icon: 'ƒ' },
       // runServerFunction items are injected dynamically (like runProjectWorkflow)
@@ -800,6 +810,10 @@ const SERVER_TYPE_DEFS: Record<string, ActionTypeDef> = {
   throwError:            { type: 'throwError',             label: 'Throw error',               icon: '⚠' },
   tryCatch:              { type: 'tryCatch',               label: 'Try/Catch',                 icon: '⚡', isStructural: true },
   createWorkflowVariable:{ type: 'createWorkflowVariable', label: 'Create workflow variable',  icon: '(x)' },
+  hashPassword:          { type: 'hashPassword',           label: 'Hash password',             icon: '🔒' },
+  verifyPassword:        { type: 'verifyPassword',         label: 'Verify password',           icon: '🔓' },
+  generateToken:         { type: 'generateToken',          label: 'Generate token',            icon: '🔑' },
+  verifyToken:           { type: 'verifyToken',            label: 'Verify token',              icon: '🛡' },
 };
 
 export function getActionDef(type: ActionStepType): ActionTypeDef | undefined {
@@ -1071,6 +1085,39 @@ export function getStepSummary(
       return cfg.targetNodeId ? `${cfg.enterType ?? 'fadeIn'} → ${cfg.targetNodeId}` : null;
     case 'returnValue':
       return cfg.value !== undefined ? cfgStr(cfg.value) : null;
+    case 'tablesList': {
+      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
+      if (!table) return null;
+      const filters = (cfg.filters as unknown[] | undefined) ?? [];
+      return filters.length > 0
+        ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}`
+        : `${table} · no filters`;
+    }
+    case 'tablesGet': {
+      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
+      if (!table) return null;
+      return `${table} · by id`;
+    }
+    case 'tablesInsert': {
+      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
+      return table ?? null;
+    }
+    case 'tablesUpdate': {
+      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
+      if (!table) return null;
+      const filters = (cfg.filters as unknown[] | undefined) ?? [];
+      return filters.length > 0 ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}` : table;
+    }
+    case 'tablesDelete': {
+      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
+      if (!table) return null;
+      const filters = (cfg.filters as unknown[] | undefined) ?? [];
+      return filters.length > 0 ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}` : table;
+    }
+    case 'executeSQL': {
+      const sql = cfgStr(cfg.query) ?? cfgStr(cfg.sql);
+      return sql ? sql.trim().slice(0, 40) : null;
+    }
     default:
       return null;
   }

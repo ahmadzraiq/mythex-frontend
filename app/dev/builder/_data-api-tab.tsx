@@ -3,22 +3,18 @@
  * Data & API tab — top-level section in the builder.
  *
  * Sub-navigation (left sidebar):
- *   Tables            → _tables-designer.tsx  (views are tabs inside the table grid)
- *   API Endpoints     → workflow canvas (API_ENDPOINT kind)
- *   Backend Workflows → workflow canvas (FUNCTION kind)
- *   Auth              → _native-auth-admin.tsx
+ *   Tables            → _tables-designer.tsx
+ *   Backend Workflows → _server-workflows-panel.tsx
  *   Storage           → _storage-browser.tsx
  */
 import React, { useState } from 'react';
 import { TablesDesigner } from './_tables-designer';
-import { NativeAuthAdmin } from './_native-auth-admin';
 import { StorageBrowser } from './_storage-browser';
 import { ServerWorkflowsPanel } from './_server-workflows-panel';
 
 export type DataApiSection =
   | 'tables'
   | 'backend-workflows'
-  | 'auth'
   | 'storage';
 
 interface DataApiTabProps {
@@ -26,10 +22,9 @@ interface DataApiTabProps {
 }
 
 const NAV_ITEMS: { id: DataApiSection; label: string; icon: string }[] = [
-  { id: 'tables',            label: 'Tables',             icon: '⊞' },
-  { id: 'backend-workflows', label: 'Backend Workflows',  icon: 'ƒ' },
-  { id: 'auth',              label: 'Auth',               icon: '🔐' },
-  { id: 'storage',           label: 'Storage',            icon: '🗄' },
+  { id: 'tables',            label: 'Tables',            icon: '⊞' },
+  { id: 'backend-workflows', label: 'Backend Workflows', icon: 'ƒ' },
+  { id: 'storage',           label: 'Storage',           icon: '🗄' },
 ];
 
 const SECTION_STYLE: React.CSSProperties = {
@@ -89,23 +84,19 @@ export function DataApiTab({ projectId }: DataApiTabProps) {
       </div>
 
       {/* ── Main content area ──────────────────────────────────────────── */}
-      <div style={SECTION_STYLE}>
-        {section === 'tables' && (
-          <TablesDesigner
-            projectId={projectId}
-            onSelectTable={setSelectedTableId}
-            selectedTableId={selectedTableId}
-          />
-        )}
-        {section === 'backend-workflows' && (
-          <ServerWorkflowsPanel projectId={projectId} />
-        )}
-        {section === 'auth' && (
-          <NativeAuthAdmin projectId={projectId} />
-        )}
-        {section === 'storage' && (
-          <StorageBrowser projectId={projectId} />
-        )}
+      {/* All sections stay mounted so switching tabs never triggers a re-fetch. */}
+      <div style={{ ...SECTION_STYLE, display: section === 'tables' ? 'flex' : 'none' }}>
+        <TablesDesigner
+          projectId={projectId}
+          onSelectTable={setSelectedTableId}
+          selectedTableId={selectedTableId}
+        />
+      </div>
+      <div style={{ ...SECTION_STYLE, display: section === 'backend-workflows' ? 'flex' : 'none' }}>
+        <ServerWorkflowsPanel projectId={projectId} />
+      </div>
+      <div style={{ ...SECTION_STYLE, display: section === 'storage' ? 'flex' : 'none' }}>
+        <StorageBrowser projectId={projectId} />
       </div>
     </div>
   );

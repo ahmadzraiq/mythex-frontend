@@ -1,19 +1,17 @@
 {
   "56642a48-2ec2-4923-9506-cb86ef6b0661": {
     "name": "updateProfileMutation",
-    "type": "graphql",
-    "query": "mutation UpdateCustomer($input: UpdateCustomerInput!) { updateCustomer(input: $input) { __typename id firstName lastName emailAddress } }",
-    "variables": {
-      "input": {
-        "firstName": "{{local.data.form.formData.firstName}}",
-        "lastName": "{{local.data.form.formData.lastName}}"
-      }
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/me",
+    "method": "PATCH",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
     },
-    "endpoint": "http://localhost:3000/shop-api"
+    "body": {
+      "first_name": "{{local.data.form.formData.firstName}}",
+      "last_name": "{{local.data.form.formData.lastName}}"
+    }
   },
   "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9": {
     "name": "submitUpdateProfile",
@@ -38,27 +36,25 @@
   },
   "9e4ba82b-c14c-4b8d-9646-559d274fc9c5": {
     "name": "saveAddressMutation",
-    "type": "graphql",
-    "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } }",
-    "variables": {
-      "input": {
-        "fullName": "{{local.data.form.formData.fullName}}",
-        "streetLine1": "{{local.data.form.formData.streetLine1}}",
-        "streetLine2": "{{local.data.form.formData.streetLine2}}",
-        "city": "{{local.data.form.formData.city}}",
-        "province": "{{local.data.form.formData.province}}",
-        "postalCode": "{{local.data.form.formData.postalCode}}",
-        "countryCode": "{{local.data.form.formData.countryCode}}",
-        "phoneNumber": "{{local.data.form.formData.phoneNumber}}",
-        "defaultShippingAddress": "{{local.data.form.formData.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{local.data.form.formData.defaultBillingAddress}}"
-      }
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/addresses",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
     },
-    "endpoint": "http://localhost:3000/shop-api"
+    "body": {
+      "full_name": "{{local.data.form.formData.fullName}}",
+      "street_line1": "{{local.data.form.formData.streetLine1}}",
+      "street_line2": "{{local.data.form.formData.streetLine2}}",
+      "city": "{{local.data.form.formData.city}}",
+      "province": "{{local.data.form.formData.province}}",
+      "postal_code": "{{local.data.form.formData.postalCode}}",
+      "country_code": "{{local.data.form.formData.countryCode}}",
+      "phone_number": "{{local.data.form.formData.phoneNumber}}",
+      "default_shipping_address": "{{local.data.form.formData.defaultShippingAddress}}",
+      "default_billing_address": "{{local.data.form.formData.defaultBillingAddress}}"
+    }
   },
   "5e6f7a8b-9c0d-1e2f-3a4b-c5d6e7f8a9b0": {
     "name": "submitSaveAddress",
@@ -87,54 +83,44 @@
   },
   "bd9e61f2-7964-4545-8167-4331ff17ec7a": {
     "name": "changePasswordMutation",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation UpdateCustomerPassword($currentPassword: String!, $newPassword: String!) { updateCustomerPassword(currentPassword: $currentPassword, newPassword: $newPassword) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "currentPassword": "{{local.data.form.formData.currentPassword}}",
-      "newPassword": "{{local.data.form.formData.newPassword}}"
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/change-password",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "body": {
+      "current_password": "{{local.data.form.formData.currentPassword}}",
+      "new_password": "{{local.data.form.formData.newPassword}}"
     }
   },
   "a6626679-62d9-4aa5-a842-7ebcc266e658": {
     "name": "requestEmailUpdateMutation",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation RequestUpdateCustomerEmailAddress($password: String!, $newEmailAddress: String!) { requestUpdateCustomerEmailAddress(password: $password, newEmailAddress: $newEmailAddress) { __typename ... on Success { success } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "password": "{{local.data.form.formData.password}}",
-      "newEmailAddress": "{{local.data.form.formData.newEmailAddress}}"
-    },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    }
+    "type": "set",
+    "path": "account.emailUpdateNotSupported",
+    "value": true
   },
   "9c6e39a6-5495-4c2a-8ea9-fc5bbe0ef052": {
     "name": "createAddressMutation",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation CreateCustomerAddress($input: CreateAddressInput!) { createCustomerAddress(input: $input) { id fullName streetLine1 city postalCode country { id code name } defaultShippingAddress defaultBillingAddress } }",
-    "variables": {
-      "input": {
-        "fullName": "{{local.data.form.formData.fullName}}",
-        "streetLine1": "{{local.data.form.formData.streetLine1}}",
-        "streetLine2": "{{local.data.form.formData.streetLine2}}",
-        "city": "{{local.data.form.formData.city}}",
-        "province": "{{local.data.form.formData.province}}",
-        "postalCode": "{{local.data.form.formData.postalCode}}",
-        "countryCode": "{{local.data.form.formData.countryCode}}",
-        "phoneNumber": "{{local.data.form.formData.phoneNumber}}",
-        "defaultShippingAddress": "{{local.data.form.formData.defaultShippingAddress}}",
-        "defaultBillingAddress": "{{local.data.form.formData.defaultBillingAddress}}"
-      }
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/addresses",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "body": {
+      "full_name": "{{local.data.form.formData.fullName}}",
+      "street_line1": "{{local.data.form.formData.streetLine1}}",
+      "street_line2": "{{local.data.form.formData.streetLine2}}",
+      "city": "{{local.data.form.formData.city}}",
+      "province": "{{local.data.form.formData.province}}",
+      "postal_code": "{{local.data.form.formData.postalCode}}",
+      "country_code": "{{local.data.form.formData.countryCode}}",
+      "phone_number": "{{local.data.form.formData.phoneNumber}}",
+      "default_shipping_address": "{{local.data.form.formData.defaultShippingAddress}}",
+      "default_billing_address": "{{local.data.form.formData.defaultBillingAddress}}"
     }
   },
   "8b9c0d1e-2f3a-4b5c-6d7e-f8a9b0c1d2e3": {
@@ -153,15 +139,13 @@
   },
   "bffb584e-62c9-4da1-8a42-3763f943f51c": {
     "name": "deleteAddress",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation DeleteCustomerAddress($id: ID!) { deleteCustomerAddress(id: $id) { success } }",
-    "variables": {
-      "id": "{{context.item.data.id}}"
+    "type": "fetch",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/addresses/', context?.item?.data?.id)"
     },
+    "method": "DELETE",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "9c0d1e2f-3a4b-5c6d-7e8f-a9b0c1d2e3f4": {

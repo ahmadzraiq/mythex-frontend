@@ -5,26 +5,24 @@
   },
   "d791c0b3-13d3-4ab0-9c06-0c31de94a4bc": {
     "name": "setShippingAddressMutation",
-    "type": "graphql",
-    "query": "mutation SetOrderShippingAddress($input: CreateAddressInput!) { setOrderShippingAddress(input: $input) { __typename ... on Order { id code shippingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "input": {
-        "fullName": "{{local.data.form.formData.fullName}}",
-        "company": "{{local.data.form.formData.company}}",
-        "streetLine1": "{{local.data.form.formData.streetLine1}}",
-        "streetLine2": "{{local.data.form.formData.streetLine2}}",
-        "city": "{{local.data.form.formData.city}}",
-        "province": "{{local.data.form.formData.province}}",
-        "postalCode": "{{local.data.form.formData.postalCode}}",
-        "countryCode": "{{local.data.form.formData.countryCode}}",
-        "phoneNumber": "{{local.data.form.formData.phoneNumber}}"
-      }
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/checkout/shipping-address",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
     },
-    "endpoint": "http://localhost:3000/shop-api"
+    "body": {
+      "full_name": "{{local.data.form.formData.fullName}}",
+      "company": "{{local.data.form.formData.company}}",
+      "street_line1": "{{local.data.form.formData.streetLine1}}",
+      "street_line2": "{{local.data.form.formData.streetLine2}}",
+      "city": "{{local.data.form.formData.city}}",
+      "province": "{{local.data.form.formData.province}}",
+      "postal_code": "{{local.data.form.formData.postalCode}}",
+      "country_code": "{{local.data.form.formData.countryCode}}",
+      "phone_number": "{{local.data.form.formData.phoneNumber}}"
+    }
   },
   "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6": {
     "name": "submitShippingAddress",
@@ -75,36 +73,22 @@
   },
   "1f273bc6-2270-47f2-84ba-8ce62eb8b06c": {
     "name": "addPaymentToOrder",
-    "type": "graphql",
-    "query": "mutation AddPaymentToOrder($input: PaymentInput!) { addPaymentToOrder(input: $input) { __typename ... on Order { id code state payments { id method amount state } } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "input": {
-        "method": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}",
-        "metadata": {
-          "shouldDecline": false,
-          "shouldError": false,
-          "shouldErrorOnSettle": false
-        }
-      }
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/checkout/place",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
     },
-    "endpoint": "http://localhost:3000/shop-api"
+    "body": {
+      "payment_method": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}"
+    }
   },
   "d9ff335b-ba80-420c-9b0f-45ee893498dd": {
     "name": "transitionToArrangingPayment",
-    "type": "graphql",
-    "query": "mutation TransitionOrderToState($state: String!) { transitionOrderToState(state: $state) { __typename ... on Order { id code state } ... on OrderStateTransitionError { errorCode message transitionError fromState toState } } }",
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
-    "endpoint": "http://localhost:3000/shop-api",
-    "variables": {
-      "state": "ArrangingPayment"
-    }
+    "type": "set",
+    "path": "checkout.transitionDone",
+    "value": true
   },
   "42e0738d-1f45-4424-8f96-7ecbb017ce42": {
     "name": "goToShipping",
@@ -128,7 +112,7 @@
         "id": "step-1",
         "type": "branch",
         "config": {
-          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length"
+          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.activeOrder.shippingLines.length"
         },
         "trueBranch": [
           {
@@ -148,10 +132,6 @@
     "name": "goToPayment",
     "trigger": "click",
     "steps": [
-      {
-        "id": "step-1",
-        "action": "d9ff335b-ba80-420c-9b0f-45ee893498dd"
-      },
       {
         "id": "step-2",
         "action": "5b47500d-b49f-45ba-918f-dd51cc221e7b"
@@ -200,10 +180,6 @@
         "action": "dad64254-6780-4e72-beed-3f3179710a50"
       },
       {
-        "id": "step-transition",
-        "action": "d9ff335b-ba80-420c-9b0f-45ee893498dd"
-      },
-      {
         "id": "step-payment",
         "action": "1f273bc6-2270-47f2-84ba-8ce62eb8b06c"
       },
@@ -215,26 +191,9 @@
   },
   "c83ac41c-1192-46f3-a39e-152bb9c14258": {
     "name": "setOrderBillingAddressMutation",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation SetOrderBillingAddress($input: CreateAddressInput!) { setOrderBillingAddress(input: $input) { __typename ... on Order { id code billingAddress { fullName streetLine1 city postalCode country } } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "input": {
-        "fullName": "{{local.data.form.formData.fullName}}",
-        "company": "{{local.data.form.formData.company}}",
-        "streetLine1": "{{local.data.form.formData.streetLine1}}",
-        "streetLine2": "{{local.data.form.formData.streetLine2}}",
-        "city": "{{local.data.form.formData.city}}",
-        "province": "{{local.data.form.formData.province}}",
-        "postalCode": "{{local.data.form.formData.postalCode}}",
-        "countryCode": "{{local.data.form.formData.countryCode}}",
-        "phoneNumber": "{{local.data.form.formData.phoneNumber}}"
-      }
-    },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    }
+    "type": "set",
+    "path": "checkout.billingAddressDone",
+    "value": true
   },
   "e89bedc2-a39c-4c83-861b-7fd20bcc63cd": {
     "name": "goToContact",
@@ -386,17 +345,15 @@
   },
   "2fbd7cd8-f41d-48c2-b0d2-4ca9ad3ad3af": {
     "name": "setShippingMethodMutation",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) { setOrderShippingMethod(shippingMethodId: $shippingMethodId) { __typename ... on Order { id code shippingWithTax totalWithTax shippingLines { shippingMethod { id name description } priceWithTax } } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "shippingMethodId": [
-        "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}}"
-      ]
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/checkout/shipping",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "body": {
+      "shipping_method_id": "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}}"
     }
   }
 }

@@ -13,7 +13,7 @@
  *   View ⋮          → floating card (View name + Description + Delete view)
  *   Grid header +   → right-side AddColumnPanel (full WeWeb form)
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   backendTables, backendViews, backendRows,
   type BackendTable, type BackendColumn, type BackendView,
@@ -170,6 +170,14 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
 
   const [error, setError] = useState('');
 
+  // Refs to avoid stale-closure re-fetches
+  const selectedTableIdRef = useRef(selectedTableId);
+  const onSelectTableRef   = useRef(onSelectTable);
+  const tablesLoadingRef   = useRef(false);
+  const rowsLoadingRef     = useRef(false);
+  useEffect(() => { selectedTableIdRef.current = selectedTableId; }, [selectedTableId]);
+  useEffect(() => { onSelectTableRef.current = onSelectTable; }, [onSelectTable]);
+
   const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
 
   const allCols = (() => {
@@ -195,14 +203,19 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
 
   // ── Load tables ────────────────────────────────────────────────────────────
   const loadTables = useCallback(async () => {
+    if (tablesLoadingRef.current) return;
+    tablesLoadingRef.current = true;
     setLoadingTables(true);
     try {
       const res = await backendTables.list(projectId);
       setTables(res.tables);
-      if (!selectedTableId && res.tables.length > 0) onSelectTable(res.tables[0].id);
+      // Auto-select first table only if nothing is selected — use refs to avoid deps
+      if (!selectedTableIdRef.current && res.tables.length > 0) {
+        onSelectTableRef.current(res.tables[0].id);
+      }
     } catch (e) { setError((e as Error).message); }
-    finally { setLoadingTables(false); }
-  }, [projectId, selectedTableId, onSelectTable]);
+    finally { setLoadingTables(false); tablesLoadingRef.current = false; }
+  }, [projectId]); // removed selectedTableId & onSelectTable — accessed via refs
 
   useEffect(() => { void loadTables(); }, [loadTables]);
 
@@ -228,16 +241,28 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
   }, [selectedTable?.id]);
 
   // ── Load rows ──────────────────────────────────────────────────────────────
+  // Use a ref for views so changes to views alone don't recreate loadRows and re-trigger the effect.
+  const viewsRef = useRef(views);
+  const viewParamsMapRef = useRef(viewParamsMap);
+  const paramValuesRef = useRef(paramValues);
+  useEffect(() => { viewsRef.current = views; }, [views]);
+  useEffect(() => { viewParamsMapRef.current = viewParamsMap; }, [viewParamsMap]);
+  useEffect(() => { paramValuesRef.current = paramValues; }, [paramValues]);
+
   const loadRows = useCallback(async () => {
     if (!selectedTable) return;
+    if (rowsLoadingRef.current) return;
+    rowsLoadingRef.current = true;
     setLoadingRows(true);
     try {
-      const activeViewObj = views.find((v) => v.id === activeView);
-      // Resolve parameter values into filter conditions for the active view
-      const activeParams = activeView !== 'data' ? (viewParamsMap[activeView] ?? []) : [];
+      const currentViews = viewsRef.current;
+      const currentViewParamsMap = viewParamsMapRef.current;
+      const currentParamValues = paramValuesRef.current;
+      const activeViewObj = currentViews.find((v) => v.id === activeView);
+      const activeParams = activeView !== 'data' ? (currentViewParamsMap[activeView] ?? []) : [];
       const paramFilters: RowsListOptions['filters'] = activeParams
-        .filter((p) => paramValues[p.id] !== undefined && paramValues[p.id] !== '')
-        .map((p) => ({ field: p.name, operator: 'Is', value: paramValues[p.id] }));
+        .filter((p) => currentParamValues[p.id] !== undefined && currentParamValues[p.id] !== '')
+        .map((p) => ({ field: p.name, operator: 'Is', value: currentParamValues[p.id] }));
 
       const mergedFilters = [
         ...((activeViewObj?.filters as RowsListOptions['filters']) ?? []),
@@ -256,8 +281,9 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
       setRows(res.data ?? []);
       setTotalRows(res.total ?? 0);
     } catch (e) { setError((e as Error).message); }
-    finally { setLoadingRows(false); }
-  }, [projectId, selectedTable, activeView, views, filters, sorts, page, pageSize]);
+    finally { setLoadingRows(false); rowsLoadingRef.current = false; }
+  // views/viewParamsMap/paramValues accessed via refs — excluded from deps to prevent cascade
+  }, [projectId, selectedTable, activeView, filters, sorts, page, pageSize]);
 
   useEffect(() => { if (selectedTable) void loadRows(); }, [loadRows]);
 
@@ -613,6 +639,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
               )}
               {activePanel === 'filter' && (
                 <FilterPanel
+                  asPopover
                   conditions={pendingFilters}
                   groups={pendingFilterGroups}
                   allCols={allCols}
@@ -624,6 +651,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
               )}
               {activePanel === 'sort' && (
                 <SortPanel
+                  asPopover
                   pending={pendingSorts}
                   allCols={allCols}
                   onChange={setPendingSorts}

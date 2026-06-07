@@ -11,12 +11,16 @@ export interface RestNamedDataSourceDef {
   type: 'rest';
   url: string;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  headers?: Array<{ key: string; value: string; enabled?: boolean }> | Record<string, string>;
+  headers?: Array<{ key: string; value: string; enabled?: boolean }> | Record<string, string | { formula: string }>;
   queryParams?: Array<{ key: string; value: string; enabled?: boolean }>;
   body?: string;
   responsePath?: string;
   proxy?: boolean;
   sendCredentials?: boolean;
+  skipStoreWhenNull?: boolean;
+  cacheTag?: string;
+  cacheTTL?: number;
+  cacheKeyVars?: string[];
 }
 
 export interface GraphQLNamedDataSourceDef {

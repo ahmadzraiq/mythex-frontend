@@ -143,6 +143,15 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
 
       ctx.setStepResult?.(stepResult, null);
 
+      // Invalidate datasource caches by tag/name after a successful mutation
+      const invalidateTags = actionDef.invalidateCache as string[] | string | undefined;
+      if (invalidateTags) {
+        const tags = Array.isArray(invalidateTags) ? invalidateTags : [invalidateTags];
+        for (const tag of tags) {
+          ctx.triggerDataSourceRefetch?.(tag);
+        }
+      }
+
       const onSuccess = actionDef.onSuccess;
       if (onSuccess) {
         const nexts = Array.isArray(onSuccess) ? onSuccess : [onSuccess];

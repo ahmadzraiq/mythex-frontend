@@ -680,7 +680,7 @@
                       "children": [
                         {
                           "type": "Box",
-                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                           "key": "navCollection",
                           "props": {
                             "className": "contents"
@@ -923,14 +923,14 @@
                                   "props": {
                                     "className": "absolute -top-[2px] -right-[2px] h-[14px] w-[14px] rounded-[9999px] bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
                                   },
-                                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
                                   "children": [
                                     {
                                       "type": "Text",
                                       "props": {
                                         "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
                                       },
-                                      "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
+                                      "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.totalQuantity}}"
                                     }
                                   ]
                                 }
@@ -1087,7 +1087,7 @@
                       "children": [
                         {
                           "type": "Box",
-                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                          "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                           "key": "footerCol",
                           "props": {
                             "className": "contents"
@@ -1325,7 +1325,7 @@
                   "props": {
                     "className": "flex flex-col items-center justify-center py-[48px] text-center"
                   },
-                  "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
+                  "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity || 0) === 0",
                   "children": [
                     {
                       "type": "Icon",
@@ -1348,8 +1348,8 @@
                   "props": {
                     "className": "space-y-[12px] flex flex-col"
                   },
-                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
-                  "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
+                  "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
+                  "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.lines",
                   "key": "drawerLine",
                   "children": [
                     {
@@ -1407,7 +1407,7 @@
                                     "className": "text-[14px] font-medium"
                                   },
                                   "text": {
-                                    "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                    "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                                   }
                                 }
                               ]
@@ -1445,7 +1445,7 @@
               "props": {
                 "className": "flex flex-col border-t border-[var(--theme-border)] pt-[16px] gap-[12px]"
               },
-              "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+              "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
               "children": [
                 {
                   "type": "Box",
@@ -1466,7 +1466,7 @@
                         "className": "font-semibold"
                       },
                       "text": {
-                        "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                        "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                       }
                     }
                   ]
@@ -1723,7 +1723,7 @@
                 "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
               },
               "text": {
-                "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
               }
             }
           ]
@@ -1749,7 +1749,7 @@
           "children": [
             {
               "type": "Box",
-              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+              "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets",
               "props": {
                 "className": "w-full h-full relative"
               },
@@ -1757,13 +1757,13 @@
                 {
                   "type": "Image",
                   "condition": {
-                    "formula": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
+                    "formula": "at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0)"
                   },
                   "props": {
                     "src": {
-                      "formula": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
+                      "formula": "getKeyValue(at(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets, variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0), 'source')"
                     },
-                    "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                    "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}",
                     "fill": true,
                     "className": "w-full h-full object-cover",
                     "sizes": "(max-width: 1024px) 100vw, 50vw",
@@ -1772,7 +1772,7 @@
                 },
                 {
                   "type": "Box",
-                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                   "props": {
                     "className": "absolute left-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
                   },
@@ -1801,7 +1801,7 @@
                 },
                 {
                   "type": "Box",
-                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                   "props": {
                     "className": "absolute right-[8px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
                   },
@@ -1830,7 +1830,7 @@
                 },
                 {
                   "type": "Box",
-                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+                  "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
                   "props": {
                     "className": "absolute bottom-[16px] left-1/2 -translate-x-1/2 bg-[var(--theme-card)]/80 px-[12px] py-[4px] rounded-[9999px] text-[14px]"
                   },
@@ -1838,7 +1838,7 @@
                     {
                       "type": "Text",
                       "text": {
-                        "formula": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length || 0)"
+                        "formula": "(variables['d5e6f7a8-b9c0-1234-defa-345678901234'] || 0) + 1 + ' / ' + (collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length || 0)"
                       }
                     }
                   ]
@@ -1847,7 +1847,7 @@
             },
             {
               "type": "Box",
-              "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets",
+              "condition": "!collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets",
               "props": {
                 "className": "w-full h-full flex items-center justify-center"
               },
@@ -1865,14 +1865,14 @@
         },
         {
           "type": "Box",
-          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.assets?.length > 1",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.assets?.length > 1",
           "props": {
             "className": "grid grid-cols-4 gap-[8px]"
           },
           "children": [
             {
               "type": "Box",
-              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.assets",
+              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.assets",
               "key": "assetThumb",
               "props": {
                 "className": "contents"
@@ -1893,7 +1893,7 @@
                       "type": "Image",
                       "props": {
                         "src": "{{context.item.data.preview}}",
-                        "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}",
+                        "alt": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}",
                         "fill": true,
                         "className": "object-cover w-full h-full",
                         "sizes": "25vw"
@@ -1926,40 +1926,40 @@
               "props": {
                 "className": "text-[30px] font-bold"
               },
-              "text": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.name}}"
+              "text": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.name}}"
             },
             {
               "type": "Text",
               "condition": {
-                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
               },
               "props": {
                 "className": "text-[24px] font-bold mt-[8px]"
               },
               "text": {
-                "formula": "formatCurrency(getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'priceWithTax') / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                "formula": "formatCurrency(getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'priceWithTax') / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
               }
             }
           ]
         },
         {
           "type": "HtmlContent",
-          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.description",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.description",
           "props": {
-            "html": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.description}}",
+            "html": "{{collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.description}}",
             "className": "prose prose-sm max-w-none text-[var(--theme-muted-foreground)]"
           }
         },
         {
           "type": "Box",
-          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups?.length > 0",
+          "condition": "collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups?.length > 0",
           "props": {
             "className": "space-y-[16px]"
           },
           "children": [
             {
               "type": "Box",
-              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.data.product.optionGroups",
+              "map": "collections.b2c3d4e5-f6a7-8901-bcde-f12345678901.product.optionGroups",
               "key": "optionGroup",
               "props": {
                 "className": "space-y-[12px]"
@@ -2033,13 +2033,13 @@
         {
           "type": "Box",
           "condition": {
-            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
+            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123']))"
           },
           "children": [
             {
               "type": "Text",
               "condition": {
-                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
               },
               "props": {
                 "className": "text-[14px] text-green-600 font-medium"
@@ -2049,7 +2049,7 @@
             {
               "type": "Text",
               "condition": {
-                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+                "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
               },
               "props": {
                 "className": "text-[14px] text-red-600 font-medium"
@@ -2067,7 +2067,7 @@
             {
               "type": "Box",
               "condition": {
-                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
+                "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') !== 'OUT_OF_STOCK'"
               },
               "props": {
                 "className": "w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)] !text-white flex flex-row items-center justify-center py-[12px] rounded-[6px]"
@@ -2090,7 +2090,7 @@
             {
               "type": "Box",
               "condition": {
-                "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
+                "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) || getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'stockLevel') === 'OUT_OF_STOCK'"
               },
               "props": {
                 "className": "w-full !bg-[var(--theme-border)] !text-[var(--theme-muted-foreground)] cursor-not-allowed flex flex-row items-center justify-center py-[12px] rounded-[6px]",
@@ -2103,7 +2103,7 @@
                     "className": "text-[var(--theme-muted-foreground)]"
                   },
                   "text": {
-                    "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) ? 'Select Options' : 'Out of Stock'"
+                    "formula": "!findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) ? 'Select Options' : 'Out of Stock'"
                   }
                 }
               ]
@@ -2113,7 +2113,7 @@
         {
           "type": "Box",
           "condition": {
-            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+            "formula": "findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])) && getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
           },
           "children": [
             {
@@ -2122,7 +2122,7 @@
                 "className": "text-[12px] text-[var(--theme-muted-foreground)]"
               },
               "text": {
-                "formula": "'SKU: ' + getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
+                "formula": "'SKU: ' + getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'sku')"
               }
             }
           ]
@@ -2139,7 +2139,7 @@
       "props": {
         "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
       },
-      "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems > 12",
+      "condition": "collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.search?.totalItems > 12",
       "children": [
         {
           "type": "Box",
@@ -2186,7 +2186,7 @@
             "className": "contents"
           },
           "map": {
-            "formula": "paginationPages(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0, max(0, (toNumber(globalContext?.browser?.query?.page || 1) - 1) * 12), 12)"
+            "formula": "paginationPages(collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.search?.totalItems || 0, max(0, (toNumber(globalContext?.browser?.query?.page || 1) - 1) * 12), 12)"
           },
           "children": [
             {
@@ -2241,7 +2241,7 @@
           "props": {
             "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
           },
-          "condition": "toNumber(globalContext?.browser?.query?.page || 1) >= max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12))",
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) >= max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.search?.totalItems || 0) / 12))",
           "children": [
             {
               "type": "Icon",
@@ -2258,7 +2258,7 @@
           "props": {
             "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0"
           },
-          "condition": "toNumber(globalContext?.browser?.query?.page || 1) < max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12))",
+          "condition": "toNumber(globalContext?.browser?.query?.page || 1) < max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.search?.totalItems || 0) / 12))",
           "children": [
             {
               "type": "Icon",
@@ -2287,7 +2287,7 @@
       "props": {
         "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
       },
-      "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems > get('collectionPageSize')",
+      "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > get('collectionPageSize')",
       "children": [
         {
           "type": "Box",
@@ -2334,7 +2334,7 @@
             "className": "contents"
           },
           "map": {
-            "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
+            "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
           },
           "children": [
             {
@@ -2389,7 +2389,7 @@
           "props": {
             "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
           },
-          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
           "children": [
             {
               "type": "Icon",
@@ -2406,7 +2406,7 @@
           "props": {
             "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0"
           },
-          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+          "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
           "children": [
             {
               "type": "Icon",
@@ -2646,10 +2646,10 @@
                     "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
                     "style": {
                       "backgroundColor": {
-                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
                       },
                       "color": {
-                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'"
+                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'"
                       }
                     }
                   },
@@ -2661,7 +2661,7 @@
                         "size": 16,
                         "className": "!text-white"
                       },
-                      "condition": "auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress"
+                      "condition": "auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress"
                     },
                     {
                       "type": "Text",
@@ -2669,7 +2669,7 @@
                         "className": "font-semibold text-[14px] !text-white"
                       },
                       "text": "1",
-                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
+                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
                     },
                     {
                       "type": "Text",
@@ -2677,7 +2677,7 @@
                         "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
                       },
                       "text": "1",
-                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
+                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
                     }
                   ]
                 },
@@ -2943,13 +2943,13 @@
             "className": "flex flex-row items-center justify-between w-full py-[16px]",
             "style": {
               "opacity": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 1 : 0.5"
+                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 1 : 0.5"
               },
               "pointerEvents": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'"
+                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'"
               },
               "cursor": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'"
+                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'"
               }
             }
           },
@@ -2971,10 +2971,10 @@
                     "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
                     "style": {
                       "backgroundColor": {
-                        "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                        "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
                       },
                       "color": {
-                        "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'white' : 'var(--theme-muted-foreground)'"
+                        "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'white' : 'var(--theme-muted-foreground)'"
                       }
                     }
                   },
@@ -2986,7 +2986,7 @@
                         "size": 16,
                         "className": "!text-white"
                       },
-                      "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1"
+                      "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1"
                     },
                     {
                       "type": "Text",
@@ -2994,7 +2994,7 @@
                         "className": "font-semibold text-[14px] !text-white"
                       },
                       "text": "2",
-                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
+                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
                     },
                     {
                       "type": "Text",
@@ -3002,7 +3002,7 @@
                         "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
                       },
                       "text": "2",
-                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
+                      "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
                     }
                   ]
                 },
@@ -3468,13 +3468,13 @@
             "className": "flex flex-row items-center justify-between w-full py-[16px]",
             "style": {
               "opacity": {
-                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 1 : 0.5"
+                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 1 : 0.5"
               },
               "pointerEvents": {
-                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'auto' : 'none'"
+                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'auto' : 'none'"
               },
               "cursor": {
-                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'pointer' : 'not-allowed'"
+                "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'pointer' : 'not-allowed'"
               }
             }
           },
@@ -3703,7 +3703,7 @@
               "props": {
                 "className": "flex flex-col items-center gap-[16px] py-[80px]"
               },
-              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.search?.items?.0",
               "children": [
                 {
                   "type": "Text",
@@ -3730,7 +3730,7 @@
             },
             {
               "type": "Box",
-              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.search?.items?.0",
               "props": {
                 "className": "w-full overflow-hidden"
               },
@@ -3743,7 +3743,7 @@
                   "children": [
                     {
                       "type": "Box",
-                      "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items",
+                      "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.search.items",
                       "props": {
                         "className": "snap-start shrink-0 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                       },
@@ -3814,7 +3814,7 @@
                                     "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
                                   },
                                   "text": {
-                                    "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value, context?.item?.data?.currencyCode) : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min, context?.item?.data?.currencyCode)"
+                                    "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
                                   }
                                 }
                               ]
@@ -3912,11 +3912,11 @@
               "props": {
                 "className": "grid grid-cols-2 gap-[16px] lg:grid-cols-4"
               },
-              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "condition": "!!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.search?.items?.0",
               "children": [
                 {
                   "type": "Box",
-                  "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.data.search.items",
+                  "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.search.items",
                   "key": "product",
                   "props": {
                     "className": "contents"
@@ -3985,7 +3985,7 @@
                                 "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
                               },
                               "text": {
-                                "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
                               }
                             }
                           ]
@@ -4005,7 +4005,7 @@
               "props": {
                 "className": "flex flex-col items-center gap-[16px] py-[80px]"
               },
-              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.search?.items?.0",
+              "condition": "!collections['c3d4e5f6-a7b8-9012-cdef-123456789012']?.search?.items?.0",
               "children": [
                 {
                   "type": "Text",

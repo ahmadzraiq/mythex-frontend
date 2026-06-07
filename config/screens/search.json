@@ -196,7 +196,7 @@
                   {
                     "type": "Box",
                     "map": {
-                      "formula": "groupBy(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.facetValues || [], 'facetValue.facet.name', 'facetValue.facet.id')"
+                      "formula": "groupBy(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.facetValues || [], 'facetValue.facet.name', 'facetValue.facet.id')"
                     },
                     "key": "context.item.data.id",
                     "props": {
@@ -312,7 +312,7 @@
                       "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
                     "text": {
-                      "formula": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) === 1 ? '1 product' : (collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) + ' products'"
+                      "formula": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 1 ? '1 product' : (collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) + ' products'"
                     }
                   },
                   {
@@ -494,7 +494,7 @@
               },
               {
                 "type": "Box",
-                "condition": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) === 0",
+                "condition": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 0",
                 "props": {
                   "className": "text-center py-[48px]"
                 },
@@ -510,14 +510,14 @@
               },
               {
                 "type": "Box",
-                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems > 0",
+                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > 0",
                 "props": {
                   "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
                 },
                 "children": [
                   {
                     "type": "Box",
-                    "map": "collections.e5f6a7b8-c9d0-1234-efab-345678901234.data.search.items",
+                    "map": "collections.e5f6a7b8-c9d0-1234-efab-345678901234.search.items",
                     "key": "searchProduct",
                     "props": {
                       "className": "contents"
@@ -586,7 +586,7 @@
                                   "className": "text-[18px] font-bold text-[var(--theme-card-foreground)]"
                                 },
                                 "text": {
-                                  "formula": "context?.item?.data?.priceWithTax?.__typename === 'SinglePrice' ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                  "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
                                 }
                               }
                             ]
@@ -606,7 +606,7 @@
                 "props": {
                   "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
                 },
-                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems > get('collectionPageSize')",
+                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > get('collectionPageSize')",
                 "children": [
                   {
                     "type": "Box",
@@ -653,7 +653,7 @@
                       "className": "contents"
                     },
                     "map": {
-                      "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
+                      "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
                     },
                     "children": [
                       {
@@ -708,7 +708,7 @@
                     "props": {
                       "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0"
                     },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
                     "children": [
                       {
                         "type": "Icon",
@@ -725,7 +725,7 @@
                     "props": {
                       "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0"
                     },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
                     "children": [
                       {
                         "type": "Icon",

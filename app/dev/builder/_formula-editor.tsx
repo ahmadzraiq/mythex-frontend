@@ -1508,7 +1508,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
         {([
-          ...(showQuickTab && !serverContext ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
+          ...((showQuickTab && !serverContext) || (paramsInQuick && hasFormulaParams) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           ...(!serverContext ? [{ id: 'variables' as Tab, icon: '{x}', label: 'Variables' }] : []),
           ...(!serverContext ? [{ id: 'data' as Tab, icon: '≡', label: 'Data' }] : []),
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },

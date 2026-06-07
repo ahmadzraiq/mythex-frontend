@@ -465,7 +465,7 @@
         "config": {
           "variableName": "d9e0f1a2-b3c4-5678-defa-789012345678",
           "value": {
-            "formula": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress || '') ? 'contact' : !(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1 || '') ? 'shipping' : (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.length || 0 || 0) <= 0 ? 'delivery' : !(variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '') ? 'payment' : 'review'"
+            "formula": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress || '') ? 'contact' : !(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 || '') ? 'shipping' : (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0 || 0) <= 0 ? 'delivery' : !(variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '') ? 'payment' : 'review'"
           }
         }
       }
@@ -481,7 +481,7 @@
         "config": {
           "path": "local.data.form.formData.emailAddress",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.emailAddress"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress"
           }
         }
       },
@@ -491,7 +491,7 @@
         "config": {
           "path": "local.data.form.formData.firstName",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.firstName"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.firstName"
           }
         }
       },
@@ -501,7 +501,7 @@
         "config": {
           "path": "local.data.form.formData.lastName",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.customer?.lastName"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.lastName"
           }
         }
       },
@@ -511,7 +511,7 @@
         "config": {
           "path": "local.data.form.formData.fullName",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.fullName"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.fullName"
           }
         }
       },
@@ -521,7 +521,7 @@
         "config": {
           "path": "local.data.form.formData.company",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.company"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.company"
           }
         }
       },
@@ -531,7 +531,7 @@
         "config": {
           "path": "local.data.form.formData.streetLine1",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine1"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1"
           }
         }
       },
@@ -541,7 +541,7 @@
         "config": {
           "path": "local.data.form.formData.streetLine2",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.streetLine2"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine2"
           }
         }
       },
@@ -551,7 +551,7 @@
         "config": {
           "path": "local.data.form.formData.city",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.city"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.city"
           }
         }
       },
@@ -561,7 +561,7 @@
         "config": {
           "path": "local.data.form.formData.province",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.province"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.province"
           }
         }
       },
@@ -571,7 +571,7 @@
         "config": {
           "path": "local.data.form.formData.postalCode",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.postalCode"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.postalCode"
           }
         }
       },
@@ -581,7 +581,7 @@
         "config": {
           "path": "local.data.form.formData.countryCode",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.countryCode"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.countryCode"
           }
         }
       },
@@ -591,7 +591,7 @@
         "config": {
           "path": "local.data.form.formData.phoneNumber",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingAddress?.phoneNumber"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.phoneNumber"
           }
         }
       },
@@ -601,7 +601,7 @@
         "config": {
           "variableName": "a2b3c4d5-e6f7-8901-abcd-012345678901",
           "value": {
-            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.data?.activeOrder?.shippingLines?.0?.shippingMethod?.id"
+            "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.0?.shippingMethod?.id"
           }
         }
       }
@@ -615,7 +615,7 @@
         "id": "step-1",
         "type": "branch",
         "config": {
-          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingAddress.streetLine1"
+          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.activeOrder.shippingAddress.streetLine1"
         },
         "trueBranch": [
           {
@@ -629,7 +629,7 @@
         "id": "step-2",
         "type": "branch",
         "config": {
-          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.data.activeOrder.shippingLines.length"
+          "conditionPath": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.activeOrder.shippingLines.length"
         },
         "trueBranch": [
           {

@@ -21,7 +21,7 @@
         "props": {
           "className": "text-center py-[48px]"
         },
-        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.data?.activeCustomer?.orders?.items?.length || 0) === 0",
+        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.activeCustomer?.orders?.items?.length || 0) === 0",
         "children": [
           {
             "type": "Text",
@@ -37,7 +37,7 @@
         "props": {
           "className": "border-[1px] rounded-[8px] overflow-hidden"
         },
-        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.data?.activeCustomer?.orders?.items?.length || 0) > 0",
+        "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.activeCustomer?.orders?.items?.length || 0) > 0",
         "children": [
           {
             "type": "Box",
@@ -123,7 +123,7 @@
                 "children": [
                   {
                     "type": "Box",
-                    "map": "collections.c5d6e7f8-a9b0-1234-cdef-345678901234.data.activeCustomer.orders.items",
+                    "map": "collections.c5d6e7f8-a9b0-1234-cdef-345678901234.activeCustomer.orders.items",
                     "key": "orderRow",
                     "props": {
                       "className": "hover:bg-[var(--theme-muted)] flex flex-row"

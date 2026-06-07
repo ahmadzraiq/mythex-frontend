@@ -68,7 +68,7 @@
                         "children": [
                           {
                             "type": "Box",
-                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                             "key": "navCollection",
                             "props": {
                               "className": "contents"
@@ -311,14 +311,14 @@
                                     "props": {
                                       "className": "absolute -top-[2px] -right-[2px] h-[14px] w-[14px] rounded-[9999px] bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
                                     },
-                                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
                                           "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
                                         },
-                                        "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
+                                        "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.totalQuantity}}"
                                       }
                                     ]
                                   }
@@ -485,7 +485,7 @@
                         "children": [
                           {
                             "type": "Box",
-                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                             "key": "footerCol",
                             "props": {
                               "className": "contents"
@@ -709,7 +709,7 @@
                     "props": {
                       "className": "flex flex-col items-center justify-center py-[48px] text-center"
                     },
-                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity || 0) === 0",
+                    "condition": "(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity || 0) === 0",
                     "children": [
                       {
                         "type": "Icon",
@@ -732,8 +732,8 @@
                     "props": {
                       "className": "space-y-[12px] flex flex-col"
                     },
-                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
-                    "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.lines",
+                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
+                    "map": "collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.lines",
                     "key": "drawerLine",
                     "children": [
                       {
@@ -791,7 +791,7 @@
                                       "className": "text-[14px] font-medium"
                                     },
                                     "text": {
-                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                                      "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                                     }
                                   }
                                 ]
@@ -829,7 +829,7 @@
                 "props": {
                   "className": "flex flex-col border-t border-[var(--theme-border)] pt-[16px] gap-[12px]"
                 },
-                "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
                 "children": [
                   {
                     "type": "Box",
@@ -850,7 +850,7 @@
                           "className": "font-semibold"
                         },
                         "text": {
-                          "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.currencyCode || 'USD')"
+                          "formula": "formatCurrency(collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.subTotalWithTax / 100, collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.currencyCode || 'USD')"
                         }
                       }
                     ]

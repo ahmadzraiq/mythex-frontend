@@ -44,7 +44,7 @@
             "props": {
               "className": "text-[30px] font-bold"
             },
-            "text": "Order #{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.code}}"
+            "text": "Order #{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.code}}"
           },
           {
             "type": "Box",
@@ -54,7 +54,7 @@
             "children": [
               {
                 "type": "Text",
-                "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.state}}"
+                "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.state}}"
               }
             ]
           }
@@ -81,7 +81,7 @@
                 "props": {
                   "className": "space-y-[16px] flex flex-col"
                 },
-                "map": "collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.lines",
+                "map": "collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.lines",
                 "key": "orderDetailLine",
                 "children": [
                   {
@@ -135,7 +135,7 @@
                           "className": "font-semibold text-right flex-shrink-0"
                         },
                         "text": {
-                          "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -176,28 +176,28 @@
                     "props": {
                       "className": "text-[14px]"
                     },
-                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.fullName}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.shippingAddress.fullName}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.streetLine1}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.shippingAddress.streetLine1}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.city}}, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.postalCode}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.shippingAddress.city}}, {{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.shippingAddress.postalCode}}"
                   },
                   {
                     "type": "Text",
                     "props": {
                       "className": "text-[14px] text-[var(--theme-muted-foreground)]"
                     },
-                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.data.orderByCode.shippingAddress.country}}"
+                    "text": "{{collections.d6e7f8a9-b0c1-2345-defa-456789012345.orderByCode.shippingAddress.country}}"
                   }
                 ]
               }
@@ -238,7 +238,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.subTotalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.subTotalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -259,7 +259,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.shippingWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.shippingWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]
@@ -283,7 +283,7 @@
                       {
                         "type": "Text",
                         "text": {
-                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.totalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.data?.orderByCode?.currencyCode || 'USD')"
+                          "formula": "formatCurrency((collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.totalWithTax || 0) / 100, collections['d6e7f8a9-b0c1-2345-defa-456789012345']?.orderByCode?.currencyCode || 'USD')"
                         }
                       }
                     ]

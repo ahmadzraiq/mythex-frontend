@@ -623,8 +623,15 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
   const store = useBuilderStore();
   const [name, setName] = useState(initial.name ?? '');
   const [dsLabel, setDsLabel] = useState((initial as { _label?: string })._label ?? '');
-  const [url, setUrl] = useState<string | FormulaValue>(initial.url ?? '');
-  const [urlBound, setUrlBound] = useState(false);
+  const [url, setUrl] = useState<string | FormulaValue>(() => {
+    const u = initial.url as unknown;
+    if (typeof u === 'object' && u !== null && 'formula' in (u as object)) return u as FormulaValue;
+    return (u as string) ?? '';
+  });
+  const [urlBound, setUrlBound] = useState(() => {
+    const u = initial.url as unknown;
+    return typeof u === 'object' && u !== null && 'formula' in (u as object);
+  });
   const [method, setMethod] = useState<DataSourceConfig['method']>(initial.method ?? 'GET');
   const [bodyMode, setBodyMode] = useState<'parsed' | 'raw'>((initial as { bodyMode?: 'parsed' | 'raw' }).bodyMode ?? 'parsed');
   const [fields, setFields] = useState<KvEntry[]>(() => toKvEntries(((initial as { fields?: { key: string; value: string }[] }).fields) ?? []));

@@ -1,22 +1,25 @@
 {
   "c5c43e71-0991-4923-abad-7755eb230f6b": {
     "name": "addToCart",
-    "type": "graphql",
-    "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "variantId": {
-        "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'id')"
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/add",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "variant_id": {
+        "formula": "getKeyValue(findItemById(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, findItemByOptionsMatch(collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.variants, collections['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.product?.optionGroups, variables['c4d5e6f7-a8b9-0123-cdef-234567890123'])), 'id')"
       },
       "quantity": 1
     },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100001-0000-0000-0000-000000000001": {
     "name": "submitAddToCart",
@@ -41,20 +44,25 @@
   },
   "7a44a326-2c68-4d7f-9266-c83457ef057b": {
     "name": "addToCartFromCard",
-    "type": "graphql",
-    "query": "mutation AddToCart($variantId: ID!, $quantity: Int!) { addItemToOrder(productVariantId: $variantId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "variantId": "{{context.item.data.variantId}}",
-      "quantity": 1
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/add",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "variant_id": {
+        "formula": "context?.item?.data?.productVariantId || context?.item?.data?.variantId"
+      },
+      "quantity": 1
     },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100002-0000-0000-0000-000000000002": {
     "name": "submitAddToCartFromCard",
@@ -72,20 +80,23 @@
   },
   "16fcea3b-13a7-4a58-b890-d2fc91ee0408": {
     "name": "removeFromCart",
-    "type": "graphql",
+    "type": "fetch",
     "stopPropagation": true,
-    "query": "mutation RemoveFromCart($lineId: ID!) { removeOrderLine(orderLineId: $lineId) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "lineId": "{{context.item.data.id}}"
-    },
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/remove",
+    "method": "DELETE",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "line_id": "{{context.item.data.id}}"
     },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100003-0000-0000-0000-000000000003": {
     "name": "submitRemoveFromCart",
@@ -103,39 +114,45 @@
   },
   "d5907b1b-3ecf-40b0-b150-6eb47c8d5733": {
     "name": "adjustCartItemQuantity",
-    "type": "graphql",
-    "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "lineId": "{{context.item.data.id}}",
-      "quantity": "{{context.item.data.quantity}}"
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/adjust",
+    "method": "PATCH",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "line_id": "{{context.item.data.id}}",
+      "quantity": "{{context.item.data.quantity}}"
     },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "26266968-8914-4e63-acfe-338ca69a0095": {
     "name": "decrementCartItem",
-    "type": "graphql",
-    "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "lineId": "{{context.item.data.id}}",
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/adjust",
+    "method": "PATCH",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "line_id": "{{context.item.data.id}}",
       "quantity": {
         "formula": "context?.item?.data?.quantity - 1"
       }
     },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100004-0000-0000-0000-000000000004": {
     "name": "submitDecrementCartItem",
@@ -153,22 +170,25 @@
   },
   "7e13b3e3-daf0-430b-83b8-0447ad9a94c3": {
     "name": "incrementCartItem",
-    "type": "graphql",
-    "query": "mutation AdjustCartItem($lineId: ID!, $quantity: Int!) { adjustOrderLine(orderLineId: $lineId, quantity: $quantity) { __typename ... on Order { id totalQuantity } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "lineId": "{{context.item.data.id}}",
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/adjust",
+    "method": "PATCH",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "line_id": "{{context.item.data.id}}",
       "quantity": {
         "formula": "context?.item?.data?.quantity + 1"
       }
     },
-    "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
-    },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100005-0000-0000-0000-000000000005": {
     "name": "submitIncrementCartItem",
@@ -186,19 +206,22 @@
   },
   "85346c1c-0613-4776-9cba-3a7c3172a764": {
     "name": "applyPromotionCode",
-    "type": "graphql",
-    "query": "mutation ApplyPromotionCode($couponCode: String!) { applyCouponCode(couponCode: $couponCode) { __typename ... on Order { id code totalWithTax couponCodes discounts { description amountWithTax } } ... on ErrorResult { errorCode message } } }",
-    "variables": {
-      "couponCode": "{{local.data.form.formData.couponCode}}"
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/coupon",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "coupon_code": "{{local.data.form.formData.couponCode}}"
     },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100006-0000-0000-0000-000000000006": {
     "name": "submitApplyPromotionCode",
@@ -220,19 +243,22 @@
   },
   "9d025c9c-1fef-460d-9238-faec04029ad6": {
     "name": "removePromotionCode",
-    "type": "graphql",
-    "query": "mutation RemovePromotionCode($couponCode: String!) { removeCouponCode(couponCode: $couponCode) { id code totalWithTax couponCodes discounts { description amountWithTax } } }",
-    "variables": {
-      "couponCode": "{{$item}}"
-    },
+    "type": "fetch",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart/coupon",
+    "method": "POST",
     "headers": {
-      "Authorization": "{{auth.token}}",
-      "vendure-token": "__default_channel__"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
+    },
+    "body": {
+      "coupon_code": ""
     },
     "invalidateCache": [
       "cart"
-    ],
-    "endpoint": "http://localhost:3000/shop-api"
+    ]
   },
   "aa100007-0000-0000-0000-000000000007": {
     "name": "submitRemovePromotionCode",

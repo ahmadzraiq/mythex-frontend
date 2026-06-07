@@ -2,12 +2,14 @@
   "a1b2c3d4-e5f6-7890-abcd-ef1234567890": {
     "folder": "Cart",
     "label": "Cart",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetActiveOrder { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
     },
     "skipStoreWhenNull": true,
     "cacheTag": "cart",
@@ -19,17 +21,11 @@
   "b2c3d4e5-f6a7-8901-bcde-f12345678901": {
     "folder": "Products",
     "label": "Product Detail",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetProductDetail($slug: String!) { product(slug: $slug) { id name description slug assets { id preview source } variants { id name sku priceWithTax stockLevel options { id code name groupId group { id code name } } } optionGroups { id code name options { id code name } } collections { id name slug parent { id } } } }",
-    "variables": {
-      "slug": {
-        "formula": "globalContext?.browser?.query?.slug"
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/products/detail?slug=', globalContext?.browser?.query?.slug || '')"
     },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "method": "GET",
     "cacheTag": "product",
     "cacheTTL": 300,
     "cacheKeyVars": [
@@ -39,53 +35,20 @@
   "c3d4e5f6-a7b8-9012-cdef-123456789012": {
     "folder": "Products",
     "label": "Featured Products",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetFeaturedProducts($input: SearchInput!) { search(input: $input) { items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } } }",
-    "variables": {
-      "input": {
-        "collectionSlug": "electronics",
-        "take": 8,
-        "skip": 0,
-        "groupByProduct": true
-      }
-    },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?collection_slug=electronics&pageSize=8",
+    "method": "GET",
     "cacheTag": "featured",
     "cacheTTL": 600
   },
   "d4e5f6a7-b8c9-0123-defa-234567890123": {
     "folder": "Catalog",
     "label": "Collection",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCollectionProducts($slug: String!, $input: SearchInput!) { collection(slug: $slug) { id name slug description featuredAsset { id preview } } search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
-    "variables": {
-      "slug": {
-        "formula": "globalContext?.browser?.query?.slug || 'electronics'"
-      },
-      "input": {
-        "collectionSlug": {
-          "formula": "globalContext?.browser?.query?.slug || 'electronics'"
-        },
-        "take": 12,
-        "skip": {
-          "formula": "max(0, (toNumber(globalContext?.browser?.query?.page || 1) - 1) * 12)"
-        },
-        "groupByProduct": true,
-        "sort": {
-          "formula": "lookupMap(variables?.['fa000005-0000-0000-0000-000000000001'], globalContext?.browser?.query?.sort || 'name-asc', variables?.['fa000006-0000-0000-0000-000000000001'])"
-        },
-        "facetValueIds": {
-          "formula": "remove(split(globalContext?.browser?.query?.facets || '', ','), '')"
-        }
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?collection_slug=', globalContext?.browser?.query?.slug || 'electronics', '&pageSize=12&page=', globalContext?.browser?.query?.page || '1', globalContext?.browser?.query?.facets ? concat('&facets=', globalContext?.browser?.query?.facets) : '', globalContext?.browser?.query?.sort ? concat('&sort=', globalContext?.browser?.query?.sort) : '')"
     },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "method": "GET",
     "cacheTag": "collection",
     "cacheTTL": 120,
     "cacheKeyVars": [
@@ -98,32 +61,11 @@
   "e5f6a7b8-c9d0-1234-efab-345678901234": {
     "folder": "Catalog",
     "label": "Search Results",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query SearchProducts($input: SearchInput!) { search(input: $input) { totalItems items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } facetValues { count facetValue { id name facet { id name } } } } }",
-    "variables": {
-      "input": {
-        "term": {
-          "formula": "globalContext?.browser?.query?.q"
-        },
-        "take": {
-          "formula": "variables?.['fa000001-0000-0000-0000-000000000001']"
-        },
-        "skip": {
-          "formula": "variables?.['b7c8d9e0-f1a2-3456-bcde-567890123456']"
-        },
-        "groupByProduct": true,
-        "sort": {
-          "formula": "lookupMap(variables?.['fa000005-0000-0000-0000-000000000001'], globalContext?.browser?.query?.sort, variables?.['fa000006-0000-0000-0000-000000000001'])"
-        },
-        "facetValueIds": {
-          "formula": "remove(split(globalContext?.browser?.query?.facets || '', ','), '')"
-        }
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?q=', globalContext?.browser?.query?.q || '', '&pageSize=20')"
     },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "method": "GET",
     "cacheTag": "search",
     "cacheTTL": 120,
     "cacheKeyVars": [
@@ -135,98 +77,74 @@
   "f6a7b8c9-d0e1-2345-fabc-456789012345": {
     "folder": "Products",
     "label": "Related Products",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetRelatedProducts($input: SearchInput!) { search(input: $input) { items { productId productName slug productAsset { id preview } priceWithTax { __typename ... on PriceRange { min max } ... on SinglePrice { value } } currencyCode } } }",
-    "variables": {
-      "input": {
-        "collectionSlug": {
-          "formula": "collections?.['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.collections?.[0]?.slug || 'electronics'"
-        },
-        "take": 13,
-        "skip": 0,
-        "groupByProduct": true
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?pageSize=12&q=', collections?.['b2c3d4e5-f6a7-8901-bcde-f12345678901']?.data?.product?.name || '')"
     },
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "method": "GET",
     "cacheTag": "related",
     "cacheTTL": 300,
     "cacheKeyVars": [
-      "product.id",
-      "product.collections"
+      "globalContext.browser.query.slug"
     ]
   },
   "a7b8c9d0-e1f2-3456-abcd-567890123456": {
     "folder": "Catalog",
     "label": "Nav Collections",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetNavCollections { collections(options: { filter: { parentId: { eq: \"1\" } } }) { items { id name slug } } }",
-    "headers": {
-      "vendure-token": "__default_channel__"
-    },
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/collections",
+    "method": "GET",
     "cacheTag": "collections",
     "cacheTTL": 600
   },
   "b8c9d0e1-f2a3-4567-bcde-678901234567": {
     "folder": "Checkout",
     "label": "Active Order",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetActiveOrderForCheckout { activeOrder { id code state totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode couponCodes customer { id firstName lastName emailAddress phoneNumber } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country countryCode phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } discounts { description amountWithTax } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}",
+      "X-Guest-ID": {
+        "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
+      }
     },
     "skipStoreWhenNull": true
   },
   "c9d0e1f2-a3b4-5678-cdef-789012345678": {
     "folder": "Checkout",
     "label": "Shipping Methods",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetEligibleShippingMethods { eligibleShippingMethods { id name code description priceWithTax } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/checkout/shipping-methods",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "d0e1f2a3-b4c5-6789-defa-890123456789": {
     "folder": "Checkout",
     "label": "Payment Methods",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetEligiblePaymentMethods { eligiblePaymentMethods { id name code description isEligible eligibilityMessage } }",
-    "headers": {
-      "vendure-token": "__default_channel__"
-    }
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/payment_method",
+    "method": "GET"
   },
   "e1f2a3b4-c5d6-7890-efab-901234567890": {
     "folder": "Checkout",
     "label": "Available Countries",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetAvailableCountries { availableCountries { id code name } }",
-    "headers": {
-      "vendure-token": "__default_channel__"
-    }
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/region",
+    "method": "GET"
   },
   "f2a3b4c5-d6e7-8901-fabc-012345678901": {
     "folder": "Checkout",
     "label": "Confirmed Order",
-    "type": "graphql",
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetOrderByCode($code: String!) { orderByCode(code: $code) { id code state total totalWithTax currencyCode orderPlacedAt customer { firstName lastName emailAddress } shippingAddress { fullName streetLine1 streetLine2 city province postalCode country } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } shippingLines { shippingMethod { name } priceWithTax } discounts { description amountWithTax } } }",
-    "variables": {
-      "code": {
-        "formula": "globalContext?.browser?.query?.code"
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders/detail?order_id=', globalContext?.browser?.query?.code || '')"
     },
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     },
     "cacheKeyVars": [
       "globalContext.browser.query.code"
@@ -235,17 +153,13 @@
   "a3b4c5d6-e7f8-9012-abcd-123456789012": {
     "folder": "Account",
     "label": "Order by Code",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetOrderByCode($code: String!) { orderByCode(code: $code) { id code state totalWithTax currencyCode lines { id productVariant { id name product { id name slug featuredAsset { id preview } } } quantity linePriceWithTax } shippingAddress { fullName streetLine1 streetLine2 city province postalCode country } } }",
-    "variables": {
-      "code": {
-        "formula": "globalContext?.browser?.query?.id"
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders/detail?order_id=', globalContext?.browser?.query?.id || '')"
     },
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     },
     "cacheKeyVars": [
       "globalContext.browser.query.id"
@@ -254,39 +168,33 @@
   "b4c5d6e7-f8a9-0123-bcde-234567890123": {
     "folder": "Account",
     "label": "Active Customer",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetActiveCustomer { activeCustomer { id firstName lastName emailAddress phoneNumber defaultShippingAddress { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } defaultBillingAddress { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } addresses { id fullName streetLine1 streetLine2 city province postalCode country { code name } phoneNumber defaultShippingAddress defaultBillingAddress } } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "c5d6e7f8-a9b0-1234-cdef-345678901234": {
     "folder": "Account",
     "label": "Customer Orders",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCustomerOrders { activeCustomer { orders(options: { take: 20, sort: { createdAt: DESC } }) { items { id code state total totalWithTax currencyCode orderPlacedAt lines { id productVariant { product { featuredAsset { preview } } } quantity } } } } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "d6e7f8a9-b0c1-2345-defa-456789012345": {
     "folder": "Account",
     "label": "Order Detail",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetOrderDetail($code: String!) { orderByCode(code: $code) { id code state active createdAt updatedAt totalQuantity subTotal subTotalWithTax shipping shippingWithTax total totalWithTax currencyCode customer { id firstName lastName emailAddress } shippingAddress { fullName company streetLine1 streetLine2 city province postalCode country phoneNumber } shippingLines { shippingMethod { id name description } priceWithTax } payments { id method amount state transactionId createdAt } lines { id productVariant { id name sku product { id name slug featuredAsset { id preview } } } unitPriceWithTax quantity linePriceWithTax } discounts { description amountWithTax } } }",
-    "variables": {
-      "code": {
-        "formula": "globalContext?.browser?.query?.id"
-      }
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders/detail?order_id=', globalContext?.browser?.query?.id || '')"
     },
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     },
     "cacheKeyVars": [
       "globalContext.browser.query.id"
@@ -295,40 +203,31 @@
   "e7f8a9b0-c1d2-3456-efab-567890123456": {
     "folder": "Account",
     "label": "Profile",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetActiveCustomer { activeCustomer { id firstName lastName emailAddress } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "f8a9b0c1-d2e3-4567-fabc-678901234567": {
     "folder": "Account",
     "label": "Orders List",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCustomerOrders($options: OrderListOptions) { activeCustomer { id orders(options: $options) { totalItems items { id code state totalWithTax currencyCode createdAt updatedAt lines { id productVariant { id name product { id name featuredAsset { id preview } } } } } } } }",
-    "variables": {
-      "options": {
-        "take": 10,
-        "skip": 0
-      }
-    },
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "a9b0c1d2-e3f4-5678-abcd-789012345678": {
     "folder": "Account",
     "label": "Addresses",
-    "type": "graphql",
-    "proxy": false,
-    "endpoint": "http://localhost:3000/shop-api",
-    "query": "query GetCustomerAddresses { activeCustomer { id addresses { id fullName company streetLine1 streetLine2 city province postalCode country { id code name } phoneNumber defaultShippingAddress defaultBillingAddress } } }",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/addresses",
+    "method": "GET",
     "headers": {
-      "vendure-token": "__default_channel__"
+      "Authorization": "Bearer {{auth.token}}"
     }
   },
   "b0c1d2e3-f4a5-6789-bcde-890123456789": {
@@ -338,7 +237,7 @@
     "method": "GET"
   },
   "tr-bad-fetch-0000-0000-000000000001": {
-    "label": "Triggers Test — Bad Fetch (intentionally fails)",
+    "label": "Triggers Test \u2014 Bad Fetch (intentionally fails)",
     "type": "rest",
     "url": "https://this-domain-does-not-exist-sdui-triggers-test.invalid/data",
     "method": "GET"

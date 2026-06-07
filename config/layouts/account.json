@@ -68,7 +68,7 @@
                         "children": [
                           {
                             "type": "Box",
-                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                             "key": "navCollection",
                             "props": {
                               "className": "contents"
@@ -311,14 +311,14 @@
                                     "props": {
                                       "className": "absolute -top-[2px] -right-[2px] h-[14px] w-[14px] rounded-[9999px] bg-[var(--theme-primary)] flex items-center justify-center pointer-events-none"
                                     },
-                                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.data?.activeOrder?.totalQuantity > 0",
+                                    "condition": "collections['a1b2c3d4-e5f6-7890-abcd-ef1234567890']?.activeOrder?.totalQuantity > 0",
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
                                           "className": "text-[var(--theme-primary-foreground)] text-[9px] font-bold"
                                         },
-                                        "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.data.activeOrder.totalQuantity}}"
+                                        "text": "{{collections.a1b2c3d4-e5f6-7890-abcd-ef1234567890.activeOrder.totalQuantity}}"
                                       }
                                     ]
                                   }
@@ -646,7 +646,7 @@
                         "children": [
                           {
                             "type": "Box",
-                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.data.collections.items",
+                            "map": "collections.a7b8c9d0-e1f2-3456-abcd-567890123456.collections.items",
                             "key": "footerCol",
                             "props": {
                               "className": "contents"

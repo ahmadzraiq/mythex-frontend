@@ -323,7 +323,7 @@
         "config": {
           "path": "/collection",
           "queryParams": {
-            "page": { "formula": "toText(min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.data?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
+            "page": { "formula": "toText(min(max(1, ceil((collections['d4e5f6a7-b8c9-0123-defa-234567890123']?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
           }
         }
       }
@@ -371,7 +371,7 @@
         "config": {
           "path": "/search",
           "queryParams": {
-            "page": { "formula": "toText(min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.data?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
+            "page": { "formula": "toText(min(max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / 12)), toNumber(globalContext?.browser?.query?.page || 1) + 1))" }
           }
         }
       }

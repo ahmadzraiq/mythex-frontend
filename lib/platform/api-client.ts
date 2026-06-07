@@ -255,7 +255,9 @@ export interface BackendWorkflow {
   path?: string | null;
   status: 'DRAFT' | 'PUBLISHED';
   security: 'PUBLIC' | 'AUTHENTICATED' | 'ROLE';
+  middlewareIds?: string[];
   graph: unknown;
+  inputSchema?: Array<{ id: string; name: string; type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array' }>;
   createdAt: string;
   autoGroupTableId?: string | null;
   securityPolicy?: { access: 'public' | 'authenticated'; middlewareIds: string[] };
