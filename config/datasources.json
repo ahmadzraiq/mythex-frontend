@@ -241,5 +241,134 @@
     "type": "rest",
     "url": "https://this-domain-does-not-exist-sdui-triggers-test.invalid/data",
     "method": "GET"
+  },
+  "ad000001-0000-0000-0000-000000000001": {
+    "folder": "Admin",
+    "label": "Admin: Dashboard",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/dashboard",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-dashboard",
+    "cacheTTL": 60
+  },
+  "ad000002-0000-0000-0000-000000000002": {
+    "folder": "Admin",
+    "label": "Admin: Orders",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/orders?page=', globalContext?.browser?.query?.page || '1', '&pageSize=', globalContext?.browser?.query?.pageSize || '20')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-orders",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.page", "globalContext.browser.query.pageSize"]
+  },
+  "ad000003-0000-0000-0000-000000000003": {
+    "folder": "Admin",
+    "label": "Admin: Order Detail",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/orders/detail?order_id=', globalContext?.browser?.query?.order_id || '')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-order-detail",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.order_id"]
+  },
+  "ad000004-0000-0000-0000-000000000004": {
+    "folder": "Admin",
+    "label": "Admin: Products",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products?page=', globalContext?.browser?.query?.page || '1', '&pageSize=', globalContext?.browser?.query?.pageSize || '20', variables['adm00008-0000-0000-0000-000000000008'] ? concat('&search=', variables['adm00008-0000-0000-0000-000000000008']) : '', variables['adm00012-0000-0000-0000-000000000012'] !== 'all' ? concat('&enabled=', variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'true' : 'false') : '')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-products",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.page", "adm00008-0000-0000-0000-000000000008", "adm00012-0000-0000-0000-000000000012"]
+  },
+  "ad000005-0000-0000-0000-000000000005": {
+    "folder": "Admin",
+    "label": "Admin: Product Detail",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products/detail?product_id=', globalContext?.browser?.query?.product_id || '')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-product-detail",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.product_id"]
+  },
+  "ad000006-0000-0000-0000-000000000006": {
+    "folder": "Admin",
+    "label": "Admin: Customers",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/customers?page=', globalContext?.browser?.query?.page || '1', '&pageSize=', globalContext?.browser?.query?.pageSize || '20')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-customers",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.page"]
+  },
+  "ad000007-0000-0000-0000-000000000007": {
+    "folder": "Admin",
+    "label": "Admin: Product Variants (via Products)",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products?page=', globalContext?.browser?.query?.page || '1', '&pageSize=20')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-variants",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.page"]
+  },
+  "ad000008-0000-0000-0000-000000000008": {
+    "folder": "Admin",
+    "label": "Admin: Facets",
+    "type": "rest",
+    "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/facets",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-facets",
+    "cacheTTL": 60
+  },
+  "ad000009-0000-0000-0000-000000000009": {
+    "folder": "Admin",
+    "label": "Admin: Collections",
+    "type": "rest",
+    "url": {
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/collections?page=', globalContext?.browser?.query?.page || '1', '&pageSize=20')"
+    },
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer {{auth.token}}"
+    },
+    "cacheTag": "admin-collections",
+    "cacheTTL": 30,
+    "cacheKeyVars": ["globalContext.browser.query.page"]
   }
 }

@@ -106,7 +106,8 @@ NEVER emit "agentScopes". That field does not exist. Every operation MUST have a
         "workflows"?:        {},
         "styling"?:          {},
         "animation"?:        {},
-        "sharedComponents"?: { "context"?: { "scName": "..." } }
+        "sharedComponents"?: { "context"?: { "scName": "..." } },
+        "backend"?:          {}
       }
     }
   ]
@@ -116,4 +117,6 @@ Rules:
 - NEVER emit "agentScopes" — use "agents" object only.
 - Omit any agent key whose work is NOT needed.
 - Do NOT emit dispatchMode, type, or rounds at the op level.
-- Operations array must be non-empty unless needsClarification is set.`;
+- Operations array must be non-empty unless needsClarification is set.
+- Backend ops have NO pageRoute and NO pageName — omit both fields. They run in parallel with page ops.
+- backend and data NEVER appear in the same op — backend handles server-side tables/workflows, data handles client-side REST/GraphQL datasources.`;

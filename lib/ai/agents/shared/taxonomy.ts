@@ -25,4 +25,5 @@ export const PLANNER_AGENT_LINES = `- structure — builds or rewrites the node 
 - workflows — the only agent that writes to variables; required whenever a user action must update any variable value
 - animation — transitions, hover effects, keyframe animations
 - data — configures remote API datasources only (REST endpoints, GraphQL). Never include it when all data is local UI state — variables declared by the structure agent are NOT datasources.
-- sharedComponents — creates reusable component definitions`;
+- sharedComponents — creates reusable component definitions
+- backend — creates database tables, server functions, API endpoints, and middleware. Include whenever the request mentions tables, schemas, database, CRUD, server API, auth (hashPassword/JWT), or server logic. Backend ops have no pageRoute — omit it.`;

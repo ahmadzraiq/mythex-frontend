@@ -1,0 +1,375 @@
+{
+  "structure": {
+    "type": "Box",
+    "props": {
+      "className": "w-full flex flex-row min-h-screen bg-[var(--theme-admin-background)]"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "id": "admin-sidebar",
+        "props": {
+          "className": { "formula": "concat('flex-shrink-0 min-h-screen bg-[var(--theme-admin-sidebar)] flex flex-col fixed left-0 top-0 bottom-0 z-[40] border-r border-[var(--theme-admin-border)] transition-[width] duration-200 overflow-hidden ', variables['adm00006-0000-0000-0000-000000000006'] ? 'w-[240px]' : 'w-0')" }
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "admin-logo",
+            "props": {
+              "className": "h-[64px] flex flex-row items-center gap-[10px] px-[16px] border-b border-[#2a2627] flex-shrink-0 cursor-pointer"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[32px] h-[32px] rounded-[6px] bg-[var(--theme-admin-accent)] flex items-center justify-center flex-shrink-0"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[12px] font-bold text-white leading-none" },
+                    "text": "DC"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col flex-1 min-w-0" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[13px] font-semibold text-[var(--theme-admin-text)] leading-tight truncate" },
+                    "text": "Default channel"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[11px] text-[var(--theme-admin-muted)] leading-tight" },
+                    "text": "Language: English"
+                  }
+                ]
+              },
+              {
+                "type": "Icon",
+                "props": { "icon": "lucide:chevrons-up-down", "size": 14, "color": "var(--theme-admin-muted)" }
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "admin-nav",
+            "props": { "className": "flex-1 flex flex-col py-[8px] overflow-y-auto" },
+            "children": [
+
+              {
+                "type": "Box",
+                "id": "nav-insights",
+                "props": { "className": { "formula": "concat('flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[8px] rounded-[6px] cursor-pointer transition-colors ', (globalContext?.browser?.path === '/admin' || globalContext?.browser?.path === '/admin/') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-dashboard" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:chart-line", "size": 15, "color": { "formula": "(globalContext?.browser?.path === '/admin' || globalContext?.browser?.path === '/admin/') ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'" } } },
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] font-medium ', (globalContext?.browser?.path === '/admin' || globalContext?.browser?.path === '/admin/') ? 'text-[var(--theme-admin-text)]' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Insights" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors hover:bg-[var(--theme-admin-surface)]" },
+                "actions": [{ "action": "admin-toggle-catalog" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:tag", "size": 15, "color": "var(--theme-admin-muted)" } },
+                  { "type": "Text", "props": { "className": "flex-1 text-[13px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Catalog" },
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 13, "color": "var(--theme-admin-muted)", "className": { "formula": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets')) ? 'rotate-90 transition-transform' : 'transition-transform'" } } }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-products",
+                "condition": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets'))",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', (globalContext?.browser?.path?.startsWith('/admin/product') && !globalContext?.browser?.path?.startsWith('/admin/product-variants')) ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-products" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', (globalContext?.browser?.path?.startsWith('/admin/product') && !globalContext?.browser?.path?.startsWith('/admin/product-variants')) ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Products" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-variants",
+                "condition": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets'))",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/product-variants') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-variants" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/product-variants') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Product Variants" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-facets",
+                "condition": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets'))",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/facets') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-facets" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/facets') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Facets" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-collections",
+                "condition": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets'))",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/collections') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-collections" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/collections') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Collections" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-assets",
+                "condition": "variables['adm00001-0000-0000-0000-000000000001'] || (globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets'))",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/assets') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-assets" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/assets') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Assets" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors hover:bg-[var(--theme-admin-surface)]" },
+                "actions": [{ "action": "admin-toggle-sales" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:shopping-bag", "size": 15, "color": "var(--theme-admin-muted)" } },
+                  { "type": "Text", "props": { "className": "flex-1 text-[13px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Sales" },
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 13, "color": "var(--theme-admin-muted)", "className": { "formula": "variables['adm00002-0000-0000-0000-000000000002'] || globalContext?.browser?.path?.startsWith('/admin/order') ? 'rotate-90 transition-transform' : 'transition-transform'" } } }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-orders",
+                "condition": "variables['adm00002-0000-0000-0000-000000000002'] || globalContext?.browser?.path?.startsWith('/admin/order')",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/order') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-orders" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/order') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Orders" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors hover:bg-[var(--theme-admin-surface)]" },
+                "actions": [{ "action": "admin-toggle-customers" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:users", "size": 15, "color": "var(--theme-admin-muted)" } },
+                  { "type": "Text", "props": { "className": "flex-1 text-[13px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Customers" },
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 13, "color": "var(--theme-admin-muted)", "className": { "formula": "variables['adm00003-0000-0000-0000-000000000003'] || globalContext?.browser?.path?.startsWith('/admin/customers') ? 'rotate-90 transition-transform' : 'transition-transform'" } } }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-customers",
+                "condition": "variables['adm00003-0000-0000-0000-000000000003'] || globalContext?.browser?.path?.startsWith('/admin/customers')",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/customers') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-customers" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/customers') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Customers" }
+                ]
+              },
+
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors hover:bg-[var(--theme-admin-surface)]" },
+                "actions": [{ "action": "admin-toggle-marketing" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:percent", "size": 15, "color": "var(--theme-admin-muted)" } },
+                  { "type": "Text", "props": { "className": "flex-1 text-[13px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Marketing" },
+                  { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 13, "color": "var(--theme-admin-muted)", "className": { "formula": "variables['adm00004-0000-0000-0000-000000000004'] || globalContext?.browser?.path?.startsWith('/admin/promotions') ? 'rotate-90 transition-transform' : 'transition-transform'" } } }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-promotions",
+                "condition": "variables['adm00004-0000-0000-0000-000000000004'] || globalContext?.browser?.path?.startsWith('/admin/promotions')",
+                "props": { "className": { "formula": "concat('flex flex-row items-center mx-[8px] pl-[34px] pr-[10px] py-[6px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/promotions') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-promotions" }],
+                "children": [
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] ', globalContext?.browser?.path?.startsWith('/admin/promotions') ? 'text-[var(--theme-admin-text)] font-medium' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Promotions" }
+                ]
+              },
+
+              { "type": "Box", "props": { "className": "flex-1" } },
+              { "type": "Box", "props": { "className": "mx-[8px] my-[6px] h-[1px] bg-[#2a2627]" } },
+
+              { "type": "Box", "props": { "className": "px-[16px] pb-[4px] pt-[8px]" }, "children": [
+                { "type": "Text", "props": { "className": "text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-admin-label)]" }, "text": "Administration" }
+              ]},
+              {
+                "type": "Box",
+                "id": "nav-settings",
+                "props": { "className": { "formula": "concat('flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/settings') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:settings-2", "size": 15, "color": { "formula": "globalContext?.browser?.path?.startsWith('/admin/settings') ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'" } } },
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] font-medium ', globalContext?.browser?.path?.startsWith('/admin/settings') ? 'text-[var(--theme-admin-text)]' : 'text-[var(--theme-admin-muted)]')" } }, "text": "Settings" }
+                ]
+              },
+              {
+                "type": "Box",
+                "id": "nav-system",
+                "props": { "className": { "formula": "concat('flex flex-row items-center gap-[10px] mx-[8px] px-[10px] py-[7px] rounded-[6px] cursor-pointer transition-colors ', globalContext?.browser?.path?.startsWith('/admin/system') ? 'bg-[var(--theme-admin-surface-hover)]' : 'hover:bg-[var(--theme-admin-surface)]')" } },
+                "actions": [{ "action": "admin-nav-system" }],
+                "children": [
+                  { "type": "Icon", "props": { "icon": "lucide:terminal", "size": 15, "color": { "formula": "globalContext?.browser?.path?.startsWith('/admin/system') ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'" } } },
+                  { "type": "Text", "props": { "className": { "formula": "concat('text-[13px] font-medium ', globalContext?.browser?.path?.startsWith('/admin/system') ? 'text-[var(--theme-admin-text)]' : 'text-[var(--theme-admin-muted)]')" } }, "text": "System" }
+                ]
+              }
+
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "admin-user-footer",
+            "props": {
+              "className": "border-t border-[#2a2627] p-[12px] flex-shrink-0"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row items-center gap-[10px] px-[8px] py-[6px] rounded-[6px] hover:bg-[var(--theme-admin-surface)] cursor-pointer transition-colors"
+                },
+                "actions": [{ "action": "admin-logout" }],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[32px] h-[32px] rounded-full bg-[var(--theme-admin-accent)] flex items-center justify-center flex-shrink-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] font-bold text-white leading-none" },
+                        "text": {
+                          "formula": "(auth?.user?.firstName?.[0] || auth?.user?.emailAddress?.[0] || 'A').toUpperCase()"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex-1 min-w-0" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate" },
+                        "text": {
+                          "formula": "concat(auth?.user?.firstName || '', ' ', auth?.user?.lastName || '').trim() || 'Admin'"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[11px] text-[var(--theme-admin-label)] truncate" },
+                        "text": {
+                          "formula": "auth?.user?.emailAddress || 'admin@example.com'"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:log-out", "size": 14, "color": "var(--theme-admin-label)", "className": "flex-shrink-0" }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "admin-main",
+        "props": {
+          "className": { "formula": "concat('flex-1 flex flex-col min-h-screen bg-[var(--theme-admin-background)] transition-[margin] duration-200 ', variables['adm00006-0000-0000-0000-000000000006'] ? 'ml-[240px]' : 'ml-0')" }
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "admin-topbar",
+            "props": {
+              "className": "h-[56px] bg-[var(--theme-admin-background)] border-b border-[var(--theme-admin-border)] flex items-center justify-between px-[24px] flex-row sticky top-0 z-[30]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[12px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] hover:bg-[var(--theme-admin-surface)] cursor-pointer transition-colors flex-shrink-0" },
+                    "actions": [{ "action": "admin-toggle-sidebar" }],
+                    "children": [
+                      { "type": "Icon", "props": { "icon": "lucide:panel-left", "size": 16, "color": "var(--theme-admin-muted)" } }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex items-center gap-[6px] flex-row" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "condition": "!!(globalContext?.browser?.path && globalContext?.browser?.path !== '/admin' && globalContext?.browser?.path !== '/admin/')",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-muted)] cursor-pointer hover:text-[var(--theme-admin-text)] transition-colors" },
+                        "text": { "formula": "(globalContext?.browser?.path?.startsWith('/admin/product') || globalContext?.browser?.path?.startsWith('/admin/facets') || globalContext?.browser?.path?.startsWith('/admin/collections') || globalContext?.browser?.path?.startsWith('/admin/assets')) ? 'Catalog' : globalContext?.browser?.path?.startsWith('/admin/order') ? 'Sales' : globalContext?.browser?.path?.startsWith('/admin/customer') ? 'Customers' : globalContext?.browser?.path?.startsWith('/admin/promotion') ? 'Marketing' : (globalContext?.browser?.path?.startsWith('/admin/settings') || globalContext?.browser?.path?.startsWith('/admin/system')) ? 'Administration' : ''" }
+                      },
+                      {
+                        "type": "Icon",
+                        "condition": "!!(globalContext?.browser?.path && globalContext?.browser?.path !== '/admin' && globalContext?.browser?.path !== '/admin/')",
+                        "props": { "icon": "lucide:chevron-right", "size": 12, "color": "var(--theme-admin-label)" }
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-text)] font-medium" },
+                        "text": { "formula": "(globalContext?.browser?.path?.startsWith('/admin/product') && !globalContext?.browser?.path?.startsWith('/admin/product-variants')) ? 'Products' : globalContext?.browser?.path?.startsWith('/admin/product-variants') ? 'Product Variants' : globalContext?.browser?.path?.startsWith('/admin/facets') ? 'Facets' : globalContext?.browser?.path?.startsWith('/admin/collections') ? 'Collections' : globalContext?.browser?.path?.startsWith('/admin/assets') ? 'Assets' : globalContext?.browser?.path?.startsWith('/admin/order') ? 'Orders' : globalContext?.browser?.path?.startsWith('/admin/customer') ? 'Customers' : globalContext?.browser?.path?.startsWith('/admin/promotion') ? 'Promotions' : globalContext?.browser?.path?.startsWith('/admin/settings') ? 'Settings' : globalContext?.browser?.path?.startsWith('/admin/system') ? 'System' : 'Insights'" }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[8px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row items-center gap-[6px] px-[10px] h-[30px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                    },
+                    "actions": [{ "action": "admin-nav-store" }],
+                    "children": [
+                      { "type": "Icon", "props": { "icon": "lucide:store", "size": 12, "color": "var(--theme-admin-muted)" } },
+                      { "type": "Text", "props": { "className": "text-[12px] text-[var(--theme-admin-muted)]" }, "text": "View store" }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] hover:bg-[var(--theme-admin-surface)] cursor-pointer transition-colors" },
+                    "children": [
+                      { "type": "Icon", "props": { "icon": "lucide:bell", "size": 16, "color": "var(--theme-admin-muted)" } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "admin-content",
+            "props": {
+              "className": "flex-1 p-[24px] overflow-y-auto"
+            },
+            "children": [
+              { "$slot": "content" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

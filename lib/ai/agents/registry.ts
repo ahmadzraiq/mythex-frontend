@@ -15,6 +15,7 @@ export const BUILDER_AGENT_IDS = [
   'workflows',
   'media',
   'sharedComponents',
+  'backend',
 ] as const;
 
 export type BuilderAgentId = (typeof BUILDER_AGENT_IDS)[number];
@@ -29,6 +30,7 @@ export const AGENT_DISPLAY_LABELS: Record<BuilderAgentId, string> = {
   workflows: 'Workflow',
   media: 'UI',
   sharedComponents: 'Components',
+  backend: 'Backend',
 };
 
 export const AGENT_REGISTRY: Record<
@@ -66,5 +68,9 @@ export const AGENT_REGISTRY: Record<
   sharedComponents: {
     promptModule: 'lib/ai/agents/sharedComponents/prompt.ts',
     notes: 'authors SC content (enter/exit + primitives); shells pre-minted by structure step; runs in parallel with page agents; tools: SC_AGENT_TOOLS',
+  },
+  backend: {
+    promptModule: 'lib/ai/agents/backend/prompt.ts',
+    notes: 'creates database tables and server-side workflows (FUNCTION/ENDPOINT/MIDDLEWARE); all tool calls executed server-side; runs in parallel with page agents; tools: BACKEND_AGENT_TOOLS',
   },
 };

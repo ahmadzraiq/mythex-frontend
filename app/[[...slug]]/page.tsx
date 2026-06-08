@@ -290,12 +290,17 @@ export default function DynamicRoutePage() {
 
     // auth: redirect unauthenticated users to login, storing the intended path
     if (routeTyped?.auth && !isAuthenticated) {
-      const REDIRECT_AFTER_LOGIN_UUID = 'c1d2e3f4-a5b6-7890-cdef-123456789012';
-      getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
-        ...prev,
-        [REDIRECT_AFTER_LOGIN_UUID]: pathname,
-      }));
-      router.replace(defaultRedirect);
+      const routeRedirect = (routeTyped as { authRedirect?: string })?.authRedirect;
+      const loginPath = routeRedirect ?? defaultRedirect;
+      // Only store return-path for the default storefront sign-in (not admin login)
+      if (!routeRedirect) {
+        const REDIRECT_AFTER_LOGIN_UUID = 'c1d2e3f4-a5b6-7890-cdef-123456789012';
+        getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
+          ...prev,
+          [REDIRECT_AFTER_LOGIN_UUID]: pathname,
+        }));
+      }
+      router.replace(loginPath);
       return;
     }
 

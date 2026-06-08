@@ -138,4 +138,17 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'search_images':       'Search Unsplash/Pexels for photos. Returns [{url, alt}]. Query describes visual content (subject, mood, setting) — never element role.',
   'search_videos':       'Search Pexels for videos. Returns [{src, poster}]. Query describes the scene (subject, mood, setting).',
   'search_icons':        'Search Iconify for icons. Returns valid icon names. Use before set_icon_src to get the best matching icon name.',
+
+  // ── Backend — tables ──────────────────────────────────────────────────────
+  'create_table':              'Create a new database table with typed columns.',
+  'add_table_column':          'Add a column to an existing table by tableId.',
+  'import_erd':                'Bulk-create multiple tables with columns and relations in one call.',
+  'read_table':                'Fetch full schema (columns + types + constraints) for a single table by ID.',
+
+  // ── Backend — server workflows ────────────────────────────────────────────
+  'create_server_workflow':    'Create a server-side workflow: FUNCTION (reusable), ENDPOINT (HTTP route), or MIDDLEWARE.',
+  'add_server_workflow_step':  'Append a step to a server workflow (tablesInsert, hashPassword, sendResponse, tryCatch, etc.).',
+  'update_server_workflow':    'Update name, description, httpMethod, httpPath, or params of a server workflow.',
+  'publish_server_workflow':   'Publish an ENDPOINT workflow to make it live.',
+  'read_workflow':             'Fetch full step tree for a single server workflow by ID.',
 };

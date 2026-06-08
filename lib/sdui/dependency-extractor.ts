@@ -27,7 +27,10 @@ function extractFormulaVarPaths(expr: string): string[] {
     paths.push(`${m[1]}.${m[2]}`);
   }
   // Extract globalContext paths (e.g. globalContext?.browser?.query?.sort → globalContext.browser.query.sort)
-  const gcRe = /\bglobalContext(?:\?\.|\.)(\w+(?:(?:\?\.|\.)?\w+)*)/g;
+  // Lookahead (?!\w+\s*\() is placed AFTER the separator and BEFORE the next word so that separators
+  // leading into method calls (e.g. `?.startsWith(`) are never consumed. Placing the lookahead after
+  // the word causes \w+ to backtrack one char at a time until the lookahead passes on a partial word.
+  const gcRe = /\bglobalContext(?:\?\.|\.)(\w+(?:(?:\?\.|\.)(?!\w+\s*\()\w+)*)/g;
   let gc: RegExpExecArray | null;
   while ((gc = gcRe.exec(expr)) !== null) {
     paths.push(`globalContext.${gc[1].replace(/\?\./g, '.')}`);

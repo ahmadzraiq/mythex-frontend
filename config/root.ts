@@ -101,6 +101,25 @@ import triggersTestActions from './actions/triggers-test.json';
 import scComponentShowcase from './screens/sc-component-showcase.json';
 import scComponentShowcaseActions from './actions/sc-component-showcase.json';
 
+// Admin portal screens
+import adminDashboard from './screens/adminDashboard.json';
+import adminOrders from './screens/adminOrders.json';
+import adminOrderDetail from './screens/adminOrderDetail.json';
+import adminProducts from './screens/adminProducts.json';
+import adminProductEdit from './screens/adminProductEdit.json';
+import adminCustomers from './screens/adminCustomers.json';
+import adminProductVariants from './screens/adminProductVariants.json';
+import adminFacets from './screens/adminFacets.json';
+import adminCollections from './screens/adminCollections.json';
+import adminAssets from './screens/adminAssets.json';
+import adminPromotions from './screens/adminPromotions.json';
+import adminSystem from './screens/adminSystem.json';
+import adminLogin from './screens/adminLogin.json';
+
+// Admin layout + actions
+import adminLayout from './layouts/admin.json';
+import adminActions from './actions/admin.json';
+
 
 const screens = {
   home,
@@ -165,12 +184,26 @@ const screens = {
   workflowCallTest,
   themeCustomColorsTest,
   scComponentShowcase,
+  adminDashboard,
+  adminOrders,
+  adminOrderDetail,
+  adminProducts,
+  adminProductEdit,
+  adminCustomers,
+  adminProductVariants,
+  adminFacets,
+  adminCollections,
+  adminAssets,
+  adminPromotions,
+  adminSystem,
+  adminLogin,
 };
 
 const layouts = {
   store: storeLayout,
   account: accountLayout,
   checkoutMinimal: checkoutMinimalLayout,
+  admin: adminLayout,
 };
 
 const fragments = {};
@@ -196,6 +229,7 @@ const actions = {
   ...animationShowcaseActions,
   ...triggersTestActions,
   ...scComponentShowcaseActions,
+  ...adminActions,
 
 };
 
@@ -220,6 +254,7 @@ const actionsByFile = {
   animationShowcase: animationShowcaseActions,
   triggersTest: triggersTestActions,
   scComponentShowcase: scComponentShowcaseActions,
+  admin: adminActions,
 
 };
 

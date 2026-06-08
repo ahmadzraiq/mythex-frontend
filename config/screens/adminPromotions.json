@@ -1,0 +1,108 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-[4px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex items-center gap-[6px] flex-row" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "text": "Marketing"
+              },
+              {
+                "type": "Icon",
+                "props": { "icon": "lucide:chevron-right", "size": 14, "color": "var(--theme-admin-label)" }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "text": "Promotions"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[24px] font-bold text-[var(--theme-admin-text)]" },
+            "text": "Promotions"
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-[var(--theme-admin-label)]" },
+            "text": "Create discount rules and promotional campaigns."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[80px] gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[64px] h-[64px] rounded-full bg-[var(--theme-admin-warning)]/10 flex items-center justify-center"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:percent", "size": 28, "color": "var(--theme-admin-warning)" }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col items-center gap-[8px] text-center" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[18px] font-semibold text-[var(--theme-admin-text)]" },
+                    "text": "Promotions"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] text-[var(--theme-admin-label)] max-w-[420px]" },
+                    "text": "Define promotion conditions and actions — for example, offer a 10% discount when the order total exceeds $100. Promotion management is coming soon."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "inline-flex items-center gap-[8px] px-[16px] h-[38px] rounded-[8px] bg-[var(--theme-admin-surface-hover)] border border-[var(--theme-admin-border)] text-[var(--theme-admin-muted)] text-[13px] font-medium flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:clock", "size": 14 }
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[13px] font-medium" },
+                    "text": "Coming soon"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

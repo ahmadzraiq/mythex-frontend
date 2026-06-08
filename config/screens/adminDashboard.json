@@ -1,0 +1,776 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "id": "dash-header",
+        "props": {
+          "className": "flex flex-col gap-[4px]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] font-bold text-white"
+            },
+            "text": "Dashboard"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-[var(--theme-admin-label)]"
+            },
+            "text": "Welcome back! Here's what's happening with your store."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "kpi-cards",
+        "props": {
+          "className": "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[16px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "kpi-revenue",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] p-[20px] flex flex-col gap-[12px] border border-[var(--theme-admin-border)]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-between flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider"
+                    },
+                    "text": "Total Revenue"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[36px] h-[36px] rounded-[8px] bg-[var(--theme-admin-accent)]/20 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:dollar-sign",
+                          "size": 18,
+                          "color": "var(--theme-admin-accent)"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[28px] font-bold text-white leading-none"
+                },
+                "text": {
+                  "formula": "formatCurrency(collections['ad000001-0000-0000-0000-000000000001']?.stats?.totalRevenue || 0, 'USD')"
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.revenueChange || 0) >= 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-up",
+                          "size": 14,
+                          "color": "var(--theme-admin-success)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-success)]"
+                        },
+                        "text": {
+                          "formula": "concat('+', String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.revenueChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.revenueChange || 0) < 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-down",
+                          "size": 14,
+                          "color": "var(--theme-admin-danger)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-danger)]"
+                        },
+                        "text": {
+                          "formula": "concat(String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.revenueChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": "vs last month"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "kpi-orders",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] p-[20px] flex flex-col gap-[12px] border border-[var(--theme-admin-border)]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-between flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider"
+                    },
+                    "text": "Orders"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[36px] h-[36px] rounded-[8px] bg-[var(--theme-admin-warning)]/20 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:shopping-cart",
+                          "size": 18,
+                          "color": "var(--theme-admin-warning)"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[28px] font-bold text-white leading-none"
+                },
+                "text": "{{collections['ad000001-0000-0000-0000-000000000001']?.stats?.totalOrders || 0}}"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.ordersChange || 0) >= 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-up",
+                          "size": 14,
+                          "color": "var(--theme-admin-success)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-success)]"
+                        },
+                        "text": {
+                          "formula": "concat('+', String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.ordersChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.ordersChange || 0) < 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-down",
+                          "size": 14,
+                          "color": "var(--theme-admin-danger)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-danger)]"
+                        },
+                        "text": {
+                          "formula": "concat(String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.ordersChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": "vs last month"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "kpi-customers",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] p-[20px] flex flex-col gap-[12px] border border-[var(--theme-admin-border)]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-between flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider"
+                    },
+                    "text": "New Customers"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[36px] h-[36px] rounded-[8px] bg-[var(--theme-admin-success)]/20 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:users",
+                          "size": 18,
+                          "color": "var(--theme-admin-success)"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[28px] font-bold text-white leading-none"
+                },
+                "text": "{{collections['ad000001-0000-0000-0000-000000000001']?.stats?.newCustomers || 0}}"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.customersChange || 0) >= 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-up",
+                          "size": 14,
+                          "color": "var(--theme-admin-success)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-success)]"
+                        },
+                        "text": {
+                          "formula": "concat('+', String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.customersChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.customersChange || 0) < 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-down",
+                          "size": 14,
+                          "color": "var(--theme-admin-danger)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-danger)]"
+                        },
+                        "text": {
+                          "formula": "concat(String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.customersChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": "vs last month"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "kpi-avg",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] p-[20px] flex flex-col gap-[12px] border border-[var(--theme-admin-border)]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center justify-between flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider"
+                    },
+                    "text": "Avg Order Value"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[36px] h-[36px] rounded-[8px] bg-[var(--theme-admin-info)]/20 flex items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:bar-chart-2",
+                          "size": 18,
+                          "color": "var(--theme-admin-info)"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[28px] font-bold text-white leading-none"
+                },
+                "text": {
+                  "formula": "formatCurrency(collections['ad000001-0000-0000-0000-000000000001']?.stats?.avgOrderValue || 0, 'USD')"
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.avgOrderChange || 0) >= 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-up",
+                          "size": 14,
+                          "color": "var(--theme-admin-success)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-success)]"
+                        },
+                        "text": {
+                          "formula": "concat('+', String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.avgOrderChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
+                    "condition": "(collections['ad000001-0000-0000-0000-000000000001']?.stats?.avgOrderChange || 0) < 0",
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trending-down",
+                          "size": 14,
+                          "color": "var(--theme-admin-danger)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-danger)]"
+                        },
+                        "text": {
+                          "formula": "concat(String(collections['ad000001-0000-0000-0000-000000000001']?.stats?.avgOrderChange || 0), '%')"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": "vs last month"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "chart-section",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] p-[24px] border border-[var(--theme-admin-border)]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center justify-between mb-[20px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[16px] font-semibold text-white"
+                    },
+                    "text": "Revenue"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)] mt-[2px]"
+                    },
+                    "text": "Last 12 months"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[10px] h-[10px] rounded-[2px] bg-[var(--theme-admin-accent)]"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-muted)]"
+                    },
+                    "text": "Monthly revenue"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Chart",
+            "props": {
+              "className": "w-full h-[280px]",
+              "chartType": "bar",
+              "data": {
+                "formula": "collections['ad000001-0000-0000-0000-000000000001']?.revenueChart || []"
+              },
+              "dataKey": "value",
+              "nameKey": "name",
+              "color": "var(--theme-admin-accent)",
+              "xAxisLabel": "Month",
+              "yAxisLabel": "Revenue ($)",
+              "showGrid": true,
+              "showTooltip": true
+            }
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "id": "recent-orders",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center justify-between p-[20px] border-b border-[var(--theme-admin-border)] flex-row"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[16px] font-semibold text-white"
+                    },
+                    "text": "Recent Orders"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)] mt-[2px]"
+                    },
+                    "text": "Latest 10 placed orders"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[32px] rounded-[6px] bg-[var(--theme-admin-accent)] hover:bg-[var(--theme-admin-accent-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "actions": [
+                  {
+                    "action": "admin-nav-orders"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-white"
+                    },
+                    "text": "View all"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "id": "orders-table-header",
+            "props": {
+              "className": "grid grid-cols-5 gap-[0px] px-[20px] py-[10px] border-b border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)]/50"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Order #"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Customer"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Date"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Total"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Status"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": "collections.ad000001-0000-0000-0000-000000000001.recentOrders",
+            "key": "dash-order-row",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid grid-cols-5 gap-[0px] px-[20px] py-[14px] border-b border-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-sidebar)]/40 transition-colors cursor-pointer items-center"
+                },
+                "actions": [
+                  {
+                    "action": "admin-view-order"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-accent)]"
+                    },
+                    "text": "{{context.item.data.code}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate"
+                    },
+                    "text": "{{context.item.data.customerName}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": {
+                      "formula": "context.item.data.placedAt ? new Date(context.item.data.placedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-white"
+                    },
+                    "text": {
+                      "formula": "formatCurrency(context.item.data.total || 0, 'USD')"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": {
+                            "formula": "concat('inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium ', (context.item.data.state === 'Delivered' ? 'bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)]' : context.item.data.state === 'Cancelled' ? 'bg-[var(--theme-admin-danger)]/20 text-[var(--theme-admin-danger)]' : context.item.data.state === 'Shipped' ? 'bg-[var(--theme-admin-info)]/20 text-[var(--theme-admin-info)]' : 'bg-[var(--theme-admin-warning)]/20 text-[var(--theme-admin-warning)]'))"
+                          }
+                        },
+                        "text": "{{context.item.data.state}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[40px] gap-[8px]"
+            },
+            "condition": "!(collections['ad000001-0000-0000-0000-000000000001']?.recentOrders?.length > 0)",
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:shopping-cart",
+                  "size": 32,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No orders yet"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dataSources": [
+    "ad000001-0000-0000-0000-000000000001"
+  ]
+}

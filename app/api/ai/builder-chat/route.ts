@@ -25,9 +25,10 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS, BACKEND_AGENT_TOOLS } from '@/lib/ai/builder-tools';
 import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt, buildDataAgentPrompt } from '@/lib/ai/agents';
 import { buildSharedComponentAgentPrompt } from '@/lib/ai/agents/sharedComponents/prompt';
+import { buildBackendAgentPrompt } from '@/lib/ai/agents/backend/prompt';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
@@ -2464,6 +2465,96 @@ ${effectiveMessage}`,
       // Media gate — reuse the value computed before the promise was created.
       const shouldMedia = shouldMediaEarly;
 
+      // ── Backend agent gate ─────────────────────────────────────────────────
+      const shouldBackend = manifestAgentSet.has('backend');
+      const projectId = (body as { projectId?: string }).projectId ?? threadId ?? requestId;
+
+      // ── Backend context: compact table/workflow index ──────────────────────
+      // Fetched only when the planner requested the backend agent.
+      // Returns a [Backend Context] block injected into the backend agent user message.
+      const BACKEND_API_URL = process.env.BACKEND_URL ?? 'http://localhost:4000';
+      const backendAuthHeaders: Record<string, string> = (() => {
+        const h: Record<string, string> = { 'Content-Type': 'application/json' };
+        const cookie = req.headers.get('cookie');
+        if (cookie) h['cookie'] = cookie;
+        const auth = req.headers.get('authorization');
+        if (auth) h['authorization'] = auth;
+        return h;
+      })();
+
+      async function backendFetch(path: string, method = 'GET', bodyData?: unknown): Promise<unknown> {
+        const url = `${BACKEND_API_URL}${path}`;
+        const res = await fetch(url, {
+          method,
+          headers: backendAuthHeaders,
+          ...(bodyData !== undefined ? { body: JSON.stringify(bodyData) } : {}),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Backend ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
+        }
+        return res.json();
+      }
+
+      let backendContextBlock = '';
+      if (shouldBackend && projectId) {
+        try {
+          const [tablesRaw, workflowsRaw] = await Promise.all([
+            backendFetch(`/v1/projects/${projectId}/tables`).catch(() => []),
+            backendFetch(`/v1/projects/${projectId}/workflows`).catch(() => []),
+          ]);
+
+          // Strip tables to compact form: name + column names
+          interface RawColumn { name: string; type?: string; refTableId?: string | null }
+          interface RawTable { id: string; name: string; columns?: RawColumn[] }
+          const tablesObj = tablesRaw as { tables?: RawTable[] };
+          const tables = Array.isArray(tablesObj?.tables) ? tablesObj.tables : [];
+          const compactTables = tables.map(t => ({
+            id: t.id,
+            name: t.name,
+            columnNames: (t.columns ?? []).map((c: RawColumn) => c.name),
+          }));
+
+          // Semantic keyword match: score each table by how many words from the message appear in name/columnNames
+          const msgWords = message.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+          const scoredTables = compactTables.map(t => {
+            const haystack = [t.name, ...t.columnNames].join(' ').toLowerCase();
+            const score = msgWords.reduce((n, w) => n + (haystack.includes(w) ? 1 : 0), 0);
+            return { ...t, score };
+          });
+          const relevantTables = scoredTables.sort((a, b) => b.score - a.score).slice(0, 14);
+
+          // Compact workflow index
+          interface RawWorkflow { id: string; name?: string; kind?: string; status?: string; method?: string; path?: string }
+          const workflowsObj = workflowsRaw as { workflows?: RawWorkflow[] };
+          const workflows = Array.isArray(workflowsObj?.workflows) ? workflowsObj.workflows : [];
+          const scoredWorkflows = workflows.map(w => {
+            const haystack = [w.name ?? '', w.kind ?? '', w.path ?? ''].join(' ').toLowerCase();
+            const score = msgWords.reduce((n, wd) => n + (haystack.includes(wd) ? 1 : 0), 0);
+            return { ...w, score };
+          });
+          const relevantWorkflows = scoredWorkflows.sort((a, b) => b.score - a.score).slice(0, 10);
+
+          // Format as text block
+          const tableLines = relevantTables.map(t => {
+            return `  ${t.name} (${t.id})  columns: ${t.columnNames.join(', ') || '(none)'}`;
+          });
+          const workflowLines = relevantWorkflows.map(w => {
+            const method = w.method ? ` ${w.method}` : '';
+            const path = w.path ? ` ${w.path}` : '';
+            const pub = w.status === 'PUBLISHED' ? ' [published]' : '';
+            return `  ${w.name ?? 'unnamed'} (${w.id}) — ${w.kind ?? '?'}${method}${path}${pub}`;
+          });
+
+          const parts: string[] = [];
+          if (tableLines.length > 0) parts.push(`tables:\n${tableLines.join('\n')}`);
+          if (workflowLines.length > 0) parts.push(`server workflows:\n${workflowLines.join('\n')}`);
+          if (parts.length > 0) backendContextBlock = `[Backend Context]\n${parts.join('\n\n')}`;
+        } catch (err) {
+          console.warn('[backend-agent] failed to fetch backend context:', err instanceof Error ? err.message : err);
+        }
+      }
+
       // App-level workflows agent — Planner manifest is the sole gate.
       const shouldAppWorkflow = shouldWorkflow && manifestAgentSet.has('appWorkflows');
 
@@ -2502,7 +2593,7 @@ ${effectiveMessage}`,
 
       // Guard: if the planner produced no work (empty manifest / context failure), surface an error
       // instead of silently completing with zero agents.
-      const hasAnyWork = styleChunks.length > 0 || shouldBind || shouldWorkflow || shouldMedia || shouldData || shouldAuthSC;
+      const hasAnyWork = styleChunks.length > 0 || shouldBind || shouldWorkflow || shouldMedia || shouldData || shouldAuthSC || shouldBackend;
       if (!hasAnyWork) {
         send({ type: 'build_error', message: 'Build produced no work — the planner may have failed or returned an empty manifest. Please try again.' });
         return;
@@ -2518,6 +2609,7 @@ ${effectiveMessage}`,
         if (shouldMedia) activeAgents.push('Media');
         if (shouldData)  activeAgents.push('Data');
         if (shouldAuthSC) activeAgents.push('Components');
+        if (shouldBackend) activeAgents.push('Backend');
         const agentLabel = activeAgents.length > 0
           ? activeAgents.join(', ')
           : 'agents';
@@ -2579,6 +2671,144 @@ ${effectiveMessage}`,
         });
       }
 
+      // ── Backend agent (global, server-side tool execution) ────────────────
+      if (shouldBackend && projectId) {
+        const backendPromptParts = buildBackendAgentPrompt();
+        const backendSystemBlocks: Anthropic.Messages.TextBlockParam[] = [
+          { type: 'text', text: backendPromptParts.static, cache_control: { type: 'ephemeral' } },
+        ];
+        const backendMessages: Anthropic.Messages.MessageParam[] = [{
+          role: 'user',
+          content: [
+            backendContextBlock ? `${backendContextBlock}\n\n` : '',
+            `Original request: ${effectiveMessage}`,
+          ].filter(Boolean).join(''),
+        }];
+
+        // Track created backend resources for backend_created SSE event
+        const createdTables: Array<{ id: string; name: string }> = [];
+        const createdWorkflows: Array<{ id: string; name: string; kind: string }> = [];
+
+        // Backend tool handlers — all execute server-side against the platform API
+        const backendToolHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
+          create_table: async (input) => {
+            try {
+              const payload: Record<string, unknown> = {
+                name: input.tableName,
+                displayName: input.tableName,
+                createApiActions: false,
+              };
+              if (Array.isArray(input.columns) && input.columns.length > 0) payload.columns = input.columns;
+              const result = await backendFetch(`/v1/projects/${projectId}/tables`, 'POST', payload) as { table?: { id: string; name: string } };
+              const tbl = result?.table;
+              if (tbl?.id) {
+                createdTables.push({ id: tbl.id, name: tbl.name });
+                send({ type: 'backend_created', tables: [{ id: tbl.id, name: tbl.name }], workflows: [] });
+              }
+              return { success: true, tableId: tbl?.id, tableName: tbl?.name };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          add_table_column: async (input) => {
+            try {
+              const result = await backendFetch(`/v1/projects/${projectId}/tables/${input.tableId}/columns`, 'POST', input.column);
+              return { success: true, column: result };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          import_erd: async (input) => {
+            try {
+              const result = await backendFetch(`/v1/projects/${projectId}/tables/import-erd`, 'POST', { erd: input.erd }) as { tables?: Array<{ id: string; name: string }>; workflowsCreated?: number };
+              const tables = result?.tables ?? [];
+              for (const t of tables) createdTables.push({ id: t.id, name: t.name });
+              if (tables.length > 0) send({ type: 'backend_created', tables, workflows: [] });
+              return { success: true, tablesCreated: tables.map(t => ({ id: t.id, name: t.name })), workflowsCreated: result?.workflowsCreated ?? 0 };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          read_table: async (input) => {
+            try {
+              return await backendFetch(`/v1/projects/${projectId}/tables/${input.tableId}`);
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          create_server_workflow: async (input) => {
+            try {
+              const slug = String(input.name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+              const payload: Record<string, unknown> = {
+                name: input.name,
+                slug,
+                kind: input.kind,
+                ...(input.description ? { description: input.description } : {}),
+                ...(input.method ? { method: input.method } : {}),
+                ...(input.path ? { path: input.path } : {}),
+              };
+              const result = await backendFetch(`/v1/projects/${projectId}/workflows`, 'POST', payload) as { workflow?: { id: string; name: string; kind: string } };
+              const wf = result?.workflow;
+              if (wf?.id) {
+                createdWorkflows.push({ id: wf.id, name: wf.name, kind: wf.kind });
+                send({ type: 'backend_created', tables: [], workflows: [{ id: wf.id, name: wf.name, kind: wf.kind }] });
+              }
+              return { success: true, workflowId: wf?.id, name: wf?.name, kind: wf?.kind };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          add_server_workflow_step: async (input) => {
+            try {
+              const current = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { graph?: unknown[] } };
+              const currentGraph: unknown[] = Array.isArray(current?.workflow?.graph) ? current.workflow.graph : [];
+              const newStep = input.step as Record<string, unknown>;
+              if (!newStep.id) newStep.id = `s${currentGraph.length + 1}`;
+              const updatedGraph = [...currentGraph, newStep];
+              const updated = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
+              return { success: true, stepId: newStep.id, workflow: updated };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          update_server_workflow: async (input) => {
+            try {
+              const payload: Record<string, unknown> = {};
+              if (input.name) payload.name = input.name;
+              if (input.description) payload.description = input.description;
+              if (input.method) payload.method = input.method;
+              if (input.path) payload.path = input.path;
+              if (input.params) payload.inputSchema = input.params;
+              const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', payload);
+              return { success: true, workflow: result };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          publish_server_workflow: async (input) => {
+            try {
+              const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST');
+              return { success: true, workflow: result };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          read_workflow: async (input) => {
+            try {
+              return await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`);
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+        };
+
+        send({ type: 'agent_context', agent: 'backend', systemPrompt: backendPromptParts.static, tools: BACKEND_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(backendMessages) });
+        agentRuns.push({
+          agent: 'backend',
+          promise: runHaikuAgentLoop(backendMessages, backendSystemBlocks, BACKEND_AGENT_TOOLS.map(toToolParam), backendToolHandlers, send, allExecutedTools, 20, 'backend', modelSignalCtl.signal),
+        });
+      }
+
       // ── Media agent (global; only fires when tree has media nodes) ────────
       if (shouldMedia) {
         send({ type: 'agent_context', agent: 'media', systemPrompt: mediaPromptParts.static, tools: MEDIA_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: getFirstUserMsg(mediaMessages) });
@@ -2627,6 +2857,7 @@ ${effectiveMessage}`,
       if (shouldData) expectedAgentNames.add('data');
       if (shouldMedia) expectedAgentNames.add('media');
       if (shouldAuthSC) predictedSCModels.forEach(sc => expectedAgentNames.add(`sharedComponents:${sc.slug}`));
+      if (shouldBackend) expectedAgentNames.add('backend');
       for (const agent of expectedAgentNames) {
         if (!launchedAgentNames.has(agent)) {
           send({ type: 'agent_complete', agent, rounds: 0, toolCallCount: 0, duration: 0, endedAt: Date.now() });

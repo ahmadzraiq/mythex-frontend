@@ -1,0 +1,206 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-[4px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[6px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
+                "text": "Catalog"
+              },
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:chevron-right",
+                  "size": 14,
+                  "color": "var(--theme-admin-label)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
+                "text": "Facets"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+            },
+            "text": "Facets"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-[var(--theme-admin-label)]"
+            },
+            "text": "Facets are used to categorize and filter products."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "grid gap-[0px] px-[20px] py-[12px] border-b border-[var(--theme-admin-border)]",
+              "style": {
+                "gridTemplateColumns": "2fr 1fr 1fr"
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Name"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Code"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Values"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": "collections['ad000008-0000-0000-0000-000000000008']?.facets?.items",
+            "key": "facet-row",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid gap-[0px] px-[20px] py-[14px] border-b border-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-sidebar)]/50 transition-colors items-center",
+                  "style": {
+                    "gridTemplateColumns": "2fr 1fr 1fr"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[28px] h-[28px] rounded-[6px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:tag",
+                              "size": 14,
+                              "color": "var(--theme-admin-accent)"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)]"
+                        },
+                        "text": "{{context.item.data.name}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono"
+                    },
+                    "text": "{{context.item.data.code}}"
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row flex-wrap gap-[4px]"
+                    },
+                    "map": "context.item.data.values",
+                    "key": "facet-value-chip",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[var(--theme-admin-border)]/60 text-[var(--theme-admin-muted)]"
+                        },
+                        "text": "{{context.item.data.name}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
+            },
+            "condition": "!(collections['ad000008-0000-0000-0000-000000000008']?.facets?.items?.length > 0)",
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:tag",
+                  "size": 40,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No facets found"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dataSources": [
+    "ad000008-0000-0000-0000-000000000008"
+  ]
+}

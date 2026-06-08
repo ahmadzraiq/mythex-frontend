@@ -1,0 +1,303 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex items-center justify-between flex-row"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-white"
+                },
+                "text": "Customers"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px]"
+                },
+                "text": {
+                  "formula": "concat(String((collections['ad000006-0000-0000-0000-000000000006'] || []).length), ' registered customers')"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "customers-table-head",
+            "props": {
+              "className": "grid gap-[0px] px-[20px] py-[12px] border-b border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)]/50",
+              "style": {
+                "gridTemplateColumns": "2fr 2fr 1.2fr 0.8fr 1fr"
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Name"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Email"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Joined"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Orders"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Total Spend"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": "collections.ad000006-0000-0000-0000-000000000006",
+            "key": "customer-row",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid gap-[0px] px-[20px] py-[14px] border-b border-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-sidebar)]/50 transition-colors items-center",
+                  "style": {
+                    "gridTemplateColumns": "2fr 2fr 1.2fr 0.8fr 1fr"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[10px] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[32px] h-[32px] rounded-full bg-[var(--theme-admin-accent)]/20 border border-[var(--theme-admin-accent)]/30 flex items-center justify-center flex-shrink-0"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[12px] font-semibold text-[var(--theme-admin-accent)]"
+                            },
+                            "text": {
+                              "formula": "((context.item.data.first_name || '?')[0] + (context.item.data.last_name || '?')[0]).toUpperCase()"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] truncate"
+                        },
+                        "text": {
+                          "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || '\u2014'"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)] truncate"
+                    },
+                    "text": "{{context.item.data.email_address}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": {
+                      "formula": "context.item.data.created_at ? new Date(context.item.data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": {
+                            "formula": "concat('text-[13px] font-medium ', (context.item.data.order_count || 0) > 0 ? 'text-[var(--theme-admin-muted)]' : 'text-[var(--theme-admin-border)]')"
+                          }
+                        },
+                        "text": "{{context.item.data.order_count || 0}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": {
+                        "formula": "concat('text-[13px] font-medium ', (context.item.data.total_spend || 0) > 0 ? 'text-white' : 'text-[var(--theme-admin-border)]')"
+                      }
+                    },
+                    "text": {
+                      "formula": "formatCurrency(context.item.data.total_spend || 0, 'USD')"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
+            },
+            "condition": "!(collections['ad000006-0000-0000-0000-000000000006']?.length > 0)",
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:users",
+                  "size": 40,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No customers yet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex items-center justify-between flex-row"
+        },
+        "condition": "false",
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[13px] text-[var(--theme-admin-label)]"
+            },
+            "text": {
+              "formula": "concat('Page ', String(collections['ad000006-0000-0000-0000-000000000006']?.page || 1), ' of ', String(collections['ad000006-0000-0000-0000-000000000006']?.totalPages || 1))"
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[8px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[34px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] text-[var(--theme-admin-muted)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "condition": "(collections['ad000006-0000-0000-0000-000000000006']?.page || 1) > 1",
+                "actions": [
+                  {
+                    "action": "admin-customers-page-prev"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:chevron-left",
+                      "size": 14
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px]"
+                    },
+                    "text": "Previous"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[34px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] text-[var(--theme-admin-muted)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "condition": "(collections['ad000006-0000-0000-0000-000000000006']?.page || 1) < (collections['ad000006-0000-0000-0000-000000000006']?.totalPages || 1)",
+                "actions": [
+                  {
+                    "action": "admin-customers-page-next"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px]"
+                    },
+                    "text": "Next"
+                  },
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:chevron-right",
+                      "size": 14
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dataSources": [
+    "ad000006-0000-0000-0000-000000000006"
+  ]
+}

@@ -68,6 +68,15 @@ export function setNestedValue(
         ? (next as Record<string, unknown>)
         : {};
     const updatedNext = setAtPath(nextObj, partIndex + 1);
+    // When the existing value is an array, preserve it by merging new properties
+    // onto a copy of the array instead of replacing it with a plain object.
+    // This handles cases like setData("collections.UUID", array) followed by
+    // setData("collections.UUID.loading", false) without losing the array data.
+    if (Array.isArray(next)) {
+      const arrCopy = [...next] as unknown[] & Record<string, unknown>;
+      Object.assign(arrCopy, updatedNext);
+      return { ...current, [part]: arrCopy };
+    }
     return { ...current, [part]: updatedNext };
   }
 

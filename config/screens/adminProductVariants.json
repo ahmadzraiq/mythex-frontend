@@ -1,0 +1,237 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col gap-[4px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[6px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
+                "text": "Catalog"
+              },
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:chevron-right",
+                  "size": 14,
+                  "color": "var(--theme-admin-label)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
+                "text": "Product Variants"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+            },
+            "text": "Product Variants"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[14px] text-[var(--theme-admin-label)]"
+            },
+            "text": "All product variants across your catalog."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "grid gap-[0px] px-[20px] py-[12px] border-b border-[var(--theme-admin-border)]",
+              "style": {
+                "gridTemplateColumns": "2fr 1fr 1fr 0.8fr 100px"
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Product / Variant"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "SKU / Slug"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Price"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Variants"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Status"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": "collections.ad000007-0000-0000-0000-000000000007",
+            "key": "variant-row",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid gap-[0px] px-[20px] py-[14px] border-b border-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-sidebar)]/50 cursor-pointer transition-colors items-center",
+                  "style": {
+                    "gridTemplateColumns": "2fr 1fr 1fr 0.8fr 100px"
+                  }
+                },
+                "actions": [
+                  {
+                    "action": "admin-view-product"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[10px] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Image",
+                        "props": {
+                          "src": "{{context.item.data.image_url}}",
+                          "alt": "{{context.item.data.name}}",
+                          "width": 36,
+                          "height": 36,
+                          "className": "w-[36px] h-[36px] rounded-[6px] object-cover border border-[var(--theme-admin-border)] flex-shrink-0"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate"
+                        },
+                        "text": "{{context.item.data.name}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono truncate"
+                    },
+                    "text": "{{context.item.data.slug}}"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                    },
+                    "text": {
+                      "formula": "formatCurrency((context.item.data.price || 0) / 100, 'USD')"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "inline-flex items-center justify-center w-[28px] h-[20px] rounded-full bg-[var(--theme-admin-accent)]/20 text-[var(--theme-admin-accent)] text-[11px] font-semibold"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] font-semibold"
+                        },
+                        "text": "{{context.item.data.variant_count || 1}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": {
+                        "formula": "concat('inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium ', context.item.data.enabled ? 'bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)]' : 'bg-[var(--theme-admin-label)]/20 text-[var(--theme-admin-label)]')"
+                      }
+                    },
+                    "text": {
+                      "formula": "context.item.data.enabled ? 'Enabled' : 'Disabled'"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
+            },
+            "condition": "!(collections['ad000007-0000-0000-0000-000000000007']?.length > 0)",
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:layers",
+                  "size": 40,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No variants found"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dataSources": [
+    "ad000007-0000-0000-0000-000000000007"
+  ]
+}

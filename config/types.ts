@@ -33,6 +33,7 @@ export type AppConfig = {
     config?: string;
     redirect?: string;
     auth?: boolean;
+    authRedirect?: string;
     accessCondition?: string;
     guestOnly?: boolean;
     layout?: string;

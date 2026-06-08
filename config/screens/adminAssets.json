@@ -1,0 +1,133 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-[4px]" },
+        "children": [
+          {
+            "type": "Box",
+            "props": { "className": "flex items-center gap-[6px] flex-row" },
+            "children": [
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "text": "Catalog"
+              },
+              {
+                "type": "Icon",
+                "props": { "icon": "lucide:chevron-right", "size": 14, "color": "var(--theme-admin-label)" }
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "text": "Assets"
+              }
+            ]
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[24px] font-bold text-[var(--theme-admin-text)]" },
+            "text": "Assets"
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-[var(--theme-admin-label)]" },
+            "text": "Manage images and other media files used across your catalog."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[80px] gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-[64px] h-[64px] rounded-full bg-[var(--theme-admin-accent)]/10 flex items-center justify-center"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:image", "size": 28, "color": "var(--theme-admin-accent)" }
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col items-center gap-[8px] text-center" },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[18px] font-semibold text-[var(--theme-admin-text)]" },
+                    "text": "Asset Manager"
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[14px] text-[var(--theme-admin-label)] max-w-[400px]" },
+                    "text": "Asset management allows you to upload, organise and search for media files. A dedicated asset upload endpoint is coming soon."
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-[10px] mt-[8px] w-full max-w-[320px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[10px] p-[14px] rounded-[8px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:check-circle-2", "size": 16, "color": "var(--theme-admin-success)" }
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                        "text": "Product images stored in asset table"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[10px] p-[14px] rounded-[8px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] flex-row"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:clock", "size": 16, "color": "var(--theme-admin-warning)" }
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                        "text": "Upload & browse UI coming soon"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

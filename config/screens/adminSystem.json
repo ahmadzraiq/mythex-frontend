@@ -1,0 +1,299 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": { "className": "flex flex-col gap-[4px]" },
+        "children": [
+          {
+            "type": "Text",
+            "props": { "className": "text-[24px] font-bold text-[var(--theme-admin-text)]" },
+            "text": "System"
+          },
+          {
+            "type": "Text",
+            "props": { "className": "text-[14px] text-[var(--theme-admin-label)]" },
+            "text": "System management and maintenance tools."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "grid grid-cols-1 md:grid-cols-2 gap-[16px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] p-[24px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[12px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:search", "size": 18, "color": "var(--theme-admin-accent)" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]" },
+                        "text": "Search Index"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                        "text": "Rebuild the product search index"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed" },
+                "text": "If products are not appearing in search results, rebuilding the search index will re-index all products and their variants."
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[8px] px-[14px] h-[38px] rounded-[8px] bg-[var(--theme-admin-accent)] hover:bg-[var(--theme-admin-accent-hover)] cursor-pointer transition-colors flex-row w-fit"
+                },
+                "actions": [
+                  { "action": "ad-reindex-btn" }
+                ],
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": { "icon": "lucide:refresh-cw", "size": 14, "className": "text-white" }
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[13px] font-medium text-white" },
+                    "text": "Reindex Now"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] p-[24px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[12px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-info)]/15 flex items-center justify-center flex-shrink-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:database", "size": 18, "color": "var(--theme-admin-info)" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]" },
+                        "text": "Database"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                        "text": "PostgreSQL connection status"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[8px] p-[12px] rounded-[8px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "w-[8px] h-[8px] rounded-full bg-[var(--theme-admin-success)] flex-shrink-0" }
+                  },
+                  {
+                    "type": "Text",
+                    "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                    "text": "Connected — localhost:5432"
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-label)] leading-relaxed" },
+                "text": "Database schema management is handled by the backend server. Use the server CLI for migrations."
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] p-[24px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[12px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-success)]/15 flex items-center justify-center flex-shrink-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:activity", "size": 18, "color": "var(--theme-admin-success)" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]" },
+                        "text": "Health Check"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                        "text": "API server status"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": { "className": "flex flex-col gap-[8px]" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex items-center justify-between flex-row" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                        "text": "REST API"
+                      },
+                      {
+                        "type": "Box",
+                        "props": { "className": "flex items-center gap-[6px] flex-row" },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": { "className": "w-[6px] h-[6px] rounded-full bg-[var(--theme-admin-success)]" }
+                          },
+                          {
+                            "type": "Text",
+                            "props": { "className": "text-[12px] text-[var(--theme-admin-success)]" },
+                            "text": "Online"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": { "className": "flex items-center justify-between flex-row" },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                        "text": "localhost:4000"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[12px] text-[var(--theme-admin-label)]" },
+                        "text": "Port 4000"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] p-[24px] flex flex-col gap-[16px]"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": { "className": "flex items-center gap-[12px] flex-row" },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-warning)]/15 flex items-center justify-center flex-shrink-0"
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": { "icon": "lucide:terminal", "size": 18, "color": "var(--theme-admin-warning)" }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]" },
+                        "text": "Job Queue"
+                      },
+                      {
+                        "type": "Text",
+                        "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                        "text": "Background job processing"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed" },
+                "text": "Job queue monitoring and management is coming soon. Background jobs such as email sending and product indexing are processed automatically."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

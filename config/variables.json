@@ -1,5 +1,35 @@
 {
   "variables": {
+    "adm00001-0000-0000-0000-000000000001": {
+      "label": "Admin Nav Catalog Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00002-0000-0000-0000-000000000002": {
+      "label": "Admin Nav Sales Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00003-0000-0000-0000-000000000003": {
+      "label": "Admin Nav Customers Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00004-0000-0000-0000-000000000004": {
+      "label": "Admin Nav Marketing Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00005-0000-0000-0000-000000000005": {
+      "label": "Admin Nav Administration Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
     "a0b1c2d3-e4f5-6789-abcd-ef0123456789": {
       "label": "Auth",
       "type": "object",
@@ -126,6 +156,12 @@
       "type": "string",
       "initialValue": "",
       "folder": "Login"
+    },
+    "adm1n2l3-4567-89ab-cdef-012345678901": {
+      "label": "Admin Login Error",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Admin"
     },
     "a3b4c5d6-e7f8-9012-abcd-123456789012": {
       "label": "Register API Error",
@@ -1286,7 +1322,7 @@
           "color": "#000000"
         },
         {
-          "label": "÷",
+          "label": "\u00f7",
           "type": "operator",
           "op": "/",
           "bg": "#ff9f0a",
@@ -1311,7 +1347,7 @@
           "color": "#ffffff"
         },
         {
-          "label": "×",
+          "label": "\u00d7",
           "type": "operator",
           "op": "*",
           "bg": "#ff9f0a",
@@ -1336,7 +1372,7 @@
           "color": "#ffffff"
         },
         {
-          "label": "−",
+          "label": "\u2212",
           "type": "operator",
           "op": "-",
           "bg": "#ff9f0a",
@@ -1380,7 +1416,7 @@
           "color": "#ffffff"
         },
         {
-          "label": "⌫",
+          "label": "\u232b",
           "type": "backspace",
           "bg": "#a5a5a5",
           "color": "#000000"
@@ -1434,25 +1470,162 @@
       "label": "Buttons Layout",
       "type": "array",
       "initialValue": [
-        { "id": "ac",      "label": "AC",  "type": "clear",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
-        { "id": "sign",    "label": "+/−", "type": "unary",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
-        { "id": "percent", "label": "%",   "type": "unary",    "bg": "#a5a5a5", "color": "#000000", "span": "span 1" },
-        { "id": "divide",  "label": "÷",   "type": "operator", "op": "/", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
-        { "id": "seven",   "label": "7",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "eight",   "label": "8",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "nine",    "label": "9",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "multiply","label": "×",   "type": "operator", "op": "*", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
-        { "id": "four",    "label": "4",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "five",    "label": "5",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "six",     "label": "6",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "minus",   "label": "−",   "type": "operator", "op": "-", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
-        { "id": "one",     "label": "1",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "two",     "label": "2",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "three",   "label": "3",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "plus",    "label": "+",   "type": "operator", "op": "+", "bg": "#ff9500", "color": "#ffffff", "span": "span 1" },
-        { "id": "zero",    "label": "0",   "type": "number",   "bg": "#333333", "color": "#ffffff", "span": "span 2" },
-        { "id": "decimal", "label": ".",   "type": "decimal",  "bg": "#333333", "color": "#ffffff", "span": "span 1" },
-        { "id": "equals",  "label": "=",   "type": "equals",   "bg": "#ff9500", "color": "#ffffff", "span": "span 1" }
+        {
+          "id": "ac",
+          "label": "AC",
+          "type": "clear",
+          "bg": "#a5a5a5",
+          "color": "#000000",
+          "span": "span 1"
+        },
+        {
+          "id": "sign",
+          "label": "+/\u2212",
+          "type": "unary",
+          "bg": "#a5a5a5",
+          "color": "#000000",
+          "span": "span 1"
+        },
+        {
+          "id": "percent",
+          "label": "%",
+          "type": "unary",
+          "bg": "#a5a5a5",
+          "color": "#000000",
+          "span": "span 1"
+        },
+        {
+          "id": "divide",
+          "label": "\u00f7",
+          "type": "operator",
+          "op": "/",
+          "bg": "#ff9500",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "seven",
+          "label": "7",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "eight",
+          "label": "8",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "nine",
+          "label": "9",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "multiply",
+          "label": "\u00d7",
+          "type": "operator",
+          "op": "*",
+          "bg": "#ff9500",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "four",
+          "label": "4",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "five",
+          "label": "5",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "six",
+          "label": "6",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "minus",
+          "label": "\u2212",
+          "type": "operator",
+          "op": "-",
+          "bg": "#ff9500",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "one",
+          "label": "1",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "two",
+          "label": "2",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "three",
+          "label": "3",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "plus",
+          "label": "+",
+          "type": "operator",
+          "op": "+",
+          "bg": "#ff9500",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "zero",
+          "label": "0",
+          "type": "number",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 2"
+        },
+        {
+          "id": "decimal",
+          "label": ".",
+          "type": "decimal",
+          "bg": "#333333",
+          "color": "#ffffff",
+          "span": "span 1"
+        },
+        {
+          "id": "equals",
+          "label": "=",
+          "type": "equals",
+          "bg": "#ff9500",
+          "color": "#ffffff",
+          "span": "span 1"
+        }
       ],
       "folder": "Calculator 2"
     },
@@ -2103,165 +2276,769 @@
       "initialValue": false,
       "folder": "Popover Test"
     },
-
-    "dp-test-0000-0000-0000-000000000001": { "label": "DP1: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000002": { "label": "DP1: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000003": { "label": "DP1: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000004": { "label": "DP1: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000005": { "label": "DP1: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
-
-    "dp-test-0000-0000-0000-000000000011": { "label": "DP2: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000012": { "label": "DP2: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000013": { "label": "DP2: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000014": { "label": "DP2: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000015": { "label": "DP2: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
-
-    "dp-test-0000-0000-0000-000000000021": { "label": "TP: Selected Hour", "type": "number", "initialValue": 10, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000022": { "label": "TP: Selected Minute", "type": "number", "initialValue": 30, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000023": { "label": "TP: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000024": { "label": "TP: Hours", "type": "array", "initialValue": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000025": { "label": "TP: Minutes", "type": "array", "initialValue": [0,5,10,15,20,25,30,35,40,45,50,55], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000026": { "label": "TP: Display", "type": "string", "initialValue": "10:00", "folder": "Popover Test" },
-
-    "dp-test-0000-0000-0000-000000000031": { "label": "DTP: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000032": { "label": "DTP: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000033": { "label": "DTP: Selected Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000034": { "label": "DTP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000035": { "label": "DTP: Hour", "type": "number", "initialValue": 12, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000036": { "label": "DTP: Minute", "type": "number", "initialValue": 0, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000037": { "label": "DTP: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000038": { "label": "DTP: Display", "type": "string", "initialValue": " 10:00", "folder": "Popover Test" },
-
-    "dp-test-0000-0000-0000-000000000041": { "label": "DR: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000042": { "label": "DR: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000043": { "label": "DR: Start Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000044": { "label": "DR: End Date", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000045": { "label": "DR: Grid Left", "type": "array", "initialValue": [], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000046": { "label": "DR: Grid Right", "type": "array", "initialValue": [], "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000047": { "label": "DR: Open", "type": "boolean", "initialValue": false, "folder": "Popover Test" },
-
-    "dp-test-0000-0000-0000-000000000051": { "label": "Static DP: Year", "type": "number", "initialValue": 2026, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000052": { "label": "Static DP: Month", "type": "number", "initialValue": 3, "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000053": { "label": "Static DP: Selected", "type": "string", "initialValue": "", "folder": "Popover Test" },
-    "dp-test-0000-0000-0000-000000000054": { "label": "Static DP: Grid", "type": "array", "initialValue": [], "folder": "Popover Test" },
-
-    "wf-param-0000-0000-0000-000000000001": { "label": "Greet Result", "type": "string", "initialValue": "(not run yet)", "folder": "Workflow Params Demo" },
-    "wf-return-0000-0000-0000-000000000002": { "label": "Greet Return Value", "type": "string", "initialValue": "(no return yet)", "folder": "Workflow Params Demo" },
-    "wf-todo-result-0000-0000-0000-000000000002": { "label": "Todo API Result (JSON)", "type": "string", "initialValue": "(not fetched yet)", "folder": "Workflow Params Demo" },
-
-    "tr000000-0000-0000-0000-000000000001": { "label": "App Load Before Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000002": { "label": "App Load Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000003": { "label": "Page Load Before Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000004": { "label": "Page Load Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000005": { "label": "Page Unload Count", "type": "number", "initialValue": 0, "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000006": { "label": "Scroll Y", "type": "string", "initialValue": "0", "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000007": { "label": "Viewport Width", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000008": { "label": "Last Keydown", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000009": { "label": "Last Keyup", "type": "string", "initialValue": "—", "folder": "Triggers Test" },
-    "tr000000-0000-0000-0000-000000000010": { "label": "Collection Fetch Error", "type": "string", "initialValue": "None", "folder": "Triggers Test" },
-
-    "wftest-result-1-0000-0000-0000-000000000001": { "label": "Scenario 1 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
-    "wftest-result-2-0000-0000-0000-000000000002": { "label": "Scenario 2 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
-    "wftest-result-3-0000-0000-0000-000000000003": { "label": "Scenario 3 Result (SC Instance Mirror)", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
-    "wftest-result-4-0000-0000-0000-000000000004": { "label": "Scenario 4 Result", "type": "string", "initialValue": "(not run yet)", "folder": "WorkflowTest" },
-
-    "js-demo-0000-0000-0000-000000000001": { "label": "cartCount", "type": "number", "initialValue": 2, "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000002": { "label": "userEmail", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
+    "dp-test-0000-0000-0000-000000000001": {
+      "label": "DP1: Year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000002": {
+      "label": "DP1: Month",
+      "type": "number",
+      "initialValue": 3,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000003": {
+      "label": "DP1: Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000004": {
+      "label": "DP1: Grid",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000005": {
+      "label": "DP1: Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000011": {
+      "label": "DP2: Year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000012": {
+      "label": "DP2: Month",
+      "type": "number",
+      "initialValue": 3,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000013": {
+      "label": "DP2: Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000014": {
+      "label": "DP2: Grid",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000015": {
+      "label": "DP2: Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000021": {
+      "label": "TP: Selected Hour",
+      "type": "number",
+      "initialValue": 10,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000022": {
+      "label": "TP: Selected Minute",
+      "type": "number",
+      "initialValue": 30,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000023": {
+      "label": "TP: Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000024": {
+      "label": "TP: Hours",
+      "type": "array",
+      "initialValue": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000025": {
+      "label": "TP: Minutes",
+      "type": "array",
+      "initialValue": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55
+      ],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000026": {
+      "label": "TP: Display",
+      "type": "string",
+      "initialValue": "10:00",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000031": {
+      "label": "DTP: Year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000032": {
+      "label": "DTP: Month",
+      "type": "number",
+      "initialValue": 3,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000033": {
+      "label": "DTP: Selected Date",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000034": {
+      "label": "DTP: Grid",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000035": {
+      "label": "DTP: Hour",
+      "type": "number",
+      "initialValue": 12,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000036": {
+      "label": "DTP: Minute",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000037": {
+      "label": "DTP: Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000038": {
+      "label": "DTP: Display",
+      "type": "string",
+      "initialValue": " 10:00",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000041": {
+      "label": "DR: Year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000042": {
+      "label": "DR: Month",
+      "type": "number",
+      "initialValue": 3,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000043": {
+      "label": "DR: Start Date",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000044": {
+      "label": "DR: End Date",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000045": {
+      "label": "DR: Grid Left",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000046": {
+      "label": "DR: Grid Right",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000047": {
+      "label": "DR: Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000051": {
+      "label": "Static DP: Year",
+      "type": "number",
+      "initialValue": 2026,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000052": {
+      "label": "Static DP: Month",
+      "type": "number",
+      "initialValue": 3,
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000053": {
+      "label": "Static DP: Selected",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Popover Test"
+    },
+    "dp-test-0000-0000-0000-000000000054": {
+      "label": "Static DP: Grid",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Popover Test"
+    },
+    "wf-param-0000-0000-0000-000000000001": {
+      "label": "Greet Result",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "Workflow Params Demo"
+    },
+    "wf-return-0000-0000-0000-000000000002": {
+      "label": "Greet Return Value",
+      "type": "string",
+      "initialValue": "(no return yet)",
+      "folder": "Workflow Params Demo"
+    },
+    "wf-todo-result-0000-0000-0000-000000000002": {
+      "label": "Todo API Result (JSON)",
+      "type": "string",
+      "initialValue": "(not fetched yet)",
+      "folder": "Workflow Params Demo"
+    },
+    "tr000000-0000-0000-0000-000000000001": {
+      "label": "App Load Before Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000002": {
+      "label": "App Load Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000003": {
+      "label": "Page Load Before Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000004": {
+      "label": "Page Load Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000005": {
+      "label": "Page Unload Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000006": {
+      "label": "Scroll Y",
+      "type": "string",
+      "initialValue": "0",
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000007": {
+      "label": "Viewport Width",
+      "type": "string",
+      "initialValue": "\u2014",
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000008": {
+      "label": "Last Keydown",
+      "type": "string",
+      "initialValue": "\u2014",
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000009": {
+      "label": "Last Keyup",
+      "type": "string",
+      "initialValue": "\u2014",
+      "folder": "Triggers Test"
+    },
+    "tr000000-0000-0000-0000-000000000010": {
+      "label": "Collection Fetch Error",
+      "type": "string",
+      "initialValue": "None",
+      "folder": "Triggers Test"
+    },
+    "wftest-result-1-0000-0000-0000-000000000001": {
+      "label": "Scenario 1 Result",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "WorkflowTest"
+    },
+    "wftest-result-2-0000-0000-0000-000000000002": {
+      "label": "Scenario 2 Result",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "WorkflowTest"
+    },
+    "wftest-result-3-0000-0000-0000-000000000003": {
+      "label": "Scenario 3 Result (SC Instance Mirror)",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "WorkflowTest"
+    },
+    "wftest-result-4-0000-0000-0000-000000000004": {
+      "label": "Scenario 4 Result",
+      "type": "string",
+      "initialValue": "(not run yet)",
+      "folder": "WorkflowTest"
+    },
+    "js-demo-0000-0000-0000-000000000001": {
+      "label": "cartCount",
+      "type": "number",
+      "initialValue": 2,
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000002": {
+      "label": "userEmail",
+      "type": "string",
+      "initialValue": "",
+      "folder": "JavaScript Test"
+    },
     "js-demo-0000-0000-0000-000000000003": {
       "label": "users",
       "type": "array",
       "initialValue": [
-        { "id": "u1", "name": "Ada Lovelace", "active": true },
-        { "id": "u2", "name": "Grace Hopper", "active": true },
-        { "id": "u3", "name": "Alan Turing", "active": false },
-        { "id": "u4", "name": "Linus Torvalds", "active": true }
+        {
+          "id": "u1",
+          "name": "Ada Lovelace",
+          "active": true
+        },
+        {
+          "id": "u2",
+          "name": "Grace Hopper",
+          "active": true
+        },
+        {
+          "id": "u3",
+          "name": "Alan Turing",
+          "active": false
+        },
+        {
+          "id": "u4",
+          "name": "Linus Torvalds",
+          "active": true
+        }
       ],
       "folder": "JavaScript Test"
     },
-    "js-demo-0000-0000-0000-000000000004": { "label": "lastSyncAt", "type": "string", "initialValue": "(never)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000005": { "label": "processedCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000006": { "label": "jsMathResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000007": { "label": "jsApiResult", "type": "string", "initialValue": "(not fetched)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000008": { "label": "jsSyncStatus", "type": "string", "initialValue": "(not synced)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000009": { "label": "jsForEachResult", "type": "string", "initialValue": "(no users processed)", "folder": "JavaScript Test" },
+    "js-demo-0000-0000-0000-000000000004": {
+      "label": "lastSyncAt",
+      "type": "string",
+      "initialValue": "(never)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000005": {
+      "label": "processedCount",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000006": {
+      "label": "jsMathResult",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000007": {
+      "label": "jsApiResult",
+      "type": "string",
+      "initialValue": "(not fetched)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000008": {
+      "label": "jsSyncStatus",
+      "type": "string",
+      "initialValue": "(not synced)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000009": {
+      "label": "jsForEachResult",
+      "type": "string",
+      "initialValue": "(no users processed)",
+      "folder": "JavaScript Test"
+    },
     "js-demo-0000-0000-0000-000000000010": {
       "label": "productItems",
       "type": "array",
       "initialValue": [
-        { "id": "p1", "name": "Tee", "price": 24.5 },
-        { "id": "p2", "name": "Hoodie", "price": 64 },
-        { "id": "p3", "name": "Cap", "price": 18.25 },
-        { "id": "p4", "name": "Sticker Pack", "price": 5.5 }
+        {
+          "id": "p1",
+          "name": "Tee",
+          "price": 24.5
+        },
+        {
+          "id": "p2",
+          "name": "Hoodie",
+          "price": 64
+        },
+        {
+          "id": "p3",
+          "name": "Cap",
+          "price": 18.25
+        },
+        {
+          "id": "p4",
+          "name": "Sticker Pack",
+          "price": 5.5
+        }
       ],
       "folder": "JavaScript Test"
     },
-
-    "js-demo-0000-0000-0000-000000000011": { "label": "jsNavStatus", "type": "string", "initialValue": "(no navigation yet)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000012": { "label": "jsCollectionRowCount", "type": "number", "initialValue": 4, "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000013": { "label": "jsComponentResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000014": { "label": "jsPopoverState", "type": "string", "initialValue": "closed", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000015": { "label": "jsSharedAddedIds", "type": "array", "initialValue": [], "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000016": { "label": "jsFormState", "type": "string", "initialValue": "(unset)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000017": { "label": "jsFormName", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000018": { "label": "jsAuthEmail", "type": "string", "initialValue": "guest", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000019": { "label": "jsBrowserStatus", "type": "string", "initialValue": "(idle)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000020": { "label": "jsWorkflowReturn", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000021": { "label": "jsEscapeHatchInput", "type": "string", "initialValue": "{\"type\":\"copyToClipboard\",\"config\":{\"text\":\"hi from wwLib.actions.run\"}}", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000022": { "label": "jsEscapeHatchResult", "type": "string", "initialValue": "(not run)", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000023": { "label": "jsOuterClickCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000024": { "label": "jsInnerClickCount", "type": "number", "initialValue": 0, "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000025": { "label": "jsB64Url", "type": "string", "initialValue": "", "folder": "JavaScript Test" },
-    "js-demo-0000-0000-0000-000000000026": { "label": "jsDelayStatus", "type": "string", "initialValue": "(idle)", "folder": "JavaScript Test" },
-
-    "dpdemo-selected-date-0000-000000000001": { "label": "Picked Date", "type": "string", "initialValue": "(no date picked yet)", "folder": "DatePicker Test" },
-    "dpdemo-event-count-0000-000000000002":   { "label": "Trigger Fire Count", "type": "number", "initialValue": 0,                "folder": "DatePicker Test" },
-
-    "sel-test-value":  { "label": "Selected Value",   "type": "string", "initialValue": "",  "folder": "Select Test" },
-    "fu-test-name":    { "label": "Picked Filename",  "type": "string", "initialValue": "",  "folder": "FileUpload Test" },
-    "fu-test-files":   { "label": "Picked Files",     "type": "array",  "initialValue": [],  "folder": "FileUpload Test" },
-
-    "btn-test-count":         { "label": "Button click count",   "type": "number", "initialValue": 0,  "folder": "Button Test" },
-    "btn-test-label":         { "label": "Button last label",    "type": "string", "initialValue": "", "folder": "Button Test" },
-    "tabs-test-value":        { "label": "Active tab",            "type": "string", "initialValue": "", "folder": "Tabs Test" },
-    "pg-test-page":           { "label": "Pagination page",       "type": "number", "initialValue": 1,  "folder": "Pagination Test" },
-    "rating-test-value":      { "label": "Rating value",          "type": "number", "initialValue": 0,  "folder": "Rating Test" },
-    "stepper-test-index":     { "label": "Active step",           "type": "number", "initialValue": 1,  "folder": "Stepper Test" },
-    "breadcrumbs-test-label": { "label": "Breadcrumb last label", "type": "string", "initialValue": "", "folder": "Breadcrumbs Test" },
-    "rg-test-value":          { "label": "Radio Group value",     "type": "string", "initialValue": "", "folder": "RadioGroup Test" },
-    "chip-test-clicks":       { "label": "Chip click count",      "type": "number", "initialValue": 0,  "folder": "Chip Test" },
-    "chip-test-removes":      { "label": "Chip remove count",     "type": "number", "initialValue": 0,  "folder": "Chip Test" },
-
+    "js-demo-0000-0000-0000-000000000011": {
+      "label": "jsNavStatus",
+      "type": "string",
+      "initialValue": "(no navigation yet)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000012": {
+      "label": "jsCollectionRowCount",
+      "type": "number",
+      "initialValue": 4,
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000013": {
+      "label": "jsComponentResult",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000014": {
+      "label": "jsPopoverState",
+      "type": "string",
+      "initialValue": "closed",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000015": {
+      "label": "jsSharedAddedIds",
+      "type": "array",
+      "initialValue": [],
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000016": {
+      "label": "jsFormState",
+      "type": "string",
+      "initialValue": "(unset)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000017": {
+      "label": "jsFormName",
+      "type": "string",
+      "initialValue": "",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000018": {
+      "label": "jsAuthEmail",
+      "type": "string",
+      "initialValue": "guest",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000019": {
+      "label": "jsBrowserStatus",
+      "type": "string",
+      "initialValue": "(idle)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000020": {
+      "label": "jsWorkflowReturn",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000021": {
+      "label": "jsEscapeHatchInput",
+      "type": "string",
+      "initialValue": "{\"type\":\"copyToClipboard\",\"config\":{\"text\":\"hi from wwLib.actions.run\"}}",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000022": {
+      "label": "jsEscapeHatchResult",
+      "type": "string",
+      "initialValue": "(not run)",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000023": {
+      "label": "jsOuterClickCount",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000024": {
+      "label": "jsInnerClickCount",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000025": {
+      "label": "jsB64Url",
+      "type": "string",
+      "initialValue": "",
+      "folder": "JavaScript Test"
+    },
+    "js-demo-0000-0000-0000-000000000026": {
+      "label": "jsDelayStatus",
+      "type": "string",
+      "initialValue": "(idle)",
+      "folder": "JavaScript Test"
+    },
+    "dpdemo-selected-date-0000-000000000001": {
+      "label": "Picked Date",
+      "type": "string",
+      "initialValue": "(no date picked yet)",
+      "folder": "DatePicker Test"
+    },
+    "dpdemo-event-count-0000-000000000002": {
+      "label": "Trigger Fire Count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "DatePicker Test"
+    },
+    "sel-test-value": {
+      "label": "Selected Value",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Select Test"
+    },
+    "fu-test-name": {
+      "label": "Picked Filename",
+      "type": "string",
+      "initialValue": "",
+      "folder": "FileUpload Test"
+    },
+    "fu-test-files": {
+      "label": "Picked Files",
+      "type": "array",
+      "initialValue": [],
+      "folder": "FileUpload Test"
+    },
+    "btn-test-count": {
+      "label": "Button click count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Button Test"
+    },
+    "btn-test-label": {
+      "label": "Button last label",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Button Test"
+    },
+    "tabs-test-value": {
+      "label": "Active tab",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Tabs Test"
+    },
+    "pg-test-page": {
+      "label": "Pagination page",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Pagination Test"
+    },
+    "rating-test-value": {
+      "label": "Rating value",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Rating Test"
+    },
+    "stepper-test-index": {
+      "label": "Active step",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Stepper Test"
+    },
+    "breadcrumbs-test-label": {
+      "label": "Breadcrumb last label",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Breadcrumbs Test"
+    },
+    "rg-test-value": {
+      "label": "Radio Group value",
+      "type": "string",
+      "initialValue": "",
+      "folder": "RadioGroup Test"
+    },
+    "chip-test-clicks": {
+      "label": "Chip click count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Chip Test"
+    },
+    "chip-test-removes": {
+      "label": "Chip remove count",
+      "type": "number",
+      "initialValue": 0,
+      "folder": "Chip Test"
+    },
     "showcase-carousel": {
       "label": "Showcase Carousel",
       "type": "object",
-      "initialValue": { "slide": 0, "offset": 0 },
+      "initialValue": {
+        "slide": 0,
+        "offset": 0
+      },
       "folder": "Component Showcase"
     },
     "showcase-kanban-cards": {
       "label": "Showcase Kanban Cards",
       "type": "array",
       "initialValue": [
-        { "id": "k1", "title": "Design mockups",   "col": "todo" },
-        { "id": "k2", "title": "Write unit tests",  "col": "todo" },
-        { "id": "k3", "title": "Implement auth",    "col": "doing" },
-        { "id": "k4", "title": "Review PR",         "col": "doing" },
-        { "id": "k5", "title": "Deploy to staging", "col": "done" },
-        { "id": "k6", "title": "Update docs",       "col": "done" }
+        {
+          "id": "k1",
+          "title": "Design mockups",
+          "col": "todo"
+        },
+        {
+          "id": "k2",
+          "title": "Write unit tests",
+          "col": "todo"
+        },
+        {
+          "id": "k3",
+          "title": "Implement auth",
+          "col": "doing"
+        },
+        {
+          "id": "k4",
+          "title": "Review PR",
+          "col": "doing"
+        },
+        {
+          "id": "k5",
+          "title": "Deploy to staging",
+          "col": "done"
+        },
+        {
+          "id": "k6",
+          "title": "Update docs",
+          "col": "done"
+        }
       ],
       "folder": "Component Showcase"
     },
     "showcase-kanban-drag": {
       "label": "Showcase Kanban Drag State",
       "type": "object",
-      "initialValue": { "cardId": null, "sourceCol": null, "targetCol": null, "targetIndex": 0 },
+      "initialValue": {
+        "cardId": null,
+        "sourceCol": null,
+        "targetCol": null,
+        "targetIndex": 0
+      },
       "folder": "Component Showcase"
     },
-
     "showcase-exit-visible": {
       "label": "Showcase Exit Target Visible",
       "type": "boolean",
       "initialValue": true,
       "folder": "Component Showcase"
+    },
+    "adm00006-0000-0000-0000-000000000006": {
+      "label": "Admin Sidebar Open",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Admin"
+    },
+    "adm00007-0000-0000-0000-000000000007": {
+      "label": "Admin Product Action Menu Open",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Admin"
+    },
+    "adm00008-0000-0000-0000-000000000008": {
+      "label": "Admin Products Search Query",
+      "type": "string",
+      "initialValue": "",
+      "folder": "Admin"
+    },
+    "adm00009-0000-0000-0000-000000000009": {
+      "label": "Admin Products Column Settings Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00010-0000-0000-0000-000000000010": {
+      "label": "Admin Products Filter Popover Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00011-0000-0000-0000-000000000011": {
+      "label": "Admin Products Saved Filters Popover Open",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00012-0000-0000-0000-000000000012": {
+      "label": "Admin Products Status Filter",
+      "type": "string",
+      "initialValue": "all",
+      "folder": "Admin"
+    },
+    "adm00013-0000-0000-0000-000000000013": {
+      "label": "Admin Products Column Order",
+      "type": "array",
+      "initialValue": [
+        {"id": "id", "label": "ID", "visible": false},
+        {"id": "created_at", "label": "Created At", "visible": false},
+        {"id": "updated_at", "label": "Updated At", "visible": false},
+        {"id": "featured_asset", "label": "Featured Asset", "visible": true},
+        {"id": "name", "label": "Name", "visible": true},
+        {"id": "slug", "label": "Slug", "visible": true},
+        {"id": "enabled", "label": "Enabled", "visible": true},
+        {"id": "description", "label": "Description", "visible": false}
+      ],
+      "folder": "Admin"
+    },
+    "adm00014-0000-0000-0000-000000000014": {
+      "label": "Admin Products Column Drag State",
+      "type": "object",
+      "initialValue": {"cardId": null, "sourceIndex": null, "targetIndex": null},
+      "folder": "Admin"
     }
   },
   "varFolders": [

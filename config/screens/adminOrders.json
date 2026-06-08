@@ -1,0 +1,301 @@
+{
+  "layout": "admin",
+  "content": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col gap-[24px] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex items-center justify-between flex-row"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-white"
+                },
+                "text": "Orders"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px]"
+                },
+                "text": {
+                  "formula": "concat(String((collections['ad000002-0000-0000-0000-000000000002'] || []).length), ' total orders')"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "id": "orders-table-head",
+            "props": {
+              "className": "grid gap-[0px] px-[20px] py-[12px] border-b border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)]/50",
+              "style": {
+                "gridTemplateColumns": "1.5fr 1.5fr 1fr 0.8fr 0.5fr 1fr"
+              }
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Order #"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Customer"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Date"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Items"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Total"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                },
+                "text": "Status"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": "collections.ad000002-0000-0000-0000-000000000002",
+            "key": "order-row",
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid gap-[0px] px-[20px] py-[14px] border-b border-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-sidebar)]/50 cursor-pointer transition-colors items-center",
+                  "style": {
+                    "gridTemplateColumns": "1.5fr 1.5fr 1fr 0.8fr 0.5fr 1fr"
+                  }
+                },
+                "actions": [
+                  {
+                    "action": "admin-view-order"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-accent)]"
+                    },
+                    "text": "{{context.item.data.code}}"
+                  },
+                  {
+                    "type": "Box",
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                        },
+                        "text": {
+                          "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || context.item.data.email_address || 'Guest'"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[var(--theme-admin-label)] mt-[1px]"
+                        },
+                        "text": "{{context.item.data.email_address}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
+                    "text": {
+                      "formula": "context.item.data.order_placed_at ? new Date(context.item.data.order_placed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                    },
+                    "text": {
+                      "formula": "concat(String(context.item.data.line_count || 0), ' items')"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-medium text-white"
+                    },
+                    "text": {
+                      "formula": "formatCurrency((context.item.data.total || 0) / 100, 'USD')"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": {
+                        "formula": "concat('inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium ', (context.item.data.state === 'Delivered' ? 'bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)]' : context.item.data.state === 'Cancelled' ? 'bg-[var(--theme-admin-danger)]/20 text-[var(--theme-admin-danger)]' : context.item.data.state === 'Shipped' || context.item.data.state === 'PartiallyShipped' ? 'bg-[var(--theme-admin-info)]/20 text-[var(--theme-admin-info)]' : context.item.data.state === 'PaymentSettled' ? 'bg-[var(--theme-admin-accent)]/20 text-[var(--theme-admin-accent)]' : 'bg-[var(--theme-admin-warning)]/20 text-[var(--theme-admin-warning)]'))"
+                      }
+                    },
+                    "text": "{{context.item.data.state}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
+            },
+            "condition": "!(collections['ad000002-0000-0000-0000-000000000002']?.length > 0)",
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:shopping-cart",
+                  "size": 40,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No orders found"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex items-center justify-between flex-row"
+        },
+        "condition": "false",
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[13px] text-[var(--theme-admin-label)]"
+            },
+            "text": {
+              "formula": "concat('Page ', String(collections['ad000002-0000-0000-0000-000000000002']?.page || 1), ' of ', String(collections['ad000002-0000-0000-0000-000000000002']?.totalPages || 1))"
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[8px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[34px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] text-[var(--theme-admin-muted)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "condition": "(collections['ad000002-0000-0000-0000-000000000002']?.page || 1) > 1",
+                "actions": [
+                  {
+                    "action": "admin-orders-page-prev"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:chevron-left",
+                      "size": 14
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px]"
+                    },
+                    "text": "Previous"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[34px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] text-[var(--theme-admin-muted)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "condition": "(collections['ad000002-0000-0000-0000-000000000002']?.page || 1) < (collections['ad000002-0000-0000-0000-000000000002']?.totalPages || 1)",
+                "actions": [
+                  {
+                    "action": "admin-orders-page-next"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px]"
+                    },
+                    "text": "Next"
+                  },
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:chevron-right",
+                      "size": 14
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dataSources": [
+    "ad000002-0000-0000-0000-000000000002"
+  ]
+}

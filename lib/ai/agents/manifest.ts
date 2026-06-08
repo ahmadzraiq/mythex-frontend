@@ -8,7 +8,7 @@
  *  - the dispatch order (parallel within an op, sequential across ops)
  */
 
-export type AgentScope = 'structure' | 'media' | 'styling' | 'animation' | 'workflows' | 'binding' | 'data' | 'sharedComponents';
+export type AgentScope = 'structure' | 'media' | 'styling' | 'animation' | 'workflows' | 'binding' | 'data' | 'sharedComponents' | 'backend';
 
 export interface ManifestOperation {
   id: string;

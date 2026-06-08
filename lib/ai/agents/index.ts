@@ -6,6 +6,7 @@ export { buildAnimationAgentPrompt } from './animation/prompt';
 export { buildMediaAgentPrompt } from './media/prompt';
 export { buildDataAgentPrompt } from './data/prompt';
 export { buildSharedComponentAgentPrompt } from './sharedComponents/prompt';
+export { buildBackendAgentPrompt } from './backend/prompt';
 
 export type { StylingSubAgentContext } from './shared/styling-subagent';
 export { SHARED_FORMULA_SYNTAX } from './shared/formula-scope';

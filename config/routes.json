@@ -385,6 +385,97 @@
       "config": "scComponentShowcase",
       "auth": false,
       "layout": "full"
+    },
+    {
+      "path": "/admin/login",
+      "config": "adminLogin",
+      "auth": false,
+      "layout": "none",
+      "guestOnly": false
+    },
+    {
+      "path": "/admin",
+      "config": "adminDashboard",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/orders",
+      "config": "adminOrders",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/order",
+      "config": "adminOrderDetail",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/products",
+      "config": "adminProducts",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/product",
+      "config": "adminProductEdit",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/customers",
+      "config": "adminCustomers",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/product-variants",
+      "config": "adminProductVariants",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/facets",
+      "config": "adminFacets",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/collections",
+      "config": "adminCollections",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/assets",
+      "config": "adminAssets",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/promotions",
+      "config": "adminPromotions",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
+    },
+    {
+      "path": "/admin/system",
+      "config": "adminSystem",
+      "auth": true,
+      "layout": "admin",
+      "authRedirect": "/admin/login"
     }
   ]
 }
