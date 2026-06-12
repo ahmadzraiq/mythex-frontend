@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback, useRef, lazy, Suspense, useEffect } from 'react';
+import { SearchInput } from './_panel-primitives';
 import { useSearchParams, usePathname } from 'next/navigation';
 import { backendWorkflows, type BackendWorkflow } from '@/lib/platform/api-client';
 import { json } from '@codemirror/lang-json';
@@ -118,13 +119,13 @@ export function getDataSlideTitle(slideState: DataTabSlideState): string {
 // ─── Main DataTab ─────────────────────────────────────────────────────────────
 
 const SEARCH_INPUT: React.CSSProperties = {
-  width: '100%', background: '#111827', border: '1px solid #374151', borderRadius: 4,
-  padding: '4px 8px', fontSize: 10, color: '#d1d5db', outline: 'none', boxSizing: 'border-box',
+  width: '100%', background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+  padding: '4px 8px', fontSize: 10, color: 'var(--bld-text-2)', outline: 'none', boxSizing: 'border-box',
 };
 
 const SUB_HDR: React.CSSProperties = {
-  fontSize: 9, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase' as const,
-  letterSpacing: '0.07em', padding: '4px 12px 2px', background: '#0f172a',
+  fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const,
+  letterSpacing: '0.07em', padding: '4px 12px 2px', background: 'var(--bld-bg-base)',
 };
 
 // ─── BackendApisSection ───────────────────────────────────────────────────────
@@ -136,7 +137,7 @@ import { backendTables, type BackendTable } from '@/lib/platform/api-client';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
 
 const METHOD_COLOR: Record<string, string> = {
-  GET: '#4ade80', POST: '#60a5fa', PUT: '#fbbf24', PATCH: '#c4b5fd', DELETE: '#f87171',
+  GET: 'var(--bld-success)', POST: 'var(--bld-info)', PUT: 'var(--bld-warning)', PATCH: 'var(--bld-ai-accent)', DELETE: 'var(--bld-error)',
 };
 const METHOD_BG: Record<string, string> = {
   GET: 'rgba(34,197,94,0.12)', POST: 'rgba(59,130,246,0.12)', PUT: 'rgba(245,158,11,0.12)',
@@ -146,11 +147,11 @@ const METHOD_BG: Record<string, string> = {
 function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onAdd: () => void }) {
   const m = wf.method ?? 'GET';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px 4px 22px', fontSize: 11 }}>
-      <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px 5px 22px', fontSize: 11 }}>
+      <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0, letterSpacing: '0.03em' }}>
         {m}
       </span>
-      <span style={{ flex: 1, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ flex: 1, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
         {wf.name}
       </span>
       <button
@@ -158,13 +159,13 @@ function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onA
         disabled={added}
         title={added ? 'Already added' : 'Add as data source'}
         style={{
-          fontSize: 9, padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+          fontSize: 9, padding: '2px 6px', borderRadius: 3, flexShrink: 0,
           cursor: added ? 'default' : 'pointer',
           background: added ? 'transparent' : 'rgba(99,102,241,0.15)',
-          color: added ? '#374151' : '#a5b4fc',
-          border: `1px solid ${added ? '#1f2937' : 'rgba(99,102,241,0.3)'}`,
+          color: added ? 'var(--bld-text-disabled)' : 'var(--bld-accent)',
+          border: `1px solid ${added ? 'var(--bld-border)' : 'rgba(99,102,241,0.3)'}`,
         }}
-      >{added ? '✓' : '+'}</button>
+      >{added ? '✓' : '+ Add'}</button>
     </div>
   );
 }
@@ -221,12 +222,12 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
   };
 
   return (
-    <div style={{ borderBottom: '2px solid #1f2937', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
+    <div style={{ borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
       <div style={{ ...SECTION_HDR, cursor: 'pointer', flexShrink: 0 }} onClick={() => setOpen(o => !o)}>
         <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Chevron open={open} size={10} color="#6b7280" />
+          <Chevron open={open} size={10} color="var(--bld-text-disabled)" />
           Backend APIs
-          {!loading && <span style={{ fontSize: 10, color: '#4b5563', fontWeight: 400 }}>({wfs.length})</span>}
+          {!loading && <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>({wfs.length})</span>}
         </span>
         {!loading && wfs.length > 0 && (
           <div onClick={e => e.stopPropagation()}>
@@ -236,8 +237,8 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
               style={{
                 fontSize: 10, padding: '2px 8px', borderRadius: 4, cursor: allAdded ? 'default' : 'pointer',
                 background: allAdded ? 'transparent' : 'rgba(99,102,241,0.15)',
-                color: allAdded ? '#374151' : '#a5b4fc',
-                border: `1px solid ${allAdded ? '#1f2937' : 'rgba(99,102,241,0.3)'}`,
+                color: allAdded ? 'var(--bld-text-disabled)' : 'var(--bld-accent)',
+                border: `1px solid ${allAdded ? 'var(--bld-border)' : 'rgba(99,102,241,0.3)'}`,
               }}
             >{allAdded ? '✓ Added' : '+ Add All'}</button>
           </div>
@@ -246,7 +247,7 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
       {open && (
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 4 }}>
           {loading ? (
-            <div style={{ padding: '8px 12px', fontSize: 11, color: '#4b5563' }}>Loading…</div>
+            <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading…</div>
           ) : (
             <>
               {tables.map(t => {
@@ -260,9 +261,12 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
                       onClick={() => toggleFolder(key)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', cursor: 'pointer', userSelect: 'none' as const }}
                     >
-                      <span style={{ fontSize: 9, color: '#475569', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}>▾</span>
-                      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>📁 {t.displayName}</span>
-                      <span style={{ fontSize: 10, color: '#334155', marginLeft: 'auto' }}>{items.length}</span>
+                      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}>▾</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        {t.displayName}
+                      </span>
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{items.length}</span>
                     </div>
                     {folderOpen && items.map(wf => (
                       <WfItem key={wf.id} wf={wf} added={addedIds.has(wf.id)} onAdd={() => handleAdd(wf, `be-folder-${t.id}`)} />
@@ -382,11 +386,12 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
               cursor: 'pointer', userSelect: 'none',
             }}
             onClick={() => toggleFolder(`${section}-${f.id}`)}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1e293b'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
-            <Chevron open={isExpanded} size={10} color="#6b7280" />
-            <span style={{ fontSize: 11, fontWeight: 500, color: '#d1d5db', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+            <Chevron open={isExpanded} size={10} color="var(--bld-text-disabled)" />
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--bld-text-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
             {section === 'var' && (
               <button
                 onClick={e => {
@@ -394,9 +399,9 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   setFolderMenu(m => m?.id === f.id ? null : { id: f.id, top: rect.bottom + 4, left: rect.right - 160 });
                 }}
-                style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+                style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
               >⋮</button>
             )}
           </div>
@@ -404,10 +409,10 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
           {section === 'var' && folderMenu?.id === f.id && typeof document !== 'undefined' && ReactDOM.createPortal(
             <div
               ref={folderMenuRef}
-              style={{ position: 'fixed', top: folderMenu.top, left: folderMenu.left, width: 160, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden' }}
+              style={{ position: 'fixed', top: folderMenu.top, left: folderMenu.left, width: 160, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden' }}
             >
               <button
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => {
                   e.stopPropagation();
@@ -416,8 +421,8 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                   customVars.filter(v => v.folderId && ids.has(v.folderId)).forEach(v => removeCustomVar(v.name));
                   removeVarFolder(f.id);
                 }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', fontSize: 12, color: '#f87171', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}
-              ><span>🗑</span> Remove with vars</button>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', fontSize: 12, color: 'var(--bld-error)', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}
+              ><IcoTrash /> Remove with vars</button>
             </div>,
             document.body
           )}
@@ -445,10 +450,10 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
     <div data-testid="data-tab-split" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* ── Top: Data Sources ── */}
       <div data-testid="data-sources-column"
-        style={{ flex: dsOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid #1f2937', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
+        style={{ flex: dsOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setDsOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Chevron open={dsOpen} size={10} color="#6b7280" />
+            <Chevron open={dsOpen} size={10} color="var(--bld-text-disabled)" />
             Data Sources
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
@@ -456,9 +461,9 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
               title="Search"
               onMouseDown={e => e.preventDefault()}
               onClick={() => { setDsSearchOpen(o => { const next = !o; if (next) setTimeout(() => dsSearchRef.current?.focus(), 20); else setDsSearch(''); return next; }); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: dsSearchOpen ? '#818cf8' : '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
-              onMouseEnter={e => { if (!dsSearchOpen) (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-              onMouseLeave={e => { if (!dsSearchOpen) (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: dsSearchOpen ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { if (!dsSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+              onMouseLeave={e => { if (!dsSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -469,33 +474,39 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                 data-testid="remove-all-datasources-btn"
                 title="Remove all data sources"
                 onClick={() => { pageDataSources.forEach(d => removePageDataSource(d.id)); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
                 </svg>
               </button>
             )}
-            <button data-testid="add-datasource-btn"
+            <button
+              data-testid="add-datasource-btn"
+              title="New data source"
               onClick={() => onSetSlide({ kind: 'dataSource', editingId: null })}
-              style={ADD_BTN}>
-              + Add
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
             </button>
           </div>
         </div>
         {/* Slide-down search row */}
         <div style={{ overflow: 'hidden', maxHeight: dsSearchOpen ? 40 : 0, transition: 'max-height 0.2s ease', flexShrink: 0 }}>
           <div style={{ padding: '5px 10px' }}>
-            <input
-              ref={dsSearchRef}
-              data-testid="ds-search"
+            <SearchInput
               value={dsSearch}
-              onChange={e => setDsSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') { setDsSearch(''); setDsSearchOpen(false); } }}
+              onChange={setDsSearch}
               placeholder="Search sources…"
-              style={{ ...SEARCH_INPUT, width: '100%' }}
+              inputRef={dsSearchRef}
+              data-testid="ds-search"
+              onKeyDown={e => { if (e.key === 'Escape') { setDsSearch(''); setDsSearchOpen(false); } }}
             />
           </div>
         </div>
@@ -549,7 +560,7 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
             tables.forEach(t => {
               const folderId = `be-folder-${t.id}`;
               if (!dsFolders.find(f => f.id === folderId)) {
-                addDsFolder({ id: folderId, name: t.displayName });
+                addDsFolder({ id: folderId, name: t.displayName, parentId: undefined });
               }
               folderIdMap[t.id] = folderId;
             });
@@ -577,7 +588,7 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
         style={{ flex: varOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setVarOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Chevron open={varOpen} size={10} color="#6b7280" />
+            <Chevron open={varOpen} size={10} color="var(--bld-text-disabled)" />
             Variables
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
@@ -585,9 +596,9 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
               title="Search"
               onMouseDown={e => e.preventDefault()}
               onClick={() => { setVarSearchOpen(o => { const next = !o; if (next) setTimeout(() => varSearchRef.current?.focus(), 20); else setVarSearch(''); return next; }); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: varSearchOpen ? '#818cf8' : '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
-              onMouseEnter={e => { if (!varSearchOpen) (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-              onMouseLeave={e => { if (!varSearchOpen) (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: varSearchOpen ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { if (!varSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+              onMouseLeave={e => { if (!varSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -598,33 +609,39 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
                 data-testid="remove-all-vars-btn"
                 title="Remove all variables"
                 onClick={() => { customVars.forEach(v => removeCustomVar(v.name)); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
                 </svg>
               </button>
             )}
-            <button data-testid="add-variable-btn"
+            <button
+              data-testid="add-variable-btn"
+              title="New variable"
               onClick={() => onSetSlide({ kind: 'variable', editingName: null })}
-              style={ADD_BTN}>
-              + Add
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
             </button>
           </div>
         </div>
         {/* Slide-down search row */}
         <div style={{ overflow: 'hidden', maxHeight: varSearchOpen ? 40 : 0, transition: 'max-height 0.2s ease', flexShrink: 0 }}>
           <div style={{ padding: '5px 10px' }}>
-            <input
-              ref={varSearchRef}
-              data-testid="var-search"
+            <SearchInput
               value={varSearch}
-              onChange={e => setVarSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') { setVarSearch(''); setVarSearchOpen(false); } }}
+              onChange={setVarSearch}
               placeholder="Search variables…"
-              style={{ ...SEARCH_INPUT, width: '100%' }}
+              inputRef={varSearchRef}
+              data-testid="var-search"
+              onKeyDown={e => { if (e.key === 'Escape') { setVarSearch(''); setVarSearchOpen(false); } }}
             />
           </div>
         </div>
@@ -663,7 +680,22 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
   );
 }
 
+// ─── Shared SVG icons for context menus ──────────────────────────────────────
+const IcoEdit = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IcoCopy = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+const IcoDuplicate = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
+const IcoTrash = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
+const IcoFolder = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
+const IcoRefresh = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+
 // ─── VarRow — variable list item with ⋮ context menu ─────────────────────────
+
+// Readable type labels for variable badges
+const VAR_TYPE_LABEL: Record<string, string> = {
+  string: 'str', number: 'num', boolean: 'bool',
+  array: 'arr', object: 'obj', color: 'color',
+  date: 'date', any: 'any',
+};
 
 function VarRow({
   v, depth = 0, onEdit, onDelete, onDuplicate, onMove,
@@ -681,7 +713,8 @@ function VarRow({
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const col = TYPE_BADGE_COLORS[v.type] ?? '#6b7280';
+  const col = TYPE_BADGE_COLORS[v.type] ?? 'var(--bld-text-disabled)';
+  const typeLabel = VAR_TYPE_LABEL[v.type] ?? v.type.slice(0, 4);
 
   React.useEffect(() => {
     if (!menuOpen) return;
@@ -698,121 +731,136 @@ function VarRow({
   const openMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 4, left: rect.right - 160 });
+    setMenuPos({ top: rect.bottom + 4, left: rect.right - 168 });
     setShowMove(false);
     setMenuOpen(o => !o);
   };
 
   const MENU_ITEM: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
-    fontSize: 12, color: '#d1d5db', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left',
+    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
+    fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left' as const,
   };
 
-  const folderTree = (parentId: string | null, indent: number): React.ReactNode[] => {
-    return allFolders.filter(f => (f.parentId ?? null) === parentId).flatMap(f => [
+  const folderTree = (parentId: string | null, indent: number): React.ReactNode[] =>
+    allFolders.filter(f => (f.parentId ?? null) === parentId).flatMap(f => [
       <button
         key={f.id}
         data-testid={`var-menu-move-${v.name}-${f.id}`}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
         onClick={e => { e.stopPropagation(); setMenuOpen(false); setShowMove(false); onMove(f.id); }}
-        style={{ ...MENU_ITEM, paddingLeft: 12 + indent * 12,
-          fontWeight: v.folderId === f.id ? 700 : 400,
-          color: v.folderId === f.id ? '#a5b4fc' : '#d1d5db' }}
+        style={{ ...MENU_ITEM, paddingLeft: 12 + indent * 12, fontWeight: v.folderId === f.id ? 700 : 400, color: v.folderId === f.id ? 'var(--bld-accent)' : 'var(--bld-text-2)' }}
       >
-        {v.folderId === f.id && <span style={{ fontSize: 10 }}>✓</span>}
-        {v.folderId !== f.id && <span style={{ fontSize: 10, opacity: 0 }}>✓</span>}
+        {v.folderId === f.id
+          ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          : <span style={{ width: 10, display: 'inline-block' }} />
+        }
         {f.name}
       </button>,
       ...folderTree(f.id, indent + 1),
     ]);
-  };
 
   return (
     <div
       data-testid={`var-row-${v.name}`}
       onClick={onEdit}
-      style={{ paddingLeft: 10 + depth * 14, paddingRight: 8, paddingTop: 5, paddingBottom: 5, borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+      style={{
+        paddingLeft: 10 + depth * 14, paddingRight: 6, paddingTop: 6, paddingBottom: 6,
+        borderBottom: '1px solid var(--bld-bg-base)',
+        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: 9, padding: '1px 4px', borderRadius: 3, background: `${col}22`, color: col, border: `1px solid ${col}44`, flexShrink: 0, fontWeight: 600 }}>{v.type.slice(0, 3)}</span>
+      {/* Type chip — readable label, colored */}
+      <span style={{
+        fontSize: 8, padding: '2px 5px', borderRadius: 3,
+        background: `${col}1a`, color: col, border: `1px solid ${col}33`,
+        flexShrink: 0, fontWeight: 700, letterSpacing: '0.03em',
+        minWidth: typeLabel.length >= 4 ? 30 : 22, textAlign: 'center',
+      }}>{typeLabel}</span>
+
+      {/* Name */}
       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {v.label ?? v.name}
         </span>
-        {v.label && (
-          <span style={{ display: 'block', fontSize: 9, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-            {v.name}
-          </span>
-        )}
       </span>
 
-      {/* Dropdown menu (portal) */}
+      {/* ⋮ menu button */}
+      <button
+        ref={btnRef}
+        onClick={openMenu}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+      >⋮</button>
+
       {menuOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div
           ref={menuRef}
           data-testid={`var-menu-${v.name}`}
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: 160, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden' }}
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: 168, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 7, boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden', padding: '3px 0' }}
         >
           {!showMove ? (
             <>
               <button
                 data-testid={`var-menu-copy-${v.name}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); navigator.clipboard?.writeText(v.name); }}
                 style={MENU_ITEM}
-              ><span style={{ fontSize: 12 }}>⧉</span> Copy</button>
+              ><IcoCopy /> Copy name</button>
               <button
                 data-testid={`var-menu-duplicate-${v.name}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); onDuplicate(); }}
                 style={MENU_ITEM}
-              ><span style={{ fontSize: 12 }}>⧉</span> Duplicate</button>
+              ><IcoDuplicate /> Duplicate</button>
               <button
                 data-testid={`var-menu-move-${v.name}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setShowMove(true); }}
                 style={{ ...MENU_ITEM, justifyContent: 'space-between' }}
-              ><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>📁</span> Move to</span><Chevron open={false} size={10} color="#6b7280" /></button>
-              <div style={{ borderTop: '1px solid #374151' }} />
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IcoFolder /> Move to folder</span>
+                <Chevron open={false} size={9} color="var(--bld-text-disabled)" />
+              </button>
+              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
               <button
                 data-testid={`var-menu-delete-${v.name}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); onDelete(); }}
-                style={{ ...MENU_ITEM, color: '#f87171' }}
-              ><span style={{ fontSize: 12 }}>🗑</span> Delete</button>
+                style={{ ...MENU_ITEM, color: 'var(--bld-error)' }}
+              ><IcoTrash /> Delete</button>
             </>
           ) : (
             <>
-              {/* Back header */}
               <button
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setShowMove(false); }}
-                style={{ ...MENU_ITEM, color: '#9ca3af', gap: 6 }}
-              ><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Chevron open={false} size={10} color="#9ca3af" style={{ transform: 'rotate(180deg)' }} /> Back</span></button>
-              <div style={{ borderTop: '1px solid #374151' }} />
-              {/* No folder option */}
+                style={{ ...MENU_ITEM, color: 'var(--bld-text-3)' }}
+              ><Chevron open={false} size={9} color="var(--bld-text-3)" style={{ transform: 'rotate(180deg)' }} /> Back</button>
+              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
               <button
                 data-testid={`var-menu-move-${v.name}-none`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); setShowMove(false); onMove(undefined); }}
-                style={{ ...MENU_ITEM, color: !v.folderId ? '#a5b4fc' : '#9ca3af', fontStyle: 'italic' }}
+                style={{ ...MENU_ITEM, color: !v.folderId ? 'var(--bld-accent)' : 'var(--bld-text-3)' }}
               >
-                {!v.folderId ? <span style={{ fontSize: 10 }}>✓</span> : <span style={{ fontSize: 10, opacity: 0 }}>✓</span>}
+                {!v.folderId
+                  ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span style={{ width: 10, display: 'inline-block' }} />
+                }
                 No folder
               </button>
-              {allFolders.length > 0 && <div style={{ borderTop: '1px solid #374151' }} />}
-              {/* Folder tree */}
-              <div style={{ maxHeight: 160, overflowY: 'auto' }}>
-                {folderTree(null, 0)}
-              </div>
+              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />}
+              <div style={{ maxHeight: 160, overflowY: 'auto' }}>{folderTree(null, 0)}</div>
             </>
           )}
         </div>,
@@ -842,15 +890,22 @@ function DsRow({
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  const isConfig = !!(src as { _fromConfig?: boolean })._fromConfig;
   const isGraphQL = src.type === 'graphql';
-  const typeColor = TYPE_COLOR[src.type] ?? '#6b7280';
+  const method = (src.method ?? 'GET').toUpperCase();
   const srcDisplayKey = src.name || src.id;
+  const displayName = (src as { _label?: string })._label ?? src.name ?? src.id;
+  const subName = (src as { _label?: string })._label && src.name ? src.name : null;
   const lastFetch = src._lastFetch;
   const hasFetchData = !!lastFetch;
-  const fetchDotColor = lastFetch?.status === 'success' ? '#34d399' : lastFetch?.status === 'error' ? '#f87171' : undefined;
+  const fetchOk = lastFetch?.status === 'success';
+  const fetchErr = lastFetch?.status === 'error';
+  const isAuto = src.trigger === 'mount' || (src.trigger as string) === 'auto';
+  const isConfig = !!(src as { _fromConfig?: boolean })._fromConfig;
 
-  // Close on outside click
+  const methodColor = isGraphQL ? 'var(--bld-ai-accent)' : (METHOD_COLOR[method] ?? 'var(--bld-text-3)');
+  const methodBg = isGraphQL ? 'rgba(139,92,246,0.12)' : (METHOD_BG[method] ?? 'rgba(148,163,184,0.1)');
+  const methodLabel = isGraphQL ? 'GQL' : method;
+
   React.useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -867,134 +922,172 @@ function DsRow({
   const openMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuPos({ top: rect.bottom + 4, left: rect.right - 160 });
+    setMenuPos({ top: rect.bottom + 4, left: rect.right - 168 });
     setShowMove(false);
     setMenuOpen(o => !o);
   };
 
-  const MENU_ITEM: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
-    fontSize: 12, color: '#d1d5db', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left',
-  };
-
-  const handleFetch = async (e: React.MouseEvent) => {
+  const handleFetch = (e: React.MouseEvent) => {
     e.stopPropagation();
     setMenuOpen(false);
     window.dispatchEvent(new CustomEvent('sdui:refetch-datasource', { detail: { name: src.name || src.id } }));
   };
 
+  const MENU_ITEM: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
+    fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer', background: 'none', border: 'none', width: '100%', textAlign: 'left' as const,
+  };
+
   const folderTree = (parentId: string | null, indent: number): React.ReactNode[] =>
     allFolders.filter(f => (f.parentId ?? null) === parentId).flatMap(f => [
       <button key={f.id}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
         onClick={e => { e.stopPropagation(); setMenuOpen(false); setShowMove(false); onMove(f.id); }}
-        style={{ ...MENU_ITEM, paddingLeft: 12 + indent * 12,
-          fontWeight: src.folderId === f.id ? 700 : 400,
-          color: src.folderId === f.id ? '#a5b4fc' : '#d1d5db' }}
+        style={{ ...MENU_ITEM, paddingLeft: 12 + indent * 12, fontWeight: src.folderId === f.id ? 700 : 400, color: src.folderId === f.id ? 'var(--bld-accent)' : 'var(--bld-text-2)' }}
       >
-        <span style={{ fontSize: 10 }}>{src.folderId === f.id ? '✓' : ' '}</span>{f.name}
+        {src.folderId === f.id
+          ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          : <span style={{ width: 10, display: 'inline-block' }} />
+        }
+        {f.name}
       </button>,
       ...folderTree(f.id, indent + 1),
     ]);
 
   return (
-    <div data-testid={`ds-card-${srcDisplayKey}`}
+    <div
+      data-testid={`ds-card-${srcDisplayKey}`}
       onClick={onEdit}
-      style={{ paddingLeft: 10 + depth * 14, paddingRight: 8, paddingTop: 5, paddingBottom: 5, borderBottom: '1px solid #0f172a', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: isActive ? '#1e293b' : 'transparent', borderLeft: isActive ? '2px solid #6366f1' : '2px solid transparent' }}
-      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+      style={{
+        paddingLeft: 10 + depth * 14, paddingRight: 6, paddingTop: 6, paddingBottom: 6,
+        borderBottom: '1px solid var(--bld-bg-base)',
+        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+        background: isActive ? 'var(--bld-bg-active)' : 'transparent',
+        borderLeft: isActive ? '2px solid var(--bld-accent)' : '2px solid transparent',
+      }}
+      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
       onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ flexShrink: 0, width: 18, height: 18, borderRadius: 4, background: `${typeColor}18`, border: `1px solid ${typeColor}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: typeColor, fontWeight: 700 }}>
-        {isGraphQL ? '⬡' : '⇄'}
-      </span>
-      <span data-testid={`ds-type-badge-${srcDisplayKey}`} style={{ display: 'none' }}>{src.type}</span>
+      {/* Method badge */}
+      <span
+        data-testid={`ds-type-badge-${srcDisplayKey}`}
+        title={isGraphQL ? 'GraphQL' : `${method} request`}
+        style={{
+          flexShrink: 0, fontSize: 8, fontWeight: 700, letterSpacing: '0.03em',
+          padding: '2px 4px', borderRadius: 3,
+          background: methodBg, color: methodColor,
+          minWidth: isGraphQL ? 26 : method.length <= 3 ? 22 : 32,
+          textAlign: 'center',
+        }}
+      >{methodLabel}</span>
+
+      {/* Name */}
       <span style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {(src as { _label?: string })._label ?? src.name}
+        <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {displayName}
         </span>
-        {(src as { _label?: string })._label && src.name && (
-          <span style={{ display: 'block', fontSize: 9, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
-            {src.name}
-          </span>
+      </span>
+
+      {/* Indicators */}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+        {isAuto && (
+          <span title="Auto-fetches on load" style={{ fontSize: 9, color: 'var(--bld-info)', lineHeight: 1 }}>⚡</span>
+        )}
+        {hasFetchData && (
+          <span
+            title={fetchOk ? `Fetched${lastFetch?.fetchedAt ? ' ' + new Date(lastFetch.fetchedAt).toLocaleTimeString() : ''}` : 'Last fetch failed'}
+            style={{ width: 5, height: 5, borderRadius: '50%', background: fetchOk ? 'var(--bld-success)' : fetchErr ? 'var(--bld-error)' : 'var(--bld-text-disabled)', display: 'inline-block' }}
+          />
         )}
       </span>
-      {hasFetchData && (
-        <span title={lastFetch?.status === 'success' ? `Fetched ${lastFetch.fetchedAt ? new Date(lastFetch.fetchedAt).toLocaleTimeString() : ''}` : 'Last fetch failed'}
-          style={{ width: 6, height: 6, borderRadius: '50%', background: fetchDotColor, flexShrink: 0, display: 'inline-block' }} />
-      )}
-      <button ref={btnRef} data-testid={`ds-menu-btn-${srcDisplayKey}`} onClick={openMenu}
-        style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+
+      {/* ⋮ menu button */}
+      <button
+        ref={btnRef}
+        data-testid={`ds-menu-btn-${srcDisplayKey}`}
+        onClick={openMenu}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 14, cursor: 'pointer', padding: '2px 4px', borderRadius: 3, lineHeight: 1, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >⋮</button>
 
       {menuOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div ref={menuRef}
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: 160, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden' }}
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: 168, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 7, boxShadow: '0 6px 20px rgba(0,0,0,0.5)', zIndex: 99999, overflow: 'hidden', padding: '3px 0' }}
         >
           {!showMove ? (
             <>
               {hasFetchData && (
                 <button data-testid={`ds-menu-view-${srcDisplayKey}`}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                   onClick={e => { e.stopPropagation(); setMenuOpen(false); onEdit(); }}
                   style={MENU_ITEM}
-                ><span style={{ fontSize: 11, color: fetchDotColor }}>●</span> View result</button>
+                >
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: fetchOk ? 'var(--bld-success)' : 'var(--bld-error)', display: 'inline-block', flexShrink: 0 }} />
+                  View result
+                </button>
               )}
               <button data-testid={`ds-menu-fetch-${srcDisplayKey}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={handleFetch} style={MENU_ITEM}
-              ><span style={{ fontSize: 13 }}>↻</span> Fetch</button>
+              ><IcoRefresh /> Fetch now</button>
               <button data-testid={`edit-datasource-${src.id}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); onEdit(); }} style={MENU_ITEM}
-              ><span style={{ fontSize: 12 }}>✎</span> Edit</button>
+              ><IcoEdit /> Edit</button>
               <button data-testid={`ds-menu-copy-${srcDisplayKey}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); navigator.clipboard?.writeText(srcDisplayKey); }} style={MENU_ITEM}
-              ><span style={{ fontSize: 12 }}>⧉</span> Copy</button>
+              ><IcoCopy /> Copy name</button>
               <button data-testid={`ds-menu-duplicate-${srcDisplayKey}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); onDuplicate(); }} style={MENU_ITEM}
-              ><span style={{ fontSize: 12 }}>⧉</span> Duplicate</button>
+              ><IcoDuplicate /> Duplicate</button>
               <button
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setShowMove(true); }}
                 style={{ ...MENU_ITEM, justifyContent: 'space-between' }}
-              ><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>📁</span> Move to</span><Chevron open={false} size={10} color="#6b7280" /></button>
-              <div style={{ borderTop: '1px solid #374151' }} />
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IcoFolder /> Move to folder</span>
+                <Chevron open={false} size={9} color="var(--bld-text-disabled)" />
+              </button>
+              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
               <button data-testid={`delete-datasource-${src.id}`}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); onDelete(); }}
-                style={{ ...MENU_ITEM, color: '#f87171' }}
-              ><span style={{ fontSize: 12 }}>🗑</span> Delete</button>
+                style={{ ...MENU_ITEM, color: 'var(--bld-error)' }}
+              ><IcoTrash /> Delete</button>
             </>
           ) : (
             <>
               <button
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setShowMove(false); }}
-                style={{ ...MENU_ITEM, color: '#9ca3af', gap: 6 }}
-              ><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Chevron open={false} size={10} color="#9ca3af" style={{ transform: 'rotate(180deg)' }} /> Back</span></button>
-              <div style={{ borderTop: '1px solid #374151' }} />
+                style={{ ...MENU_ITEM, color: 'var(--bld-text-3)' }}
+              ><Chevron open={false} size={9} color="var(--bld-text-3)" style={{ transform: 'rotate(180deg)' }} /> Back</button>
+              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
               <button
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
                 onClick={e => { e.stopPropagation(); setMenuOpen(false); setShowMove(false); onMove(undefined); }}
-                style={{ ...MENU_ITEM, color: !src.folderId ? '#a5b4fc' : '#9ca3af', fontStyle: 'italic' }}
+                style={{ ...MENU_ITEM, color: !src.folderId ? 'var(--bld-accent)' : 'var(--bld-text-3)' }}
               >
-                <span style={{ fontSize: 10 }}>{!src.folderId ? '✓' : ' '}</span> No folder
+                {!src.folderId
+                  ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span style={{ width: 10, display: 'inline-block' }} />
+                }
+                No folder
               </button>
-              {allFolders.length > 0 && <div style={{ borderTop: '1px solid #374151' }} />}
+              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />}
               <div style={{ maxHeight: 160, overflowY: 'auto' }}>{folderTree(null, 0)}</div>
             </>
           )}

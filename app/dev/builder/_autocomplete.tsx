@@ -398,7 +398,7 @@ function AutocompleteDropdown({ items, activeIdx, onSelect, onClose, anchorPos, 
       }}
     >
       {/* Header */}
-      <div style={{ padding: '4px 10px', borderBottom: '1px solid #1f2937', fontSize: 9, color: '#6b7280', background: '#0d1117', flexShrink: 0 }}>
+      <div style={{ padding: '4px 10px', borderBottom: '1px solid #1f2937', fontSize: 9, color: 'var(--bld-text-disabled)', background: '#0d1117', flexShrink: 0 }}>
         {triggerMode ? MODE_LABEL[triggerMode] : 'Autocomplete'} — ↑↓ navigate, Tab/Enter confirm
       </div>
 
@@ -407,7 +407,7 @@ function AutocompleteDropdown({ items, activeIdx, onSelect, onClose, anchorPos, 
         {Object.entries(grouped).map(([group, groupItems]) => (
           <div key={group}>
             {Object.keys(grouped).length > 1 && (
-              <div style={{ padding: '3px 10px 1px', fontSize: 9, color: '#4b5563', background: '#0d1117', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <div style={{ padding: '3px 10px 1px', fontSize: 9, color: 'var(--bld-text-disabled)', background: '#0d1117', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {group}
               </div>
             )}
@@ -429,7 +429,7 @@ function AutocompleteDropdown({ items, activeIdx, onSelect, onClose, anchorPos, 
                     gap: 8,
                   }}
                 >
-                  <span style={{ fontSize: 12, color: '#e5e7eb', fontFamily: 'monospace', fontWeight: isActive ? 600 : 400 }}>
+                  <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontFamily: 'monospace', fontWeight: isActive ? 600 : 400 }}>
                     {item.label}
                   </span>
                   <span style={{ fontSize: 10, color: isActive ? '#93c5fd' : '#9ca3af', flexShrink: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -476,7 +476,7 @@ export function AutocompleteInput({
     borderRadius: 4,
     padding: '4px 8px',
     fontSize: 11,
-    color: '#f3f4f6',
+    color: 'var(--bld-text-2)',
     fontFamily: 'monospace',
     outline: 'none',
     resize: 'none',

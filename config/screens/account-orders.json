@@ -30,7 +30,8 @@
             },
             "text": "You haven't placed any orders yet."
           }
-        ]
+        ],
+        "_group": "Empty State"
       },
       {
         "type": "Box",
@@ -231,7 +232,8 @@
               "className": ""
             }
           }
-        ]
+        ],
+        "_group": "Orders List"
       }
     ]
   }

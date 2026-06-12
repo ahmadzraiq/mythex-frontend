@@ -60,7 +60,7 @@ function formatCell(val: unknown): string {
 const BTN: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 5,
   padding: '4px 10px', fontSize: 12, fontWeight: 500,
-  background: 'transparent', color: '#94a3b8',
+  background: 'transparent', color: 'var(--bld-text-3)',
   border: '1px solid transparent', borderRadius: 5,
   cursor: 'pointer', whiteSpace: 'nowrap',
 };
@@ -74,7 +74,7 @@ const BTN_PRIMARY: React.CSSProperties = {
 };
 const INPUT_STYLE: React.CSSProperties = {
   background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-  padding: '8px 12px', fontSize: 13, color: '#e2e8f0', outline: 'none',
+  padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
 const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: 'pointer' };
@@ -509,7 +509,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
       {/* ── Main content ──────────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
         {!selectedTable && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 13 }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 13 }}>
             Select a table from the sidebar to view its data.
           </div>
         )}
@@ -518,8 +518,8 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
           <>
             {/* Breadcrumb + Settings */}
             <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #1e293b', flexShrink: 0, position: 'relative', zIndex: 41 }}>
-              <span style={{ fontSize: 13, color: '#475569' }}>⊞</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{selectedTable.displayName}</span>
+              <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>⊞</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>{selectedTable.displayName}</span>
               <div style={{ flex: 1 }} />
               <button
                 onClick={(e) => { e.stopPropagation(); setShowSettings((v) => !v); setActivePanel(null); setViewSettingsId(null); }}
@@ -588,12 +588,12 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, padding: '8px 16px', borderBottom: '1px solid #1e293b', background: '#080d17' }}>
                 {(viewParamsMap[activeView] ?? []).map((p) => (
                   <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{p.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>{p.name}</span>
                     <input
                       value={paramValues[p.id] ?? p.defaultValue}
                       onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                       placeholder="Enter a value"
-                      style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: '#e2e8f0', outline: 'none', width: 160 }}
+                      style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', width: 160 }}
                     />
                   </div>
                 ))}
@@ -743,7 +743,7 @@ function SettingsCard({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Name */}
       <div style={{ padding: '16px 16px 12px' }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
           Name <span style={{ color: '#ef4444' }}>*</span>
         </label>
         <input
@@ -756,7 +756,7 @@ function SettingsCard({
 
       {/* Description */}
       <div style={{ padding: '0 16px 14px' }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
           Description
         </label>
         <RichTextArea value={desc} onChange={onDescChange} />
@@ -766,7 +766,7 @@ function SettingsCard({
       <div style={{ borderTop: '1px solid #1e293b', padding: '12px 16px' }}>
         <button
           onClick={onDelete}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--bld-text-3)', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
         >
           🗑 Delete
         </button>
@@ -792,7 +792,7 @@ function RichTextArea({ value, onChange }: { value: string; onChange: (v: string
           <button
             key={t.title}
             title={t.title}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 11, padding: '2px 5px', borderRadius: 3 }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: '2px 5px', borderRadius: 3 }}
           >
             {t.icon}
           </button>
@@ -805,7 +805,7 @@ function RichTextArea({ value, onChange }: { value: string; onChange: (v: string
         rows={5}
         style={{
           width: '100%', background: 'transparent', border: 'none', outline: 'none',
-          color: '#e2e8f0', fontSize: 13, padding: '10px 12px', resize: 'none',
+          color: 'var(--bld-text-2)', fontSize: 13, padding: '10px 12px', resize: 'none',
           boxSizing: 'border-box', lineHeight: '1.5',
         }}
       />
@@ -838,19 +838,19 @@ function Sidebar({
 }) {
   const sideInputStyle: React.CSSProperties = {
     background: '#111827', border: '1px solid #374151', borderRadius: 4,
-    padding: '4px 8px', fontSize: 11, color: '#e2e8f0', outline: 'none',
+    padding: '4px 8px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box',
   };
 
   return (
     <div style={{ width: 220, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0 }}>
       <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0' }}>Tables</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>Tables</span>
         <div style={{ display: 'flex', gap: 5 }}>
           <button
             onClick={onImportErd}
             title="Import from ERD (dbdiagram.io)"
-            style={{ ...BTN, border: '1px solid #374151', padding: '3px 8px', fontSize: 11, color: '#94a3b8' }}
+            style={{ ...BTN, border: '1px solid #374151', padding: '3px 8px', fontSize: 11, color: 'var(--bld-text-3)' }}
           >⬆ ERD</button>
           <button onClick={onToggleAddTable} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+ Add</button>
         </div>
@@ -874,9 +874,9 @@ function Sidebar({
         </div>
       )}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {loadingTables && <div style={{ padding: 14, textAlign: 'center', fontSize: 12, color: '#475569' }}>Loading…</div>}
+        {loadingTables && <div style={{ padding: 14, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)' }}>Loading…</div>}
         {!loadingTables && tables.length === 0 && (
-          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: '#475569' }}>No tables yet.<br />Click + Add Table.</div>
+          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)' }}>No tables yet.<br />Click + Add Table.</div>
         )}
         {tables.map((t) => {
           const active = t.id === selectedTableId;
@@ -941,15 +941,15 @@ function ViewTabBar({
   const tabBase: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 14px',
     fontSize: 12, cursor: 'pointer', background: 'transparent', border: 'none',
-    borderBottom: '2px solid transparent', color: '#94a3b8', whiteSpace: 'nowrap',
+    borderBottom: '2px solid transparent', color: 'var(--bld-text-3)', whiteSpace: 'nowrap',
   };
   const tabActive: React.CSSProperties = {
-    ...tabBase, color: '#e2e8f0', borderBottom: '2px solid #6366f1', fontWeight: 600,
+    ...tabBase, color: 'var(--bld-text-2)', borderBottom: '2px solid #6366f1', fontWeight: 600,
   };
 
   const sideInput: React.CSSProperties = {
     background: '#111827', border: '1px solid #374151', borderRadius: 4,
-    padding: '3px 7px', fontSize: 11, color: '#e2e8f0', outline: 'none', boxSizing: 'border-box',
+    padding: '3px 7px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', boxSizing: 'border-box',
   };
 
   return (
@@ -970,7 +970,7 @@ function ViewTabBar({
               if (viewSettingsId === v.id) { onCloseViewSettings(); return; }
               onViewSettings(v.id, v.name, '');
             }}
-            style={{ ...BTN, padding: '4px 6px', fontSize: 13, color: '#475569', borderBottom: activeView === v.id ? '2px solid #6366f1' : '2px solid transparent' }}
+            style={{ ...BTN, padding: '4px 6px', fontSize: 13, color: 'var(--bld-text-disabled)', borderBottom: activeView === v.id ? '2px solid #6366f1' : '2px solid transparent' }}
           >
             ⋮
           </button>
@@ -1031,7 +1031,7 @@ function Toolbar({
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderBottom: '1px solid #1e293b', flexShrink: 0, background: '#080d17' }}>
       {isDataTab
         ? <button style={activePanel === 'insert' ? BTN_ACTIVE : BTN_PRIMARY} onClick={() => onTogglePanel('insert')}>+ Insert</button>
-        : <button style={(activePanel as string) === 'parameters' ? BTN_ACTIVE : { ...BTN, background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 6 }} onClick={() => onTogglePanel('parameters')}>⊕ Parameters</button>
+        : <button style={(activePanel as string) === 'parameters' ? BTN_ACTIVE : { ...BTN, background: '#1e293b', border: '1px solid #334155', color: 'var(--bld-text-2)', borderRadius: 6 }} onClick={() => onTogglePanel('parameters')}>⊕ Parameters</button>
       }
       <div style={{ width: 1, height: 16, background: '#1e293b', margin: '0 4px' }} />
       <button style={activePanel === 'columns' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('columns')}>⊞ Columns</button>
@@ -1075,13 +1075,13 @@ function InsertPanel({
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 300, maxHeight: 420, overflow: 'auto' }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>Insert a row</span>
-        <button onClick={() => setMode('menu')} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 11 }}>← Back</button>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Insert a row</span>
+        <button onClick={() => setMode('menu')} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 11 }}>← Back</button>
       </div>
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {table.columns.map((col) => (
           <div key={col.id}>
-            <label style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, display: 'block', marginBottom: 3 }}>
+            <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 3 }}>
               {typeIcon(col.type)} {col.displayName ?? col.name}
               {col.required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
             </label>
@@ -1093,7 +1093,7 @@ function InsertPanel({
             />
           </div>
         ))}
-        {table.columns.length === 0 && <p style={{ fontSize: 12, color: '#475569' }}>No custom columns. Add columns via the + button.</p>}
+        {table.columns.length === 0 && <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)' }}>No custom columns. Add columns via the + button.</p>}
       </div>
       <div style={{ padding: '10px 14px', borderTop: '1px solid #1e293b', display: 'flex', gap: 8 }}>
         <button onClick={onInsertRow} disabled={inserting} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: inserting ? 0.6 : 1 }}>
@@ -1112,8 +1112,8 @@ function MenuItem({ icon, title, subtitle, onClick }: { icon: string; title: str
       style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', cursor: 'pointer', background: hover ? 'rgba(99,102,241,0.08)' : 'transparent' }}>
       <div style={{ width: 28, height: 28, background: '#1e293b', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#818cf8', flexShrink: 0 }}>{icon}</div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{title}</div>
-        <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{subtitle}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</div>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2 }}>{subtitle}</div>
       </div>
     </div>
   );
@@ -1135,7 +1135,7 @@ function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: 
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 260 }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>Columns</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Columns</span>
       </div>
       <div style={{ padding: '6px 0', maxHeight: 280, overflow: 'auto' }}>
         {allCols.map((col) => {
@@ -1144,8 +1144,8 @@ function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: 
           return (
             <div key={col} onClick={() => toggle(col)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', cursor: 'pointer' }}>
               <Toggle on={on} />
-              <span style={{ fontSize: 12, color: '#475569', width: 16, textAlign: 'center', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
-              <span style={{ fontSize: 12, color: '#e2e8f0' }}>{col}</span>
+              <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', width: 16, textAlign: 'center', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
+              <span style={{ fontSize: 12, color: 'var(--bld-text-2)' }}>{col}</span>
             </div>
           );
         })}
@@ -1165,7 +1165,7 @@ function PaginationPanel({ pending, onChange, onSave }: { pending: number; onCha
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 320 }}>
       <div style={{ padding: '12px 14px' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 10 }}>Rows per page <span style={{ color: '#ef4444' }}>*</span></div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Rows per page <span style={{ color: '#ef4444' }}>*</span></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {PAGE_SIZE_OPTIONS.map((opt) => (
             <button key={opt} onClick={() => onChange(opt)} style={{
@@ -1205,7 +1205,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
 
   const s: React.CSSProperties = {
     background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-    padding: '6px 10px', fontSize: 12, color: '#e2e8f0', outline: 'none',
+    padding: '6px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none',
     boxSizing: 'border-box',
   };
 
@@ -1216,7 +1216,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
           {/* Header row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 32px', gap: 8, padding: '10px 16px 4px', borderBottom: '1px solid #1e293b' }}>
             {['Parameter name', 'Parameter type', 'Default value', ''].map((h) => (
-              <span key={h} style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{h}</span>
+              <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>{h}</span>
             ))}
           </div>
           {/* Rows */}
@@ -1230,7 +1230,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
                   style={{ ...s, width: '100%' }}
                 />
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none' }}>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--bld-text-3)', pointerEvents: 'none' }}>
                     {typeIcon(p.type)}
                   </span>
                   <select
@@ -1249,7 +1249,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
                 />
                 <button
                   onClick={() => onChange(pending.filter((x) => x.id !== p.id))}
-                  style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16, padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: 0 }}
                 >
                   ×
                 </button>
@@ -1259,7 +1259,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
         </>
       )}
       <div style={{ padding: pending.length > 0 ? '4px 16px 10px' : '10px 16px' }}>
-        <button onClick={addParam} style={{ ...BTN, fontSize: 12, color: '#94a3b8', padding: '4px 0' }}>
+        <button onClick={addParam} style={{ ...BTN, fontSize: 12, color: 'var(--bld-text-3)', padding: '4px 0' }}>
           + Add Parameters
         </button>
       </div>
@@ -1295,7 +1295,7 @@ function DataGrid({
     <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
       {loading && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(8,13,23,0.7)', zIndex: 10 }}>
-          <span style={{ fontSize: 13, color: '#475569' }}>Loading…</span>
+          <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>Loading…</span>
         </div>
       )}
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
@@ -1312,7 +1312,7 @@ function DataGrid({
               return (
                 <th key={col} style={{ width: COL_WIDTH, borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', padding: 0, textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', height: 34 }}>
-                    <span style={{ fontSize: 12, color: '#475569', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
+                    <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
                     <span style={{ fontSize: 12, fontWeight: 500, color: system ? '#94a3b8' : '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col}</span>
                     <span style={{ fontSize: 11, color: '#334155', cursor: 'pointer', flexShrink: 0 }}>⋮</span>
                   </div>
@@ -1330,7 +1330,7 @@ function DataGrid({
         <tbody>
           {rows.length === 0 && !loading && (
             <tr>
-              <td colSpan={displayCols.length + 2} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: '#475569' }}>
+              <td colSpan={displayCols.length + 2} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--bld-text-disabled)' }}>
                 No rows yet. Click Insert → Insert a row.
               </td>
             </tr>
@@ -1381,7 +1381,7 @@ function DataRow({
             {isEditing ? (
               <input autoFocus value={editingValue} onChange={(e) => onEditValue(e.target.value)}
                 onBlur={onCommitEdit} onKeyDown={(e) => { if (e.key === 'Enter') onCommitEdit(); if (e.key === 'Escape') onCancelEdit(); }}
-                style={{ width: '100%', height: 36, border: 'none', outline: '2px solid #6366f1', background: '#111827', color: '#e2e8f0', padding: '0 10px', fontSize: 12, boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 36, border: 'none', outline: '2px solid #6366f1', background: '#111827', color: 'var(--bld-text-2)', padding: '0 10px', fontSize: 12, boxSizing: 'border-box' }}
               />
             ) : (
               <div style={{ padding: '0 10px', height: 36, display: 'flex', alignItems: 'center', fontSize: 12, color: system ? '#475569' : '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: system ? 'default' : 'text' }}>
@@ -1404,7 +1404,7 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
   const [inputVal, setInputVal] = useState(String(page));
   useEffect(() => setInputVal(String(page)), [page]);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', borderTop: '1px solid #1e293b', fontSize: 12, color: '#475569', flexShrink: 0, background: '#080d17' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', borderTop: '1px solid #1e293b', fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0, background: '#080d17' }}>
       <span>{totalRows} {totalRows === 1 ? 'row' : 'rows'}</span>
       <div style={{ flex: 1 }} />
       <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...BTN, padding: '2px 8px', opacity: page <= 1 ? 0.3 : 1 }}>‹</button>
@@ -1412,7 +1412,7 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
       <input value={inputVal} onChange={(e) => setInputVal(e.target.value)}
         onBlur={() => { const n = parseInt(inputVal, 10); if (!isNaN(n) && n >= 1 && n <= totalPages) onPageChange(n); else setInputVal(String(page)); }}
         onKeyDown={(e) => { if (e.key === 'Enter') { const n = parseInt(inputVal, 10); if (!isNaN(n) && n >= 1 && n <= totalPages) onPageChange(n); } }}
-        style={{ width: 40, textAlign: 'center', background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '2px 4px', color: '#e2e8f0', fontSize: 12, outline: 'none' }}
+        style={{ width: 40, textAlign: 'center', background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '2px 4px', color: 'var(--bld-text-2)', fontSize: 12, outline: 'none' }}
       />
       <span>of {totalPages}</span>
       <button onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...BTN, padding: '2px 8px', opacity: page >= totalPages ? 0.3 : 1 }}>›</button>
@@ -1439,7 +1439,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
         {/* Column Name */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
             Column Name <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <input
@@ -1453,11 +1453,11 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
 
         {/* Column Type */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
             Column Type <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8', pointerEvents: 'none', zIndex: 1 }}>
+            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--bld-text-3)', pointerEvents: 'none', zIndex: 1 }}>
               {typeIcon(col.type ?? 'TEXT')}
             </div>
             <select
@@ -1476,14 +1476,14 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
             onClick={() => onChange({ ...col, nullable: !col.nullable })}>
-            <span style={{ fontSize: 13, color: '#e2e8f0' }}>Allow multiple values</span>
+            <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Allow multiple values</span>
             <Toggle on={!!col.nullable} />
           </label>
         </div>
 
         {/* Default Value */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Default Value</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Default Value</label>
           <input
             value={col.defaultVal ?? ''}
             onChange={(e) => onChange({ ...col, defaultVal: e.target.value || undefined })}
@@ -1494,16 +1494,16 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
 
         {/* Constraints */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 10 }}>Constraints</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Constraints</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
               onClick={() => onChange({ ...col, required: !col.required })}>
-              <span style={{ fontSize: 13, color: '#e2e8f0' }}>Value is required</span>
+              <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Value is required</span>
               <Toggle on={!!col.required} />
             </label>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
               onClick={() => onChange({ ...col, unique: !col.unique })}>
-              <span style={{ fontSize: 13, color: '#e2e8f0' }}>Value must be unique</span>
+              <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Value must be unique</span>
               <Toggle on={!!col.unique} />
             </label>
           </div>
@@ -1511,7 +1511,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
 
         {/* Description */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Description</label>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Description</label>
           <RichTextArea value={''} onChange={() => void 0} />
         </div>
       </div>
@@ -1575,7 +1575,7 @@ function ImportErdModal({ projectId, onImported, onClose }: {
   };
   const INPUT: React.CSSProperties = {
     background: '#111827', border: '1px solid #374151', borderRadius: 6,
-    color: '#e2e8f0', fontSize: 12, fontFamily: 'monospace', padding: '10px 12px',
+    color: 'var(--bld-text-2)', fontSize: 12, fontFamily: 'monospace', padding: '10px 12px',
     resize: 'vertical', outline: 'none', width: '100%', boxSizing: 'border-box',
   };
 
@@ -1585,10 +1585,10 @@ function ImportErdModal({ projectId, onImported, onClose }: {
         {/* Header */}
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0' }}>Import ERD</span>
-            <span style={{ marginLeft: 8, fontSize: 11, color: '#64748b' }}>dbdiagram.io / DBML format</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--bld-text-2)' }}>Import ERD</span>
+            <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--bld-text-3)' }}>dbdiagram.io / DBML format</span>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
         </div>
 
         {/* Body */}
@@ -1622,7 +1622,7 @@ function ImportErdModal({ projectId, onImported, onClose }: {
 
         {/* Footer */}
         <div style={{ padding: '12px 18px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid #374151', borderRadius: 6, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid #374151', borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer' }}>
             {result ? 'Close' : 'Cancel'}
           </button>
           {!result && (

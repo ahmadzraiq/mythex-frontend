@@ -54,7 +54,7 @@ export const filterPanelStyles = {
   BTN: {
     display: 'inline-flex', alignItems: 'center', gap: 5,
     padding: '4px 10px', fontSize: 12, fontWeight: 500,
-    background: 'transparent', color: '#94a3b8',
+    background: 'transparent', color: 'var(--bld-text-3)',
     border: '1px solid transparent', borderRadius: 5,
     cursor: 'pointer', whiteSpace: 'nowrap',
   } as React.CSSProperties,
@@ -69,13 +69,13 @@ export const filterPanelStyles = {
 
   INPUT_STYLE: {
     background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-    padding: '8px 12px', fontSize: 13, color: '#e2e8f0', outline: 'none',
+    padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box',
   } as React.CSSProperties,
 
   SELECT_STYLE: {
     background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-    padding: '8px 12px', fontSize: 13, color: '#e2e8f0', outline: 'none',
+    padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box', cursor: 'pointer',
   } as React.CSSProperties,
 
@@ -140,7 +140,7 @@ function FilterRow({
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px' }}>
-      <span style={{ fontSize: 11, color: '#475569', width: 40 }}>{prefix}</span>
+      <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', width: 40 }}>{prefix}</span>
       {allCols.length > 0 ? (
         <select value={cond.field} onChange={(e) => onChange({ field: e.target.value })} style={{ ...s, width: 110 }}>
           {colOptions.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -170,7 +170,7 @@ function FilterRow({
             />
       )}
       <Toggle on={cond.active} onClick={() => onChange({ active: !cond.active })} />
-      <button onClick={onRemove} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 13 }}>⋮</button>
+      <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 13 }}>⋮</button>
     </div>
   );
 }
@@ -255,8 +255,8 @@ export function FilterPanel({
   return (
     <div style={asPopover ? { ...PANEL_STYLE, top: 0, left: 12, minWidth: 560, maxHeight: 440, overflow: 'auto' } : undefined}>
       {empty && (
-        <div style={{ padding: '14px 16px', fontSize: 12, color: '#475569' }}>
-          <strong style={{ color: '#94a3b8' }}>Use a filter to:</strong><br />
+        <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>
+          <strong style={{ color: 'var(--bld-text-3)' }}>Use a filter to:</strong><br />
           - Show only data with a certain tag.<br />
           - Hide data with no value.
         </div>
@@ -279,7 +279,7 @@ export function FilterPanel({
               <option>And</option><option>Or</option>
             </select>
             <span style={{ fontSize: 12, color: '#60a5fa', flex: 1 }}>⚷ Condition group ({group.conditions.length} conditions)</span>
-            <button onClick={() => onChangeGroups(groups.filter((g) => g.id !== group.id))} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer' }}>⋮</button>
+            <button onClick={() => onChangeGroups(groups.filter((g) => g.id !== group.id))} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>⋮</button>
           </div>
           {group.conditions.map((cond) => (
             <FilterRow key={cond.id} cond={cond} allCols={allCols} prefix="Where"
@@ -302,8 +302,8 @@ export function FilterPanel({
         </div>
       ))}
       <div style={{ padding: '8px 14px', display: 'flex', gap: 16, borderTop: empty ? 'none' : '1px solid #1e293b' }}>
-        <button onClick={addCondition} style={{ ...BTN, fontSize: 11, color: '#94a3b8', padding: '2px 0' }}>+ Add condition</button>
-        <button onClick={addGroup} style={{ ...BTN, fontSize: 11, color: '#94a3b8', padding: '2px 0' }}>+ Add condition group</button>
+        <button onClick={addCondition} style={{ ...BTN, fontSize: 11, color: 'var(--bld-text-3)', padding: '2px 0' }}>+ Add condition</button>
+        <button onClick={addGroup} style={{ ...BTN, fontSize: 11, color: 'var(--bld-text-3)', padding: '2px 0' }}>+ Add condition group</button>
       </div>
       <PanelFooter onReset={onReset} onSave={onSave} />
     </div>
@@ -327,10 +327,10 @@ export function SortPanel({
   return (
     <div style={asPopover ? { ...PANEL_STYLE, top: 0, left: 12, minWidth: 400 } : undefined}>
       <div style={{ padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {pending.length === 0 && <p style={{ fontSize: 12, color: '#475569', margin: 0 }}>No sorts applied.</p>}
+        {pending.length === 0 && <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)', margin: 0 }}>No sorts applied.</p>}
         {pending.map((spec, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: '#475569', width: 44 }}>Sort by</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', width: 44 }}>Sort by</span>
             <select value={spec.field} onChange={(e) => onChange(pending.map((x, j) => j === i ? { ...x, field: e.target.value } : x))} style={{ ...s, flex: 1 }}>
               {allCols.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -338,12 +338,12 @@ export function SortPanel({
               <option value="asc">↑ Asc</option>
               <option value="desc">↓ Desc</option>
             </select>
-            <button onClick={() => onChange(pending.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 14 }}>×</button>
+            <button onClick={() => onChange(pending.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14 }}>×</button>
           </div>
         ))}
         <button
           onClick={() => onChange([...pending, { field: allCols[0] ?? 'id', dir: 'asc' }])}
-          style={{ ...BTN, fontSize: 11, color: '#94a3b8', padding: '3px 0', alignSelf: 'flex-start' }}
+          style={{ ...BTN, fontSize: 11, color: 'var(--bld-text-3)', padding: '3px 0', alignSelf: 'flex-start' }}
         >+ Add sort</button>
       </div>
       <PanelFooter onReset={onReset} onSave={onSave} />

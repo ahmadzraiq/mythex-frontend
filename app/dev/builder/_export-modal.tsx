@@ -132,14 +132,14 @@ export function ExportModal({ onClose }: ExportModalProps) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Export as React Code</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--bld-text-1)' }}>Export as React Code</div>
+            <div style={{ fontSize: 12, color: 'var(--bld-text-3)', marginTop: 2 }}>
               Downloads a standalone Next.js + Tailwind project
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
           >
             ✕
           </button>
@@ -147,7 +147,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
 
         {/* App name input */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             App Name
           </label>
           <input
@@ -163,7 +163,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               background: '#0f172a',
               border: '1px solid #334155',
               borderRadius: 6,
-              color: '#f1f5f9',
+              color: 'var(--bld-text-1)',
               fontSize: 13,
               fontFamily: 'monospace',
               boxSizing: 'border-box',
@@ -185,7 +185,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
                 {phaseLabel[progress.phase]}
               </span>
               {progress.filesTotal > 0 && (
-                <span style={{ fontSize: 11, color: '#64748b' }}>
+                <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>
                   {progress.filesDone} / {progress.filesTotal} files
                 </span>
               )}
@@ -232,7 +232,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
         {/* File tree preview */}
         {fileTree.length > 0 && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Generated Files ({fileTree.length})
             </div>
             <div style={{
@@ -244,7 +244,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               overflowY: 'auto',
               fontFamily: 'monospace',
               fontSize: 11,
-              color: '#94a3b8',
+              color: 'var(--bld-text-3)',
               lineHeight: 1.8,
             }}>
               {fileTree.map(f => (
@@ -281,7 +281,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               background: 'none',
               border: '1px solid #334155',
               borderRadius: 6,
-              color: '#94a3b8',
+              color: 'var(--bld-text-3)',
               fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',

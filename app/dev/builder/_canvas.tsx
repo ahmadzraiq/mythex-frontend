@@ -2499,7 +2499,7 @@ export default function BuilderCanvas() {
         }}>
           <div style={{ textAlign: 'center', fontFamily: 'system-ui', maxWidth: 320 }}>
             <div style={{ fontSize: 36, marginBottom: 16, opacity: 0.2 }}>⬜</div>
-            <div style={{ fontSize: 15, color: '#e2e8f0', fontWeight: 600, marginBottom: 20 }}>
+            <div style={{ fontSize: 15, color: 'var(--bld-text-2)', fontWeight: 600, marginBottom: 20 }}>
               Your canvas is empty
             </div>
             {/* Step 1 */}
@@ -2511,10 +2511,10 @@ export default function BuilderCanvas() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>1</div>
               <div>
-                <div style={{ fontSize: 12, color: '#d1d5db', fontWeight: 600, lineHeight: 1.3 }}>
+                <div style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, lineHeight: 1.3 }}>
                   Add a page
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2, lineHeight: 1.5 }}>
                   Open <span style={{ color: '#93c5fd', fontWeight: 500 }}>Select page</span> in the top bar and click <span style={{ color: '#93c5fd', fontWeight: 500 }}>+ Add page</span>
                 </div>
               </div>
@@ -2528,10 +2528,10 @@ export default function BuilderCanvas() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>2</div>
               <div>
-                <div style={{ fontSize: 12, color: '#d1d5db', fontWeight: 600, lineHeight: 1.3 }}>
+                <div style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, lineHeight: 1.3 }}>
                   Drag a component
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2, lineHeight: 1.5 }}>
                   Open the <span style={{ color: '#93c5fd', fontWeight: 500 }}>Components</span> tab in the left panel and drag any component onto the canvas
                 </div>
               </div>
@@ -2625,10 +2625,10 @@ export default function BuilderCanvas() {
                 window.addEventListener('mousemove', onMove);
                 window.addEventListener('mouseup', onUp);
               } : undefined}
-              style={{ position: 'absolute', left: pgLeft, top: pgTop - 26, fontSize: 11, color: '#d1d5db', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline', cursor: 'grab' }}>
-              <span style={{ fontWeight: 600, color: '#f3f4f6' }}>{pg?.name ?? 'Page'}</span>
-              {pg?.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6b7280' }}>{pg.route}</span>}
-              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{vpWidth}px</span>
+              style={{ position: 'absolute', left: pgLeft, top: pgTop - 26, fontSize: 11, color: 'var(--bld-text-2)', userSelect: 'none', fontFamily: 'system-ui', whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline', cursor: 'grab' }}>
+              <span style={{ fontWeight: 600, color: 'var(--bld-text-2)' }}>{pg?.name ?? 'Page'}</span>
+              {pg?.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'var(--bld-text-disabled)' }}>{pg.route}</span>}
+              <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'var(--bld-text-disabled)' }}>{vpWidth}px</span>
             </div>
           );
         })()}
@@ -3304,7 +3304,7 @@ export default function BuilderCanvas() {
       {/* ── Zoom controls ── */}
       <div style={{ position: 'absolute', bottom: 52, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
         <ZoomBtn label="−" testId="zoom-out" onClick={() => setZoom(Math.max(MIN_ZOOM, zoom / 1.25))} />
-        <button data-testid="zoom-label" style={{ fontSize: 11, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', minWidth: 40, textAlign: 'center' }} onClick={fitToCanvas}>
+        <button data-testid="zoom-label" style={{ fontSize: 11, color: 'var(--bld-text-2)', background: 'none', border: 'none', cursor: 'pointer', minWidth: 40, textAlign: 'center' }} onClick={fitToCanvas}>
           {Math.round(zoom * 100)}%
         </button>
         <ZoomBtn label="+" testId="zoom-in" onClick={() => setZoom(Math.min(MAX_ZOOM, zoom * 1.25))} />

@@ -106,7 +106,7 @@ function Breadcrumb({ nodeId, pageNodes }: { nodeId: string; pageNodes: SDUINode
         const label = (node.id ?? node.type).slice(0, 16);
         return (
           <React.Fragment key={node.id ?? i}>
-            {i > 0 && <span style={{ color: '#4b5563', fontSize: 10 }}>›</span>}
+            {i > 0 && <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10 }}>›</span>}
             <button
               onClick={() => node.id && store.select(node.id)}
               style={{
@@ -181,7 +181,7 @@ function MoreMenu({ nodeId, onClose }: { nodeId: string; onClose: () => void }) 
           <button
             key={item.label}
             onClick={() => { item.action(); onClose(); }}
-            style={{ display: 'block', width: '100%', padding: '6px 14px', background: 'none', border: 'none', color: '#d1d5db', fontSize: 11, textAlign: 'left', cursor: 'pointer' }}
+            style={{ display: 'block', width: '100%', padding: '6px 14px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 11, textAlign: 'left', cursor: 'pointer' }}
             onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
@@ -295,7 +295,7 @@ export function FloatingToolbar({ selectedRect, node, canvasContainerRef }: Floa
           <button
             ref={moreRef}
             onClick={openMore}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 11, padding: '3px 4px', borderRadius: 3 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 11, padding: '3px 4px', borderRadius: 3 }}
             onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >

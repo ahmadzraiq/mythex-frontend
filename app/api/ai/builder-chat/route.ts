@@ -25,8 +25,9 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, STRUCTURE_AGENT_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS, BACKEND_AGENT_TOOLS } from '@/lib/ai/builder-tools';
-import { buildStructureAgentPrompt, buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt, buildDataAgentPrompt } from '@/lib/ai/agents';
+import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS, BACKEND_AGENT_TOOLS } from '@/lib/ai/builder-tools';
+import { buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt, buildDataAgentPrompt } from '@/lib/ai/agents';
+import type { CollectedTree, ToolEvent, Marker } from '@/lib/ai/tools/process-structure-tree';
 import { buildSharedComponentAgentPrompt } from '@/lib/ai/agents/sharedComponents/prompt';
 import { buildBackendAgentPrompt } from '@/lib/ai/agents/backend/prompt';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -81,30 +82,7 @@ interface BuildUnit {
 }
 
 
-interface CollectedTree {
-  unitName: string;
-  tree: Record<string, unknown>;
-  pageId: string | null;
-  atIndex?: number;
-  structureHint?: string;
-  // Page-lifecycle workflow stubs declared by the structure agent alongside the tree.
-  pageActions?: Array<{ workflowId: string; trigger: string }>;
-  // Populated by onStructureReady via extractMediaFromTree — no post-hoc scanning
-  mediaManifest?: {
-    icons: Array<{ id: string; icon: string; name?: string }>;
-    images: Array<{ id: string; searchQuery: string; name?: string }>;
-    videos: Array<{ id: string; searchQuery: string; name?: string }>;
-    bgImages: Array<{ id: string; searchQuery: string; name?: string }>;
-  };
-}
-
-// A non-structure tool call made by the mini-model during Phase 2 (add_variable, set_repeat, set_text).
-// These are collected and streamed to the client in order before Phase 3.
-interface ToolEvent {
-  name: string;
-  input: Record<string, unknown>;
-  result: unknown;
-}
+// CollectedTree, ToolEvent, Marker are imported from @/lib/ai/tools/process-structure-tree
 
 // ── Server-side UUID assignment for generate_structure ───────────────────────
 // Keep AI pre-assigned UUIDs when valid; generate only for missing/invalid ones;
@@ -475,6 +453,32 @@ function extractMediaFromTree(
   return manifest;
 }
 
+// ── Richer client-side tool echo ──────────────────────────────────────────────
+
+function buildRegisteredEcho(toolName: string, input: Record<string, unknown>): Record<string, unknown> {
+  const base: Record<string, unknown> = { ok: true, pending: 'client_execution' };
+  switch (toolName) {
+    case 'add_workflow_step':
+      return { ...base, registered: { workflowId: input.workflowId ?? input.workflowName, stepId: input.stepId, type: input.type, parentStepId: input.parentStepId ?? null, branchKey: input.branchKey ?? null } };
+    case 'update_workflow_steps':
+      return { ...base, registered: { workflowName: input.workflowName, stepCount: Array.isArray(input.steps) ? (input.steps as unknown[]).length : '?', stepTypes: Array.isArray(input.steps) ? (input.steps as Array<{ type?: string }>).map(s => s.type ?? '?') : [] } };
+    case 'set_style':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, appliedProperties: Object.keys((input.style as Record<string, unknown>) ?? {}) } };
+    case 'set_text':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, formula: input.formula ?? input.text } };
+    case 'set_condition':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, condition: input.condition } };
+    case 'set_repeat':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, dataPath: input.dataPath ?? input.mapPath } };
+    case 'set_animation':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, trigger: input.trigger, effect: input.effect } };
+    case 'set_component_props':
+      return { ...base, registered: { nodeId: input.id ?? input.nodeId, appliedProps: Object.keys((input.props as Record<string, unknown>) ?? {}) } };
+    default:
+      return base;
+  }
+}
+
 // ── Reusable Haiku agent loop (used by Phase 3 and Phase W) ──────────────────
 
 async function runHaikuAgentLoop(
@@ -510,6 +514,8 @@ async function runHaikuAgentLoop(
    * so the model can self-correct without being blind to client-side failures.
    */
   serverSideValidators?: Record<string, (input: Record<string, unknown>) => string | null>,
+  /** Optional accumulator — populated with token counts from each Anthropic API call */
+  tokenAccumulator?: { inputTokens: number; outputTokens: number },
 ): Promise<void> {
   const startedAt = Date.now();
   let localToolCount = 0;
@@ -610,6 +616,19 @@ async function runHaikuAgentLoop(
 
     const finalMessage = await response.finalMessage();
     stopReason = finalMessage.stop_reason ?? stopReason;
+
+    // Report token usage via the send callback so the outer POST handler can accumulate
+    if (finalMessage.usage) {
+      send({
+        type: '_internal_token_usage',
+        inputTokens: finalMessage.usage.input_tokens ?? 0,
+        outputTokens: finalMessage.usage.output_tokens ?? 0,
+      });
+      if (tokenAccumulator) {
+        tokenAccumulator.inputTokens += finalMessage.usage.input_tokens ?? 0;
+        tokenAccumulator.outputTokens += finalMessage.usage.output_tokens ?? 0;
+      }
+    }
 
     // Reconcile streamed toolUseBlocks with finalMessage.content.
     // When max_tokens is hit mid-response, the last tool_use block may not receive a
@@ -737,9 +756,8 @@ async function runHaikuAgentLoop(
           is_error: true,
         });
       } else if (streamEmittedIds.has(tool.id)) {
-        // Already emitted during streaming — client executed it; report pending.
-        // No need to re-run the validator here since it already passed during streaming.
-        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+        // Already emitted during streaming — client executed it; report registered echo.
+        toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(buildRegisteredEcho(tool.name, tool.input)) });
       } else {
         // Not emitted during streaming (e.g. max_tokens reconciliation path) — emit now.
         const ssValidator = serverSideValidators?.[tool.name];
@@ -751,10 +769,13 @@ async function runHaikuAgentLoop(
           send({ type: 'tool_executed', id: tool.id, name: tool.name, input: enriched, phase });
           allExecutedTools.push({ name: tool.name, input: enriched });
           localToolCount++;
-          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify({ ok: true, pending: 'client_execution' }) });
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(buildRegisteredEcho(tool.name, enriched)) });
         }
       }
     }
+
+    // pause_turn: server paused generation, no tool calls; re-send without a user message.
+    if (stopReason === 'pause_turn') continue;
 
     currentMessages.push({ role: 'user', content: toolResults });
 
@@ -783,23 +804,12 @@ async function runHaikuAgentLoop(
   }
 }
 
-// ── Structure Agent: builds tree shape + declares variables in one call ───────
+// ── Structure Agent: removed — functionality moved to Smart Planner ───────────
+// The Smart Planner (lib/ai/agents/planner/agent.ts) now calls generate_structure
+// directly in its agentic loop. processStructureTree() (lib/ai/tools/process-structure-tree.ts)
+// handles UUID assignment, marker extraction, and variable processing.
 
-/** Build the user-facing prompt for the structure agent.
- *  Uses the original user message so the agent works from the user's own words
- *  rather than a Planner-generated SDUI description that may use wrong node terminology.
- *  For multi-page builds, prepends a page scope line so the agent knows which page to build. */
-function buildStructureUserRequest(message: string, unit: BuildUnit, totalUnits: number): string {
-  let base = totalUnits > 1 && unit.pageName && unit.pageRoute
-    ? `Page: ${unit.pageName} (${unit.pageRoute})\n\n${message}`
-    : message;
-  if (unit.agentContext) {
-    base += `\n\nWhat each specialist agent will do with the tree you build — create the DOM structure to support all of these:\n${unit.agentContext}`;
-  }
-  return base;
-}
-
-async function runStructureAgent(
+async function _runStructureAgentLegacy_REMOVED(
   unit: BuildUnit,
   assignedPageId: string | null,
   existingVariables: Array<{ id?: string; label?: string; name?: string; type?: string; initialValue?: unknown }>,
@@ -811,6 +821,7 @@ async function runStructureAgent(
    *  user's own words instead of a Planner-generated SDUI description that may use
    *  wrong node-type terminology. For multi-page builds, prefixed with the page scope. */
   userRequest?: string,
+  tokenAccumulator?: { inputTokens: number; outputTokens: number },
 ): Promise<{
   tree: CollectedTree | null;
   markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>;
@@ -831,11 +842,8 @@ async function runStructureAgent(
       }).join('\n')}\n`
     : '';
 
-  const sysPrompt = buildStructureAgentPrompt(existingVarsNote || undefined);
-  const systemBlocks: Anthropic.Messages.TextBlockParam[] = [
-    { type: 'text', text: sysPrompt.static, cache_control: { type: 'ephemeral' } },
-    ...(sysPrompt.dynamic ? [{ type: 'text', text: sysPrompt.dynamic } as Anthropic.Messages.TextBlockParam] : []),
-  ];
+  // Legacy: prompt building removed — this function is no longer called
+  const systemBlocks: Anthropic.Messages.TextBlockParam[] = [];
 
   const prompt = userRequest
     ? `${userRequest}\n\nBuild the tree and declare variables in one generate_structure call.`
@@ -850,10 +858,22 @@ async function runStructureAgent(
       model: resolvedStructureModel,
       max_tokens: 16384,
       system: systemBlocks,
-      tools: STRUCTURE_AGENT_TOOLS.map(t => ({ name: t.name, description: t.description, input_schema: t.input_schema })),
+      tools: [] as never[],
       tool_choice: { type: 'tool' as const, name: 'generate_structure' },
       messages: structureMessages,
     } as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming, signal ? { signal } : undefined);
+
+    if (response.usage) {
+      send({
+        type: '_internal_token_usage',
+        inputTokens: response.usage.input_tokens ?? 0,
+        outputTokens: response.usage.output_tokens ?? 0,
+      });
+      if (tokenAccumulator) {
+        tokenAccumulator.inputTokens += response.usage.input_tokens ?? 0;
+        tokenAccumulator.outputTokens += response.usage.output_tokens ?? 0;
+      }
+    }
 
     for (const block of response.content) {
       if (block.type !== 'tool_use' || block.name !== 'generate_structure') continue;
@@ -1070,6 +1090,10 @@ interface ChatRequestBody {
   /** When true, the client is continuing a Phase 3 styling session across a tool-result request.
    *  The server must restore inPhase3Mode=true so Phase 3 tool restrictions are preserved. */
   isPhase3Continuation?: boolean;
+  /** Workspace ID — used for AI token usage tracking */
+  workspaceId?: string;
+  /** Project ID — used for context in token usage tracking */
+  projectId?: string;
 }
 
 // ── Build palette snapshot from the project's live theme overrides ─────────────
@@ -1144,6 +1168,27 @@ export async function POST(req: NextRequest) {
   const requestId = threadId || crypto.randomUUID();
   const modelSignalCtl = buildTimeoutSignal(req.signal, MODEL_TIMEOUT_MS);
   const externalSignalCtl = buildTimeoutSignal(req.signal, EXTERNAL_FETCH_TIMEOUT_MS);
+
+  // ── AI quota pre-check ──────────────────────────────────────────────────────
+  const { workspaceId: wsIdForQuota } = body as { workspaceId?: string };
+  if (wsIdForQuota) {
+    try {
+      const usageResp = await fetch(
+        `${process.env.BACKEND_URL ?? 'http://localhost:4000'}/v1/workspaces/${wsIdForQuota}/usage`,
+        { headers: { Cookie: req.headers.get('cookie') ?? '' } },
+      );
+      if (usageResp.ok) {
+        const usageData = await usageResp.json() as { usage?: { aiTokens?: { remaining: number | null } } };
+        const remaining = usageData.usage?.aiTokens?.remaining;
+        if (remaining !== null && remaining !== undefined && remaining <= 0) {
+          return new Response(
+            JSON.stringify({ error: 'AI token quota exhausted for this billing period. Please upgrade your plan.', code: 'AI_QUOTA_EXCEEDED' }),
+            { status: 402, headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+      }
+    } catch { /* non-critical — allow through if check fails */ }
+  }
 
   // ── Build system prompt ─────────────────────────────────────────────────────
 
@@ -1239,7 +1284,7 @@ export async function POST(req: NextRequest) {
 
   // Phase O \u2014 turn instrumentation captured by wrapping `send`.
   const turnStartedAt = Date.now();
-  const turnCounters = { ops: 0, agents: new Set<string>(), toolCalls: 0 };
+  const turnCounters = { ops: 0, agents: new Set<string>(), toolCalls: 0, inputTokens: 0, outputTokens: 0 };
   const rawSend = (event: Record<string, unknown>) => {
     try {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
@@ -1252,6 +1297,11 @@ export async function POST(req: NextRequest) {
     if (t === 'tool_executed') turnCounters.toolCalls += 1;
     else if (t === 'agent_context' && typeof event.agent === 'string') turnCounters.agents.add(event.agent);
     else if (t === 'planner_complete' && event.manifest && Array.isArray((event.manifest as Record<string, unknown>).operations)) turnCounters.ops = ((event.manifest as Record<string, unknown>).operations as unknown[]).length;
+    else if (t === '_internal_token_usage') {
+      turnCounters.inputTokens += (event.inputTokens as number) ?? 0;
+      turnCounters.outputTokens += (event.outputTokens as number) ?? 0;
+      return; // don't forward internal events to the SSE stream
+    }
     rawSend(event);
   };
   send({ type: 'request_start', requestId, pageId: currentPage.id, model: modelId });
@@ -1291,6 +1341,11 @@ export async function POST(req: NextRequest) {
       let manifestOperations: import('@/lib/ai/agents/manifest').ManifestOperation[] = [];
       // Human-readable intent string from the manifest (used for the completion text bubble).
       let manifestIntent = '';
+      let capturedManifest: import('@/lib/ai/agents/manifest').ContractManifest = { intent: '', operations: [] };
+      // Structure output — captured from dispatchResult inside the try block
+      let builtCollectedTrees: CollectedTree[] = [];
+      let builtAllMarkers: Marker[][] = [];
+      let builtAddVarEventsCollected: ToolEvent[] = [];
       // Planner-refined working spec for all specialist agents. Falls back to the raw user message.
       let effectiveMessage = message;
       try {
@@ -1302,7 +1357,6 @@ export async function POST(req: NextRequest) {
             selectedNodeIds: selectedNodeIds ?? [],
             pageId: currentPage.id,
             pageNodes: (pageTreeSnapshot ?? []) as never,
-            // Full search context for Context Agent + legacy read handlers
             nodeFlat: nodeFlat ?? [],
             otherPagesIndex: otherPagesIndex ?? [],
             variables: variables ?? [],
@@ -1313,6 +1367,10 @@ export async function POST(req: NextRequest) {
             pages: pages ?? [],
             theme: theme ?? {},
             currentPageRoute: currentPage.route,
+            // Pass compact chat history for planner context
+            chatHistory: chatHistory.slice(-5).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+            // Share the allExecutedTools accumulator so the planner populates it
+            allExecutedTools,
             signal: modelSignalCtl.signal,
           },
           send,
@@ -1326,6 +1384,10 @@ export async function POST(req: NextRequest) {
         }
         // Capture top-level manifest intent for the completion text bubble.
         if (dispatchResult.manifest.intent) manifestIntent = dispatchResult.manifest.intent;
+        capturedManifest = dispatchResult.manifest;
+        builtCollectedTrees = dispatchResult.collectedTrees;
+        builtAllMarkers = dispatchResult.allMarkers;
+        builtAddVarEventsCollected = [...dispatchResult.addVarEventsCollected];
         // Use the planner's refined request as the working spec for all specialist agents.
         // Falls back to the raw user message when refinedRequest is absent (e.g. clarification flows).
         if (dispatchResult.manifest.refinedRequest) effectiveMessage = dispatchResult.manifest.refinedRequest;
@@ -1338,19 +1400,6 @@ export async function POST(req: NextRequest) {
           if (op.agents?.data) plannerWantsData = true;
           // Collect all agent family keys emitted by the planner.
           for (const key of Object.keys(op.agents ?? {})) manifestAgentSet.add(key);
-          const ctx = (op.agents?.structure?.context ?? {}) as Record<string, unknown>;
-          if (Array.isArray(ctx.dataSources)) {
-            for (const d of ctx.dataSources as Array<Record<string, unknown>>) {
-              const id = (d.dataSourceId ?? d.id) as string | undefined;
-              if (typeof id === 'string' && id.length > 0) {
-                predictedDataSources.push({
-                  id,
-                  name: typeof d.name === 'string' ? d.name : undefined,
-                  type: (d.type as 'rest' | 'graphql' | undefined),
-                });
-              }
-            }
-          }
           const dctx = (op.agents?.data?.context ?? {}) as Record<string, unknown>;
           if (Array.isArray(dctx.dataSources)) {
             for (const d of dctx.dataSources as Array<Record<string, unknown>>) {
@@ -1380,33 +1429,16 @@ export async function POST(req: NextRequest) {
       // The Planner outputs pageRoute + pageName per operation; we derive units from
       // that rather than defaulting everything to the current page.
       if (manifestOperations.length > 0) {
-        // Collect all specialist briefings per route so the structure agent knows
-        // what every downstream agent will do with its tree before building it.
-        const agentContextByRoute = new Map<string, string[]>();
-        const BRIEFING_AGENTS = ['styling', 'animation', 'binding', 'media'] as const;
-        for (const op of manifestOperations) {
-          const route = op.pageRoute ?? currentPage.route;
-          if (!route) continue;
-          for (const agentKey of BRIEFING_AGENTS) {
-            const brief = (op.agents?.[agentKey] as { briefing?: string } | undefined)?.briefing;
-            if (brief) {
-              if (!agentContextByRoute.has(route)) agentContextByRoute.set(route, []);
-              agentContextByRoute.get(route)!.push(`[${agentKey}]: ${brief}`);
-            }
-          }
-        }
-
         const routeMap = new Map<string, BuildUnit>();
         for (const op of manifestOperations) {
           const route = op.pageRoute ?? currentPage.route;
           if (!route || routeMap.has(route)) continue;
           routeMap.set(route, {
-            name: op.summary,
+            name: op.id,
             pageRoute: route,
             pageName: op.pageName ?? (route === currentPage.route ? currentPage.name : undefined),
-            description: op.summary,
+            description: op.id,
             sectionCount: 1,
-            agentContext: agentContextByRoute.get(route)?.join('\n') ?? undefined,
           });
         }
         if (routeMap.size > 0) {
@@ -1416,112 +1448,42 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Compute early gates from manifest (needed before structure agent runs).
-      const skipStructureAgentEarly = !manifestAgentSet.has('structure');
-
       send({ type: 'build_phase', phase: 'building', total: units.length, message: `Building ${units.length} section${units.length !== 1 ? 's' : ''} with parallel agents...`, buildUnits: units.map(u => ({ name: u.name, description: u.description, pageRoute: u.pageRoute, sectionCount: u.sectionCount })) });
 
-      // ── Page creation (sequential) ──────────────────────────────────────────
-      const pageIdMap: Record<string, string> = {};
-      if (!skipStructureAgentEarly) {
-      for (const unit of units) {
-        const routeKey = unit.pageRoute ?? '/';
-          if (pageIdMap[routeKey]) continue; // already assigned for this route
-        const isCurrent = !unit.pageRoute || unit.pageRoute === currentPage.route;
-        if (isCurrent) { pageIdMap[routeKey] = pageId ?? currentPage.id; continue; }
-        const existing = pages.find(p => p.route === unit.pageRoute);
-        if (existing) { pageIdMap[unit.pageRoute] = existing.id; continue; }
-        const newPageId = `page-${crypto.randomUUID().slice(0, 8)}`;
-        pageIdMap[unit.pageRoute] = newPageId;
-        send({ type: 'tool_executed', id: `page-create-${newPageId}`, name: 'add_page', input: { route: unit.pageRoute, name: unit.pageName, pageId: newPageId, _assignedPageId: newPageId }, phase: 'structure' });
-        }
-      }
+      // ── Structure comes from the smart planner (dispatch) ─────────────────────
+      // The planner built the DOM tree and emitted tool_executed events during its
+      // agentic loop. We just pick up the results here.
+      const collectedTrees: CollectedTree[] = builtCollectedTrees;
+      const allMarkers: Marker[][] = builtAllMarkers;
+      let addVarEventsCollected: ToolEvent[] = builtAddVarEventsCollected;
 
-      // Shared state populated by the structure agent (empty for dynamic-only requests).
-      const collectedTrees: CollectedTree[] = [];
-      const allMarkers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[] = [];
-      let addVarEventsCollected: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> = [];
-      let boolVarIds: string[] = [];
-
-      // ── Phase 1: Structure (tree + variables in one LLM call) ─────────────────
-      // Skipped for dynamic-only requests — no new structure is being created.
-      if (!skipStructureAgentEarly) {
-      send({ type: 'build_phase', phase: 'structure', message: 'Building structure & variables...' });
-      const structureStartedAt = Date.now();
-      // Build a representative user message for the first unit so the copy log can show it.
-      const firstStructureUnit = units[0];
-      const firstStructureUserRequest = firstStructureUnit
-        ? buildStructureUserRequest(effectiveMessage, firstStructureUnit, units.length)
-        : undefined;
-      const firstStructureUserMessage = firstStructureUserRequest
-        ? `${firstStructureUserRequest}\n\nBuild the tree and declare variables in one generate_structure call.`
-        : undefined;
-      send({ type: 'agent_context', agent: 'structure', systemPrompt: buildStructureAgentPrompt().static, userMessage: firstStructureUserMessage, tools: STRUCTURE_AGENT_TOOLS.map(t => t.name), syntheticMessageCount: 0, startedAt: structureStartedAt });
-
-      type StructureSubResult = {
-        result: Awaited<ReturnType<typeof runStructureAgent>>;
-        unit: BuildUnit;
-        index: number;
-        ctWithMedia?: CollectedTree;
-        prompt: string;
-      };
-
-      const structureSubResultsSettled = await Promise.allSettled(units.map(async (unit, i): Promise<StructureSubResult> => {
-        const assignedPid = pageIdMap[unit.pageRoute ?? '/'] ?? null;
-        const structureUserRequest = buildStructureUserRequest(effectiveMessage, unit, units.length);
-        const result = await runStructureAgent(unit, assignedPid, variables, send, allExecutedTools, modelSignalCtl.signal, modelId, structureUserRequest);
-        const unitPrompt = `${structureUserRequest}\n\nBuild the tree and declare variables in one generate_structure call.`;
-
-        let ctWithMedia: CollectedTree | undefined;
-        if (result.tree) {
-          const ct = result.tree;
+      // Attach media manifests to trees (extractMediaFromTree needs loop node IDs)
+      for (const ct of collectedTrees) {
+        if (!ct.mediaManifest) {
           const loopNodeIds = new Set(
-            (result.markers ?? []).filter(m => m.loop).map(m => m.nodeId),
+            allMarkers.flat().filter(m => m.loop).map(m => m.nodeId),
           );
-          const mediaManifest = extractMediaFromTree(ct.tree, loopNodeIds);
-          ctWithMedia = { ...ct, mediaManifest };
+          ct.mediaManifest = extractMediaFromTree(ct.tree, loopNodeIds);
         }
-
-        send({ type: 'section_progress', done: i + 1, total: units.length, name: unit.name });
-        return { result, unit, index: i, ctWithMedia, prompt: unitPrompt };
-      }));
-      const structureSubResults: StructureSubResult[] = [];
-      for (const [idx, settled] of structureSubResultsSettled.entries()) {
-        if (settled.status === 'fulfilled') {
-          structureSubResults.push(settled.value);
-          continue;
-        }
-        send({
-          type: 'agent_error',
-          agent: 'structure',
-          section: units[idx]?.name,
-          message: settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
-        });
       }
 
-        addVarEventsCollected = structureSubResults.flatMap(s => s.result.varEvents);
-        boolVarIds = addVarEventsCollected
+      // Build pageIdMap from collected trees for downstream pageSplits lookups
+      const pageIdMap: Record<string, string> = {};
+      pageIdMap[currentPage.route] = pageId ?? currentPage.id;
+      for (const ct of collectedTrees) {
+        if (ct.pageId) {
+          // Find matching unit by pageId
+          const matchedUnit = units.find(u => {
+            const existing = pages.find(p => p.route === u.pageRoute);
+            return existing?.id === ct.pageId;
+          });
+          if (matchedUnit?.pageRoute) pageIdMap[matchedUnit.pageRoute] = ct.pageId;
+        }
+      }
+
+      const boolVarIds = addVarEventsCollected
         .filter(e => (e.input as Record<string, unknown>).type === 'boolean')
         .map(e => String((e.input as Record<string, unknown>).variableId ?? ''));
-
-      for (const sub of structureSubResults) {
-        if (sub.ctWithMedia) {
-          const ct = sub.ctWithMedia;
-          const isCurrentPage = !ct.pageId || ct.pageId === (pageId ?? currentPage.id);
-          collectedTrees.push(ct);
-          allMarkers.push(sub.result.markers);
-          send({ type: 'tool_executed', id: `build-${ct.unitName}-imm-${sub.index}`, name: 'generate_structure', input: { tree: ct.tree, parentId: undefined, atIndex: ct.atIndex, _pageId: isCurrentPage ? undefined : ct.pageId, _boolVarIds: boolVarIds, pageActions: ct.pageActions }, phase: 'structure' });
-          allExecutedTools.push({ name: 'generate_structure', input: { tree: ct.tree } });
-        }
-      }
-
-      send({ type: 'agent_complete', agent: 'structure', rounds: structureSubResults.length, toolCallCount: collectedTrees.length + addVarEventsCollected.length, duration: Date.now() - structureStartedAt, endedAt: Date.now() });
-
-      if (collectedTrees.length === 0) {
-        send({ type: 'done', tools: allExecutedTools });
-          return;
-        }
-      }
 
       // ── Compute hints (between structure and parallel fan-out) ──────────────
       // Hints are computed from the trees BEFORE markers are stripped (they're still on the trees at this point for hint detectors)
@@ -1541,7 +1503,7 @@ export async function POST(req: NextRequest) {
       // and reduces input tokens significantly.
       function buildCompactTreeText(
         trees: CollectedTree[],
-        markers: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string }>[],
+        markers: Marker[][],
       ): string {
         const markerMap = new Map<string, { repeat?: string; condition?: string }>();
         for (const mks of markers) {
@@ -2017,7 +1979,7 @@ export async function POST(req: NextRequest) {
 
       const pageSplits: PageAgentSplit[] = collectedTrees.map((ct, idx) => {
         const pageCompactTree = buildCompactTreeText([ct], allMarkers);
-        const unit = units[idx] ?? units.find(u => (pageIdMap[u.pageRoute ?? '/'] ?? null) === ct.pageId) ?? units[0];
+        const unit = units.find(u => (pageIdMap[u.pageRoute ?? '/'] ?? null) === ct.pageId) ?? units[idx] ?? units[0];
         const rawLabel = unit?.name || ct.unitName || ct.pageId || `page-${idx + 1}`;
         const agentLabel = rawLabel;
         const slug = slugify(rawLabel);
@@ -2131,11 +2093,7 @@ ${effectiveMessage}${relationsNote}`,
 
           const op = pageStylingOps[i];
           const opId = op?.id ?? slugify(ct.unitName || pageRoute);
-          const chunkLabel = op?.agents?.styling?.briefing
-            ? op.agents.styling.briefing.slice(0, 40)
-            : (ct.unitName || pageRoute);
-          const animationBriefing = (op?.agents?.animation as { briefing?: string } | undefined)?.briefing ?? '';
-          const animationChunkLabel = animationBriefing ? animationBriefing.slice(0, 40) : chunkLabel;
+          const chunkLabel = ct.unitName || pageRoute;
           const stylingAgentName = N > 1 ? `styling:${opId}` : `styling:${slugify(ct.unitName || pageRoute)}`;
           const animationAgentName = N > 1 ? `animation:${opId}` : `animation:${slugify(ct.unitName || pageRoute)}`;
 
@@ -2155,11 +2113,10 @@ ${effectiveMessage}${relationsNote}`,
               : '';
           })() : '';
 
-          const stylingBriefing = (op?.agents?.styling as { briefing?: string } | undefined)?.briefing ?? '';
           const stylingMessages: Anthropic.Messages.MessageParam[] = [{
             role: 'user',
             content: `${contextBlock}[Styling Agent — ${chunkLabel}]
-${stylingBriefing ? stylingBriefing + '\n\n' : ''}
+
 [Page Tree Chunk — use exact node UUIDs]
 ${chunkCompactTree}${fullPageBlock}
 
@@ -2171,8 +2128,8 @@ ${effectiveMessage}${relationsNote}${pageContextNote}`,
 
           const animationMessages: Anthropic.Messages.MessageParam[] = [{
             role: 'user',
-            content: `[Animation Agent — ${animationChunkLabel}]
-${animationBriefing ? animationBriefing + '\n\n' : ''}
+            content: `[Animation Agent — ${chunkLabel}]
+
 [Page Tree Chunk — use exact node UUIDs]
 ${chunkCompactTree}${fullPageBlock}
 
@@ -2188,9 +2145,9 @@ ${effectiveMessage}${relationsNote}${pageContextNote}`,
       // When structure is skipped (edit-only request), collectedTrees is empty so the
       // loop above produces no styleChunks/pageSplits. Build slots directly from
       // manifest ops that have resolvedNodeIds — agents receive exact UUIDs, no search.
-      if (skipStructureAgentEarly) {
+      if (collectedTrees.length === 0) {
         const editOps = manifestOperations.filter(op =>
-          op.resolvedNodeIds && op.resolvedNodeIds.length > 0 && !op.agents?.structure
+          op.resolvedNodeIds && op.resolvedNodeIds.length > 0
         );
 
         if (editOps.length > 0 && styleChunks.length === 0 && (manifestAgentSet.has('styling') || manifestAgentSet.has('animation'))) {
@@ -2198,15 +2155,14 @@ ${effectiveMessage}${relationsNote}${pageContextNote}`,
           for (const op of editOps) {
             if (!op.agents?.styling && !op.agents?.animation) continue;
             const opSlug = slugify(op.id ?? 'edit');
-            const sBriefing = (op.agents?.styling as { briefing?: string } | undefined)?.briefing ?? op.summary ?? message;
-            const label = op.summary?.slice(0, 50) ?? 'Edit';
+            const label = op.id ?? 'Edit';
             const uuidHint = `\nTarget node UUIDs: ${op.resolvedNodeIds.join(', ')}`;
 
             const stylingMessages: Anthropic.Messages.MessageParam[] = [{
               role: 'user',
               content: `${contextBlock}[Styling Agent — ${label}]
 The page structure ALREADY EXISTS — do NOT call generate_structure. Apply visual styles directly to the target nodes.
-${sBriefing}${uuidHint}
+${uuidHint}
 
 ${varRoster}
 
@@ -2217,7 +2173,7 @@ ${effectiveMessage}`,
               role: 'user',
               content: `${contextBlock}[Animation Agent — ${label}]
 The page structure ALREADY EXISTS. Apply animations to the target nodes.
-${sBriefing}${uuidHint}
+${uuidHint}
 
 Original request:
 ${effectiveMessage}`,
@@ -2237,8 +2193,7 @@ ${effectiveMessage}`,
           for (const op of editOps) {
             if (!op.agents?.binding && !op.agents?.workflows) continue;
             const opSlug = slugify(op.id ?? 'edit');
-            const wBriefing = (op.agents?.workflows as { briefing?: string } | undefined)?.briefing ?? op.summary ?? message;
-            const label = op.summary?.slice(0, 50) ?? 'Edit';
+            const label = op.id ?? 'Edit';
             const uuidHint = `\nTarget node UUIDs: ${op.resolvedNodeIds.join(', ')}`;
             const resolvedPageId = pages.find((p: { route: string }) => p.route === (op.pageRoute ?? currentPage.route))?.id ?? currentPage.id;
 
@@ -2257,7 +2212,7 @@ ${effectiveMessage}`,
               role: 'user',
               content: `${contextBlock}[Workflows Agent — ${label}]
 Page: ${resolvedPageId} (page-scoped workflows must include pageScope: '${resolvedPageId}').
-${wBriefing}${uuidHint}
+${uuidHint}
 ${varRosterForWorkflows}${editExistingWfRoster ? `\n\n${editExistingWfRoster}` : ''}
 
 Original request:
@@ -2302,7 +2257,30 @@ ${effectiveMessage}${relationsNote}`,
       ];
       const phaseWReadHandlers: Record<string, (input: Record<string, unknown>) => unknown> = {
         get_variables: () => mergedVariables,
-        get_workflows: () => workflows,
+        get_workflows: () => {
+          // Augment the stale snapshot with steps dispatched during this session.
+          // add_workflow_step is a client-side tool — we track dispatched calls in allExecutedTools.
+          const stepCountByWorkflow = new Map<string, number>();
+          const stepIdsByWorkflow = new Map<string, string[]>();
+          for (const t of allExecutedTools) {
+            if (t.name === 'add_workflow_step') {
+              const inp = t.input as Record<string, unknown>;
+              const wfKey = String(inp.workflowId ?? inp.workflowName ?? '');
+              if (!wfKey) continue;
+              stepCountByWorkflow.set(wfKey, (stepCountByWorkflow.get(wfKey) ?? 0) + 1);
+              const ids = stepIdsByWorkflow.get(wfKey) ?? [];
+              ids.push(String(inp.stepId ?? '?'));
+              stepIdsByWorkflow.set(wfKey, ids);
+            }
+          }
+          return (workflows as Array<Record<string, unknown>>).map(wf => {
+            const key = String(wf.id ?? wf.name ?? '');
+            const count = stepCountByWorkflow.get(key) ?? 0;
+            return count > 0
+              ? { ...wf, _stepsAddedThisSession: count, _stepIds: stepIdsByWorkflow.get(key) }
+              : wf;
+          });
+        },
       };
 
       // ── Media Agent (real AI — searches and applies images/videos/icons) ─────
@@ -2461,7 +2439,7 @@ ${effectiveMessage}`,
       const shouldBind      = manifestAgentSet.has('binding');
       const shouldWorkflow  = manifestAgentSet.has('workflows');
       const shouldAnimation = manifestAgentSet.has('animation');
-      const skipStructureAgent = skipStructureAgentEarly;
+      const skipStructureAgent = collectedTrees.length === 0;
       // Media gate — reuse the value computed before the promise was created.
       const shouldMedia = shouldMediaEarly;
 
@@ -2473,8 +2451,8 @@ ${effectiveMessage}`,
       // Fetched only when the planner requested the backend agent.
       // Returns a [Backend Context] block injected into the backend agent user message.
       const BACKEND_API_URL = process.env.BACKEND_URL ?? 'http://localhost:4000';
-      const backendAuthHeaders: Record<string, string> = (() => {
-        const h: Record<string, string> = { 'Content-Type': 'application/json' };
+      const baseBackendAuthHeaders: Record<string, string> = (() => {
+        const h: Record<string, string> = {};
         const cookie = req.headers.get('cookie');
         if (cookie) h['cookie'] = cookie;
         const auth = req.headers.get('authorization');
@@ -2484,9 +2462,13 @@ ${effectiveMessage}`,
 
       async function backendFetch(path: string, method = 'GET', bodyData?: unknown): Promise<unknown> {
         const url = `${BACKEND_API_URL}${path}`;
+        const headers: Record<string, string> = { ...baseBackendAuthHeaders };
+        // Only set Content-Type when we have a body; omitting it for bodyless POSTs (e.g. /publish)
+        // prevents the server from rejecting with FST_ERR_CTP_EMPTY_JSON_BODY.
+        if (bodyData !== undefined) headers['Content-Type'] = 'application/json';
         const res = await fetch(url, {
           method,
-          headers: backendAuthHeaders,
+          headers,
           ...(bodyData !== undefined ? { body: JSON.stringify(bodyData) } : {}),
         });
         if (!res.ok) {
@@ -2765,8 +2747,31 @@ ${effectiveMessage}`,
               const newStep = input.step as Record<string, unknown>;
               if (!newStep.id) newStep.id = `s${currentGraph.length + 1}`;
               const updatedGraph = [...currentGraph, newStep];
-              const updated = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
-              return { success: true, stepId: newStep.id, workflow: updated };
+              await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
+              // Re-publish after each step so the live endpoint always reflects the latest graph.
+              await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST').catch(() => {});
+              return {
+                success: true,
+                stepId: newStep.id,
+                currentStepCount: updatedGraph.length,
+                allStepIds: updatedGraph.map((s: unknown) => String((s as Record<string, unknown>).id ?? '')),
+              };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : String(err) };
+            }
+          },
+          replace_workflow_step: async (input) => {
+            try {
+              const current = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { graph?: unknown[] } };
+              const currentGraph: unknown[] = Array.isArray(current?.workflow?.graph) ? current.workflow.graph : [];
+              const idx = currentGraph.findIndex(s => (s as Record<string, unknown>).id === input.stepId);
+              if (idx === -1) return { success: false, error: `Step "${input.stepId}" not found in workflow graph.` };
+              const updatedGraph = [...currentGraph];
+              updatedGraph[idx] = input.step;
+              await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
+              // Re-publish after replacement so the fix is live immediately.
+              await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST').catch(() => {});
+              return { success: true, replacedStepId: input.stepId, totalSteps: updatedGraph.length };
             } catch (err) {
               return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
@@ -2787,15 +2792,26 @@ ${effectiveMessage}`,
           },
           publish_server_workflow: async (input) => {
             try {
-              const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST');
-              return { success: true, workflow: result };
+              const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST') as { workflow?: { id: string; name: string; status: string } };
+              return { success: true, published: true, workflowId: result?.workflow?.id, name: result?.workflow?.name, status: result?.workflow?.status };
             } catch (err) {
               return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
           },
           read_workflow: async (input) => {
             try {
-              return await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`);
+              const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { id: string; name: string; kind: string; method?: string; path?: string; status: string; graph?: unknown[] } };
+              const wf = result?.workflow;
+              const graph = wf?.graph ?? [];
+              function compactStep(s: Record<string, unknown>): Record<string, unknown> {
+                const out: Record<string, unknown> = { id: s.id, type: s.type };
+                if (s.config) out.config = s.config;
+                for (const key of ['trueBranch', 'falseBranch', 'tryBody', 'catchBody', 'loopBody']) {
+                  if (Array.isArray(s[key])) out[key] = (s[key] as unknown[]).map(x => compactStep(x as Record<string, unknown>));
+                }
+                return out;
+              }
+              return { workflowId: wf?.id, name: wf?.name, kind: wf?.kind, method: wf?.method, path: wf?.path, status: wf?.status, stepCount: graph.length, steps: graph.map(s => compactStep(s as Record<string, unknown>)) };
             } catch (err) {
               return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
@@ -2873,8 +2889,33 @@ ${effectiveMessage}`,
         });
       });
 
+      // Verify pass disabled.
+
       // Phase O — turn stats before `done`.
-      send({ type: 'turn_stats', totalDurationMs: Date.now() - turnStartedAt, toolCalls: turnCounters.toolCalls, ops: turnCounters.ops, agents: turnCounters.agents.size });
+      send({
+        type: 'turn_stats',
+        totalDurationMs: Date.now() - turnStartedAt,
+        toolCalls: turnCounters.toolCalls,
+        ops: turnCounters.ops,
+        agents: turnCounters.agents.size,
+        inputTokens: turnCounters.inputTokens,
+        outputTokens: turnCounters.outputTokens,
+      });
+
+      // Report token usage to backend (fire-and-forget, don't block the response)
+      const { workspaceId: wsId, projectId: projId } = body as { workspaceId?: string; projectId?: string };
+      if (wsId && (turnCounters.inputTokens + turnCounters.outputTokens) > 0) {
+        fetch(`${process.env.BACKEND_URL ?? 'http://localhost:4000'}/v1/workspaces/${wsId}/usage/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...req.headers.get('cookie') ? { Cookie: req.headers.get('cookie')! } : {} },
+          body: JSON.stringify({
+            projectId: projId,
+            inputTokens: turnCounters.inputTokens,
+            outputTokens: turnCounters.outputTokens,
+            model: modelId,
+          }),
+        }).catch(() => { /* non-critical */ });
+      }
 
       // Emit a brief completion message.
       const completionText = manifestIntent

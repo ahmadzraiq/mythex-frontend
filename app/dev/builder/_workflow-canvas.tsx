@@ -125,17 +125,17 @@ function ContextMenuPopup({
     >
       {items.map((item, i) =>
         item === null ? (
-          <div key={i} style={{ height: 1, background: '#f3f4f6', margin: '2px 0' }} />
+          <div key={i} style={{ height: 1, background: 'var(--bld-text-1)', margin: '2px 0' }} />
         ) : (
           <button
             key={i}
             style={S.contextItem(item.danger)}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = item.danger ? '#450a0a' : '#374151'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = item.danger ? 'rgba(248,113,113,0.12)' : 'var(--bld-border-subtle)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
             onClick={item.action}
           >
             <span>{item.label}</span>
-            {item.shortcut && <span style={{ fontSize: 10, color: '#9ca3af' }}>{item.shortcut}</span>}
+            {item.shortcut && <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>{item.shortcut}</span>}
           </button>
         )
       )}
@@ -175,11 +175,11 @@ function ParametersCanvasNode({
       style={S.card(isSelected, false)}
     >
       <div style={S.cardTopRow}>
-        <span style={{ ...S.cardIcon, color: '#60a5fa' }}>Φ</span>
+        <span style={{ ...S.cardIcon, color: 'var(--bld-info)' }}>Φ</span>
         <span style={S.cardName}>Parameters</span>
         {params.length > 0 && (
           <span style={{
-            fontSize: 10, background: '#1e3a5f', color: '#60a5fa',
+            fontSize: 10, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)',
             borderRadius: 10, padding: '1px 7px', fontWeight: 600, flexShrink: 0,
           }}>
             {params.length}
@@ -278,9 +278,9 @@ function AddActionPopover({
       />
       {copiedStep && !q && (
         <button
-          style={{ ...S.dropdownItem(false), fontWeight: 600, borderBottom: '1px solid #374151' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+          style={{ ...S.dropdownItem(false), fontWeight: 600, borderBottom: '1px solid var(--bld-border-subtle)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
           onClick={() => { onPaste(); onClose(); }}
         >
           📋 Paste action
@@ -295,8 +295,8 @@ function AddActionPopover({
                 <button
                   key={wf.id}
                   style={S.dropdownItem(false)}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
                   onClick={() => { onSelectWorkflow(wf.id, wf.name); onClose(); }}
                 >
                   <span style={{ fontSize: 12 }}>⚡</span>
@@ -311,8 +311,8 @@ function AddActionPopover({
             <button
               key={item.type}
               style={S.dropdownItem(false)}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onSelect(item.type); onClose(); }}
             >
               <span style={{ fontSize: 12 }}>{item.icon}</span>
@@ -324,8 +324,8 @@ function AddActionPopover({
             <button
               key={fn.id}
               style={S.dropdownItem(false)}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onSelectWorkflow(fn.id, fn.name); onClose(); }}
             >
               <span style={{ fontSize: 12 }}>ƒ</span>
@@ -390,11 +390,11 @@ function TriggerDropdown({
               style={S.dropdownItem(opt.value === value)}
               onClick={() => { onChange(opt.value); onClose(); }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', color: '#9ca3af', flexShrink: 0 }}>
+              <span style={{ display: 'flex', alignItems: 'center', color: 'var(--bld-text-3)', flexShrink: 0 }}>
                 {getTriggerIcon(opt.value)}
               </span>
               <span style={{ flex: 1 }}>{opt.label}</span>
-              {opt.value === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+              {opt.value === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -433,7 +433,7 @@ function WorkflowOptionsMenu({
   const itemStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '7px 14px', fontSize: 12, cursor: 'pointer',
-    background: 'transparent', border: 'none', color: '#e5e7eb',
+    background: 'transparent', border: 'none', color: 'var(--bld-text-2)',
     width: '100%', textAlign: 'left',
   };
 
@@ -446,15 +446,15 @@ function WorkflowOptionsMenu({
         right: window.innerWidth - anchorRect.right,
         top: anchorRect.bottom + 4,
         zIndex: 10001,
-        background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+        background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)', minWidth: 160, overflow: 'hidden',
       }}
     >
       {canDelete && (
         <button
-          style={{ ...itemStyle, color: '#f87171' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#450a0a'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+          style={{ ...itemStyle, color: 'var(--bld-error)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(248,113,113,0.12)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
           onClick={() => onDelete()}
         >
           Delete workflow
@@ -1092,19 +1092,19 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div data-testid="workflow-canvas" style={inline ? { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: '#0f172a' } : S.overlay} onClick={() => { setTriggerDropdownOpen(false); setAddPopoverState(null); setContextMenuState(null); }}>
+    <div data-testid="workflow-canvas" style={inline ? { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: 'var(--bld-bg-base)' } : S.overlay} onClick={() => { setTriggerDropdownOpen(false); setAddPopoverState(null); setContextMenuState(null); }}>
       {/* Top bar */}
       <div style={S.topBar} onClick={e => e.stopPropagation()}>
         {/* Left: workflow name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow' || target.kind === 'serverWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
         </div>
         {/* Copy JSON */}
         <button
           data-testid="workflow-canvas-copy-json"
-          style={{ ...S.closeBtn, color: copiedJson ? '#34d399' : '#9ca3af' }}
+          style={{ ...S.closeBtn, color: copiedJson ? 'var(--bld-success)' : 'var(--bld-text-3)' }}
           onClick={handleCopyJson}
           title="Copy workflow steps as JSON"
         >
@@ -1125,7 +1125,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.18 }}>
             <defs>
               <pattern id="wf-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="0.8" fill="#6b7280" />
+                <circle cx="1" cy="1" r="0.8" fill="var(--bld-text-disabled)" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#wf-grid)" />
@@ -1143,11 +1143,11 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                   style={S.triggerPill(!isFixedTrigger)}
                   onClick={() => !isFixedTrigger && setTriggerDropdownOpen(v => !v)}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', color: '#fbbf24', flexShrink: 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', color: 'var(--bld-warning)', flexShrink: 0 }}>
                     {isFixedTrigger ? <TI.Zap /> : getTriggerIcon(triggerValue)}
                   </span>
                   <span>{triggerLabel}</span>
-                  {!isFixedTrigger && <span style={{ fontSize: 10, color: '#9ca3af' }}>▾</span>}
+                  {!isFixedTrigger && <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>▾</span>}
                 </div>
                 {triggerDropdownOpen && !isFixedTrigger && (
                   <TriggerDropdown
@@ -1211,12 +1211,12 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
         <div style={S.rightPanel} onClick={e => e.stopPropagation()}>
           {/* Panel header */}
           <div style={S.rightPanelHeader}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e7eb', flex: 1 }}>Workflow</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1 }}>Workflow</span>
             {/* Workflow options menu */}
             <button
               ref={workflowMenuBtnRef}
               data-testid="workflow-panel-menu-btn"
-              style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 16, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 16, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
               onClick={e => {
                 e.stopPropagation();
                 const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
@@ -1276,7 +1276,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
               />
             ) : selectedStep ? (
               <>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #1f2937' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--bld-bg-input)' }}>
                   <span style={{ fontSize: 14 }}>{getActionIcon(selectedStep.type)}</span>
                   <span>{selectedStep.name || getActionLabel(selectedStep.type)}</span>
                 </div>
@@ -1311,9 +1311,9 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                 onChange={patch => setWorkflowMeta(prev => ({ ...prev, ...patch }))}
               />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af', fontSize: 12, textAlign: 'center', padding: 24, gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center', padding: 24, gap: 8 }}>
                 <span style={{ fontSize: 32, opacity: 0.3 }}>⚡</span>
-                <span style={{ fontWeight: 600, color: '#6b7280' }}>Select an action</span>
+                <span style={{ fontWeight: 600, color: 'var(--bld-text-disabled)' }}>Select an action</span>
                 <span>Click any action node to configure it</span>
               </div>
             )}

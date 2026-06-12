@@ -51,10 +51,42 @@ function parseStreamedInput(raw: string): Record<string, unknown> {
   try { return JSON.parse(raw || '{}') as Record<string, unknown>; } catch { return { __parseError: true }; }
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Compact step tree — keep id + type + config at all levels; strip verbose metadata. */
+function compactStepTree(steps: unknown[]): unknown[] {
+  return steps.map(s => {
+    const step = s as Record<string, unknown>;
+    const out: Record<string, unknown> = { id: step.id, type: step.type };
+    if (step.config) out.config = step.config;
+    for (const key of ['trueBranch', 'falseBranch', 'tryBody', 'catchBody', 'loopBody']) {
+      if (Array.isArray(step[key])) out[key] = compactStepTree(step[key] as unknown[]);
+    }
+    return out;
+  });
+}
+
+
+/** Summarise old chat history turns into a compact block. */
+async function summariseChatHistory(
+  history: Array<{ role: string; content: string }>,
+  anthropic: Anthropic,
+): Promise<string> {
+  if (history.length <= 6) return '';
+  const toSummarise = history.slice(0, history.length - 4);
+  const resp = await anthropic.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 300,
+    messages: [{ role: 'user', content: `Summarise this backend build conversation in ≤200 words. Focus on: what tables/workflows were created, key decisions, what was requested.\n\n${toSummarise.map(m => `${m.role}: ${m.content}`).join('\n\n')}` }],
+  });
+  return `[Prior context summary]\n${(resp.content[0] as { text: string }).text}`;
+}
+
 export async function POST(req: NextRequest) {
-  const body = await req.json() as { message?: string; projectId?: string };
+  const body = await req.json() as { message?: string; projectId?: string; chatHistory?: Array<{ role: string; content: string }> };
   const message = String(body.message ?? '').trim();
   const projectId = String(body.projectId ?? '').trim();
+  const chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : [];
 
   if (!message || !projectId) {
     return new Response(JSON.stringify({ error: 'message and projectId are required' }), { status: 400 });
@@ -63,16 +95,20 @@ export async function POST(req: NextRequest) {
   const signalCtl = buildTimeoutSignal(req.signal, MODEL_TIMEOUT_MS);
 
   // Auth headers — forward cookies from the original request
-  const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+  const baseAuthHeaders: Record<string, string> = {};
   const cookie = req.headers.get('cookie');
-  if (cookie) authHeaders['cookie'] = cookie;
+  if (cookie) baseAuthHeaders['cookie'] = cookie;
   const auth = req.headers.get('authorization');
-  if (auth) authHeaders['authorization'] = auth;
+  if (auth) baseAuthHeaders['authorization'] = auth;
 
   async function backendFetch(path: string, method = 'GET', bodyData?: unknown): Promise<unknown> {
+    const headers: Record<string, string> = { ...baseAuthHeaders };
+    // Only set Content-Type when we have a body; omitting it for bodyless POSTs (e.g. /publish)
+    // prevents the server from rejecting with FST_ERR_CTP_EMPTY_JSON_BODY.
+    if (bodyData !== undefined) headers['Content-Type'] = 'application/json';
     const res = await fetch(`${BACKEND_API_URL}${path}`, {
       method,
-      headers: authHeaders,
+      headers,
       ...(bodyData !== undefined ? { body: JSON.stringify(bodyData) } : {}),
     });
     if (!res.ok) {
@@ -107,8 +143,7 @@ export async function POST(req: NextRequest) {
       const haystack = [t.name, ...t.columnNames].join(' ').toLowerCase();
       return { ...t, score: msgWords.reduce((n, w) => n + (haystack.includes(w) ? 1 : 0), 0) };
     });
-    const topTables = scoredTables.sort((a, b) => b.score - a.score).slice(0, 10);
-    const relevantTables = topTables.slice(0, 14);
+    const relevantTables = scoredTables.sort((a, b) => b.score - a.score).slice(0, 14);
 
     interface RawWorkflow { id: string; name?: string; kind?: string; status?: string; method?: string; path?: string }
     const workflowsObj = workflowsRaw as { workflows?: RawWorkflow[] };
@@ -175,11 +210,20 @@ export async function POST(req: NextRequest) {
         },
         import_erd: async (input) => {
           try {
-            const result = await backendFetch(`/v1/projects/${projectId}/tables/import-erd`, 'POST', { erd: input.erd }) as { tables?: Array<{ id: string; name: string }>; workflowsCreated?: number };
+            const result = await backendFetch(`/v1/projects/${projectId}/tables/import-erd`, 'POST', { erd: input.erd }) as { tables?: Array<{ id: string; name: string; columns?: Array<{ name: string; type?: string }> }>; workflowsCreated?: number };
             const tables = result?.tables ?? [];
             for (const t of tables) createdTables.push({ id: t.id, name: t.name });
             if (tables.length > 0) send({ type: 'backend_created', tables, workflows: [] });
-            return { success: true, tablesCreated: tables.map(t => ({ id: t.id, name: t.name })), workflowsCreated: result?.workflowsCreated ?? 0 };
+            return {
+              success: true,
+              tablesCreated: tables.map(t => ({
+                id: t.id,
+                name: t.name,
+                columnNames: (t.columns ?? []).map((c: { name: string }) => c.name),
+              })),
+              workflowsCreated: result?.workflowsCreated ?? 0,
+              note: 'Column names are converted to snake_case (e.g. passwordHash → password_hash, userId → user_id). Use the columnNames above exactly in all formula expressions.',
+            };
           } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
         },
         read_table: async (input) => {
@@ -208,14 +252,37 @@ export async function POST(req: NextRequest) {
         },
         add_server_workflow_step: async (input) => {
           try {
-            // Fetch current graph (array), append new step, PATCH back
+            if (!input.step || typeof input.step !== 'object' || Array.isArray(input.step)) {
+              return { success: false, error: 'step must be a JSON object, not a string or array.' };
+            }
             const current = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { graph?: unknown[] } };
             const currentGraph: unknown[] = Array.isArray(current?.workflow?.graph) ? current.workflow.graph : [];
             const newStep = input.step as Record<string, unknown>;
             if (!newStep.id) newStep.id = `s${currentGraph.length + 1}`;
             const updatedGraph = [...currentGraph, newStep];
-            const updated = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
-            return { success: true, stepId: newStep.id, workflow: updated };
+            await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
+            // Re-publish after each step so the live endpoint always reflects the latest graph.
+            await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST').catch(() => {});
+            return {
+              success: true,
+              stepId: newStep.id,
+              currentStepCount: updatedGraph.length,
+              allStepIds: updatedGraph.map((s: unknown) => String((s as Record<string, unknown>).id ?? '')),
+            };
+          } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
+        },
+        replace_workflow_step: async (input) => {
+          try {
+            const current = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { graph?: unknown[] } };
+            const currentGraph: unknown[] = Array.isArray(current?.workflow?.graph) ? current.workflow.graph : [];
+            const idx = currentGraph.findIndex(s => (s as Record<string, unknown>).id === input.stepId);
+            if (idx === -1) return { success: false, error: `Step "${input.stepId}" not found in workflow graph.` };
+            const updatedGraph = [...currentGraph];
+            updatedGraph[idx] = input.step;
+            await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', { graph: updatedGraph });
+            // Re-publish after replacement so the fix is live immediately.
+            await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST').catch(() => {});
+            return { success: true, replacedStepId: input.stepId, totalSteps: updatedGraph.length };
           } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
         },
         update_server_workflow: async (input) => {
@@ -226,16 +293,32 @@ export async function POST(req: NextRequest) {
             if (input.method) payload.method = input.method;
             if (input.path) payload.path = input.path;
             if (input.params) payload.inputSchema = input.params;
+            if (Array.isArray(input.middlewareIds)) payload.middlewareIds = input.middlewareIds;
             return { success: true, workflow: await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`, 'PATCH', payload) };
           } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
         },
         publish_server_workflow: async (input) => {
-          try { return { success: true, workflow: await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST') }; }
-          catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
+          try {
+            const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}/publish`, 'POST') as { workflow?: { id: string; name: string; status: string } };
+            return { success: true, published: true, workflowId: result?.workflow?.id, name: result?.workflow?.name, status: result?.workflow?.status };
+          } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
         },
         read_workflow: async (input) => {
-          try { return await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`); }
-          catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
+          try {
+            const result = await backendFetch(`/v1/projects/${projectId}/workflows/${input.workflowId}`) as { workflow?: { id: string; name: string; kind: string; method?: string; path?: string; status: string; graph?: unknown[] } };
+            const wf = result?.workflow;
+            const graph = wf?.graph ?? [];
+            return {
+              workflowId: wf?.id,
+              name: wf?.name,
+              kind: wf?.kind,
+              method: wf?.method,
+              path: wf?.path,
+              status: wf?.status,
+              stepCount: graph.length,
+              steps: compactStepTree(graph),
+            };
+          } catch (err) { return { success: false, error: err instanceof Error ? err.message : String(err) }; }
         },
       };
 
@@ -243,7 +326,18 @@ export async function POST(req: NextRequest) {
       const systemBlocks: Anthropic.Messages.TextBlockParam[] = [
         { type: 'text', text: promptParts.static, cache_control: { type: 'ephemeral' } },
       ];
+
+      // Inject summarised chat history as context
+      let historyBlock = '';
+      if (chatHistory.length > 0) {
+        const summary = await summariseChatHistory(chatHistory, client).catch(() => '');
+        const recentRaw = chatHistory.slice(-4);
+        const rawLines = recentRaw.map(m => `${m.role}: ${m.content}`).join('\n\n');
+        historyBlock = [summary, rawLines].filter(Boolean).join('\n\n') + '\n\n';
+      }
+
       const userContent = [
+        historyBlock,
         backendContextBlock ? `${backendContextBlock}\n\n` : '',
         `Original request: ${message}`,
       ].filter(Boolean).join('');
@@ -257,11 +351,10 @@ export async function POST(req: NextRequest) {
       const startedAt = Date.now();
       let rounds = 0;
       let toolCount = 0;
-      const maxRounds = 20;
 
       try {
         let currentMessages = [...messages];
-        while (rounds < maxRounds) {
+        while (true) {
           rounds++;
           const response = client.messages.stream({
             model: 'claude-haiku-4-5',
@@ -295,7 +388,10 @@ export async function POST(req: NextRequest) {
           const finalMessage = await response.finalMessage();
           currentMessages.push({ role: 'assistant', content: finalMessage.content });
 
-          if (toolUseBlocks.length === 0) break;
+          // 'pause_turn' must be checked first — it always has zero tool blocks so the length
+          // guard below would incorrectly break the loop if it fires first.
+          if (finalMessage.stop_reason === 'pause_turn') continue;
+          if (finalMessage.stop_reason === 'end_turn' || toolUseBlocks.length === 0) break;
 
           const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
           for (const tool of toolUseBlocks) {
@@ -319,6 +415,74 @@ export async function POST(req: NextRequest) {
             }
           }
           currentMessages.push({ role: 'user', content: toolResults });
+        }
+
+        // ── Post-build verify loop — read each ENDPOINT/MIDDLEWARE and self-correct ──
+        // The verify loop only gets read/repair tools — no create_server_workflow so it cannot
+        // create duplicate workflows when it finds something broken.
+        const verifyOnlyTools = tools.filter(t => ['read_workflow', 'replace_workflow_step', 'add_server_workflow_step'].includes(t.name));
+
+        const workflowsToVerify = createdWorkflows.filter(w => w.kind === 'API_ENDPOINT' || w.kind === 'MIDDLEWARE');
+        if (workflowsToVerify.length > 0) {
+          const verifyUserContent = `[Verify Phase] Check and repair these ${workflowsToVerify.length} workflow(s):
+
+${workflowsToVerify.map(w => `- ${w.name} (id: ${w.id})`).join('\n')}
+
+For each workflow:
+1. Call read_workflow to inspect its step graph.
+2. Check: every branch/tryCatch must have BOTH arms populated; the final path must end in sendResponse or throwError; step IDs must be unique.
+3. Fix issues with replace_workflow_step (rewrite a broken step) or add_server_workflow_step (add a missing step). DO NOT create new workflows.
+
+Stop once every workflow is structurally complete.`;
+
+          const verifyMessages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: verifyUserContent }];
+          send({ type: 'agent_context', agent: 'backend:verify', systemPrompt: promptParts.static, tools: verifyOnlyTools.map(t => t.name), syntheticMessageCount: 0, startedAt: Date.now(), userMessage: verifyUserContent });
+
+          let verifyCurrentMessages = [...verifyMessages];
+          while (true) {
+            const vResp = client.messages.stream({
+              model: 'claude-haiku-4-5',
+              max_tokens: 16384,
+              system: systemBlocks,
+              tools: verifyOnlyTools,
+              messages: verifyCurrentMessages,
+            } as unknown as Parameters<typeof client.messages.stream>[0], { signal: signalCtl.signal });
+
+            const vToolBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
+            let vCurBlock: { id: string; name: string; inputJson: string } | null = null;
+            for await (const ev of vResp) {
+              if (ev.type === 'content_block_start' && (ev.content_block as { type: string }).type === 'tool_use') {
+                const tb = ev.content_block as { id: string; name: string };
+                vCurBlock = { id: tb.id, name: tb.name, inputJson: '' };
+              } else if (ev.type === 'content_block_delta' && (ev.delta as { type: string }).type === 'input_json_delta' && vCurBlock) {
+                vCurBlock.inputJson += (ev.delta as { partial_json: string }).partial_json;
+              } else if (ev.type === 'content_block_stop' && vCurBlock) {
+                const parsed = parseStreamedInput(vCurBlock.inputJson);
+                vToolBlocks.push({ id: vCurBlock.id, name: vCurBlock.name, input: parsed });
+                send({ type: 'tool_executed', id: vCurBlock.id, name: vCurBlock.name, input: parsed, phase: 'backend:verify' });
+                toolCount++;
+                vCurBlock = null;
+              }
+            }
+            const vFinal = await vResp.finalMessage();
+            verifyCurrentMessages.push({ role: 'assistant', content: vFinal.content });
+
+            if (vFinal.stop_reason === 'pause_turn') continue;
+            if (vFinal.stop_reason === 'end_turn' || vToolBlocks.length === 0) break;
+
+            const vResults: Anthropic.Messages.ToolResultBlockParam[] = [];
+            for (const vt of vToolBlocks) {
+              if (vt.input.__parseError) { vResults.push({ type: 'tool_result', tool_use_id: vt.id, content: JSON.stringify({ success: false, error: 'Malformed JSON.' }), is_error: true }); continue; }
+              const handler = backendToolHandlers[vt.name];
+              if (handler) {
+                try { vResults.push({ type: 'tool_result', tool_use_id: vt.id, content: JSON.stringify(await handler(vt.input)) }); }
+                catch (e) { vResults.push({ type: 'tool_result', tool_use_id: vt.id, content: JSON.stringify({ success: false, error: String(e) }), is_error: true }); }
+              } else {
+                vResults.push({ type: 'tool_result', tool_use_id: vt.id, content: JSON.stringify({ error: `Unknown tool "${vt.name}"` }), is_error: true });
+              }
+            }
+            verifyCurrentMessages.push({ role: 'user', content: vResults });
+          }
         }
 
         send({ type: 'agent_complete', agent: 'backend', rounds, toolCallCount: toolCount, duration: Date.now() - startedAt, endedAt: Date.now() });

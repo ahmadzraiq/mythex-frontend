@@ -296,7 +296,7 @@ export function FieldWithBinding({
 export function FormulaButton({ value, onChange, label }: { value: FormulaValue; onChange: (v: FormulaValue) => void; label: string }) {
   return (
     <FieldWithBinding label={label} value={value} onChange={onChange}>
-      <span style={{ fontSize: 10, color: '#6b7280' }}>{String(value)}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{String(value)}</span>
     </FieldWithBinding>
   );
 }

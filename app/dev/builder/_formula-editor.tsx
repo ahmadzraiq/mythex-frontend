@@ -28,14 +28,17 @@ import { getSharedComponents } from '@/lib/builder/shared-component-data';
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
   ContextDataSection, PagesDataSection, ColorsDataSection, TypographyDataSection,
   BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection, AuthDataSection,
+  EnvVarsSection,
   type VarRowItem } from './_formula-editor-tabs';
 import {
   Tooltip, VariableTree, CollectionEntry,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
   SharedComponentContextSection, AuthDataSection, ParametersSection, FunctionLibrary,
+  EnvVarsSection, useBuilderProjectId,
   type VarRowItem,
 } from './_formula-editor-tabs';
+import { envVariables } from '@/lib/platform/api-client';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { setNestedValue } from '@/lib/sdui/nested-utils';
@@ -96,7 +99,7 @@ import { isJsBoundValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth' | 'formulas';
+type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth' | 'formulas' | 'env';
 
 export interface FormulaEditorProps {
   label: string;
@@ -179,7 +182,7 @@ function WorkflowResultsTab({
 
   if (sorted.length === 0) {
     return (
-      <div style={{ padding: 16, fontSize: 11, color: '#6b7280', textAlign: 'center' }}>
+      <div style={{ padding: 16, fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
         No test results yet.<br />
         Run a step with the ▶ button in the workflow canvas.
       </div>
@@ -247,13 +250,13 @@ function WorkflowResultGroup({
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 6,
           padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer',
-          color: '#e5e7eb', fontSize: 11, fontWeight: 600, textAlign: 'left',
+          color: 'var(--bld-text-2)', fontSize: 11, fontWeight: 600, textAlign: 'left',
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#6b7280' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, letterSpacing: '0.05em', color: '#9ca3af', marginRight: 2 }}>FROM ACTION</span>
+        <span style={{ color: 'var(--bld-text-disabled)' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, letterSpacing: '0.05em', color: 'var(--bld-text-3)', marginRight: 2 }}>FROM ACTION</span>
         <span style={{ fontSize: 11 }}>{label}</span>
       </button>
 
@@ -323,6 +326,20 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const pageNodes = useBuilderStore(s => s.pageNodes);
   const editingSharedComponentId = useBuilderStore(s => s.editingSharedComponentId);
   const [isFocused, setIsFocused] = useState(false);
+
+  // Load env vars so formulas like env['KEY'] evaluate to their dev values in the builder
+  const projectId = useBuilderProjectId();
+  const [envVarsMap, setEnvVarsMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!projectId) return;
+    envVariables.list(projectId)
+      .then((r) => {
+        const map: Record<string, string> = {};
+        for (const v of r.envVariables) map[v.name] = v.devValue;
+        setEnvVarsMap(map);
+      })
+      .catch(() => {});
+  }, [projectId]);
 
   // Detect if the selected node is inside a repeated context (has a map ancestor)
   const isInsideRepeat = useMemo(() => {
@@ -948,8 +965,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       globalContext,
       pages,
       theme,
+      env: envVarsMap,
     };
-  }, [vsData, zustandData, selectedIds, selectedMapIndex, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta]);
+  }, [vsData, zustandData, selectedIds, selectedMapIndex, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta, envVarsMap]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {
@@ -1329,7 +1347,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     >
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#f3f4f6', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         {/* Formula | JavaScript mode toggle — hidden when locked into JS mode
             (e.g. from the runJavaScript workflow step config). */}
         {!lockToJs && (
@@ -1348,7 +1366,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               setMode(next);
             }}
             style={{
-              fontSize: 10, padding: '1px 6px', background: '#1f2937', color: '#e5e7eb',
+              fontSize: 10, padding: '1px 6px', background: '#1f2937', color: 'var(--bld-text-2)',
               border: '1px solid #374151', borderRadius: 3, cursor: 'pointer', flexShrink: 0,
             }}
           >
@@ -1358,17 +1376,17 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {!hideUnbind && (
           <button onClick={unbind} data-testid="formula-unbind"
-            style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
+            style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
             Unbind
           </button>
         )}
         <button onClick={onClose} data-testid="formula-close"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 14, lineHeight: 1, padding: '1px' }}>×</button>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 14, lineHeight: 1, padding: '1px' }}>×</button>
       </div>
 
       {/* ── Formula / JavaScript input ── */}
       <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {mode === 'js' ? 'JavaScript' : 'Formula'}
         </div>
         {mode === 'js' ? (
@@ -1396,7 +1414,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               aria-hidden
               style={{
                 position: 'absolute', top: 5, left: 8, right: 8,
-                fontSize: 11, color: '#4b5563', fontFamily: '"JetBrains Mono","Fira Mono",monospace',
+                fontSize: 11, color: 'var(--bld-text-disabled)', fontFamily: '"JetBrains Mono","Fira Mono",monospace',
                 pointerEvents: 'none', lineHeight: 1.5,
               }}
             >
@@ -1440,7 +1458,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               fontSize: 11,
               fontFamily: '"JetBrains Mono","Fira Mono","Cascadia Code",monospace',
               lineHeight: 1.6,
-              color: '#f3f4f6',
+              color: 'var(--bld-text-2)',
               outline: 'none',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -1454,14 +1472,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       <div style={{ padding: '4px 10px 6px', borderBottom: '1px solid #1f2937', flexShrink: 0, background: '#0d1420', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {/* Row 1 — Current value (full width) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current value</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current value</span>
           <div style={{ width: '100%' }} data-testid="formula-current-value">
           {evalResult.error ? (
               <div style={{ fontSize: 10, color: '#f87171', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#1a0a0a', border: '1px solid #3f1515', borderRadius: 4, padding: '3px 6px' }}>
               {evalResult.error}
               </div>
           ) : evalResult.value === undefined ? (
-              <div style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>—</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>—</div>
           ) : (() => {
             let displayVal = evalResult.value;
             if (typeof displayVal === 'string') {
@@ -1488,13 +1506,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {(hint || expectedType !== 'any') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expected</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expected</span>
             <Tooltip text={hint ? `${hint}\n\nReturn type: ${expectedType}` : `Expected return type: ${expectedType}`}>
               <span style={{
                   border: '1px solid #374151', borderRadius: '50%',
                   width: 11, height: 11, fontSize: 7, flexShrink: 0,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                color: '#6b7280', cursor: 'default',
+                color: 'var(--bld-text-disabled)', cursor: 'default',
               }}>?</span>
             </Tooltip>
             </div>
@@ -1513,6 +1531,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           ...(!serverContext ? [{ id: 'data' as Tab, icon: '≡', label: 'Data' }] : []),
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
           { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
+          ...(!serverContext ? [{ id: 'env' as Tab, icon: '⚙', label: 'Env' }] : []),
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
           <button key={t.id} data-testid={`formula-tab-${t.id}`} onClick={() => setTab(t.id)}
@@ -1536,7 +1555,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           placeholder='Search variables…'
           style={{
             width: '100%', boxSizing: 'border-box', background: '#1f2937',
-            border: '1px solid #374151', borderRadius: 3, color: '#d1d5db',
+            border: '1px solid #374151', borderRadius: 3, color: 'var(--bld-text-2)',
             fontSize: 10, padding: '3px 7px', outline: 'none',
           }}
         />
@@ -1598,7 +1617,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             )}
             {isInsideRepeat && (
               <>
-                <div style={{ padding: '8px 12px 4px', fontSize: 10, color: '#6b7280', fontStyle: 'italic' }}>
+                <div style={{ padding: '8px 12px 4px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
                   Fields from the repeated item
                 </div>
                 <ItemContextGroup onInsert={insertChip} initialOpen={true} />
@@ -1610,6 +1629,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           <div style={{ overflowY: 'auto', flex: 1 }}>
             <AuthDataSection onInsert={insertChip} />
           </div>
+        )}
+        {tab === 'env' && (
+          <EnvVarsSection onInsert={insertChip} />
         )}
         {tab === 'workflow' && (
           <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -1689,7 +1711,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Apply footer ── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '5px 10px', borderTop: '1px solid #1f2937', flexShrink: 0 }}>
         <button onClick={onClose}
-          style={{ padding: '3px 10px', background: 'transparent', border: '1px solid #374151', borderRadius: 4, color: '#6b7280', fontSize: 10, cursor: 'pointer' }}>
+          style={{ padding: '3px 10px', background: 'transparent', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 10, cursor: 'pointer' }}>
           Cancel
         </button>
         <button data-testid="formula-apply" onClick={apply}

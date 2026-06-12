@@ -289,7 +289,7 @@
     "label": "Admin: Products",
     "type": "rest",
     "url": {
-      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products?page=', globalContext?.browser?.query?.page || '1', '&pageSize=', globalContext?.browser?.query?.pageSize || '20', variables['adm00008-0000-0000-0000-000000000008'] ? concat('&search=', variables['adm00008-0000-0000-0000-000000000008']) : '', variables['adm00012-0000-0000-0000-000000000012'] !== 'all' ? concat('&enabled=', variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'true' : 'false') : '')"
+      "formula": "concat('http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products?page=', variables['adm00017-0000-0000-0000-000000000017'] || '1', '&pageSize=', variables['adm00016-0000-0000-0000-000000000016'] || '10', variables['adm00008-0000-0000-0000-000000000008'] ? concat('&search=', variables['adm00008-0000-0000-0000-000000000008']) : '', variables['adm00012-0000-0000-0000-000000000012'] !== 'all' ? concat('&enabled=', variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'true' : 'false') : '')"
     },
     "method": "GET",
     "headers": {
@@ -297,7 +297,7 @@
     },
     "cacheTag": "admin-products",
     "cacheTTL": 30,
-    "cacheKeyVars": ["globalContext.browser.query.page", "adm00008-0000-0000-0000-000000000008", "adm00012-0000-0000-0000-000000000012"]
+    "cacheKeyVars": ["adm00016-0000-0000-0000-000000000016", "adm00017-0000-0000-0000-000000000017", "adm00008-0000-0000-0000-000000000008", "adm00012-0000-0000-0000-000000000012"]
   },
   "ad000005-0000-0000-0000-000000000005": {
     "folder": "Admin",

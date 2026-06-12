@@ -8,19 +8,65 @@ export interface User {
   name: string;
   email: string;
   avatarUrl?: string | null;
+  superAdmin?: boolean;
   createdAt: string;
+}
+
+export interface PlanLimits {
+  projects: number;
+  members: number;
+  aiAccess: boolean;
+  exports: boolean;
+  aiTokensPerMonth: number;
+  storageMb: number;
+  apiCallsPerMonth: number;
 }
 
 export interface Workspace {
   id: string;
   name: string;
-  plan: 'FREE' | 'PRO';
+  plan: 'FREE' | 'PRO' | 'ENTERPRISE';
   ownerId: string;
-  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  myRole: 'OWNER' | 'MEMBER' | 'EDITOR' | 'VIEWER';
+  /** @deprecated use myRole */
+  role?: 'OWNER' | 'MEMBER' | 'EDITOR' | 'VIEWER';
   projectCount: number;
   memberCount: number;
+  limits?: PlanLimits;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WorkspaceInvitation {
+  id: string;
+  email: string;
+  projectIds: string[];
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  expiresAt: string;
+  createdAt: string;
+  invitedBy?: { id: string; name: string; email: string };
+}
+
+interface UsageMeterEntry {
+  used: number;
+  limit: number;
+  remaining: number | null;
+}
+
+export interface WorkspaceUsage {
+  period: string;
+  plan: 'FREE' | 'PRO' | 'ENTERPRISE';
+  usage: {
+    aiTokens:        UsageMeterEntry;
+    apiCalls:        UsageMeterEntry;
+    storageMb:       UsageMeterEntry;
+    bandwidthMb:     UsageMeterEntry;
+    storageRequests: UsageMeterEntry;
+    dbReads:         UsageMeterEntry;
+    dbWrites:        UsageMeterEntry;
+    wsMinutes:       UsageMeterEntry;
+  };
+  limits: PlanLimits;
 }
 
 export interface WorkspaceMember {
@@ -28,7 +74,7 @@ export interface WorkspaceMember {
   name: string;
   email: string;
   avatarUrl?: string | null;
-  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  role: 'OWNER' | 'MEMBER' | 'EDITOR' | 'VIEWER';
   joinedAt: string;
 }
 
@@ -36,7 +82,7 @@ export interface WorkspaceMember {
 interface RawWorkspaceMember {
   userId: string;
   workspaceId: string;
-  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  role: 'OWNER' | 'MEMBER' | 'EDITOR' | 'VIEWER';
   joinedAt: string;
   user?: {
     id: string;
@@ -63,6 +109,9 @@ export interface Project {
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
+  published?: boolean;
+  customDomain?: string | null;
+  customDomainVerified?: boolean;
 }
 
 export type ApiError = { error: string; code?: string };
@@ -138,31 +187,73 @@ export const workspaces = {
     }),
 
   delete: (id: string) =>
-    apiFetch<{ ok: boolean }>(`/api/workspaces/${id}`, { method: 'DELETE' }),
+    apiFetch<void>(`/api/workspaces/${id}`, { method: 'DELETE' }),
 
   listMembers: async (id: string) => {
     const res = await apiFetch<{ members: RawWorkspaceMember[] }>(`/api/workspaces/${id}/members`);
     return { members: res.members.map(normalizeMember) };
   },
 
-  inviteMember: async (id: string, body: { email: string; role?: 'EDITOR' | 'VIEWER' }) => {
-    const res = await apiFetch<{ member: RawWorkspaceMember }>(`/api/workspaces/${id}/members`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-    return { member: normalizeMember(res.member) };
-  },
-
-  updateMemberRole: (wsId: string, userId: string, role: 'EDITOR' | 'VIEWER') =>
-    apiFetch<{ ok: boolean }>(`/api/workspaces/${wsId}/members/${userId}`, {
+  updateMemberProjects: (wsId: string, userId: string, projectIds: string[]) =>
+    apiFetch<{ ok: boolean; projectIds: string[] }>(`/api/workspaces/${wsId}/members/${userId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({ projectIds }),
     }),
+
+  getMemberProjects: (wsId: string, userId: string) =>
+    apiFetch<{ projectIds: string[]; projects: { id: string; name: string }[]; allProjects: boolean }>(
+      `/api/workspaces/${wsId}/members/${userId}/projects`,
+    ),
 
   removeMember: (wsId: string, userId: string) =>
-    apiFetch<{ ok: boolean }>(`/api/workspaces/${wsId}/members/${userId}`, {
-      method: 'DELETE',
+    apiFetch<void>(`/api/workspaces/${wsId}/members/${userId}`, { method: 'DELETE' }),
+
+  // ── Invitations ────────────────────────────────────────────────────────────
+
+  listInvitations: (wsId: string) =>
+    apiFetch<{ invitations: WorkspaceInvitation[] }>(`/api/workspaces/${wsId}/invitations`),
+
+  sendInvitation: (wsId: string, body: { email: string; projectIds: string[] }) =>
+    apiFetch<{ ok: boolean; message: string }>(`/api/workspaces/${wsId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
+
+  revokeInvitation: (wsId: string, invitationId: string) =>
+    apiFetch<void>(`/api/workspaces/${wsId}/invitations/${invitationId}`, { method: 'DELETE' }),
+
+  previewInvitation: (token: string) =>
+    apiFetch<{ email: string; role: string; workspaceName: string; workspaceId: string; inviterName: string; expiresAt: string }>(
+      `/api/workspaces/invitations/preview?token=${encodeURIComponent(token)}`,
+    ),
+
+  acceptInvitation: (token: string) =>
+    apiFetch<{ ok: boolean; workspaceId: string; role: string }>(
+      `/api/workspaces/invitations/accept?token=${encodeURIComponent(token)}`,
+      { method: 'POST' },
+    ),
+
+  // ── Usage ──────────────────────────────────────────────────────────────────
+
+  getUsage: (wsId: string) =>
+    apiFetch<WorkspaceUsage>(`/api/workspaces/${wsId}/usage`),
+
+  reportAiUsage: (wsId: string, body: { inputTokens: number; outputTokens: number; projectId?: string; model?: string }) =>
+    apiFetch<{ used: number; limit: number; remaining: number }>(`/api/workspaces/${wsId}/usage/ai`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  // ── Billing ────────────────────────────────────────────────────────────────
+
+  getBilling: (wsId: string) =>
+    apiFetch<{ plan: string; subscription: unknown; limits: PlanLimits }>(`/api/workspaces/${wsId}/billing`),
+
+  startCheckout: (wsId: string) =>
+    apiFetch<{ url: string }>(`/api/workspaces/${wsId}/billing/checkout`, { method: 'POST' }),
+
+  openPortal: (wsId: string) =>
+    apiFetch<{ url: string }>(`/api/workspaces/${wsId}/billing/portal`, { method: 'POST' }),
 };
 
 // ── Projects ──────────────────────────────────────────────────────────────────
@@ -189,6 +280,9 @@ export const projects = {
   delete: (id: string) =>
     apiFetch<{ ok: boolean }>(`/api/projects/${id}`, { method: 'DELETE' }),
 
+  authoriseExport: (id: string) =>
+    apiFetch<{ approved: boolean; price: number; message: string }>(`/api/projects/${id}/export/pay`, { method: 'POST' }),
+
   getConfig: (id: string) =>
     apiFetch<{ config: Record<string, unknown>; updatedAt: string }>(`/api/projects/${id}/config`),
 
@@ -203,6 +297,24 @@ export const projects = {
       method: 'PATCH',
       body: JSON.stringify(meta),
     }),
+
+  publish: (id: string) =>
+    apiFetch<{ ok: boolean; published: boolean }>(`/api/projects/${id}/publish`, { method: 'POST' }),
+
+  unpublish: (id: string) =>
+    apiFetch<{ ok: boolean; published: boolean }>(`/api/projects/${id}/unpublish`, { method: 'POST' }),
+
+  setCustomDomain: (id: string, domain: string) =>
+    apiFetch<{ ok: boolean; customDomain: string | null; verified: boolean }>(`/api/projects/${id}/custom-domain`, {
+      method: 'POST',
+      body: JSON.stringify({ domain }),
+    }),
+
+  verifyCustomDomain: (id: string) =>
+    apiFetch<{ ok: boolean; verified: boolean; customDomain: string; expectedCname: string; message: string }>(`/api/projects/${id}/custom-domain/verify`, { method: 'POST' }),
+
+  removeCustomDomain: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${id}/custom-domain`, { method: 'DELETE' }),
 };
 
 // ── Backend — Tables ──────────────────────────────────────────────────────────
@@ -457,4 +569,29 @@ export const backendAuth = {
     apiFetch<{ ok: boolean }>(`/api/data/${projectId}/auth/users/${userId}/reset-password`, {
       method: 'POST', body: JSON.stringify({ newPassword }),
     }),
+};
+
+// ── Environment Variables API ─────────────────────────────────────────────────
+
+export interface EnvVariable {
+  id: string;
+  projectId: string;
+  name: string;
+  devValue: string;
+  prodValue: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const envVariables = {
+  list: (projectId: string) =>
+    apiFetch<{ envVariables: EnvVariable[] }>(`/api/projects/${projectId}/env-variables`),
+
+  upsert: (projectId: string, name: string, body: { devValue: string; prodValue: string }) =>
+    apiFetch<{ envVariable: EnvVariable }>(`/api/projects/${projectId}/env-variables/${name}`, {
+      method: 'PUT', body: JSON.stringify(body),
+    }),
+
+  delete: (projectId: string, name: string) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/env-variables/${name}`, { method: 'DELETE' }),
 };

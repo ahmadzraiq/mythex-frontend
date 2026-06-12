@@ -27,7 +27,8 @@
             },
             "text": "Welcome back! Here's what's happening with your store."
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -496,7 +497,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "KPI Cards"
       },
       {
         "type": "Box",
@@ -570,7 +572,8 @@
               "showTooltip": true
             }
           }
-        ]
+        ],
+        "_group": "Charts"
       },
       {
         "type": "Box",
@@ -709,7 +712,7 @@
                       "className": "text-[13px] text-[var(--theme-admin-label)]"
                     },
                     "text": {
-                      "formula": "context.item.data.placedAt ? new Date(context.item.data.placedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'"
+                      "formula": "context.item.data.placedAt ? new Date(context.item.data.placedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'"
                     }
                   },
                   {
@@ -766,7 +769,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Recent Orders"
       }
     ]
   },

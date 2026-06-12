@@ -1,0 +1,181 @@
+/*
+ * builder-tokens.css
+ *
+ * All CSS custom properties (design tokens) for the builder chrome.
+ * Applied to any element with [data-builder-ui].
+ * Default: dark theme. Add [data-bld-theme="light"] for light variant.
+ *
+ * Naming: --bld-<group>-<name>
+ */
+
+/* ─── Dark Theme (default) ─────────────────────────────────────────────────── */
+[data-builder-ui] {
+  /* Surfaces */
+  --bld-bg-base:     #0f172a;
+  --bld-bg-panel:    #111827;
+  --bld-bg-elevated: #1e293b;
+  --bld-bg-input:    #1f2937;
+  --bld-bg-canvas:   #161d2e;
+  --bld-bg-hover:    rgba(255, 255, 255, 0.045);
+  --bld-bg-active:   rgba(59, 130, 246, 0.15);
+
+  /* Borders */
+  --bld-border:        #1f2937;
+  --bld-border-subtle: #374151;
+  --bld-border-focus:  #3b82f6;
+
+  /* Text */
+  --bld-text-1:        #f1f5f9;
+  --bld-text-2:        #d1d5db;
+  --bld-text-3:        #9ca3af;
+  --bld-text-disabled: #6b7280;
+
+  /* Accent (blue) */
+  --bld-accent:        #3b82f6;
+  --bld-accent-hover:  #2563eb;
+  --bld-accent-subtle: rgba(59, 130, 246, 0.15);
+  --bld-accent-fg:     #ffffff;
+
+  /* AI surface */
+  --bld-ai-bg:     #0a0f1e;
+  --bld-ai-accent: #7c3aed;
+  --bld-ai-border: #1e293b;
+
+  /* Feedback */
+  --bld-success: #22c55e;
+  --bld-warning: #f59e0b;
+  --bld-error:   #f87171;
+  --bld-info:    #60a5fa;
+
+  /* Semantic chip/badge */
+  --bld-badge-rest:    #22c55e;
+  --bld-badge-gql:     #f59e0b;
+  --bld-badge-text:    #818cf8;
+  --bld-badge-number:  #60a5fa;
+  --bld-badge-boolean: #f472b6;
+  --bld-badge-object:  #fb923c;
+  --bld-badge-array:   #a78bfa;
+
+  /* HTTP method badges */
+  --bld-method-get:    #22c55e;
+  --bld-method-post:   #3b82f6;
+  --bld-method-put:    #f59e0b;
+  --bld-method-patch:  #a78bfa;
+  --bld-method-delete: #f87171;
+
+  /* Radius */
+  --bld-r-xs:  3px;
+  --bld-r-sm:  4px;
+  --bld-r-md:  6px;
+  --bld-r-lg:  8px;
+  --bld-r-xl:  12px;
+  --bld-r-full: 9999px;
+
+  /* Shadows */
+  --bld-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4);
+  --bld-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5);
+  --bld-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6);
+
+  /* Misc */
+  --bld-scrollbar-thumb: #374151;
+  --bld-scrollbar-track: transparent;
+}
+
+/* ─── Light Theme ───────────────────────────────────────────────────────────── */
+[data-builder-ui][data-bld-theme="light"] {
+  /* Surfaces */
+  --bld-bg-base:     #f8fafc;
+  --bld-bg-panel:    #ffffff;
+  --bld-bg-elevated: #f1f5f9;
+  --bld-bg-input:    #f8fafc;
+  --bld-bg-canvas:   #eef2f7;
+  --bld-bg-hover:    rgba(0, 0, 0, 0.04);
+  --bld-bg-active:   rgba(59, 130, 246, 0.1);
+
+  /* Borders */
+  --bld-border:        #e2e8f0;
+  --bld-border-subtle: #cbd5e1;
+  --bld-border-focus:  #3b82f6;
+
+  /* Text */
+  --bld-text-1:        #0f172a;
+  --bld-text-2:        #334155;
+  --bld-text-3:        #64748b;
+  --bld-text-disabled: #94a3b8;
+
+  /* Accent — same blue works on light */
+  --bld-accent:        #2563eb;
+  --bld-accent-hover:  #1d4ed8;
+  --bld-accent-subtle: rgba(37, 99, 235, 0.1);
+  --bld-accent-fg:     #ffffff;
+
+  /* AI surface */
+  --bld-ai-bg:     #f0f4ff;
+  --bld-ai-accent: #7c3aed;
+  --bld-ai-border: #ddd6fe;
+
+  /* Feedback — keep semantic meaning, adjusted for light */
+  --bld-success: #16a34a;
+  --bld-warning: #d97706;
+  --bld-error:   #dc2626;
+  --bld-info:    #2563eb;
+
+  /* Semantic chip/badge */
+  --bld-badge-rest:    #16a34a;
+  --bld-badge-gql:     #d97706;
+  --bld-badge-text:    #4f46e5;
+  --bld-badge-number:  #2563eb;
+  --bld-badge-boolean: #db2777;
+  --bld-badge-object:  #c2410c;
+  --bld-badge-array:   #7c3aed;
+
+  /* HTTP method badges */
+  --bld-method-get:    #16a34a;
+  --bld-method-post:   #2563eb;
+  --bld-method-put:    #d97706;
+  --bld-method-patch:  #7c3aed;
+  --bld-method-delete: #dc2626;
+
+  /* Shadows */
+  --bld-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.1);
+  --bld-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.12);
+  --bld-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* Misc */
+  --bld-scrollbar-thumb: #cbd5e1;
+  --bld-scrollbar-track: transparent;
+}
+
+/* ─── Scrollbar theming ─────────────────────────────────────────────────────── */
+[data-builder-ui] *::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+[data-builder-ui] *::-webkit-scrollbar-track {
+  background: var(--bld-scrollbar-track);
+}
+[data-builder-ui] *::-webkit-scrollbar-thumb {
+  background: var(--bld-scrollbar-thumb);
+  border-radius: var(--bld-r-full);
+}
+[data-builder-ui] *::-webkit-scrollbar-thumb:hover {
+  background: var(--bld-border-subtle);
+}
+
+/* ─── Global input/select resets inside builder ─────────────────────────────── */
+[data-builder-ui] input[type="number"]::-webkit-inner-spin-button,
+[data-builder-ui] input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+[data-builder-ui] input[type="range"] {
+  accent-color: var(--bld-accent);
+}
+
+/* ─── Focus ring ────────────────────────────────────────────────────────────── */
+[data-builder-ui] input:focus-visible,
+[data-builder-ui] select:focus-visible,
+[data-builder-ui] textarea:focus-visible {
+  outline: 1px solid var(--bld-border-focus);
+  outline-offset: 0;
+}

@@ -395,7 +395,7 @@ function Swatch({
         boxSizing: 'border-box', flexShrink: 0,
       }} />
       <span style={{
-        fontSize: 8, color: '#9ca3af', whiteSpace: 'nowrap',
+        fontSize: 8, color: 'var(--bld-text-3)', whiteSpace: 'nowrap',
         maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center',
       }}>
         {label}
@@ -609,14 +609,14 @@ function ColorPopover({
       <div>
         {format === 'hex' && (
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{ fontSize: 9, color: '#6b7280', width: 24, flexShrink: 0 }}>Hex</span>
+            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 24, flexShrink: 0 }}>Hex</span>
             <input
               value={hexText}
               onChange={e => setHexText(e.target.value)}
               onBlur={() => commitHex(hexText)}
               onKeyDown={e => { if (e.key === 'Enter') commitHex(hexText); }}
               placeholder="#000000"
-              style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 8px', fontFamily: 'monospace' }}
+              style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', fontFamily: 'monospace' }}
             />
           </div>
         )}
@@ -636,11 +636,11 @@ function ColorPopover({
                   onKeyDown={e => { if (e.key === 'Enter') onCommit(text); }}
                   style={{
                     width: '100%', background: '#1f2937', border: '1px solid #374151',
-                    borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 4px',
+                    borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 4px',
                     textAlign: 'center', boxSizing: 'border-box',
                   }}
                 />
-                <div style={{ fontSize: 9, color: '#6b7280', marginTop: 2 }}>{label}</div>
+                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 2 }}>{label}</div>
               </div>
             ))}
           </div>
@@ -652,7 +652,7 @@ function ColorPopover({
 
       {/* Theme swatches */}
       <div>
-        <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Theme Colors</div>
+        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Theme Colors</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
           {GLOBAL_SWATCHES.map(s => (
             <Swatch
@@ -672,7 +672,7 @@ function ColorPopover({
       {/* Custom swatches — user-defined theme colors, behave identically to system swatches */}
       {customSwatches && customSwatches.length > 0 && (
         <div>
-          <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Custom Colors</div>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Custom Colors</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
             {customSwatches.map(s => (
               <Swatch
@@ -790,7 +790,7 @@ export function FigmaColorPicker({
 
       {/* Value text — read-only, shows var name or raw color */}
       <div style={{ flex: 1 }} onClick={handleTriggerClick}>
-        {label && <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>{label}</span>}
+        {label && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>{label}</span>}
         <input
           data-testid={testId}
           value={displayText}

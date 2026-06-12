@@ -56,7 +56,8 @@
             },
             "text": "Facets are used to categorize and filter products."
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -196,7 +197,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Facets Table"
       }
     ]
   },

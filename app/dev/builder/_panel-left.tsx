@@ -39,10 +39,12 @@ import { LogicTab, type LogicSlideState } from './_logic-tab';
 // ─── Extracted modules ───────────────────────────────────────────────────────
 import { Chevron, NodeIcon, ContextMenu, LayerRow, LayerTree, type LayerRowProps, type ContextMenuProps, type LayerDragState } from './_layers-panel';
 import { PRIMITIVE_COMPONENTS, SectionHeader, DraggablePrimitive, ComponentsTab } from './_components-tab';
+import { SearchInput } from './_panel-primitives';
 import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel } from './_vars-panel';
 import { AssetsTab } from './_assets-tab';
 import { TriggersTab } from './_triggers-tab';
 import { ThemePanel } from './_theme-panel';
+import { FilesPanel } from './_files-panel';
 
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -111,7 +113,7 @@ function _PagesTab_unused() {
                 padding: '7px 10px',
                 cursor: 'pointer',
                 background: isActive ? 'rgba(59,130,246,0.15)' : 'transparent',
-                borderLeft: isActive ? '2px solid #3b82f6' : '2px solid transparent',
+                borderLeft: isActive ? '2px solid var(--bld-accent)' : '2px solid transparent',
                 borderRadius: 4,
                 margin: '1px 6px',
                 userSelect: 'none',
@@ -138,10 +140,10 @@ function _PagesTab_unused() {
                     onClick={e => e.stopPropagation()}
                     style={{
                       width: '100%',
-                      background: '#1f2937',
-                      border: '1px solid #3b82f6',
+                      background: 'var(--bld-bg-input)',
+                      border: '1px solid var(--bld-accent)',
                       borderRadius: 3,
-                      color: '#f3f4f6',
+                      color: 'var(--bld-text-1)',
                       fontSize: 11,
                       padding: '1px 5px',
                       boxSizing: 'border-box',
@@ -152,7 +154,7 @@ function _PagesTab_unused() {
                   <>
                     <div style={{
                       fontSize: 11,
-                      color: isActive ? '#f3f4f6' : '#d1d5db',
+                      color: isActive ? 'var(--bld-text-1)' : 'var(--bld-text-2)',
                       fontWeight: isActive ? 600 : 400,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -167,7 +169,7 @@ function _PagesTab_unused() {
                       {page.name}
                     </div>
                     {page.route && (
-                    <div style={{ fontSize: 9, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {page.route}
                     </div>
                     )}
@@ -183,7 +185,7 @@ function _PagesTab_unused() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#6b7280',
+                    color: 'var(--bld-text-disabled)',
                     cursor: 'pointer',
                     fontSize: 13,
                     lineHeight: 1,
@@ -191,8 +193,8 @@ function _PagesTab_unused() {
                     borderRadius: 3,
                     flexShrink: 0,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
                 >
                   ×
                 </button>
@@ -203,17 +205,17 @@ function _PagesTab_unused() {
       </div>
 
       {/* Add page button + route picker */}
-      <div style={{ padding: '8px 10px', borderTop: '1px solid #1f2937', flexShrink: 0, position: 'relative' }} ref={menuRef}>
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, position: 'relative' }} ref={menuRef}>
         <button
           data-testid="add-page-btn"
           onClick={() => setShowRouteMenu(v => !v)}
           style={{
             width: '100%',
             padding: '7px 0',
-            background: showRouteMenu ? '#1d4ed8' : '#1f2937',
-            border: `1px solid ${showRouteMenu ? '#3b82f6' : '#374151'}`,
+            background: showRouteMenu ? 'var(--bld-accent-hover)' : 'var(--bld-bg-input)',
+            border: `1px solid ${showRouteMenu ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
             borderRadius: 5,
-            color: '#d1d5db',
+            color: 'var(--bld-text-2)',
             fontSize: 11,
             cursor: 'pointer',
             display: 'flex',
@@ -233,8 +235,8 @@ function _PagesTab_unused() {
             bottom: '100%',
             left: 10,
             right: 10,
-            background: '#1f2937',
-            border: '1px solid #374151',
+            background: 'var(--bld-bg-input)',
+            border: '1px solid var(--bld-border-subtle)',
             borderRadius: 6,
             boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
             zIndex: 9999,
@@ -245,8 +247,8 @@ function _PagesTab_unused() {
             flexDirection: 'column',
           }}>
             {/* Custom route input */}
-            <div style={{ padding: '8px 10px', borderBottom: '1px solid #374151', flexShrink: 0 }}>
-              <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 5, letterSpacing: '0.04em' }}>CUSTOM ROUTE</div>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bld-border-subtle)', flexShrink: 0 }}>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, letterSpacing: '0.04em' }}>CUSTOM ROUTE</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
                   autoFocus
@@ -260,10 +262,10 @@ function _PagesTab_unused() {
                   }}
                   style={{
                     flex: 1,
-                    background: '#111827',
-                    border: '1px solid #374151',
+                    background: 'var(--bld-bg-panel)',
+                    border: '1px solid var(--bld-border-subtle)',
                     borderRadius: 4,
-                    color: '#f3f4f6',
+                    color: 'var(--bld-text-1)',
                     fontSize: 11,
                     padding: '4px 8px',
                     outline: 'none',
@@ -275,10 +277,10 @@ function _PagesTab_unused() {
                   disabled={!customRoute.trim()}
                   style={{
                     padding: '4px 10px',
-                    background: customRoute.trim() ? '#1d4ed8' : '#374151',
+                    background: customRoute.trim() ? 'var(--bld-accent-hover)' : 'var(--bld-border-subtle)',
                     border: 'none',
                     borderRadius: 4,
-                    color: customRoute.trim() ? '#fff' : '#6b7280',
+                    color: customRoute.trim() ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
                     fontSize: 11,
                     cursor: customRoute.trim() ? 'pointer' : 'default',
                     fontFamily: 'system-ui',
@@ -292,7 +294,7 @@ function _PagesTab_unused() {
 
             {/* Predefined routes from routes.json */}
             <div style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '6px 10px 4px', fontSize: 10, color: '#6b7280', letterSpacing: '0.04em' }}>
+              <div style={{ padding: '6px 10px 4px', fontSize: 10, color: 'var(--bld-text-disabled)', letterSpacing: '0.04em' }}>
                 APP ROUTES
               </div>
               {allRoutes.map(r => {
@@ -314,7 +316,7 @@ function _PagesTab_unused() {
                       padding: '6px 10px',
                       background: 'none',
                       border: 'none',
-                      color: alreadyAdded ? '#4b5563' : '#d1d5db',
+                      color: alreadyAdded ? 'var(--bld-border-subtle)' : 'var(--bld-text-2)',
                       fontSize: 11,
                       textAlign: 'left',
                       cursor: alreadyAdded ? 'default' : 'pointer',
@@ -323,13 +325,13 @@ function _PagesTab_unused() {
                     onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'rgba(59,130,246,0.15)'; }}
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                   >
-                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? '#374151' : '#60a5fa', flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? 'var(--bld-border-subtle)' : 'var(--bld-info)', flexShrink: 0 }}>
                       {r.path}
                     </span>
                     <span style={{ opacity: alreadyAdded ? 0.35 : 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {r.config}
                     </span>
-                    {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151', flexShrink: 0 }}>✓</span>}
+                    {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>✓</span>}
                   </button>
                 );
               })}
@@ -346,16 +348,16 @@ function _PagesTab_unused() {
 // ─── App Panel (Store / Actions / Sources) ───────────────────────────────────
 
 const ACTION_TYPE_COLORS: Record<string, string> = {
-  graphql: '#818cf8',
-  fetch: '#34d399',
-  set: '#fbbf24',
-  setVar: '#f9a8d4',
-  validate: '#f87171',
-  runMultiple: '#93c5fd',
-  navigate: '#a78bfa',
-  appendToPath: '#6ee7b7',
-  toggle: '#fcd34d',
-  default: '#6b7280',
+  graphql: 'var(--bld-ai-accent)',
+  fetch: 'var(--bld-success)',
+  set: 'var(--bld-warning)',
+  setVar: 'var(--bld-badge-boolean)',
+  validate: 'var(--bld-error)',
+  runMultiple: 'var(--bld-accent)',
+  navigate: 'var(--bld-ai-accent)',
+  appendToPath: 'var(--bld-success)',
+  toggle: 'var(--bld-warning)',
+  default: 'var(--bld-text-disabled)',
 };
 
 function ActionTypeBadge({ type }: { type: string }) {
@@ -417,7 +419,7 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
           placeholder="Filter by key…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
         />
       </div>
       <div style={embedded ? { padding: '4px 0' } : { flex: 1, overflow: 'auto', padding: '4px 0' }}>
@@ -425,20 +427,20 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
           <div key={group}>
             <button
               onClick={() => setExpanded(p => ({ ...p, [group]: !p[group] }))}
-              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: '#d1d5db', fontSize: 11 }}
+              style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--bld-text-2)', fontSize: 11 }}
             >
               <Chevron open={!!expanded[group]} size={10} />
-              <span style={{ fontWeight: 600, color: '#e5e7eb' }}>{group}</span>
-              <span style={{ fontSize: 10, color: '#6b7280', marginLeft: 'auto' }}>{Object.keys(values).length} key{Object.keys(values).length !== 1 ? 's' : ''}</span>
+              <span style={{ fontWeight: 600, color: 'var(--bld-text-2)' }}>{group}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{Object.keys(values).length} key{Object.keys(values).length !== 1 ? 's' : ''}</span>
             </button>
             {expanded[group] && (
               <div style={{ paddingLeft: 20 }}>
                 {Object.entries(values).map(([k, v]) => (
-                  <div key={k} data-testid={`store-entry-${group}.${k}`} style={{ display: 'flex', gap: 8, padding: '2px 12px 2px 4px', borderBottom: '1px solid #1f293750' }}>
-                    <span style={{ color: '#9ca3af', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0, maxWidth: 90 }}>
+                  <div key={k} data-testid={`store-entry-${group}.${k}`} style={{ display: 'flex', gap: 8, padding: '2px 12px 2px 4px', borderBottom: '1px solid var(--bld-bg-input)50' }}>
+                    <span style={{ color: 'var(--bld-text-3)', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0, maxWidth: 90 }}>
                       {k === '__value__' ? group : `${group}.${k}`}
                     </span>
-                    <span style={{ color: '#6ee7b7', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    <span style={{ color: 'var(--bld-success)', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
                       {JSON.stringify(v).slice(0, 60)}
                     </span>
                   </div>
@@ -448,7 +450,7 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
           </div>
         ))}
         {Object.keys(filteredGroups).length === 0 && (
-          <div style={{ color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>No store data yet</div>
+          <div style={{ color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center', padding: 16 }}>No store data yet</div>
         )}
       </div>
     </>
@@ -497,17 +499,17 @@ function ActionsTab() {
           placeholder="Filter actions…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
         />
       </div>
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', fontSize: 10, color: '#4b5563', lineHeight: 1.6, flexShrink: 0 }}>
+      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--bld-bg-input)', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
         Use named actions in Interactions → select "namedAction" and type the action name.
-        Defined in <code style={{ color: '#818cf8' }}>config/actions/</code>.
+        Defined in <code style={{ color: 'var(--bld-ai-accent)' }}>config/actions/</code>.
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
         {Object.entries(filtered).map(([grp, rows]) => (
           <div key={grp}>
-            <div style={{ padding: '3px 12px', fontSize: 10, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', background: '#0f172a' }}>
+            <div style={{ padding: '3px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'var(--bld-bg-base)' }}>
               {grp}
             </div>
             {rows.map(([name, def]) => (
@@ -515,14 +517,14 @@ function ActionsTab() {
                 <button
                   data-testid={`action-row-${name}`}
                   onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
-                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid #1f2937' }}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--bld-bg-input)' }}
                 >
-                  <span style={{ color: '#d1d5db', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  <span style={{ color: 'var(--bld-text-2)', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                   <ActionTypeBadge type={def.type} />
                   <Chevron open={!!expanded[name]} size={10} />
                 </button>
                 {expanded[name] && (
-                  <pre style={{ margin: 0, padding: '6px 16px', background: '#0f172a', color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120 }}>
+                  <pre style={{ margin: 0, padding: '6px 16px', background: 'var(--bld-bg-base)', color: 'var(--bld-text-3)', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120 }}>
                     {JSON.stringify(def, null, 2)}
                   </pre>
                 )}
@@ -531,7 +533,7 @@ function ActionsTab() {
           </div>
         ))}
         {Object.keys(filtered).length === 0 && (
-          <div style={{ color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 24 }}>No actions match</div>
+          <div style={{ color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center', padding: 24 }}>No actions match</div>
         )}
       </div>
     </div>
@@ -548,10 +550,10 @@ function SourcesTab() {
 
   if (sources.length === 0) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 24, flexDirection: 'column', gap: 8 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center', padding: 24, flexDirection: 'column', gap: 8 }}>
         <div>No graphql / fetch actions defined</div>
-        <div style={{ fontSize: 10, color: '#374151', maxWidth: 180 }}>
-          Add fetch/graphql actions in <code style={{ color: '#34d399' }}>config/actions/</code> then use them in Interactions or Data Source sections.
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', maxWidth: 180 }}>
+          Add fetch/graphql actions in <code style={{ color: 'var(--bld-success)' }}>config/actions/</code> then use them in Interactions or Data Source sections.
         </div>
       </div>
     );
@@ -559,28 +561,28 @@ function SourcesTab() {
 
   return (
     <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', fontSize: 10, color: '#4b5563', lineHeight: 1.6, flexShrink: 0 }}>
-        Select an element → Logic tab → <span style={{ color: '#34d399' }}>Data Source</span> to trigger one of these on mount.
+      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--bld-bg-input)', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
+        Select an element → Logic tab → <span style={{ color: 'var(--bld-success)' }}>Data Source</span> to trigger one of these on mount.
         Use them in Interactions to call on click/submit.
       </div>
     <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
       {sources.map(([name, def]) => (
-        <div key={name} style={{ borderBottom: '1px solid #1f2937' }}>
+        <div key={name} style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
           <button
             data-testid={`source-row-${name}`}
             onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
             style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 3 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ color: '#d1d5db', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+              <span style={{ color: 'var(--bld-text-2)', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
               <ActionTypeBadge type={def.type} />
             </div>
-            <div style={{ color: '#6b7280', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ color: 'var(--bld-text-disabled)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {def.type === 'fetch' ? `${def.method ?? 'GET'} ${def.url ?? ''}` : `${def.endpoint ?? 'convention endpoint'}`}
             </div>
           </button>
           {expanded[name] && def.query && (
-            <pre style={{ margin: 0, padding: '6px 16px', background: '#0f172a', color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120, whiteSpace: 'pre-wrap' }}>
+            <pre style={{ margin: 0, padding: '6px 16px', background: 'var(--bld-bg-base)', color: 'var(--bld-text-3)', fontSize: 10, fontFamily: 'monospace', overflow: 'auto', maxHeight: 120, whiteSpace: 'pre-wrap' }}>
               {def.query.slice(0, 400)}{def.query.length > 400 ? '\n…' : ''}
             </pre>
           )}
@@ -609,7 +611,7 @@ function AppPreviewDataEditor() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', padding: '10px 8px', gap: 8 }}>
-      <div style={{ fontSize: 10, color: '#9ca3af', lineHeight: 1.5 }}>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-3)', lineHeight: 1.5 }}>
         Global mock data shared across all pages. Per-page data (set when &quot;Data&quot; state is active) overrides these values.
       </div>
       <textarea
@@ -621,9 +623,9 @@ function AppPreviewDataEditor() {
         style={{
           flex: 1,
           resize: 'none',
-          background: '#0f172a',
-          color: '#e2e8f0',
-          border: `1px solid ${error ? '#ef4444' : '#1f2937'}`,
+          background: 'var(--bld-bg-base)',
+          color: 'var(--bld-text-2)',
+          border: `1px solid ${error ? 'var(--bld-error)' : 'var(--bld-bg-input)'}`,
           borderRadius: 4,
           fontFamily: 'monospace',
           fontSize: 11,
@@ -632,11 +634,11 @@ function AppPreviewDataEditor() {
           minHeight: 180,
         }}
       />
-      {error && <div style={{ fontSize: 10, color: '#ef4444' }}>{error}</div>}
+      {error && <div style={{ fontSize: 10, color: 'var(--bld-error)' }}>{error}</div>}
       <button
         data-testid="app-preview-data-apply"
         onClick={handleApply}
-        style={{ padding: '5px 10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-end' }}
+        style={{ padding: '5px 10px', background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 4, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-end' }}
       >
         Apply
       </button>
@@ -647,17 +649,17 @@ function AppPreviewDataEditor() {
 // ─── Page Config Slide ────────────────────────────────────────────────────────
 
 const PC_INPUT: React.CSSProperties = {
-  width: '100%', background: '#1f2937', border: '1px solid #374151',
-  borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '5px 8px',
+  width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
+  borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '5px 8px',
   outline: 'none', boxSizing: 'border-box',
 };
 const PC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 600, color: '#9ca3af',
+  fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.06em',
   display: 'block', marginBottom: 4,
 };
 const PC_SECTION: React.CSSProperties = {
-  padding: '10px 12px', borderBottom: '1px solid #1f2937',
+  padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)',
   display: 'flex', flexDirection: 'column', gap: 8,
 };
 
@@ -696,7 +698,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Page name */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Page</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Page</div>
         <div>
           <label style={PC_LABEL}>Name</label>
           <input
@@ -710,14 +712,14 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
         {currentPage?.route && (
           <div>
             <label style={PC_LABEL}>Route</label>
-            <div style={{ ...PC_INPUT, color: '#6b7280', cursor: 'default' }}>{currentPage.route}</div>
+            <div style={{ ...PC_INPUT, color: 'var(--bld-text-disabled)', cursor: 'default' }}>{currentPage.route}</div>
           </div>
         )}
       </div>
 
       {/* SEO / Meta */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO / Meta</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO / Meta</div>
         <div>
           <label style={PC_LABEL}>Page title</label>
           <input
@@ -755,7 +757,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
       {/* Interactions */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interactions</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interactions</div>
         <div>
           <label style={PC_LABEL}>On mount (page load)</label>
           <select
@@ -770,7 +772,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
           {mountWorkflow && (
             <button
               onClick={() => { setMountWorkflow(''); saveInteractions(''); }}
-              style={{ marginTop: 4, background: 'none', border: 'none', color: '#f87171', fontSize: 10, cursor: 'pointer', padding: 0 }}
+              style={{ marginTop: 4, background: 'none', border: 'none', color: 'var(--bld-error)', fontSize: 10, cursor: 'pointer', padding: 0 }}
             >
               × Clear
             </button>
@@ -780,7 +782,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
       {/* Private Access */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Access</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Access</div>
 
         {/* Who can access */}
         <div>
@@ -812,7 +814,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
               placeholder="auth?.user?.role === 'admin'"
               style={PC_INPUT}
             />
-            <div style={{ fontSize: 9, color: '#6b7280', marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
               If fails → redirect to unauthorized page (set in Auth Settings)
             </div>
           </div>
@@ -820,7 +822,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
         {/* Hide from authenticated users (guestOnly) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
-          <label style={{ fontSize: 11, color: '#d1d5db' }}>Hide from authenticated users</label>
+          <label style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Hide from authenticated users</label>
           <button
             data-testid="page-config-guest-only"
             onClick={() => {
@@ -830,33 +832,33 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             }}
             style={{
               width: 32, height: 16, borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: guestOnly ? '#818cf8' : '#374151',
+              background: guestOnly ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)',
               position: 'relative', flexShrink: 0, transition: 'background 150ms',
             }}
             title="When on, authenticated users are redirected away from this page (e.g. /sign-in)"
           >
             <span style={{
               position: 'absolute', top: 2, left: guestOnly ? 18 : 2,
-              width: 12, height: 12, borderRadius: '50%', background: '#fff',
+              width: 12, height: 12, borderRadius: '50%', background: 'var(--bld-accent-fg)',
               transition: 'left 150ms',
             }} />
           </button>
         </div>
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           title="Delete this page"
           onClick={() => { if (currentPageId) { removePage(currentPageId); onClose(); } }}
-          style={{ padding: '5px 10px', background: 'none', border: '1px solid #374151', borderRadius: 4, color: '#f87171', fontSize: 11, cursor: 'pointer', marginRight: 'auto' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = '#f87171'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#374151'; }}
+          style={{ padding: '5px 10px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-error)', fontSize: 11, cursor: 'pointer', marginRight: 'auto' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = 'var(--bld-error)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--bld-border-subtle)'; }}
         >
           Delete page
         </button>
         <button
           onClick={onClose}
-          style={{ padding: '5px 14px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+          style={{ padding: '5px 14px', background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, cursor: 'pointer' }}
         >
           Done
         </button>
@@ -868,45 +870,45 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 // ─── Auth Settings Slide ──────────────────────────────────────────────────────
 
 const A_INPUT: React.CSSProperties = {
-  width: '100%', background: '#1f2937', border: '1px solid #374151',
-  borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '5px 8px',
+  width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
+  borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '5px 8px',
   outline: 'none', boxSizing: 'border-box',
 };
 
 // Aliases used inside AuthSettingsSlidePanelContent and RolesManagerView
 const AUTH_INPUT = A_INPUT;
 const AUTH_FIELD_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 600, color: '#9ca3af',
+  fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4,
 };
 const AUTH_SELECT: React.CSSProperties = {
   ...A_INPUT, appearance: 'none', paddingRight: 24, cursor: 'pointer',
 };
 const AUTH_CARD: React.CSSProperties = {
-  background: '#111827', border: '1px solid #1f2937', borderRadius: 8,
+  background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 8,
   padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10,
 };
 const AUTH_STEP_NUM: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#e5e7eb',
+  fontSize: 11, fontWeight: 700, color: 'var(--bld-text-2)',
 };
 const AUTH_DIVIDER = (
-  <div style={{ height: 1, background: '#1f2937', margin: '2px 0' }} />
+  <div style={{ height: 1, background: 'var(--bld-bg-input)', margin: '2px 0' }} />
 );
 const A_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 600, color: '#9ca3af',
+  fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4,
 };
 const A_SECTION: React.CSSProperties = {
-  padding: '10px 12px', borderBottom: '1px solid #1f2937',
+  padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)',
   display: 'flex', flexDirection: 'column', gap: 8,
 };
 const A_SECTION_TITLE: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: '#9ca3af',
+  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.08em',
 };
 const A_ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'center',
-  padding: '6px 12px', borderBottom: '1px solid #111827',
+  padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-panel)',
 };
 
 type AuthView = 'settings' | 'roles';
@@ -960,8 +962,8 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={AUTH_STEP_NUM}>1. Configuration</div>
           {step1Done
-            ? <span style={{ color: '#34d399', fontSize: 16 }}>✓</span>
-            : <span style={{ fontSize: 11, color: '#6b7280' }}>Fill in to continue</span>}
+            ? <span style={{ color: 'var(--bld-success)', fontSize: 16 }}>✓</span>
+            : <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Fill in to continue</span>}
         </div>
         <div>
           <label style={AUTH_FIELD_LABEL}>Auth type *</label>
@@ -971,13 +973,13 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="basic">Auth Basic</option>
               <option value="custom">Custom</option>
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
           </div>
         </div>
         <div>
           <label style={AUTH_FIELD_LABEL}>User endpoint *</label>
           {/* REST / GraphQL mode toggle */}
-          <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2, marginBottom: 8 }}>
+          <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2, marginBottom: 8 }}>
             {(['rest', 'graphql'] as const).map(mode => (
               <button
                 key={mode}
@@ -985,8 +987,8 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
                 onBlur={save}
                 style={{
                   flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                  background: endpointType === mode ? '#374151' : 'transparent',
-                  color:      endpointType === mode ? '#f3f4f6'  : '#6b7280',
+                  background: endpointType === mode ? 'var(--bld-border-subtle)' : 'transparent',
+                  color:      endpointType === mode ? 'var(--bld-text-1)'  : 'var(--bld-text-disabled)',
                 }}
               >{mode === 'rest' ? 'REST API' : 'GraphQL'}</button>
             ))}
@@ -1038,7 +1040,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="">None</option>
               {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
           </div>
         </div>
         <div>
@@ -1048,7 +1050,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="">None</option>
               {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
           </div>
         </div>
       </div>
@@ -1058,7 +1060,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
       {/* Step 3 — User role (optional) */}
       <div style={AUTH_CARD}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={AUTH_STEP_NUM}>3. User role configuration <span style={{ fontWeight: 400, fontSize: 11, color: '#6b7280' }}>(optional)</span></div>
+          <div style={AUTH_STEP_NUM}>3. User role configuration <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--bld-text-disabled)' }}>(optional)</span></div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ flex: 1 }}>
@@ -1067,9 +1069,9 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
           </div>
           <div style={{ flex: 1 }}>
             <label style={AUTH_FIELD_LABEL}>Property type</label>
-            <div style={{ height: 28, display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px', background: '#1f2937', border: '1px solid #374151', borderRadius: 4 }}>
-              <span style={{ fontSize: 11, color: '#60a5fa', fontWeight: 700 }}>T</span>
-              <span style={{ fontSize: 11, color: '#9ca3af' }}>Text</span>
+            <div style={{ height: 28, display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--bld-info)', fontWeight: 700 }}>T</span>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>Text</span>
             </div>
           </div>
         </div>
@@ -1080,7 +1082,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
       {/* Manage roles button */}
       <button
         onClick={() => setView('roles')}
-        style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: '#3b82f6', color: '#fff', fontSize: 12, fontWeight: 600 }}
+        style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', fontSize: 12, fontWeight: 600 }}
       >
         Manage roles
       </button>
@@ -1095,41 +1097,41 @@ const RM = {
     display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8,
   } as React.CSSProperties,
   searchInput: {
-    flex: 1, height: 30, background: '#1f2937', border: '1px solid #374151',
-    borderRadius: 6, color: '#e5e7eb', fontSize: 11, padding: '0 10px 0 28px',
+    flex: 1, height: 30, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
+    borderRadius: 6, color: 'var(--bld-text-2)', fontSize: 11, padding: '0 10px 0 28px',
     outline: 'none', boxSizing: 'border-box',
   } as React.CSSProperties,
   addBtn: {
     display: 'flex', alignItems: 'center', gap: 4, height: 30,
-    padding: '0 10px', background: 'none', border: '1px solid #3b82f6',
-    borderRadius: 6, color: '#60a5fa', fontSize: 11, fontWeight: 600,
+    padding: '0 10px', background: 'none', border: '1px solid var(--bld-accent)',
+    borderRadius: 6, color: 'var(--bld-info)', fontSize: 11, fontWeight: 600,
     cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
   } as React.CSSProperties,
   tableHead: {
     display: 'flex', alignItems: 'center', padding: '0 10px',
-    height: 28, background: '#1a2235',
-    borderRadius: '6px 6px 0 0', borderBottom: '1px solid #1f2937',
+    height: 28, background: 'var(--bld-bg-elevated)',
+    borderRadius: '6px 6px 0 0', borderBottom: '1px solid var(--bld-bg-input)',
   } as React.CSSProperties,
   thText: {
-    fontSize: 10, fontWeight: 700, color: '#6b7280',
+    fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)',
     textTransform: 'uppercase', letterSpacing: '0.05em',
   } as React.CSSProperties,
   row: {
     display: 'flex', alignItems: 'center', padding: '0 10px',
-    height: 38, borderBottom: '1px solid #1a2235', cursor: 'default',
+    height: 38, borderBottom: '1px solid var(--bld-bg-elevated)', cursor: 'default',
   } as React.CSSProperties,
-  cellText: { fontSize: 12, color: '#e5e7eb' } as React.CSSProperties,
-  timeText: { fontSize: 11, color: '#6b7280' } as React.CSSProperties,
+  cellText: { fontSize: 12, color: 'var(--bld-text-2)' } as React.CSSProperties,
+  timeText: { fontSize: 11, color: 'var(--bld-text-disabled)' } as React.CSSProperties,
   tag: {
     fontSize: 10, padding: '2px 7px', borderRadius: 12,
-    background: '#1e3a5f', color: '#93c5fd', fontWeight: 500,
-    border: '1px solid #2563eb44',
+    background: 'var(--bld-bg-elevated)', color: 'var(--bld-accent)', fontWeight: 500,
+    border: '1px solid var(--bld-accent)44',
   } as React.CSSProperties,
   sectionTitle: {
-    fontSize: 12, fontWeight: 700, color: '#f3f4f6', marginBottom: 2,
+    fontSize: 12, fontWeight: 700, color: 'var(--bld-text-1)', marginBottom: 2,
   } as React.CSSProperties,
   sectionSub: {
-    fontSize: 10, color: '#6b7280',
+    fontSize: 10, color: 'var(--bld-text-disabled)',
   } as React.CSSProperties,
 };
 
@@ -1181,12 +1183,12 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
 
       {/* Header */}
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, background: '#0f172a' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: 13, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#1e3a5f')}
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, background: 'var(--bld-bg-base)' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--bld-info)', cursor: 'pointer', fontSize: 13, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >← Back</button>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#f3f4f6' }}>Roles &amp; User Groups</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-1)' }}>Roles &amp; User Groups</span>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -1199,10 +1201,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
 
           {/* Search + Add */}
           <div style={RM.searchRow}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#4b5563', pointerEvents: 'none' }}>🔍</span>
-              <input value={roleSearch} onChange={e => setRoleSearch(e.target.value)} placeholder="Search by role name" style={RM.searchInput} />
-            </div>
+            <SearchInput value={roleSearch} onChange={setRoleSearch} placeholder="Search by role name" style={{ flex: 1 }} />
             <button onClick={() => { setShowAddRole(v => !v); setAddRoleInput(''); }} style={RM.addBtn}>
               + Add role
             </button>
@@ -1222,7 +1221,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
               <button
                 onClick={addRole}
                 disabled={!addRoleInput.trim()}
-                style={{ height: 32, padding: '0 12px', borderRadius: 6, border: 'none', fontSize: 11, fontWeight: 600, cursor: addRoleInput.trim() ? 'pointer' : 'default', background: addRoleInput.trim() ? '#2563eb' : '#1f2937', color: addRoleInput.trim() ? '#fff' : '#4b5563' }}
+                style={{ height: 32, padding: '0 12px', borderRadius: 6, border: 'none', fontSize: 11, fontWeight: 600, cursor: addRoleInput.trim() ? 'pointer' : 'default', background: addRoleInput.trim() ? 'var(--bld-accent)' : 'var(--bld-bg-input)', color: addRoleInput.trim() ? 'var(--bld-accent-fg)' : 'var(--bld-border-subtle)' }}
               >
                 Create
               </button>
@@ -1230,30 +1229,30 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
           )}
 
           {/* Table */}
-          <div style={{ border: '1px solid #1f2937', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'hidden' }}>
             <div style={RM.tableHead}>
               <span style={{ ...RM.thText, flex: 1 }}>Role name</span>
               <span style={{ ...RM.thText, width: 80 }}>Created at</span>
               <span style={{ width: 28 }} />
             </div>
             {visibleRoles.length === 0 ? (
-              <div style={{ padding: '16px 10px', fontSize: 11, color: '#4b5563', textAlign: 'center' }}>
+              <div style={{ padding: '16px 10px', fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
                 {roleSearch ? 'No matching roles' : 'No roles yet — add one above'}
               </div>
             ) : visibleRoles.map((role, i) => (
               <div
                 key={role.id}
-                style={{ ...RM.row, background: i % 2 === 0 ? '#0f172a' : '#111827' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#1e3a5f')}
-                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? '#0f172a' : '#111827')}
+                style={{ ...RM.row, background: i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
+                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)')}
               >
                 <span style={{ ...RM.cellText, flex: 1 }}>{role.name}</span>
                 <span style={{ ...RM.timeText, width: 80 }}>{timeAgo(role.createdAt)}</span>
                 <button
                   onClick={() => deleteRole(role.id)}
-                  style={{ width: 28, background: 'none', border: 'none', color: '#374151', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}
+                  style={{ width: 28, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--bld-error)'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--bld-text-disabled)'; e.currentTarget.style.background = 'none'; }}
                   title="Delete role"
                 >×</button>
               </div>
@@ -1269,16 +1268,13 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
           </div>
 
           <div style={RM.searchRow}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#4b5563', pointerEvents: 'none' }}>🔍</span>
-              <input value={groupSearch} onChange={e => setGroupSearch(e.target.value)} placeholder="Search by user group name" style={RM.searchInput} />
-            </div>
+            <SearchInput value={groupSearch} onChange={setGroupSearch} placeholder="Search by user group name" style={{ flex: 1 }} />
             <button onClick={() => setAddGroupPanel({ name: '', roleIds: [] })} style={RM.addBtn}>
               + Add user group
             </button>
           </div>
 
-          <div style={{ border: '1px solid #1f2937', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'hidden' }}>
             <div style={RM.tableHead}>
               <span style={{ ...RM.thText, width: 90 }}>Group name</span>
               <span style={{ ...RM.thText, flex: 1, marginLeft: 8 }}>Roles</span>
@@ -1286,15 +1282,15 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
               <span style={{ width: 28 }} />
             </div>
             {visibleGroups.length === 0 ? (
-              <div style={{ padding: '16px 10px', fontSize: 11, color: '#4b5563', textAlign: 'center' }}>
+              <div style={{ padding: '16px 10px', fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
                 {groupSearch ? 'No matching groups' : 'No user groups yet — add one above'}
               </div>
             ) : visibleGroups.map((group, i) => (
               <div
                 key={group.id}
-                style={{ ...RM.row, height: 'auto', minHeight: 38, padding: '6px 10px', alignItems: 'flex-start', background: i % 2 === 0 ? '#0f172a' : '#111827' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#1e3a5f')}
-                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? '#0f172a' : '#111827')}
+                style={{ ...RM.row, height: 'auto', minHeight: 38, padding: '6px 10px', alignItems: 'flex-start', background: i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
+                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)')}
               >
                 <span style={{ ...RM.cellText, width: 90, paddingTop: 2, fontWeight: 500 }}>{group.name}</span>
                 <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, paddingTop: 2 }}>
@@ -1302,14 +1298,14 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
                     const r = roles.find(x => x.id === rid);
                     return r ? <span key={rid} style={RM.tag}>{r.name}</span> : null;
                   })}
-                  {group.roles.length === 0 && <span style={{ fontSize: 11, color: '#4b5563' }}>No roles</span>}
+                  {group.roles.length === 0 && <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>No roles</span>}
                 </div>
                 <span style={{ ...RM.timeText, width: 70, paddingTop: 2 }}>{timeAgo(group.createdAt)}</span>
                 <button
                   onClick={() => deleteGroup(group.id)}
-                  style={{ width: 28, background: 'none', border: 'none', color: '#374151', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4, flexShrink: 0 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}
+                  style={{ width: 28, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4, flexShrink: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--bld-error)'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--bld-text-disabled)'; e.currentTarget.style.background = 'none'; }}
                   title="Delete group"
                 >×</button>
               </div>
@@ -1322,20 +1318,20 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
       {addGroupPanel && (
         <>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }} onClick={() => setAddGroupPanel(null)} />
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '75%', background: '#0f172a', borderLeft: '1px solid #1f2937', display: 'flex', flexDirection: 'column', zIndex: 51, boxShadow: '-12px 0 32px rgba(0,0,0,0.6)' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '75%', background: 'var(--bld-bg-base)', borderLeft: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', zIndex: 51, boxShadow: '-12px 0 32px rgba(0,0,0,0.6)' }}>
             {/* Drawer header */}
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#f3f4f6' }}>User group</span>
-              <button onClick={() => setAddGroupPanel(null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0, borderRadius: 4 }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#f3f4f6')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bld-bg-base)' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--bld-text-1)' }}>User group</span>
+              <button onClick={() => setAddGroupPanel(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0, borderRadius: 4 }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-1)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
               >×</button>
             </div>
 
             {/* Drawer body */}
             <div style={{ flex: 1, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Given name *</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Given name *</label>
                 <input
                   autoFocus
                   value={addGroupPanel.name}
@@ -1347,23 +1343,23 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
               </div>
 
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', display: 'block', marginBottom: 8 }}>Roles *</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 8 }}>Roles *</label>
                 {roles.length === 0 ? (
-                  <div style={{ fontSize: 11, color: '#4b5563', padding: '8px 0' }}>No roles available — go back and add roles first.</div>
+                  <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', padding: '8px 0' }}>No roles available — go back and add roles first.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {roles.map(role => {
                       const checked = addGroupPanel.roleIds.includes(role.id);
                       return (
-                        <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 6, cursor: 'pointer', background: checked ? '#1e3a5f' : 'transparent', border: `1px solid ${checked ? '#2563eb' : '#1f2937'}` }}
-                          onMouseEnter={e => { if (!checked) e.currentTarget.style.background = '#1a2235'; }}
+                        <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 6, cursor: 'pointer', background: checked ? 'var(--bld-bg-elevated)' : 'transparent', border: `1px solid ${checked ? 'var(--bld-accent)' : 'var(--bld-bg-input)'}` }}
+                          onMouseEnter={e => { if (!checked) e.currentTarget.style.background = 'var(--bld-bg-elevated)'; }}
                           onMouseLeave={e => { if (!checked) e.currentTarget.style.background = 'transparent'; }}
                         >
-                          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked ? '#3b82f6' : '#374151'}`, background: checked ? '#3b82f6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {checked && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
+                          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`, background: checked ? 'var(--bld-accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {checked && <span style={{ color: 'var(--bld-accent-fg)', fontSize: 10, lineHeight: 1 }}>✓</span>}
                           </div>
                           <input type="checkbox" checked={checked} onChange={() => setAddGroupPanel(p => p ? { ...p, roleIds: checked ? p.roleIds.filter(id => id !== role.id) : [...p.roleIds, role.id] } : p)} style={{ display: 'none' }} />
-                          <span style={{ fontSize: 12, color: '#e5e7eb', fontWeight: checked ? 600 : 400 }}>{role.name}</span>
+                          <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: checked ? 600 : 400 }}>{role.name}</span>
                         </label>
                       );
                     })}
@@ -1373,11 +1369,11 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Drawer footer */}
-            <div style={{ padding: '12px 14px', borderTop: '1px solid #1f2937' }}>
+            <div style={{ padding: '12px 14px', borderTop: '1px solid var(--bld-bg-input)' }}>
               <button
                 onClick={addGroup}
                 disabled={!addGroupPanel.name.trim()}
-                style={{ width: '100%', padding: '9px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: addGroupPanel.name.trim() ? 'pointer' : 'default', background: addGroupPanel.name.trim() ? '#2563eb' : '#1f2937', color: addGroupPanel.name.trim() ? '#fff' : '#4b5563' }}
+                style={{ width: '100%', padding: '9px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: addGroupPanel.name.trim() ? 'pointer' : 'default', background: addGroupPanel.name.trim() ? 'var(--bld-accent)' : 'var(--bld-bg-input)', color: addGroupPanel.name.trim() ? 'var(--bld-accent-fg)' : 'var(--bld-border-subtle)' }}
               >
                 Create
               </button>
@@ -1389,7 +1385,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
   );
 }
 
-type LeftTabId = 'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme';
+type LeftTabId = 'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme' | 'files';
 
 interface PanelLeftProps {
   activeTab: LeftTabId;
@@ -1530,9 +1526,9 @@ export default function PanelLeft({
   }), []);
 
   return (
-    <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: '#111827', borderRight: '1px solid #1f2937', overflow: 'hidden' }}>
+    <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bld-bg-panel)', borderRight: '1px solid var(--bld-bg-input)', overflow: 'hidden' }}>
       {/* Tab bar — 4 icon-only tabs, styled to match the right panel */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
         {([
           {
             id: 'layers' as LeftTabId,
@@ -1580,6 +1576,17 @@ export default function PanelLeft({
               </svg>
             ),
           },
+          {
+            id: 'files' as LeftTabId,
+            title: 'Config Files',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 2h5l3 3v7a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round"/>
+                <path d="M8 2v3h3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 7h4M5 9.5h2.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+              </svg>
+            ),
+          },
         ] as const).map(({ id: t, title, icon }) => (
           <button
             key={t}
@@ -1590,8 +1597,8 @@ export default function PanelLeft({
               padding: '9px 0',
               background: 'none',
               border: 'none',
-              borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent',
-              color: tab === t ? '#f3f4f6' : '#6b7280',
+              borderBottom: tab === t ? '2px solid var(--bld-accent)' : '2px solid transparent',
+              color: tab === t ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
               cursor: 'pointer',
               marginBottom: -1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1607,17 +1614,12 @@ export default function PanelLeft({
         <>
           {/* Search */}
           <div style={{ padding: '6px 8px', flexShrink: 0 }}>
-            <input
-              placeholder="Search layers…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
-            />
+            <SearchInput value={search} onChange={setSearch} placeholder="Search layers…" />
           </div>
 
           {/* Empty state */}
           {filteredNodes.length === 0 && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4b5563', fontSize: 12, textAlign: 'center', padding: 16 }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center', padding: 16 }}>
               {baseNodes.length === 0
                 ? 'Drop a component to get started'
                 : 'No layers match your search'}
@@ -1647,7 +1649,7 @@ export default function PanelLeft({
             {/* Canvas nodes (freeform nodes outside pages) */}
             {(store.canvasNodes as SDUINode[]).length > 0 && (
               <>
-                <div style={{ padding: '6px 8px 2px', fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Canvas</div>
+                <div style={{ padding: '6px 8px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Canvas</div>
                 <LayerTree
                   nodes={store.canvasNodes as SDUINode[]}
                   store={store}
@@ -1674,6 +1676,8 @@ export default function PanelLeft({
       {tab === 'assets' && <AssetsTab />}
 
       {tab === 'theme' && <ThemePanel onOpenColorSlide={onOpenColorSlide} />}
+
+      {tab === 'files' && <FilesPanel />}
 
       {/* Context menu */}
       {contextMenu && (

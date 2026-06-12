@@ -4,7 +4,6 @@
  */
 
 export {
-  buildStructureAgentPrompt,
   buildBindingAgentPrompt,
   buildStylingAgentPrompt,
   buildAnimationAgentPrompt,

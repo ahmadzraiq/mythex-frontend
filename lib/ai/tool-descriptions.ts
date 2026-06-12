@@ -150,5 +150,6 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = {
   'add_server_workflow_step':  'Append a step to a server workflow (tablesInsert, hashPassword, sendResponse, tryCatch, etc.).',
   'update_server_workflow':    'Update name, description, httpMethod, httpPath, or params of a server workflow.',
   'publish_server_workflow':   'Publish an ENDPOINT workflow to make it live.',
-  'read_workflow':             'Fetch full step tree for a single server workflow by ID.',
+  'read_workflow':             'Fetch full step tree for a single server workflow by ID. Call this before publish_server_workflow to verify all steps are correct.',
+  'replace_workflow_step':     'Replace a single step (by stepId) in a server workflow graph without rebuilding the whole workflow. Use after read_workflow reveals a wrong or incomplete step.',
 };

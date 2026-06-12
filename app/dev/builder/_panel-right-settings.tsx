@@ -195,17 +195,17 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
   // ── Auto-tracked (Input / Textarea): always controlled, show read-only badge ──
   if (isAutoTracked) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <span style={{ fontSize: 11, color: '#f3f4f6', fontWeight: 500 }}>Controlled</span>
-            <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{`variables['${varId}']`}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-1)', fontWeight: 500 }}>Controlled</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>{`variables['${varId}']`}</span>
           </div>
-          <span style={{ fontSize: 10, color: '#34d399', background: '#064e3b', borderRadius: 3, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Auto</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-success)', background: 'rgba(34,197,94,0.15)', borderRadius: 3, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Auto</span>
         </div>
-        <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ color: '#818cf8' }}>Live:</span>
-          <span style={{ color: '#f3f4f6', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'flex', gap: 4, alignItems: 'center' }}>
+          <span style={{ color: 'var(--bld-ai-accent)' }}>Live:</span>
+          <span style={{ color: 'var(--bld-text-1)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
             {liveValue === undefined || liveValue === null ? '—' : String(liveValue)}
           </span>
         </div>
@@ -214,15 +214,15 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid #1f2937' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
       {/* Toggle row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, color: '#f3f4f6', fontWeight: 500 }}>Controlled</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-1)', fontWeight: 500 }}>Controlled</span>
         <button
           onClick={toggle}
           style={{
             width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-            background: isControlled ? '#3b82f6' : '#374151',
+            background: isControlled ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
             position: 'relative', transition: 'background 0.15s',
           }}
           title={isControlled ? 'Disable controlled mode' : 'Enable controlled mode — creates a page variable'}
@@ -254,7 +254,7 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
               patchNodeField(nodeId, '_initialValue' as keyof SDUINode,
                 t === 'boolean' ? false : t === 'number' ? 0 : t === 'array' ? '[]' : t === 'object' ? '{}' : '');
             }}
-            style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+            style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
           >
             <option value="text">Text</option>
             <option value="boolean">Boolean</option>
@@ -282,7 +282,7 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
                 }}
                 style={{
                   width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-                  background: initValueRaw ? '#3b82f6' : '#374151', position: 'relative', transition: 'background 0.15s',
+                  background: initValueRaw ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', transition: 'background 0.15s',
                 }}
               >
                 <span style={{
@@ -310,7 +310,7 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
                   getGlobalVariableStore().getState().set(varId, n);
                 }}
                 placeholder="0"
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
               />
             </FieldWithBinding>
           ) : resolvedType === 'array' || resolvedType === 'object' ? (
@@ -323,8 +323,8 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
               }}
               expectedType="string"
             >
-              <Suspense fallback={<div style={{ height: 60, background: '#1f2937', borderRadius: 4 }} />}>
-                <div style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #374151', width: '100%' }}>
+              <Suspense fallback={<div style={{ height: 60, background: 'var(--bld-bg-input)', borderRadius: 4 }} />}>
+                <div style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)', width: '100%' }}>
                   <CodeMirror
                     value={isInitFormula ? '' : (typeof initValueRaw === 'string' ? initValueRaw : JSON.stringify(initValueRaw ?? (resolvedType === 'array' ? [] : {}), null, 2))}
                     height="80px"
@@ -356,19 +356,19 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
                   getGlobalVariableStore().getState().set(varId, e.target.value);
                 }}
                 placeholder="Initial value"
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
               />
             </FieldWithBinding>
           )}
 
           {/* Debounce toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>Debounce</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flexShrink: 0, minWidth: 80 }}>Debounce</span>
             <button
               onClick={() => patchDebounce({ enabled: !debounceEnabled })}
               style={{
                 width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-                background: debounceEnabled ? '#3b82f6' : '#374151', position: 'relative', transition: 'background 0.15s',
+                background: debounceEnabled ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', transition: 'background 0.15s',
               }}
             >
               <span style={{
@@ -381,20 +381,20 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
           {/* Delay (only when debounce on) */}
           {debounceEnabled && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>Delay</span>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flexShrink: 0, minWidth: 80 }}>Delay</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
                 <input
                   type="number"
                   value={debounceDelay}
                   min={0} max={5000} step={50}
                   onChange={e => patchDebounce({ delay: Math.max(0, Number(e.target.value)) })}
-                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' }}
+                  style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' }}
                 />
-                <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>ms</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>ms</span>
                 <input
                   type="range" min={0} max={2000} step={50} value={debounceDelay}
                   onChange={e => patchDebounce({ delay: Number(e.target.value) })}
-                  style={{ flex: 1, accentColor: '#3b82f6', width: 60 }}
+                  style={{ flex: 1, accentColor: 'var(--bld-accent)', width: 60 }}
                 />
               </div>
             </div>
@@ -437,7 +437,7 @@ function SettingsRow({
       padding: `5px ${indent ? 12 : 12}px`,
       paddingLeft: indent ? 20 : 12,
     }}>
-      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80 }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flexShrink: 0, minWidth: 80 }}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
         {children}
       </div>
@@ -456,13 +456,13 @@ function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolea
     fontWeight: 500,
   };
   return (
-    <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+    <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2 }}>
       <button
-        style={{ ...btnBase, background: value ? '#374151' : 'transparent', color: value ? '#f3f4f6' : '#6b7280' }}
+        style={{ ...btnBase, background: value ? 'var(--bld-border-subtle)' : 'transparent', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
         onClick={() => onChange(true)}
       >On</button>
       <button
-        style={{ ...btnBase, background: !value ? '#374151' : 'transparent', color: !value ? '#f3f4f6' : '#6b7280' }}
+        style={{ ...btnBase, background: !value ? 'var(--bld-border-subtle)' : 'transparent', color: !value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
         onClick={() => onChange(false)}
       >Off</button>
     </div>
@@ -483,13 +483,13 @@ function SettingsTextInput({ value, onChange, placeholder, expandable = false, t
         onKeyDown={e => { if (e.key === 'Enter') { onChange(draft); (e.target as HTMLInputElement).blur(); } }}
         placeholder={placeholder}
         style={{
-          background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-          color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none',
+          background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+          color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none',
           width: 130, boxSizing: 'border-box',
         }}
       />
       {expandable && (
-        <button style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1 }} title="Expand">⤢</button>
+        <button style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1 }} title="Expand">⤢</button>
       )}
     </div>
   );
@@ -570,13 +570,13 @@ const ICONIFY_API_BASE = 'https://api.iconify.design';
 function AnyPropEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div style={{ position: 'relative', width: 130, boxSizing: 'border-box' as const, borderRadius: 4, overflow: 'hidden', border: '1px solid #374151' }}>
+    <div style={{ position: 'relative', width: 130, boxSizing: 'border-box' as const, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)' }}>
       <Suspense fallback={
         <textarea
           value={value}
           onChange={e => onChange(e.target.value)}
           rows={expanded ? 5 : 1}
-          style={{ width: '100%', background: '#1f2937', border: 'none', color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', resize: 'none', fontFamily: 'monospace', boxSizing: 'border-box' as const, height: expanded ? 110 : 26 }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: 'none', color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', resize: 'none', fontFamily: 'monospace', boxSizing: 'border-box' as const, height: expanded ? 110 : 26 }}
         />
       }>
         <CodeMirror
@@ -593,15 +593,15 @@ function AnyPropEditor({ value, onChange }: { value: string; onChange: (v: strin
       <button
         onClick={() => setExpanded(e => !e)}
         title={expanded ? 'Collapse' : 'Expand'}
-        style={{ position: 'absolute', bottom: 3, right: 3, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#374151', border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0, zIndex: 10 }}
+        style={{ position: 'absolute', bottom: 3, right: 3, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bld-border-subtle)', border: 'none', borderRadius: 3, cursor: 'pointer', padding: 0, zIndex: 10 }}
       >
         {expanded ? (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
             <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
           </svg>
         ) : (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
             <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
           </svg>
@@ -635,7 +635,7 @@ function SpecificRow({
 }) {
   return (
     <div style={{ display: 'flex', alignItems: topAlign ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 8, padding: topAlign ? '6px 12px' : '3px 12px' }}>
-      <span style={{ fontSize: 11, color: '#d1d5db', flexShrink: 0, minWidth: 80, paddingTop: topAlign ? 4 : 0 }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flexShrink: 0, minWidth: 80, paddingTop: topAlign ? 4 : 0 }}>{label}</span>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: topAlign ? 'flex-start' : 'center', justifyContent: 'flex-end' }}>
         <FieldWithBinding label={fieldKey} value={value} onChange={onChange} hint={hint} expectedType={expectedType} topAlign={topAlign}>
           {children}
@@ -651,9 +651,9 @@ function SpecificRow({
  *  Handles hex strings, `var(--name)`, and `var(--name, fallback)` syntax.
  *  Theme vars may be "R G B" triplets or plain hex strings on :root. */
 function resolveCssVarToHex(color: string): string {
-  if (!color || color === 'currentColor') return '#6b7280';
+  if (!color || color === 'currentColor') return 'var(--bld-text-disabled)';
   if (color.startsWith('#')) return color;
-  if (typeof document === 'undefined') return '#6b7280';
+  if (typeof document === 'undefined') return 'var(--bld-text-disabled)';
   // Match both var(--name) and var(--name, fallback)
   const match = color.match(/var\(--([\w-]+)/);
   if (match) {
@@ -671,7 +671,7 @@ function resolveCssVarToHex(color: string): string {
     const fbMatch = color.match(/var\(--[\w-]+,\s*(.+)\)$/);
     if (fbMatch) return resolveCssVarToHex(fbMatch[1].trim());
   }
-  return '#6b7280';
+  return 'var(--bld-text-disabled)';
 }
 
 // ── Icon Settings ───────────────────────────────────────────────────────
@@ -686,7 +686,7 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
   const isBoundColor = isBoundValue(nodeProps.color as FormulaValue);
   const rawColor = (!isBoundColor && typeof nodeProps.color === 'string') ? nodeProps.color : 'currentColor';
   // Resolve to hex for FigmaColorPicker display (it only accepts hex)
-  const resolvedHex = (rawColor === 'currentColor' || !rawColor) ? '#6b7280' : resolveCssVarToHex(rawColor);
+  const resolvedHex = (rawColor === 'currentColor' || !rawColor) ? 'var(--bld-text-disabled)' : resolveCssVarToHex(rawColor);
   // For the Iconify preview thumbnail
   const previewColor = resolvedHex;
 
@@ -728,15 +728,15 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
     : null;
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Icon</div>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Icon</div>
 
       {/* Preview + icon identifier (with binding support) */}
       <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 32, height: 32, flexShrink: 0, borderRadius: 4, background: '#1f2937', border: '1px solid #374151', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4 }}>
+        <div style={{ width: 32, height: 32, flexShrink: 0, borderRadius: 4, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4 }}>
           {svgPreviewUrl
             ? <img src={svgPreviewUrl} alt="icon" style={{ width: 20, height: 20 }} />
-            : <span style={{ fontSize: 14, color: '#4b5563' }}>◈</span>}
+            : <span style={{ fontSize: 14, color: 'var(--bld-text-disabled)' }}>◈</span>}
         </div>
         <FieldWithBinding
           label="icon"
@@ -750,7 +750,7 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
             value={iconValue}
             onChange={e => patchProp('icon', e.target.value)}
             placeholder="heroicons:star"
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none', width: '100%' }}
+            style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none', width: '100%' }}
           />
         </FieldWithBinding>
       </div>
@@ -761,7 +761,7 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
         fieldKey="color"
         value={(nodeProps.color as FormulaValue) ?? 'currentColor'}
         onChange={v => patchProp('color', v)}
-        hint="CSS color or CSS variable e.g. var(--primary), #3b82f6"
+        hint="CSS color or CSS variable e.g. var(--primary), var(--bld-accent)"
         expectedType="string"
       >
         <FigmaColorPicker
@@ -782,14 +782,14 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search icons…"
-          style={{ width: '100%', boxSizing: 'border-box' as const, background: '#111827', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+          style={{ width: '100%', boxSizing: 'border-box' as const, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 7px', outline: 'none' }}
         />
       </div>
 
       {(searchResults.length > 0 || searching) && (
         <div style={{ padding: '0 12px 8px' }}>
           {searching ? (
-            <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center' as const, padding: '4px 0' }}>Searching…</div>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textAlign: 'center' as const, padding: '4px 0' }}>Searching…</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 3 }}>
               {searchResults.map(name => {
@@ -806,8 +806,8 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
                       patchProps({ icon: name, ...(needsColor ? { color: 'var(--primary)' } : {}) });
                     }}
                     style={{
-                      background: name === iconValue ? '#1d4ed8' : '#1f2937',
-                      border: `1px solid ${name === iconValue ? '#3b82f6' : '#374151'}`,
+                      background: name === iconValue ? 'var(--bld-accent-hover)' : 'var(--bld-bg-input)',
+                      border: `1px solid ${name === iconValue ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
                       borderRadius: 4, padding: 4, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -839,13 +839,13 @@ function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
     store.patchNodeField(nodeId, 'src', value);
 
   const SELECT_STYLE: React.CSSProperties = {
-    background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-    color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
+    background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+    color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
   };
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Image</div>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Image</div>
 
       {/* Source URL — with binding support */}
       <SpecificRow
@@ -864,7 +864,7 @@ function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
         <div style={{ padding: '0 12px 8px' }}>
           <img
             src={nodeSrc} alt="preview"
-            style={{ width: '100%', maxHeight: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #1f2937' }}
+            style={{ width: '100%', maxHeight: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--bld-bg-input)' }}
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         </div>
@@ -925,8 +925,8 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
   const patchSrc  = (value: string) => patchPropResponsive('src', value);
 
   const SELECT_STYLE: React.CSSProperties = {
-    background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-    color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
+    background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+    color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', outline: 'none', width: '100%',
   };
 
   const TOGGLES: { key: 'autoPlay' | 'loop' | 'muted' | 'controls'; label: string; value: boolean }[] = [
@@ -937,8 +937,8 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
   ];
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Video</div>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Video</div>
 
       {/* Source URL — with binding support */}
       <SpecificRow
@@ -966,7 +966,7 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
 
       {posterVal && typeof posterVal === 'string' && (
         <div style={{ padding: '0 12px 8px' }}>
-          <img src={posterVal} alt="poster" style={{ width: '100%', maxHeight: 64, objectFit: 'cover', borderRadius: 4, border: '1px solid #1f2937' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <img src={posterVal} alt="poster" style={{ width: '100%', maxHeight: 64, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--bld-bg-input)' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         </div>
       )}
 
@@ -992,8 +992,8 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
       </SpecificRow>
 
       {/* Playback toggles — with binding support */}
-      <div style={{ padding: '6px 12px 4px', borderTop: '1px solid #111827' }}>
-        <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Playback</div>
+      <div style={{ padding: '6px 12px 4px', borderTop: '1px solid var(--bld-bg-panel)' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Playback</div>
         {TOGGLES.map(({ key, label, value }) => (
           <SpecificRow
             key={key}
@@ -1310,12 +1310,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
     || isScControlled;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', borderBottom: hasSpecific ? '1px solid #374151' : undefined }}>
+    <div style={{ display: 'flex', flexDirection: 'column', borderBottom: hasSpecific ? '1px solid var(--bld-border-subtle)' : undefined }}>
 
       {/* ── Name (all types; hidden when inside FormContainer — field name serves as name) ── */}
       {!formContainerAncestor && (
-        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 12px' }}>
-          <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Name</div>
+        <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 12px' }}>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Name</div>
           <input
             data-testid="settings-name-input"
             value={nameDraft}
@@ -1324,7 +1324,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
             onBlur={() => commitName()}
             onKeyDown={e => { if (e.key === 'Enter') { commitName(); (e.target as HTMLInputElement).blur(); } }}
             placeholder={`e.g. ${nodeType}`}
-            style={{ width: '100%', boxSizing: 'border-box' as const, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+            style={{ width: '100%', boxSizing: 'border-box' as const, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none' }}
           />
         </div>
       )}
@@ -1344,12 +1344,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         if (!scModel || !scModel.properties?.length) return null;
         const rootProps = (linkedRoot.props ?? {}) as Record<string, unknown>;
         return (
-          <div style={{ borderBottom: '1px solid #1f2937', overflow: 'hidden' }}>
-            <div style={{ padding: '6px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ borderBottom: '1px solid var(--bld-bg-input)', overflow: 'hidden' }}>
+            <div style={{ padding: '6px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{
                 fontSize: 9,
-                color: '#60a5fa',
-                background: '#1e3a5f',
+                color: 'var(--bld-info)',
+                background: 'var(--bld-bg-elevated)',
                 borderRadius: 3, padding: '1px 4px', fontWeight: 700,
               }}>SC</span>
               Component Properties
@@ -1360,7 +1360,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
               const isAny = prop.type === 'any' || prop.type === 'list';
               const strVal = isAny ? (typeof rawVal === 'string' ? rawVal : (rawVal !== undefined ? JSON.stringify(rawVal, null, 2) : '')) : '';
 
-              const inputStyle: React.CSSProperties = { width: 130, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const };
+              const inputStyle: React.CSSProperties = { width: 130, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const };
 
               let editor: React.ReactNode;
 
@@ -1368,12 +1368,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                 editor = <AnyPropEditor value={strVal} onChange={v => patchProp(v)} />;
               } else if (prop.type === 'boolean') {
                 editor = (
-                  <div style={{ display: 'flex', border: '1px solid #374151', borderRadius: 6, overflow: 'hidden', width: 130, boxSizing: 'border-box' as const }}>
+                  <div style={{ display: 'flex', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', width: 130, boxSizing: 'border-box' as const }}>
                     {[{ label: 'On', val: true }, { label: 'Off', val: false }].map(({ label, val }) => {
                       const active = (!!rawVal) === val;
                       return (
                         <button key={label}
-                          style={{ flex: 1, padding: '5px 0', background: active ? '#1f2937' : 'transparent', border: 'none', fontSize: 12, color: active ? '#f3f4f6' : '#6b7280', cursor: 'pointer', fontWeight: active ? 600 : 400 }}
+                          style={{ flex: 1, padding: '5px 0', background: active ? 'var(--bld-bg-input)' : 'transparent', border: 'none', fontSize: 12, color: active ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)', cursor: 'pointer', fontWeight: active ? 600 : 400 }}
                           onClick={() => patchProp(val)}
                         >{label}</button>
                       );
@@ -1483,7 +1483,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
       {/* ── "Specific" section header — only shown when there IS component-specific content ── */}
       {hasSpecific && (
-        <div style={{ padding: '8px 12px 2px', fontSize: 10, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ padding: '8px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
@@ -1512,12 +1512,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
       {/* ── Form Container Section (input types only) ────────────────────────── */}
       {(SETTINGS_INPUT_TYPES.has(nodeType) || isScControlled) && formContainerAncestor && (
-        <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+        <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
           <div style={{ padding: '0 12px 4px', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 12 11 14 15 10"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
             </svg>
-            <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Form container</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-success)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Form container</span>
           </div>
 
           {/* Field name */}
@@ -1543,7 +1543,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                 onBlur={() => commitFieldName()}
                 onKeyDown={e => { if (e.key === 'Enter') { commitFieldName(); (e.target as HTMLInputElement).blur(); } }}
                 placeholder="e.g. email"
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: 110, boxSizing: 'border-box' as const }}
               />
             </FieldWithBinding>
           </SettingsRow>
@@ -1554,7 +1554,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
               data-testid="settings-validation-trigger"
               value={validationTrigger}
               onChange={e => patchValidation({ trigger: e.target.value as 'submit' | 'change' })}
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 160 }}
+              style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 160 }}
             >
               <option value="submit">On form submit</option>
               <option value="change">On input change</option>
@@ -1564,30 +1564,30 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
           {/* ── Validation rules list ──────────────────────────────────────────── */}
           <div style={{ padding: '4px 12px 2px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rules</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rules</span>
               <button
                 onClick={addRule}
-                style={{ fontSize: 10, color: '#a78bfa', background: 'none', border: '1px solid #4c1d95', borderRadius: 3, padding: '1px 7px', cursor: 'pointer' }}
+                style={{ fontSize: 10, color: 'var(--bld-ai-accent)', background: 'none', border: '1px solid var(--bld-ai-accent)', borderRadius: 3, padding: '1px 7px', cursor: 'pointer' }}
               >
                 + Add rule
               </button>
             </div>
 
             {validationRules.length === 0 && (
-              <div style={{ fontSize: 10, color: '#4b5563', padding: '4px 0 6px', fontStyle: 'italic' }}>No rules — click + Add rule</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-3)', padding: '4px 0 6px', fontStyle: 'italic' }}>No rules — click + Add rule</div>
             )}
 
             {validationRules.map((rule, idx) => {
               const opt = RULE_TYPE_OPTIONS.find(o => o.value === rule.type);
               const isFormulaOpen = formulaOpenRuleIdx === idx;
               return (
-                <div key={idx} style={{ marginBottom: 6, background: '#0f1929', borderRadius: 4, border: '1px solid #1f2937', padding: '5px 6px' }}>
+                <div key={idx} style={{ marginBottom: 6, background: 'var(--bld-bg-base)', borderRadius: 4, border: '1px solid var(--bld-bg-input)', padding: '5px 6px' }}>
                   {/* Row 1: type + message + remove */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <select
                       value={rule.type}
                       onChange={e => changeRuleType(idx, e.target.value as ValidationRuleType)}
-                      style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', outline: 'none', flexShrink: 0, width: 100 }}
+                      style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, color: 'var(--bld-text-1)', fontSize: 10, padding: '2px 4px', outline: 'none', flexShrink: 0, width: 100 }}
                     >
                       {RULE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
@@ -1595,12 +1595,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                       <RuleMessageInput
                         value={rule.message}
                         onChange={v => updateRule(idx, { message: v })}
-                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
+                        style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 3, color: 'var(--bld-text-2)', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
                       />
                     )}
                     <button
                       onClick={() => removeRule(idx)}
-                      style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
                       title="Remove rule"
                     >×</button>
                   </div>
@@ -1608,17 +1608,17 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                   {/* Row 2: value input (minLength / maxLength / pattern) */}
                   {opt?.hasValue && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                      <span style={{ fontSize: 9, color: '#6b7280', flexShrink: 0 }}>Value</span>
+                      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>Value</span>
                       <RuleValueInput
                         value={rule.value ?? ''}
                         onChange={v => updateRule(idx, { value: v })}
                         placeholder={opt.valuePlaceholder ?? ''}
-                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', width: 70 }}
+                        style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 3, color: 'var(--bld-text-2)', fontSize: 10, padding: '2px 5px', outline: 'none', width: 70 }}
                       />
                       <RuleMessageInput
                         value={rule.message}
                         onChange={v => updateRule(idx, { message: v })}
-                        style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
+                        style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 3, color: 'var(--bld-text-2)', fontSize: 10, padding: '2px 5px', outline: 'none', flex: 1, minWidth: 0 }}
                       />
                     </div>
                   )}
@@ -1630,7 +1630,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                         <div style={{ position: 'relative', flex: 1 }}>
                           <button
                             onClick={e => openRuleFormula(e, idx)}
-                            style={{ padding: '2px 8px', background: isFormulaOpen ? '#3b0764' : '#2e1065', border: '1px solid #7c3aed', borderRadius: 4, color: '#a78bfa', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
+                            style={{ padding: '2px 8px', background: isFormulaOpen ? 'rgba(124,58,237,0.25)' : 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 4, color: 'var(--bld-ai-accent)', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
                           >
                             ƒ {(rule.formula || rule.value) ? 'Edit formula' : 'Add formula'}
                           </button>
@@ -1652,7 +1652,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                         value={rule.message}
                         onChange={v => updateRule(idx, { message: v })}
                         placeholder="Error message (fallback)"
-                        style={{ marginTop: 4, background: '#111827', border: '1px solid #1f2937', borderRadius: 3, color: '#d1d5db', fontSize: 10, padding: '2px 5px', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
+                        style={{ marginTop: 4, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 3, color: 'var(--bld-text-2)', fontSize: 10, padding: '2px 5px', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
                       />
                     </div>
                   )}
@@ -1666,7 +1666,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
       {/* ── Specific section (input types only) ──────────────────────────────── */}
       {SETTINGS_INPUT_TYPES.has(nodeType) && (
         <div style={{ padding: '8px 0 4px' }}>
-          <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Specific</div>
+          <div style={{ padding: '0 12px 6px', fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>Specific</div>
 
           {nodeType === 'Input' && (
             <SettingsRow label="Input type">
@@ -1674,7 +1674,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                 data-testid="settings-input-type-select"
                 value={currentInputType}
                 onChange={e => selectInputType(e.target.value)}
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 150 }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', outline: 'none', flex: 1, maxWidth: 150 }}
               >
                 {INPUT_TYPE_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1695,7 +1695,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                 value={_initIsFormula ? '' : (initValue as string)}
                 onChange={e => patchInitialValue(e.target.value)}
                 placeholder=""
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
               />
             </FieldWithBinding>
           </SettingsRow>
@@ -1712,7 +1712,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                 value={placeholder}
                 onChange={e => patchProp('placeholder', e.target.value)}
                 placeholder="Placeholder"
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
               />
             </FieldWithBinding>
           </SettingsRow>
@@ -1730,13 +1730,13 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                   value={formatMask}
                   onChange={e => patchProp('format', e.target.value || undefined)}
                   placeholder="e.g. ####-##-##"
-                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
+                  style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', width: 130, boxSizing: 'border-box' as const }}
                 />
               </FieldWithBinding>
             </SettingsRow>
           )}
           {nodeType === 'Input' && formatMask && (
-            <div style={{ fontSize: 10, color: '#6b7280', padding: '0 8px 4px', lineHeight: '1.4' }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '0 8px 4px', lineHeight: '1.4' }}>
               # digit · A letter · * any char · other = literal
             </div>
           )}
@@ -1774,9 +1774,9 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                   max={5000}
                   step={50}
                   onChange={e => patchDebounce({ delay: Math.max(0, Number(e.target.value)) })}
-                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' as const }}
+                  style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 5px', outline: 'none', width: 52, textAlign: 'center' as const }}
                 />
-                <span style={{ fontSize: 10, color: '#6b7280', flexShrink: 0 }}>ms</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>ms</span>
                 <input
                   type="range"
                   min={0}
@@ -1784,7 +1784,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                   step={50}
                   value={debounceDelay}
                   onChange={e => patchDebounce({ delay: Number(e.target.value) })}
-                  style={{ flex: 1, accentColor: '#3b82f6', width: 60 }}
+                  style={{ flex: 1, accentColor: 'var(--bld-accent)', width: 60 }}
                 />
               </div>
             </SettingsRow>
@@ -1800,7 +1800,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
 // ─── OpenVariable Picker (searchable, workflow-style) ─────────────────────────
 
-const OV_TYPE_COLOR: Record<string, string> = { string: '#fbbf24', number: '#60a5fa', boolean: '#34d399', object: '#a78bfa', array: '#fb923c' };
+const OV_TYPE_COLOR: Record<string, string> = { string: 'var(--bld-warning)', number: 'var(--bld-info)', boolean: 'var(--bld-success)', object: 'var(--bld-ai-accent)', array: 'var(--bld-warning)' };
 
 function OpenVariablePicker({ value, customVars, onChange }: {
   value: string | undefined;
@@ -1831,13 +1831,13 @@ function OpenVariablePicker({ value, customVars, onChange }: {
   const isUnknown = !!value && !selected;
 
   return (
-    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'flex', flexDirection: 'column', gap: 3 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>Control variable</span>
         {value && (
           <button
             onClick={() => onChange(undefined)}
-            style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 9, cursor: 'pointer', textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 9, cursor: 'pointer', textDecoration: 'underline' }}
           >
             unbind
           </button>
@@ -1849,8 +1849,8 @@ function OpenVariablePicker({ value, customVars, onChange }: {
           style={{
             width: '100%', textAlign: 'left', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4,
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-            color: '#f3f4f6', fontSize: 10, padding: '3px 6px',
+            background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+            color: 'var(--bld-text-1)', fontSize: 10, padding: '3px 6px',
           }}
         >
           {selected ? (
@@ -1864,17 +1864,17 @@ function OpenVariablePicker({ value, customVars, onChange }: {
             </span>
           ) : isUnknown ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 8, color: '#f87171', fontFamily: 'monospace',
+              <span style={{ fontSize: 8, color: 'var(--bld-error)', fontFamily: 'monospace',
                 background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
                 borderRadius: 3, padding: '0 3px', flexShrink: 0 }}>!</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f87171' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--bld-error)' }}>
                 Unknown variable
               </span>
             </span>
           ) : (
-            <span style={{ color: '#4b5563' }}>(none)</span>
+            <span style={{ color: 'var(--bld-text-disabled)' }}>(none)</span>
           )}
-          <span style={{ color: '#6b7280', fontSize: 9, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 9, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
         </button>
 
         {open && (
@@ -1882,20 +1882,20 @@ function OpenVariablePicker({ value, customVars, onChange }: {
             onClick={e => e.stopPropagation()}
             style={{
               position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-              background: '#111827', border: '1px solid #374151', borderRadius: 6,
+              background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
               marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
               maxHeight: 200, display: 'flex', flexDirection: 'column',
             }}
           >
-            <div style={{ padding: '5px 6px', borderBottom: '1px solid #1f2937' }}>
+            <div style={{ padding: '5px 6px', borderBottom: '1px solid var(--bld-bg-input)' }}>
               <input
                 autoFocus
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search boolean variables…"
                 style={{
-                  width: '100%', boxSizing: 'border-box', background: '#1f2937',
-                  border: '1px solid #374151', borderRadius: 4, color: '#d1d5db',
+                  width: '100%', boxSizing: 'border-box', background: 'var(--bld-bg-input)',
+                  border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)',
                   fontSize: 10, padding: '3px 6px', outline: 'none',
                 }}
               />
@@ -1906,14 +1906,14 @@ function OpenVariablePicker({ value, customVars, onChange }: {
                 onClick={() => { onChange(undefined); setOpen(false); setSearch(''); }}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px',
-                  background: !value ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
-                  color: !value ? '#93c5fd' : '#9ca3af', fontSize: 10, textAlign: 'left',
+                  background: !value ? 'var(--bld-bg-elevated)' : 'none', border: 'none', cursor: 'pointer',
+                  color: !value ? 'var(--bld-accent)' : 'var(--bld-text-3)', fontSize: 10, textAlign: 'left',
                 }}
               >
                 (none)
               </button>
               {filtered.length === 0 && (
-                <div style={{ padding: '8px 10px', fontSize: 10, color: '#6b7280' }}>No boolean variables found</div>
+                <div style={{ padding: '8px 10px', fontSize: 10, color: 'var(--bld-text-disabled)' }}>No boolean variables found</div>
               )}
               {filtered.map(v => {
                 const key = v.id ?? v.name;
@@ -1924,8 +1924,8 @@ function OpenVariablePicker({ value, customVars, onChange }: {
                     onClick={() => { onChange(key); setOpen(false); setSearch(''); }}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px',
-                      background: isActive ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
-                      color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 10, textAlign: 'left',
+                      background: isActive ? 'var(--bld-bg-elevated)' : 'none', border: 'none', cursor: 'pointer',
+                      color: isActive ? 'var(--bld-accent)' : 'var(--bld-text-2)', fontSize: 10, textAlign: 'left',
                     }}
                   >
                     <span style={{ fontSize: 8, color: OV_TYPE_COLOR.boolean, fontFamily: 'monospace',
@@ -2028,14 +2028,14 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
   }, [store.pageNodes, store.customVars, nodeId]);
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
       <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', cursor: 'pointer' }}
         onClick={() => setExpanded(!expanded)}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: hasConfig ? '#60a5fa' : '#9ca3af', fontWeight: hasConfig ? 600 : 400 }}>Popover</span>
-          {hasConfig && <span style={{ fontSize: 9, color: '#3b82f6', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px' }}>{contentCount} node{contentCount !== 1 ? 's' : ''}</span>}
+          <span style={{ fontSize: 11, color: hasConfig ? 'var(--bld-info)' : 'var(--bld-text-3)', fontWeight: hasConfig ? 600 : 400 }}>Popover</span>
+          {hasConfig && <span style={{ fontSize: 9, color: 'var(--bld-accent)', background: 'var(--bld-bg-elevated)', borderRadius: 3, padding: '1px 5px' }}>{contentCount} node{contentCount !== 1 ? 's' : ''}</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {hasConfig && (
@@ -2043,15 +2043,15 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
               title={isShown ? 'Hide on canvas' : 'Show on canvas'}
               onClick={e => { e.stopPropagation(); store.togglePopoverShown(nodeId); }}
               style={{
-                background: isShown ? '#1e3a5f' : 'transparent',
-                border: `1px solid ${isShown ? '#3b82f6' : '#374151'}`,
-                borderRadius: 4, padding: '2px 6px', cursor: 'pointer', color: isShown ? '#60a5fa' : '#6b7280', fontSize: 10,
+                background: isShown ? 'var(--bld-bg-elevated)' : 'transparent',
+                border: `1px solid ${isShown ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
+                borderRadius: 4, padding: '2px 6px', cursor: 'pointer', color: isShown ? 'var(--bld-info)' : 'var(--bld-text-disabled)', fontSize: 10,
               }}
             >
               {isShown ? 'Showing' : 'Show'}
             </button>
           )}
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
             <polyline points="9 18 15 12 9 6" />
           </svg>
@@ -2063,7 +2063,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
           {!hasConfig ? (
             <button
               onClick={handleAdd}
-              style={{ width: '100%', padding: '6px 0', background: '#1e293b', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', fontSize: 11, cursor: 'pointer' }}
+              style={{ width: '100%', padding: '6px 0', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer' }}
             >
               + Add Popover
             </button>
@@ -2074,7 +2074,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
                 <select
                   value={(config?.trigger as string) || 'click'}
                   onChange={e => patchConfig('trigger', e.target.value)}
-                  style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px' }}
+                  style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 10, padding: '2px 4px' }}
                 >
                   <option value="click">Click</option>
                   <option value="hover">Hover</option>
@@ -2083,7 +2083,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
 
               {/* Placement — 3x3 dot matrix */}
               <div>
-                <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 3 }}>Placement</div>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 3 }}>Placement</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, width: 72 }}>
                   {PLACEMENT_GRID.map(({ placement, row, col }) => {
                     const isCenter = row === 1 && col === 1;
@@ -2096,8 +2096,8 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
                         onClick={isCenter ? undefined : () => patchConfig('placement', placement)}
                         style={{
                           width: 20, height: 20,
-                          background: isCenter ? '#0f172a' : isActive ? '#3b82f6' : '#1f2937',
-                          border: `1px solid ${isCenter ? '#1e293b' : isActive ? '#3b82f6' : '#374151'}`,
+                          background: isCenter ? 'var(--bld-bg-base)' : isActive ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                          border: `1px solid ${isCenter ? 'var(--bld-bg-elevated)' : isActive ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
                           borderRadius: 3,
                           cursor: isCenter ? 'default' : 'pointer',
                           display: 'flex', alignItems: dotV, justifyContent: dotH,
@@ -2107,7 +2107,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
                         <div style={{
                           width: isCenter ? 8 : 4, height: isCenter ? 8 : 4,
                           borderRadius: isCenter ? 2 : '50%', flexShrink: 0,
-                          background: isCenter ? '#374151' : isActive ? 'rgba(255,255,255,0.9)' : '#4b5563',
+                          background: isCenter ? 'var(--bld-border-subtle)' : isActive ? 'rgba(255,255,255,0.9)' : 'var(--bld-border-subtle)',
                         }} />
                       </div>
                     );
@@ -2121,7 +2121,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
                   type="number"
                   value={(config?.offset as number) ?? 4}
                   onChange={e => patchConfig('offset', Number(e.target.value))}
-                  style={{ width: 48, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 10, padding: '2px 4px', textAlign: 'right' as const }}
+                  style={{ width: 48, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 10, padding: '2px 4px', textAlign: 'right' as const }}
                 />
               </SettingsRow>
 
@@ -2151,7 +2151,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
               />
 
               {/* Content summary */}
-              <div style={{ fontSize: 10, color: '#6b7280', paddingTop: 4 }}>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', paddingTop: 4 }}>
                 {contentCount} content node{contentCount !== 1 ? 's' : ''}
                 {contentCount === 0 && pcChildren.length === 0 && (
                   <button
@@ -2165,7 +2165,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
                       };
                       store.addNode(pcWrapper, nodeId);
                     }}
-                    style={{ marginLeft: 6, fontSize: 10, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    style={{ marginLeft: 6, fontSize: 10, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     + Add container
                   </button>
@@ -2175,7 +2175,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
               {/* Remove */}
               <button
                 onClick={handleRemove}
-                style={{ width: '100%', padding: '4px 0', background: 'transparent', border: '1px solid #7f1d1d', borderRadius: 4, color: '#ef4444', fontSize: 10, cursor: 'pointer', marginTop: 2 }}
+                style={{ width: '100%', padding: '4px 0', background: 'transparent', border: '1px solid rgba(248,113,113,0.12)', borderRadius: 4, color: 'var(--bld-error)', fontSize: 10, cursor: 'pointer', marginTop: 2 }}
               >
                 Remove Popover
               </button>
@@ -2208,7 +2208,7 @@ export function AlignDistributePanel({ ids }: { ids: string[] }) {
 
   return (
     <div style={{ padding: 12, overflowY: 'auto', flex: 1 }}>
-      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 8 }}>{ids.length} nodes selected</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 8 }}>{ids.length} nodes selected</div>
 
       <SectionHeader title="Align" />
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12, marginTop: 6 }}>
@@ -2218,7 +2218,7 @@ export function AlignDistributePanel({ ids }: { ids: string[] }) {
             title={label}
             data-testid={testId}
             onClick={() => store.alignNodes(ids, edge)}
-            style={{ width: 32, height: 28, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', cursor: 'pointer', fontSize: 14 }}
+            style={{ width: 32, height: 28, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', cursor: 'pointer', fontSize: 14 }}
           >
             {icon}
           </button>
@@ -2233,7 +2233,7 @@ export function AlignDistributePanel({ ids }: { ids: string[] }) {
             title={label}
             data-testid={testId}
             onClick={() => store.distributeNodes(ids, axis)}
-            style={{ width: 32, height: 28, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#d1d5db', cursor: 'pointer', fontSize: 14 }}
+            style={{ width: 32, height: 28, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', cursor: 'pointer', fontSize: 14 }}
           >
             {icon}
           </button>
@@ -2274,32 +2274,32 @@ function FormContainerFieldsPanel({ nodeId }: { nodeId: string }) {
   const fieldNames = Object.keys(formData);
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937', padding: '8px 0 4px' }}>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
       <div style={{ padding: '0 12px 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-ai-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h8M8 14h5"/>
         </svg>
-        <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Registered Fields</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-ai-accent)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Registered Fields</span>
       </div>
 
       {/* Formula path hint */}
       {formStoreKey && (
-        <div style={{ padding: '0 12px 6px', fontSize: 9, color: '#4b5563', lineHeight: 1.4 }}>
+        <div style={{ padding: '0 12px 6px', fontSize: 9, color: 'var(--bld-text-disabled)', lineHeight: 1.4 }}>
           Formula path:{' '}
-          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3, color: '#6366f1' }}>
+          <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3, color: 'var(--bld-ai-accent)' }}>
             variables[&apos;{formStoreKey}&apos;].formData.fieldName
           </code>
         </div>
       )}
       {!formStoreKey && (
-        <div style={{ padding: '4px 12px 6px', fontSize: 9, color: '#f87171' }}>
-          Set an <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>id</code> on this FormContainer to enable per-form tracking.
+        <div style={{ padding: '4px 12px 6px', fontSize: 9, color: 'var(--bld-error)' }}>
+          Set an <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>id</code> on this FormContainer to enable per-form tracking.
         </div>
       )}
       {fieldNames.length === 0 ? (
-        <div style={{ padding: '4px 12px 8px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+        <div style={{ padding: '4px 12px 8px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
           No fields registered yet — add InputField nodes with a{' '}
-          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>name</code> prop.
+          <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>name</code> prop.
         </div>
       ) : (
         <div style={{ padding: '0 12px 4px', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -2307,13 +2307,13 @@ function FormContainerFieldsPanel({ nodeId }: { nodeId: string }) {
             const val = formData[name];
             const isValid = fields[name]?.isValid;
             return (
-              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: '#0f172a', borderRadius: 4, border: '1px solid #1e293b' }}>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#86efac', minWidth: 80, flexShrink: 0 }}>{name}</span>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {val === undefined || val === null || val === '' ? <span style={{ color: '#374151' }}>(empty)</span> : String(val)}
+              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'var(--bld-bg-base)', borderRadius: 4, border: '1px solid var(--bld-bg-elevated)' }}>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--bld-success)', minWidth: 80, flexShrink: 0 }}>{name}</span>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--bld-text-3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {val === undefined || val === null || val === '' ? <span style={{ color: 'var(--bld-text-disabled)' }}>(empty)</span> : String(val)}
                 </span>
                 {isValid ? (
-                  <span style={{ fontSize: 9, color: '#f87171', flexShrink: 0 }}>⚠ {String(isValid)}</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-error)', flexShrink: 0 }}>⚠ {String(isValid)}</span>
                 ) : null}
               </div>
             );
@@ -2325,8 +2325,8 @@ function FormContainerFieldsPanel({ nodeId }: { nodeId: string }) {
       <div style={{ padding: '4px 12px 6px', display: 'flex', gap: 8 }}>
         {(['isSubmitting', 'isSubmitted', 'isValid'] as const).map(key => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: flags[key] ? '#86efac' : '#374151', flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#6b7280' }}>{key}</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: flags[key] ? 'var(--bld-success)' : 'var(--bld-border-subtle)', flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{key}</span>
           </div>
         ))}
       </div>

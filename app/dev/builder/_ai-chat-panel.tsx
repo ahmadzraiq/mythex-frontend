@@ -23,6 +23,7 @@ import { useAiChat } from './_use-ai-chat';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
 import { BUILDER_MODELS, type BuilderModelId } from './_store-types';
 import { AgentDebugOverlay, type DebugSnapshot } from './_agent-debug-overlay';
+import { AiActivityFeed } from './_ai-activity-feed';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -33,7 +34,7 @@ function AnimatedDots() {
     <span style={{ display: 'inline-flex', gap: 3, alignItems: 'center', marginLeft: 4 }}>
       {[0, 1, 2].map(i => (
         <span key={i} style={{
-          width: 3, height: 3, borderRadius: '50%', background: '#7c3aed',
+          width: 3, height: 3, borderRadius: '50%', background: 'var(--bld-ai-accent)',
           display: 'inline-block', animation: `bounce 1.2s infinite ${i * 0.2}s`,
         }} />
       ))}
@@ -51,7 +52,7 @@ function StreamCursor() {
       display: 'inline-block',
       width: 7, height: 7,
       borderRadius: '50%',
-      background: '#7c3aed',
+      background: 'var(--bld-ai-accent)',
       marginLeft: 4,
       verticalAlign: 'middle',
       animation: 'aiCursorPulse 1s ease-in-out infinite',
@@ -75,15 +76,15 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
 
   const dotStyle: React.CSSProperties = (isGenerating || isPending)
     ? {
-        background: isGenerating ? '#4f46e5' : '#1e293b',
+        background: isGenerating ? 'var(--bld-ai-accent)' : 'var(--bld-bg-elevated)',
         animation: isGenerating ? 'toolDotSpin 1.4s linear infinite' : 'none',
       }
     : isError
-    ? { background: '#ef4444' }
-    : { background: '#34d399', animation: 'toolDotPop 0.35s cubic-bezier(0.34,1.56,0.64,1)' };
+    ? { background: 'var(--bld-error)' }
+    : { background: 'var(--bld-success)', animation: 'toolDotPop 0.35s cubic-bezier(0.34,1.56,0.64,1)' };
 
   const labelAnim = (isPending || isGenerating) ? 'toolLabelShimmer 1.8s ease-in-out infinite' : 'none';
-  const labelColor = (isGenerating || isPending) ? '#475569' : isError ? '#fca5a5' : '#94a3b8';
+  const labelColor = (isGenerating || isPending) ? 'var(--bld-text-disabled)' : isError ? 'var(--bld-error)' : 'var(--bld-text-3)';
 
   return (
     <div style={{ animation: 'toolSlideIn 0.18s ease-out both' }}>
@@ -101,7 +102,7 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         {/* Status dot — pops on success, spins on generating */}
         <span style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, ...dotStyle }} />
         {/* Step number */}
-        <span style={{ color: '#334155', fontSize: 10, flexShrink: 0, minWidth: 18, textAlign: 'right' }}>
+        <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0, minWidth: 18, textAlign: 'right' }}>
           {stepNumber}
         </span>
         {/* Label — shimmer while pending/generating */}
@@ -113,14 +114,14 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         </span>
         {/* Checkmark badge on done */}
         {isDone && (
-          <span style={{ fontSize: 9, color: '#34d399', flexShrink: 0, animation: 'toolDotPop 0.35s ease-out' }}>✓</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-success)', flexShrink: 0, animation: 'toolDotPop 0.35s ease-out' }}>✓</span>
         )}
         {/* AI blind badge — tool failed client-side but AI was told "ok" */}
         {tool.aiBlind && (
           <span
             title="AI unaware — this tool failed on the client but the AI was told it succeeded"
             style={{
-              fontSize: 8, color: '#fbbf24', background: '#422006',
+              fontSize: 8, color: 'var(--bld-warning)', background: 'rgba(245,158,11,0.15)',
               borderRadius: 3, padding: '1px 4px', flexShrink: 0,
               fontWeight: 600, letterSpacing: 0.3,
             }}
@@ -132,8 +133,8 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
       {open && (
         <pre style={{
           margin: '3px 0 3px 30px', padding: '5px 8px', borderRadius: 5,
-          borderLeft: '1px solid #1e293b',
-          fontSize: 10, color: '#475569', overflow: 'auto', maxHeight: 100, fontFamily: 'monospace',
+          borderLeft: '1px solid var(--bld-ai-border)',
+          fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'auto', maxHeight: 100, fontFamily: 'monospace',
         }}>
           {JSON.stringify({ input: tool.input, result: tool.result }, null, 2)}
         </pre>
@@ -217,11 +218,11 @@ function RoundDivider({ round }: { round: number }) {
       display: 'flex', alignItems: 'center', gap: 6,
       padding: '3px 0', margin: '2px 0',
     }}>
-      <div style={{ flex: 1, height: 1, background: '#1e293b' }} />
-      <span style={{ fontSize: 9, color: '#475569', whiteSpace: 'nowrap', fontWeight: 500 }}>
+      <div style={{ flex: 1, height: 1, background: 'var(--bld-bg-elevated)' }} />
+      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', whiteSpace: 'nowrap', fontWeight: 500 }}>
         Round {round}
       </span>
-      <div style={{ flex: 1, height: 1, background: '#1e293b' }} />
+      <div style={{ flex: 1, height: 1, background: 'var(--bld-bg-elevated)' }} />
     </div>
   );
 }
@@ -264,8 +265,8 @@ function PhaseGroupSection({ label, tools, active }: {
   const timeDisplay = active ? `${liveElapsed}s` : doneLabel;
 
   const dotColor = active
-    ? '#4f46e5'
-    : hasError ? '#ef4444' : blindCount > 0 ? '#fbbf24' : '#34d399';
+    ? 'var(--bld-ai-accent)'
+    : hasError ? 'var(--bld-error)' : blindCount > 0 ? 'var(--bld-warning)' : 'var(--bld-success)';
   const dotAnim = active ? 'toolDotSpin 1.4s linear infinite' : 'none';
 
   return (
@@ -279,26 +280,26 @@ function PhaseGroupSection({ label, tools, active }: {
         }}
       >
         <span style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: dotColor, animation: dotAnim }} />
-        <span style={{ color: '#94a3b8', fontWeight: 500, flex: 1 }}>
+        <span style={{ color: 'var(--bld-text-3)', fontWeight: 500, flex: 1 }}>
           {label}
         </span>
         {active ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ color: '#334155', fontSize: 10 }}>{liveElapsed}s</span>
+            <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10 }}>{liveElapsed}s</span>
             <AnimatedDots />
           </span>
         ) : (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#334155', fontSize: 10 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--bld-text-disabled)', fontSize: 10 }}>
             {n} step{n !== 1 ? 's' : ''}{doneLabel ? ` · ${doneLabel}` : ''}
             {blindCount > 0 && (
-              <span style={{ color: '#fbbf24', fontSize: 8, fontWeight: 600 }}>{blindCount} blind</span>
+              <span style={{ color: 'var(--bld-warning)', fontSize: 8, fontWeight: 600 }}>{blindCount} blind</span>
             )}
             {expanded ? ' ▲' : ' ▼'}
           </span>
         )}
       </button>
       {expanded && (
-        <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14, marginTop: 3, maxHeight: 180, overflowY: 'auto' }}>
+        <div style={{ borderLeft: '1px solid var(--bld-ai-border)', paddingLeft: 8, paddingRight: 14, marginTop: 3, maxHeight: 180, overflowY: 'auto' }}>
           {tools.map((t, i) => {
             const prevRound = i > 0 ? tools[i - 1].round : undefined;
             const showRoundDivider = t.round !== undefined && prevRound !== undefined && t.round !== prevRound;
@@ -378,8 +379,10 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
         if (info.startedAt && !info.endedAt) activePhases.add(agent);
       }
     }
-    // Fallback: if agentDebugInfo isn't populated yet, use the last received tool's phase
-    if (activePhases.size === 0) {
+    // Fallback: if agentDebugInfo isn't populated yet, use the last received tool's phase.
+    // Guard: only fire when agentDebugInfo is absent/empty — once it has entries, an empty
+    // activePhases means all agents are done, not that tracking hasn't started yet.
+    if (activePhases.size === 0 && (!agentDebugInfo || Object.keys(agentDebugInfo).length === 0)) {
       const last = tools[tools.length - 1]?.phase;
       if (last) activePhases.add(last);
     }
@@ -393,14 +396,14 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <AnimatedDots />
-            <span style={{ fontSize: 11, color: '#475569' }}>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>
               {isThinking
-                ? <span style={{ color: '#334155', fontStyle: 'italic' }}>Planning next steps…</span>
+                ? <span style={{ color: 'var(--bld-text-3)', fontStyle: 'italic' }}>Planning next steps…</span>
                 : <>{n} step{n !== 1 ? 's' : ''}</>
               }
             </span>
           </div>
-          <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8 }}>
+          <div style={{ borderLeft: '1px solid var(--bld-ai-border)', paddingLeft: 8 }}>
             {groups.map(g => (
               <PhaseGroupSection
                 key={g.phase ?? 'other'}
@@ -420,17 +423,17 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
           <AnimatedDots />
-          <span style={{ fontSize: 11, color: '#475569' }}>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>
             {isThinking
-              ? <span style={{ color: '#334155', fontStyle: 'italic' }}>Planning next steps…</span>
+              ? <span style={{ color: 'var(--bld-text-3)', fontStyle: 'italic' }}>Planning next steps…</span>
               : <>{n} step{n !== 1 ? 's' : ''}</>
             }
           </span>
         </div>
         <div ref={listRef}
-          style={{ borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14, maxHeight: 130, overflowY: 'auto' }}>
+          style={{ borderLeft: '1px solid var(--bld-ai-border)', paddingLeft: 8, paddingRight: 14, maxHeight: 130, overflowY: 'auto' }}>
           {hidden > 0 && (
-            <div style={{ fontSize: 10, color: '#1e293b', marginBottom: 2 }}>+{hidden} earlier</div>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-3)', marginBottom: 2 }}>+{hidden} earlier</div>
           )}
           {live.map(t => (
             <ToolRow key={tools.indexOf(t)} tool={t} stepNumber={tools.indexOf(t) + 1} />
@@ -441,7 +444,7 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
   }
 
   // ── Done state ───────────────────────────────────────────────────────────
-  const doneDotColor = hasError ? '#ef4444' : '#34d399';
+  const doneDotColor = hasError ? 'var(--bld-error)' : 'var(--bld-success)';
   return (
     <div style={{ marginBottom: 10 }}>
       {/* Summary line: dot · N steps · Xs ▼ */}
@@ -455,19 +458,19 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
         }}
       >
         <span style={{ width: 5, height: 5, borderRadius: '50%', background: doneDotColor, flexShrink: 0 }} />
-        <span style={{ fontSize: 11, color: '#475569' }}>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>
           {n} step{n !== 1 ? 's' : ''}
         </span>
         {timeLabel && (
-          <span style={{ fontSize: 11, color: '#334155' }}>· {timeLabel}</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>· {timeLabel}</span>
         )}
-        <span style={{ fontSize: 9, color: '#334155' }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
       {/* Expanded: phase-grouped or flat */}
       {expanded && (
         <div style={{
-          borderLeft: '1px solid #1e293b', paddingLeft: 8, paddingRight: 14,
+          borderLeft: '1px solid var(--bld-ai-border)', paddingLeft: 8, paddingRight: 14,
           marginTop: 5, maxHeight: 320, overflowY: 'auto',
         }}>
           {groups
@@ -501,14 +504,14 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
 // ---------------------------------------------------------------------------
 
 const AGENT_COLORS: Record<string, string> = {
-  structure: '#60a5fa',
-  binding: '#34d399',
+  structure: 'var(--bld-info)',
+  binding: 'var(--bld-success)',
   styling: '#f472b6',
-  animation: '#a78bfa',
+  animation: 'var(--bld-ai-accent)',
   'styling:layout': '#e879f9',
   'styling:colors': '#f472b6',
   'styling:typo': '#c084fc',
-  workflows: '#fbbf24',
+  workflows: 'var(--bld-warning)',
   media: '#fb923c',
 };
 
@@ -553,32 +556,32 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           display: 'inline-flex', alignItems: 'center', gap: 5,
           padding: 0, border: 'none', background: 'transparent',
           fontFamily: 'inherit', cursor: 'pointer',
-          fontSize: 10, color: '#475569',
+          fontSize: 10, color: 'var(--bld-text-disabled)',
         }}
       >
-        <span style={{ color: '#334155' }}>
+        <span style={{ color: 'var(--bld-text-disabled)' }}>
           {agentList.length > 0 ? `${agentList.length} agents` : rounds > 0 ? `${rounds} round${rounds !== 1 ? 's' : ''}` : ''}
           {errorCount > 0 ? ` · ${errorCount} error${errorCount !== 1 ? 's' : ''}` : ''}
           {blindCount > 0 ? ` · ${blindCount} blind` : ''}
           {totalDuration > 0 ? ` · ${(totalDuration / 1000).toFixed(1)}s` : ''}
           {totalTurnMs != null ? ` · total ${(totalTurnMs / 1000).toFixed(1)}s` : ''}
         </span>
-        <span style={{ fontSize: 9, color: blindCount > 0 ? '#fbbf24' : '#334155' }}>
+        <span style={{ fontSize: 9, color: blindCount > 0 ? 'var(--bld-warning)' : 'var(--bld-text-disabled)' }}>
           {expanded ? '▲ Stats' : '▼ Stats'}
         </span>
       </button>
       {expanded && (
         <div style={{
           marginTop: 4, padding: '6px 8px', borderRadius: 5,
-          background: '#0f172a', border: '1px solid #1e293b',
-          fontSize: 10, color: '#94a3b8',
+          background: 'var(--bld-bg-base)', border: '1px solid var(--bld-ai-border)',
+          fontSize: 10, color: 'var(--bld-text-3)',
         }}>
           {errorCount > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <span style={{ color: '#64748b' }}>Errors: </span>
-              <span style={{ color: '#ef4444' }}>{errorCount}</span>
+              <span style={{ color: 'var(--bld-text-3)' }}>Errors: </span>
+              <span style={{ color: 'var(--bld-error)' }}>{errorCount}</span>
               {blindCount > 0 && (
-                <span style={{ color: '#fbbf24', marginLeft: 6 }}>
+                <span style={{ color: 'var(--bld-warning)', marginLeft: 6 }}>
                   ({blindCount} blind — AI unaware)
                 </span>
               )}
@@ -586,9 +589,9 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           )}
           {msg.phaseLog && msg.phaseLog.length > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <span style={{ color: '#64748b' }}>Phases: </span>
+              <span style={{ color: 'var(--bld-text-3)' }}>Phases: </span>
               {msg.phaseLog.map((p, i) => (
-                <span key={i} style={{ color: '#94a3b8' }}>
+                <span key={i} style={{ color: 'var(--bld-text-3)' }}>
                   {i > 0 && ' → '}
                   {p.phase}
                 </span>
@@ -597,12 +600,12 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           )}
           {plan && plan.length > 0 && (
             <div style={{ marginBottom: 6 }}>
-              <span style={{ color: '#64748b' }}>Build plan: </span>
+              <span style={{ color: 'var(--bld-text-3)' }}>Build plan: </span>
               {plan.map((u, i) => (
-                <div key={i} style={{ paddingLeft: 8, color: '#94a3b8' }}>
+                <div key={i} style={{ paddingLeft: 8, color: 'var(--bld-text-3)' }}>
                   {u.name}
                   {u.sectionCount ? ` (${u.sectionCount} section${u.sectionCount !== 1 ? 's' : ''})` : ''}
-                  <span style={{ color: '#475569' }}> — {u.pageRoute}</span>
+                  <span style={{ color: 'var(--bld-text-disabled)' }}> — {u.pageRoute}</span>
                 </div>
               ))}
             </div>
@@ -610,21 +613,21 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           {/* Per-agent timeline bars */}
           {agentList.length > 0 && totalDuration > 0 && (
             <div style={{ marginBottom: 6 }}>
-              <div style={{ color: '#64748b', marginBottom: 3 }}>Agent Timeline:</div>
+              <div style={{ color: 'var(--bld-text-3)', marginBottom: 3 }}>Agent Timeline:</div>
               {agentList.map(a => {
                 const offsetPct = earliestStart > 0 ? ((a.startedAt - earliestStart) / totalDuration) * 100 : 0;
                 const widthPct = a.duration ? (a.duration / totalDuration) * 100 : 5;
-                const color = AGENT_COLORS[a.agent] ?? '#94a3b8';
+                const color = AGENT_COLORS[a.agent] ?? 'var(--bld-text-3)';
                 return (
                   <div key={a.agent} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
                     <span style={{ width: 60, textAlign: 'right', color, fontSize: 9, flexShrink: 0 }}>{a.agent}</span>
-                    <div style={{ flex: 1, height: 8, background: '#1e293b', borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, height: 8, background: 'var(--bld-bg-elevated)', borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
                       <div style={{
                         position: 'absolute', left: `${offsetPct}%`, width: `${Math.max(widthPct, 2)}%`,
                         height: '100%', background: color, borderRadius: 3, opacity: 0.8,
                       }} />
                     </div>
-                    <span style={{ fontSize: 9, color: '#64748b', width: 40, flexShrink: 0 }}>
+                    <span style={{ fontSize: 9, color: 'var(--bld-text-3)', width: 40, flexShrink: 0 }}>
                       {a.duration ? `${(a.duration / 1000).toFixed(1)}s` : '...'}
                     </span>
                   </div>
@@ -635,7 +638,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           {/* Per-agent details */}
           {agentList.map(a => {
             const isExpanded = expandedAgents.has(a.agent);
-            const color = AGENT_COLORS[a.agent] ?? '#94a3b8';
+            const color = AGENT_COLORS[a.agent] ?? 'var(--bld-text-3)';
             const agentErrors = a.toolCalls.filter(t => t.status === 'error').length;
             return (
               <div key={a.agent} style={{ marginBottom: 4, borderLeft: `2px solid ${color}`, paddingLeft: 6 }}>
@@ -649,35 +652,35 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>{a.agent}</span>
-                  <span style={{ color: '#64748b', fontSize: 9 }}>
+                  <span style={{ color: 'var(--bld-text-3)', fontSize: 9 }}>
                     {a.rounds != null ? `${a.rounds}r` : ''} · {a.toolCalls.length} tools
                     {a.duration ? ` · ${(a.duration / 1000).toFixed(1)}s` : ''}
                     {agentErrors > 0 ? ` · ${agentErrors} err` : ''}
                   </span>
-                  <span style={{ marginLeft: 'auto', fontSize: 8, color: '#475569' }}>
+                  <span style={{ marginLeft: 'auto', fontSize: 8, color: 'var(--bld-text-disabled)' }}>
                     {isExpanded ? '▲' : '▼'}
                   </span>
                 </button>
                 {isExpanded && (
-                  <div style={{ paddingLeft: 4, paddingTop: 3, fontSize: 9, color: '#64748b' }}>
+                  <div style={{ paddingLeft: 4, paddingTop: 3, fontSize: 9, color: 'var(--bld-text-3)' }}>
                     <div style={{ marginBottom: 3 }}>
-                      <span style={{ color: '#475569' }}>Tools: </span>
+                      <span style={{ color: 'var(--bld-text-disabled)' }}>Tools: </span>
                       {a.tools.join(', ')}
                     </div>
                     <details style={{ marginBottom: 3 }}>
-                      <summary style={{ cursor: 'pointer', color: '#475569' }}>
+                      <summary style={{ cursor: 'pointer', color: 'var(--bld-text-disabled)' }}>
                         System prompt ({a.systemPrompt.length} chars)
                       </summary>
-                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#64748b', maxHeight: 200, overflow: 'auto', fontSize: 8, marginTop: 2, padding: 4, background: '#020617', borderRadius: 3 }}>
+                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--bld-text-3)', maxHeight: 200, overflow: 'auto', fontSize: 8, marginTop: 2, padding: 4, background: 'var(--bld-bg-base)', borderRadius: 3 }}>
                         {a.systemPrompt}
                       </pre>
                     </details>
                     {a.toolCalls.length > 0 && (
                       <div>
-                        <span style={{ color: '#475569' }}>Tool calls:</span>
+                        <span style={{ color: 'var(--bld-text-disabled)' }}>Tool calls:</span>
                         {a.toolCalls.map((tc, i) => (
-                          <div key={i} style={{ paddingLeft: 6, color: tc.status === 'error' ? '#fca5a5' : '#94a3b8' }}>
-                            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: tc.status === 'error' ? '#ef4444' : tc.aiBlind ? '#fbbf24' : '#22c55e', marginRight: 3, verticalAlign: 'middle' }} />
+                          <div key={i} style={{ paddingLeft: 6, color: tc.status === 'error' ? 'var(--bld-error)' : 'var(--bld-text-3)' }}>
+                            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: tc.status === 'error' ? 'var(--bld-error)' : tc.aiBlind ? 'var(--bld-warning)' : 'var(--bld-success)', marginRight: 3, verticalAlign: 'middle' }} />
                             {tc.name}({tc.input.nodeId ? String(tc.input.nodeId).slice(0, 8) + '...' : ''})
                             {tc.aiBlind ? ' BLIND' : ''}
                           </div>
@@ -711,7 +714,7 @@ function ThinkingBlock({ content, streaming }: { content: string; streaming?: bo
           padding: '3px 8px', borderRadius: 6,
           border: '1px solid rgba(124,58,237,0.3)',
           background: 'rgba(124,58,237,0.1)',
-          color: '#c4b5fd', fontSize: 10, fontWeight: 500,
+          color: 'var(--bld-ai-accent)', fontSize: 10, fontWeight: 500,
           cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
@@ -735,14 +738,14 @@ function ThinkingBlock({ content, streaming }: { content: string; streaming?: bo
           borderLeft: '2px solid rgba(124,58,237,0.4)',
           borderRadius: '0 6px 6px 0',
           background: 'rgba(124,58,237,0.05)',
-          fontSize: 11, color: '#94a3b8', lineHeight: 1.6,
+          fontSize: 11, color: 'var(--bld-text-3)', lineHeight: 1.6,
           maxHeight: expanded ? 320 : 120, overflowY: 'auto',
           whiteSpace: 'pre-wrap', fontFamily: 'inherit',
           transition: 'max-height 0.2s',
         }}>
           {content}
           {streaming && (
-            <span style={{ display: 'inline-block', marginLeft: 2, animation: 'pulse 1s infinite', color: '#7c3aed' }}>▌</span>
+            <span style={{ display: 'inline-block', marginLeft: 2, animation: 'pulse 1s infinite', color: 'var(--bld-ai-accent)' }}>▌</span>
           )}
         </div>
       )}
@@ -763,7 +766,7 @@ function ImageResultChips({ images }: { images: AiImageResult[] }) {
           title={img.alt ?? img.photographer ?? ''}
           style={{
             display: 'block', borderRadius: 6, overflow: 'hidden',
-            width: 60, height: 44, border: '1px solid #1e293b', flexShrink: 0,
+            width: 60, height: 44, border: '1px solid var(--bld-ai-border)', flexShrink: 0,
             transition: 'transform 0.1s',
           }}
           onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.05)'; }}
@@ -788,7 +791,7 @@ function IconResultChips({ icons }: { icons: AiIconResult[] }) {
       {icons.slice(0, 12).map((ic, i) => (
         <span key={i} style={{
           fontSize: 10, padding: '2px 7px', borderRadius: 20,
-          background: 'rgba(79,70,229,0.12)', color: '#a5b4fc',
+          background: 'var(--bld-accent-subtle)', color: 'var(--bld-accent)',
           border: '1px solid rgba(79,70,229,0.25)',
         }}>
           {ic.prefix ? `${ic.prefix}:${ic.name}` : ic.name}
@@ -803,9 +806,9 @@ function IconResultChips({ icons }: { icons: AiIconResult[] }) {
 // ---------------------------------------------------------------------------
 
 const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  h1: ({...p}) => <h1 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, marginTop: 8, color: '#f1f5f9' }} {...p} />,
-  h2: ({...p}) => <h2 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, marginTop: 6, color: '#f1f5f9' }} {...p} />,
-  h3: ({...p}) => <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, marginTop: 4, color: '#e2e8f0' }} {...p} />,
+  h1: ({...p}) => <h1 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, marginTop: 8, color: 'var(--bld-text-1)' }} {...p} />,
+  h2: ({...p}) => <h2 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, marginTop: 6, color: 'var(--bld-text-1)' }} {...p} />,
+  h3: ({...p}) => <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, marginTop: 4, color: 'var(--bld-text-2)' }} {...p} />,
   p:  ({...p}) => <p  style={{ margin: '4px 0', lineHeight: 1.65 }} {...p} />,
   ul: ({...p}) => <ul style={{ paddingLeft: 18, margin: '4px 0' }} {...p} />,
   ol: ({...p}) => <ol style={{ paddingLeft: 18, margin: '4px 0' }} {...p} />,
@@ -813,17 +816,17 @@ const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>['components'] = 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   code: (({ inline, ...p }: { inline?: boolean } & React.HTMLAttributes<HTMLElement>) =>
     inline
-      ? <code style={{ background: '#0f172a', borderRadius: 4, padding: '1px 5px', fontSize: 11, color: '#7dd3fc', fontFamily: 'monospace' }} {...p} />
-      : <pre style={{ background: '#0a0f1a', borderRadius: 8, padding: '8px 10px', overflowX: 'auto', fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', margin: '6px 0', border: '1px solid #1e293b' }}><code {...p} /></pre>
+      ? <code style={{ background: 'var(--bld-bg-base)', borderRadius: 4, padding: '1px 5px', fontSize: 11, color: '#7dd3fc', fontFamily: 'monospace' }} {...p} />
+      : <pre style={{ background: 'var(--bld-ai-bg)', borderRadius: 8, padding: '8px 10px', overflowX: 'auto', fontSize: 11, color: 'var(--bld-text-3)', fontFamily: 'monospace', margin: '6px 0', border: '1px solid var(--bld-ai-border)' }}><code {...p} /></pre>
   ) as React.ComponentType<React.HTMLAttributes<HTMLElement>>,
-  a:  ({...p}) => <a  style={{ color: '#818cf8', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...p} />,
-  strong: ({...p}) => <strong style={{ fontWeight: 700, color: '#e2e8f0' }} {...p} />,
-  em: ({...p}) => <em style={{ fontStyle: 'italic', color: '#cbd5e1' }} {...p} />,
-  blockquote: ({...p}) => <blockquote style={{ borderLeft: '2px solid #4f46e5', paddingLeft: 10, margin: '6px 0', color: '#94a3b8', fontStyle: 'italic' }} {...p} />,
-  hr: () => <hr style={{ border: 'none', borderTop: '1px solid #1e293b', margin: '8px 0' }} />,
+  a:  ({...p}) => <a  style={{ color: 'var(--bld-ai-accent)', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...p} />,
+  strong: ({...p}) => <strong style={{ fontWeight: 700, color: 'var(--bld-text-2)' }} {...p} />,
+  em: ({...p}) => <em style={{ fontStyle: 'italic', color: 'var(--bld-text-2)' }} {...p} />,
+  blockquote: ({...p}) => <blockquote style={{ borderLeft: '2px solid var(--bld-ai-accent)', paddingLeft: 10, margin: '6px 0', color: 'var(--bld-text-3)', fontStyle: 'italic' }} {...p} />,
+  hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--bld-ai-border)', margin: '8px 0' }} />,
   table: ({...p}) => <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12, margin: '6px 0' }} {...p} />,
-  th: ({...p}) => <th style={{ padding: '4px 8px', background: '#0f172a', borderBottom: '1px solid #334155', color: '#94a3b8', textAlign: 'left', fontWeight: 600 }} {...p} />,
-  td: ({...p}) => <td style={{ padding: '4px 8px', borderBottom: '1px solid #1e293b', color: '#cbd5e1' }} {...p} />,
+  th: ({...p}) => <th style={{ padding: '4px 8px', background: 'var(--bld-bg-base)', borderBottom: '1px solid var(--bld-border-subtle)', color: 'var(--bld-text-3)', textAlign: 'left', fontWeight: 600 }} {...p} />,
+  td: ({...p}) => <td style={{ padding: '4px 8px', borderBottom: '1px solid var(--bld-ai-border)', color: 'var(--bld-text-2)' }} {...p} />,
 };
 
 // ---------------------------------------------------------------------------
@@ -866,14 +869,14 @@ function CopyMsgLogBtn({ msg }: { msg: AiChatMessage }) {
         marginTop: 4,
         display: 'inline-flex', alignItems: 'center', gap: 4,
         padding: '2px 8px', borderRadius: 5,
-        border: `1px solid ${label === 'copied' ? '#34d399' : '#1e293b'}`,
+        border: `1px solid ${label === 'copied' ? 'var(--bld-success)' : 'var(--bld-bg-elevated)'}`,
         background: label === 'copied' ? 'rgba(52,211,153,0.1)' : 'transparent',
-        color: label === 'copied' ? '#34d399' : '#334155',
+        color: label === 'copied' ? 'var(--bld-success)' : 'var(--bld-text-disabled)',
         fontSize: 10, cursor: 'pointer', fontFamily: 'inherit',
         transition: 'all 0.2s',
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; }}
-      onMouseLeave={e => { if (label !== 'copied') { (e.currentTarget as HTMLButtonElement).style.color = '#334155'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#1e293b'; } }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; }}
+      onMouseLeave={e => { if (label !== 'copied') { (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-disabled)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-bg-elevated)'; } }}
     >
       {label === 'copied' ? '✓ Copied' : '⎘ Copy log'}
     </button>
@@ -902,7 +905,7 @@ function MentionTypeahead({
       data-testid="mention-typeahead"
       style={{
         position: 'absolute', bottom: 'calc(100% + 6px)', left: 12,
-        background: '#0f172a', border: '1px solid #1e293b',
+        background: 'var(--bld-bg-base)', border: '1px solid var(--bld-ai-border)',
         borderRadius: 6, padding: 4, minWidth: 180,
         boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
         zIndex: 50,
@@ -910,33 +913,33 @@ function MentionTypeahead({
       onMouseDown={e => e.preventDefault()}
     >
       {!hasAny && (
-        <div style={{ padding: 8, color: '#475569', fontSize: 11 }}>No matches</div>
+        <div style={{ padding: 8, color: 'var(--bld-text-disabled)', fontSize: 11 }}>No matches</div>
       )}
       {pageMatches.length > 0 && (
         <>
-          <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pages</div>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pages</div>
           {pageMatches.map(p => (
             <button
               key={p.id}
               onClick={() => onPick(p.name)}
-              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#1e293b')}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: 'var(--bld-text-2)', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              {p.name} <span style={{ color: '#475569' }}>· {p.route}</span>
+              {p.name} <span style={{ color: 'var(--bld-text-disabled)' }}>· {p.route}</span>
             </button>
           ))}
         </>
       )}
       {nodeMatches.length > 0 && (
         <>
-          <div style={{ padding: '4px 8px', fontSize: 9, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Selected nodes</div>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Selected nodes</div>
           {nodeMatches.map(id => (
             <button
               key={id}
               onClick={() => onPick(id.slice(0, 8))}
-              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#e2e8f0', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#1e293b')}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: 'var(--bld-text-2)', fontSize: 12, cursor: 'pointer', borderRadius: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               {id.slice(0, 12)}…
@@ -946,7 +949,7 @@ function MentionTypeahead({
       )}
       <button
         onClick={onClose}
-        style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: '#64748b', fontSize: 10, cursor: 'pointer' }}
+        style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 8px', color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer' }}
       >
         ↵ close
       </button>
@@ -1021,7 +1024,7 @@ function MessageBubble({
         {!isUser && (
           <div style={{
             width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 2,
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+            background: 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
           }}>✦</div>
         )}
@@ -1041,13 +1044,13 @@ function MessageBubble({
           paddingRight: isUser && !isEditing ? 36 : isUser ? 13 : 0,
           paddingBottom: isUser ? (timeLabel ? 20 : 8) : 0,
           borderRadius: isUser ? 14 : 0,
-          background: isEditing ? '#160e28' : isUser ? 'rgba(124,58,237,0.10)' : 'transparent',
+          background: isEditing ? 'rgba(124,58,237,0.12)' : isUser ? 'rgba(124,58,237,0.10)' : 'transparent',
           border: isEditing
-            ? '1px solid #5b21b6'
+            ? '1px solid var(--bld-ai-accent)'
             : isUser
               ? '1px solid rgba(124,58,237,0.22)'
               : 'none',
-          color: isEditing ? '#c4b5fd' : '#f1f5f9',
+          color: isEditing ? 'var(--bld-ai-accent)' : 'var(--bld-text-1)',
           fontSize: 13, lineHeight: 1.65, wordBreak: 'break-word',
           overflowWrap: 'anywhere', position: 'relative',
         }}>
@@ -1058,7 +1061,7 @@ function MessageBubble({
                 <span key={i} onClick={() => store.select(msg.selectedNodeIds?.[i] ?? null)}
                   style={{
                     fontSize: 10, padding: '1px 6px', borderRadius: 4, cursor: 'pointer',
-                    background: 'rgba(99,102,241,0.2)', color: '#a5b4fc',
+                    background: 'var(--bld-accent-subtle)', color: 'var(--bld-accent)',
                     border: '1px solid rgba(99,102,241,0.3)',
                   }}>◈ {name}</span>
               ))}
@@ -1067,7 +1070,7 @@ function MessageBubble({
 
           {/* Editing badge */}
           {isEditing && (
-            <div style={{ fontSize: 10, color: '#a78bfa', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-ai-accent)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
               <span>⤺</span><span style={{ fontWeight: 500 }}>Editing this message…</span>
             </div>
           )}
@@ -1082,11 +1085,11 @@ function MessageBubble({
           ) : isThisStreaming && !visibleContent && !msg.thinkingContent && !msg.debug?.planner ? (
             /* No text yet — tools running or between rounds (hidden once Planner row appears) */
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: '#64748b' }}>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>
                 {msg.isThinking ? 'Planning next steps…' : 'Thinking…'}
               </span>
               {[0, 1, 2].map(i => (
-                <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: '#7c3aed', animation: `bounce 1.2s infinite ${i * 0.2}s` }} />
+                <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--bld-ai-accent)', animation: `bounce 1.2s infinite ${i * 0.2}s` }} />
               ))}
             </div>
           ) : isThisStreaming ? (
@@ -1124,7 +1127,7 @@ function MessageBubble({
             <button className="ai-edit-btn" title="Edit & rewind" onClick={() => onEdit(msg.content)}
               style={{
                 position: 'absolute', top: 6, right: 8,
-                background: 'none', border: 'none', color: '#818cf8',
+                background: 'none', border: 'none', color: 'var(--bld-ai-accent)',
                 cursor: 'pointer', padding: '2px 4px', fontSize: 13, borderRadius: 4,
                 opacity: 0, transition: 'opacity 0.15s',
               }}>✎</button>
@@ -1141,12 +1144,12 @@ function MessageBubble({
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                  background: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399',
+                  background: msg.debug.context.status === 'running' ? 'var(--bld-ai-accent)' : 'var(--bld-success)',
                 }} />
-                <span style={{ color: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399', fontWeight: 500 }}>
+                <span style={{ color: msg.debug.context.status === 'running' ? 'var(--bld-ai-accent)' : 'var(--bld-success)', fontWeight: 500 }}>
                   Context
                 </span>
-                <span style={{ color: '#64748b' }}>
+                <span style={{ color: 'var(--bld-text-3)' }}>
                   · {msg.debug.context.status === 'running' ? 'searching…' : (
                     msg.debug.context.resolvedNodeCount != null && msg.debug.context.resolvedNodeCount > 0
                       ? `found ${msg.debug.context.resolvedNodeCount} node${msg.debug.context.resolvedNodeCount !== 1 ? 's' : ''}`
@@ -1168,12 +1171,12 @@ function MessageBubble({
                       ? (res && !res.error ? 'found' : 'not found')
                       : (note ? '0 (no match)' : `${hits} hit${hits !== 1 ? 's' : ''}`);
                     const displayColor = isRead
-                      ? (res && !res.error ? '#34d399' : '#f87171')
-                      : (note ? '#f87171' : hits > 0 ? '#34d399' : '#64748b');
+                      ? (res && !res.error ? 'var(--bld-success)' : 'var(--bld-error)')
+                      : (note ? 'var(--bld-error)' : hits > 0 ? 'var(--bld-success)' : 'var(--bld-text-3)');
                     return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#475569' }}>
-                        <span style={{ color: '#6366f1', fontWeight: 500 }}>{tc.name}</span>
-                        <span style={{ color: '#334155', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--bld-text-disabled)' }}>
+                        <span style={{ color: 'var(--bld-ai-accent)', fontWeight: 500 }}>{tc.name}</span>
+                        <span style={{ color: 'var(--bld-text-disabled)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
                         <span style={{ color: displayColor }}>
                           → {displayLabel}
                         </span>
@@ -1186,22 +1189,30 @@ function MessageBubble({
           )}
           {/* Planner status — appears immediately on planner_started, before any tool calls fire */}
           {msg.debug?.planner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
-              <span style={{
-                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399',
-              }} />
-              <span style={{ color: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
-                Planner
-              </span>
-              <span style={{ color: '#64748b' }}>
-                · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
-                {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
-              </span>
+            <div style={{ paddingBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                  background: msg.debug.planner.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)',
+                }} />
+                <span style={{ color: msg.debug.planner.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)', fontWeight: 500 }}>
+                  Planner
+                </span>
+                <span style={{ color: 'var(--bld-text-3)' }}>
+                  · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
+                  {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
+                </span>
+              </div>
+              {msg.debug.planner.status === 'running' && msg.debug.planner.thinkingLive && (
+                <div style={{ paddingLeft: 11, marginTop: 4, fontSize: 10, color: 'var(--bld-text-3)', opacity: 0.65, maxWidth: 400, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {msg.debug.planner.thinkingLive}
+                </div>
+              )}
             </div>
           )}
           <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} agentDebugInfo={msg.agentDebugInfo} />
           {!isThisStreaming && <BuildStats msg={msg} />}
+          <AiActivityFeed msg={msg} />
           {!isThisStreaming && (
             <CopyMsgLogBtn msg={msg} />
           )}
@@ -1216,12 +1227,12 @@ function MessageBubble({
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                 <span style={{
                   width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                  background: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399',
+                  background: msg.debug.context.status === 'running' ? 'var(--bld-ai-accent)' : 'var(--bld-success)',
                 }} />
-                <span style={{ color: msg.debug.context.status === 'running' ? '#a78bfa' : '#34d399', fontWeight: 500 }}>
+                <span style={{ color: msg.debug.context.status === 'running' ? 'var(--bld-ai-accent)' : 'var(--bld-success)', fontWeight: 500 }}>
                   Context
                 </span>
-                <span style={{ color: '#64748b' }}>
+                <span style={{ color: 'var(--bld-text-3)' }}>
                   · {msg.debug.context.status === 'running' ? 'searching…' : (
                     msg.debug.context.resolvedNodeCount != null && msg.debug.context.resolvedNodeCount > 0
                       ? `found ${msg.debug.context.resolvedNodeCount} node${msg.debug.context.resolvedNodeCount !== 1 ? 's' : ''}`
@@ -1243,12 +1254,12 @@ function MessageBubble({
                       ? (res && !res.error ? 'found' : 'not found')
                       : (note ? '0 (no match)' : `${hits} hit${hits !== 1 ? 's' : ''}`);
                     const displayColor = isRead
-                      ? (res && !res.error ? '#34d399' : '#f87171')
-                      : (note ? '#f87171' : hits > 0 ? '#34d399' : '#64748b');
+                      ? (res && !res.error ? 'var(--bld-success)' : 'var(--bld-error)')
+                      : (note ? 'var(--bld-error)' : hits > 0 ? 'var(--bld-success)' : 'var(--bld-text-3)');
                     return (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#475569' }}>
-                        <span style={{ color: '#6366f1', fontWeight: 500 }}>{tc.name}</span>
-                        <span style={{ color: '#334155', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--bld-text-disabled)' }}>
+                        <span style={{ color: 'var(--bld-ai-accent)', fontWeight: 500 }}>{tc.name}</span>
+                        <span style={{ color: 'var(--bld-text-disabled)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{query}</span>
                         <span style={{ color: displayColor }}>
                           → {displayLabel}
                         </span>
@@ -1260,35 +1271,43 @@ function MessageBubble({
             </div>
           )}
           {msg.debug?.planner && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
-              <span style={{
-                width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399',
-              }} />
-              <span style={{ color: msg.debug.planner.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
-                Planner
-              </span>
-              <span style={{ color: '#64748b' }}>
-                · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
-                {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
-              </span>
+            <div style={{ paddingBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                <span style={{
+                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                  background: msg.debug.planner.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)',
+                }} />
+                <span style={{ color: msg.debug.planner.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)', fontWeight: 500 }}>
+                  Planner
+                </span>
+                <span style={{ color: 'var(--bld-text-3)' }}>
+                  · {msg.debug.planner.status === 'running' ? 'thinking…' : 'plan assembled'}
+                  {msg.debug.planner.duration != null && ` · ${(msg.debug.planner.duration / 1000).toFixed(1)}s`}
+                </span>
+              </div>
+              {msg.debug.planner.status === 'running' && msg.debug.planner.thinkingLive && (
+                <div style={{ paddingLeft: 11, marginTop: 4, fontSize: 10, color: 'var(--bld-text-3)', opacity: 0.65, maxWidth: 400, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {msg.debug.planner.thinkingLive}
+                </div>
+              )}
             </div>
           )}
           {msg.debug?.structure && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 4, fontSize: 11 }}>
               <span style={{
                 width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                background: msg.debug.structure.status === 'running' ? '#60a5fa' : '#34d399',
+                background: msg.debug.structure.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)',
               }} />
-              <span style={{ color: msg.debug.structure.status === 'running' ? '#60a5fa' : '#34d399', fontWeight: 500 }}>
+              <span style={{ color: msg.debug.structure.status === 'running' ? 'var(--bld-info)' : 'var(--bld-success)', fontWeight: 500 }}>
                 Structure
               </span>
-              <span style={{ color: '#64748b' }}>
+              <span style={{ color: 'var(--bld-text-3)' }}>
                 · {msg.debug.structure.status === 'running' ? 'building…' : 'done'}
                 {msg.debug.structure.status === 'done' && msg.debug.structure.duration != null && ` · ${(msg.debug.structure.duration / 1000).toFixed(1)}s`}
               </span>
             </div>
           )}
+          <AiActivityFeed msg={msg} />
         </div>
       )}
     </div>
@@ -1311,9 +1330,9 @@ function ModelSelector({ value, onChange }: { value: BuilderModelId; onChange: (
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '4px 8px', borderRadius: 6,
-          border: `1px solid ${current.supportsThinking ? '#5b21b6' : '#334155'}`,
-          background: current.supportsThinking ? 'rgba(91,33,182,0.18)' : '#1e293b',
-          color: current.supportsThinking ? '#c4b5fd' : '#94a3b8',
+          border: `1px solid ${current.supportsThinking ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
+          background: current.supportsThinking ? 'rgba(91,33,182,0.18)' : 'var(--bld-bg-elevated)',
+          color: current.supportsThinking ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
           fontSize: 10, fontWeight: 500, cursor: 'pointer',
           fontFamily: 'inherit', transition: 'all 0.15s',
         }}
@@ -1330,7 +1349,7 @@ function ModelSelector({ value, onChange }: { value: BuilderModelId; onChange: (
           style={{
             position: 'fixed', zIndex: 1001,
             top: 44, right: 48,
-            background: '#0a0f1e', border: '1px solid #1e293b',
+            background: 'var(--bld-ai-bg)', border: '1px solid var(--bld-ai-border)',
             borderRadius: 10, overflow: 'hidden',
             boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
             minWidth: 180,
@@ -1345,7 +1364,7 @@ function ModelSelector({ value, onChange }: { value: BuilderModelId; onChange: (
                 width: '100%', padding: '9px 12px',
                 border: 'none', borderBottom: '1px solid #0a1220',
                 background: m.id === value ? '#1a2744' : 'transparent',
-                color: '#e2e8f0', fontSize: 11, cursor: 'pointer',
+                color: 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer',
                 textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s',
               }}
               onMouseEnter={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#121e30'; }}
@@ -1353,11 +1372,11 @@ function ModelSelector({ value, onChange }: { value: BuilderModelId; onChange: (
             >
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {m.supportsThinking && <span style={{ fontSize: 9, color: '#c4b5fd' }}>✦</span>}
+                  {m.supportsThinking && <span style={{ fontSize: 9, color: 'var(--bld-ai-accent)' }}>✦</span>}
                   <span style={{ fontWeight: 600 }}>{m.label}</span>
-                  {m.id === value && <span style={{ fontSize: 8, color: '#a78bfa', marginLeft: 'auto' }}>✓</span>}
+                  {m.id === value && <span style={{ fontSize: 8, color: 'var(--bld-ai-accent)', marginLeft: 'auto' }}>✓</span>}
                 </div>
-                <div style={{ fontSize: 9, color: '#475569', marginTop: 1 }}>{m.description}</div>
+                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 1 }}>{m.description}</div>
               </div>
             </button>
           ))}
@@ -1430,7 +1449,7 @@ function ThreadMenu({
       data-testid="ai-thread-menu"
       style={{
         position: 'fixed', top: 48, right: 8, zIndex: 1000,
-        background: '#0a0f1e', border: '1px solid #1e293b',
+        background: 'var(--bld-ai-bg)', border: '1px solid var(--bld-ai-border)',
         borderRadius: 12, overflow: 'hidden',
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         minWidth: 260, maxWidth: 300,
@@ -1439,14 +1458,14 @@ function ThreadMenu({
       onClick={e => e.stopPropagation()}
     >
       {/* Header */}
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-ai-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <ClockIcon size={13} color="#64748b" />
-          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Chat History
           </span>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1 }}>×</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1 }}>×</button>
       </div>
 
       {/* Thread list — exactly 10 per page, scroll-to-load-more */}
@@ -1454,10 +1473,10 @@ function ThreadMenu({
         style={{ overflowY: 'auto', maxHeight: 340 }}
       >
         {loadingThreads && (
-          <div style={{ padding: '14px', color: '#64748b', fontSize: 12, textAlign: 'center' }}>Loading…</div>
+          <div style={{ padding: '14px', color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center' }}>Loading…</div>
         )}
         {!loadingThreads && threads.length === 0 && (
-          <div style={{ padding: '20px 14px', color: '#334155', fontSize: 12, textAlign: 'center' }}>
+          <div style={{ padding: '20px 14px', color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center' }}>
             <div style={{ fontSize: 24, marginBottom: 6 }}>💬</div>
             No conversations yet
           </div>
@@ -1474,10 +1493,10 @@ function ThreadMenu({
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = t.id === aiCurrentThreadId ? '#1a2744' : 'transparent'; }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: t.id === aiCurrentThreadId ? '#c4b5fd' : '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: t.id === aiCurrentThreadId ? 600 : 400 }}>
+              <div style={{ fontSize: 12, color: t.id === aiCurrentThreadId ? 'var(--bld-ai-accent)' : 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: t.id === aiCurrentThreadId ? 600 : 400 }}>
                 {t.title}
               </div>
-              <div style={{ fontSize: 10, color: '#334155', marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
                 {t.messageCount} msg{t.messageCount !== 1 ? 's' : ''}
               </div>
             </div>
@@ -1486,13 +1505,13 @@ function ThreadMenu({
               disabled={deletingThreadId === t.id}
               style={{
                 background: 'none', border: 'none',
-                color: deletingThreadId === t.id ? '#7c3aed' : '#1e293b',
+                color: deletingThreadId === t.id ? 'var(--bld-ai-accent)' : 'var(--bld-bg-elevated)',
                 cursor: deletingThreadId === t.id ? 'wait' : 'pointer',
                 fontSize: 15, padding: '2px 5px', borderRadius: 4, flexShrink: 0, transition: 'color 0.15s',
               }}
               title="Delete"
-              onMouseEnter={e => { if (deletingThreadId !== t.id) (e.currentTarget as HTMLButtonElement).style.color = '#f87171'; }}
-              onMouseLeave={e => { if (deletingThreadId !== t.id) (e.currentTarget as HTMLButtonElement).style.color = '#1e293b'; }}
+              onMouseEnter={e => { if (deletingThreadId !== t.id) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-error)'; }}
+              onMouseLeave={e => { if (deletingThreadId !== t.id) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-bg-elevated)'; }}
             >
               {deletingThreadId === t.id ? '…' : '×'}
             </button>
@@ -1500,11 +1519,11 @@ function ThreadMenu({
         ))}
         {/* Loading more spinner */}
         {loadingMoreThreads && (
-          <div style={{ padding: '8px 14px', textAlign: 'center', fontSize: 11, color: '#475569' }}>Loading more…</div>
+          <div style={{ padding: '8px 14px', textAlign: 'center', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading more…</div>
         )}
         {/* End of list */}
         {!hasMoreThreads && threads.length > 0 && !loadingThreads && (
-          <div style={{ padding: '6px 14px', textAlign: 'center', fontSize: 10, color: '#1e293b' }}>— end —</div>
+          <div style={{ padding: '6px 14px', textAlign: 'center', fontSize: 10, color: 'var(--bld-text-3)' }}>— end —</div>
         )}
       </div>
     </div>
@@ -1804,7 +1823,7 @@ export function AiChatPanel() {
         duration: p.duration,
         status: p.status === 'done' ? 'completed' : p.status,
         toolCallCount: manifest?.operations?.length ?? 0,
-        // Encode manifest as a synthetic tool call — strip null briefings from agents
+        // Encode manifest as a synthetic tool call
         toolCalls: manifest ? [{
           name: 'planner_complete',
           status: 'success',
@@ -1812,31 +1831,14 @@ export function AiChatPanel() {
           result: {
             operations: (manifest.operations ?? []).map(op => ({
               id: op.id,
-              summary: op.summary,
               pageRoute: op.pageRoute,
               pageName: op.pageName,
-              // Only include agents that have an actual briefing
-              ...(op.agents && Object.values(op.agents).some(v => v?.briefing)
-                ? {
-                    agents: Object.fromEntries(
-                      Object.entries(op.agents).filter(([, v]) => v?.briefing)
-                    ),
-                  }
-                : {}),
+              ...(op.agents ? { agents: op.agents } : {}),
             })),
             ...(manifest.needsClarification ? { needsClarification: manifest.needsClarification } : {}),
           },
         }] : [],
-        // Store manifest — strip null briefings so neither tab shows them
-        manifest: manifest ? {
-          ...manifest,
-          operations: (manifest.operations ?? []).map(op => ({
-            ...op,
-            agents: op.agents
-              ? Object.fromEntries(Object.entries(op.agents).filter(([, v]) => v?.briefing))
-              : undefined,
-          })),
-        } : undefined,
+        manifest: manifest,
       } as import('./_agent-debug-overlay').DebugAgentData;
     }
 
@@ -1923,21 +1925,21 @@ export function AiChatPanel() {
       />
     )}
     <div
-      style={{ width: 440, display: 'flex', flexDirection: 'column', background: '#0a0f1e', borderLeft: '1px solid #1e293b', overflow: 'hidden', height: '100%' }}
+      style={{ width: 440, display: 'flex', flexDirection: 'column', background: 'var(--bld-ai-bg)', borderLeft: '1px solid var(--bld-ai-border)', overflow: 'hidden', height: '100%' }}
       data-testid="ai-chat-panel"
       onKeyDown={e => e.stopPropagation()}
       onKeyUp={e => e.stopPropagation()}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bld-ai-border)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}
         data-testid="ai-chat-header">
         {/* Logo */}
-        <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✦</div>
+        <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✦</div>
 
         {/* Title */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>AI Assistant</div>
-          <div style={{ fontSize: 10, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)' }}>AI Assistant</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentTitle ?? 'New Conversation'}
           </div>
         </div>
@@ -1953,14 +1955,14 @@ export function AiChatPanel() {
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '4px 9px', borderRadius: 6,
-            border: '1px solid #334155',
-            background: '#1e293b',
-            color: '#64748b',
+            border: '1px solid var(--bld-border-subtle)',
+            background: 'var(--bld-bg-elevated)',
+            color: 'var(--bld-text-3)',
             fontSize: 11, fontWeight: 500, cursor: 'pointer',
             fontFamily: 'inherit', transition: 'all 0.2s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#7c3aed'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
         >
           ⬡ Debug
         </button>
@@ -1973,14 +1975,14 @@ export function AiChatPanel() {
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '4px 9px', borderRadius: 6,
-            border: `1px solid ${copyToolsLabel === 'copied' ? '#34d399' : '#334155'}`,
-            background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.12)' : '#1e293b',
-            color: copyToolsLabel === 'copied' ? '#34d399' : copyToolsLabel === 'loading' ? '#7c3aed' : '#64748b',
+            border: `1px solid ${copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-border-subtle)'}`,
+            background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.12)' : 'var(--bld-bg-elevated)',
+            color: copyToolsLabel === 'copied' ? 'var(--bld-success)' : copyToolsLabel === 'loading' ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
             fontSize: 11, fontWeight: 500, cursor: copyToolsLabel === 'loading' ? 'wait' : 'pointer',
             fontFamily: 'inherit', transition: 'all 0.2s',
           }}
-          onMouseEnter={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#4f46e5'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; } }}
-          onMouseLeave={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; } }}
+          onMouseEnter={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; } }}
+          onMouseLeave={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; } }}
         >
           {copyToolsLabel === 'copied' ? '✓ Copied' : copyToolsLabel === 'loading' ? '…' : '⎘ Copy Log'}
         </button>
@@ -1993,12 +1995,12 @@ export function AiChatPanel() {
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 6,
-            border: '1px solid #334155', background: '#1e293b',
+            border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)',
             color: '#a5b4fc', fontSize: 11, fontWeight: 500, cursor: 'pointer',
             fontFamily: 'inherit', transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#4f46e5'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1e293b'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; }}
         >
           <span style={{ fontSize: 13, lineHeight: 1 }}>＋</span> New
         </button>
@@ -2015,11 +2017,11 @@ export function AiChatPanel() {
             title="Chat history"
             style={{
               padding: '5px 7px', borderRadius: 6, display: 'flex', alignItems: 'center',
-              border: '1px solid #334155', background: showThreadMenu ? '#1e293b' : 'transparent',
-              color: '#64748b', cursor: 'pointer', lineHeight: 1,
+              border: '1px solid var(--bld-border-subtle)', background: showThreadMenu ? 'var(--bld-bg-elevated)' : 'transparent',
+              color: 'var(--bld-text-3)', cursor: 'pointer', lineHeight: 1,
             }}
           >
-            <ClockIcon size={14} color={showThreadMenu ? '#a5b4fc' : '#64748b'} />
+            <ClockIcon size={14} color={showThreadMenu ? '#a5b4fc' : 'var(--bld-text-3)'} />
           </button>
           {showThreadMenu && (
             <ThreadMenu
@@ -2039,7 +2041,7 @@ export function AiChatPanel() {
 
         {/* Close */}
         <button data-testid="ai-close-btn" onClick={store.toggleAiMode}
-          style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 18, padding: '2px 4px', lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, padding: '2px 4px', lineHeight: 1 }}
           title="Close AI panel">×</button>
       </div>
 
@@ -2048,19 +2050,19 @@ export function AiChatPanel() {
         ref={messagesRef} data-testid="ai-message-list" onScroll={handleMessagesScroll}>
 
         {loadingMoreMessages && (
-          <div style={{ textAlign: 'center', padding: '4px', fontSize: 11, color: '#475569' }}>Loading older messages…</div>
+          <div style={{ textAlign: 'center', padding: '4px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading older messages…</div>
         )}
         {!hasMoreMessages && aiChatHistory.length > 0 && (
-          <div style={{ textAlign: 'center', padding: '4px', fontSize: 10, color: '#1e293b' }}>— beginning of conversation —</div>
+          <div style={{ textAlign: 'center', padding: '4px', fontSize: 10, color: 'var(--bld-text-3)' }}>— beginning of conversation —</div>
         )}
 
         {/* Empty state */}
         {aiChatHistory.length === 0 && !aiGenerating && (
-          <div style={{ padding: '20px 8px', color: '#475569' }}>
+          <div style={{ padding: '20px 8px', color: 'var(--bld-text-disabled)' }}>
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 32, marginBottom: 8, filter: 'drop-shadow(0 0 12px #7c3aed88)' }}>✦</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#c4b5fd', marginBottom: 4 }}>What can I build for you?</div>
-              <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.6 }}>Describe a page, section, or change — I'll do the rest.</div>
+              <div style={{ fontSize: 32, marginBottom: 8, filter: 'drop-shadow(0 0 12px var(--bld-ai-accent)88)' }}>✦</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-ai-accent)', marginBottom: 4 }}>What can I build for you?</div>
+              <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>Describe a page, section, or change — I'll do the rest.</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               {[
@@ -2074,13 +2076,13 @@ export function AiChatPanel() {
                 <button key={text} data-testid="ai-prompt-suggestion" data-prompt={text}
                   onClick={() => setInputValue(text)}
                   style={{
-                    padding: '9px 10px', borderRadius: 10, border: '1px solid #1e293b',
-                    background: '#0d1526', color: '#94a3b8', fontSize: 11, cursor: 'pointer',
+                    padding: '9px 10px', borderRadius: 10, border: '1px solid var(--bld-ai-border)',
+                    background: '#0d1526', color: 'var(--bld-text-3)', fontSize: 11, cursor: 'pointer',
                     textAlign: 'left', fontFamily: 'inherit', display: 'flex',
                     alignItems: 'center', gap: 6, lineHeight: 1.4, transition: 'all 0.15s',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#111d35'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.color = '#c4b5fd'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d1526'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#1e293b'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#111d35'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d1526'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
                 >
                   <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
                   <span>{text}</span>
@@ -2099,7 +2101,7 @@ export function AiChatPanel() {
       </div>
 
       {/* ── AI-style input area ── */}
-      <div style={{ padding: '10px 12px 12px', borderTop: '1px solid #1e293b', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px 12px', borderTop: '1px solid var(--bld-ai-border)', flexShrink: 0 }}>
         {/* Gradient-border wrapper — @property animated conic-gradient */}
         <div className="ai-border-wrap">
           {/* Rotating gradient that fills the wrapper (shows as 1.5px border via padding) */}
@@ -2109,7 +2111,7 @@ export function AiChatPanel() {
           <div
             style={{
               position: 'relative', zIndex: 1,
-              borderRadius: 14.5, background: '#111827', overflow: 'hidden',
+              borderRadius: 14.5, background: 'var(--bld-bg-panel)', overflow: 'hidden',
               display: 'flex', flexDirection: 'column',
               boxShadow: inputFocused ? '0 2px 16px rgba(124,58,237,0.15)' : 'none',
               transition: 'box-shadow 0.3s',
@@ -2121,19 +2123,19 @@ export function AiChatPanel() {
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '7px 14px 0',
             }}>
-              <span style={{ fontSize: 11, color: '#7c3aed', flexShrink: 0 }}>⤺</span>
-              <span style={{ fontSize: 11, color: '#64748b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                Editing: <em style={{ color: '#a78bfa' }}>{rewindLabel}</em>
+              <span style={{ fontSize: 11, color: 'var(--bld-ai-accent)', flexShrink: 0 }}>⤺</span>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Editing: <em style={{ color: 'var(--bld-ai-accent)' }}>{rewindLabel}</em>
               </span>
               <button onClick={handleCancelEdit}
-                style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 15, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+                style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
                 title="Cancel edit">×</button>
             </div>
           )}
 
           {/* Active page indicator — always visible, non-removable */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: '#475569' }}>Page:</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Page:</span>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 3,
               fontSize: 10, padding: '2px 7px', borderRadius: 20,
@@ -2147,7 +2149,7 @@ export function AiChatPanel() {
           {/* Node chips — inside container */}
           {aiSelectedNodeIds.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 12px 0', alignItems: 'center' }}>
-              <span style={{ fontSize: 10, color: '#475569' }}>Referencing:</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Referencing:</span>
               {aiSelectedNodeIds.map(id => (
                 <span key={id} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 3,
@@ -2210,15 +2212,15 @@ export function AiChatPanel() {
               width: '100%', minHeight: 68, maxHeight: 160,
               padding: '12px 14px 8px',
               background: 'transparent', border: 'none', outline: 'none',
-              color: '#f1f5f9', fontSize: 13.5, resize: 'none',
+              color: 'var(--bld-text-1)', fontSize: 13.5, resize: 'none',
               fontFamily: 'inherit', lineHeight: 1.55, boxSizing: 'border-box',
-              caretColor: '#7c3aed',
+              caretColor: 'var(--bld-ai-accent)',
             }}
           />
 
           {/* Bottom bar: hint + send button */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 10px' }}>
-            <span style={{ fontSize: 10, color: '#1e293b' }}>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
               Enter to send · Shift+Enter for new line
             </span>
             <button
@@ -2229,9 +2231,9 @@ export function AiChatPanel() {
                 width: 34, height: 34, borderRadius: '50%',
                 border: 'none', cursor: inputValue.trim() && !aiGenerating ? 'pointer' : 'not-allowed',
                 background: inputValue.trim() && !aiGenerating
-                  ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
-                  : '#1e293b',
-                color: inputValue.trim() && !aiGenerating ? '#fff' : '#334155',
+                  ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
+                  : 'var(--bld-bg-elevated)',
+                color: inputValue.trim() && !aiGenerating ? '#fff' : 'var(--bld-text-disabled)',
                 fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s', flexShrink: 0,
                 boxShadow: inputValue.trim() && !aiGenerating ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
@@ -2326,8 +2328,8 @@ export function AiChatPanel() {
         .ai-edit-btn:hover { background: rgba(99,102,241,0.15) !important; }
         [data-testid="ai-message-list"]::-webkit-scrollbar { width: 3px; }
         [data-testid="ai-message-list"]::-webkit-scrollbar-track { background: transparent; }
-        [data-testid="ai-message-list"]::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
-        [data-testid="ai-message-list"]::-webkit-scrollbar-thumb:hover { background: #334155; }
+        [data-testid="ai-message-list"]::-webkit-scrollbar-thumb { background: var(--bld-ai-border); border-radius: 2px; }
+        [data-testid="ai-message-list"]::-webkit-scrollbar-thumb:hover { background: var(--bld-border-subtle); }
         [data-testid="ai-thread-menu"]::-webkit-scrollbar { width: 3px; }
         [data-testid="ai-thread-menu"] > div::-webkit-scrollbar { width: 3px; }
       `}</style>

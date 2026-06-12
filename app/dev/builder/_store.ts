@@ -1839,6 +1839,10 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   _requestRingUpdate: () => {},
   _setRingUpdateCallback: (fn) => set({ _requestRingUpdate: fn ?? (() => {}) }),
 
+  // ── Builder UI Theme ───────────────────────────────────────────────────────
+  builderTheme: 'dark' as 'dark' | 'light',
+  toggleBuilderTheme: () => set(s => ({ builderTheme: s.builderTheme === 'dark' ? 'light' : 'dark' })),
+
   // ── AI Chat ────────────────────────────────────────────────────────────────
   aiMode: false,
   aiChatHistory: [],
@@ -3937,6 +3941,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         varFolders?: Array<{ id: string; label: string }>;
         workflows?: Array<{ id: string; name: string; trigger: string; steps: object[]; onErrorSteps?: object[] }>;
         directActions?: Record<string, Record<string, unknown>>;
+        workflowGroups?: Record<string, string[]>;
         dsActionsMap?: Record<string, string>;
         formulas?: Record<string, import('./_store-types').GlobalFormulaDef>;
         sharedComponents?: Record<string, unknown>;
@@ -4079,6 +4084,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         // ── Direct actions from config/actions/*.json ─────────────────────────
         if (json.directActions && typeof json.directActions === 'object') {
           next.directActionsMap = json.directActions as Record<string, Record<string, unknown>>;
+        }
+
+        // ── Workflow groups (domain→ids) — powers virtual file tree grouping ──
+        if (json.workflowGroups && typeof json.workflowGroups === 'object') {
+          next.pageWorkflowGroups = json.workflowGroups as Record<string, string[]>;
         }
 
         // ── Global formulas from config/formulas.json ─────────────────────────

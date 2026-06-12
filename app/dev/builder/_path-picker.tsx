@@ -247,7 +247,7 @@ export function PathPicker({
         <span style={{ fontSize: 11, color: value ? '#93c5fd' : '#6b7280', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
           {value || placeholder}
         </span>
-        <span style={{ fontSize: 9, color: '#4b5563' }}>▼</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>▼</span>
       </div>
 
       {open && dropdownPos && (
@@ -284,7 +284,7 @@ export function PathPicker({
                 borderRadius: 4,
                 padding: '4px 8px',
                 fontSize: 11,
-                color: '#f3f4f6',
+                color: 'var(--bld-text-2)',
                 fontFamily: 'monospace',
                 outline: 'none',
               }}
@@ -295,11 +295,11 @@ export function PathPicker({
           {/* Grouped results */}
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {Object.keys(grouped).length === 0 && (
-              <div style={{ padding: '8px 12px', color: '#6b7280', fontSize: 11 }}>No matches</div>
+              <div style={{ padding: '8px 12px', color: 'var(--bld-text-disabled)', fontSize: 11 }}>No matches</div>
             )}
             {Object.entries(grouped).map(([group, entries]) => (
               <div key={group}>
-                <div style={{ padding: '4px 10px 2px', fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#0d1117' }}>
+                <div style={{ padding: '4px 10px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#0d1117' }}>
                   {GROUP_LABELS[group as PathEntry['group']] ?? group}
                 </div>
                 {entries.map((entry, i) => {
@@ -320,7 +320,7 @@ export function PathPicker({
                         gap: 8,
                       }}
                     >
-                      <span style={{ fontSize: 11, color: '#e5e7eb', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, color: 'var(--bld-text-2)', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {entry.path}
                       </span>
                       <TypeBadge type={entry.type} />
@@ -335,7 +335,7 @@ export function PathPicker({
           {query && !flatFiltered.find(p => p.path === query) && (
             <div
               onClick={() => select(query)}
-              style={{ padding: '6px 10px', borderTop: '1px solid #1f2937', cursor: 'pointer', fontSize: 11, color: '#9ca3af', flexShrink: 0 }}
+              style={{ padding: '6px 10px', borderTop: '1px solid #1f2937', cursor: 'pointer', fontSize: 11, color: 'var(--bld-text-3)', flexShrink: 0 }}
               onMouseEnter={e => (e.currentTarget.style.background = '#1f2937')}
               onMouseLeave={e => (e.currentTarget.style.background = '')}
             >

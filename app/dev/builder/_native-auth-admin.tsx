@@ -81,8 +81,8 @@ export function NativeAuthAdmin({ projectId }: Props) {
       <div style={{ width: 320, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         {/* Header */}
         <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>Users</span>
-          <span style={{ fontSize: 11, color: '#475569' }}>{total} total</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Users</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{total} total</span>
         </div>
 
         {/* Search */}
@@ -93,7 +93,7 @@ export function NativeAuthAdmin({ projectId }: Props) {
             placeholder="Search email or name…"
             style={{
               background: '#111827', border: '1px solid #374151', borderRadius: 4,
-              padding: '5px 8px', fontSize: 12, color: '#e2e8f0', outline: 'none',
+              padding: '5px 8px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none',
               width: '100%', boxSizing: 'border-box',
             }}
           />
@@ -101,9 +101,9 @@ export function NativeAuthAdmin({ projectId }: Props) {
 
         {/* User rows */}
         <div style={{ flex: 1, overflow: 'auto' }}>
-          {loading && <div style={{ padding: 16, textAlign: 'center', color: '#475569', fontSize: 12 }}>Loading…</div>}
+          {loading && <div style={{ padding: 16, textAlign: 'center', color: 'var(--bld-text-disabled)', fontSize: 12 }}>Loading…</div>}
           {!loading && users.length === 0 && (
-            <div style={{ padding: 20, textAlign: 'center', color: '#475569', fontSize: 12 }}>
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--bld-text-disabled)', fontSize: 12 }}>
               No users found.
             </div>
           )}
@@ -132,7 +132,7 @@ export function NativeAuthAdmin({ projectId }: Props) {
                   <div style={{ fontSize: 12, color: user.is_disabled ? '#6b7280' : '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user.name ?? user.email}
                   </div>
-                  <div style={{ fontSize: 10, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+                  <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
                 </div>
                 {user.is_disabled && <span style={{ fontSize: 9, color: '#ef4444', background: '#7f1d1d22', padding: '1px 4px', borderRadius: 3 }}>Disabled</span>}
                 {user.email_verified && <span style={{ fontSize: 9, color: '#22c55e' }}>✓</span>}
@@ -151,7 +151,7 @@ export function NativeAuthAdmin({ projectId }: Props) {
             >
               ← Prev
             </button>
-            <span style={{ fontSize: 11, color: '#6b7280', alignSelf: 'center' }}>{offset + 1}–{Math.min(offset + limit, total)} of {total}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', alignSelf: 'center' }}>{offset + 1}–{Math.min(offset + limit, total)} of {total}</span>
             <button
               disabled={offset + limit >= total}
               onClick={() => setOffset(offset + limit)}
@@ -166,7 +166,7 @@ export function NativeAuthAdmin({ projectId }: Props) {
       {/* ── User detail panel ─────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selected ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#475569', fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--bld-text-disabled)', fontSize: 13 }}>
             Select a user to view details
           </div>
         ) : (
@@ -211,8 +211,8 @@ function UserDetail({ user, onUpdate, onResetPassword, saving }: {
           {(user.name ?? user.email).charAt(0).toUpperCase()}
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>{user.name ?? '—'}</div>
-          <div style={{ fontSize: 12, color: '#6b7280' }}>{user.email}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--bld-text-2)' }}>{user.name ?? '—'}</div>
+          <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)' }}>{user.email}</div>
         </div>
       </div>
 
@@ -228,12 +228,12 @@ function UserDetail({ user, onUpdate, onResetPassword, saving }: {
 
       {/* Name edit */}
       <div>
-        <label style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, display: 'block', marginBottom: 4 }}>Display name</label>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Display name</label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ flex: 1, background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '5px 8px', fontSize: 12, color: '#e2e8f0', outline: 'none' }}
+            style={{ flex: 1, background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '5px 8px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none' }}
           />
           <button
             onClick={() => onUpdate({ name })}
@@ -247,7 +247,7 @@ function UserDetail({ user, onUpdate, onResetPassword, saving }: {
 
       {/* Actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <label style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>Actions</label>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500 }}>Actions</label>
         <button
           onClick={() => onUpdate({ is_disabled: !user.is_disabled })}
           disabled={saving}
@@ -258,7 +258,7 @@ function UserDetail({ user, onUpdate, onResetPassword, saving }: {
         <button
           onClick={onResetPassword}
           disabled={saving}
-          style={{ padding: '7px 14px', fontSize: 12, background: 'transparent', color: '#94a3b8', border: '1px solid #374151', borderRadius: 5, cursor: 'pointer', textAlign: 'left' }}
+          style={{ padding: '7px 14px', fontSize: 12, background: 'transparent', color: 'var(--bld-text-3)', border: '1px solid #374151', borderRadius: 5, cursor: 'pointer', textAlign: 'left' }}
         >
           🔑 Reset password
         </button>
@@ -266,12 +266,12 @@ function UserDetail({ user, onUpdate, onResetPassword, saving }: {
 
       {/* Meta */}
       <div>
-        <label style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, display: 'block', marginBottom: 4 }}>User ID</label>
-        <code style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>{user.id}</code>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 4 }}>User ID</label>
+        <code style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>{user.id}</code>
       </div>
       <div>
-        <label style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, display: 'block', marginBottom: 4 }}>Created</label>
-        <span style={{ fontSize: 11, color: '#6b7280' }}>{new Date(user.created_at).toLocaleString()}</span>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 4 }}>Created</label>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{new Date(user.created_at).toLocaleString()}</span>
       </div>
     </div>
   );

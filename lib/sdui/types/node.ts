@@ -167,4 +167,12 @@ export interface SDUINode {
   popover?: PopoverConfig;
   /** Marks this Box as the popover content container (rendered in the floating panel) */
   _popoverContent?: boolean;
+  /**
+   * Named group/section marker.
+   * Value is a display name (e.g. "Hero", "Pricing", "Footer").
+   * Makes this node addressable as a virtual file under pages/<page>/groups/<name>
+   * and indexable as a semantic-search chunk (future vector embedding).
+   * The renderer ignores this field — it is builder-only metadata.
+   */
+  _group?: string;
 }

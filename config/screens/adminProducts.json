@@ -2,52 +2,126 @@
   "layout": "admin",
   "content": {
     "type": "Box",
-    "props": { "className": "flex flex-col gap-[16px] w-full" },
+    "props": {
+      "className": "flex flex-col gap-[16px] w-full"
+    },
     "children": [
       {
         "type": "Box",
-        "props": { "className": "flex items-center justify-between flex-row" },
-        "children": [
+        "condition": "variables['adm00007-0000-0000-0000-000000000007'] || variables['adm00009-0000-0000-0000-000000000009'] || variables['adm00010-0000-0000-0000-000000000010'] || variables['adm00011-0000-0000-0000-000000000011'] || variables['adm00018-0000-0000-0000-000000000018']",
+        "props": {
+          "className": "fixed inset-0 z-[45]",
+          "style": {
+            "background": "transparent",
+            "cursor": "default"
+          }
+        },
+        "actions": [
           {
-            "type": "Box",
-            "children": [
-              { "type": "Text", "props": { "className": "text-[28px] font-bold text-[var(--theme-admin-text)] leading-tight" }, "text": "Products" }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": { "className": "flex items-center gap-[8px] flex-row" },
-            "children": [
-              {
-                "type": "Box",
-                "props": { "className": "flex items-center gap-[6px] px-[12px] h-[36px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row" },
-                "actions": [{ "action": "ad-reindex-btn" }],
-                "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:refresh-cw", "size": 13, "color": "var(--theme-admin-text)" } },
-                  { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "Rebuild search index" }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": { "className": "flex items-center gap-[6px] px-[14px] h-[36px] rounded-[6px] bg-[var(--theme-admin-accent)] hover:bg-[var(--theme-admin-accent-hover)] cursor-pointer transition-colors flex-row" },
-                "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:plus", "size": 14, "color": "white" } },
-                  { "type": "Text", "props": { "className": "text-[13px] font-semibold text-white" }, "text": "New Product" }
-                ]
-              }
-            ]
+            "action": "admin-close-all-popovers"
           }
         ]
       },
       {
         "type": "Box",
-        "props": { "className": "flex items-center gap-[8px] flex-row" },
+        "props": {
+          "className": "flex items-center justify-between flex-row"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex items-center gap-[6px] h-[32px] px-[10px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[#2a2627] flex-row" },
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:search", "size": 13, "color": "var(--theme-admin-label)" } },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[28px] font-bold text-[var(--theme-admin-text)] leading-tight"
+                },
+                "text": "Products"
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[8px] flex-row"
+            },
+            "children": [
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[12px] h-[36px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[var(--theme-admin-border)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "actions": [
+                  {
+                    "action": "ad-reindex-btn"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:refresh-cw",
+                      "size": 13,
+                      "color": "var(--theme-admin-text)"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-text)]"
+                    },
+                    "text": "Rebuild search index"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex items-center gap-[6px] px-[14px] h-[36px] rounded-[6px] bg-[var(--theme-admin-accent)] hover:bg-[var(--theme-admin-accent-hover)] cursor-pointer transition-colors flex-row"
+                },
+                "children": [
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:plus",
+                      "size": 14,
+                      "color": "white"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[13px] font-semibold text-white"
+                    },
+                    "text": "New Product"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "_group": "Page Header"
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex items-center gap-[8px] flex-row"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex items-center gap-[6px] h-[32px] px-[10px] rounded-[6px] bg-[var(--theme-admin-surface)] border border-[#2a2627] flex-row"
+            },
+            "children": [
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:search",
+                  "size": 13,
+                  "color": "var(--theme-admin-label)"
+                }
+              },
               {
                 "type": "Input",
                 "id": "admin-products-filter-input",
@@ -56,177 +130,445 @@
                   "className": "w-[220px] !bg-transparent !border-0 !shadow-none !ring-0 !outline-none h-[28px] text-[13px] text-[var(--theme-admin-text)]",
                   "placeholderTextColor": "var(--theme-admin-label)"
                 },
-                "actions": [{ "action": "admin-products-filter", "trigger": "change" }]
+                "actions": [
+                  {
+                    "action": "admin-products-filter",
+                    "trigger": "change"
+                  }
+                ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "relative" },
+            "props": {
+              "className": "relative z-[50]"
+            },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": { "formula": "variables['adm00010-0000-0000-0000-000000000010'] ? 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.15)] cursor-pointer transition-colors' : 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors'" }
+                  "className": {
+                    "formula": "variables['adm00010-0000-0000-0000-000000000010'] ? 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.15)] cursor-pointer transition-colors' : 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors'"
+                  }
                 },
-                "actions": [{ "action": "admin-products-toggle-filter" }],
+                "actions": [
+                  {
+                    "action": "admin-products-toggle-filter"
+                  }
+                ],
                 "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:filter", "size": 13, "color": { "formula": "variables['adm00010-0000-0000-0000-000000000010'] ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'" } } }
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:filter",
+                      "size": 13,
+                      "color": {
+                        "formula": "variables['adm00010-0000-0000-0000-000000000010'] ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'"
+                      }
+                    }
+                  }
                 ]
               },
               {
                 "type": "Box",
                 "condition": "variables['adm00010-0000-0000-0000-000000000010']",
-                "props": { "className": "absolute left-0 top-[36px] w-[260px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]" },
+                "props": {
+                  "className": "absolute left-0 top-[36px] w-[260px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]" }, "text": "Filter by status" },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]"
+                    },
+                    "text": "Filter by status"
+                  },
                   {
                     "type": "Box",
-                    "props": { "className": "flex items-center gap-[6px] flex-row" },
+                    "props": {
+                      "className": "flex items-center gap-[6px] flex-row"
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'all' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'" } },
-                        "actions": [{ "action": "admin-products-status-all", "stopPropagation": true }],
-                        "children": [{ "type": "Text", "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'all' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'" } }, "text": "All" }]
+                        "props": {
+                          "className": {
+                            "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'all' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'"
+                          }
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-status-all",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": {
+                                "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'all' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'"
+                              }
+                            },
+                            "text": "All"
+                          }
+                        ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'" } },
-                        "actions": [{ "action": "admin-products-status-enabled", "stopPropagation": true }],
-                        "children": [{ "type": "Text", "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'" } }, "text": "Enabled" }]
+                        "props": {
+                          "className": {
+                            "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'"
+                          }
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-status-enabled",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": {
+                                "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'enabled' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'"
+                              }
+                            },
+                            "text": "Enabled"
+                          }
+                        ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'disabled' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'" } },
-                        "actions": [{ "action": "admin-products-status-disabled", "stopPropagation": true }],
-                        "children": [{ "type": "Text", "props": { "className": { "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'disabled' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'" } }, "text": "Disabled" }]
+                        "props": {
+                          "className": {
+                            "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'disabled' ? 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] bg-[var(--theme-admin-accent)] cursor-pointer text-center' : 'flex-1 h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-sidebar)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer text-center'"
+                          }
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-status-disabled",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": {
+                                "formula": "variables['adm00012-0000-0000-0000-000000000012'] === 'disabled' ? 'text-[12px] font-medium text-white' : 'text-[12px] text-[var(--theme-admin-label)]'"
+                              }
+                            },
+                            "text": "Disabled"
+                          }
+                        ]
                       }
                     ]
                   },
-                  { "type": "Box", "props": { "className": "border-t border-[#2a2627] mt-[12px] pt-[10px]" }, "children": [
-                    {
-                      "type": "Box",
-                      "props": { "className": "flex items-center gap-[6px] cursor-pointer hover:opacity-80 flex-row" },
-                      "actions": [{ "action": "admin-products-status-all", "stopPropagation": true }, { "action": "admin-products-close-filter", "stopPropagation": true }],
-                      "children": [
-                        { "type": "Icon", "props": { "icon": "lucide:x", "size": 12, "color": "var(--theme-admin-muted)" } },
-                        { "type": "Text", "props": { "className": "text-[12px] text-[var(--theme-admin-muted)]" }, "text": "Clear filters" }
-                      ]
-                    }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "border-t border-[#2a2627] mt-[12px] pt-[10px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex items-center gap-[6px] cursor-pointer hover:opacity-80 flex-row"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-status-all",
+                            "stopPropagation": true
+                          },
+                          {
+                            "action": "admin-products-close-filter",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:x",
+                              "size": 12,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[12px] text-[var(--theme-admin-muted)]"
+                            },
+                            "text": "Clear filters"
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "relative" },
+            "props": {
+              "className": "relative z-[50]"
+            },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": { "formula": "variables['adm00011-0000-0000-0000-000000000011'] ? 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.15)] cursor-pointer transition-colors' : 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors'" }
+                  "className": {
+                    "formula": "variables['adm00011-0000-0000-0000-000000000011'] ? 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.15)] cursor-pointer transition-colors' : 'w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors'"
+                  }
                 },
-                "actions": [{ "action": "admin-products-toggle-saved" }],
+                "actions": [
+                  {
+                    "action": "admin-products-toggle-saved"
+                  }
+                ],
                 "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:bookmark", "size": 13, "color": { "formula": "variables['adm00011-0000-0000-0000-000000000011'] ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'" } } }
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:bookmark",
+                      "size": 13,
+                      "color": {
+                        "formula": "variables['adm00011-0000-0000-0000-000000000011'] ? 'var(--theme-admin-accent)' : 'var(--theme-admin-muted)'"
+                      }
+                    }
+                  }
                 ]
               },
               {
                 "type": "Box",
                 "condition": "variables['adm00011-0000-0000-0000-000000000011']",
-                "props": { "className": "absolute left-0 top-[36px] w-[240px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]" },
+                "props": {
+                  "className": "absolute left-0 top-[36px] w-[240px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]"
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]" }, "text": "Saved filters" },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]"
+                    },
+                    "text": "Saved filters"
+                  },
                   {
                     "type": "Box",
-                    "props": { "className": "flex flex-col items-center gap-[8px] py-[16px]" },
+                    "props": {
+                      "className": "flex flex-col items-center gap-[8px] py-[16px]"
+                    },
                     "children": [
-                      { "type": "Icon", "props": { "icon": "lucide:bookmark", "size": 28, "color": "var(--theme-admin-border)" } },
-                      { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-muted)] text-center" }, "text": "No saved filters yet" },
-                      { "type": "Text", "props": { "className": "text-[11px] text-[var(--theme-admin-label)] text-center" }, "text": "Apply filters, then save them here for quick access" }
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:bookmark",
+                          "size": 28,
+                          "color": "var(--theme-admin-border)"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] text-center"
+                        },
+                        "text": "No saved filters yet"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[var(--theme-admin-label)] text-center"
+                        },
+                        "text": "Apply filters, then save them here for quick access"
+                      }
                     ]
                   },
-                  { "type": "Box", "props": { "className": "border-t border-[#2a2627] pt-[10px]" }, "children": [
-                    {
-                      "type": "Box",
-                      "props": { "className": "h-[30px] flex items-center justify-center rounded-[6px] border border-[#2a2627] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row gap-[6px]" },
-                      "actions": [{ "action": "admin-products-close-saved", "stopPropagation": true }],
-                      "children": [
-                        { "type": "Icon", "props": { "icon": "lucide:bookmark-plus", "size": 13, "color": "var(--theme-admin-muted)" } },
-                        { "type": "Text", "props": { "className": "text-[12px] text-[var(--theme-admin-label)]" }, "text": "Save current filters" }
-                      ]
-                    }
-                  ]}
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "border-t border-[#2a2627] pt-[10px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "h-[30px] flex items-center justify-center rounded-[6px] border border-[#2a2627] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-row gap-[6px]"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-close-saved",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:bookmark-plus",
+                              "size": 13,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[12px] text-[var(--theme-admin-label)]"
+                            },
+                            "text": "Save current filters"
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 ]
               }
             ]
           },
-          { "type": "Box", "props": { "className": "flex-1" } },
           {
             "type": "Box",
-            "props": { "className": "relative" },
+            "props": {
+              "className": "flex-1"
+            }
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "relative z-[50]"
+            },
             "children": [
               {
                 "type": "Box",
-                "props": { "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors" },
-                "actions": [{ "action": "admin-products-toggle-columns" }],
+                "props": {
+                  "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors"
+                },
+                "actions": [
+                  {
+                    "action": "admin-products-toggle-columns"
+                  }
+                ],
                 "children": [
-                  { "type": "Icon", "props": { "icon": "lucide:sliders-horizontal", "size": 13, "color": "var(--theme-admin-muted)" } }
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:sliders-horizontal",
+                      "size": 13,
+                      "color": "var(--theme-admin-muted)"
+                    }
+                  }
                 ]
               },
               {
                 "type": "Box",
                 "condition": "variables['adm00009-0000-0000-0000-000000000009']",
-                "props": { "className": "absolute right-0 top-[36px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 overflow-hidden" },
+                "props": {
+                  "className": "absolute right-0 top-[36px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "map": { "js": "return variables['adm00013-0000-0000-0000-000000000013'] ?? [];" },
+                    "map": {
+                      "js": "return variables['adm00013-0000-0000-0000-000000000013'] ?? [];",
+                      "keyField": "id"
+                    },
                     "key": "col-row",
-                    "props": { "className": "flex flex-col py-[4px]" },
+                    "props": {
+                      "className": "flex flex-col py-[4px] relative"
+                    },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
                           "className": "transition-transform duration-[150ms]",
                           "style": {
-                            "transform": { "js": "const drag=variables['adm00014-0000-0000-0000-000000000014']; const myId=context?.item?.data?.id; const myIdx=context?.item?.data?.index; if(!drag?.cardId) return 'none'; const si=drag.sourceIndex; const ti=drag.targetIndex; const sh=36; if(myId===drag.cardId) return 'none'; if(myIdx>si&&myIdx<=ti) return 'translateY(-'+sh+'px)'; if(myIdx<si&&myIdx>=ti) return 'translateY('+sh+'px)'; return 'none';" }
+                            "transform": {
+                              "js": "const drag=variables['adm00014-0000-0000-0000-000000000014']; const myId=context?.item?.data?.id; const myIdx=context?.item?.data?.index; if(!drag?.cardId) return 'translateY(0px)'; const si=drag.sourceIndex; const ti=drag.targetIndex; const sh=36; if(myId===drag.cardId) return 'translateY(0px)'; if(myIdx>si&&myIdx<=ti) return 'translateY(-'+sh+'px)'; if(myIdx<si&&myIdx>=ti) return 'translateY('+sh+'px)'; return 'translateY(0px)';"
+                            }
                           }
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center gap-[10px] px-[12px] py-[8px] hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row cursor-pointer select-none",
+                              "className": "flex items-center gap-[10px] px-[12px] py-[8px] hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row cursor-grab active:cursor-grabbing select-none",
                               "style": {
-                                "opacity": { "formula": "context?.item?.data?.id === variables['adm00014-0000-0000-0000-000000000014']?.cardId ? 0.3 : 1" }
+                                "opacity": {
+                                  "formula": "context?.item?.data?.id === variables['adm00014-0000-0000-0000-000000000014']?.cardId ? 0.4 : 1"
+                                },
+                                "zIndex": {
+                                  "formula": "context?.item?.data?.id === variables['adm00014-0000-0000-0000-000000000014']?.cardId ? 10 : 1"
+                                }
+                              },
+                              "animation": {
+                                "drag": {
+                                  "enabled": true,
+                                  "axis": "y",
+                                  "snapBack": true,
+                                  "slotHeight": 36
+                                }
                               }
                             },
-                            "animation": { "drag": { "enabled": true, "axis": "y", "snapBack": true, "slotHeight": 36 } },
                             "actions": [
-                              { "action": "admin-col-drag-start", "trigger": "dragStart" },
-                              { "action": "admin-col-drag-update", "trigger": "dragUpdate" },
-                              { "action": "admin-col-drag-end", "trigger": "dragEnd" },
-                              { "action": "admin-col-toggle" }
+                              {
+                                "action": "admin-col-drag-start",
+                                "trigger": "dragStart"
+                              },
+                              {
+                                "action": "admin-col-drag-update",
+                                "trigger": "dragUpdate"
+                              },
+                              {
+                                "action": "admin-col-drag-end",
+                                "trigger": "dragEnd"
+                              },
+                              {
+                                "action": "admin-col-toggle"
+                              }
                             ],
                             "children": [
-                              { "type": "Icon", "props": { "icon": "lucide:grip-vertical", "size": 14, "color": "var(--theme-admin-border)" } },
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:grip-vertical",
+                                  "size": 14,
+                                  "color": "var(--theme-admin-border)",
+                                  "draggable": false,
+                                  "style": {
+                                    "pointerEvents": "none"
+                                  }
+                                }
+                              },
                               {
                                 "type": "Icon",
                                 "condition": "context.item.data.visible === true",
-                                "props": { "icon": "lucide:check", "size": 13, "color": "var(--theme-admin-accent)" }
+                                "props": {
+                                  "icon": "lucide:check",
+                                  "size": 13,
+                                  "color": "var(--theme-admin-accent)",
+                                  "style": {
+                                    "pointerEvents": "none"
+                                  }
+                                }
                               },
                               {
                                 "type": "Box",
                                 "condition": "context.item.data.visible !== true",
-                                "props": { "className": "w-[13px]" }
+                                "props": {
+                                  "className": "w-[13px]",
+                                  "style": {
+                                    "pointerEvents": "none"
+                                  }
+                                }
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": { "formula": "context?.item?.data?.visible ? 'text-[13px] text-[var(--theme-admin-text)] flex-1' : 'text-[13px] text-[var(--theme-admin-muted)] flex-1'" }
+                                  "className": {
+                                    "formula": "context?.item?.data?.visible ? 'text-[13px] text-[var(--theme-admin-text)] flex-1 pointer-events-none' : 'text-[13px] text-[var(--theme-admin-muted)] flex-1 pointer-events-none'"
+                                  }
                                 },
                                 "text": "{{context.item.data.label}}"
                               }
@@ -236,17 +578,37 @@
                       }
                     ]
                   },
-                  { "type": "Box", "props": { "className": "border-t border-[#2a2627]" } },
                   {
                     "type": "Box",
-                    "props": { "className": "px-[12px] py-[10px]" },
+                    "props": {
+                      "className": "border-t border-[#2a2627]"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "px-[12px] py-[10px]"
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "flex items-center gap-[6px] cursor-pointer hover:opacity-80 flex-row" },
-                        "actions": [{ "action": "admin-products-columns-reset", "stopPropagation": true }],
+                        "props": {
+                          "className": "flex items-center gap-[6px] cursor-pointer hover:opacity-80 flex-row"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-columns-reset",
+                            "stopPropagation": true
+                          }
+                        ],
                         "children": [
-                          { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "Reset" }
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[13px] text-[var(--theme-admin-text)]"
+                            },
+                            "text": "Reset"
+                          }
                         ]
                       }
                     ]
@@ -257,148 +619,547 @@
           },
           {
             "type": "Box",
-            "props": { "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors" },
-            "actions": [{ "action": "admin-products-refresh" }],
+            "props": {
+              "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors"
+            },
+            "actions": [
+              {
+                "action": "admin-products-refresh"
+              }
+            ],
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:refresh-cw", "size": 13, "color": "var(--theme-admin-muted)" } }
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:refresh-cw",
+                  "size": 13,
+                  "color": "var(--theme-admin-muted)"
+                }
+              }
             ]
           }
-        ]
+        ],
+        "_group": "Toolbar"
       },
       {
         "type": "Box",
-        "props": { "className": "bg-[var(--theme-admin-background)] rounded-[8px] border border-[#2a2627] overflow-hidden" },
+        "props": {
+          "className": "bg-[var(--theme-admin-background)] rounded-[8px] border border-[#2a2627] relative z-[46]"
+        },
         "children": [
+          {
+            "type": "Box",
+            "condition": "variables['adm00007-0000-0000-0000-000000000007'] !== ''",
+            "props": {
+              "className": "absolute inset-0 z-[5]",
+              "style": {
+                "background": "transparent"
+              }
+            },
+            "actions": [
+              {
+                "action": "admin-product-menu-close"
+              }
+            ]
+          },
           {
             "type": "Box",
             "id": "products-table-head",
             "props": {
               "className": "grid gap-x-[20px] px-[16px] py-[10px] border-b border-[#2a2627] bg-[var(--theme-admin-surface)] items-center",
-              "style": { "gridTemplateColumns": { "js": "const c=variables['adm00013-0000-0000-0000-000000000013']??[]; const fv=c.find(x=>x.id==='featured_asset')?.visible!==false; const nv=c.find(x=>x.id==='name')?.visible!==false; const sv=c.find(x=>x.id==='slug')?.visible!==false; const ev=c.find(x=>x.id==='enabled')?.visible!==false; const p=['40px']; if(fv)p.push('120px'); if(nv)p.push('1fr'); if(sv)p.push('1fr'); if(ev)p.push('130px'); p.push('72px'); return p.join(' ');" } }
+              "style": {
+                "gridTemplateColumns": {
+                  "js": "const c=variables['adm00013-0000-0000-0000-000000000013']??[]; const widths={featured_asset:'120px',name:'1fr',slug:'1fr',description:'1fr',enabled:'130px',id:'120px',created_at:'140px',updated_at:'140px'}; const p=['40px']; for(const col of c){if(col.visible===true&&widths[col.id])p.push(widths[col.id]);} p.push('72px'); return p.join(' ');"
+                }
+              }
             },
             "children": [
-              { "type": "Box", "props": { "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)]" } },
-              { "type": "Text", "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='featured_asset')?.visible!==false", "props": { "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Featured asset" },
               {
                 "type": "Box",
-                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='name')?.visible!==false",
-                "props": { "className": "flex items-center gap-[4px] flex-row cursor-pointer select-none" },
+                "props": {
+                  "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)]",
+                  "style": {
+                    "order": 0
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='featured_asset')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='featured_asset')+1;"
+                    }
+                  }
+                },
+                "text": "Featured asset"
+              },
+              {
+                "type": "Box",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='name')?.visible===true",
+                "props": {
+                  "className": "flex items-center gap-[4px] flex-row cursor-pointer select-none",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='name')+1;"
+                    }
+                  }
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Name" },
-                  { "type": "Icon", "props": { "icon": "lucide:arrow-up-down", "size": 11, "color": "var(--theme-admin-label)" } }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]"
+                    },
+                    "text": "Name"
+                  },
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:arrow-up-down",
+                      "size": 11,
+                      "color": "var(--theme-admin-label)"
+                    }
+                  }
                 ]
               },
               {
                 "type": "Box",
-                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='slug')?.visible!==false",
-                "props": { "className": "flex items-center gap-[4px] flex-row cursor-pointer select-none" },
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='slug')?.visible===true",
+                "props": {
+                  "className": "flex items-center gap-[4px] flex-row cursor-pointer select-none",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='slug')+1;"
+                    }
+                  }
+                },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Slug" },
-                  { "type": "Icon", "props": { "icon": "lucide:arrow-up-down", "size": 11, "color": "var(--theme-admin-label)" } }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]"
+                    },
+                    "text": "Slug"
+                  },
+                  {
+                    "type": "Icon",
+                    "props": {
+                      "icon": "lucide:arrow-up-down",
+                      "size": 11,
+                      "color": "var(--theme-admin-label)"
+                    }
+                  }
                 ]
               },
-              { "type": "Text", "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='enabled')?.visible!==false", "props": { "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]" }, "text": "Enabled" },
-              { "type": "Text", "props": { "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] text-center w-full" }, "text": "Actions" }
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='description')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='description')+1;"
+                    }
+                  }
+                },
+                "text": "Description"
+              },
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='enabled')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='enabled')+1;"
+                    }
+                  }
+                },
+                "text": "Enabled"
+              },
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='id')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='id')+1;"
+                    }
+                  }
+                },
+                "text": "ID"
+              },
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='created_at')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='created_at')+1;"
+                    }
+                  }
+                },
+                "text": "Created At"
+              },
+              {
+                "type": "Text",
+                "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='updated_at')?.visible===true",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='updated_at')+1;"
+                    }
+                  }
+                },
+                "text": "Updated At"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] text-center w-full",
+                  "style": {
+                    "order": {
+                      "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.length+1;"
+                    }
+                  }
+                },
+                "text": "Actions"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-col" },
-            "map": "collections.ad000004-0000-0000-0000-000000000004",
+            "props": {
+              "className": "flex flex-col"
+            },
+            "map": {
+              "js": "return (collections['ad000004-0000-0000-0000-000000000004'] && collections['ad000004-0000-0000-0000-000000000004'].data) ? collections['ad000004-0000-0000-0000-000000000004'].data : (Array.isArray(collections['ad000004-0000-0000-0000-000000000004']) ? collections['ad000004-0000-0000-0000-000000000004'] : []);"
+            },
             "key": "product-row",
             "children": [
               {
                 "type": "Box",
                 "props": {
                   "className": "grid gap-x-[20px] px-[16px] py-[10px] border-b border-[#2a2627] hover:bg-[var(--theme-admin-surface)] cursor-pointer transition-colors items-center",
-                  "style": { "gridTemplateColumns": { "js": "const c=variables['adm00013-0000-0000-0000-000000000013']??[]; const fv=c.find(x=>x.id==='featured_asset')?.visible!==false; const nv=c.find(x=>x.id==='name')?.visible!==false; const sv=c.find(x=>x.id==='slug')?.visible!==false; const ev=c.find(x=>x.id==='enabled')?.visible!==false; const p=['40px']; if(fv)p.push('120px'); if(nv)p.push('1fr'); if(sv)p.push('1fr'); if(ev)p.push('130px'); p.push('72px'); return p.join(' ');" } }
+                  "style": {
+                    "gridTemplateColumns": {
+                      "js": "const c=variables['adm00013-0000-0000-0000-000000000013']??[]; const widths={featured_asset:'120px',name:'1fr',slug:'1fr',description:'1fr',enabled:'130px',id:'120px',created_at:'140px',updated_at:'140px'}; const p=['40px']; for(const col of c){if(col.visible===true&&widths[col.id])p.push(widths[col.id]);} p.push('72px'); return p.join(' ');"
+                    }
+                  }
                 },
-                "actions": [{ "action": "admin-view-product" }],
+                "actions": [
+                  {
+                    "action": "admin-view-product"
+                  }
+                ],
                 "children": [
-                  { "type": "Box", "props": { "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)] mt-[1px]" } },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)] mt-[1px]",
+                      "style": {
+                        "order": 0
+                      }
+                    }
+                  },
                   {
                     "type": "Image",
-                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='featured_asset')?.visible!==false",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='featured_asset')?.visible===true",
                     "props": {
                       "src": "{{context.item.data.image_url}}",
                       "alt": "{{context.item.data.name}}",
                       "width": 36,
                       "height": 36,
-                      "className": "w-[36px] h-[36px] rounded-[4px] object-cover border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] flex-shrink-0"
+                      "className": "w-[36px] h-[36px] rounded-[4px] object-cover border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] flex-shrink-0",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='featured_asset')+1;"
+                        }
+                      }
                     }
                   },
                   {
                     "type": "Box",
-                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='name')?.visible!==false",
-                    "props": { "className": "flex items-center gap-[6px] flex-row min-w-0" },
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='name')?.visible===true",
+                    "props": {
+                      "className": "flex items-center gap-[6px] flex-row min-w-0",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='name')+1;"
+                        }
+                      }
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate" }, "text": "{{context.item.data.name}}" },
-                      { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 12, "color": "var(--theme-admin-muted)", "className": "flex-shrink-0" } }
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate"
+                        },
+                        "text": "{{context.item.data.name}}"
+                      },
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:chevron-right",
+                          "size": 12,
+                          "color": "var(--theme-admin-muted)",
+                          "className": "flex-shrink-0"
+                        }
+                      }
                     ]
                   },
-                  { "type": "Text", "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='slug')?.visible!==false", "props": { "className": "text-[13px] text-[var(--theme-admin-muted)] truncate" }, "text": "{{context.item.data.slug}}" },
                   {
                     "type": "Text",
-                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='enabled')?.visible!==false",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='slug')?.visible===true",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='slug')+1;"
+                        }
+                      }
+                    },
+                    "text": "{{context.item.data.slug}}"
+                  },
+                  {
+                    "type": "Text",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='description')?.visible===true",
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='description')+1;"
+                        }
+                      }
+                    },
+                    "text": "{{context.item.data.description}}"
+                  },
+                  {
+                    "type": "Text",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='enabled')?.visible===true",
                     "props": {
                       "className": {
                         "formula": "context.item.data.enabled ? 'inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[rgba(34,197,94,0.12)] text-[#22c55e] w-fit' : 'inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[rgba(113,113,122,0.2)] text-[#71717a] w-fit'"
+                      },
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='enabled')+1;"
+                        }
                       }
                     },
-                    "text": { "formula": "context.item.data.enabled ? 'Enabled' : 'Disabled'" }
+                    "text": {
+                      "formula": "context.item.data.enabled ? 'Enabled' : 'Disabled'"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='id')?.visible===true",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] truncate font-mono",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='id')+1;"
+                        }
+                      }
+                    },
+                    "text": "{{context.item.data.id}}"
+                  },
+                  {
+                    "type": "Text",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='created_at')?.visible===true",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='created_at')+1;"
+                        }
+                      }
+                    },
+                    "text": {
+                      "formula": "context.item.data.created_at ? new Date(context.item.data.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : '—'"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='updated_at')?.visible===true",
+                    "props": {
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='updated_at')+1;"
+                        }
+                      }
+                    },
+                    "text": {
+                      "formula": "context.item.data.updated_at ? new Date(context.item.data.updated_at).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : '—'"
+                    }
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex items-center justify-center relative" },
+                    "props": {
+                      "className": "flex items-center justify-center relative",
+                      "style": {
+                        "order": {
+                          "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.length+1;"
+                        }
+                      }
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "w-[28px] h-[28px] rounded-[4px] flex items-center justify-center hover:bg-[var(--theme-admin-surface-hover)] transition-colors cursor-pointer" },
-                        "actions": [{ "action": "admin-product-menu-toggle", "stopPropagation": true }],
+                        "props": {
+                          "className": "w-[28px] h-[28px] rounded-[4px] flex items-center justify-center hover:bg-[var(--theme-admin-surface-hover)] transition-colors cursor-pointer"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-product-menu-toggle",
+                            "stopPropagation": true
+                          }
+                        ],
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:more-horizontal", "size": 14, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:more-horizontal",
+                              "size": 14,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          }
                         ]
                       },
                       {
                         "type": "Box",
                         "condition": "variables['adm00007-0000-0000-0000-000000000007'] === context.item.data.id",
-                        "props": { "className": "absolute right-0 top-[34px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-[4px] overflow-hidden" },
+                        "props": {
+                          "className": "absolute right-0 top-[34px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-[4px] overflow-hidden"
+                        },
                         "children": [
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row" },
-                            "actions": [{ "action": "admin-product-menu-close", "stopPropagation": true }],
+                            "props": {
+                              "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row"
+                            },
+                            "actions": [
+                              {
+                                "action": "admin-product-menu-close",
+                                "stopPropagation": true
+                              }
+                            ],
                             "children": [
-                              { "type": "Icon", "props": { "icon": "lucide:circle-slash-2", "size": 14, "color": "var(--theme-admin-muted)" } },
-                              { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "Remove from current channel" }
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:circle-slash-2",
+                                  "size": 14,
+                                  "color": "var(--theme-admin-muted)"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                },
+                                "text": "Remove from current channel"
+                              }
                             ]
                           },
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row" },
-                            "actions": [{ "action": "admin-product-menu-close", "stopPropagation": true }],
+                            "props": {
+                              "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row"
+                            },
+                            "actions": [
+                              {
+                                "action": "admin-product-menu-close",
+                                "stopPropagation": true
+                              }
+                            ],
                             "children": [
-                              { "type": "Icon", "props": { "icon": "lucide:tag", "size": 14, "color": "var(--theme-admin-muted)" } },
-                              { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "Edit facet values" }
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:tag",
+                                  "size": 14,
+                                  "color": "var(--theme-admin-muted)"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                },
+                                "text": "Edit facet values"
+                              }
                             ]
                           },
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row" },
-                            "actions": [{ "action": "admin-product-menu-close", "stopPropagation": true }],
+                            "props": {
+                              "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row"
+                            },
+                            "actions": [
+                              {
+                                "action": "admin-product-menu-close",
+                                "stopPropagation": true
+                              }
+                            ],
                             "children": [
-                              { "type": "Icon", "props": { "icon": "lucide:copy", "size": 14, "color": "var(--theme-admin-muted)" } },
-                              { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "Duplicate" }
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:copy",
+                                  "size": 14,
+                                  "color": "var(--theme-admin-muted)"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                },
+                                "text": "Duplicate"
+                              }
                             ]
                           },
-                          { "type": "Box", "props": { "className": "border-t border-[#2a2627] mx-[0px] my-[4px]" } },
                           {
                             "type": "Box",
-                            "props": { "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row" },
-                            "actions": [{ "action": "admin-product-menu-close", "stopPropagation": true }],
+                            "props": {
+                              "className": "border-t border-[#2a2627] mx-[0px] my-[4px]"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex items-center gap-[10px] px-[14px] py-[9px] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-row"
+                            },
+                            "actions": [
+                              {
+                                "action": "admin-product-menu-close",
+                                "stopPropagation": true
+                              }
+                            ],
                             "children": [
-                              { "type": "Icon", "props": { "icon": "lucide:trash-2", "size": 14, "color": "var(--theme-admin-danger)" } },
-                              { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-danger)]" }, "text": "Delete" }
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:trash-2",
+                                  "size": 14,
+                                  "color": "var(--theme-admin-danger)"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[13px] text-[var(--theme-admin-danger)]"
+                                },
+                                "text": "Delete"
+                              }
                             ]
                           }
                         ]
@@ -411,84 +1172,323 @@
           },
           {
             "type": "Box",
-            "props": { "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]" },
-            "condition": "!(collections['ad000004-0000-0000-0000-000000000004']?.length > 0)",
+            "props": {
+              "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
+            },
+            "condition": "!((collections['ad000004-0000-0000-0000-000000000004']?.data ?? collections['ad000004-0000-0000-0000-000000000004'] ?? []).length > 0)",
             "children": [
-              { "type": "Icon", "props": { "icon": "lucide:package", "size": 40, "color": "var(--theme-admin-border)" } },
-              { "type": "Text", "props": { "className": "text-[15px] text-[var(--theme-admin-label)]" }, "text": "No products found" }
+              {
+                "type": "Icon",
+                "props": {
+                  "icon": "lucide:package",
+                  "size": 40,
+                  "color": "var(--theme-admin-border)"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                },
+                "text": "No products found"
+              }
             ]
           },
           {
             "type": "Box",
-            "props": { "className": "flex items-center justify-between px-[16px] py-[12px] border-t border-[#2a2627] flex-row" },
+            "props": {
+              "className": "flex items-center justify-between px-[16px] py-[12px] border-t border-[#2a2627] flex-row"
+            },
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-label)]"
+                },
                 "text": {
-                  "formula": "concat('0 of ', String((collections['ad000004-0000-0000-0000-000000000004'] || []).length), ' row(s) selected.')"
+                  "formula": "(() => { const total = collections['ad000004-0000-0000-0000-000000000004']?.total || 0; const page = variables['adm00017-0000-0000-0000-000000000017'] || 1; const size = variables['adm00016-0000-0000-0000-000000000016'] || 10; const from = Math.min((page - 1) * size + 1, total); const to = Math.min(page * size, total); return total === 0 ? '0 results' : from + '–' + to + ' of ' + total + ' results'; })()"
                 }
               },
               {
                 "type": "Box",
-                "props": { "className": "flex items-center gap-[16px] flex-row" },
+                "props": {
+                  "className": "flex items-center gap-[16px] flex-row"
+                },
                 "children": [
                   {
                     "type": "Box",
-                    "props": { "className": "flex items-center gap-[8px] flex-row" },
+                    "props": {
+                      "className": "flex items-center gap-[8px] flex-row"
+                    },
                     "children": [
-                      { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" }, "text": "Rows per page" },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                        },
+                        "text": "Rows per page"
+                      },
                       {
                         "type": "Box",
-                        "props": { "className": "flex items-center gap-[4px] px-[8px] h-[28px] rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer flex-row" },
+                        "props": {
+                          "className": "relative z-[50]"
+                        },
                         "children": [
-                          { "type": "Text", "props": { "className": "text-[13px] text-[var(--theme-admin-text)]" }, "text": "10" },
-                          { "type": "Icon", "props": { "icon": "lucide:chevron-down", "size": 12, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": {
+                                "formula": "variables['adm00018-0000-0000-0000-000000000018'] ? 'flex items-center gap-[4px] px-[8px] h-[28px] rounded-[4px] border border-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.15)] cursor-pointer flex-row' : 'flex items-center gap-[4px] px-[8px] h-[28px] rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] flex-row'"
+                              }
+                            },
+                            "actions": [
+                              {
+                                "action": "admin-products-toggle-page-size",
+                                "stopPropagation": true
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                },
+                                "text": {
+                                  "formula": "String(variables['adm00016-0000-0000-0000-000000000016'] || 10)"
+                                }
+                              },
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:chevron-down",
+                                  "size": 12,
+                                  "color": "var(--theme-admin-muted)"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "condition": "variables['adm00018-0000-0000-0000-000000000018']",
+                            "props": {
+                              "className": "absolute bottom-[34px] left-0 w-[80px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.5)] z-50 py-[4px]"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "map": {
+                                  "js": "return [10, 20, 50, 100].map(s => ({ size: s }))"
+                                },
+                                "props": {
+                                  "className": {
+                                    "formula": "context?.item?.data?.size === (variables['adm00016-0000-0000-0000-000000000016'] || 10) ? 'px-[12px] py-[7px] text-[13px] text-[var(--theme-admin-accent)] bg-[rgba(99,102,241,0.1)] cursor-pointer' : 'px-[12px] py-[7px] text-[13px] text-[var(--theme-admin-text)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer'"
+                                  }
+                                },
+                                "actions": [
+                                  {
+                                    "action": "admin-products-set-page-size",
+                                    "stopPropagation": true
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "style": {
+                                        "pointerEvents": "none"
+                                      }
+                                    },
+                                    "text": {
+                                      "formula": "String(context?.item?.data?.size)"
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[13px] text-[var(--theme-admin-label)]" },
+                    "props": {
+                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                    },
                     "text": {
-                      "formula": "concat('Page ', String(globalContext?.browser?.query?.page || '1'), ' of 1')"
+                      "formula": "concat('Page ', String(variables['adm00017-0000-0000-0000-000000000017'] || 1), ' of ', String(collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1))"
                     }
                   },
                   {
                     "type": "Box",
-                    "props": { "className": "flex items-center gap-[4px] flex-row" },
+                    "props": {
+                      "className": "flex items-center gap-[4px] flex-row"
+                    },
                     "children": [
                       {
                         "type": "Box",
-                        "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors" },
-                        "actions": [{ "action": "admin-products-page-prev" }],
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) > 1",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-goto-page",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "map": {
+                          "js": "return [{ page: 1 }]"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:chevron-first", "size": 13, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-first",
+                              "size": 13,
+                              "color": "var(--theme-admin-text)"
+                            }
+                          }
                         ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors" },
-                        "actions": [{ "action": "admin-products-page-prev" }],
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) <= 1",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:chevron-left", "size": 13, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-first",
+                              "size": 13,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          }
                         ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors" },
-                        "actions": [{ "action": "admin-products-page-next" }],
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) > 1",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-prev-page",
+                            "stopPropagation": true
+                          }
+                        ],
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:chevron-right", "size": 13, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-left",
+                              "size": 13,
+                              "color": "var(--theme-admin-text)"
+                            }
+                          }
                         ]
                       },
                       {
                         "type": "Box",
-                        "props": { "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors" },
-                        "actions": [{ "action": "admin-products-page-next" }],
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) <= 1",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                        },
                         "children": [
-                          { "type": "Icon", "props": { "icon": "lucide:chevron-last", "size": 13, "color": "var(--theme-admin-muted)" } }
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-left",
+                              "size": 13,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) < (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-next-page",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-right",
+                              "size": 13,
+                              "color": "var(--theme-admin-text)"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) >= (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-right",
+                              "size": 13,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) < (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                        },
+                        "actions": [
+                          {
+                            "action": "admin-products-goto-page",
+                            "stopPropagation": true
+                          }
+                        ],
+                        "map": {
+                          "js": "return [{ page: collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1 }]"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-last",
+                              "size": 13,
+                              "color": "var(--theme-admin-text)"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) >= (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
+                        "props": {
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                        },
+                        "children": [
+                          {
+                            "type": "Icon",
+                            "props": {
+                              "icon": "lucide:chevron-last",
+                              "size": 13,
+                              "color": "var(--theme-admin-muted)"
+                            }
+                          }
                         ]
                       }
                     ]
@@ -497,7 +1497,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Products Table"
       }
     ]
   },

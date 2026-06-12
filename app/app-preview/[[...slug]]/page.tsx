@@ -342,7 +342,8 @@ export default function AppPreviewPage() {
       if (!bustCache) {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
-          const cfg = JSON.parse(cached) as ProjectConfig;
+          const parsed = JSON.parse(cached) as { config: ProjectConfig; envVars?: Record<string, string> };
+          const cfg = parsed.config ?? (parsed as unknown as ProjectConfig);
           if (cfg.themeOverrides || cfg.themeDarkOverrides || cfg.customColors) {
             applyTheme(cfg.themeOverrides ?? {}, cfg.themeDarkOverrides ?? {}, cfg.customColors ?? []);
           }
@@ -350,6 +351,7 @@ export default function AppPreviewPage() {
             loadSharedComponents(cfg.sharedComponents);
           }
           seedCustomVars(cfg);
+          if (parsed.envVars) useSduiStore.getState().setData('env', parsed.envVars);
           setProjectConfig(cfg);
           setLoading(false);
           return;
@@ -359,22 +361,34 @@ export default function AppPreviewPage() {
       // Always evict the stale cache entry before fetching fresh data.
       sessionStorage.removeItem(cacheKey);
 
-      // Fetch with preview token (Bearer) — token was set as a cookie by middleware
+      // Authenticated preview (builder "Preview" button) sends a preview_token cookie.
+      // Public deploy subdomain has no preview_token — use the public-config endpoint.
       const token = getPreviewToken();
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch(`/api/projects/${projectId}/config`, { headers });
+      let res: Response;
+      if (token) {
+        res = await fetch(`/api/projects/${projectId}/preview-config`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      } else {
+        res = await fetch(`/api/projects/${projectId}/public-config`);
+      }
+
       if (!res.ok) {
-        setError(`Could not load project (HTTP ${res.status}). Make sure you are logged in.`);
+        setError(`Could not load project (HTTP ${res.status}). Make sure the project is deployed.`);
         setLoading(false);
         return;
       }
-      const data = await res.json() as { config?: ProjectConfig };
+      const data = await res.json() as { config?: ProjectConfig; envVars?: Record<string, string> };
       const cfg = data.config ?? {};
 
+      // Inject env vars into the SDUI store so formulas can access env['KEY']
+      if (data.envVars && typeof data.envVars === 'object') {
+        useSduiStore.getState().setData('env', data.envVars);
+      }
+
       // Cache in sessionStorage — valid for this tab's lifetime (1 hour token)
-      try { sessionStorage.setItem(cacheKey, JSON.stringify(cfg)); } catch { /* quota */ }
+      try { sessionStorage.setItem(cacheKey, JSON.stringify({ config: cfg, envVars: data.envVars ?? {} })); } catch { /* quota */ }
 
       // Apply theme overrides + custom colors (custom colors are user-defined
       // theme tokens; they need both the CSS vars and THEME_OBJ patched so
@@ -518,7 +532,7 @@ export default function AppPreviewPage() {
     state: {},
     ui: {
       type: 'Box',
-      props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+      props: { className: 'flex flex-col w-full min-h-screen relative' },
       children: (currentPage?.nodes ?? []) as SDUINode[],
     } as SDUIConfig['ui'],
   }), [currentPage]);

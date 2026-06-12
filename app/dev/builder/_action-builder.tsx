@@ -117,19 +117,19 @@ export interface EventActions {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const INPUT_STYLE: React.CSSProperties = {
-  background: '#1f2937',
-  border: '1px solid #374151',
+  background: 'var(--bld-bg-input)',
+  border: '1px solid var(--bld-border-subtle)',
   borderRadius: 4,
   padding: '3px 6px',
   fontSize: 11,
-  color: '#f3f4f6',
+  color: 'var(--bld-text-1)',
   outline: 'none',
   fontFamily: 'monospace',
   width: '100%',
 };
 
 const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: 'pointer' };
-const LABEL_STYLE: React.CSSProperties = { fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 2 };
+const LABEL_STYLE: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -170,12 +170,12 @@ function ActionParams({ action, onChange, inMapContext }: {
           <Field label="Type">
             <div style={{ display: 'flex', gap: 8 }}>
               {['path', 'routeConfig'].map(t => (
-                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#d1d5db', cursor: 'pointer' }}>
+                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
                   <input
                     type="radio"
                     checked={(action.navRouteConfig ? 'routeConfig' : 'path') === t}
                     onChange={() => onChange(t === 'path' ? { navRouteConfig: undefined } : { navPath: undefined })}
-                    style={{ accentColor: '#3b82f6' }}
+                    style={{ accentColor: 'var(--bld-accent)' }}
                   />
                   {t === 'path' ? 'Static path' : 'Route config'}
                 </label>
@@ -360,12 +360,12 @@ function VariablesEditor({ variables, onChange, inMapContext }: {
       {variables.map((v, i) => (
         <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <input value={v.key} onChange={e => update(i, { key: e.target.value })} placeholder="key" style={{ ...INPUT_STYLE, flex: 1 }} />
-          <span style={{ color: '#4b5563' }}>:</span>
+          <span style={{ color: 'var(--bld-text-disabled)' }}>:</span>
           <input value={v.value} onChange={e => update(i, { value: e.target.value })} placeholder="{{value}}" style={{ ...INPUT_STYLE, flex: 2 }} />
-          <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+          <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12 }}>×</button>
         </div>
       ))}
-      <button onClick={add} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
+      <button onClick={add} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
         + Add variable
       </button>
     </div>
@@ -389,22 +389,22 @@ function ValidationRulesEditor({ rules, onChange }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {rules.map((r, i) => (
-        <div key={i} style={{ background: '#1f2937', borderRadius: 4, padding: 6, border: '1px solid #374151' }}>
+        <div key={i} style={{ background: 'var(--bld-bg-input)', borderRadius: 4, padding: 6, border: '1px solid var(--bld-border-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <input value={r.field} onChange={e => update(i, { field: e.target.value })} placeholder="form.email" style={{ ...INPUT_STYLE, flex: 1 }} />
-            <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, marginLeft: 4 }}>×</button>
+            <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, marginLeft: 4 }}>×</button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d1d5db', cursor: 'pointer' }}>
-              <input type="checkbox" checked={r.required ?? false} onChange={e => update(i, { required: e.target.checked })} style={{ accentColor: '#3b82f6' }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={r.required ?? false} onChange={e => update(i, { required: e.target.checked })} style={{ accentColor: 'var(--bld-accent)' }} />
               Required
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>Min:</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Min:</span>
               <input type="number" value={r.minLength ?? ''} onChange={e => update(i, { minLength: e.target.value ? Number(e.target.value) : undefined })} style={{ ...INPUT_STYLE, width: 50 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>Pattern:</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Pattern:</span>
               <select value={r.pattern ?? ''} onChange={e => update(i, { pattern: e.target.value || undefined })} style={{ ...SELECT_STYLE, width: 80 }}>
                 <option value="">none</option>
                 <option value="email">email</option>
@@ -416,7 +416,7 @@ function ValidationRulesEditor({ rules, onChange }: {
           <input value={r.message ?? ''} onChange={e => update(i, { message: e.target.value })} placeholder="Error message" style={{ ...INPUT_STYLE, marginTop: 4 }} />
         </div>
       ))}
-      <button onClick={add} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
+      <button onClick={add} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
         + Add rule
       </button>
     </div>
@@ -463,16 +463,16 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
 
   return (
     <div style={{
-      background: depth === 0 ? '#1f2937' : '#111827',
-      border: '1px solid #374151',
+      background: depth === 0 ? 'var(--bld-bg-input)' : 'var(--bld-bg-panel)',
+      border: '1px solid var(--bld-border-subtle)',
       borderRadius: 5,
       overflow: 'hidden',
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderBottom: expanded ? '1px solid #374151' : 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderBottom: expanded ? '1px solid var(--bld-border-subtle)' : 'none' }}>
         <button
           onClick={() => setExpanded(v => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 10, padding: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 10, padding: 0 }}
         >
           {expanded ? '▾' : '▸'}
         </button>
@@ -488,13 +488,13 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
         <button
           onClick={() => setShowCondition(v => !v)}
           title="Add condition (Only if…)"
-          style={{ background: showCondition ? '#1d4ed820' : 'none', border: 'none', cursor: 'pointer', color: showCondition ? '#60a5fa' : '#6b7280', fontSize: 10, padding: '2px 5px', borderRadius: 3 }}
+          style={{ background: showCondition ? 'var(--bld-accent-hover)20' : 'none', border: 'none', cursor: 'pointer', color: showCondition ? 'var(--bld-info)' : 'var(--bld-text-disabled)', fontSize: 10, padding: '2px 5px', borderRadius: 3 }}
         >
           if
         </button>
         <button
           onClick={onRemove}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 12 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 12 }}
           title="Remove action"
         >
           ×
@@ -508,8 +508,8 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
 
           {/* Condition */}
           {showCondition && (
-            <div style={{ borderTop: '1px solid #1f2937', paddingTop: 6 }}>
-              <span style={{ fontSize: 10, color: '#60a5fa', display: 'block', marginBottom: 4 }}>Only if…</span>
+            <div style={{ borderTop: '1px solid var(--bld-bg-input)', paddingTop: 6 }}>
+              <span style={{ fontSize: 10, color: 'var(--bld-info)', display: 'block', marginBottom: 4 }}>Only if…</span>
               <ExprBuilder
                 value={action.condition ?? null}
                 onChange={v => onUpdate({ condition: v as object | null })}
@@ -521,10 +521,10 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
 
           {/* OnSuccess / OnError chain */}
           {hasChain && (
-            <div style={{ borderTop: '1px solid #1f2937', paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ borderTop: '1px solid var(--bld-bg-input)', paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button
                 onClick={() => setShowOnSuccess(v => !v)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 10, textAlign: 'left', padding: 0 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, textAlign: 'left', padding: 0 }}
               >
                 {showOnSuccess ? '▾ Then…' : '▸ Then…'} (on success)
               </button>
@@ -600,9 +600,9 @@ function ActionList({ actions, onChange, inMapContext, depth = 0, max }: {
       {(!max || actions.length < max) && (
         <button
           onClick={addAction}
-          style={{ background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '4px 8px', cursor: 'pointer', marginTop: 2 }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = '#6b7280')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = '#374151')}
+          style={{ background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '4px 8px', cursor: 'pointer', marginTop: 2 }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-text-disabled)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
         >
           + Add action
         </button>
@@ -634,7 +634,7 @@ function EventSection({ event, actions, onChange, inMapContext }: {
   const [expanded, setExpanded] = useState(actions.length > 0);
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
+    <div style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
       {/* Use div instead of button to avoid <button> inside <button> hydration error */}
       <div
         role="button"
@@ -650,22 +650,22 @@ function EventSection({ event, actions, onChange, inMapContext }: {
           border: 'none',
           cursor: 'pointer',
           padding: '7px 10px',
-          color: '#d1d5db',
+          color: 'var(--bld-text-2)',
           fontSize: 11,
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: actions.length ? '#60a5fa' : '#6b7280' }}>{expanded ? '▾' : '▸'}</span>
+          <span style={{ color: actions.length ? 'var(--bld-info)' : 'var(--bld-text-disabled)' }}>{expanded ? '▾' : '▸'}</span>
           <span style={{ fontWeight: 500 }}>{EVENT_LABELS[event]}</span>
           {actions.length > 0 && (
-            <span style={{ fontSize: 9, background: '#1d4ed8', color: '#bfdbfe', padding: '1px 5px', borderRadius: 9 }}>
+            <span style={{ fontSize: 9, background: 'var(--bld-accent-hover)', color: 'var(--bld-accent)', padding: '1px 5px', borderRadius: 9 }}>
               {actions.length}
             </span>
           )}
         </span>
         <button
           onClick={e => { e.stopPropagation(); onChange([...actions, { id: newActionId(), type: 'named', actionName: '' }]); setExpanded(true); }}
-          style={{ background: 'none', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', fontSize: 10, padding: '2px 6px', cursor: 'pointer' }}
+          style={{ background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, color: 'var(--bld-text-3)', fontSize: 10, padding: '2px 6px', cursor: 'pointer' }}
         >
           + Add
         </button>
@@ -673,7 +673,7 @@ function EventSection({ event, actions, onChange, inMapContext }: {
       {expanded && (
         <div style={{ padding: '0 10px 10px' }}>
           {actions.length === 0 ? (
-            <div style={{ color: '#4b5563', fontSize: 11, fontStyle: 'italic', padding: '4px 0' }}>
+            <div style={{ color: 'var(--bld-text-3)', fontSize: 11, fontStyle: 'italic', padding: '4px 0' }}>
               No actions — element has no {EVENT_LABELS[event].toLowerCase()} handler
             </div>
           ) : (

@@ -66,23 +66,23 @@ function updateEditingModel(patch: Partial<SharedComponentModel> & { id: string 
 // ─── Shared palette ───────────────────────────────────────────────────────────
 
 const INPUT_BASE: React.CSSProperties = {
-  background: '#1f2937', border: '1px solid #374151', borderRadius: 5,
-  color: '#e5e7eb', fontSize: 12, padding: '6px 10px', outline: 'none',
+  background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+  color: 'var(--bld-text-2)', fontSize: 12, padding: '6px 10px', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
 
 const BTN_PRIMARY: React.CSSProperties = {
-  padding: '6px 14px', background: '#3b82f6', border: 'none', borderRadius: 5,
-  color: '#fff', fontSize: 12, cursor: 'pointer', fontWeight: 600,
+  padding: '6px 14px', background: 'var(--bld-accent)', border: 'none', borderRadius: 5,
+  color: 'var(--bld-accent-fg)', fontSize: 12, cursor: 'pointer', fontWeight: 600,
 };
 
 const BTN_GHOST: React.CSSProperties = {
-  padding: '6px 12px', background: 'none', border: '1px solid #374151', borderRadius: 5,
-  color: '#9ca3af', fontSize: 12, cursor: 'pointer',
+  padding: '6px 12px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+  color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer',
 };
 
 const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 10, color: '#6b7280', fontWeight: 700,
+  fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700,
   textTransform: 'uppercase', letterSpacing: '0.07em',
   display: 'block', marginBottom: 4,
 };
@@ -129,18 +129,18 @@ const IconEdit = () => (
 // ─── Type badge ───────────────────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  text:    { bg: '#374151', text: '#f9fafb' },
-  number:  { bg: '#1d4ed8', text: '#dbeafe' },
-  boolean: { bg: '#6d28d9', text: '#ede9fe' },
-  color:   { bg: '#b45309', text: '#fef3c7' },
-  any:     { bg: '#065f46', text: '#d1fae5' },
-  size:    { bg: '#0c4a6e', text: '#bae6fd' },
-  select:  { bg: '#3b0764', text: '#e9d5ff' },
-  icon:    { bg: '#292524', text: '#d6d3d1' },
-  list:    { bg: '#14532d', text: '#bbf7d0' },
-  string:  { bg: '#374151', text: '#f9fafb' },
-  object:  { bg: '#7c3aed', text: '#ede9fe' },
-  array:   { bg: '#be185d', text: '#fce7f3' },
+  text:    { bg: 'var(--bld-border-subtle)', text: 'var(--bld-text-1)' },
+  number:  { bg: 'var(--bld-accent-hover)', text: 'var(--bld-accent)' },
+  boolean: { bg: 'var(--bld-ai-accent)', text: 'var(--bld-ai-accent)' },
+  color:   { bg: 'rgba(245,158,11,0.2)', text: 'var(--bld-warning)' },
+  any:     { bg: 'rgba(34,197,94,0.15)', text: 'var(--bld-success)' },
+  size:    { bg: 'rgba(96,165,250,0.2)', text: 'var(--bld-info)' },
+  select:  { bg: 'rgba(124,58,237,0.25)', text: 'var(--bld-ai-accent)' },
+  icon:    { bg: 'var(--bld-bg-elevated)', text: 'var(--bld-text-3)' },
+  list:    { bg: 'rgba(34,197,94,0.15)', text: 'var(--bld-success)' },
+  string:  { bg: 'var(--bld-border-subtle)', text: 'var(--bld-text-1)' },
+  object:  { bg: 'var(--bld-ai-accent)', text: 'var(--bld-ai-accent)' },
+  array:   { bg: 'rgba(219,39,119,0.15)', text: 'var(--bld-badge-boolean)' },
 };
 
 function TypeBadge({ type }: { type: string }) {
@@ -166,9 +166,9 @@ function SectionBar({
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</span>
         {count > 0 && (
-          <span style={{ fontSize: 9, background: '#1f2937', color: '#6b7280', borderRadius: 10, padding: '1px 6px', fontWeight: 600 }}>
+          <span style={{ fontSize: 9, background: 'var(--bld-bg-input)', color: 'var(--bld-text-disabled)', borderRadius: 10, padding: '1px 6px', fontWeight: 600 }}>
             {count}
           </span>
         )}
@@ -177,9 +177,9 @@ function SectionBar({
         data-testid={newTestId}
         onClick={e => { e.stopPropagation(); onNew(e); }}
         title={`Add ${label.toLowerCase()}`}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, background: 'none', border: 'none', borderRadius: 4, color: '#6b7280', cursor: 'pointer' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1f2937'; (e.currentTarget as HTMLElement).style.color = '#e5e7eb'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, background: 'none', border: 'none', borderRadius: 4, color: 'var(--bld-text-disabled)', cursor: 'pointer' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >
         <IconPlus />
       </button>
@@ -191,7 +191,7 @@ function SectionBar({
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div style={{ padding: '4px 12px 8px', fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>
+    <div style={{ padding: '4px 12px 8px', fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
       No {label} defined
     </div>
   );
@@ -242,8 +242,8 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
     top: anchorRect.bottom + 6,
     right: window.innerWidth - anchorRect.right,
     width: 280,
-    background: '#111827',
-    border: '1px solid #374151',
+    background: 'var(--bld-bg-panel)',
+    border: '1px solid var(--bld-border-subtle)',
     borderRadius: 8,
     boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     zIndex: 99999,
@@ -314,9 +314,9 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
       onClick={e => e.stopPropagation()}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb' }}>Create Component</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)' }}>Create Component</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3 }}>
           <IconClose />
         </button>
       </div>
@@ -332,8 +332,8 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
             placeholder="Component name"
             autoFocus
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 12 }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
         </div>
         <div>
@@ -345,8 +345,8 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
             onChange={e => setFolder(e.target.value)}
             placeholder="e.g. Cards, Layout…"
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 12 }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
           {existingFolders.length > 0 && (
             <datalist id="sc-folders">
@@ -363,8 +363,8 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
             placeholder="What does this component do?"
             rows={2}
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 12, resize: 'vertical' }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
@@ -473,7 +473,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
 
   const PANEL_STYLE: React.CSSProperties = {
     display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden',
-    background: '#0f172a',
+    background: 'var(--bld-bg-base)',
   };
 
   const tabData: Array<{ id: ComponentEditorTab; label: string; icon: React.ReactNode; testId: string }> = [
@@ -519,7 +519,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
       {/* ── Top bar ── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px',
-        borderBottom: '1px solid #1f2937', flexShrink: 0,
+        borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0,
       }}>
         {/* Back to instance */}
         <button
@@ -528,11 +528,11 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
           title="Back to instance"
           style={{
             display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px',
-            background: 'none', border: '1px solid #374151', borderRadius: 5,
-            color: '#9ca3af', fontSize: 11, cursor: 'pointer', flexShrink: 0,
+            background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+            color: 'var(--bld-text-3)', fontSize: 11, cursor: 'pointer', flexShrink: 0,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6'; (e.currentTarget as HTMLElement).style.color = '#60a5fa'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#374151'; (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-info)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
         >
           <IconChevronLeft />
           <span>Back</span>
@@ -546,13 +546,13 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
             onChange={e => setRenameDraft(e.target.value)}
             onBlur={commitRename}
             onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenaming(false); }}
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #3b82f6', borderRadius: 4, color: '#e5e7eb', fontSize: 11, padding: '2px 6px', outline: 'none', minWidth: 0 }}
+            style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-accent)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '2px 6px', outline: 'none', minWidth: 0 }}
           />
         ) : (
           <span
             onClick={handleRename}
             title="Click to rename"
-            style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', minWidth: 0 }}
+            style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', minWidth: 0 }}
           >
             {model.name}
           </span>
@@ -563,9 +563,9 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
           <button
             ref={kebabRef}
             onClick={e => { e.stopPropagation(); setKebabOpen(o => !o); }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, background: 'none', border: 'none', borderRadius: 4, color: '#6b7280', cursor: 'pointer' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#e5e7eb'; (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6b7280'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, background: 'none', border: 'none', borderRadius: 4, color: 'var(--bld-text-disabled)', cursor: 'pointer' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
           >
             <IconDots />
           </button>
@@ -580,7 +580,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
       </div>
 
       {/* ── Scoped tab bar ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
         {tabData.map(t => (
           <button
             key={t.id}
@@ -589,8 +589,8 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
             onClick={() => setTab(t.id)}
             style={{
               flex: 1, padding: '8px 0', background: 'none', border: 'none',
-              borderBottom: tab === t.id ? '2px solid #3b82f6' : '2px solid transparent',
-              color: tab === t.id ? '#f3f4f6' : '#6b7280',
+              borderBottom: tab === t.id ? '2px solid var(--bld-accent)' : '2px solid transparent',
+              color: tab === t.id ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
               cursor: 'pointer', marginBottom: -1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
@@ -612,7 +612,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
         )}
         {tab === 'edit' && (
           editTabContent ?? (
-            <div style={{ padding: 16, fontSize: 11, color: '#4b5563', textAlign: 'center' }}>
+            <div style={{ padding: 16, fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
               Select a node inside the component to edit
             </div>
           )
@@ -659,14 +659,14 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
   const itemStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
     fontSize: 11, cursor: 'pointer', background: 'transparent', border: 'none',
-    color: '#e5e7eb', width: '100%', textAlign: 'left', borderRadius: 0,
+    color: 'var(--bld-text-2)', width: '100%', textAlign: 'left', borderRadius: 0,
   };
 
   if (showDescEditor) {
     return (
       <div ref={ref} onClick={e => e.stopPropagation()} style={{
         position: 'absolute', right: 0, top: 26, zIndex: 10001,
-        background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+        background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
         boxShadow: '0 4px 16px rgba(0,0,0,0.5)', width: 220, padding: 10,
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
@@ -692,17 +692,17 @@ function ComponentKebabMenu({ model, onRename, onClose }: {
   return (
     <div ref={ref} onClick={e => e.stopPropagation()} style={{
       position: 'absolute', right: 0, top: 26, zIndex: 10001,
-      background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+      background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
       boxShadow: '0 4px 16px rgba(0,0,0,0.5)', minWidth: 160, overflow: 'hidden',
     }}>
       <button style={itemStyle} onClick={onRename}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
       >
         <IconEdit /> Rename
       </button>
       <button style={itemStyle} onClick={() => setShowDescEditor(true)}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
       >
         <IconEdit /> Edit description
@@ -725,16 +725,16 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
     <div>
       {/* Component meta header */}
       {(model.description || model.folder) && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid #1f2937' }}>
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
           {model.folder && (
             <div style={{ marginBottom: model.description ? 4 : 0 }}>
-              <span style={{ fontSize: 9, background: '#1f2937', color: '#6b7280', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+              <span style={{ fontSize: 9, background: 'var(--bld-bg-input)', color: 'var(--bld-text-disabled)', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
                 {model.folder}
               </span>
             </div>
           )}
           {model.description && (
-            <div style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>
+            <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
               {model.description}
             </div>
           )}
@@ -744,12 +744,12 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
       {/* Properties section */}
       <PropertiesSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid #1f2937' }} />
+      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
 
       {/* Variables section */}
       <VariablesSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid #1f2937' }} />
+      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
 
       {/* Workflows section */}
       <ActionsTab
@@ -759,12 +759,12 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
         onOpenWorkflow={onOpenWorkflow}
       />
 
-      <div style={{ borderTop: '1px solid #1f2937' }} />
+      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
 
       {/* Triggers (custom component events) */}
       <TriggersSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid #1f2937' }} />
+      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
 
       {/* Formulas section */}
       <FormulasSection model={model} modelId={modelId} />
@@ -872,13 +872,13 @@ function SettingsTab({ model, modelId, designContent }: {
     <div>
       {/* Component description */}
       {model.description && (
-        <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280', borderBottom: '1px solid #1f2937', fontStyle: 'italic' }}>
+        <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-3)', borderBottom: '1px solid var(--bld-bg-input)', fontStyle: 'italic' }}>
           {model.description}
         </div>
       )}
       {model.folder && (
         <div style={{ padding: '4px 12px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 9, background: '#1f2937', color: '#6b7280', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+          <span style={{ fontSize: 9, background: 'var(--bld-bg-input)', color: 'var(--bld-text-disabled)', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
             {model.folder}
           </span>
         </div>
@@ -906,7 +906,7 @@ function SettingsTab({ model, modelId, designContent }: {
 
       {/* Normal design content below */}
       {designContent && (
-        <div style={{ borderTop: '1px solid #1f2937', marginTop: 4 }}>
+        <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 4 }}>
           {designContent}
         </div>
       )}
@@ -932,27 +932,27 @@ function PropertyRow({ prop, onEdit, onDelete }: {
   return (
     <div
       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 12px' }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#0f1929'}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
     >
       <TypeBadge type={prop.type} />
       <span
         onClick={e => onEdit(e.clientY)}
-        style={{ flex: 1, fontSize: 11, color: '#e5e7eb', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        style={{ flex: 1, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
       >
         {prop.name}
       </span>
       {prop.defaultValue !== undefined && prop.defaultValue !== '' && (
-        <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
           {typeof prop.defaultValue === 'string' ? `"${prop.defaultValue}"` : String(prop.defaultValue)}
         </span>
       )}
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
         title="Delete property"
-        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >
         <IconTrash />
       </button>
@@ -995,16 +995,16 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
       onClick={e => e.stopPropagation()}
       style={{
         position: 'fixed', right: 260, top, zIndex: 99999, width: 240,
-        background: '#1a2233', border: '1px solid #374151', borderRadius: 8,
+        background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
         boxShadow: '0 8px 32px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #2d3748' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--bld-border-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <TypeBadge type={prop.type} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{prop.name || 'Untitled'}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>{prop.name || 'Untitled'}</span>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3 }}>
           <IconClose />
         </button>
       </div>
@@ -1017,10 +1017,10 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
             onChange={e => onUpdate('name', e.target.value)}
             placeholder="prop name"
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
-          <div style={{ fontSize: 9, color: '#6b7280', marginTop: 3, fontFamily: 'monospace' }}>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 3, fontFamily: 'monospace' }}>
             context.component?.props?.[&apos;{prop.name || '…'}&apos;]
           </div>
         </div>
@@ -1078,13 +1078,13 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
                   />
                   <button
                     onClick={() => onUpdate('options', (prop.options ?? []).filter((_, j) => j !== i))}
-                    style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
                   >×</button>
                 </div>
               ))}
               <button
                 onClick={() => onUpdate('options', [...(prop.options ?? []), { label: '', value: '' }])}
-                style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: '1px dashed #374151', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
+                style={{ fontSize: 10, color: 'var(--bld-info)', background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
               >+ Add option</button>
             </div>
           </div>
@@ -1094,15 +1094,15 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
         <div>
           <label style={SECTION_LABEL}>Default value</label>
           {prop.type === 'boolean' ? (
-            <div style={{ display: 'flex', gap: 3, background: '#111827', borderRadius: 6, padding: 3 }}>
+            <div style={{ display: 'flex', gap: 3, background: 'var(--bld-bg-panel)', borderRadius: 6, padding: 3 }}>
               {(['True', 'False'] as const).map(label => {
                 const on = prop.defaultValue === true || prop.defaultValue === 'true';
                 const active = label === 'True' ? on : !on;
                 return (
                   <button key={label} onClick={() => onUpdate('defaultValue', label === 'True')}
                     style={{ flex: 1, fontSize: 11, padding: '4px 0', borderRadius: 4, border: 'none', cursor: 'pointer',
-                      background: active ? (label === 'True' ? '#064e3b' : '#7f1d1d') : 'transparent',
-                      color: active ? (label === 'True' ? '#6ee7b7' : '#fca5a5') : '#6b7280',
+                      background: active ? (label === 'True' ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.12)') : 'transparent',
+                      color: active ? (label === 'True' ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)',
                       fontWeight: active ? 600 : 400 }}
                   >{label}</button>
                 );
@@ -1154,8 +1154,8 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
               onChange={e => onUpdate('defaultValue', prop.type === 'number' ? Number(e.target.value) : e.target.value)}
               placeholder={prop.type === 'icon' ? 'lucide:check' : prop.type === 'link' ? 'https://…' : 'Default value…'}
               style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
             />
           )}
         </div>
@@ -1172,8 +1172,8 @@ const VAR_TYPES = ['string', 'number', 'boolean', 'object', 'array'] as const;
 type VarType = typeof VAR_TYPES[number];
 
 const VAR_TYPE_COLORS: Record<VarType, string> = {
-  string: '#3b82f6', number: '#f59e0b', boolean: '#10b981',
-  object: '#8b5cf6', array: '#ec4899',
+  string: 'var(--bld-accent)', number: 'var(--bld-warning)', boolean: 'var(--bld-success)',
+  object: 'var(--bld-ai-accent)', array: 'var(--bld-badge-boolean)',
 };
 
 // ─── Shared slide-panel overlay (used by Variables + Formulas) ────────────────
@@ -1193,21 +1193,21 @@ function ComponentSlideOverlay({
       onClick={e => e.stopPropagation()}
       style={{
         position: 'fixed', top: 0, right: 260, bottom: 0, width: 300, zIndex: 99998,
-        background: '#111827', borderLeft: '1px solid #1f2937', borderRight: '1px solid #1f2937',
+        background: 'var(--bld-bg-panel)', borderLeft: '1px solid var(--bld-bg-input)', borderRight: '1px solid var(--bld-bg-input)',
         display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 16px rgba(0,0,0,0.4)',
       }}
     >
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', padding: '8px 12px',
-        borderBottom: '1px solid #1f2937', flexShrink: 0, gap: 8,
+        borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0, gap: 8,
       }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#e5e7eb' }}>{title}</span>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', display: 'flex', padding: 3, borderRadius: 4 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#e5e7eb'; (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6b7280'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 3, borderRadius: 4 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
         >
           <IconClose />
         </button>
@@ -1282,7 +1282,7 @@ function ComponentVarForm({
 
   return (
     <>
-      <div style={{ padding: '6px 12px 0', fontSize: 9, color: '#4b5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+      <div style={{ padding: '6px 12px 0', fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
         context.component.variables[&apos;{id}&apos;]
       </div>
       <VariableSlideContent
@@ -1322,7 +1322,7 @@ function ComponentFormulaForm({
   return (
     <>
       {/* UUID path hint */}
-      <div style={{ padding: '6px 12px 0', fontSize: 9, color: '#4b5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+      <div style={{ padding: '6px 12px 0', fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
         context.component.formulas[&apos;{id}&apos;]
       </div>
       <FormulaSlideBase
@@ -1350,15 +1350,15 @@ function ComponentFormulaForm({
 
 const FP_ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
-  fontSize: 12, color: '#d1d5db', cursor: 'pointer', userSelect: 'none',
+  fontSize: 12, color: 'var(--bld-text-2)', cursor: 'pointer', userSelect: 'none',
 };
 const FP_ICON_BTN: React.CSSProperties = {
-  background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280',
+  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)',
   fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0,
 };
 const FP_INLINE_INPUT: React.CSSProperties = {
-  flex: 1, background: '#374151', border: '1px solid #6366f1', borderRadius: 3,
-  color: '#f3f4f6', fontSize: 11, padding: '2px 6px', outline: 'none',
+  flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-ai-accent)', borderRadius: 3,
+  color: 'var(--bld-text-1)', fontSize: 11, padding: '2px 6px', outline: 'none',
 };
 
 function ComponentFolderPicker({
@@ -1411,14 +1411,14 @@ function ComponentFolderPicker({
         type="button"
         onClick={() => setOpen(o => !o)}
         style={{
-          width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5,
-          color: value ? '#d1d5db' : '#6b7280', fontSize: 12, padding: '6px 10px',
+          width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+          color: value ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)', fontSize: 12, padding: '6px 10px',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           outline: 'none', boxSizing: 'border-box',
         } as React.CSSProperties}
       >
         <span>{value ?? 'No folder'}</span>
-        <Chevron open={open} size={10} color="#6b7280" />
+        <Chevron open={open} size={10} color="var(--bld-text-disabled)" />
       </button>
 
       {open && typeof document !== 'undefined' && ReactDOM.createPortal(
@@ -1427,32 +1427,32 @@ function ComponentFolderPicker({
           top: (() => { const r = btnRef.current?.getBoundingClientRect(); return (r?.bottom ?? 0) + 4; })(),
           left: (() => { const r = btnRef.current?.getBoundingClientRect(); return r?.left ?? 0; })(),
           width: btnRef.current?.getBoundingClientRect().width ?? 240,
-          background: '#111827', border: '1px solid #374151', borderRadius: 6,
+          background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
           boxShadow: '0 4px 20px rgba(0,0,0,0.6)', zIndex: 99999,
           maxHeight: 280, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* No folder row */}
-          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: '#4b5563', fontWeight: 700, letterSpacing: '0.05em' }}>NO FOLDER</div>
+          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700, letterSpacing: '0.05em' }}>NO FOLDER</div>
           <div
-            style={{ ...FP_ROW, background: !value ? '#1e3a5f' : 'transparent' }}
+            style={{ ...FP_ROW, background: !value ? 'var(--bld-bg-elevated)' : 'transparent' }}
             onClick={() => { onChange(undefined); setOpen(false); }}
-            onMouseEnter={e => { if (value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+            onMouseEnter={e => { if (value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
             onMouseLeave={e => { if (value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
-            <span style={{ flex: 1, color: '#9ca3af', fontStyle: 'italic' }}>No folder</span>
-            {!value && <span style={{ color: '#34d399', fontSize: 12 }}>✓</span>}
+            <span style={{ flex: 1, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No folder</span>
+            {!value && <span style={{ color: 'var(--bld-success)', fontSize: 12 }}>✓</span>}
           </div>
 
           {/* Folder list */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {folders.map(f => (
               <div key={f}
-                style={{ ...FP_ROW, background: value === f ? '#1e3a5f' : 'transparent' }}
-                onMouseEnter={e => { if (value !== f) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+                style={{ ...FP_ROW, background: value === f ? 'var(--bld-bg-elevated)' : 'transparent' }}
+                onMouseEnter={e => { if (value !== f) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
                 onMouseLeave={e => { if (value !== f) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
                 {/* folder icon */}
-                <span style={{ fontSize: 11, color: '#6b7280', flexShrink: 0 }}>📁</span>
+                <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>📁</span>
 
                 {editing === f ? (
                   <>
@@ -1464,18 +1464,18 @@ function ComponentFolderPicker({
                       onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') confirmRename(f); if (e.key === 'Escape') setEditing(null); }}
                       onClick={e => e.stopPropagation()}
                     />
-                    <button style={{ ...FP_ICON_BTN, color: '#34d399' }} onClick={e => { e.stopPropagation(); confirmRename(f); }}>✓</button>
-                    <button style={{ ...FP_ICON_BTN, color: '#f87171' }} onClick={e => { e.stopPropagation(); setEditing(null); }}>✕</button>
+                    <button style={{ ...FP_ICON_BTN, color: 'var(--bld-success)' }} onClick={e => { e.stopPropagation(); confirmRename(f); }}>✓</button>
+                    <button style={{ ...FP_ICON_BTN, color: 'var(--bld-error)' }} onClick={e => { e.stopPropagation(); setEditing(null); }}>✕</button>
                   </>
                 ) : (
                   <>
                     <span
-                      style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value === f ? '#a5b4fc' : undefined }}
+                      style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value === f ? 'var(--bld-accent)' : undefined }}
                       onClick={() => { onChange(f); setOpen(false); }}
                     >{f}</span>
                     <button style={{ ...FP_ICON_BTN, fontSize: 11 }} title="Rename"
                       onClick={e => { e.stopPropagation(); setEditing(f); setEditingName(f); }}>✎</button>
-                    <button style={{ ...FP_ICON_BTN, fontSize: 11, color: '#6b7280' }} title="Delete folder"
+                    <button style={{ ...FP_ICON_BTN, fontSize: 11, color: 'var(--bld-text-disabled)' }} title="Delete folder"
                       onClick={e => {
                         e.stopPropagation();
                         onDeleteFolder(f);
@@ -1489,7 +1489,7 @@ function ComponentFolderPicker({
             {/* Inline create input */}
             {creating !== null && (
               <div style={{ ...FP_ROW }}>
-                <span style={{ fontSize: 11, color: '#6b7280', flexShrink: 0 }}>📁</span>
+                <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>📁</span>
                 <input
                   autoFocus
                   style={FP_INLINE_INPUT}
@@ -1499,17 +1499,17 @@ function ComponentFolderPicker({
                   onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') confirmCreate(); if (e.key === 'Escape') setCreating(null); }}
                   onClick={e => e.stopPropagation()}
                 />
-                <button style={{ ...FP_ICON_BTN, color: '#34d399' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
-                <button style={{ ...FP_ICON_BTN, color: '#f87171' }} onClick={e => { e.stopPropagation(); setCreating(null); }}>✕</button>
+                <button style={{ ...FP_ICON_BTN, color: 'var(--bld-success)' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
+                <button style={{ ...FP_ICON_BTN, color: 'var(--bld-error)' }} onClick={e => { e.stopPropagation(); setCreating(null); }}>✕</button>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div style={{ borderTop: '1px solid #1f2937', padding: '6px 8px' }}>
+          <div style={{ borderTop: '1px solid var(--bld-bg-input)', padding: '6px 8px' }}>
             <button
               onClick={() => setCreating('')}
-              style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-ai-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
             >+ Create new folder</button>
           </div>
         </div>,
@@ -1619,12 +1619,12 @@ function VariablesSection({ modelId }: { model: SharedComponentModel; modelId: s
                     padding: '5px 10px', cursor: 'pointer', userSelect: 'none',
                   }}
                   onClick={() => setExpandedFolders(s => ({ ...s, [folder]: !isExpanded }))}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1e293b'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <Chevron open={isExpanded} size={10} color="#6b7280" />
-                  <span style={{ fontSize: 11, fontWeight: 500, color: '#d1d5db', flex: 1 }}>{folder}</span>
-                  <span style={{ fontSize: 10, color: '#6b7280' }}>{folderVars.length}</span>
+                  <Chevron open={isExpanded} size={10} color="var(--bld-text-disabled)" />
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--bld-text-2)', flex: 1 }}>{folder}</span>
+                  <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{folderVars.length}</span>
                 </div>
                 {isExpanded && folderVars.map(([id, v]) => renderRow(id, v, 1))}
               </React.Fragment>
@@ -1734,7 +1734,7 @@ function DataTab({ model, modelId }: { model: SharedComponentModel; modelId: str
   return (
     <div>
       <VariablesSection model={model} modelId={modelId} />
-      <div style={{ borderTop: '1px solid #1f2937', marginTop: 6 }} />
+      <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 6 }} />
       <FormulasSection model={model} modelId={modelId} />
     </div>
   );
@@ -1756,36 +1756,36 @@ function VariableRow({ id, varDef, depth = 0, isEditing, onEdit, onClose, onChan
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `4px 10px 4px ${12 + depth * 14}px`, cursor: 'pointer' }}
         onClick={isEditing ? onClose : onEdit}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#0f1929'}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
       >
         <span style={{
           width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-          background: VAR_TYPE_COLORS[varDef.type as VarType] ?? '#6b7280',
+          background: VAR_TYPE_COLORS[varDef.type as VarType] ?? 'var(--bld-text-disabled)',
         }} />
-        <span style={{ flex: 1, fontSize: 11, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ flex: 1, fontSize: 11, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {varDef.label}
         </span>
-        <span style={{ fontSize: 10, color: '#6b7280' }}>{varDef.type}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{varDef.type}</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
         >
           <IconTrash />
         </button>
       </div>
       {isEditing && (
-        <div style={{ padding: '6px 12px 10px', background: '#060d1a', borderTop: '1px solid #1f2937', borderBottom: '1px solid #1f2937', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: '1px solid var(--bld-bg-input)', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
             <label style={SECTION_LABEL}>Label</label>
             <input
               value={varDef.label}
               onChange={e => onChange('label', e.target.value)}
               style={{ ...INPUT_BASE, padding: '4px 7px', fontSize: 11 }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
             />
           </div>
           <div>
@@ -1805,11 +1805,11 @@ function VariableRow({ id, varDef, depth = 0, isEditing, onEdit, onClose, onChan
               onChange={e => onChange('initialValue', e.target.value)}
               placeholder="Initial value"
               style={{ ...INPUT_BASE, padding: '4px 7px', fontSize: 11 }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
             />
           </div>
-          <div style={{ fontSize: 9, color: '#4b5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
             variables[&apos;{id}&apos;]
           </div>
         </div>
@@ -1832,32 +1832,32 @@ function FormulaRow({ id, formulaDef, isEditing, onEdit, onClose, onChange, onDe
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 12px', cursor: 'pointer' }}
         onClick={isEditing ? onClose : onEdit}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#0f1929'}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
       >
-        <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace', flexShrink: 0 }}>ƒ</span>
-        <span style={{ flex: 1, fontSize: 11, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontFamily: 'monospace', flexShrink: 0 }}>ƒ</span>
+        <span style={{ flex: 1, fontSize: 11, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {formulaDef.name}
         </span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
         >
           <IconTrash />
         </button>
       </div>
       {isEditing && (
-        <div style={{ padding: '6px 12px 10px', background: '#060d1a', borderTop: '1px solid #1f2937', borderBottom: '1px solid #1f2937', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: '1px solid var(--bld-bg-input)', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
             <label style={SECTION_LABEL}>Name</label>
             <input
               value={formulaDef.name}
               onChange={e => onChange('name', e.target.value)}
               style={{ ...INPUT_BASE, padding: '4px 7px', fontSize: 11 }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
             />
           </div>
           <div>
@@ -1868,8 +1868,8 @@ function FormulaRow({ id, formulaDef, isEditing, onEdit, onClose, onChange, onDe
               placeholder="e.g. variables['uuid'] * 2"
               rows={3}
               style={{ ...INPUT_BASE, padding: '4px 7px', fontSize: 11, fontFamily: 'monospace', resize: 'vertical' }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
             />
           </div>
           {formulaDef.description !== undefined && (
@@ -1879,8 +1879,8 @@ function FormulaRow({ id, formulaDef, isEditing, onEdit, onClose, onChange, onDe
                 value={formulaDef.description}
                 onChange={e => onChange('description', e.target.value)}
                 style={{ ...INPUT_BASE, padding: '4px 7px', fontSize: 11 }}
-                onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-                onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
               />
             </div>
           )}
@@ -2049,15 +2049,15 @@ function TriggerRow({ trigger, onEdit, onDelete }: {
         borderLeft: '2px solid transparent',
       }}
       onClick={onEdit}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0a1020'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: 12, color: '#a78bfa', flexShrink: 0 }}>⚡</span>
+      <span style={{ fontSize: 12, color: 'var(--bld-ai-accent)', flexShrink: 0 }}>⚡</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {trigger.name}
         </div>
-        <div style={{ fontSize: 10, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           Component event · {(() => {
             const p = trigger.payload;
             if (!p) return 'no payload';
@@ -2069,18 +2069,18 @@ function TriggerRow({ trigger, onEdit, onDelete }: {
       <button
         onClick={e => { e.stopPropagation(); onEdit(e); }}
         title="Edit trigger"
-        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >
         <IconEdit />
       </button>
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
         title="Delete trigger"
-        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >
         <IconTrash />
       </button>
@@ -2147,8 +2147,8 @@ function TriggerEditModal({ initial, anchorY, onSave, onClose }: {
     // the modal and the FormulaEditor (anchorRight=260 below) form one strip.
     right: 260,
     width: 320,
-    background: '#111827',
-    border: '1px solid #374151',
+    background: 'var(--bld-bg-panel)',
+    border: '1px solid var(--bld-border-subtle)',
     borderRadius: 8,
     boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     zIndex: 99999,
@@ -2160,7 +2160,7 @@ function TriggerEditModal({ initial, anchorY, onSave, onClose }: {
 
   return ReactDOM.createPortal(
     <form ref={ref} style={style} onSubmit={handleSubmit}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb', marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', marginBottom: 2 }}>
         {initial ? 'Edit trigger' : 'New trigger'}
       </div>
 
@@ -2192,9 +2192,9 @@ function TriggerEditModal({ initial, anchorY, onSave, onClose }: {
           // formula editor chips `context.item.*`, `event.*`, etc.
           workflowTrigger="click"
         />
-        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>
-          Payload delivered to listeners as <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.event</code>.
-          Bind a formula (e.g. <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>{'{ date: context?.item?.data?.dateStr }'}</code>)
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 4 }}>
+          Payload delivered to listeners as <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>context.event</code>.
+          Bind a formula (e.g. <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>{'{ date: context?.item?.data?.dateStr }'}</code>)
           so emitting fires with the real runtime value.
         </div>
       </div>
@@ -2229,21 +2229,21 @@ function WorkflowRow({ id, workflow, isActive, onOpen, onDelete }: {
       data-testid={`sc-workflow-row-${id}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 12px',
-        cursor: 'pointer', background: isActive ? '#0f1929' : 'transparent',
-        borderLeft: isActive ? '2px solid #3b82f6' : '2px solid transparent',
+        cursor: 'pointer', background: isActive ? 'var(--bld-bg-base)' : 'transparent',
+        borderLeft: isActive ? '2px solid var(--bld-accent)' : '2px solid transparent',
       }}
       onClick={onOpen}
-      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#0a1020'; }}
+      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
       onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: 12, color: '#60a5fa', flexShrink: 0 }}>
+      <span style={{ fontSize: 12, color: 'var(--bld-info)', flexShrink: 0 }}>
         {TRIGGER_ICONS[trigger] ?? '⚡'}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {workflow.name}
         </div>
-        <div style={{ fontSize: 10, color: '#6b7280' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
           {TRIGGER_LABELS[trigger] ?? trigger} · {stepCount} step{stepCount !== 1 ? 's' : ''}
           {(workflow.params?.length ?? 0) > 0 && ` · ${workflow.params.length} param${workflow.params.length !== 1 ? 's' : ''}`}
         </div>
@@ -2251,9 +2251,9 @@ function WorkflowRow({ id, workflow, isActive, onOpen, onDelete }: {
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
         title="Delete workflow"
-        style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; }}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
       >
         <IconTrash />
       </button>
@@ -2300,8 +2300,8 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
     };
     const baseBtn: React.CSSProperties = {
       display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
-      background: 'none', border: '1px solid #374151', borderRadius: 4,
-      color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0,
+      background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+      color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0,
       fontWeight: 600, letterSpacing: '0.04em',
     };
     return (
@@ -2312,13 +2312,13 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
           title="Edit component"
           style={baseBtn}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#3b82f6';
-            (e.currentTarget as HTMLElement).style.color = '#60a5fa';
-            (e.currentTarget as HTMLElement).style.background = '#0f172a';
+            (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-accent)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--bld-info)';
+            (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-            (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+            (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)';
             (e.currentTarget as HTMLElement).style.background = 'none';
           }}
         >
@@ -2331,12 +2331,12 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
           title="Detach from component"
           style={baseBtn}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#ef4444';
-            (e.currentTarget as HTMLElement).style.color = '#f87171';
+            (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-error)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-            (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+            (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)';
+            (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)';
           }}
         >
           <span>Detach</span>
@@ -2359,18 +2359,18 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
         title="Create as component"
         style={{
           display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
-          background: 'none', border: '1px solid #374151', borderRadius: 4,
-          color: '#9ca3af', fontSize: 10, cursor: 'pointer', flexShrink: 0,
+          background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+          color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0,
           fontWeight: 600, letterSpacing: '0.04em',
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.borderColor = '#6366f1';
-          (e.currentTarget as HTMLElement).style.color = '#a5b4fc';
-          (e.currentTarget as HTMLElement).style.background = '#1e1b4b';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-ai-accent)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)';
+          (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.12)';
         }}
         onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-          (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)';
           (e.currentTarget as HTMLElement).style.background = 'none';
         }}
       >

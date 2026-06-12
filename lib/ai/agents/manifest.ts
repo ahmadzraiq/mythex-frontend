@@ -8,11 +8,10 @@
  *  - the dispatch order (parallel within an op, sequential across ops)
  */
 
-export type AgentScope = 'structure' | 'media' | 'styling' | 'animation' | 'workflows' | 'binding' | 'data' | 'sharedComponents' | 'backend';
+export type AgentScope = 'media' | 'styling' | 'animation' | 'workflows' | 'binding' | 'data' | 'sharedComponents' | 'backend';
 
 export interface ManifestOperation {
   id: string;
-  summary: string;
   /** Page route this op targets (e.g. "/", "/about"). Used by the pool builder to assign
    *  depth-1 section chunks to the correct styling/animation agent pair. */
   pageRoute?: string;
@@ -25,8 +24,6 @@ export interface ManifestOperation {
 }
 
 export interface AgentContract {
-  /** Free-form instructions the orchestrator wants the agent to follow. */
-  briefing?: string;
   /** Optional payload pre-built by the planner (variable IDs, route hints, etc.). */
   context?: Record<string, unknown>;
 }

@@ -51,10 +51,9 @@ export interface DebugAgentData {
     intent?: string;
     operations?: Array<{
       id: string;
-      summary: string;
       pageRoute?: string;
       pageName?: string;
-      agents?: Record<string, { briefing?: string }>;
+      agents?: Record<string, Record<string, unknown>>;
     }>;
     needsClarification?: { question: string; options?: string[] };
   };
@@ -118,13 +117,13 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
           userSelect: 'none', marginBottom: 6,
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
           {label}
         </span>
         <span style={{ fontSize: 10, color: '#334155' }}>
           {charCount ?? text.length} chars
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#475569' }}>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--bld-text-disabled)' }}>
           {expanded ? '▾ collapse' : '▸ expand'}
         </span>
       </div>
@@ -135,7 +134,7 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
           onClick={() => setExpanded(true)}
           style={{
             background: '#020617', borderRadius: 6, padding: '8px 10px',
-            fontSize: 11, lineHeight: 1.7, color: '#94a3b8',
+            fontSize: 11, lineHeight: 1.7, color: 'var(--bld-text-3)',
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             maxHeight: 90, overflow: 'hidden', cursor: 'pointer',
             fontFamily: 'ui-monospace, monospace',
@@ -165,7 +164,7 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
             height: Math.min(Math.max(200, text.split('\n').length * 18), 600),
             background: '#020617', borderRadius: 6,
             border: '1px solid #1e293b', padding: '10px 12px',
-            fontSize: 11, lineHeight: 1.7, color: '#e2e8f0',
+            fontSize: 11, lineHeight: 1.7, color: 'var(--bld-text-2)',
             fontFamily: 'ui-monospace, monospace',
             resize: 'vertical', outline: 'none',
             whiteSpace: 'pre', overflowWrap: 'normal',
@@ -181,7 +180,7 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
 
 function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
   const [open, setOpen] = useState(depth < 2);
-  if (value === null || value === undefined) return <span style={{ color: '#475569' }}>null</span>;
+  if (value === null || value === undefined) return <span style={{ color: 'var(--bld-text-disabled)' }}>null</span>;
   if (typeof value === 'boolean') return <span style={{ color: '#fb923c' }}>{String(value)}</span>;
   if (typeof value === 'number') return <span style={{ color: '#34d399' }}>{value}</span>;
   if (typeof value === 'string') {
@@ -192,11 +191,11 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
     );
   }
   if (Array.isArray(value)) {
-    if (!value.length) return <span style={{ color: '#475569' }}>[]</span>;
+    if (!value.length) return <span style={{ color: 'var(--bld-text-disabled)' }}>[]</span>;
     return (
       <span>
         <button onClick={() => setOpen(o => !o)}
-          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 11, padding: 0 }}>
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: 0 }}>
           {open ? '▾' : '▸'} [{value.length}]
         </button>
         {open && (
@@ -214,11 +213,11 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
   }
   if (typeof value === 'object') {
     const keys = Object.keys(value as object);
-    if (!keys.length) return <span style={{ color: '#475569' }}>{'{}'}</span>;
+    if (!keys.length) return <span style={{ color: 'var(--bld-text-disabled)' }}>{'{}'}</span>;
     return (
       <span>
         <button onClick={() => setOpen(o => !o)}
-          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 11, padding: 0 }}>
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: 0 }}>
           {open ? '▾' : '▸'} {'{…}'}
         </button>
         {open && (
@@ -234,7 +233,7 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
       </span>
     );
   }
-  return <span style={{ color: '#94a3b8' }}>{String(value)}</span>;
+  return <span style={{ color: 'var(--bld-text-3)' }}>{String(value)}</span>;
 }
 
 // ── Tool call row ──────────────────────────────────────────────────────────────
@@ -256,7 +255,7 @@ function ToolCallRow({ tc, idx }: { tc: DebugToolCall; idx: number }) {
       >
         <span style={{ fontSize: 10, color: '#334155', minWidth: 22, textAlign: 'right' }}>#{idx + 1}</span>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
-        <span style={{ fontSize: 12, color: '#e2e8f0', fontWeight: 600, flex: 1, fontFamily: 'ui-monospace, monospace' }}>
+        <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, flex: 1, fontFamily: 'ui-monospace, monospace' }}>
           {tc.name}
         </span>
         {tc.round !== undefined && (
@@ -274,7 +273,7 @@ function ToolCallRow({ tc, idx }: { tc: DebugToolCall; idx: number }) {
       {open && (
         <div style={{ padding: '0 10px 12px', fontSize: 11 }}>
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 10, color: '#475569', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Input
             </div>
             <div style={{ background: '#0f172a', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
@@ -282,7 +281,7 @@ function ToolCallRow({ tc, idx }: { tc: DebugToolCall; idx: number }) {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: '#475569', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Result
             </div>
             <div style={{ background: '#0f172a', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
@@ -335,7 +334,7 @@ function ManifestView({ manifest }: { manifest: NonNullable<DebugAgentData['mani
       {/* Operations */}
       {(manifest.operations ?? []).length > 0 && (
         <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
             Operations ({manifest.operations!.length})
           </div>
           {manifest.operations!.map((op, i) => (
@@ -368,7 +367,7 @@ function OperationCard({ op, idx }: {
           fontSize: 10, fontWeight: 700, color: '#6366f1',
           background: '#1e1b4b', borderRadius: 4, padding: '2px 7px', flexShrink: 0,
         }}>#{idx + 1}</span>
-        <span style={{ fontSize: 12, color: '#e2e8f0', fontWeight: 600, flex: 1 }}>{op.summary}</span>
+        <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, flex: 1 }}>{op.id}</span>
         {op.pageName && (
           <span style={{ fontSize: 10, color: '#334155', background: '#020617', borderRadius: 4, padding: '2px 6px' }}>
             {op.pageName}
@@ -377,37 +376,22 @@ function OperationCard({ op, idx }: {
         <span style={{ fontSize: 10, color: '#334155' }}>{open ? '▾' : '▸'}</span>
       </div>
 
-      {open && (() => {
-        // Only show agents that actually have a briefing
-        const briefedAgents = agentKeys.filter(k => op.agents![k].briefing);
-        if (!briefedAgents.length) return null;
-        return (
-          <div style={{ padding: '0 12px 10px' }}>
-            <div style={{ fontSize: 10, color: '#334155', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
-              Agent Briefings
-            </div>
-            {briefedAgents.map(agentName => {
-              const briefing = op.agents![agentName].briefing!;
-              const col = colorOf(agentName);
-              return (
-                <div key={agentName} style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, color: col.border, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
-                    {agentName}
-                  </div>
-                  <div style={{
-                    background: '#020617', borderRadius: 5, padding: '7px 9px',
-                    fontSize: 11, color: '#94a3b8', lineHeight: 1.6,
-                    fontFamily: 'ui-monospace, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                    borderLeft: `2px solid ${col.border}44`,
-                  }}>
-                    {briefing}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
+      {open && agentKeys.length > 0 && (
+        <div style={{ padding: '0 12px 10px', display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          {agentKeys.map(agentName => {
+            const col = colorOf(agentName);
+            return (
+              <span key={agentName} style={{
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                color: col.border, background: `${col.border}18`, borderRadius: 4, padding: '2px 7px',
+                border: `1px solid ${col.border}33`,
+              }}>
+                {agentName}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -471,7 +455,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
           <div style={{ fontSize: 14, fontWeight: 700, color: col.title, lineHeight: 1.3 }}>
             {label}
           </div>
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 3 }}>
             {toolCount} call{toolCount !== 1 ? 's' : ''}
             {agent.rounds ? ` · ${agent.rounds} rounds` : ''}
             {' · '}{durationStr}
@@ -480,7 +464,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
         </div>
         <button onClick={onClose} style={{
           background: 'none', border: '1px solid #1e293b', borderRadius: 6,
-          color: '#475569', cursor: 'pointer', fontSize: 16, padding: '3px 10px',
+          color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: '3px 10px',
           lineHeight: 1, flexShrink: 0,
         }}>✕</button>
       </div>
@@ -512,14 +496,14 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             {/* Extra info (context agent) */}
             {agent.extra && Object.keys(agent.extra).length > 0 && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
                   Context Info
                 </div>
                 <div style={{ background: '#0f172a', borderRadius: 6, padding: '8px 10px', fontSize: 11 }}>
                   {Object.entries(agent.extra).map(([k, v]) => (
                     <div key={k} style={{ marginBottom: 4 }}>
-                      <span style={{ color: '#475569', marginRight: 6 }}>{k}:</span>
-                      <span style={{ color: '#94a3b8' }}>{String(v)}</span>
+                      <span style={{ color: 'var(--bld-text-disabled)', marginRight: 6 }}>{k}:</span>
+                      <span style={{ color: 'var(--bld-text-3)' }}>{String(v)}</span>
                     </div>
                   ))}
                 </div>
@@ -530,7 +514,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
                 {(agent.tools ?? []).map(t => (
                   <span key={t} style={{
-                    fontSize: 10, background: '#0f172a', color: '#64748b',
+                    fontSize: 10, background: '#0f172a', color: 'var(--bld-text-3)',
                     borderRadius: 4, padding: '2px 7px', border: '1px solid #1e293b',
                     fontFamily: 'ui-monospace, monospace',
                   }}>{t}</span>
@@ -721,8 +705,8 @@ function buildGraph(snapshot: DebugSnapshot): { nodes: Node[]; edges: Edge[] } {
       source: seqIds[i - 1],
       target: seqIds[i],
       type: 'smoothstep',
-      style: { stroke: '#94a3b8', strokeWidth: 2 },
-      markerEnd: { ...ARROW, color: '#94a3b8' },
+      style: { stroke: 'var(--bld-text-3)', strokeWidth: 2 },
+      markerEnd: { ...ARROW, color: 'var(--bld-text-3)' },
     });
   }
 
@@ -896,8 +880,8 @@ export function AgentDebugOverlay({ snapshot, onClose }: AgentDebugOverlayProps)
           style={{ background: '#0d1117', width: '100%', height: '100%' }}
           defaultEdgeOptions={{
             type: 'smoothstep',
-            style: { stroke: '#94a3b8', strokeWidth: 2 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8', width: 16, height: 16 },
+            style: { stroke: 'var(--bld-text-3)', strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--bld-text-3)', width: 16, height: 16 },
           }}
         >
           <Background color="#21262d" gap={28} size={1} />

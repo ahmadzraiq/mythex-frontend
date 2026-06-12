@@ -45,6 +45,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const PREVIEW_COOKIE       = 'preview_project_id';
 const PREVIEW_TOKEN_COOKIE = 'preview_token';
+const BACKEND_URL          = (process.env.BACKEND_URL ?? 'http://localhost:4000');
 
 /** Returns true when the host is a bare IPv4 address (with optional port). */
 function isIpHost(host: string): boolean {
@@ -87,10 +88,35 @@ function getFirstLabel(host: string): string {
 /** Well-known subdomain prefixes that are NOT project IDs. */
 const RESERVED_SUBDOMAINS = ['builder-dev', 'preview-dev', 'preview', 'www'];
 
+/** Check if a project is published by calling the backend API. */
+async function isProjectPublished(projectId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/v1/projects/${projectId}/published`, { cache: 'no-store' });
+    if (!res.ok) return false;
+    const data = await res.json() as { project?: { published?: boolean } };
+    return data.project?.published === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Look up project by custom domain. Returns projectId if found and published, null otherwise. */
+async function resolveCustomDomain(host: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/v1/projects/by-domain?domain=${encodeURIComponent(host)}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json() as { projectId?: string };
+    return data.projectId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Paths allowed on the main domain without further auth checking. */
 const PLATFORM_PREFIXES = [
   '/login',
   '/signup',
+  '/invitations/',
   '/api/',
   '/_next/',
 ];
@@ -101,7 +127,7 @@ function isAllowedOnMainDomain(pathname: string): boolean {
   );
 }
 
-export function middleware(req: NextRequest): NextResponse {
+export async function middleware(req: NextRequest): Promise<NextResponse> {
   const host = req.headers.get('host') ?? '';
   const { pathname } = req.nextUrl;
 
@@ -150,8 +176,13 @@ export function middleware(req: NextRequest): NextResponse {
   const isProjectDev = !isReserved && !isBuilderDev && !isPreviewDev && firstLabel.endsWith('-dev');
   const projectDevId = isProjectDev ? firstLabel.slice(0, -'-dev'.length) : '';
 
-  // {projectId}.* — project-specific production preview (any non-reserved, non -dev subdomain)
-  const isProjectProd = !isReserved && !isBuilderDev && !isPreviewDev && !isLegacyPreview && !isProjectDev
+  // {projectId}-preview.* — authenticated builder preview (production pattern)
+  const isProjectPreview = !isReserved && !isBuilderDev && !isPreviewDev && !isProjectDev
+    && firstLabel.endsWith('-preview');
+  const projectPreviewId = isProjectPreview ? firstLabel.slice(0, -'-preview'.length) : '';
+
+  // {projectId}.* — project public deploy (any non-reserved, non -dev, non -preview subdomain)
+  const isProjectProd = !isReserved && !isBuilderDev && !isPreviewDev && !isLegacyPreview && !isProjectDev && !isProjectPreview
     && firstLabel.length > 0 && !host.startsWith('localhost');
 
   const projectProdId = isProjectProd ? firstLabel : '';
@@ -217,16 +248,17 @@ export function middleware(req: NextRequest): NextResponse {
     return res;
   }
 
-  // ── {projectId}.* — project-specific production preview ────────────────────
-  if (isProjectProd) {
+  // ── {projectId}-preview.* — authenticated builder preview (requires auth) ────
+  if (isProjectPreview) {
     if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
       return NextResponse.next();
     }
 
-    const url = req.nextUrl.clone();
+    const previewToken = req.cookies.get(PREVIEW_TOKEN_COOKIE)?.value
+      ?? req.cookies.get('auth_token')?.value;
 
-    // Strip legacy query params if somehow present
-    const tokenFromQuery = url.searchParams.get('token');
+    // Handle token in query string (from builder "Preview" button)
+    const tokenFromQuery = req.nextUrl.searchParams.get('token');
     if (tokenFromQuery) {
       const clean = req.nextUrl.clone();
       clean.searchParams.delete('token');
@@ -237,6 +269,42 @@ export function middleware(req: NextRequest): NextResponse {
       return res;
     }
 
+    if (!previewToken) {
+      // Redirect to login with a return path
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.host = APP_DOMAIN_ENV || 'localhost:3001';
+      loginUrl.pathname = '/login';
+      loginUrl.search = `?redirect=${encodeURIComponent(req.url)}`;
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const url = req.nextUrl.clone();
+    url.pathname = `/app-preview${pathname === '/' ? '' : pathname}`;
+    const res = NextResponse.rewrite(url);
+    res.cookies.set(PREVIEW_COOKIE, projectPreviewId, {
+      path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24,
+    });
+    return res;
+  }
+
+  // ── {projectId}.* — project public deploy ────────────────────────────────────
+  if (isProjectProd) {
+    if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
+      return NextResponse.next();
+    }
+
+    // Check published flag — return 404 directly if not published.
+    // We return an HTML response instead of rewriting to avoid the
+    // [[...slug]] catch-all rendering the static SDUI template.
+    const published = await isProjectPublished(projectProdId);
+    if (!published) {
+      return new NextResponse(
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Not Found</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#f8f9fa;display:flex;align-items:center;justify-content:center;min-height:100vh;color:#111}.card{text-align:center;padding:48px 32px;background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.08);max-width:400px;width:100%}h1{font-size:4rem;font-weight:700;color:#e5e7eb;margin-bottom:8px}h2{font-size:1.25rem;font-weight:600;margin-bottom:12px}p{color:#6b7280;font-size:.95rem}</style></head><body><div class="card"><h1>404</h1><h2>Project not deployed</h2><p>This project hasn&rsquo;t been published yet.</p></div></body></html>`,
+        { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+      );
+    }
+
+    const url = req.nextUrl.clone();
     url.pathname = `/app-preview${pathname === '/' ? '' : pathname}`;
     const res = NextResponse.rewrite(url);
     res.cookies.set(PREVIEW_COOKIE, projectProdId, {
@@ -286,6 +354,28 @@ export function middleware(req: NextRequest): NextResponse {
       });
     }
     return res;
+  }
+
+  // ── Custom domain routing ─────────────────────────────────────────────────
+  // If APP_DOMAIN is set and the host doesn't match the base domain or any known
+  // subdomain pattern, try to look it up as a custom project domain.
+  if (APP_DOMAIN_ENV && firstLabel === '' && !host.includes('localhost') && !isIpHost(host)) {
+    const bareHost = host.split(':')[0];
+    if (bareHost !== APP_DOMAIN_ENV) {
+      // Not the main domain — could be a custom domain
+      if (!pathname.startsWith('/_next/') && !pathname.startsWith('/api/')) {
+        const customProjectId = await resolveCustomDomain(bareHost);
+        if (customProjectId) {
+          const url = req.nextUrl.clone();
+          url.pathname = `/app-preview${pathname === '/' ? '' : pathname}`;
+          const res = NextResponse.rewrite(url);
+          res.cookies.set(PREVIEW_COOKIE, customProjectId, {
+            path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24,
+          });
+          return res;
+        }
+      }
+    }
   }
 
   // ── Main domain ────────────────────────────────────────────────────────────

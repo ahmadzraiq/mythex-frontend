@@ -23,7 +23,7 @@ const SECTION: React.CSSProperties = {
 
 const LABEL: React.CSSProperties = {
   fontSize: 9,
-  color: '#6b7280',
+  color: 'var(--bld-text-disabled)',
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
   marginBottom: 8,
@@ -123,7 +123,7 @@ function ColorRow({
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center', marginBottom: 6 }}>
-      <span style={{ fontSize: 11, color: '#d1d5db' }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{label}</span>
       <FigmaColorPicker
         value={currentHex}
         onChange={hex => patchTheme(cssVar, hex, mode)}
@@ -161,10 +161,10 @@ function ColorGroupHeader({
         padding: '4px 0', marginBottom: expanded ? 6 : 0,
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#9ca3af', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        <span style={{ fontSize: 9, color: '#6b7280' }}>{expanded ? '▾' : '▸'}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? '▾' : '▸'}</span>
         {label}
-        <span style={{ color: '#4b5563', fontWeight: 400 }}>{count}</span>
+        <span style={{ color: 'var(--bld-text-disabled)', fontWeight: 400 }}>{count}</span>
       </span>
     </button>
   );
@@ -204,7 +204,7 @@ function CustomColorRow({
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
         <span
           title={`${display}  •  --${color.name}`}
-          style={{ fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
+          style={{ fontSize: 11, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
         >
           {display}
         </span>
@@ -214,7 +214,7 @@ function CustomColorRow({
               onClick={onEdit}
               title="Edit color"
               data-testid={`custom-color-edit-${color.name}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
               onMouseEnter={e => (e.currentTarget.style.color = '#a78bfa')}
               onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
             >
@@ -226,7 +226,7 @@ function CustomColorRow({
               }}
               title="Delete color"
               data-testid={`custom-color-delete-${color.name}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
               onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
               onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
             >
@@ -265,7 +265,7 @@ function FontSelect({
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>{label}</div>
       <select
         data-testid={`select-${cssVar}`}
         value={current}
@@ -279,7 +279,7 @@ function FontSelect({
           background: '#1f2937',
           border: '1px solid #374151',
           borderRadius: 4,
-          color: '#f3f4f6',
+          color: 'var(--bld-text-2)',
           fontSize: 11,
           padding: '4px 6px',
         }}
@@ -292,7 +292,7 @@ function FontSelect({
         style={{
           marginTop: 4,
           fontSize: 13,
-          color: '#9ca3af',
+          color: 'var(--bld-text-3)',
           fontFamily: current,
           overflow: 'hidden',
           whiteSpace: 'nowrap',
@@ -407,15 +407,15 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
   };
 
   return (
-    <div style={{ overflowY: 'auto', flex: 1, fontSize: 12, color: '#f3f4f6' }}>
+    <div style={{ overflowY: 'auto', flex: 1, fontSize: 12, color: 'var(--bld-text-2)' }}>
 
       {/* ── Header ── */}
       <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Theme</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>Theme</span>
         <button
           onClick={handleReset}
           title="Reset all theme overrides"
-          style={{ fontSize: 10, color: '#6b7280', background: 'none', border: '1px solid #374151', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
+          style={{ fontSize: 10, color: 'var(--bld-text-disabled)', background: 'none', border: '1px solid #374151', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
         >
           Reset
         </button>
@@ -428,7 +428,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
           style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'presets' ? 10 : 0 }}
         >
           <span style={LABEL}>Presets</span>
-          <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'presets' ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'presets' ? '▲' : '▼'}</span>
         </button>
         {openSection === 'presets' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))', gap: 6 }}>
@@ -483,7 +483,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
             style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0 }}
           >
             <span style={LABEL}>Colors</span>
-            <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'colors' ? '▲' : '▼'}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'colors' ? '▲' : '▼'}</span>
           </button>
           {openSection === 'colors' && onOpenColorSlide && (
             <button
@@ -579,7 +579,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
                   {isExpanded && (
                     <div style={{ marginBottom: 10 }}>
                       {folderColors.length === 0 && (
-                        <div style={{ fontSize: 10, color: '#4b5563', fontStyle: 'italic', padding: '4px 0' }}>
+                        <div style={{ fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic', padding: '4px 0' }}>
                           No colors in this folder.
                         </div>
                       )}
@@ -643,7 +643,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
           style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'typography' ? 8 : 0 }}
         >
           <span style={LABEL}>Typography</span>
-          <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'typography' ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'typography' ? '▲' : '▼'}</span>
         </button>
         {openSection === 'typography' && (
           <div>
@@ -660,7 +660,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
           style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'radius' ? 8 : 0 }}
         >
           <span style={LABEL}>Border Radius</span>
-          <span style={{ fontSize: 10, color: '#6b7280' }}>{openSection === 'radius' ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'radius' ? '▲' : '▼'}</span>
         </button>
         {openSection === 'radius' && (
           <div>
@@ -688,8 +688,8 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
                 </button>
               ))}
             </div>
-            <div style={{ marginTop: 8, fontSize: 10, color: '#6b7280' }}>
-              Current: <span style={{ color: '#9ca3af', fontFamily: 'monospace' }}>{currentRadius}</span>
+            <div style={{ marginTop: 8, fontSize: 10, color: 'var(--bld-text-disabled)' }}>
+              Current: <span style={{ color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{currentRadius}</span>
             </div>
           </div>
         )}

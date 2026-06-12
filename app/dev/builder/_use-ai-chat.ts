@@ -88,6 +88,8 @@ type BuilderChatSSE =
   | { type: 'structure_started'; startedAt?: number }
   | { type: 'structure_complete'; nodes: number; variables: number; formulas: number; workflows: number; dataSources: number; duration?: number }
   | { type: 'agent_phase'; agent: string; phase: 'started' | 'tool_call' | 'complete'; opId?: string; model?: string; rounds?: number; toolCallCount?: number; duration?: number }
+  | { type: 'planner_thinking'; round: number; text: string }
+  | { type: 'planner_thinking_delta'; round: number; delta: string }
   | { type: 'turn_stats'; totalDurationMs: number; usdEstimate?: number; toolCalls: number; ops: number; agents: number }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
   | { type: 'error'; message: string };
@@ -898,24 +900,32 @@ export function useAiChat() {
                 status: 'done',
                 startedAt: debug.planner?.startedAt,
                 duration: (ev as { duration?: number }).duration,
+                thinking: debug.planner?.thinking,
+                thinkingLive: undefined, // clear live stream — full blocks are in thinking[]
                 manifest: {
                   intent: ev.manifest.intent,
                   needsClarification: ev.manifest.needsClarification,
                   operations: ev.manifest.operations?.map(op => ({
                     id: op.id,
-                    summary: op.summary,
                     pageRoute: op.pageRoute,
                     pageName: op.pageName,
-                    agents: op.agents
-                      ? Object.fromEntries(
-                          Object.entries(op.agents).map(([k, v]) => [
-                            k,
-                            { briefing: (v as { briefing?: string })?.briefing },
-                          ]),
-                        )
-                      : undefined,
+                    agents: op.agents,
                   })),
                 },
+              };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'planner_thinking') {
+              debug.planner = {
+                ...debug.planner,
+                manifest: debug.planner?.manifest ?? {},
+                thinking: [...(debug.planner?.thinking ?? []), { round: ev.round, text: ev.text }],
+              };
+              store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
+            } else if (ev.type === 'planner_thinking_delta') {
+              debug.planner = {
+                ...debug.planner,
+                manifest: debug.planner?.manifest ?? {},
+                thinkingLive: (debug.planner?.thinkingLive ?? '') + ev.delta,
               };
               store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
             } else if (ev.type === 'structure_started') {

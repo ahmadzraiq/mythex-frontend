@@ -338,8 +338,8 @@ export function ActionNode({
   // Badge: show success / error dot after test
   const badge = testResult
     ? testResult.error
-      ? { color: '#f87171', symbol: '✕', title: `Error: ${testResult.error}` }
-      : { color: '#34d399', symbol: '✓', title: 'Test passed' }
+      ? { color: 'var(--bld-error)', symbol: '✕', title: `Error: ${testResult.error}` }
+      : { color: 'var(--bld-success)', symbol: '✓', title: 'Test passed' }
     : null;
 
   return (
@@ -359,7 +359,7 @@ export function ActionNode({
             data-testid={`test-step-btn-${step.id}`}
             style={{
               background: 'none', border: 'none', cursor: testing ? 'default' : 'pointer',
-              color: testing ? '#6b7280' : '#9ca3af', fontSize: 11, padding: '2px 4px',
+              color: testing ? 'var(--bld-text-disabled)' : 'var(--bld-text-3)', fontSize: 11, padding: '2px 4px',
               lineHeight: 1, borderRadius: 3, flexShrink: 0,
             }}
             title="Test action"
@@ -386,13 +386,13 @@ export function ActionNode({
       {actionIncomplete && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
           {step.name && (
-            <span style={{ fontSize: 11, color: '#9ca3af' }}>{label}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>{label}</span>
           )}
           <div style={{
             display: 'inline-block',
             background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
             borderRadius: 6, padding: '2px 8px',
-            fontSize: 11, fontWeight: 500, color: '#f59e0b',
+            fontSize: 11, fontWeight: 500, color: 'var(--bld-warning)',
           }}>
             Action incomplete
           </div>
@@ -402,7 +402,7 @@ export function ActionNode({
         <div style={S.cardSubtext(false)}>{subtextLabel}</div>
       )}
       {testResult && (
-        <div style={{ fontSize: 10, color: testResult.error ? '#f87171' : '#34d399', marginTop: 4, fontFamily: 'monospace', maxHeight: 48, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>
+        <div style={{ fontSize: 10, color: testResult.error ? 'var(--bld-error)' : 'var(--bld-success)', marginTop: 4, fontFamily: 'monospace', maxHeight: 48, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }}>
           {testResult.error
             ? `Error: ${testResult.error}`
             : `OK · ${new Date(testResult.ranAt).toLocaleTimeString()}`}
@@ -515,10 +515,10 @@ export function BranchNode({
       </div>
       {/* Top split SVG: center drop → horizontal bar → per-column drops */}
       <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
-        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xL} y1={16} x2={xR} y2={16} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xL} y1={16} x2={xL} y2={32} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xR} y1={16} x2={xR} y2={32} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xL} y1={16} x2={xR} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xL} y1={16} x2={xL} y2={32} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xR} y1={16} x2={xR} y2={32} stroke="var(--bld-border-subtle)" strokeWidth={1} />
       </svg>
       {/* Branch columns */}
       <div ref={rowRef} style={{ display: 'flex', alignItems: 'flex-start', gap: GAP }}>
@@ -527,7 +527,7 @@ export function BranchNode({
           ref={el => { colRefs.current[0] = el; }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
         >
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#34d399', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>true</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-success)', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>true</span>
           <FlowRenderer
             steps={trueBranch}
             pathPrefix={[...stepPath, 'true']}
@@ -544,7 +544,7 @@ export function BranchNode({
           ref={el => { colRefs.current[1] = el; }}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BRANCH_W }}
         >
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#f87171', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>false</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-error)', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 20, padding: '2px 10px', marginBottom: 6 }}>false</span>
           <FlowRenderer
             steps={falseBranch}
             pathPrefix={[...stepPath, 'false']}
@@ -559,10 +559,10 @@ export function BranchNode({
       </div>
       {/* Rejoin SVG: vertical drops from each column center, single bottom merge bar, center drop */}
       <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
-        <line x1={xL} y1={-(maxH - (layout.heights[0] ?? 0))} x2={xL} y2={24} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xR} y1={-(maxH - (layout.heights[1] ?? 0))} x2={xR} y2={24} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xL} y1={24} x2={xR} y2={24} stroke="#4b5563" strokeWidth={1} />
-        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xL} y1={-(maxH - (layout.heights[0] ?? 0))} x2={xL} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xR} y1={-(maxH - (layout.heights[1] ?? 0))} x2={xR} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xL} y1={24} x2={xR} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="var(--bld-border-subtle)" strokeWidth={1} />
       </svg>
       <Connector />
     </div>
@@ -639,10 +639,10 @@ export function MultiOptionBranchNode({
       </div>
       {/* Top split SVG: center drop → horizontal bar → per-column drops */}
       <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
-        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xCenters[0]} y1={16} x2={xCenters[xCenters.length - 1]} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xCenters[0]} y1={16} x2={xCenters[xCenters.length - 1]} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         {xCenters.map((cx, bi) => (
-          <line key={bi} x1={cx} y1={16} x2={cx} y2={32} stroke="#4b5563" strokeWidth={1} />
+          <line key={bi} x1={cx} y1={16} x2={cx} y2={32} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         ))}
       </svg>
       <div ref={rowRef} style={{ display: 'flex', alignItems: 'flex-start', gap: GAP }}>
@@ -661,8 +661,8 @@ export function MultiOptionBranchNode({
                 padding: '2px 10px',
                 marginBottom: 6,
                 ...(bi >= branches.length
-                  ? { color: '#9ca3af', background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.3)' }
-                  : { color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(165,180,252,0.3)' }),
+                  ? { color: 'var(--bld-text-3)', background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.3)' }
+                  : { color: 'var(--bld-accent)', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(165,180,252,0.3)' }),
               }}>
                 {branch.match}
               </span>
@@ -684,10 +684,10 @@ export function MultiOptionBranchNode({
       <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
         {xCenters.map((cx, bi) => {
           const drop = layout.heights[bi] != null ? maxH - layout.heights[bi] : 0;
-          return <line key={bi} x1={cx} y1={-drop} x2={cx} y2={24} stroke="#4b5563" strokeWidth={1} />;
+          return <line key={bi} x1={cx} y1={-drop} x2={cx} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />;
         })}
-        <line x1={xCenters[0]} y1={24} x2={xCenters[xCenters.length - 1]} y2={24} stroke="#4b5563" strokeWidth={1} />
-        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xCenters[0]} y1={24} x2={xCenters[xCenters.length - 1]} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="var(--bld-border-subtle)" strokeWidth={1} />
       </svg>
       <Connector />
     </div>
@@ -718,7 +718,7 @@ export function TryCatchNode({
   const cols = [tryBody, ...(hasCatch ? [catchBody] : []), ...(hasFinally ? [finallyBody] : [])];
   const colLabels = ['try', ...(hasCatch ? ['catch'] : []), ...(hasFinally ? ['finally'] : [])];
   const colPrefixes = ['try', ...(hasCatch ? ['catch'] : []), ...(hasFinally ? ['finally'] : [])];
-  const colColors = ['#60a5fa', '#f87171', '#fbbf24'];
+  const colColors = ['var(--bld-info)', 'var(--bld-error)', 'var(--bld-warning)'];
 
   const colRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rowRef = useRef<HTMLDivElement | null>(null);
@@ -754,7 +754,7 @@ export function TryCatchNode({
     <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Pill header with dashed border */}
       <div
-        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid #6366f1' : '1.5px dashed #4b5563' }}
+        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid var(--bld-ai-accent)' : '1.5px dashed var(--bld-border-subtle)' }}
         onClick={() => onSelect(stepPath)}
       >
         <span>⚡</span>
@@ -763,10 +763,10 @@ export function TryCatchNode({
       </div>
       {/* Top split */}
       <svg width={rowW} height={32} style={{ flexShrink: 0, overflow: 'visible' }}>
-        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="#4b5563" strokeWidth={1} />
-        <line x1={xFirst} y1={16} x2={xLast} y2={16} stroke="#4b5563" strokeWidth={1} />
+        <line x1={rowW / 2} y1={0} x2={rowW / 2} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={xFirst} y1={16} x2={xLast} y2={16} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         {layout.xCenters.map((x, i) => (
-          <line key={i} x1={x} y1={16} x2={x} y2={32} stroke="#4b5563" strokeWidth={1} />
+          <line key={i} x1={x} y1={16} x2={x} y2={32} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         ))}
       </svg>
       {/* Branch columns */}
@@ -796,10 +796,10 @@ export function TryCatchNode({
       {/* Rejoin SVG */}
       <svg width={rowW} height={36} style={{ flexShrink: 0, overflow: 'visible' }}>
         {layout.xCenters.map((x, i) => (
-          <line key={i} x1={x} y1={-(maxH - (layout.heights[i] ?? 0))} x2={x} y2={24} stroke="#4b5563" strokeWidth={1} />
+          <line key={i} x1={x} y1={-(maxH - (layout.heights[i] ?? 0))} x2={x} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         ))}
-        <line x1={xFirst} y1={24} x2={xLast} y2={24} stroke="#4b5563" strokeWidth={1} />
-        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="#4b5563" strokeWidth={1} />
+        <line x1={xFirst} y1={24} x2={xLast} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
+        <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="var(--bld-border-subtle)" strokeWidth={1} />
       </svg>
       <Connector />
     </div>

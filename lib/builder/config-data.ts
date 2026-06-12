@@ -14,6 +14,7 @@ import checkoutActions from '@/config/actions/checkout.json';
 import accountActions from '@/config/actions/account.json';
 import productsActions from '@/config/actions/products.json';
 import layoutActions from '@/config/actions/layout.json';
+import adminActions from '@/config/actions/admin.json';
 import workflowTestActions from '@/config/actions/workflow-test.json';
 import javascriptTestActions from '@/config/actions/javascript-test.json';
 import animationTestActions from '@/config/actions/animation-test.json';
@@ -146,26 +147,42 @@ export function getBuilderConfig() {
     label: f.label,
   }));
 
-  const allActions: Record<string, Record<string, unknown>> = {
-    ...(authActions as Record<string, Record<string, unknown>>),
-    ...(cartActions as Record<string, Record<string, unknown>>),
-    ...(checkoutActions as Record<string, Record<string, unknown>>),
-    ...(accountActions as Record<string, Record<string, unknown>>),
-    ...(productsActions as Record<string, Record<string, unknown>>),
-    ...(layoutActions as Record<string, Record<string, unknown>>),
-    ...(workflowTestActions as Record<string, Record<string, unknown>>),
-    ...(javascriptTestActions as Record<string, Record<string, unknown>>),
-    ...(animationTestActions as Record<string, Record<string, unknown>>),
-    ...(calculatorActions as Record<string, Record<string, unknown>>),
-    ...(counterExampleActions as Record<string, Record<string, unknown>>),
-    ...(pricingNestedActions as Record<string, Record<string, unknown>>),
-    ...(responsiveTestActions as Record<string, Record<string, unknown>>),
-    ...(sharedComponentTestActions as Record<string, Record<string, unknown>>),
-    ...(popoverTestActions as Record<string, Record<string, unknown>>),
-    ...(animationShowcaseActions as Record<string, Record<string, unknown>>),
-    ...(triggersTestActions as Record<string, Record<string, unknown>>),
-    ...(scComponentShowcaseActions as Record<string, Record<string, unknown>>),
-  };
+  // Named sources — keeps track of which IDs came from which file so we can
+  // build workflowGroups for the virtual file tree.
+  const actionSources: Array<[string, Record<string, Record<string, unknown>>]> = [
+    ['auth',                    authActions                    as Record<string, Record<string, unknown>>],
+    ['cart',                    cartActions                    as Record<string, Record<string, unknown>>],
+    ['checkout',                checkoutActions                as Record<string, Record<string, unknown>>],
+    ['account',                 accountActions                 as Record<string, Record<string, unknown>>],
+    ['products',                productsActions                as Record<string, Record<string, unknown>>],
+    ['layout',                  layoutActions                  as Record<string, Record<string, unknown>>],
+    ['admin',                   adminActions                   as Record<string, Record<string, unknown>>],
+    ['workflow-test',           workflowTestActions            as Record<string, Record<string, unknown>>],
+    ['javascript-test',         javascriptTestActions          as Record<string, Record<string, unknown>>],
+    ['animation-test',          animationTestActions           as Record<string, Record<string, unknown>>],
+    ['calculator',              calculatorActions              as Record<string, Record<string, unknown>>],
+    ['counter-example',         counterExampleActions          as Record<string, Record<string, unknown>>],
+    ['pricing-nested',          pricingNestedActions           as Record<string, Record<string, unknown>>],
+    ['responsive-test',         responsiveTestActions          as Record<string, Record<string, unknown>>],
+    ['shared-component-test',   sharedComponentTestActions     as Record<string, Record<string, unknown>>],
+    ['popover-test',            popoverTestActions             as Record<string, Record<string, unknown>>],
+    ['animation-showcase',      animationShowcaseActions       as Record<string, Record<string, unknown>>],
+    ['triggers-test',           triggersTestActions            as Record<string, Record<string, unknown>>],
+    ['sc-component-showcase',   scComponentShowcaseActions     as Record<string, Record<string, unknown>>],
+  ];
+
+  const allActions: Record<string, Record<string, unknown>> = Object.fromEntries(
+    actionSources.flatMap(([, actions]) => Object.entries(actions)),
+  );
+
+  // Build domain→ids map so the store can surface workflows under the right page/folder.
+  const workflowGroups: Record<string, string[]> = {};
+  for (const [sourceName, actions] of actionSources) {
+    const ids = Object.entries(actions)
+      .filter(([, def]) => Array.isArray(def.steps))
+      .map(([id]) => id);
+    if (ids.length > 0) workflowGroups[sourceName] = ids;
+  }
 
   // A workflow def has a steps array. A direct action has a specific type (graphql, fetch, etc.)
   const workflows = Object.entries(allActions)
@@ -222,7 +239,7 @@ export function getBuilderConfig() {
   const customColors = (customColorsJson as { customColors?: unknown[]; colorFolders?: unknown[] }).customColors ?? [];
   const colorFolders = (customColorsJson as { customColors?: unknown[]; colorFolders?: unknown[] }).colorFolders ?? [];
 
-  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, dsActionsMap, formulas, customColors, colorFolders };
+  return { dataSources: dataSourceList, dsFolders, variables, varFolders, workflows, directActions, workflowGroups, dsActionsMap, formulas, customColors, colorFolders };
 }
 
 // ── Backend project config load / save ────────────────────────────────────────

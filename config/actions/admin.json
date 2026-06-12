@@ -1,141 +1,693 @@
 {
+  "admin-close-all-popovers": {
+    "name": "admin-close-all-popovers",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00007-0000-0000-0000-000000000007",
+          "value": ""
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": false
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00010-0000-0000-0000-000000000010",
+          "value": false
+        }
+      },
+      {
+        "id": "s4",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00011-0000-0000-0000-000000000011",
+          "value": false
+        }
+      },
+      {
+        "id": "s5",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00018-0000-0000-0000-000000000018",
+          "value": false
+        }
+      }
+    ]
+  },
   "admin-products-toggle-filter": {
     "name": "admin-products-toggle-filter",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00010-0000-0000-0000-000000000010", "value": { "formula": "!variables['adm00010-0000-0000-0000-000000000010']" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "adm00011-0000-0000-0000-000000000011", "value": false } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "adm00009-0000-0000-0000-000000000009", "value": false } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00010-0000-0000-0000-000000000010",
+          "value": {
+            "formula": "!variables['adm00010-0000-0000-0000-000000000010']"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00011-0000-0000-0000-000000000011",
+          "value": false
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": false
+        }
+      }
     ]
   },
   "admin-products-close-filter": {
     "name": "admin-products-close-filter",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00010-0000-0000-0000-000000000010", "value": false } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00010-0000-0000-0000-000000000010",
+          "value": false
+        }
+      }
+    ]
   },
   "admin-products-toggle-saved": {
     "name": "admin-products-toggle-saved",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00011-0000-0000-0000-000000000011", "value": { "formula": "!variables['adm00011-0000-0000-0000-000000000011']" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "adm00010-0000-0000-0000-000000000010", "value": false } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "adm00009-0000-0000-0000-000000000009", "value": false } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00011-0000-0000-0000-000000000011",
+          "value": {
+            "formula": "!variables['adm00011-0000-0000-0000-000000000011']"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00010-0000-0000-0000-000000000010",
+          "value": false
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": false
+        }
+      }
     ]
   },
   "admin-products-close-saved": {
     "name": "admin-products-close-saved",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00011-0000-0000-0000-000000000011", "value": false } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00011-0000-0000-0000-000000000011",
+          "value": false
+        }
+      }
+    ]
   },
   "admin-products-status-all": {
     "name": "admin-products-status-all",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00012-0000-0000-0000-000000000012", "value": "all" } },
-      { "id": "s2", "type": "refetchDataSource", "name": "ad000004-0000-0000-0000-000000000004" }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00012-0000-0000-0000-000000000012",
+          "value": "all"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": 1
+        }
+      },
+      {
+        "id": "s3",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
     ]
   },
   "admin-products-status-enabled": {
     "name": "admin-products-status-enabled",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00012-0000-0000-0000-000000000012", "value": "enabled" } },
-      { "id": "s2", "type": "refetchDataSource", "name": "ad000004-0000-0000-0000-000000000004" }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00012-0000-0000-0000-000000000012",
+          "value": "enabled"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": 1
+        }
+      },
+      {
+        "id": "s3",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
     ]
   },
   "admin-products-status-disabled": {
     "name": "admin-products-status-disabled",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00012-0000-0000-0000-000000000012", "value": "disabled" } },
-      { "id": "s2", "type": "refetchDataSource", "name": "ad000004-0000-0000-0000-000000000004" }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00012-0000-0000-0000-000000000012",
+          "value": "disabled"
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": 1
+        }
+      },
+      {
+        "id": "s3",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
     ]
   },
   "admin-col-toggle": {
     "name": "admin-col-toggle",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00013-0000-0000-0000-000000000013", "value": { "js": "const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const id=context?.item?.data?.id; return cols.map(c=>c.id===id?{...c,visible:!c.visible}:c);" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00013-0000-0000-0000-000000000013",
+          "value": {
+            "js": "const justDragged=variables['adm00015-0000-0000-0000-000000000015']; if(justDragged) return variables['adm00013-0000-0000-0000-000000000013']; const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const id=context?.item?.data?.id; return cols.map(c=>c.id===id?{...c,visible:!c.visible}:c);"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00015-0000-0000-0000-000000000015",
+          "value": false
+        }
+      }
+    ]
   },
   "admin-col-drag-start": {
     "name": "admin-col-drag-start",
     "trigger": "dragStart",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00014-0000-0000-0000-000000000014", "value": { "formula": "{ cardId: context?.item?.data?.id, sourceIndex: context?.item?.data?.index, targetIndex: context?.item?.data?.index }" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00014-0000-0000-0000-000000000014",
+          "value": {
+            "formula": "{ cardId: context?.item?.data?.id, sourceIndex: context?.item?.data?.index, targetIndex: context?.item?.data?.index }"
+          }
+        }
+      }
+    ]
   },
   "admin-col-drag-update": {
     "name": "admin-col-drag-update",
     "trigger": "dragUpdate",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00014-0000-0000-0000-000000000014", "value": { "js": "const drag=variables['adm00014-0000-0000-0000-000000000014']; const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const slotH=36; const ty=event?.translationY??0; const srcIdx=drag?.sourceIndex??0; const newTgt=Math.max(0,Math.min(cols.length-1,srcIdx+Math.round(ty/slotH))); return {...drag,targetIndex:newTgt};" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00014-0000-0000-0000-000000000014",
+          "value": {
+            "js": "const drag=variables['adm00014-0000-0000-0000-000000000014']; const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const slotH=36; const ty=event?.translationY??0; const srcIdx=drag?.sourceIndex??0; const newTgt=Math.max(0,Math.min(cols.length-1,srcIdx+Math.round(ty/slotH))); return {...drag,targetIndex:newTgt};"
+          }
+        }
+      }
+    ]
   },
   "admin-col-drag-end": {
     "name": "admin-col-drag-end",
     "trigger": "dragEnd",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00013-0000-0000-0000-000000000013", "value": { "js": "const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const drag=variables['adm00014-0000-0000-0000-000000000014']; const srcIdx=drag?.sourceIndex??0; const ty=event?.translationY??0; const slotH=36; const newIdx=Math.max(0,Math.min(cols.length-1,srcIdx+Math.round(ty/slotH))); if(srcIdx===newIdx) return cols; const r=[...cols]; const [m]=r.splice(srcIdx,1); r.splice(newIdx,0,m); return r;" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "adm00014-0000-0000-0000-000000000014", "value": { "formula": "{ cardId: null, sourceIndex: null, targetIndex: null }" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00013-0000-0000-0000-000000000013",
+          "value": {
+            "js": "const cols=variables['adm00013-0000-0000-0000-000000000013']??[]; const drag=variables['adm00014-0000-0000-0000-000000000014']; const srcIdx=drag?.sourceIndex??0; const newIdx=drag?.targetIndex??srcIdx; if(srcIdx===newIdx) return cols; const r=[...cols]; const [m]=r.splice(srcIdx,1); r.splice(newIdx,0,m); return r;"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00014-0000-0000-0000-000000000014",
+          "value": {
+            "formula": "{ cardId: null, sourceIndex: null, targetIndex: null }"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00015-0000-0000-0000-000000000015",
+          "value": true
+        }
+      }
     ]
   },
   "admin-products-columns-reset": {
     "name": "admin-products-columns-reset",
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00013-0000-0000-0000-000000000013", "value": [{"id":"id","label":"ID","visible":false},{"id":"created_at","label":"Created At","visible":false},{"id":"updated_at","label":"Updated At","visible":false},{"id":"featured_asset","label":"Featured Asset","visible":true},{"id":"name","label":"Name","visible":true},{"id":"slug","label":"Slug","visible":true},{"id":"enabled","label":"Enabled","visible":true},{"id":"description","label":"Description","visible":false}] } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "adm00009-0000-0000-0000-000000000009", "value": false } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00013-0000-0000-0000-000000000013",
+          "value": [
+            {
+              "id": "featured_asset",
+              "label": "Featured Asset",
+              "visible": true
+            },
+            {
+              "id": "name",
+              "label": "Name",
+              "visible": true
+            },
+            {
+              "id": "slug",
+              "label": "Slug",
+              "visible": true
+            },
+            {
+              "id": "enabled",
+              "label": "Enabled",
+              "visible": true
+            },
+            {
+              "id": "description",
+              "label": "Description",
+              "visible": false
+            },
+            {
+              "id": "id",
+              "label": "ID",
+              "visible": false
+            },
+            {
+              "id": "created_at",
+              "label": "Created At",
+              "visible": false
+            },
+            {
+              "id": "updated_at",
+              "label": "Updated At",
+              "visible": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": false
+        }
+      }
     ]
   },
   "admin-products-filter": {
     "name": "admin-products-filter",
     "trigger": "change",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00008-0000-0000-0000-000000000008", "value": { "formula": "event?.['value']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00008-0000-0000-0000-000000000008",
+          "value": {
+            "formula": "event?.['value']"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": 1
+        }
+      },
+      {
+        "id": "s3",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
+    ]
   },
   "admin-products-refresh": {
     "name": "admin-products-refresh",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "refetchDataSource", "name": "ad000004-0000-0000-0000-000000000004" }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
+    ]
+  },
+  "admin-products-toggle-page-size": {
+    "name": "admin-products-toggle-page-size",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00018-0000-0000-0000-000000000018",
+          "value": {
+            "formula": "!variables['adm00018-0000-0000-0000-000000000018']"
+          }
+        }
+      }
+    ]
+  },
+  "admin-products-close-page-size": {
+    "name": "admin-products-close-page-size",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00018-0000-0000-0000-000000000018",
+          "value": false
+        }
+      }
+    ]
+  },
+  "admin-products-set-page-size": {
+    "name": "admin-products-set-page-size",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00016-0000-0000-0000-000000000016",
+          "value": { "formula": "context?.item?.data?.size" }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": { "variableName": "adm00017-0000-0000-0000-000000000017", "value": 1 }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": { "variableName": "adm00018-0000-0000-0000-000000000018", "value": false }
+      },
+      {
+        "id": "s4",
+        "type": "fetchCollection",
+        "config": { "collectionId": "ad000004-0000-0000-0000-000000000004" }
+      }
+    ]
+  },
+  "admin-products-next-page": {
+    "name": "admin-products-next-page",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": {
+            "formula": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) + 1"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
+    ]
+  },
+  "admin-products-prev-page": {
+    "name": "admin-products-prev-page",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": {
+            "formula": "Math.max(1, (variables['adm00017-0000-0000-0000-000000000017'] || 1) - 1)"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
+    ]
+  },
+  "admin-products-goto-page": {
+    "name": "admin-products-goto-page",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": {
+            "formula": "context?.item?.data?.page"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "fetchCollection",
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
+      }
+    ]
   },
   "admin-products-toggle-columns": {
     "name": "admin-products-toggle-columns",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00009-0000-0000-0000-000000000009", "value": { "formula": "!variables['adm00009-0000-0000-0000-000000000009']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": {
+            "formula": "!variables['adm00009-0000-0000-0000-000000000009']"
+          }
+        }
+      }
+    ]
   },
   "admin-products-close-columns": {
     "name": "admin-products-close-columns",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00009-0000-0000-0000-000000000009", "value": false } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00009-0000-0000-0000-000000000009",
+          "value": false
+        }
+      }
+    ]
   },
   "admin-product-menu-toggle": {
     "name": "admin-product-menu-toggle",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00007-0000-0000-0000-000000000007", "value": { "formula": "variables['adm00007-0000-0000-0000-000000000007'] === context.item.data.id ? '' : context.item.data.id" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00007-0000-0000-0000-000000000007",
+          "value": {
+            "formula": "variables['adm00007-0000-0000-0000-000000000007'] === context.item.data.id ? '' : context.item.data.id"
+          }
+        }
+      }
+    ]
   },
   "admin-product-menu-close": {
     "name": "admin-product-menu-close",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00007-0000-0000-0000-000000000007", "value": "" } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00007-0000-0000-0000-000000000007",
+          "value": ""
+        }
+      }
+    ]
   },
   "admin-toggle-sidebar": {
     "name": "admin-toggle-sidebar",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00006-0000-0000-0000-000000000006", "value": { "formula": "!variables['adm00006-0000-0000-0000-000000000006']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00006-0000-0000-0000-000000000006",
+          "value": {
+            "formula": "!variables['adm00006-0000-0000-0000-000000000006']"
+          }
+        }
+      }
+    ]
   },
   "admin-toggle-catalog": {
     "name": "admin-toggle-catalog",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": { "formula": "!variables['adm00001-0000-0000-0000-000000000001']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": {
+            "formula": "!variables['adm00001-0000-0000-0000-000000000001']"
+          }
+        }
+      }
+    ]
   },
   "admin-toggle-sales": {
     "name": "admin-toggle-sales",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00002-0000-0000-0000-000000000002", "value": { "formula": "!variables['adm00002-0000-0000-0000-000000000002']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00002-0000-0000-0000-000000000002",
+          "value": {
+            "formula": "!variables['adm00002-0000-0000-0000-000000000002']"
+          }
+        }
+      }
+    ]
   },
   "admin-toggle-customers": {
     "name": "admin-toggle-customers",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00003-0000-0000-0000-000000000003", "value": { "formula": "!variables['adm00003-0000-0000-0000-000000000003']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00003-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "!variables['adm00003-0000-0000-0000-000000000003']"
+          }
+        }
+      }
+    ]
   },
   "admin-toggle-marketing": {
     "name": "admin-toggle-marketing",
     "trigger": "click",
-    "steps": [{ "id": "s1", "type": "changeVariableValue", "config": { "variableName": "adm00004-0000-0000-0000-000000000004", "value": { "formula": "!variables['adm00004-0000-0000-0000-000000000004']" } } }]
+    "steps": [
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00004-0000-0000-0000-000000000004",
+          "value": {
+            "formula": "!variables['adm00004-0000-0000-0000-000000000004']"
+          }
+        }
+      }
+    ]
   },
   "admin-nav-dashboard": {
     "name": "admin-nav-dashboard",
@@ -144,7 +696,9 @@
       {
         "id": "step-1",
         "type": "navigateTo",
-        "config": { "path": "/admin" }
+        "config": {
+          "path": "/admin"
+        }
       }
     ]
   },
@@ -152,24 +706,63 @@
     "name": "admin-nav-orders",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00002-0000-0000-0000-000000000002", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/orders" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00002-0000-0000-0000-000000000002",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/orders"
+        }
+      }
     ]
   },
   "admin-nav-products": {
     "name": "admin-nav-products",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/products" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/products"
+        }
+      }
     ]
   },
   "admin-nav-customers": {
     "name": "admin-nav-customers",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00003-0000-0000-0000-000000000003", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/customers" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00003-0000-0000-0000-000000000003",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/customers"
+        }
+      }
     ]
   },
   "admin-nav-store": {
@@ -179,7 +772,9 @@
       {
         "id": "step-1",
         "type": "navigateTo",
-        "config": { "path": "/" }
+        "config": {
+          "path": "/"
+        }
       }
     ]
   },
@@ -277,7 +872,9 @@
       {
         "id": "step-nav",
         "type": "navigateTo",
-        "config": { "path": "/admin/login" }
+        "config": {
+          "path": "/admin/login"
+        }
       }
     ]
   },
@@ -326,7 +923,10 @@
       "order_id": "{{globalContext.browser.query.order_id}}",
       "new_state": "{{local.data.form.formData.new_state}}"
     },
-    "invalidateCache": ["admin-orders", "admin-order-detail"]
+    "invalidateCache": [
+      "admin-orders",
+      "admin-order-detail"
+    ]
   },
   "ad-update-order-state-btn": {
     "name": "ad-update-order-state-btn",
@@ -339,7 +939,9 @@
       {
         "id": "step-toast",
         "action": "showToast",
-        "payload": { "message": "Order state updated" }
+        "payload": {
+          "message": "Order state updated"
+        }
       }
     ]
   },
@@ -358,7 +960,10 @@
       "description": "{{local.data.form.formData.description}}",
       "enabled": "{{local.data.form.formData.enabled}}"
     },
-    "invalidateCache": ["admin-products", "admin-product-detail"]
+    "invalidateCache": [
+      "admin-products",
+      "admin-product-detail"
+    ]
   },
   "ad-update-product-btn": {
     "name": "ad-update-product-btn",
@@ -371,7 +976,9 @@
       {
         "id": "step-toast",
         "action": "showToast",
-        "payload": { "message": "Product updated" }
+        "payload": {
+          "message": "Product updated"
+        }
       }
     ]
   },
@@ -387,7 +994,9 @@
     "body": {
       "product_id": "{{globalContext.browser.query.product_id}}"
     },
-    "invalidateCache": ["admin-products"]
+    "invalidateCache": [
+      "admin-products"
+    ]
   },
   "ad-delete-product-btn": {
     "name": "ad-delete-product-btn",
@@ -400,12 +1009,16 @@
       {
         "id": "step-toast",
         "action": "showToast",
-        "payload": { "message": "Product deleted" }
+        "payload": {
+          "message": "Product deleted"
+        }
       },
       {
         "id": "step-nav",
         "type": "navigateTo",
-        "config": { "path": "/admin/products" }
+        "config": {
+          "path": "/admin/products"
+        }
       }
     ]
   },
@@ -422,7 +1035,10 @@
       "variant_id": "{{context.item.data.id}}",
       "stock_on_hand": "{{context.item.data.stock_on_hand}}"
     },
-    "invalidateCache": ["admin-product-detail", "admin-products"]
+    "invalidateCache": [
+      "admin-product-detail",
+      "admin-products"
+    ]
   },
   "ad-reindex-search": {
     "name": "ad-reindex-search",
@@ -446,7 +1062,9 @@
       {
         "id": "step-toast",
         "action": "showToast",
-        "payload": { "message": "Search index rebuilt" }
+        "payload": {
+          "message": "Search index rebuilt"
+        }
       }
     ]
   },
@@ -562,40 +1180,105 @@
     "name": "admin-nav-variants",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/product-variants" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/product-variants"
+        }
+      }
     ]
   },
   "admin-nav-facets": {
     "name": "admin-nav-facets",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/facets" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/facets"
+        }
+      }
     ]
   },
   "admin-nav-collections": {
     "name": "admin-nav-collections",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/collections" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/collections"
+        }
+      }
     ]
   },
   "admin-nav-assets": {
     "name": "admin-nav-assets",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00001-0000-0000-0000-000000000001", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/assets" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00001-0000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/assets"
+        }
+      }
     ]
   },
   "admin-nav-promotions": {
     "name": "admin-nav-promotions",
     "trigger": "click",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "adm00004-0000-0000-0000-000000000004", "value": true } },
-      { "id": "step-1", "type": "navigateTo", "config": { "path": "/admin/promotions" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "adm00004-0000-0000-0000-000000000004",
+          "value": true
+        }
+      },
+      {
+        "id": "step-1",
+        "type": "navigateTo",
+        "config": {
+          "path": "/admin/promotions"
+        }
+      }
     ]
   },
   "admin-nav-system": {
@@ -605,7 +1288,9 @@
       {
         "id": "step-1",
         "type": "navigateTo",
-        "config": { "path": "/admin/system" }
+        "config": {
+          "path": "/admin/system"
+        }
       }
     ]
   }

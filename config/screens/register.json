@@ -494,7 +494,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Register Form"
       }
     ]
   }

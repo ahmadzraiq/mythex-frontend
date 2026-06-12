@@ -144,8 +144,8 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 22, height: 22, flexShrink: 0, cursor: 'pointer',
             border: 'none', borderRadius: 6,
-            background: isBound ? '#3730a3' : '#1f2937',
-            color: isBound ? '#a5b4fc' : '#6b7280',
+            background: isBound ? 'var(--bld-ai-accent)' : 'var(--bld-bg-input)',
+            color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
             transition: 'background 0.15s, color 0.15s',
             padding: 0,
           }}
@@ -162,21 +162,21 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         style={{
-          flex: 1, textAlign: 'left', background: isBound ? '#1e1b4b' : '#111827',
-          border: `1px solid ${isBound ? '#3730a3' : '#374151'}`,
+          flex: 1, textAlign: 'left', background: isBound ? 'rgba(124,58,237,0.15)' : 'var(--bld-bg-panel)',
+          border: `1px solid ${isBound ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
           borderRadius: 6, padding: '4px 8px', fontSize: 11,
-          color: isBound ? '#a5b4fc' : '#6b7280', cursor: 'pointer',
+          color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', cursor: 'pointer',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           display: 'flex', alignItems: 'center', gap: 4,
         }}
       >
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
         {isBound && isGlobal && !globalOnly && (
-          <span style={{ fontSize: 9, background: '#065f46', color: '#6ee7b7', borderRadius: 3, padding: '1px 4px', flexShrink: 0, fontWeight: 600 }}>
+          <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)', borderRadius: 3, padding: '1px 4px', flexShrink: 0, fontWeight: 600 }}>
             Global
           </span>
         )}
-        <span style={{ color: '#6b7280', fontSize: 10, flexShrink: 0 }}>▾</span>
+        <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>▾</span>
       </button>
 
       {/* Clear button when bound */}
@@ -185,7 +185,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
           type="button"
           title="Unbind workflow"
           onClick={e => { e.stopPropagation(); onChange(''); }}
-          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
         >
           ×
         </button>
@@ -197,15 +197,15 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
           onClick={e => e.stopPropagation()}
           style={{
             position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
-            marginTop: 4, background: '#1f2937', border: '1px solid #374151',
+            marginTop: 4, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
             borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', overflow: 'hidden',
             minWidth: 220,
           }}
         >
-          <div style={{ padding: '6px 8px', borderBottom: '1px solid #374151' }}>
+          <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-border-subtle)' }}>
             <input
               autoFocus
-              style={{ width: '100%', background: '#111827', border: '1px solid #374151', borderRadius: 4, color: '#e5e7eb', fontSize: 11, padding: '4px 8px', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', outline: 'none', boxSizing: 'border-box' }}
               placeholder="Search workflows…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -214,11 +214,11 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
           </div>
           <div style={{ maxHeight: 200, overflowY: 'auto' }}>
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No workflows found</div>
+              <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No workflows found</div>
             )}
             {/* Global workflows group */}
             {!globalOnly && filtered.some(w => w._scope === 'global') && (
-              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Global
               </div>
             )}
@@ -229,16 +229,16 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
                 onClick={e => { e.stopPropagation(); onChange(w.id); setOpen(false); setSearch(''); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6, width: '100%', textAlign: 'left',
-                  padding: '7px 12px', background: w.id === value ? '#312e81' : 'transparent',
-                  border: 'none', color: w.id === value ? '#c7d2fe' : '#e5e7eb',
+                  padding: '7px 12px', background: w.id === value ? 'var(--bld-accent-subtle)' : 'transparent',
+                  border: 'none', color: w.id === value ? 'var(--bld-accent)' : 'var(--bld-text-2)',
                   fontSize: 11, cursor: 'pointer',
                 }}
-                onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
-                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+                onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
+                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
               >
                 <span style={{ flex: 1, fontWeight: 600 }}>{toHumanName(w.name ?? w.id)}</span>
                 {(w.params?.length ?? 0) > 0 && (
-                  <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+                  <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
                     {w.params!.length} param{w.params!.length !== 1 ? 's' : ''}
                   </span>
                 )}
@@ -246,7 +246,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             ))}
             {/* Page workflows group — hidden when globalOnly */}
             {!globalOnly && filtered.some(w => w._scope === 'page') && (
-              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Page
               </div>
             )}
@@ -257,15 +257,15 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
                 onClick={e => { e.stopPropagation(); onChange(w.id); setOpen(false); setSearch(''); }}
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
-                  padding: '7px 12px', background: w.id === value ? '#312e81' : 'transparent',
-                  border: 'none', color: w.id === value ? '#c7d2fe' : '#e5e7eb',
+                  padding: '7px 12px', background: w.id === value ? 'var(--bld-accent-subtle)' : 'transparent',
+                  border: 'none', color: w.id === value ? 'var(--bld-accent)' : 'var(--bld-text-2)',
                   fontSize: 11, cursor: 'pointer',
                 }}
-                onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
-                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+                onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
+                onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
               >
                 <div style={{ fontWeight: 600 }}>{toHumanName(w.name ?? w.id)}</div>
-                {w.trigger && <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>On {w.trigger}</div>}
+                {w.trigger && <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}>On {w.trigger}</div>}
               </button>
             ))}
           </div>
@@ -340,10 +340,10 @@ export function TypeSearchDropdown({
         onClick={() => { setOpen(v => !v); setSearch(''); }}
       >
         {currentIcon && <span style={{ fontSize: 12, flexShrink: 0 }}>{currentIcon}</span>}
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {currentLabel}
         </span>
-        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -379,17 +379,17 @@ export function TypeSearchDropdown({
                   key={item.type}
                   style={S.dropdownItem(item.type === value)}
                   onMouseEnter={e => {
-                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151';
+                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)';
                   }}
                   onMouseLeave={e => {
-                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937';
+                    if (item.type !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)';
                   }}
                   onClick={() => { onChange(item.type as ActionStepType); setOpen(false); setSearch(''); }}
                   data-testid={`type-option-${item.type}`}
                 >
                   <span style={{ fontSize: 12 }}>{item.icon}</span>
                   <span style={{ flex: 1 }}>{item.label}</span>
-                  {item.type === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+                  {item.type === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
                 </button>
               ))}
             </div>
@@ -473,13 +473,13 @@ export function ParamsConfigPanel({
 
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #1f2937' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--bld-bg-input)' }}>
         <span style={{ fontSize: 14 }}>Φ</span>
         <span>Parameters</span>
       </div>
 
       {params.length === 0 && (
-        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 12, fontStyle: 'italic' }}>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 12, fontStyle: 'italic' }}>
           No parameters yet. Add one below.
         </div>
       )}
@@ -497,8 +497,8 @@ export function ParamsConfigPanel({
         type="button"
         style={{
           display: 'flex', alignItems: 'center', gap: 6, marginTop: 8,
-          width: '100%', padding: '7px 10px', background: '#1f2937',
-          border: '1px dashed #374151', borderRadius: 6, color: '#60a5fa',
+          width: '100%', padding: '7px 10px', background: 'var(--bld-bg-input)',
+          border: '1px dashed var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-info)',
           fontSize: 11, cursor: 'pointer', fontWeight: 600,
         }}
         onClick={addParam}
@@ -584,16 +584,16 @@ function ParamEditor({
       void tagTick;
       return (
         <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, minHeight: 32, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 6px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, minHeight: 32, alignItems: 'center' }}>
             {testTags.map((tag, ti) => (
-              <span key={ti} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#1e3a5f', color: '#93c5fd', borderRadius: 4, padding: '1px 6px', fontSize: 11 }}>
+              <span key={ti} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--bld-bg-elevated)', color: 'var(--bld-accent)', borderRadius: 4, padding: '1px 6px', fontSize: 11 }}>
                 {tag}
-                <button type="button" onClick={e => { e.stopPropagation(); removeTag(ti); }} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
+                <button type="button" onClick={e => { e.stopPropagation(); removeTag(ti); }} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
               </span>
             ))}
             <input
               ref={tagInputRef}
-              style={{ flex: 1, minWidth: 60, background: 'transparent', border: 'none', outline: 'none', color: '#e5e7eb', fontSize: 11 }}
+              style={{ flex: 1, minWidth: 60, background: 'transparent', border: 'none', outline: 'none', color: 'var(--bld-text-2)', fontSize: 11 }}
               placeholder="Type and press Enter…"
               onKeyDown={e => {
                 e.stopPropagation();
@@ -608,11 +608,11 @@ function ParamEditor({
             <button
               type="button"
               onClick={e => { e.stopPropagation(); commitTagInput(); tagInputRef.current?.focus(); }}
-              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
               title="Add tag"
             >+</button>
           </div>
-          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>Press Enter or click + to add a chip</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 2 }}>Press Enter or click + to add a chip</div>
         </div>
       );
     }
@@ -643,7 +643,7 @@ function ParamEditor({
     if (param.type === 'Boolean') {
       const boolVal = param.testValue === true || param.testValue === 'true';
       return (
-        <div style={{ display: 'flex', background: '#1f2937', borderRadius: 5, padding: 2, gap: 2, marginTop: 2 }}>
+        <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 5, padding: 2, gap: 2, marginTop: 2 }}>
           {[true, false].map(v => (
             <button
               key={String(v)}
@@ -651,8 +651,8 @@ function ParamEditor({
               onClick={() => onUpdate({ testValue: v })}
               style={{
                 flex: 1, padding: '5px 0', fontSize: 11, border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
-                background: boolVal === v ? (v ? '#166534' : '#7f1d1d') : 'transparent',
-                color: boolVal === v ? (v ? '#86efac' : '#fca5a5') : '#6b7280',
+                background: boolVal === v ? (v ? 'rgba(34,197,94,0.2)' : 'rgba(248,113,113,0.2)') : 'transparent',
+                color: boolVal === v ? (v ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)',
                 transition: 'background 0.1s, color 0.1s',
               }}
             >
@@ -668,7 +668,7 @@ function ParamEditor({
         ? param.testValue
         : param.testValue !== undefined ? JSON.stringify(param.testValue, null, 2) : (param.type === 'Array' ? '[]' : '{}');
       return (
-        <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', marginTop: 2 }}>
+        <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)', marginTop: 2 }}>
           <CodeMirror
             value={strVal}
             height="auto"
@@ -688,24 +688,24 @@ function ParamEditor({
   }
 
   return (
-    <div style={{ marginBottom: 8, background: '#111827', border: '1px solid #1f2937', borderRadius: 6, overflow: 'visible', position: 'relative' }}>
+    <div style={{ marginBottom: 8, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'visible', position: 'relative' }}>
       {/* Header row */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', cursor: 'pointer', userSelect: 'none', borderRadius: expanded ? '6px 6px 0 0' : 6 }}
         onClick={() => setExpanded(v => !v)}
       >
-        <span style={{ fontSize: 10, color: '#6b7280', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s' }}>▶</span>
-        <span style={{ fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s' }}>▶</span>
+        <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
           {PARAM_TYPE_ICONS[param.type] ?? 'T'}
         </span>
-        <span style={{ flex: 1, fontSize: 11, color: param.name ? '#e5e7eb' : '#6b7280', fontStyle: param.name ? 'normal' : 'italic' }}>
+        <span style={{ flex: 1, fontSize: 11, color: param.name ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)', fontStyle: param.name ? 'normal' : 'italic' }}>
           {param.name || 'Unnamed'}
         </span>
         <button
           type="button"
           title="Remove parameter"
           onClick={e => { e.stopPropagation(); onRemove(); }}
-          style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
         >
           ×
         </button>
@@ -713,7 +713,7 @@ function ParamEditor({
 
       {/* Expanded body */}
       {expanded && (
-        <div style={{ padding: '0 8px 10px', borderTop: '1px solid #1f2937' }}>
+        <div style={{ padding: '0 8px 10px', borderTop: '1px solid var(--bld-bg-input)' }}>
 
           {/* Name */}
           <label style={{ ...S.fieldLabel, marginTop: 8 }}>Name *</label>
@@ -733,11 +733,11 @@ function ParamEditor({
               onClick={e => { e.stopPropagation(); setTypeOpen(v => !v); }}
               style={{ ...S.fieldInput, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', width: '100%', textAlign: 'left' }}
             >
-              <span style={{ fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
                 {PARAM_TYPE_ICONS[param.type]}
               </span>
-              <span style={{ flex: 1, color: '#e5e7eb', fontSize: 11 }}>{param.type}</span>
-              <span style={{ fontSize: 10, color: '#9ca3af' }}>▾</span>
+              <span style={{ flex: 1, color: 'var(--bld-text-2)', fontSize: 11 }}>{param.type}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>▾</span>
             </button>
             {/* Dropdown — absolute inside a no-overflow wrapper so it escapes the card */}
             {typeOpen && (
@@ -747,7 +747,7 @@ function ParamEditor({
                 style={{
                   position: 'absolute', top: '100%', left: 0, right: 0,
                   zIndex: 99999, marginTop: 2,
-                  background: '#1f2937', border: '1px solid #374151',
+                  background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
                   borderRadius: 6, overflow: 'hidden',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                 }}
@@ -757,17 +757,17 @@ function ParamEditor({
                     key={t}
                     type="button"
                     onClick={() => handleTypeChange(t)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '7px 10px', background: param.type === t ? '#312e81' : 'transparent', border: 'none', color: param.type === t ? '#c7d2fe' : '#e5e7eb', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}
-                    onMouseEnter={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = '#374151'; }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '7px 10px', background: param.type === t ? 'var(--bld-accent-subtle)' : 'transparent', border: 'none', color: param.type === t ? 'var(--bld-accent)' : 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}
+                    onMouseEnter={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                     onMouseLeave={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
-                    <span style={{ fontFamily: 'monospace', fontSize: 10, width: 28, textAlign: 'center', color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 4px' }}>{PARAM_TYPE_ICONS[t]}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, width: 28, textAlign: 'center', color: 'var(--bld-info)', background: 'var(--bld-bg-elevated)', borderRadius: 3, padding: '1px 4px' }}>{PARAM_TYPE_ICONS[t]}</span>
                     <span style={{ flex: 1 }}>{t}</span>
-                    {t === 'Text' && <span style={{ fontSize: 9, color: '#6b7280' }}>abc</span>}
-                    {t === 'Number' && <span style={{ fontSize: 9, color: '#6b7280' }}>123</span>}
-                    {t === 'Boolean' && <span style={{ fontSize: 9, color: '#6b7280' }}>true/false</span>}
-                    {(t === 'Object' || t === 'Array') && <span style={{ fontSize: 9, color: '#6b7280' }}>JSON</span>}
-                    {param.type === t && <span style={{ marginLeft: 4, color: '#3b82f6', fontSize: 10 }}>✓</span>}
+                    {t === 'Text' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>abc</span>}
+                    {t === 'Number' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>123</span>}
+                    {t === 'Boolean' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>true/false</span>}
+                    {(t === 'Object' || t === 'Array') && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>JSON</span>}
+                    {param.type === t && <span style={{ marginLeft: 4, color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
                   </button>
                 ))}
               </div>
@@ -776,22 +776,22 @@ function ParamEditor({
 
           {/* Allow multiple values — Text only (weWeb-style) */}
           {param.type === 'Text' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, padding: '6px 8px', background: '#0f172a', borderRadius: 5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, padding: '6px 8px', background: 'var(--bld-bg-base)', borderRadius: 5 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#e5e7eb', fontWeight: 500 }}>Allow multiple values</div>
-                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Accepts a list of text values</div>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>Allow multiple values</div>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}>Accepts a list of text values</div>
               </div>
               <div
                 onClick={() => onUpdate({ allowMultiple: !param.allowMultiple, testValue: param.allowMultiple ? '' : [] })}
                 style={{
                   width: 32, height: 18, borderRadius: 9, cursor: 'pointer', flexShrink: 0,
-                  background: param.allowMultiple ? '#2563eb' : '#374151',
+                  background: param.allowMultiple ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
                   position: 'relative', transition: 'background 0.15s',
                 }}
               >
                 <div style={{
                   position: 'absolute', top: 2, left: param.allowMultiple ? 16 : 2, width: 14, height: 14,
-                  borderRadius: '50%', background: '#fff', transition: 'left 0.15s',
+                  borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.15s',
                 }} />
               </div>
             </div>
@@ -817,10 +817,10 @@ export function CanvasOnOffToggle({ value, onChange }: { value: boolean; onChang
     cursor: 'pointer', fontWeight: 500,
   };
   return (
-    <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
-      <button style={{ ...base, background: value ? '#374151' : 'transparent', color: value ? '#f3f4f6' : '#6b7280' }}
+    <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2 }}>
+      <button style={{ ...base, background: value ? 'var(--bld-border-subtle)' : 'transparent', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
         onClick={() => onChange(true)}>On</button>
-      <button style={{ ...base, background: !value ? '#374151' : 'transparent', color: !value ? '#f3f4f6' : '#6b7280' }}
+      <button style={{ ...base, background: !value ? 'var(--bld-border-subtle)' : 'transparent', color: !value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
         onClick={() => onChange(false)}>Off</button>
     </div>
   );
@@ -892,10 +892,10 @@ export function PagePickerDropdown({
         onClick={() => { setOpen(v => !v); setSearch(''); }}
       >
         <span style={{ fontSize: 12, flexShrink: 0 }}>🔗</span>
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: effectiveValue ? '#f3f4f6' : '#6b7280' }}>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: effectiveValue ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {currentLabel}
         </span>
-        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -922,19 +922,19 @@ export function PagePickerDropdown({
             onChange={e => setSearch(e.target.value)}
           />
           {filtered.length === 0 && (
-            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>No pages found</div>
+            <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>No pages found</div>
           )}
           {filtered.map(p => (
             <button
               key={p.path}
               style={S.dropdownItem(p.path === effectiveValue)}
-              onMouseEnter={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (p.path !== effectiveValue) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onChange(p.path); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{p.name}</span>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>{p.path}</span>
-              {p.path === effectiveValue && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{p.path}</span>
+              {p.path === effectiveValue && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -988,11 +988,11 @@ export function OptionPickerDropdown({
         onClick={() => setOpen(v => !v)}
       >
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          color: value ? '#f3f4f6' : '#6b7280' }}>
+          color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {selected?.label ?? placeholder}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-          fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -1007,12 +1007,12 @@ export function OptionPickerDropdown({
             <button
               key={o.value}
               style={S.dropdownItem(o.value === value)}
-              onMouseEnter={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (o.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onChange(o.value); setOpen(false); }}
             >
               <span style={{ flex: 1 }}>{o.label}</span>
-              {o.value === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+              {o.value === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -1099,10 +1099,10 @@ export function CollectionPickerDropdown({
         onClick={() => { setOpen(v => !v); setSearch(''); }}
       >
         <span style={{ fontSize: 12, flexShrink: 0 }}>🗄</span>
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {selected ? getLabel(selected) : placeholder}
         </span>
-        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -1129,19 +1129,19 @@ export function CollectionPickerDropdown({
             onChange={e => setSearch(e.target.value)}
           />
           {filtered.length === 0 && (
-            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>No collections found</div>
+            <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>No collections found</div>
           )}
           {filtered.map(c => (
             <button
               key={c.id}
               style={S.dropdownItem(c.id === value)}
-              onMouseEnter={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{getLabel(c)}</span>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>{c.type}</span>
-              {c.id === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{c.type}</span>
+              {c.id === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -1196,8 +1196,8 @@ export function NavigateToConfig({
             {isBoundValue(cfg.externalUrl as FormulaValue) ? (
               <button
                 onClick={() => setOpenField(f => f === 'externalUrl' ? null : 'externalUrl')}
-                style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                  borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+                  borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                   textAlign: 'left' }}
               >ƒ Edit formula</button>
             ) : (
@@ -1230,8 +1230,8 @@ export function NavigateToConfig({
             {isBoundValue(cfg.path as FormulaValue) ? (
               <button
                 onClick={() => setOpenField(f => f === 'path' ? null : 'path')}
-                style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                  borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+                  borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                   textAlign: 'left' }}
               >ƒ Edit formula</button>
             ) : (
@@ -1269,8 +1269,8 @@ export function NavigateToConfig({
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button
                   onClick={() => setOpenField(f => f === 'queries' ? null : 'queries')}
-                  style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                    borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                  style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+                    borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                     textAlign: 'left' }}
                 >
                   ƒ Edit formula
@@ -1284,14 +1284,14 @@ export function NavigateToConfig({
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 12, color: '#9ca3af' }}>Queries</span>
+                <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Queries</span>
                 <BindingIcon
                   isBound={false}
                   onClick={() => setOpenField(f => f === 'queries' ? null : 'queries')}
                 />
               </div>
         <button
-          style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
                 onClick={addQueryParam}
         >
           + Add
@@ -1319,8 +1319,8 @@ export function NavigateToConfig({
                       {nameBound ? (
                         <button
                           onClick={() => setOpenField(f => f === `query-name-${idx}` ? null : `query-name-${idx}`)}
-                          style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                            borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+                            borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                             textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           ƒ Edit formula
@@ -1341,8 +1341,8 @@ export function NavigateToConfig({
                       {valBound ? (
                         <button
                           onClick={() => setOpenField(f => f === `query-${idx}` ? null : `query-${idx}`)}
-                          style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                            borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+                            borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                             textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           ƒ Edit formula
@@ -1360,7 +1360,7 @@ export function NavigateToConfig({
                         onClick={() => setOpenField(f => f === `query-${idx}` ? null : `query-${idx}`)}
                       />
           <button
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
                         onClick={() => removeQueryParam(idx)}
           >
                         ×
@@ -1390,10 +1390,10 @@ export function NavigateToConfig({
             </div>
           )}
 
-          <div style={{ marginTop: 8, borderTop: '1px solid #374151', paddingTop: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>Loader on page change</span>
+          <div style={{ marginTop: 8, borderTop: '1px solid var(--bld-border-subtle)', paddingTop: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)' }}>Loader on page change</span>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>Show page loader</span>
+              <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Show page loader</span>
               <CanvasOnOffToggle value={!!(cfg.showLoader)} onChange={v => setCfg('showLoader', v)} />
             </div>
           </div>
@@ -1442,28 +1442,28 @@ function SCModelDropdown({
         style={{ ...S.fieldSelect, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textAlign: 'left', paddingRight: 28 }}
         onClick={e => { e.stopPropagation(); setOpen(v => !v); setSearch(''); }}
       >
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? '#f3f4f6' : '#6b7280' }}>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {selectedModel ? selectedModel.name : 'Choose a shared component'}
         </span>
-        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '\u25B4' : '\u25BE'}
         </span>
       </button>
       {open && (
         <div style={{ ...S.dropdown, position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, minWidth: 'unset', width: '100%', maxHeight: 260 }}>
           <input ref={searchRef} style={S.dropdownSearch} placeholder="Search components\u2026" value={search} onChange={e => setSearch(e.target.value)} />
-          {filtered.length === 0 && <div style={{ padding: '8px 12px', fontSize: 11, color: '#6b7280' }}>No components found</div>}
+          {filtered.length === 0 && <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No components found</div>}
           {filtered.map(m => (
             <button
               key={m.id}
               style={S.dropdownItem(m.id === value)}
-              onMouseEnter={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={e => { e.stopPropagation(); onChange(m.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{m.name}</span>
-              <span style={{ fontSize: 9, color: '#60a5fa', background: '#1e3a5f', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
-              {m.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>{'\u2713'}</span>}
+              <span style={{ fontSize: 9, color: 'var(--bld-info)', background: 'var(--bld-bg-elevated)', borderRadius: 3, padding: '1px 5px', fontWeight: 700 }}>SC</span>
+              {m.id === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10, marginLeft: 4 }}>{'\u2713'}</span>}
             </button>
           ))}
         </div>
@@ -1485,7 +1485,7 @@ function SCPropInput({ prop, value, onChange, onFormulaClick, formulaOpen }: {
     return (
       <button
         onClick={onFormulaClick}
-        style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+        style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
       >{'\u0192'} Edit formula</button>
     );
   }
@@ -1633,7 +1633,7 @@ export function AddSharedComponentConfig({
 
       {selectedModel && selectedModel.properties.length > 0 && (
         <>
-          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 10, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Properties</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 10, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Properties</div>
           {selectedModel.properties.map(prop => {
             const fieldKey = `prop_${prop.id}`;
             const currentVal = propValues[prop.name];
@@ -1641,7 +1641,7 @@ export function AddSharedComponentConfig({
               <React.Fragment key={prop.id}>
                 <label style={{ ...S.fieldLabel, marginTop: 6 }}>
                   {prop.name}
-                  <span style={{ fontSize: 9, color: '#4b5563', marginLeft: 4 }}>({prop.type})</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 4 }}>({prop.type})</span>
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <SCPropInput
@@ -1672,13 +1672,13 @@ export function AddSharedComponentConfig({
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>Wait close</span>
+        <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Wait close</span>
         <div style={{ ...S.toggleGroup, width: 90 }}>
           <button data-testid="addSC-waitClose-on" style={S.toggleBtn(!!(cfg.waitClose))} onClick={() => setCfg('waitClose', true)}>On</button>
           <button data-testid="addSC-waitClose-off" style={S.toggleBtn(!(cfg.waitClose))} onClick={() => setCfg('waitClose', false)}>Off</button>
         </div>
       </div>
-      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 4 }}>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 4 }}>
         When on, the workflow pauses until the instance is deleted. The delete step{'\u2019'}s return value becomes this step{'\u2019'}s result.
       </div>
     </>
@@ -1703,7 +1703,7 @@ export function DeleteSharedComponentConfig({
         {isBound ? (
           <button
             onClick={() => setOpenField(f => f === 'returnValue' ? null : 'returnValue')}
-            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
           >{'\u0192'} Edit formula</button>
         ) : (
           <input
@@ -1724,7 +1724,7 @@ export function DeleteSharedComponentConfig({
           anchorRight={292}
         />
       )}
-      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 6 }}>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 6 }}>
         Deletes the current shared component instance. If Wait Close was used, the return value is sent back as context.workflow[{'\u2018'}stepId{'\u2019'}].result.
       </div>
     </>
@@ -1754,7 +1754,7 @@ export function DeleteAllSharedComponentsConfig({
         models={models}
         onChange={id => setCfg('componentId', id || undefined)}
       />
-      <div style={{ fontSize: 10, color: '#4b5563', marginTop: 6 }}>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 6 }}>
         If set, only deletes instances of this component. If empty, deletes all dynamic shared component instances.
       </div>
     </>
@@ -1814,8 +1814,8 @@ export function ResetFormConfig({
         {bound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
@@ -1877,8 +1877,8 @@ function kvArrToObj(pairs: KvPair[]): Record<string, unknown> {
 }
 
 const FORMULA_BTN_STYLE: React.CSSProperties = {
-  flex: 1, background: '#1e1b4b', border: '1px solid #4338ca',
-  color: '#a5b4fc', cursor: 'pointer', textAlign: 'left',
+  flex: 1, background: 'rgba(124,58,237,0.15)', border: '1px solid var(--bld-ai-accent)',
+  color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left',
   fontFamily: 'monospace', fontSize: 10, padding: '3px 6px',
   borderRadius: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
 };
@@ -1953,29 +1953,29 @@ function WorkflowKvEditor({
   const openValue = openPair ? (openField === 'key' ? openPair.key : openPair.value) : '';
   const openBound = openPair ? (openField === 'key' ? openPair.keyBound : openPair.valueBound) : false;
 
-  const CELL_LABEL: React.CSSProperties = { fontSize: 9, color: '#6b7280', fontWeight: 500, marginBottom: 2 };
+  const CELL_LABEL: React.CSSProperties = { fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 500, marginBottom: 2 };
 
   return (
     <div style={{ marginTop: 10 }}>
       {/* Section header — label + bind icon + Add button (matching data tab SectionRow) */}
       {sectionBound ? (
         <div style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db', display: 'block', marginBottom: 4 }}>{label}</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)', display: 'block', marginBottom: 4 }}>{label}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => setSectionFEOpen(true)}
-              style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+              style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
             >ƒ Edit formula</button>
             <BindingIcon isBound onClick={() => setSectionFEOpen(true)} />
           </div>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db' }}>{label}</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)' }}>{label}</span>
           <BindingIcon isBound={false} onClick={() => setSectionFEOpen(true)} />
           <span style={{ flex: 1 }} />
           <button
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#1e3a5f', border: '1px solid #2563eb', borderRadius: 6, color: '#93c5fd', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)', borderRadius: 6, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
             onClick={add}
             data-testid={`${testIdPrefix}-add`}
           >+ Add</button>
@@ -2027,7 +2027,7 @@ function WorkflowKvEditor({
 
             {/* Remove */}
             <button
-              style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px 4px', fontSize: 14, lineHeight: 1, marginBottom: 2 }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', padding: '2px 4px', fontSize: 14, lineHeight: 1, marginBottom: 2 }}
               onClick={() => removePair(pair.id)}
               title="Remove"
             >×</button>
@@ -2150,11 +2150,11 @@ function NodePickerDropdown({
         onClick={() => { setOpen(v => !v); setSearch(''); }}
       >
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          color: value ? '#f3f4f6' : '#6b7280' }}>
+          color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {triggerLabel}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-          fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -2173,7 +2173,7 @@ function NodePickerDropdown({
             onChange={e => setSearch(e.target.value)}
           />
           {filtered.length === 0 && (
-            <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
+            <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>
               {namedNodes.length === 0 ? 'No named nodes on this page' : 'No matches'}
             </div>
           )}
@@ -2181,13 +2181,13 @@ function NodePickerDropdown({
             <button
               key={n.id}
               style={S.dropdownItem(n.id === value)}
-              onMouseEnter={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (n.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onChange(n.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ flex: 1 }}>{n.label}</span>
-              <span style={{ fontSize: 10, color: '#6b7280' }}>{n.id}</span>
-              {n.id === value && <span style={{ color: '#3b82f6', fontSize: 10, marginLeft: 4 }}>✓</span>}
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{n.id}</span>
+              {n.id === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10, marginLeft: 4 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -2314,7 +2314,7 @@ function TriggerExitAnimationConfig({
         value={(cfg.targetNodeId ?? '') as string}
         onChange={id => setCfg('targetNodeId', id)}
       />
-      <p style={{ fontSize: 11, color: '#6b7280', margin: 0 }}>
+      <p style={{ fontSize: 11, color: 'var(--bld-text-disabled)', margin: 0 }}>
         The node must have <code>animation.exit</code> configured. The step awaits the exit animation before continuing.
       </p>
     </div>
@@ -2504,7 +2504,7 @@ function GraphQLStepConfig({
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {endpointBound ? (
           <button
-            style={{ flex: 1, ...S.fieldInput, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '4px 7px' }}
+            style={{ flex: 1, ...S.fieldInput, background: 'rgba(124,58,237,0.15)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '4px 7px' }}
             onClick={() => setEndpointOpen(true)}
             title={String(cfg.endpoint ?? '')}
           >ƒ formula</button>
@@ -2555,47 +2555,47 @@ function GraphQLStepConfig({
       {/* Toggles */}
       <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, color: '#d1d5db' }}>Send credentials</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Send credentials</span>
           <button
             style={{
               width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
-              background: cfg.credentials ? '#3b82f6' : '#374151', transition: 'background 0.2s',
+              background: cfg.credentials ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', transition: 'background 0.2s',
             }}
             onClick={() => setCfg('credentials', !cfg.credentials)}
           >
             <span style={{
               position: 'absolute', top: 2, left: cfg.credentials ? 18 : 2, width: 16, height: 16,
-              borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+              borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.2s',
             }} />
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, color: '#d1d5db' }}>Proxy request server side</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Proxy request server side</span>
           <button
             style={{
               width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
-              background: cfg.useProxy ? '#3b82f6' : '#374151', transition: 'background 0.2s',
+              background: cfg.useProxy ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', transition: 'background 0.2s',
             }}
             onClick={() => setCfg('useProxy', !cfg.useProxy)}
           >
             <span style={{
               position: 'absolute', top: 2, left: cfg.useProxy ? 18 : 2, width: 16, height: 16,
-              borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+              borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.2s',
             }} />
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, color: '#d1d5db' }}>Return data only</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Return data only</span>
           <button
             style={{
               width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
-              background: cfg.returnDataOnly !== false ? '#3b82f6' : '#374151', transition: 'background 0.2s',
+              background: cfg.returnDataOnly !== false ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', transition: 'background 0.2s',
             }}
             onClick={() => setCfg('returnDataOnly', cfg.returnDataOnly === false ? true : false)}
           >
             <span style={{
               position: 'absolute', top: 2, left: cfg.returnDataOnly !== false ? 18 : 2, width: 16, height: 16,
-              borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+              borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.2s',
             }} />
           </button>
         </div>
@@ -2611,17 +2611,17 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 export function PillToggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-      <span style={{ fontSize: 11, color: '#d1d5db' }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{label}</span>
       <button
         style={{
           width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
-          background: value ? '#3b82f6' : '#374151', transition: 'background 0.2s', flexShrink: 0,
+          background: value ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', transition: 'background 0.2s', flexShrink: 0,
         }}
         onClick={() => onChange(!value)}
       >
         <span style={{
           position: 'absolute', top: 2, left: value ? 18 : 2, width: 16, height: 16,
-          borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+          borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.2s',
         }} />
       </button>
     </div>
@@ -2827,10 +2827,10 @@ function EmitComponentTriggerConfig({
       )}
 
       {selected && (
-        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>
-          Fires <span style={{ color: '#a78bfa', fontWeight: 600 }}>{selected.name}</span>.
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 6 }}>
+          Fires <span style={{ color: 'var(--bld-ai-accent)', fontWeight: 600 }}>{selected.name}</span>.
           The payload is defined on the trigger declaration and delivered to listeners as
-          <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3, margin: '0 3px' }}>context.event</code>.
+          <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3, margin: '0 3px' }}>context.event</code>.
         </div>
       )}
     </>
@@ -2968,16 +2968,16 @@ function ExecuteComponentActionConfig({
           <span style={{ fontSize: 12, flexShrink: 0 }}>⚡</span>
           <span style={{
             flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            color: selected ? '#f3f4f6' : (storedWorkflowId ? '#f59e0b' : '#6b7280'),
+            color: selected ? 'var(--bld-text-1)' : (storedWorkflowId ? 'var(--bld-warning)' : 'var(--bld-text-disabled)'),
           }}>
             {displayLabel}
           </span>
           {selected && selected.paramCount > 0 && (
-            <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
+            <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
               {selected.paramCount} param{selected.paramCount !== 1 ? 's' : ''}
             </span>
           )}
-          <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+          <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
             {open ? '▴' : '▾'}
           </span>
         </button>
@@ -2992,13 +2992,13 @@ function ExecuteComponentActionConfig({
               onChange={e => setSearch(e.target.value)}
             />
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', fontSize: 12, color: '#6b7280' }}>
+              <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>
                 {rows.length === 0 ? 'No shared-component workflows defined' : 'No results'}
               </div>
             )}
             {Array.from(byModel.entries()).map(([modelId, { modelName, items }]) => (
               <div key={modelId}>
-                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   {modelName}
                 </div>
                 {items.map(r => {
@@ -3007,14 +3007,14 @@ function ExecuteComponentActionConfig({
                     <button
                       key={r.key}
                       style={{ ...S.dropdownItem(isActive), flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
-                      onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                      onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+                      onMouseEnter={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+                      onMouseLeave={ev => { if (!isActive) (ev.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
                       onClick={() => selectRow(r)}
                     >
                       <span style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
                         {r.workflowName}
                       </span>
-                      <span style={{ fontSize: 10, color: '#6b7280' }}>
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
                         {r.trigger ?? 'execution'}{r.paramCount ? ` · ${r.paramCount} param${r.paramCount !== 1 ? 's' : ''}` : ''}
                       </span>
                     </button>
@@ -3027,7 +3027,7 @@ function ExecuteComponentActionConfig({
       </div>
 
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>
-        Instance ID <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional — target a specific instance)</span>
+        Instance ID <span style={{ color: 'var(--bld-text-disabled)', fontWeight: 400 }}>(optional — target a specific instance)</span>
       </label>
       <input
         style={S.fieldInput}
@@ -3049,8 +3049,8 @@ function ExecuteComponentActionConfig({
         if (!declared.length) return null;
         const savedArgs = (cfg.args as Record<string, unknown>) ?? {};
         return (
-          <div style={{ marginTop: 14, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ marginTop: 14, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 12 }}>Φ</span> Arguments
             </div>
             {declared.map(p => (
@@ -3073,12 +3073,12 @@ function ExecuteComponentActionConfig({
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  string: '#fbbf24',
-  number: '#60a5fa',
-  boolean: '#34d399',
-  object: '#a78bfa',
-  array: '#fb923c',
-  form: '#f472b6',
+  string: 'var(--bld-warning)',
+  number: 'var(--bld-info)',
+  boolean: 'var(--bld-success)',
+  object: 'var(--bld-ai-accent)',
+  array: 'var(--bld-warning)',
+  form: 'var(--bld-badge-boolean)',
 };
 
 // ─── ResetVariableValueConfig ────────────────────────────────────────────────
@@ -3170,7 +3170,7 @@ function ResetVariableValueConfig({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
         <span style={{ ...S.fieldLabel, marginTop: 0 }}>Variables</span>
         <button
-          style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
           onClick={e => { e.stopPropagation(); addRow(); }}
         >+ Add</button>
       </div>
@@ -3193,17 +3193,17 @@ function ResetVariableValueConfig({
               >
                 {selected ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 9, color: TYPE_COLOR[selected.type] ?? '#9ca3af', fontFamily: 'monospace',
-                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? '#374151'}`,
+                    <span style={{ fontSize: 9, color: TYPE_COLOR[selected.type] ?? 'var(--bld-text-3)', fontFamily: 'monospace',
+                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? 'var(--bld-border-subtle)'}`,
                       borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{selected.type}</span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {('label' in selected ? selected.label : undefined) ?? ('name' in selected ? (selected as { name?: string }).name : undefined)}
                     </span>
                   </span>
                 ) : (
-                  <span style={{ color: '#4b5563' }}>Choose a variable</span>
+                  <span style={{ color: 'var(--bld-text-disabled)' }}>Choose a variable</span>
                 )}
-                <span style={{ color: '#6b7280', fontSize: 10, flexShrink: 0 }}>{row.open ? '▴' : '▾'}</span>
+                <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{row.open ? '▴' : '▾'}</span>
               </button>
 
               {row.open && (
@@ -3211,24 +3211,24 @@ function ResetVariableValueConfig({
                   data-popover
                   onClick={e => e.stopPropagation()}
                   style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                    background: '#111827', border: '1px solid #374151', borderRadius: 6,
+                    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
                     marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     maxHeight: 200, display: 'flex', flexDirection: 'column' }}
                 >
-                  <div style={{ padding: '6px 8px', borderBottom: '1px solid #1f2937' }}>
+                  <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-bg-input)' }}>
                     <input
                       autoFocus
                       value={row.search}
                       onChange={e => setRowSearch(idx, e.target.value)}
                       placeholder="Search variables…"
-                      style={{ width: '100%', boxSizing: 'border-box', background: '#1f2937',
-                        border: '1px solid #374151', borderRadius: 4, color: '#d1d5db',
+                      style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bld-bg-input)',
+                        border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)',
                         fontSize: 11, padding: '3px 7px', outline: 'none' }}
                     />
                   </div>
                   <div style={{ overflowY: 'auto', flex: 1 }}>
                     {filtered.length === 0 && (
-                      <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No variables found</div>
+                      <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No variables found</div>
                     )}
                     {filtered.map(v => {
                       const key = v.id ?? (v as { name?: string }).name;
@@ -3238,11 +3238,11 @@ function ResetVariableValueConfig({
                           key={key}
                           onClick={e => { e.stopPropagation(); setRowVar(idx, key ?? ''); }}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px',
-                            background: isActive ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
-                            color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 11, textAlign: 'left' }}
+                            background: isActive ? 'var(--bld-bg-elevated)' : 'none', border: 'none', cursor: 'pointer',
+                            color: isActive ? 'var(--bld-accent)' : 'var(--bld-text-2)', fontSize: 11, textAlign: 'left' }}
                         >
-                          <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? '#9ca3af', fontFamily: 'monospace',
-                            background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? '#374151'}`,
+                          <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? 'var(--bld-text-3)', fontFamily: 'monospace',
+                            background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? 'var(--bld-border-subtle)'}`,
                             borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{v.type}</span>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {('label' in v ? v.label : undefined) ?? ('name' in v ? (v as { name?: string }).name : undefined)}
@@ -3255,7 +3255,7 @@ function ResetVariableValueConfig({
               )}
             </div>
             <button
-              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18, flexShrink: 0, lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 18, flexShrink: 0, lineHeight: 1 }}
               onClick={e => { e.stopPropagation(); removeRow(idx); }}
             >−</button>
           </div>
@@ -3363,20 +3363,20 @@ export function BoundToggleField({
         {isBound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
-          <div style={{ flex: 1, display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+          <div style={{ flex: 1, display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2 }}>
             <button
               style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                background: boolVal ? '#374151' : 'transparent', color: boolVal ? '#f3f4f6' : '#6b7280' }}
+                background: boolVal ? 'var(--bld-border-subtle)' : 'transparent', color: boolVal ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
               onClick={() => onChange(true)}
             >On</button>
             <button
               style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                background: !boolVal ? '#374151' : 'transparent', color: !boolVal ? '#f3f4f6' : '#6b7280' }}
+                background: !boolVal ? 'var(--bld-border-subtle)' : 'transparent', color: !boolVal ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
               onClick={() => onChange(false)}
             >Off</button>
           </div>
@@ -3401,11 +3401,11 @@ export function BoundToggleField({
 function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const btn = (active: boolean): React.CSSProperties => ({
     padding: '2px 10px', fontSize: 10, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-    background: active ? '#374151' : 'transparent',
-    color: active ? '#f3f4f6' : '#6b7280',
+    background: active ? 'var(--bld-border-subtle)' : 'transparent',
+    color: active ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
   });
   return (
-    <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2 }}>
+    <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2 }}>
       <button style={btn(value)} onClick={() => onChange(true)}>On</button>
       <button style={btn(!value)} onClick={() => onChange(false)}>Off</button>
     </div>
@@ -3514,12 +3514,12 @@ export function BoundField({
           <button
             type="button"
             onClick={handleOpenEditor}
-            style={{ flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : code ? (
-          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', minHeight: 80 }}>
+          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)', minHeight: 80 }}>
             <CodeMirror
               value={strVal}
               height="auto"
@@ -3651,8 +3651,8 @@ function ChangeVariableValueConfig({
         >
           {selected ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 9, color: TYPE_COLOR[selected.type] ?? '#9ca3af', fontFamily: 'monospace',
-                background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? '#374151'}`,
+              <span style={{ fontSize: 9, color: TYPE_COLOR[selected.type] ?? 'var(--bld-text-3)', fontFamily: 'monospace',
+                background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[selected.type] ?? 'var(--bld-border-subtle)'}`,
                 borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{selected.type}</span>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {selected.label ?? (selected as { name?: string }).name}
@@ -3661,30 +3661,30 @@ function ChangeVariableValueConfig({
           ) : rawPathSelected ? (
             /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(rawPathSelected) ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }} title={rawPathSelected}>
-                <span style={{ fontSize: 9, color: '#f87171', fontFamily: 'monospace',
+                <span style={{ fontSize: 9, color: 'var(--bld-error)', fontFamily: 'monospace',
                   background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
                   borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>!</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f87171', fontSize: 11 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--bld-error)', fontSize: 11 }}>
                   Unknown variable
                 </span>
               </span>
             ) : (
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }} title={rawPathSelected}>
-                <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid #374151',
+                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', fontFamily: 'monospace',
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid var(--bld-border-subtle)',
                   borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>path</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#d1d5db' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--bld-text-2)' }}>
                   {rawPathSelected.split('.').pop()}
                 </span>
-                <span style={{ color: '#4b5563', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                   {rawPathSelected.split('.').slice(0, -1).join('.')}
                 </span>
               </span>
             )
           ) : (
-            <span style={{ color: '#4b5563' }}>Choose a variable</span>
+            <span style={{ color: 'var(--bld-text-disabled)' }}>Choose a variable</span>
           )}
-          <span style={{ color: '#6b7280', fontSize: 10, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
         </button>
 
         {open && (
@@ -3692,21 +3692,21 @@ function ChangeVariableValueConfig({
             data-popover
             style={{
               position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-              background: '#111827', border: '1px solid #374151', borderRadius: 6,
+              background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
               marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
               maxHeight: 240, display: 'flex', flexDirection: 'column',
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ padding: '6px 8px', borderBottom: '1px solid #1f2937' }}>
+            <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-bg-input)' }}>
               <input
                 autoFocus
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search variables…"
                 style={{
-                  width: '100%', boxSizing: 'border-box', background: '#1f2937',
-                  border: '1px solid #374151', borderRadius: 4, color: '#d1d5db',
+                  width: '100%', boxSizing: 'border-box', background: 'var(--bld-bg-input)',
+                  border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)',
                   fontSize: 11, padding: '3px 7px', outline: 'none',
                 }}
               />
@@ -3717,17 +3717,17 @@ function ChangeVariableValueConfig({
                   onClick={() => { setCfg('variableName', search.trim()); setOpen(false); setSearch(''); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px',
-                    background: 'none', border: 'none', cursor: 'pointer', color: '#a5b4fc', fontSize: 11, textAlign: 'left',
+                    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-accent)', fontSize: 11, textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace',
-                    background: 'rgba(255,255,255,0.07)', border: '1px solid #374151',
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-3)', fontFamily: 'monospace',
+                    background: 'rgba(255,255,255,0.07)', border: '1px solid var(--bld-border-subtle)',
                     borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>path</span>
                   <span style={{ fontFamily: 'monospace', fontSize: 10 }}>Use &ldquo;{search.trim()}&rdquo;</span>
                 </button>
               )}
               {filtered.length === 0 && !search.includes('.') && (
-                <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No variables found</div>
+                <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No variables found</div>
               )}
               {filtered.map(v => {
                 const key = v.id ?? (v as { name?: string }).name;
@@ -3738,12 +3738,12 @@ function ChangeVariableValueConfig({
                     onClick={() => { setCfg('variableName', key); setOpen(false); setSearch(''); }}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px',
-                      background: isActive ? '#1e3a5f' : 'none', border: 'none', cursor: 'pointer',
-                      color: isActive ? '#93c5fd' : '#d1d5db', fontSize: 11, textAlign: 'left',
+                      background: isActive ? 'var(--bld-bg-elevated)' : 'none', border: 'none', cursor: 'pointer',
+                      color: isActive ? 'var(--bld-accent)' : 'var(--bld-text-2)', fontSize: 11, textAlign: 'left',
                     }}
                   >
-                    <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? '#9ca3af', fontFamily: 'monospace',
-                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? '#374151'}`,
+                    <span style={{ fontSize: 9, color: TYPE_COLOR[v.type] ?? 'var(--bld-text-3)', fontFamily: 'monospace',
+                      background: 'rgba(255,255,255,0.07)', border: `1px solid ${TYPE_COLOR[v.type] ?? 'var(--bld-border-subtle)'}`,
                       borderRadius: 3, padding: '0 4px', flexShrink: 0 }}>{v.type}</span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {v.label ?? (v as { name?: string }).name}
@@ -3761,9 +3761,9 @@ function ChangeVariableValueConfig({
         <>
           {/* Object type: Partial Update */}
           {varType === 'object' && (
-            <div style={{ marginTop: 10, padding: '10px 12px', background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }}>
+            <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: '#d1d5db' }}>Partial Update</span>
+                <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Partial Update</span>
                 <OnOffToggle value={partialUpdate} onChange={v => setCfg('partialUpdate', v)} />
               </div>
               {partialUpdate && (
@@ -3780,8 +3780,8 @@ function ChangeVariableValueConfig({
 
           {/* Array type: Update array operation */}
           {varType === 'array' && (
-            <div style={{ marginTop: 10, padding: '10px 12px', background: '#111827', border: '1px solid #1f2937', borderRadius: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db' }}>Update array</span>
+            <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>Update array</span>
               <div style={{ marginTop: 8 }}>
                 <OptionPickerDropdown
                   value={arrayOp}
@@ -3861,9 +3861,9 @@ function BranchConditionField({
   return (
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>Condition *</label>
-      <p style={{ fontSize: 10, color: '#9ca3af', margin: '0 0 6px' }}>
+      <p style={{ fontSize: 10, color: 'var(--bld-text-3)', margin: '0 0 6px' }}>
         Formula that evaluates to true or false. Use{' '}
-        <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>
+        <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>
           {'context.workflow[\'stepId\'].result'}
         </code>
         {' '}to access prior step results.
@@ -3872,8 +3872,8 @@ function BranchConditionField({
         {isBound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
@@ -3984,15 +3984,15 @@ function ParamBoundField({
       {/* Label row with type badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10, marginBottom: 3 }}>
         <span style={{
-          fontSize: 10, fontWeight: 700, background: '#1e3a5f', color: '#60a5fa',
+          fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)',
           borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace', flexShrink: 0,
         }}>
           {PARAM_TYPE_ICONS[param.type] ?? 'T'}
         </span>
-        <label style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', flex: 1, margin: 0 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', flex: 1, margin: 0 }}>
           {param.name || 'Unnamed'}
           {param.allowMultiple && (
-            <span style={{ marginLeft: 4, fontSize: 10, color: '#6b7280' }}>(multi)</span>
+            <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--bld-text-disabled)' }}>(multi)</span>
           )}
         </label>
       </div>
@@ -4006,8 +4006,8 @@ function ParamBoundField({
           <button
             onClick={handleOpenEditor}
             style={{
-              flex: 1, padding: '5px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer',
+              flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer',
               fontWeight: 500, textAlign: 'left',
             }}
           >
@@ -4017,7 +4017,7 @@ function ParamBoundField({
         ) : param.type === 'Boolean' ? (
           /* Boolean toggle */
           <div style={{
-            flex: 1, display: 'flex', background: '#1f2937',
+            flex: 1, display: 'flex', background: 'var(--bld-bg-input)',
             borderRadius: 5, padding: 2, gap: 2,
           }}>
             {(['true', 'false'] as const).map(opt => {
@@ -4032,11 +4032,11 @@ function ParamBoundField({
                     flex: 1, padding: '5px 0', fontSize: 11, border: 'none',
                     borderRadius: 4, cursor: 'pointer', fontWeight: 600,
                     background: active
-                      ? (opt === 'true' ? '#166534' : '#7f1d1d')
+                      ? (opt === 'true' ? 'rgba(34,197,94,0.2)' : 'rgba(248,113,113,0.2)')
                       : 'transparent',
                     color: active
-                      ? (opt === 'true' ? '#86efac' : '#fca5a5')
-                      : '#6b7280',
+                      ? (opt === 'true' ? 'var(--bld-success)' : 'var(--bld-error)')
+                      : 'var(--bld-text-disabled)',
                     transition: 'background 0.1s, color 0.1s',
                   }}
                 >
@@ -4058,7 +4058,7 @@ function ParamBoundField({
 
         ) : param.type === 'Object' || param.type === 'Array' ? (
           /* CodeMirror JSON editor */
-          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid #374151', minHeight: 70 }}>
+          <div style={{ flex: 1, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)', minHeight: 70 }}>
             <CodeMirror
               value={strVal || (param.type === 'Array' ? '[]' : '{}')}
               height="auto"
@@ -4082,15 +4082,15 @@ function ParamBoundField({
                     key={`${tag}-${i}`}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 3,
-                      background: '#1e3a5f', border: '1px solid #2563eb',
-                      borderRadius: 4, padding: '2px 6px', fontSize: 11, color: '#93c5fd',
+                      background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)',
+                      borderRadius: 4, padding: '2px 6px', fontSize: 11, color: 'var(--bld-accent)',
                     }}
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={e => { e.stopPropagation(); removeTag(i); }}
-                      style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 12 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 12 }}
                     >×</button>
                   </span>
                 ))}
@@ -4107,8 +4107,8 @@ function ParamBoundField({
                 type="button"
                 onClick={e => { e.stopPropagation(); commitTag(); tagInputRef.current?.focus(); }}
                 style={{
-                  background: '#1e3a5f', border: '1px solid #2563eb', borderRadius: 5,
-                  color: '#93c5fd', fontSize: 12, cursor: 'pointer', padding: '4px 8px', flexShrink: 0,
+                  background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)', borderRadius: 5,
+                  color: 'var(--bld-accent)', fontSize: 12, cursor: 'pointer', padding: '4px 8px', flexShrink: 0,
                 }}
               >+</button>
             </div>
@@ -4190,15 +4190,15 @@ function GlobalWorkflowPicker({
         onClick={() => { setOpen(v => !v); setSearch(''); }}
       >
         {selected && <span style={{ fontSize: 12, flexShrink: 0 }}>Φ</span>}
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? '#f3f4f6' : '#6b7280' }}>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}>
           {label}
         </span>
         {selected && (selected.params?.length ?? 0) > 0 && (
-          <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)', borderRadius: 3, padding: '1px 5px', fontWeight: 600, flexShrink: 0 }}>
             {selected.params!.length} param{selected.params!.length !== 1 ? 's' : ''}
           </span>
         )}
-        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#6b7280', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
           {open ? '▴' : '▾'}
         </span>
       </button>
@@ -4217,24 +4217,24 @@ function GlobalWorkflowPicker({
             onChange={e => setSearch(e.target.value)}
           />
           {filtered.length === 0 && (
-            <div style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>No global workflows found</div>
+            <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No global workflows found</div>
           )}
           {filtered.map(w => (
             <button
               key={w.id}
               style={S.dropdownItem(w.id === value)}
-              onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-              onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; }}
+              onMouseEnter={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-hover)'; }}
+              onMouseLeave={e => { if (w.id !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-input)'; }}
               onClick={() => { onChange(w.id); setOpen(false); setSearch(''); }}
             >
               <span style={{ fontSize: 12 }}>Φ</span>
               <span style={{ flex: 1 }}>{toHumanName(w.name ?? w.id)}</span>
               {(w.params?.length ?? 0) > 0 && (
-                <span style={{ fontSize: 9, background: '#064e3b', color: '#6ee7b7', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
+                <span style={{ fontSize: 9, background: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
                   {w.params!.length} param{w.params!.length !== 1 ? 's' : ''}
                 </span>
               )}
-              {w.id === value && <span style={{ color: '#3b82f6', fontSize: 10 }}>✓</span>}
+              {w.id === value && <span style={{ color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -4278,8 +4278,8 @@ function RunProjectWorkflowConfig({
 
       {/* Param input fields — only shown when the selected workflow has declared params */}
       {params.length > 0 && (
-        <div style={{ marginTop: 14, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ marginTop: 14, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ fontSize: 12 }}>Φ</span> Parameters
           </div>
           {params.map(p => (
@@ -4345,10 +4345,10 @@ function RunJavaScriptConfig({
   return (
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>JavaScript code *</label>
-      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4, lineHeight: 1.5 }}>
-        Async function body. Available globals: <code style={{ color: '#a78bfa' }}>variables</code>, <code style={{ color: '#a78bfa' }}>collections</code>,{' '}
-        <code style={{ color: '#a78bfa' }}>context</code>, <code style={{ color: '#a78bfa' }}>parameters</code>, <code style={{ color: '#a78bfa' }}>wwLib</code>.
-        Return value is stored at <code style={{ color: '#fbbf24' }}>{`context.workflow["${step.id}"].result`}</code>.
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, lineHeight: 1.5 }}>
+        Async function body. Available globals: <code style={{ color: 'var(--bld-ai-accent)' }}>variables</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>collections</code>,{' '}
+        <code style={{ color: 'var(--bld-ai-accent)' }}>context</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>parameters</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>wwLib</code>.
+        Return value is stored at <code style={{ color: 'var(--bld-warning)' }}>{`context.workflow["${step.id}"].result`}</code>.
       </div>
       <button
         type="button"
@@ -4357,10 +4357,10 @@ function RunJavaScriptConfig({
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           width: '100%', padding: '6px 8px',
-          background: code ? 'rgba(139, 92, 246, 0.12)' : '#0f172a',
-          border: `1px solid ${code ? '#8b5cf6' : '#374151'}`,
+          background: code ? 'rgba(139, 92, 246, 0.12)' : 'var(--bld-bg-base)',
+          border: `1px solid ${code ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
           borderRadius: 5,
-          color: code ? '#c4b5fd' : '#9ca3af',
+          color: code ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
           fontSize: 11,
           fontFamily: '"JetBrains Mono","Fira Mono",monospace',
           textAlign: 'left',
@@ -4373,7 +4373,7 @@ function RunJavaScriptConfig({
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 16, height: 16, borderRadius: 3,
-            background: '#fbbf24', color: '#1f2937',
+            background: 'var(--bld-warning)', color: 'var(--bld-text-2)',
             fontSize: 9, fontWeight: 800, flexShrink: 0,
           }}
         >JS</span>
@@ -4409,19 +4409,19 @@ function CollapsibleSection({
   title: string; status?: string; defaultOpen?: boolean; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const color = status === 'Incomplete' ? '#f59e0b' : status === 'Optional' ? '#6b7280' : '#34d399';
+  const color = status === 'Incomplete' ? 'var(--bld-warning)' : status === 'Optional' ? 'var(--bld-text-disabled)' : 'var(--bld-success)';
   return (
-    <div style={{ marginTop: 14, border: '1px solid #1e293b', borderRadius: 6, overflow: 'hidden' }}>
+    <div style={{ marginTop: 14, border: '1px solid var(--bld-bg-elevated)', borderRadius: 6, overflow: 'hidden' }}>
       <div
-        style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', cursor: 'pointer', background: '#0f172a' }}
+        style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', cursor: 'pointer', background: 'var(--bld-bg-base)' }}
         onClick={() => setOpen(o => !o)}
       >
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#e2e8f0' }}>{title}</span>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
         <span style={{ fontSize: 11, color, marginRight: 8 }}>{status}</span>
-        <span style={{ fontSize: 11, color: '#6b7280' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{open ? '▲' : '▼'}</span>
       </div>
       {open && (
-        <div style={{ padding: '10px 12px', borderTop: '1px solid #1e293b' }}>
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-elevated)' }}>
           {children}
         </div>
       )}
@@ -4490,7 +4490,7 @@ function KeyValueBuilderField({
         <div key={k} style={{ display: 'flex', gap: 4, marginTop: 4, alignItems: 'center' }}>
           <button
             onClick={() => removeRow(k)}
-            style={{ flexShrink: 0, background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}
+            style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 14 }}
           >−</button>
           <input
             style={{ ...S.fieldInput, flex: 1 }}
@@ -4508,7 +4508,7 @@ function KeyValueBuilderField({
       ))}
       <button
         onClick={addRow}
-        style={{ marginTop: 6, fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer' }}
+        style={{ marginTop: 6, fontSize: 11, color: 'var(--bld-ai-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
       >+ Add Property</button>
     </div>
   );
@@ -4665,7 +4665,7 @@ function TablesListConfig({
 
       <CollapsibleSection title="Pagination" status={pagEnabled ? 'Optional' : 'Optional'}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>Enable pagination</span>
+          <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Enable pagination</span>
           <OnOffToggle value={pagEnabled} onChange={v => setCfg('paginationEnabled', v)} />
         </div>
         {pagEnabled && (
@@ -4965,8 +4965,8 @@ function HashPasswordConfig({
         onChange={v => setCfg('password', v)}
         placeholder="Plain-text password to hash"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
-        Result: <code style={{ color: '#c4b5fd' }}>result.hash</code> — bcrypt hash (cost 10)
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.hash</code> — bcrypt hash (cost 10)
       </div>
     </>
   );
@@ -4993,8 +4993,8 @@ function VerifyPasswordConfig({
         onChange={v => setCfg('hash', v)}
         placeholder="Stored bcrypt hash to compare against"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
-        Result: <code style={{ color: '#c4b5fd' }}>result.match</code> — boolean
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.match</code> — boolean
       </div>
     </>
   );
@@ -5015,17 +5015,17 @@ function GenerateTokenConfig({
         placeholder='e.g. { userId: ..., role: "admin" }'
       />
       <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Expires in</label>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', display: 'block', marginBottom: 4 }}>Expires in</label>
         <input
-          style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '5px 8px', fontSize: 12, color: '#e2e8f0', outline: 'none', boxSizing: 'border-box' }}
+          style={{ width: '100%', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 8px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', boxSizing: 'border-box' }}
           value={(cfg.expiresIn as string | undefined) ?? '7d'}
           onChange={e => setCfg('expiresIn', e.target.value)}
           placeholder="7d, 1h, 30m …"
         />
       </div>
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
-        Result: <code style={{ color: '#c4b5fd' }}>result.token</code> — signed JWT<br />
-        All payload fields are also echoed on the result (e.g. <code style={{ color: '#c4b5fd' }}>result.userId</code>)
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.token</code> — signed JWT<br />
+        All payload fields are also echoed on the result (e.g. <code style={{ color: 'var(--bld-ai-accent)' }}>result.userId</code>)
       </div>
     </>
   );
@@ -5045,10 +5045,10 @@ function VerifyTokenConfig({
         onChange={v => setCfg('token', v)}
         placeholder="JWT to verify (e.g. from Authorization header)"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: '#a78bfa' }}>
-        Result: full decoded payload (all fields you put in <code style={{ color: '#c4b5fd' }}>generateToken</code>)<br />
-        e.g. <code style={{ color: '#c4b5fd' }}>result.userId</code>, <code style={{ color: '#c4b5fd' }}>result.role</code>, …<br />
-        <span style={{ color: '#7c3aed' }}>result.valid</span> — always <code>true</code>; throws 401 on invalid/expired
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
+        Result: full decoded payload (all fields you put in <code style={{ color: 'var(--bld-ai-accent)' }}>generateToken</code>)<br />
+        e.g. <code style={{ color: 'var(--bld-ai-accent)' }}>result.userId</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>result.role</code>, …<br />
+        <span style={{ color: 'var(--bld-ai-accent)' }}>result.valid</span> — always <code>true</code>; throws 401 on invalid/expired
       </div>
     </>
   );
@@ -5084,26 +5084,26 @@ function SendResponseConfig({
     <>
       <label style={SL}>Status *</label>
       <select
-        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.status ? '#ef4444' : '#334155' }}
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.status ? 'var(--bld-error)' : 'var(--bld-border-subtle)' }}
         value={(cfg.status as string) ?? ''}
         onChange={e => setCfg('status', e.target.value)}
       >
         <option value="">Select status…</option>
         {HTTP_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      {!cfg.status && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+      {!cfg.status && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>This field is required</span>}
 
       <CollapsibleSection title="Data" status={cfg.bodyType ? 'Optional' : 'Incomplete'} defaultOpen>
         <label style={SL}>Type *</label>
         <select
-          style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.bodyType ? '#ef4444' : '#334155' }}
+          style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.bodyType ? 'var(--bld-error)' : 'var(--bld-border-subtle)' }}
           value={(cfg.bodyType as string) ?? ''}
           onChange={e => setCfg('bodyType', e.target.value)}
         >
           <option value="">Select type…</option>
           {BODY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        {!cfg.bodyType && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+        {!cfg.bodyType && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>This field is required</span>}
 
         <BoundField
           label="Body"
@@ -5201,15 +5201,15 @@ function CreateWorkflowVariableConfig({
     <>
       <label style={SL}>Variable name *</label>
       <input
-        style={{ ...S.fieldInput, marginTop: 4, borderColor: !cfg.variableName ? '#ef4444' : '#334155' }}
+        style={{ ...S.fieldInput, marginTop: 4, borderColor: !cfg.variableName ? 'var(--bld-error)' : 'var(--bld-border-subtle)' }}
         value={(cfg.variableName as string) ?? ''}
         placeholder="myVariable"
         onChange={e => setCfg('variableName', e.target.value)}
       />
-      {!cfg.variableName && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+      {!cfg.variableName && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>This field is required</span>}
       <label style={SL}>Type *</label>
       <select
-        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.variableType ? '#ef4444' : '#334155' }}
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.variableType ? 'var(--bld-error)' : 'var(--bld-border-subtle)' }}
         value={(cfg.variableType as string) ?? ''}
         onChange={e => setCfg('variableType', e.target.value)}
       >
@@ -5276,14 +5276,14 @@ function RunServerFunctionConfig({
     <>
       <label style={SL}>Function *</label>
       <select
-        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.functionId ? '#ef4444' : '#334155' }}
+        style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer', borderColor: !cfg.functionId ? 'var(--bld-error)' : 'var(--bld-border-subtle)' }}
         value={(cfg.functionId as string) ?? ''}
         onChange={e => setCfg('functionId', e.target.value)}
       >
         <option value="">Select a function…</option>
         {serverFunctions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
       </select>
-      {!cfg.functionId && <span style={{ fontSize: 11, color: '#ef4444' }}>This field is required</span>}
+      {!cfg.functionId && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>This field is required</span>}
     </>
   );
 }
@@ -5479,10 +5479,10 @@ export function NodePropsPanel({
         <>
           {/* Branches list */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e7eb' }}>Branches</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>Branches</span>
             <button
               data-testid="branches-add-btn"
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#fff', background: '#3b82f6', border: 'none', borderRadius: 5, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-accent-fg)', background: 'var(--bld-accent)', border: 'none', borderRadius: 5, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
               onClick={() => {
                 const newBranch: BranchDef = { match: `Value ${(step.branches?.length ?? 0) + 1}`, steps: [{ id: `ph-${Date.now()}`, type: 'graphql' }] };
                 onUpdate({ branches: [...(step.branches ?? []), newBranch] });
@@ -5495,13 +5495,13 @@ export function NodePropsPanel({
             <div key={bi} style={{ marginTop: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {/* Line-number gutter */}
-                <div style={{ minWidth: 20, fontSize: 11, color: '#6b7280', textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ minWidth: 20, fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'right', flexShrink: 0 }}>
                   {bi + 1}
                 </div>
                 {/* Value input */}
                 <input
                   data-testid={`branch-value-${bi}`}
-                  style={{ ...S.fieldInput, flex: 1, color: '#e5e7eb' }}
+                  style={{ ...S.fieldInput, flex: 1, color: 'var(--bld-text-2)' }}
                   value={branch.match}
                   onChange={e => {
                     const updated = (step.branches ?? []).map((b, i) => i === bi ? { ...b, match: e.target.value } : b);
@@ -5512,7 +5512,7 @@ export function NodePropsPanel({
                 <button
                   data-testid={`branch-remove-${bi}`}
                   disabled={(step.branches?.length ?? 0) <= 1}
-                  style={{ flexShrink: 0, background: '#fce7f3', border: 'none', borderRadius: '50%', width: 22, height: 22, color: '#db2777', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, cursor: (step.branches?.length ?? 0) <= 1 ? 'not-allowed' : 'pointer', opacity: (step.branches?.length ?? 0) <= 1 ? 0.35 : 1 }}
+                  style={{ flexShrink: 0, background: 'rgba(219,39,119,0.15)', border: 'none', borderRadius: '50%', width: 22, height: 22, color: '#db2777', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, cursor: (step.branches?.length ?? 0) <= 1 ? 'not-allowed' : 'pointer', opacity: (step.branches?.length ?? 0) <= 1 ? 0.35 : 1 }}
                   title="Remove branch"
                   onClick={() => {
                     const updated = (step.branches ?? []).filter((_, i) => i !== bi);
@@ -5551,9 +5551,9 @@ export function NodePropsPanel({
           />
           <div style={S.helpText}>
             Expression that evaluates to an array. Each element is accessible inside the loop as{' '}
-            <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.item.data.value</code>
+            <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>context.item.data.value</code>
             {' '}and the index as{' '}
-            <code style={{ background: '#1f2937', padding: '1px 4px', borderRadius: 3 }}>context.item.data.index</code>.
+            <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3 }}>context.item.data.index</code>.
           </div>
         </>
       )}
@@ -5652,15 +5652,15 @@ export function NodePropsPanel({
             workflowTrigger={workflowTrigger}
           />
           {!cfg.user && (
-            <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>This field is required</div>
+            <div style={{ fontSize: 11, color: 'var(--bld-error)', marginTop: 4 }}>This field is required</div>
           )}
         </>
       )}
 
       {/* ── Auth: Clear Session ────────────────────────────────────────────── */}
       {step.type === 'clearSession' && (
-        <div style={{ marginTop: 10, padding: '8px 10px', background: '#1f2937', borderRadius: 6, border: '1px solid #374151' }}>
-          <span style={{ fontSize: 11, color: '#6b7280' }}>Removes the stored token from localStorage and clears the authenticated user.</span>
+        <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--bld-bg-input)', borderRadius: 6, border: '1px solid var(--bld-border-subtle)' }}>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Removes the stored token from localStorage and clears the authenticated user.</span>
         </div>
       )}
 
@@ -5703,7 +5703,7 @@ export function NodePropsPanel({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
             <span style={{ ...S.fieldLabel, marginTop: 0 }}>Collections</span>
             <button
-              style={{ fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
               onClick={() => {
                 // Use cfg.collections (new format) or fall back to cfg.collectionNames (old format)
                 const prev = Array.isArray(cfg.collections)
@@ -5735,7 +5735,7 @@ export function NodePropsPanel({
                   />
                 </div>
                 <button
-                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}
                   onClick={() => {
                     const next = currentList.filter((_, i) => i !== idx);
                     setCfg('collections', next);
@@ -5747,7 +5747,7 @@ export function NodePropsPanel({
           })}
           {!((Array.isArray(cfg.collections) && (cfg.collections as string[]).length > 0) ||
              (Array.isArray(cfg.collectionNames) && (cfg.collectionNames as string[]).length > 0)) && (
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>No collections added yet</div>
+            <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 6 }}>No collections added yet</div>
           )}
         </>
       )}
@@ -5795,15 +5795,15 @@ export function NodePropsPanel({
 
             {/* By index / By id sub-toggle for Update and Delete */}
             {needsFindBy && (
-              <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, padding: 2, gap: 2, marginTop: 10 }}>
+              <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2, marginTop: 10 }}>
                 <button
                   style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                    background: !byId ? '#374151' : 'transparent', color: !byId ? '#f3f4f6' : '#6b7280' }}
+                    background: !byId ? 'var(--bld-border-subtle)' : 'transparent', color: !byId ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
                   onClick={() => setCfg('findBy', 'index')}
                 >By index</button>
                 <button
                   style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                    background: byId ? '#374151' : 'transparent', color: byId ? '#f3f4f6' : '#6b7280' }}
+                    background: byId ? 'var(--bld-border-subtle)' : 'transparent', color: byId ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
                   onClick={() => setCfg('findBy', 'id')}
                 >By id</button>
               </div>

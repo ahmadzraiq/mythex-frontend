@@ -96,7 +96,7 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
     borderRadius: 4,
     padding: '5px 8px',
     fontSize: 12,
-    color: '#e2e8f0',
+    color: 'var(--bld-text-2)',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
@@ -123,7 +123,7 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
           {selectedTableId && (
             <>
               <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 10, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Views</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Views</span>
                 <button
                   onClick={() => setShowNewView(true)}
                   style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
@@ -143,12 +143,12 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
                     <button onClick={() => void createView()} disabled={saving} style={{ flex: 1, padding: '4px 0', fontSize: 11, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                       {saving ? '…' : 'Create'}
                     </button>
-                    <button onClick={() => setShowNewView(false)} style={{ padding: '4px 8px', fontSize: 11, background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 4, cursor: 'pointer' }}>✕</button>
+                    <button onClick={() => setShowNewView(false)} style={{ padding: '4px 8px', fontSize: 11, background: 'transparent', color: 'var(--bld-text-disabled)', border: '1px solid #374151', borderRadius: 4, cursor: 'pointer' }}>✕</button>
                   </div>
                 </div>
               )}
 
-              {loading && <div style={{ padding: 12, fontSize: 12, color: '#475569', textAlign: 'center' }}>Loading…</div>}
+              {loading && <div style={{ padding: 12, fontSize: 12, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>Loading…</div>}
 
               {views.map((view) => {
                 const sec = SECURITY_OPTIONS.find((o) => o.value === view.security);
@@ -166,17 +166,17 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
                       gap: 6,
                     }}
                   >
-                    <span style={{ fontSize: 11, color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, color: 'var(--bld-text-3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {view.name}
                     </span>
                     <span style={{ fontSize: 9, color: sec?.color ?? '#6b7280' }}>●</span>
-                    <button onClick={(e) => { e.stopPropagation(); void deleteView(view.id); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 10, opacity: 0, transition: 'opacity 0.15s' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); void deleteView(view.id); }} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 10, opacity: 0, transition: 'opacity 0.15s' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>✕</button>
                   </div>
                 );
               })}
 
               {!loading && views.length === 0 && !showNewView && (
-                <div style={{ padding: '12px', fontSize: 11, color: '#475569', textAlign: 'center' }}>No views. Click + New.</div>
+                <div style={{ padding: '12px', fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>No views. Click + New.</div>
               )}
             </>
           )}
@@ -186,7 +186,7 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
       {/* ── View configurator ─────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selectedView && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#475569', fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--bld-text-disabled)', fontSize: 13 }}>
             {selectedTableId ? 'Select a view to configure it' : 'Select a table first'}
           </div>
         )}
@@ -222,8 +222,8 @@ function ViewConfig({ view, table, onUpdate, saving }: {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', padding: 20, gap: 20 }}>
       {/* Header */}
       <div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>{view.name}</div>
-        <div style={{ fontSize: 11, color: '#475569', fontFamily: 'monospace', marginTop: 2 }}>/{view.slug}</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--bld-text-2)' }}>{view.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', marginTop: 2 }}>/{view.slug}</div>
       </div>
 
       {/* Security */}
@@ -241,7 +241,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
                 cursor: 'pointer',
                 border: `1px solid ${view.security === o.value ? o.color : '#374151'}`,
                 background: view.security === o.value ? `${o.color}18` : 'transparent',
-                color: view.security === o.value ? o.color : '#6b7280',
+                color: view.security === o.value ? o.color : 'var(--bld-text-disabled)',
                 transition: 'all 0.15s',
               }}
             >
@@ -250,7 +250,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
           ))}
         </div>
         {view.security === 'ROLE' && (
-          <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--bld-text-3)' }}>
             Define role-based policies in the Advanced Policy section below.
           </div>
         )}
@@ -311,7 +311,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
             })}
           </div>
         ) : (
-          <span style={{ fontSize: 11, color: '#475569' }}>No table selected</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>No table selected</span>
         )}
       </Section>
     </div>
@@ -321,7 +321,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -336,12 +336,12 @@ function FilterSortEditor({ label, items, onChange, table }: {
   return (
     <div>
       {items.length === 0 && (
-        <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>No {label}s applied. All rows returned.</div>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 6 }}>No {label}s applied. All rows returned.</div>
       )}
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', background: '#111827', padding: '4px 8px', borderRadius: 4 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 11, color: 'var(--bld-text-2)', fontFamily: 'monospace', background: '#111827', padding: '4px 8px', borderRadius: 4 }}>
           <span style={{ flex: 1 }}>{JSON.stringify(item)}</span>
-          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>✕</button>
         </div>
       ))}
       <button

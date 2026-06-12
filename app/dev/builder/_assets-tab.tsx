@@ -219,7 +219,7 @@ function StockGrid({
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder={`Search ${provider}…`}
-          style={{ width: '100%', background: BG_INPUT, border: BORDER, borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
+          style={{ width: '100%', background: BG_INPUT, border: BORDER, borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
         />
       </div>
 
@@ -452,7 +452,7 @@ function IconsPanel() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search icons…"
-          style={{ width: '100%', background: BG_INPUT, border: BORDER, borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
+          style={{ width: '100%', background: BG_INPUT, border: BORDER, borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
           autoComplete="off"
         />
       </div>
@@ -463,7 +463,7 @@ function IconsPanel() {
           <div style={{ padding: '0 8px 8px' }}>
             {searchTotal !== null && (
               <div style={{ padding: '6px 4px 8px' }}>
-                <div style={{ fontSize: 11, color: '#f3f4f6', fontWeight: 600 }}>Icons found: {searchTotal.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 600 }}>Icons found: {searchTotal.toLocaleString()}</div>
                 {searchTotal > 96 && <div style={{ fontSize: 10, color: TEXT_DIM, marginTop: 2 }}>Try a more specific query to auto-expand results.</div>}
               </div>
             )}

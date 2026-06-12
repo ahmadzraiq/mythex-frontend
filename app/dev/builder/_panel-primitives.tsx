@@ -87,7 +87,7 @@ export function ChangedLabel({
     hideTimer.current = setTimeout(() => setPopupPos(null), 120);
   };
 
-  const color = inherited ? '#10b981' : (changed ? '#f97316' : '#6b7280');
+  const color = inherited ? 'var(--bld-success)' : (changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)');
   const baseStyle: React.CSSProperties = {
     fontSize: 9,
     color,
@@ -123,9 +123,9 @@ export function ChangedLabel({
           style={{
             position: 'fixed', top: popupPos.top, left: popupPos.left,
             zIndex: 99999, pointerEvents: 'auto',
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+            background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
             padding: '5px 9px', whiteSpace: 'nowrap',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--bld-shadow-md)',
             textTransform: 'none', letterSpacing: 'normal',
             fontWeight: 'normal', fontFamily: 'system-ui, sans-serif',
           }}
@@ -133,7 +133,7 @@ export function ChangedLabel({
           <button
             onMouseDown={(e) => { e.preventDefault(); ctx.resetField(cssProp!); setPopupPos(null); }}
             style={{
-              background: 'none', border: 'none', color: '#e5e7eb',
+              background: 'none', border: 'none', color: 'var(--bld-text-2)',
               fontSize: 11, cursor: 'pointer', padding: 0,
               display: 'flex', alignItems: 'center', gap: 4,
             }}
@@ -152,20 +152,20 @@ export const PANEL_STYLE: React.CSSProperties = {
   width: 260,
   display: 'flex',
   flexDirection: 'column',
-  background: '#111827',
-  borderLeft: '1px solid #1f2937',
+  background: 'var(--bld-bg-panel)',
+  borderLeft: '1px solid var(--bld-border)',
   overflow: 'hidden',
 };
 
 export const SECTION_STYLE: React.CSSProperties = {
-  borderBottom: '1px solid #1f2937',
+  borderBottom: '1px solid var(--bld-border)',
   padding: '10px 12px',
 };
 
 export const LABEL_STYLE: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 500,
-  color: '#9ca3af',
+  color: 'var(--bld-text-3)',
   marginBottom: 6,
   display: 'block',
 };
@@ -274,23 +274,23 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
             position: 'absolute', top: 14,
             ...(flipLeft ? { right: -8 } : { left: -8 }),
             zIndex: 100,
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+            background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
             padding: '10px 12px', minWidth: 160,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            boxShadow: 'var(--bld-shadow-lg)',
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#d1d5db', marginBottom: 8 }}>Responsive</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 8 }}>Responsive</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {overriddenBreakpoints.map(bp => (
               <div key={bp} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center' }}>{BP_ICONS[bp]}</span>
-                <span style={{ fontSize: 10, color: '#9ca3af', flex: 1 }}>{BP_LABELS[bp] ?? bp}</span>
+                <span style={{ color: 'var(--bld-success)', display: 'flex', alignItems: 'center' }}>{BP_ICONS[bp]}</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', flex: 1 }}>{BP_LABELS[bp] ?? bp}</span>
                 <button
                   data-testid={`responsive-remove-${cssProp}-${bp}`}
                   onClick={(e) => { e.stopPropagation(); onRemove(bp, cssProp); }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#ef4444', fontSize: 13, lineHeight: 1, padding: '0 2px',
+                    color: 'var(--bld-error)', fontSize: 13, lineHeight: 1, padding: '0 2px',
                   }}
                   title={`Remove ${BP_LABELS[bp] ?? bp} override`}
                 >
@@ -301,13 +301,13 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
           </div>
           {onResetAll && (
             <>
-              <div style={{ borderTop: '1px solid #374151', margin: '8px 0' }} />
+              <div style={{ borderTop: '1px solid var(--bld-border)', margin: '8px 0' }} />
               <button
                 data-testid={`responsive-reset-${cssProp}`}
                 onClick={(e) => { e.stopPropagation(); onResetAll(cssProp); setOpen(false); }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#9ca3af', fontSize: 10, display: 'flex', alignItems: 'center', gap: 4,
+                  color: 'var(--bld-text-3)', fontSize: 10, display: 'flex', alignItems: 'center', gap: 4,
                   padding: 0,
                 }}
               >
@@ -343,7 +343,7 @@ export function DirectChangedLabel({ text, changed, onReset }: { text: string; c
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       <span
         ref={spanRef}
-        style={{ fontSize: 9, color: changed ? '#f97316' : '#6b7280', cursor: changed ? 'pointer' : undefined }}
+        style={{ fontSize: 9, color: changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)', cursor: changed ? 'pointer' : undefined }}
         onMouseEnter={changed ? showPopup : undefined}
         onMouseLeave={changed ? scheduleHide : undefined}
       >{text}</span>
@@ -351,11 +351,11 @@ export function DirectChangedLabel({ text, changed, onReset }: { text: string; c
         <div
           onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
           onMouseLeave={scheduleHide}
-          style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 99999, pointerEvents: 'auto', background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', textTransform: 'none', letterSpacing: 'normal', fontWeight: 'normal', fontFamily: 'system-ui, sans-serif' }}
+          style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 99999, pointerEvents: 'auto', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: 'var(--bld-shadow-md)', textTransform: 'none', letterSpacing: 'normal', fontWeight: 'normal', fontFamily: 'system-ui, sans-serif' }}
         >
           <button
             onMouseDown={e => { e.preventDefault(); onReset(); setPopupPos(null); }}
-            style={{ background: 'none', border: 'none', color: '#e5e7eb', fontSize: 11, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
           >
             <span>↺</span><span>Reset to default</span>
           </button>
@@ -449,7 +449,7 @@ export function NumberInput({
           if (live !== Number(value)) onChange(live);
           setLocal(String(live));
         }}
-        style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box' }}
+        style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box' }}
       />
     </div>
   );
@@ -471,7 +471,7 @@ export function SelectInput({
       <select
         data-testid={testId}
         value={value} onChange={e => onChange(e.target.value)}
-        style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 5px', width: '100%' }}
+        style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 5px', width: '100%' }}
       >
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -500,7 +500,7 @@ export function ToggleBtn({ active, onClick, title, children, 'data-testid': tes
   return (
     <button
       onClick={onClick} title={title} data-testid={testId} data-active={String(!!active)}
-      style={{ padding: '3px 7px', fontSize: 11, background: active ? '#3b82f6' : '#1f2937', border: `1px solid ${active ? '#3b82f6' : '#374151'}`, color: active ? '#fff' : '#9ca3af', borderRadius: 4, cursor: 'pointer', lineHeight: 1, ...extraStyle }}
+      style={{ padding: '3px 7px', fontSize: 11, background: active ? 'var(--bld-accent)' : 'var(--bld-bg-input)', border: `1px solid ${active ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`, color: active ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)', borderRadius: 4, cursor: 'pointer', lineHeight: 1, ...extraStyle }}
     >
       {children}
     </button>
@@ -518,8 +518,8 @@ export function MiniPreview({ style, children, title }: { style?: React.CSSPrope
       style={{
         width: 28, height: 18,
         borderRadius: 4,
-        border: '1px solid #374151',
-        background: '#1f2937',
+        border: '1px solid var(--bld-border-subtle)',
+        background: 'var(--bld-bg-input)',
         flexShrink: 0,
         overflow: 'hidden',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -655,7 +655,7 @@ export function SliderField({
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <ChangedLabel text={label} cssProp={cssProp} style={{ fontSize: 10 }} />
-        <span style={{ fontSize: 10, color: '#cbd5e1', fontFamily: 'monospace', minWidth: 32, textAlign: 'right' }}>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontFamily: 'monospace', minWidth: 32, textAlign: 'right' }}>
           {displayVal}{unit}
         </span>
       </div>
@@ -700,9 +700,9 @@ export function ChipSelect({
               fontWeight: 500,
               letterSpacing: '0.02em',
               borderRadius: 999,
-              border: value === opt ? '1px solid #6366f1' : '1px solid #1e293b',
-              background: value === opt ? '#6366f1' : '#1e293b',
-              color: value === opt ? '#fff' : '#6b7280',
+              border: value === opt ? '1px solid var(--bld-accent)' : '1px solid var(--bld-bg-elevated)',
+              background: value === opt ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',
+              color: value === opt ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
               cursor: 'pointer',
               lineHeight: 1.6,
             }}
@@ -735,13 +735,13 @@ export function ToggleRow({
         cursor: 'pointer', padding: '3px 0', userSelect: 'none',
       }}
     >
-      <span style={{ fontSize: 10, color: active ? '#e2e8f0' : '#6b7280' }}>{label}</span>
+      <span style={{ fontSize: 10, color: active ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)' }}>{label}</span>
       {/* Pill toggle */}
       <div
         data-testid={testId}
         style={{
           width: 28, height: 16, borderRadius: 999,
-          background: active ? '#6366f1' : '#374151',
+          background: active ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
           position: 'relative', transition: 'background 0.15s', flexShrink: 0,
         }}
       >
@@ -806,8 +806,8 @@ export function AnimPreview({
         onMouseUp={() => setIsPressed(false)}
         style={{
           width: size, height: size,
-          background: '#1e3a5f',
-          border: '1px solid #3b5c8a',
+          background: 'var(--bld-bg-elevated)',
+          border: '1px solid var(--bld-border-subtle)',
           borderRadius: 4,
           transform: `scale(${activeScale}) translateY(${activeY}px)`,
           opacity: activeOpacity,
@@ -823,8 +823,8 @@ export function AnimPreview({
   if (!animCSS) return null;
 
   const bgGradient = category === 'loop' && type === 'gradientDrift'
-    ? 'linear-gradient(135deg,#334155,#475569,#334155)'
-    : '#1e3a5f';
+    ? 'linear-gradient(135deg, var(--bld-bg-elevated), var(--bld-border-subtle), var(--bld-bg-elevated))'
+    : 'var(--bld-bg-elevated)';
   const bgSize = type === 'gradientDrift' ? '300% 300%' : undefined;
 
   return (
@@ -834,7 +834,7 @@ export function AnimPreview({
         width: size, height: size,
         background: bgGradient,
         backgroundSize: bgSize,
-        border: '1px solid #3b5c8a',
+        border: '1px solid var(--bld-border-subtle)',
         borderRadius: 4,
         animation: `${kfName} ${animCSS.animation}`,
       }} />
@@ -988,7 +988,7 @@ export function ResponsiveFieldRow({
         {changed && onReset ? (
           <DirectChangedLabel text={label} changed onReset={onReset} />
         ) : (
-          <span style={{ fontSize: 10, color: '#9ca3af' }}>{label}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>{label}</span>
         )}
         {overriddenBreakpoints.length > 0 && (
           <ResponsiveDot
@@ -1004,3 +1004,72 @@ export function ResponsiveFieldRow({
   );
 }
 
+
+// ─── SearchInput ───────────────────────────────────────────────────────────────
+
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = 'Search…',
+  style,
+  inputRef,
+  onKeyDown,
+  autoFocus,
+  'data-testid': testId,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  autoFocus?: boolean;
+  'data-testid'?: string;
+}) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', ...style }}>
+      <svg
+        style={{ position: 'absolute', left: 8, color: 'var(--bld-text-disabled)', pointerEvents: 'none', flexShrink: 0 }}
+        width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+      >
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        onKeyDown={onKeyDown}
+        autoFocus={autoFocus}
+        data-testid={testId}
+        onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--bld-accent)'; }}
+        onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--bld-border-subtle)'; }}
+        style={{
+          width: '100%',
+          background: 'var(--bld-bg-input)',
+          border: '1px solid var(--bld-border-subtle)',
+          borderRadius: 6,
+          color: 'var(--bld-text-2)',
+          fontSize: 11,
+          padding: value ? '4px 24px 4px 24px' : '4px 8px 4px 24px',
+          boxSizing: 'border-box' as const,
+          outline: 'none',
+          transition: 'border-color 0.15s',
+        }}
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          style={{ position: 'absolute', right: 5, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2, borderRadius: 3 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+        >
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}

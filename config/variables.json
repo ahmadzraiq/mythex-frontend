@@ -3023,14 +3023,14 @@
       "label": "Admin Products Column Order",
       "type": "array",
       "initialValue": [
-        {"id": "id", "label": "ID", "visible": false},
-        {"id": "created_at", "label": "Created At", "visible": false},
-        {"id": "updated_at", "label": "Updated At", "visible": false},
         {"id": "featured_asset", "label": "Featured Asset", "visible": true},
         {"id": "name", "label": "Name", "visible": true},
         {"id": "slug", "label": "Slug", "visible": true},
         {"id": "enabled", "label": "Enabled", "visible": true},
-        {"id": "description", "label": "Description", "visible": false}
+        {"id": "description", "label": "Description", "visible": false},
+        {"id": "id", "label": "ID", "visible": false},
+        {"id": "created_at", "label": "Created At", "visible": false},
+        {"id": "updated_at", "label": "Updated At", "visible": false}
       ],
       "folder": "Admin"
     },
@@ -3038,6 +3038,30 @@
       "label": "Admin Products Column Drag State",
       "type": "object",
       "initialValue": {"cardId": null, "sourceIndex": null, "targetIndex": null},
+      "folder": "Admin"
+    },
+    "adm00015-0000-0000-0000-000000000015": {
+      "label": "Admin Products Column Just Dragged",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Admin"
+    },
+    "adm00016-0000-0000-0000-000000000016": {
+      "label": "Admin Products Page Size",
+      "type": "number",
+      "initialValue": 10,
+      "folder": "Admin"
+    },
+    "adm00017-0000-0000-0000-000000000017": {
+      "label": "Admin Products Current Page",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Admin"
+    },
+    "adm00018-0000-0000-0000-000000000018": {
+      "label": "Admin Products Page Size Dropdown Open",
+      "type": "boolean",
+      "initialValue": false,
       "folder": "Admin"
     }
   },

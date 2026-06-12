@@ -28,11 +28,11 @@ const SECTION_HDR: React.CSSProperties = {
   padding: '8px 12px', borderBottom: '1px solid #1f2937',
 };
 const SEC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: '#9ca3af',
+  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.08em',
 };
 const EMPTY: React.CSSProperties = {
-  fontSize: 11, color: '#4b5563', fontStyle: 'italic',
+  fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
   padding: '10px 14px',
 };
 const ADD_BTN: React.CSSProperties = {
@@ -192,7 +192,7 @@ export function TriggerRow({
         {/* Name + step count */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: 11, fontWeight: 500, color: '#e2e8f0',
+            fontSize: 11, fontWeight: 500, color: 'var(--bld-text-2)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {name}
@@ -204,7 +204,7 @@ export function TriggerRow({
 
         {/* Trigger value badge */}
         <div style={{
-          fontSize: 9, color: '#4b5563', background: '#0f172a',
+          fontSize: 9, color: 'var(--bld-text-disabled)', background: '#0f172a',
           border: '1px solid #1e293b', borderRadius: 3, padding: '2px 5px',
           flexShrink: 0, maxWidth: 80, overflow: 'hidden',
           textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -217,7 +217,7 @@ export function TriggerRow({
           onClick={e => { e.stopPropagation(); onDelete(); }}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#475569', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1,
+            color: 'var(--bld-text-disabled)', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1,
           }}
           onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
           onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
@@ -292,7 +292,7 @@ function TriggerSection({
       >
         <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{
-            fontSize: 8, color: '#6b7280', transition: 'transform 0.15s',
+            fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s',
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block',
           }}>▶</span>
           {title}
@@ -342,7 +342,7 @@ export function TriggersTab() {
     >
       {/* Description */}
       <div style={{
-        padding: '6px 12px 5px', fontSize: 10, color: '#4b5563',
+        padding: '6px 12px 5px', fontSize: 10, color: 'var(--bld-text-disabled)',
         borderBottom: '1px solid #1f2937', flexShrink: 0,
       }}>
         Workflows that run automatically on every page (app lifecycle events).

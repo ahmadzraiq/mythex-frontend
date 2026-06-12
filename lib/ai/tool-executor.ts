@@ -2051,16 +2051,20 @@ const handlers: Record<string, Handler> = {
         };
       }
       // translate(-50%, -50%) → both X and Y
+      // Use stylePatch (not a separate patchNodeStyle) so all transform values
+      // land in a single atomic write — avoids stale-snapshot overwrites when
+      // rotate is also present in the same call.
       const tBoth = t.match(/\btranslate\(\s*([^,]+),\s*([^)]+)\)/);
       if (tBoth) {
-        patchNodeStyle(store, nodeId, { translateX: tBoth[1].trim(), translateY: tBoth[2].trim() });
+        stylePatch.translateX = tBoth[1].trim();
+        stylePatch.translateY = tBoth[2].trim();
       } else {
         // translateX(-50%) → just X
         const tX = t.match(/\btranslateX\(\s*([^)]+)\)/);
-        if (tX) patchNodeStyle(store, nodeId, { translateX: tX[1].trim() });
+        if (tX) stylePatch.translateX = tX[1].trim();
         // translateY(-50%) → just Y
         const tY = t.match(/\btranslateY\(\s*([^)]+)\)/);
-        if (tY) patchNodeStyle(store, nodeId, { translateY: tY[1].trim() });
+        if (tY) stylePatch.translateY = tY[1].trim();
       }
       // rotate(45deg) → style.transform
       const rot = t.match(/\brotate\(\s*([^)]+)\)/);
@@ -2220,7 +2224,7 @@ const handlers: Record<string, Handler> = {
         if (key === 'gap' || key === 'pt' || key === 'pr' || key === 'pb' || key === 'pl' ||
             key === 'mt' || key === 'mr' || key === 'mb' || key === 'ml' ||
             key === 'top' || key === 'right' || key === 'bottom' || key === 'left') {
-          val = `${val}px`;
+          if (typeof val === 'number') val = `${val}px`;
         }
         if (cssProp === '_padding') {
           const v = `${val}px`;
@@ -2493,6 +2497,9 @@ const handlers: Record<string, Handler> = {
         const bpStyles = bpsInput[bpName];
         if (!bpStyles || typeof bpStyles !== 'object') continue;
         asSyncResult(handlers.set_style({ ...bpStyles, nodeId, breakpoint: bpName }, getStore));
+      }
+      if ('desktop' in bpsInput && bpsInput['desktop'] && typeof bpsInput['desktop'] === 'object') {
+        asSyncResult(handlers.set_style({ ...bpsInput['desktop'], nodeId }, getStore));
       }
     }
 

@@ -67,7 +67,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -267,7 +268,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Add Address Form"
       },
       {
         "type": "Box",
@@ -283,7 +285,8 @@
             },
             "text": "No saved addresses yet."
           }
-        ]
+        ],
+        "_group": "Empty State"
       },
       {
         "type": "Box",
@@ -380,7 +383,8 @@
               "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
             }
           }
-        ]
+        ],
+        "_group": "Addresses List"
       }
     ]
   }

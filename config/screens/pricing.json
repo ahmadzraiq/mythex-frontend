@@ -127,7 +127,8 @@
             "delay": 100,
             "easing": "easeOut"
           }
-        }
+        },
+        "_group": "Pricing Header"
       },
       {
         "type": "Box",
@@ -411,7 +412,8 @@
             "key": "id",
             "condition": "context?.item?.data?.isVisible"
           }
-        ]
+        ],
+        "_group": "Pricing Cards"
       }
     ],
     "animation": {

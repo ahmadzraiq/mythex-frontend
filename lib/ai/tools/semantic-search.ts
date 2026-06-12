@@ -19,7 +19,7 @@ import path from 'path';
 
 // Set to true to skip all OpenAI embedding calls (autosave pre-warming + semantic search).
 // Semantic search will return 0 hits and the context agent falls back to text search.
-export const EMBEDDINGS_ENABLED = false;
+export const EMBEDDINGS_ENABLED = true;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { SearchInput } from './_panel-primitives';
 import {
   TEMPLATE_LIBRARY,
   TEMPLATE_CATEGORY_ORDER,
@@ -44,10 +45,10 @@ const IconCheck = () => (
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const INPUT_STYLE: React.CSSProperties = {
-  background: '#111827',
+  background: 'var(--bld-bg-panel)',
   border: '1px solid #374151',
   borderRadius: 6,
-  color: '#d1d5db',
+  color: 'var(--bld-text-2)',
   fontSize: 12,
   padding: '6px 10px 6px 32px',
   outline: 'none',
@@ -83,8 +84,8 @@ function TemplateCard({ item, isImported, onImport, importing }: TemplateCardPro
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? '#1f2937' : '#141c2b',
-        border: `1px solid ${hovered ? '#374151' : '#1f2937'}`,
+        background: hovered ? 'var(--bld-bg-elevated)' : 'var(--bld-bg-base)',
+        border: `1px solid ${hovered ? 'var(--bld-accent)' : 'var(--bld-border)'}`,
         borderRadius: 10,
         padding: '14px 14px 12px',
         display: 'flex',
@@ -115,7 +116,7 @@ function TemplateCard({ item, isImported, onImport, importing }: TemplateCardPro
           {item.icon}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb', lineHeight: 1.3 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', lineHeight: 1.3 }}>
             {item.name}
           </div>
           {/* Category badge */}
@@ -141,7 +142,7 @@ function TemplateCard({ item, isImported, onImport, importing }: TemplateCardPro
 
       {/* Description */}
       {item.description && (
-        <p style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5, margin: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--bld-text-3)', lineHeight: 1.5, margin: 0 }}>
           {item.description}
         </p>
       )}
@@ -172,7 +173,7 @@ function TemplateCard({ item, isImported, onImport, importing }: TemplateCardPro
             disabled={importing}
             style={{
               width: '100%',
-              background: importing ? '#1e3a5f' : hovered ? '#2563eb' : '#1e3a8a',
+              background: importing ? 'rgba(59,130,246,0.3)' : 'var(--bld-accent)',
               border: 'none',
               borderRadius: 6,
               color: importing ? '#93c5fd' : '#fff',
@@ -183,10 +184,10 @@ function TemplateCard({ item, isImported, onImport, importing }: TemplateCardPro
               transition: 'background 140ms',
             }}
             onMouseEnter={e => {
-              if (!importing) (e.currentTarget as HTMLElement).style.background = '#3b82f6';
+              if (!importing) (e.currentTarget as HTMLElement).style.background = 'var(--bld-accent)';
             }}
             onMouseLeave={e => {
-              if (!importing) (e.currentTarget as HTMLElement).style.background = hovered ? '#2563eb' : '#1e3a8a';
+              if (!importing) (e.currentTarget as HTMLElement).style.background = 'var(--bld-accent-hover)';
             }}
           >
             {importing ? 'Importing…' : 'Import'}
@@ -247,7 +248,7 @@ function CategorySection({ category, items, importedIds, onImport, importingId }
         <span
           style={{
             fontSize: 10,
-            color: '#4b5563',
+            color: 'var(--bld-text-disabled)',
             marginLeft: 'auto',
           }}
         >
@@ -420,10 +421,10 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f3f4f6' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--bld-text-1)' }}>
                 Template Library
               </span>
-              <span style={{ fontSize: 11, color: '#6b7280' }}>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>
                 {TEMPLATE_LIBRARY.length} templates · import as shared components
               </span>
             </div>
@@ -432,7 +433,7 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#6b7280',
+                color: 'var(--bld-text-disabled)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -444,12 +445,12 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
                 flexShrink: 0,
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = '#1f2937';
-                (e.currentTarget as HTMLElement).style.color = '#e5e7eb';
+                (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.background = 'none';
-                (e.currentTarget as HTMLElement).style.color = '#6b7280';
+                (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)';
               }}
               title="Close"
             >
@@ -470,10 +471,10 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
                   padding: '10px 14px',
                   fontSize: 12,
                   fontWeight: activeTab === tab.id ? 600 : 400,
-                  color: activeTab === tab.id ? '#e2e8f0' : '#6b7280',
+                  color: activeTab === tab.id ? '#e2e8f0' : 'var(--bld-text-disabled)',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: `2px solid ${activeTab === tab.id ? '#3b82f6' : 'transparent'}`,
+                  borderBottom: `2px solid ${activeTab === tab.id ? 'var(--bld-accent)' : 'transparent'}`,
                   cursor: 'pointer',
                   marginBottom: -1,
                 }}
@@ -484,37 +485,8 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
           </div>
 
           {/* Search bar */}
-          <div
-            style={{
-              padding: '12px 20px',
-              borderBottom: '1px solid #1f2937',
-              flexShrink: 0,
-              position: 'relative',
-            }}
-          >
-            <span
-              style={{
-                position: 'absolute',
-                left: 32,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6b7280',
-                display: 'flex',
-                alignItems: 'center',
-                pointerEvents: 'none',
-              }}
-            >
-              <IconSearch />
-            </span>
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search templates…"
-              style={INPUT_STYLE}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
-            />
+          <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--bld-border)', flexShrink: 0 }}>
+            <SearchInput value={search} onChange={setSearch} placeholder="Search templates…" inputRef={searchRef} />
           </div>
 
           {/* Body */}
@@ -539,7 +511,7 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
                 }}
               >
                 <span style={{ fontSize: 28 }}>🔍</span>
-                <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>
+                <span style={{ fontSize: 13, color: 'var(--bld-text-3)', fontWeight: 500 }}>
                   No templates match &ldquo;{search}&rdquo;
                 </span>
                 <button
@@ -581,28 +553,28 @@ export function TemplateLibraryModal({ open, onClose }: TemplateLibraryModalProp
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 11, color: '#4b5563' }}>
-              Imported templates appear in the <strong style={{ color: '#6b7280' }}>Shared</strong> tab and can be dragged onto the canvas.
+            <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>
+              Imported templates appear in the <strong style={{ color: 'var(--bld-text-disabled)' }}>Shared</strong> tab and can be dragged onto the canvas.
             </span>
             <button
               onClick={onClose}
               style={{
-                background: '#1f2937',
+                background: 'var(--bld-bg-input)',
                 border: '1px solid #374151',
                 borderRadius: 6,
-                color: '#9ca3af',
+                color: 'var(--bld-text-3)',
                 cursor: 'pointer',
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '5px 14px',
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#6b7280';
-                (e.currentTarget as HTMLElement).style.color = '#e5e7eb';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-text-disabled)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)';
               }}
               onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#374151';
-                (e.currentTarget as HTMLElement).style.color = '#9ca3af';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)';
               }}
             >
               Close
@@ -692,10 +664,10 @@ const BACKEND_TEMPLATES: BackendTemplate[] = [
 ];
 
 const BACKEND_CATEGORY_COLORS: Record<string, string> = {
-  Auth: '#3b82f6',
+  Auth: 'var(--bld-accent)',
   CRUD: '#8b5cf6',
   Payments: '#f59e0b',
-  Email: '#10b981',
+  Email: 'var(--bld-success)',
   Storage: '#6366f1',
 };
 
@@ -715,28 +687,28 @@ function BackendTemplatesTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.6 }}>
-        Backend templates scaffold ready-to-use API Endpoints and data models into the <strong style={{ color: '#94a3b8' }}>Data &amp; API</strong> section.
-        Click <strong style={{ color: '#94a3b8' }}>Use template</strong> to apply.
+      <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>
+        Backend templates scaffold ready-to-use API Endpoints and data models into the <strong style={{ color: 'var(--bld-text-3)' }}>Data &amp; API</strong> section.
+        Click <strong style={{ color: 'var(--bld-text-3)' }}>Use template</strong> to apply.
       </div>
 
       {categories.map(cat => (
         <div key={cat}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: BACKEND_CATEGORY_COLORS[cat] ?? '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: BACKEND_CATEGORY_COLORS[cat] ?? 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
             {cat}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
             {BACKEND_TEMPLATES.filter(t => t.category === cat).map(t => {
               const isApplying = applying === t.id;
               const isDone = applied.has(t.id);
-              const accent = BACKEND_CATEGORY_COLORS[t.category] ?? '#6b7280';
+              const accent = BACKEND_CATEGORY_COLORS[t.category] ?? 'var(--bld-text-disabled)';
               return (
-                <div key={t.id} style={{ background: '#0f172a', border: `1px solid ${isDone ? accent + '55' : '#1f2937'}`, borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div key={t.id} style={{ background: 'var(--bld-bg-base)', border: `1px solid ${isDone ? accent + '55' : 'var(--bld-bg-input)'}`, borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 20, flexShrink: 0 }}>{t.icon}</span>
                     <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: '#e2e8f0', marginBottom: 4 }}>{t.name}</div>
-                      <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>{t.description}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 4 }}>{t.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>{t.description}</div>
                     </div>
                   </div>
                   <button

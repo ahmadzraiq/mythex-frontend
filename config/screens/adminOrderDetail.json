@@ -48,7 +48,8 @@
               "formula": "concat('Order ', collections['ad000003-0000-0000-0000-000000000003']?.order?.code || '')"
             }
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -126,7 +127,7 @@
                                   "className": "text-[12px] text-[var(--theme-admin-label)] mt-[2px]"
                                 },
                                 "text": {
-                                  "formula": "concat(context.item.data.variant_name || '', ' \u00b7 SKU: ', context.item.data.sku || '')"
+                                  "formula": "concat(context.item.data.variant_name || '', ' · SKU: ', context.item.data.sku || '')"
                                 }
                               },
                               {
@@ -135,7 +136,7 @@
                                   "className": "text-[12px] text-[var(--theme-admin-muted)] mt-[4px]"
                                 },
                                 "text": {
-                                  "formula": "concat(formatCurrency(context.item.data.unit_price || 0, 'USD'), ' \u00d7 ', String(context.item.data.quantity || 0))"
+                                  "formula": "concat(formatCurrency(context.item.data.unit_price || 0, 'USD'), ' × ', String(context.item.data.quantity || 0))"
                                 }
                               }
                             ]
@@ -298,7 +299,7 @@
                             "formula": "concat('inline-flex items-center px-[10px] py-[4px] rounded-full text-[12px] font-medium w-fit ', (collections['ad000003-0000-0000-0000-000000000003']?.order?.state === 'Delivered' ? 'bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)]' : collections['ad000003-0000-0000-0000-000000000003']?.order?.state === 'Cancelled' ? 'bg-[var(--theme-admin-danger)]/20 text-[var(--theme-admin-danger)]' : 'bg-[var(--theme-admin-warning)]/20 text-[var(--theme-admin-warning)]'))"
                           }
                         },
-                        "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.state || '\u2014'}}"
+                        "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.state || '—'}}"
                       }
                     ]
                   }
@@ -337,7 +338,7 @@
                         "props": {
                           "className": "text-[13px] text-[var(--theme-admin-label)]"
                         },
-                        "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.email_address || '\u2014'}}"
+                        "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.email_address || '—'}}"
                       }
                     ]
                   }
@@ -407,7 +408,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Order Detail"
       }
     ]
   },

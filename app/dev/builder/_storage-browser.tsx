@@ -140,9 +140,9 @@ export function StorageBrowser({ projectId }: Props) {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* File grid */}
         <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-          {loading && <div style={{ textAlign: 'center', color: '#475569', fontSize: 12, paddingTop: 40 }}>Loading…</div>}
+          {loading && <div style={{ textAlign: 'center', color: 'var(--bld-text-disabled)', fontSize: 12, paddingTop: 40 }}>Loading…</div>}
           {!loading && files.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#475569', fontSize: 13, paddingTop: 60 }}>
+            <div style={{ textAlign: 'center', color: 'var(--bld-text-disabled)', fontSize: 13, paddingTop: 60 }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>📁</div>
               <div>No files in this bucket.</div>
               <div style={{ marginTop: 4, fontSize: 11 }}>Click ↑ Upload to add files.</div>
@@ -167,10 +167,10 @@ export function StorageBrowser({ projectId }: Props) {
                 }}
               >
                 <div style={{ fontSize: 28, textAlign: 'center' }}>{mimeIcon(file.mime)}</div>
-                <div style={{ fontSize: 10, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
                   {file.key.split('/').pop()}
                 </div>
-                <div style={{ fontSize: 9, color: '#475569', textAlign: 'center' }}>{formatBytes(file.size)}</div>
+                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>{formatBytes(file.size)}</div>
               </div>
             ))}
           </div>
@@ -180,8 +180,8 @@ export function StorageBrowser({ projectId }: Props) {
         {selected && (
           <div style={{ width: 260, borderLeft: '1px solid #1e293b', padding: 16, display: 'flex', flexDirection: 'column', gap: 14, flexShrink: 0, overflow: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>File details</span>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14 }}>✕</button>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>File details</span>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
 
             <div style={{ fontSize: 32, textAlign: 'center' }}>{mimeIcon(selected.mime)}</div>
@@ -194,19 +194,19 @@ export function StorageBrowser({ projectId }: Props) {
               { label: 'Added',  value: new Date(selected.createdAt).toLocaleDateString() },
             ].map(({ label, value }) => (
               <div key={label}>
-                <div style={{ fontSize: 10, color: '#475569', fontWeight: 500, marginBottom: 2 }}>{label}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', wordBreak: 'break-all' }}>{value}</div>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500, marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontFamily: 'monospace', wordBreak: 'break-all' }}>{value}</div>
               </div>
             ))}
 
             {presignedUrl && (
               <div>
-                <div style={{ fontSize: 10, color: '#475569', fontWeight: 500, marginBottom: 4 }}>URL</div>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500, marginBottom: 4 }}>URL</div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input
                     readOnly
                     value={presignedUrl}
-                    style={{ flex: 1, fontSize: 10, background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '4px 6px', color: '#6b7280', outline: 'none', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    style={{ flex: 1, fontSize: 10, background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '4px 6px', color: 'var(--bld-text-disabled)', outline: 'none', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}
                   />
                   <button
                     onClick={() => void navigator.clipboard.writeText(presignedUrl)}

@@ -296,7 +296,7 @@ export const LayerRow = memo(function LayerRow_({
   } else if (stateTag === 'empty') {
     badges.push({ key: 'state', label: 'empty', icon: '○', color: '#6ee7b7', bg: '#022c22', title: 'State: Empty' });
   } else if (stateTag === 'default') {
-    badges.push({ key: 'state', label: 'default', icon: '◉', color: '#9ca3af', bg: '#1f2937', title: 'State: Default' });
+    badges.push({ key: 'state', label: 'default', icon: '◉', color: 'var(--bld-text-3)', bg: '#1f2937', title: 'State: Default' });
   } else if (stateTag) {
     badges.push({ key: 'state', label: stateTag, icon: '◈', color: '#c084fc', bg: '#2e1065', title: `State: ${stateTag}` });
   }
@@ -400,7 +400,7 @@ export const LayerRow = memo(function LayerRow_({
             onChange={e => setEditVal(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false); }}
-            style={{ background: '#111827', border: '1px solid #3b82f6', borderRadius: 2, color: '#f3f4f6', fontSize: 10, padding: '0 4px', width: '100%' }}
+            style={{ background: '#111827', border: '1px solid #3b82f6', borderRadius: 2, color: 'var(--bld-text-2)', fontSize: 10, padding: '0 4px', width: '100%' }}
             onClick={e => e.stopPropagation()}
           />
         ) : (

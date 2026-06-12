@@ -34,22 +34,22 @@ if (typeof document !== 'undefined' && !document.getElementById('spatial-no-spin
 
 const ArrowUp = () => (
   <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M4 7V1M1.5 3.5L4 1l2.5 2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4 7V1M1.5 3.5L4 1l2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const ArrowDown = () => (
   <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M4 1v6M1.5 4.5L4 7l2.5-2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M4 1v6M1.5 4.5L4 7l2.5-2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const ArrowLeft = () => (
   <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M7 4H1M3.5 1.5L1 4l2.5 2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 4H1M3.5 1.5L1 4l2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const ArrowRight = () => (
   <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M1 4h6M4.5 1.5L7 4l-2.5 2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M1 4h6M4.5 1.5L7 4l-2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -200,7 +200,7 @@ export function PanelInput({
           <button
             onMouseDown={e => { e.preventDefault(); onReset(); setPopupPos(null); }}
             style={{
-              background: 'none', border: 'none', color: '#e5e7eb',
+              background: 'none', border: 'none', color: 'var(--bld-text-2)',
               fontSize: 10, cursor: 'pointer', padding: 0,
               display: 'flex', alignItems: 'center', gap: 3,
             }}
@@ -380,7 +380,7 @@ export function SpacingDiagram({
     <div>
       {/* Header row: label + responsive dot + bind button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 9, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'flex', alignItems: 'center' }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'flex', alignItems: 'center' }}>
           {label}
           {responsiveOverrides && responsiveOverrides.length > 0 && onResponsiveRemove && (
             <ResponsiveDot
@@ -488,7 +488,7 @@ function CornerCell({
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
         <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-          <path d={CORNER_SVG_D[corner]} stroke="#4b5563" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+          <path d={CORNER_SVG_D[corner]} stroke="var(--bld-text-disabled)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
         </svg>
         {dotEl}
       </div>
@@ -621,10 +621,10 @@ export function InsetDiagram({
       <div style={{ width: 24, height: 24, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width={10} height={10} viewBox="0 0 10 10" fill="none">
           <circle cx="5" cy="5" r="1.5" fill="#4b5563" />
-          <line x1="5" y1="1" x2="5" y2="3.5" stroke="#4b5563" strokeWidth="1" strokeLinecap="round" />
-          <line x1="5" y1="6.5" x2="5" y2="9" stroke="#4b5563" strokeWidth="1" strokeLinecap="round" />
-          <line x1="1" y1="5" x2="3.5" y2="5" stroke="#4b5563" strokeWidth="1" strokeLinecap="round" />
-          <line x1="6.5" y1="5" x2="9" y2="5" stroke="#4b5563" strokeWidth="1" strokeLinecap="round" />
+          <line x1="5" y1="1" x2="5" y2="3.5" stroke="var(--bld-text-disabled)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="5" y1="6.5" x2="5" y2="9" stroke="var(--bld-text-disabled)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="1" y1="5" x2="3.5" y2="5" stroke="var(--bld-text-disabled)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="6.5" y1="5" x2="9" y2="5" stroke="var(--bld-text-disabled)" strokeWidth="1" strokeLinecap="round" />
         </svg>
       </div>
       {cell('right', <ArrowRight />, true)}
@@ -648,7 +648,7 @@ export function XYOffsetControl({
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
         {icon}
-        <span style={{ fontSize: 9, color: '#6b7280' }}>{axisLabel}</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{axisLabel}</span>
       </div>
       <PanelInput value={val} onChange={onChg} width={50} min={min} max={max} />
     </div>
@@ -658,12 +658,12 @@ export function XYOffsetControl({
     <div style={{ display: 'flex', gap: 8 }}>
       {axis('X', (
         <svg width={10} height={10} viewBox="0 0 10 10" fill="none">
-          <path d="M1 5h8M6 2l3 3-3 3M4 2L1 5l3 3" stroke="#6b7280" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M1 5h8M6 2l3 3-3 3M4 2L1 5l3 3" stroke="var(--bld-text-disabled)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ), x, onChangeX)}
       {axis('Y', (
         <svg width={10} height={10} viewBox="0 0 10 10" fill="none">
-          <path d="M5 1v8M2 6l3 3 3-3M2 4L5 1l3 3" stroke="#6b7280" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 1v8M2 6l3 3 3-3M2 4L5 1l3 3" stroke="var(--bld-text-disabled)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ), y, onChangeY)}
     </div>

@@ -258,8 +258,8 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
             </div>
             {jsonErr && (
               <div style={{ marginTop: 6, padding: '10px 12px', background: '#1f2937', border: '1px solid #374151', borderRadius: 6 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: '#f3f4f6', margin: '0 0 4px' }}>JSON and JavaScript</p>
-                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', margin: '0 0 4px' }}>JSON and JavaScript</p>
+                <p style={{ fontSize: 11, color: 'var(--bld-text-3)', margin: 0, lineHeight: 1.5 }}>
                   {varType === 'array' ? 'Array' : 'Object'} value should be set as JSON. If you entered valid JavaScript, try converting it to valid JSON.
                 </p>
               </div>
@@ -285,7 +285,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
           display: 'flex', alignItems: 'flex-start', background: '#111827',
           whiteSpace: 'pre-wrap', wordBreak: 'break-all',
         }}>
-          {liveValue || <span style={{ fontStyle: 'italic', color: '#4b5563' }}>{varValue || getDefaultForType(varType)}</span>}
+          {liveValue || <span style={{ fontStyle: 'italic', color: 'var(--bld-text-3)' }}>{varValue || getDefaultForType(varType)}</span>}
         </div>
       </div>
 
@@ -294,7 +294,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
         <label style={SP_LABEL}>Save in local storage</label>
         <YesNoToggle value={saveStorage} onChange={setSaveStorage} />
         {saveStorage && (
-          <div style={{ marginTop: 6, fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
+          <div style={{ marginTop: 6, fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
             Value is only saved when it differs from the default. Reverting to the default clears the stored key.
           </div>
         )}

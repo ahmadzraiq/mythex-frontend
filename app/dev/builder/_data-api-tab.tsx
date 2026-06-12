@@ -32,7 +32,7 @@ const SECTION_STYLE: React.CSSProperties = {
   display: 'flex',
   overflow: 'hidden',
   flexDirection: 'column',
-  background: '#0f172a',
+  background: 'var(--bld-bg-base)',
 };
 
 const NAV_WIDTH = 160;
@@ -46,14 +46,14 @@ export function DataApiTab({ projectId }: DataApiTabProps) {
       {/* ── Left sub-nav ────────────────────────────────────────────────── */}
       <div style={{
         width: NAV_WIDTH,
-        background: '#0a0f1a',
-        borderRight: '1px solid #1e293b',
+        background: 'var(--bld-ai-bg)',
+        borderRight: '1px solid var(--bld-bg-elevated)',
         display: 'flex',
         flexDirection: 'column',
         padding: '8px 0',
         flexShrink: 0,
       }}>
-        <div style={{ padding: '8px 12px 12px', fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <div style={{ padding: '8px 12px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Backend
         </div>
         {NAV_ITEMS.map((item) => (
@@ -67,9 +67,9 @@ export function DataApiTab({ projectId }: DataApiTabProps) {
               padding: '7px 12px',
               fontSize: 12,
               fontWeight: section === item.id ? 600 : 400,
-              color: section === item.id ? '#e2e8f0' : '#94a3b8',
+              color: section === item.id ? 'var(--bld-text-2)' : 'var(--bld-text-3)',
               background: section === item.id ? 'rgba(59,130,246,0.12)' : 'transparent',
-              borderLeft: `2px solid ${section === item.id ? '#3b82f6' : 'transparent'}`,
+              borderLeft: `2px solid ${section === item.id ? 'var(--bld-accent)' : 'transparent'}`,
               cursor: 'pointer',
               border: 'none',
               textAlign: 'left',

@@ -61,24 +61,24 @@ export function extractByPath(data: unknown, path: string): unknown {
 
 function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
   const [open, setOpen] = React.useState(depth < 2);
-  if (value === null) return <span style={{ color: '#9ca3af' }}>null</span>;
-  if (value === undefined) return <span style={{ color: '#9ca3af' }}>undefined</span>;
-  if (typeof value === 'string') return <span style={{ color: '#86efac' }}>"{value}"</span>;
-  if (typeof value === 'number') return <span style={{ color: '#93c5fd' }}>{value}</span>;
-  if (typeof value === 'boolean') return <span style={{ color: '#fcd34d' }}>{String(value)}</span>;
+  if (value === null) return <span style={{ color: 'var(--bld-text-3)' }}>null</span>;
+  if (value === undefined) return <span style={{ color: 'var(--bld-text-3)' }}>undefined</span>;
+  if (typeof value === 'string') return <span style={{ color: 'var(--bld-success)' }}>"{value}"</span>;
+  if (typeof value === 'number') return <span style={{ color: 'var(--bld-accent)' }}>{value}</span>;
+  if (typeof value === 'boolean') return <span style={{ color: 'var(--bld-warning)' }}>{String(value)}</span>;
   if (Array.isArray(value)) {
-    if (value.length === 0) return <span style={{ color: '#6b7280' }}>[]</span>;
+    if (value.length === 0) return <span style={{ color: 'var(--bld-text-disabled)' }}>[]</span>;
     return (
       <span>
-        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9ca3af', fontSize: 11 }}>
+        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--bld-text-3)', fontSize: 11 }}>
           {open ? '▾' : '▸'} Array({value.length})
         </button>
         {open && (
           <div style={{ paddingLeft: 14 }}>
             {value.slice(0, 20).map((item, i) => (
-              <div key={i}><span style={{ color: '#6b7280' }}>{i}: </span><JsonNode value={item} depth={depth + 1} /></div>
+              <div key={i}><span style={{ color: 'var(--bld-text-disabled)' }}>{i}: </span><JsonNode value={item} depth={depth + 1} /></div>
             ))}
-            {value.length > 20 && <div style={{ color: '#6b7280' }}>… {value.length - 20} more</div>}
+            {value.length > 20 && <div style={{ color: 'var(--bld-text-disabled)' }}>… {value.length - 20} more</div>}
           </div>
         )}
       </span>
@@ -86,18 +86,18 @@ function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
   }
   if (typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return <span style={{ color: '#6b7280' }}>{'{}'}</span>;
+    if (entries.length === 0) return <span style={{ color: 'var(--bld-text-disabled)' }}>{'{}'}</span>;
     return (
       <span>
-        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9ca3af', fontSize: 11 }}>
+        <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--bld-text-3)', fontSize: 11 }}>
           {open ? '▾' : '▸'} Object({entries.length})
         </button>
         {open && (
           <div style={{ paddingLeft: 14 }}>
             {entries.slice(0, 30).map(([k, v]) => (
-              <div key={k}><span style={{ color: '#c4b5fd' }}>{k}: </span><JsonNode value={v} depth={depth + 1} /></div>
+              <div key={k}><span style={{ color: 'var(--bld-ai-accent)' }}>{k}: </span><JsonNode value={v} depth={depth + 1} /></div>
             ))}
-            {entries.length > 30 && <div style={{ color: '#6b7280' }}>… {entries.length - 30} more</div>}
+            {entries.length > 30 && <div style={{ color: 'var(--bld-text-disabled)' }}>… {entries.length - 30} more</div>}
           </div>
         )}
       </span>
@@ -109,20 +109,20 @@ function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
 export function FetchResultPanel({ result }: { result: FetchState }) {
   const isSuccess = result.status === 'success';
   return (
-    <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid #1f2937', display: 'flex', flexDirection: 'column', height: '100%', background: '#0f172a' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Result</span>
+    <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bld-bg-base)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>Result</span>
         <span style={{
           fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-          background: isSuccess ? '#064e3b' : '#7f1d1d',
-          color: isSuccess ? '#34d399' : '#f87171',
+          background: isSuccess ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.12)',
+          color: isSuccess ? 'var(--bld-success)' : 'var(--bld-error)',
         }}>
           {isSuccess ? 'Success' : 'Error'}
         </span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6, color: '#f3f4f6' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6, color: 'var(--bld-text-1)' }}>
         {result.status === 'error'
-          ? <span style={{ color: '#f87171' }}>{result.error}</span>
+          ? <span style={{ color: 'var(--bld-error)' }}>{result.error}</span>
           : <JsonNode value={result.data} depth={0} />
         }
       </div>
@@ -140,20 +140,20 @@ export const FORMULA_ANCHOR_LEFT = 248 + 320;
 
 export const SECTION_HDR: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '8px 12px', borderBottom: '1px solid #1f2937',
+  padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)',
 };
 export const SEC_LABEL: React.CSSProperties = {
-  fontSize: 12, fontWeight: 600, color: '#d1d5db', whiteSpace: 'nowrap', flexShrink: 0,
+  fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', whiteSpace: 'nowrap', flexShrink: 0,
 };
 export const EMPTY: React.CSSProperties = {
-  fontSize: 11, color: '#4b5563', fontStyle: 'italic',
+  fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
   padding: '8px 12px',
 };
 export const ADD_BTN: React.CSSProperties = {
-  padding: '3px 10px', background: '#1d4ed8', border: 'none',
-  borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer',
+  padding: '3px 10px', background: 'var(--bld-accent-hover)', border: 'none',
+  borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 10, cursor: 'pointer',
 };
-export const TYPE_COLOR: Record<string, string> = { rest: '#34d399', graphql: '#f59e0b' };
+export const TYPE_COLOR: Record<string, string> = { rest: 'var(--bld-success)', graphql: 'var(--bld-warning)' };
 
 // ─── A. Data Sources ──────────────────────────────────────────────────────────
 
@@ -256,14 +256,14 @@ function highlightGql(code: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   return esc
-    .replace(/(#[^\n]*)/g, '<span style="color:#6b7280;font-style:italic">$1</span>')
+    .replace(/(#[^\n]*)/g, '<span style="color:var(--bld-text-disabled);font-style:italic">$1</span>')
     .replace(/\b(query|mutation|subscription|fragment|on|true|false|null)\b/g,
-      '<span style="color:#60a5fa;font-weight:600">$1</span>')
+      '<span style="color:var(--bld-info);font-weight:600">$1</span>')
     .replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g,
-      '<span style="color:#34d399">$1</span>')
-    .replace(/(&quot;[^&]*&quot;)/g, '<span style="color:#fbbf24">$1</span>')
-    .replace(/([{}()[\]!|])/g, '<span style="color:#94a3b8">$1</span>')
-    .replace(/(\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span style="color:#c084fc">$1</span>');
+      '<span style="color:var(--bld-success)">$1</span>')
+    .replace(/(&quot;[^&]*&quot;)/g, '<span style="color:var(--bld-warning)">$1</span>')
+    .replace(/([{}()[\]!|])/g, '<span style="color:var(--bld-text-3)">$1</span>')
+    .replace(/(\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span style="color:var(--bld-ai-accent)">$1</span>');
 }
 
 export function GqlEditor({ value, onChange, placeholder }: {
@@ -290,13 +290,13 @@ export function GqlEditor({ value, onChange, placeholder }: {
   const lineNumbers = Array.from({ length: displayLines }, (_, i) => i + 1).join('\n');
 
   return (
-    <div style={{ position: 'relative', background: '#0a0e1a', border: '1px solid #1e3050', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
+    <div style={{ position: 'relative', background: 'var(--bld-ai-bg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
       {/* Line numbers */}
-      <pre aria-hidden style={{ ...FONT, margin: 0, padding: '10px 8px', background: '#060a14', color: '#334155', borderRight: '1px solid #1e3050', userSelect: 'none', minWidth: 34, textAlign: 'right', flexShrink: 0, overflowY: 'hidden', pointerEvents: 'none' }}>{lineNumbers}</pre>
+      <pre aria-hidden style={{ ...FONT, margin: 0, padding: '10px 8px', background: 'var(--bld-bg-base)', color: 'var(--bld-text-disabled)', borderRight: '1px solid var(--bld-border-subtle)', userSelect: 'none', minWidth: 34, textAlign: 'right', flexShrink: 0, overflowY: 'hidden', pointerEvents: 'none' }}>{lineNumbers}</pre>
       {/* Syntax highlight layer */}
       <pre ref={preRef} aria-hidden
-        style={{ ...FONT, position: 'absolute', left: 42, top: 0, right: 0, bottom: 0, margin: 0, padding: '10px 10px', color: '#e2e8f0', pointerEvents: 'none', overflow: 'hidden', whiteSpace: 'pre', wordBreak: 'normal' }}
-        dangerouslySetInnerHTML={{ __html: highlightGql(value) || `<span style="color:#334155">${placeholder ?? ''}</span>` }}
+        style={{ ...FONT, position: 'absolute', left: 42, top: 0, right: 0, bottom: 0, margin: 0, padding: '10px 10px', color: 'var(--bld-text-2)', pointerEvents: 'none', overflow: 'hidden', whiteSpace: 'pre', wordBreak: 'normal' }}
+        dangerouslySetInnerHTML={{ __html: highlightGql(value) || `<span style="color:var(--bld-border-subtle)">${placeholder ?? ''}</span>` }}
       />
       {/* Editable textarea */}
       <textarea
@@ -307,7 +307,7 @@ export function GqlEditor({ value, onChange, placeholder }: {
         onScroll={syncScroll}
         spellCheck={false}
         rows={displayLines}
-        style={{ ...FONT, position: 'relative', zIndex: 1, flex: 1, margin: 0, padding: '10px 10px', background: 'transparent', color: 'transparent', caretColor: '#e2e8f0', border: 'none', outline: 'none', resize: 'none', overflowY: 'auto', whiteSpace: 'pre', wordBreak: 'normal' }}
+        style={{ ...FONT, position: 'relative', zIndex: 1, flex: 1, margin: 0, padding: '10px 10px', background: 'transparent', color: 'transparent', caretColor: 'var(--bld-text-2)', border: 'none', outline: 'none', resize: 'none', overflowY: 'auto', whiteSpace: 'pre', wordBreak: 'normal' }}
       />
     </div>
   );
@@ -342,12 +342,12 @@ export function SectionRow({
     // Bound state: show label + ƒ Edit formula button + active BindingIcon
     return (
       <div style={{ marginBottom: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db', display: 'block', marginBottom: 4 }}>{label}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)', display: 'block', marginBottom: 4 }}>{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button
             onClick={onEditFormula}
-            style={{ flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
+              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >
             ƒ Edit formula
@@ -360,14 +360,14 @@ export function SectionRow({
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db' }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)' }}>{label}</span>
       {onBind && <BindingIcon isBound={!!bindActive} onClick={onBind} />}
       <span style={{ flex: 1 }} />
       {onAdd && (
         <button
           data-testid={addTestId}
           onClick={onAdd}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#1e3a5f', border: '1px solid #2563eb', borderRadius: 6, color: '#93c5fd', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)', borderRadius: 6, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}
         >
           + Add
         </button>
@@ -399,9 +399,9 @@ export function KvRow({
   const { isOpen: valFEOpen, open: openValFE, close: closeValFE } = useFormulaField(valFieldId, formulaState, setFormulaState);
 
   const CELL: React.CSSProperties = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 };
-  const CELL_LABEL: React.CSSProperties = { fontSize: 10, color: '#6b7280', fontWeight: 500 };
+  const CELL_LABEL: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500 };
   const FIELD_ROW: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 3 };
-  const FORMULA_BTN: React.CSSProperties = { flex: 1, ...SP_INPUT, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '3px 6px' };
+  const FORMULA_BTN: React.CSSProperties = { flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '3px 6px' };
 
   return (
     <div style={{ marginBottom: 6 }}>
@@ -446,7 +446,7 @@ export function KvRow({
           </div>
 
         {/* Remove */}
-        <button onClick={onRemove} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1, marginBottom: 2 }}>×</button>
+        <button onClick={onRemove} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1, marginBottom: 2 }}>×</button>
             </div>
 
       {/* Formula editors
@@ -507,16 +507,16 @@ export function OnOffRow({
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db', flex: 1 }}>{label}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)', flex: 1 }}>{label}</span>
         <BindingIcon isBound={isBound} onClick={open} />
         {!isBound && (
-          <div style={{ display: 'flex', borderRadius: 6, overflow: 'hidden', border: '1px solid #374151' }}>
-            <button onClick={() => onChange(true)} style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer', border: 'none', background: value === true ? '#1e3a5f' : 'transparent', color: value === true ? '#93c5fd' : '#6b7280', fontWeight: value === true ? 600 : 400 }}>On</button>
-            <button onClick={() => onChange(false)} style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer', border: 'none', borderLeft: '1px solid #374151', background: value !== true ? '#1f2937' : 'transparent', color: value !== true ? '#d1d5db' : '#6b7280', fontWeight: value !== true ? 600 : 400 }}>Off</button>
+          <div style={{ display: 'flex', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)' }}>
+            <button onClick={() => onChange(true)} style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer', border: 'none', background: value === true ? 'var(--bld-bg-elevated)' : 'transparent', color: value === true ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', fontWeight: value === true ? 600 : 400 }}>On</button>
+            <button onClick={() => onChange(false)} style={{ padding: '4px 12px', fontSize: 11, cursor: 'pointer', border: 'none', borderLeft: '1px solid var(--bld-border-subtle)', background: value !== true ? 'var(--bld-bg-input)' : 'transparent', color: value !== true ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)', fontWeight: value !== true ? 600 : 400 }}>Off</button>
                 </div>
             )}
         {isBound && (
-          <button onClick={open} style={{ ...SP_INPUT, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}>ƒ Edit formula</button>
+          <button onClick={open} style={{ ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}>ƒ Edit formula</button>
             )}
           </div>
       {isOpen && (
@@ -537,10 +537,10 @@ export function OnOffRow({
 export function SimpleToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: '#d1d5db' }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-2)' }}>{label}</span>
       <button type="button" onClick={() => onChange(!value)}
-        style={{ width: 40, height: 22, borderRadius: 11, flexShrink: 0, background: value ? '#3b82f6' : '#374151', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.15s' }}>
-        <span style={{ position: 'absolute', top: 3, left: value ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+        style={{ width: 40, height: 22, borderRadius: 11, flexShrink: 0, background: value ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.15s' }}>
+        <span style={{ position: 'absolute', top: 3, left: value ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.15s' }} />
                   </button>
             </div>
   );
@@ -551,61 +551,61 @@ export function SimpleToggleRow({ label, value, onChange }: { label: string; val
 export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'internal-view' | 'internal-table') => void }) {
   const btnStyle = (hoverColor: string): React.CSSProperties => ({
     display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px',
-    background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10,
+    background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-input)', borderRadius: 10,
     cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s',
   });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px 16px', gap: 10 }}>
-      <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Choose a data source type:</div>
+      <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>Choose a data source type:</div>
 
       {/* ── Internal types (project backend) ──────────────────────────── */}
-      <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Project Backend</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Project Backend</div>
 
       <button data-testid="ds-pick-internal-view" onClick={() => onSelect('internal-view')}
-        style={btnStyle('#3b82f6')}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
-        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#172554', border: '1px solid #3b82f655', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>⊡</span>
+        style={btnStyle('var(--bld-accent)')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-bg-input)')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(59,130,246,0.15)', border: '1px solid var(--bld-accent)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--bld-info)', fontWeight: 700 }}>⊡</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>View</div>
-          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Connect to a server-side View — pre-filtered, sorted, and secured. Supports parameters for dynamic filtering.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>View</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Connect to a server-side View — pre-filtered, sorted, and secured. Supports parameters for dynamic filtering.</div>
         </div>
       </button>
 
       <button data-testid="ds-pick-internal-table" onClick={() => onSelect('internal-table')}
-        style={btnStyle('#8b5cf6')}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#8b5cf6')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
-        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#2e1065', border: '1px solid #8b5cf655', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#a78bfa', fontWeight: 700 }}>⊞</span>
+        style={btnStyle('var(--bld-ai-accent)')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-ai-accent)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-bg-input)')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--bld-ai-accent)', fontWeight: 700 }}>⊞</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>Table</div>
-          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Direct access to a project table. Full CRUD with filters and sorting. Apply security at the View level.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>Table</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Direct access to a project table. Full CRUD with filters and sorting. Apply security at the View level.</div>
         </div>
       </button>
 
       {/* ── External types ─────────────────────────────────────────────── */}
-      <div style={{ fontSize: 10, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 6, marginBottom: 2 }}>External</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 6, marginBottom: 2 }}>External</div>
 
       <button data-testid="ds-pick-rest" onClick={() => onSelect('rest')}
-        style={btnStyle('#34d399')}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#34d399')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
-        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#06301e', border: '1px solid #34d39955', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#34d399', fontWeight: 700 }}>⇄</span>
+        style={btnStyle('var(--bld-success)')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-success)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-bg-input)')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(34,197,94,0.15)', border: '1px solid var(--bld-success)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--bld-success)', fontWeight: 700 }}>⇄</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>REST</div>
-          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Connect to any HTTP endpoint — GET, POST, PUT, DELETE. Supports query params, headers, and body.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>REST</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Connect to any HTTP endpoint — GET, POST, PUT, DELETE. Supports query params, headers, and body.</div>
         </div>
       </button>
 
       <button data-testid="ds-pick-graphql" onClick={() => onSelect('graphql')}
-        style={btnStyle('#f59e0b')}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#f59e0b')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#1f2937')}>
-        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: '#2a1a00', border: '1px solid #f59e0b55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#f59e0b', fontWeight: 700 }}>⬡</span>
+        style={btnStyle('var(--bld-warning)')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-warning)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-bg-input)')}>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,0.15)', border: '1px solid var(--bld-warning)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--bld-warning)', fontWeight: 700 }}>⬡</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f3f4f6', marginBottom: 4 }}>GraphQL</div>
-          <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.5 }}>Write a query or mutation. Variables support <code style={{ color: '#818cf8' }}>{'{{formulas}}'}</code> for dynamic values.</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>GraphQL</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Write a query or mutation. Variables support <code style={{ color: 'var(--bld-ai-accent)' }}>{'{{formulas}}'}</code> for dynamic values.</div>
         </div>
       </button>
     </div>
@@ -741,7 +741,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
     } as DataSourceConfig);
   };
 
-  const DIVIDER: React.CSSProperties = { borderTop: '1px solid #1f2937', margin: '4px 0 12px' };
+  const DIVIDER: React.CSSProperties = { borderTop: '1px solid var(--bld-bg-input)', margin: '4px 0 12px' };
 
   const hasResult = fetchState.status !== 'idle';
   const isEditing = !!initial.id;
@@ -796,7 +796,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <BindingIcon isBound={urlBound} onClick={openUrlFE} />
             {urlBound ? (
-              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
+              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
             ) : (
               <input data-testid="ds-url" value={url as string} onChange={e => setUrl(e.target.value)} placeholder="https://api-url.com/endpoint" style={{ ...SP_INPUT, flex: 1 }} />
             )}
@@ -818,12 +818,12 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
         {/* Body tabs — only for non-GET */}
         {(method ?? 'GET') !== 'GET' && (
           <>
-            <div style={{ display: 'flex', background: '#1f2937', borderRadius: 6, padding: 2, gap: 2, marginBottom: 12 }}>
+            <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 6, padding: 2, gap: 2, marginBottom: 12 }}>
               <button style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 500,
-                background: bodyMode === 'parsed' ? '#374151' : 'transparent', color: bodyMode === 'parsed' ? '#f3f4f6' : '#6b7280' }}
+                background: bodyMode === 'parsed' ? 'var(--bld-border-subtle)' : 'transparent', color: bodyMode === 'parsed' ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
                 onClick={() => setBodyMode('parsed')}>Parsed fields</button>
               <button style={{ flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 500,
-                background: bodyMode === 'raw' ? '#374151' : 'transparent', color: bodyMode === 'raw' ? '#f3f4f6' : '#6b7280' }}
+                background: bodyMode === 'raw' ? 'var(--bld-border-subtle)' : 'transparent', color: bodyMode === 'raw' ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
                 onClick={() => setBodyMode('raw')}>Raw body</button>
             </div>
 
@@ -939,12 +939,12 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
       </div>
 
       {/* Footer — compact: Fetch | Save */}
-      <div style={{ padding: '7px 10px', borderTop: '1px solid #1f2937', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ padding: '7px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
         <button
           data-testid="ds-fetch"
           onClick={fetchData}
           disabled={fetchState.status === 'loading' || !canSave}
-          style={{ padding: '4px 10px', background: 'none', border: '1px solid #374151', borderRadius: 5, color: canSave ? '#9ca3af' : '#4b5563', fontSize: 11, cursor: canSave ? 'pointer' : 'default', flexShrink: 0 }}
+          style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: canSave ? 'var(--bld-text-3)' : 'var(--bld-border-subtle)', fontSize: 11, cursor: canSave ? 'pointer' : 'default', flexShrink: 0 }}
         >
           {fetchState.status === 'loading' ? 'Fetching…' : 'Fetch'}
         </button>
@@ -1142,7 +1142,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     });
   };
 
-  const DIVIDER: React.CSSProperties = { borderTop: '1px solid #1f2937', margin: '4px 0 12px' };
+  const DIVIDER: React.CSSProperties = { borderTop: '1px solid var(--bld-bg-input)', margin: '4px 0 12px' };
 
   const hasResult = fetchState.status !== 'idle';
   const isEditing = !!initial.id;
@@ -1175,7 +1175,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <BindingIcon isBound={urlBound} onClick={openUrlFE} />
             {urlBound ? (
-              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: '#1e1b4b', border: '1px solid #4338ca', color: '#a5b4fc', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
+              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
             ) : (
               <input data-testid="ds-url" value={url as string} onChange={e => setUrl(e.target.value)} placeholder="https://api-url.com/graphql" style={{ ...SP_INPUT, flex: 1 }} />
               )}
@@ -1200,7 +1200,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
                       type="button"
               onClick={() => setQuery(formatGql(query))}
               title="Auto-format GraphQL query"
-              style={{ padding: '2px 8px', background: 'none', border: '1px solid #374151', borderRadius: 4, color: '#9ca3af', fontSize: 9, cursor: 'pointer' }}
+              style={{ padding: '2px 8px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', fontSize: 9, cursor: 'pointer' }}
             >
               Format
                       </button>
@@ -1274,12 +1274,12 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
           </div>
 
       {/* Footer — compact: Fetch | Save */}
-      <div style={{ padding: '7px 10px', borderTop: '1px solid #1f2937', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ padding: '7px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
         <button
           data-testid="ds-fetch"
           onClick={fetchData}
           disabled={fetchState.status === 'loading' || !canSave}
-          style={{ padding: '4px 10px', background: 'none', border: '1px solid #374151', borderRadius: 5, color: canSave ? '#9ca3af' : '#4b5563', fontSize: 11, cursor: canSave ? 'pointer' : 'default', flexShrink: 0 }}
+          style={{ padding: '4px 10px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: canSave ? 'var(--bld-text-3)' : 'var(--bld-border-subtle)', fontSize: 11, cursor: canSave ? 'pointer' : 'default', flexShrink: 0 }}
         >
           {fetchState.status === 'loading' ? 'Fetching…' : 'Fetch'}
         </button>
@@ -1335,7 +1335,7 @@ function InternalDataSourceForm({
   const [resourceName, setResourceName] = useState((initial as { resourceName?: string }).resourceName ?? '');
 
   const isView = type === 'internal-view';
-  const accent = isView ? '#60a5fa' : '#a78bfa';
+  const accent = isView ? 'var(--bld-info)' : 'var(--bld-ai-accent)';
 
   const handleSave = () => {
     onSave({
@@ -1348,12 +1348,12 @@ function InternalDataSourceForm({
   };
 
   const inputStyle: React.CSSProperties = {
-    background: '#0f172a',
-    border: '1px solid #1f2937',
+    background: 'var(--bld-bg-base)',
+    border: '1px solid var(--bld-bg-input)',
     borderRadius: 6,
     padding: '7px 10px',
     fontSize: 12,
-    color: '#e2e8f0',
+    color: 'var(--bld-text-2)',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
@@ -1363,20 +1363,20 @@ function InternalDataSourceForm({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 16, gap: 14 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 16, padding: 0 }}>←</button>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: 0 }}>←</button>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>
           {isView ? '⊡ View Data Source' : '⊞ Table Data Source'}
         </div>
       </div>
 
-      <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.6 }}>
+      <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>
         {isView
           ? 'Bind this data source to a server-side View. Filters, sort, and security are configured on the view.'
           : 'Direct access to a project table with auto-generated CRUD endpoints.'}
       </div>
 
       <div>
-        <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4, fontWeight: 500 }}>Data source name</label>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', display: 'block', marginBottom: 4, fontWeight: 500 }}>Data source name</label>
         <input
           value={name}
           onChange={e => setName(e.target.value)}
@@ -1386,7 +1386,7 @@ function InternalDataSourceForm({
       </div>
 
       <div>
-        <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+        <label style={{ fontSize: 11, color: 'var(--bld-text-3)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
           {isView ? 'View slug' : 'Table name'}
         </label>
         <input
@@ -1395,7 +1395,7 @@ function InternalDataSourceForm({
           placeholder={isView ? 'e.g. list-products' : 'e.g. products'}
           style={{ ...inputStyle, fontFamily: 'monospace' }}
         />
-        <div style={{ fontSize: 10, color: '#475569', marginTop: 4 }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 4 }}>
           {isView
             ? 'The slug of the view defined in Data & API → Views.'
             : 'The table name defined in Data & API → Tables.'}
@@ -1406,11 +1406,11 @@ function InternalDataSourceForm({
         <button
           onClick={handleSave}
           disabled={!resourceName.trim()}
-          style={{ flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, background: accent, color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: !resourceName.trim() ? 0.5 : 1 }}
+          style={{ flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600, background: accent, color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: !resourceName.trim() ? 0.5 : 1 }}
         >
           Save
         </button>
-        <button onClick={onBack} style={{ padding: '8px 14px', fontSize: 12, background: 'transparent', color: '#6b7280', border: '1px solid #374151', borderRadius: 6, cursor: 'pointer' }}>
+        <button onClick={onBack} style={{ padding: '8px 14px', fontSize: 12, background: 'transparent', color: 'var(--bld-text-disabled)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, cursor: 'pointer' }}>
           Cancel
         </button>
       </div>
@@ -1489,15 +1489,15 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
 
   const ROW: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
-    fontSize: 12, color: '#d1d5db', cursor: 'pointer', userSelect: 'none',
+    fontSize: 12, color: 'var(--bld-text-2)', cursor: 'pointer', userSelect: 'none',
   };
   const ICON_BTN: React.CSSProperties = {
-    background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280',
+    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)',
     fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0,
   };
   const INLINE_INPUT: React.CSSProperties = {
-    flex: 1, background: '#374151', border: '1px solid #6366f1', borderRadius: 3,
-    color: '#f3f4f6', fontSize: 11, padding: '2px 6px', outline: 'none',
+    flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-ai-accent)', borderRadius: 3,
+    color: 'var(--bld-text-1)', fontSize: 11, padding: '2px 6px', outline: 'none',
   };
 
   const renderFolder = (f: Folder, depth = 0) => {
@@ -1510,14 +1510,14 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
       <React.Fragment key={f.id}>
         <div
           style={{ ...ROW, paddingLeft: 8 + depth * 16,
-            background: isSelected ? '#1e3a5f' : 'transparent' }}
-          onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+            background: isSelected ? 'var(--bld-bg-elevated)' : 'transparent' }}
+          onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
           onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
           {/* chevron */}
           <button style={{ ...ICON_BTN, width: 12, display: 'flex', alignItems: 'center' }}
             onClick={e => { e.stopPropagation(); setExpanded(x => ({ ...x, [f.id]: !x[f.id] })); }}>
-            <Chevron open={isExpanded} size={10} color="#6b7280" />
+            <Chevron open={isExpanded} size={10} color="var(--bld-text-disabled)" />
           </button>
 
           {editing?.id === f.id ? (
@@ -1526,12 +1526,12 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
                 onChange={e => setEditing(ev => ev ? { ...ev, name: e.target.value } : ev)}
                 onKeyDown={e => { if (e.key === 'Enter') confirmRename(); if (e.key === 'Escape') setEditing(null); }}
                 onClick={e => e.stopPropagation()} />
-              <button style={{ ...ICON_BTN, color: '#34d399' }} onClick={e => { e.stopPropagation(); confirmRename(); }}>✓</button>
-              <button style={{ ...ICON_BTN, color: '#f87171' }} onClick={e => { e.stopPropagation(); setEditing(null); }}>✕</button>
+              <button style={{ ...ICON_BTN, color: 'var(--bld-success)' }} onClick={e => { e.stopPropagation(); confirmRename(); }}>✓</button>
+              <button style={{ ...ICON_BTN, color: 'var(--bld-error)' }} onClick={e => { e.stopPropagation(); setEditing(null); }}>✕</button>
             </>
           ) : (
             <>
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isSelected ? '#a5b4fc' : undefined }}
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isSelected ? 'var(--bld-accent)' : undefined }}
                 onClick={() => handleSelect(f.id)}>{f.name}</span>
               {/* rename */}
               <button style={{ ...ICON_BTN, fontSize: 11 }} title="Rename"
@@ -1540,7 +1540,7 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
               <button style={ICON_BTN} title="Add sub-folder"
                 onClick={e => { e.stopPropagation(); setCreating({ parentId: f.id, name: '' }); setExpanded(x => ({ ...x, [f.id]: true })); }}>+</button>
               {/* delete folder */}
-              <button style={{ ...ICON_BTN, color: '#6b7280', fontSize: 11 }} title="Delete folder"
+              <button style={{ ...ICON_BTN, color: 'var(--bld-text-disabled)', fontSize: 11 }} title="Delete folder"
                 onClick={e => {
                   e.stopPropagation();
                   removeFolder(f.id);
@@ -1561,8 +1561,8 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
               onChange={e => setCreating(c => c ? { ...c, name: e.target.value } : c)}
               onKeyDown={e => { if (e.key === 'Enter') confirmCreate(); if (e.key === 'Escape') setCreating(null); }}
               onClick={e => e.stopPropagation()} />
-            <button style={{ ...ICON_BTN, color: '#34d399' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
-            <button style={{ ...ICON_BTN, color: '#f87171' }}
+            <button style={{ ...ICON_BTN, color: 'var(--bld-success)' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
+            <button style={{ ...ICON_BTN, color: 'var(--bld-error)' }}
               onClick={e => { e.stopPropagation(); setCreating(null); }}>🗑</button>
           </div>
         )}
@@ -1579,8 +1579,8 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
         onClick={() => setOpen(o => !o)}
         style={{ ...SP_INPUT, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } as React.CSSProperties}
       >
-        <span style={{ color: value ? '#d1d5db' : '#6b7280' }}>{label}</span>
-        <Chevron open={open} size={10} color="#6b7280" />
+        <span style={{ color: value ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)' }}>{label}</span>
+        <Chevron open={open} size={10} color="var(--bld-text-disabled)" />
       </button>
 
       {/* Dropdown */}
@@ -1590,22 +1590,22 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
           top: (() => { const r = btnRef.current?.getBoundingClientRect(); return (r?.bottom ?? 0) + 4; })(),
           left: (() => { const r = btnRef.current?.getBoundingClientRect(); return r?.left ?? 0; })(),
           width: btnRef.current?.getBoundingClientRect().width ?? 280,
-          background: '#111827', border: '1px solid #374151', borderRadius: 6,
+          background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
           boxShadow: '0 4px 20px rgba(0,0,0,0.6)', zIndex: 99999,
           maxHeight: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* No folder option */}
-          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: '#4b5563', fontWeight: 700, letterSpacing: '0.05em' }}>
+          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700, letterSpacing: '0.05em' }}>
             NO FOLDER
           </div>
           <div
-            style={{ ...ROW, background: !value ? '#1e3a5f' : 'transparent' }}
+            style={{ ...ROW, background: !value ? 'var(--bld-bg-elevated)' : 'transparent' }}
             onClick={() => handleSelect(undefined)}
-            onMouseEnter={e => { if (value) (e.currentTarget as HTMLElement).style.background = '#1f2937'; }}
+            onMouseEnter={e => { if (value) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; }}
             onMouseLeave={e => { if (value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
-            <span style={{ flex: 1, color: '#9ca3af', fontStyle: 'italic' }}>No folder</span>
-            {!value && <span style={{ color: '#34d399', fontSize: 12 }}>✓</span>}
+            <span style={{ flex: 1, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No folder</span>
+            {!value && <span style={{ color: 'var(--bld-success)', fontSize: 12 }}>✓</span>}
           </div>
 
           {/* Folder tree */}
@@ -1619,18 +1619,18 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
                   onChange={e => setCreating(c => c ? { ...c, name: e.target.value } : c)}
                   onKeyDown={e => { if (e.key === 'Enter') confirmCreate(); if (e.key === 'Escape') setCreating(null); }}
                   onClick={e => e.stopPropagation()} />
-                <button style={{ ...ICON_BTN, color: '#34d399' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
-                <button style={{ ...ICON_BTN, color: '#f87171' }}
+                <button style={{ ...ICON_BTN, color: 'var(--bld-success)' }} onClick={e => { e.stopPropagation(); confirmCreate(); }}>✓</button>
+                <button style={{ ...ICON_BTN, color: 'var(--bld-error)' }}
                   onClick={e => { e.stopPropagation(); setCreating(null); }}>🗑</button>
               </div>
             )}
           </div>
 
           {/* Footer — create new folder */}
-          <div style={{ borderTop: '1px solid #1f2937', padding: '6px 8px' }}>
+          <div style={{ borderTop: '1px solid var(--bld-bg-input)', padding: '6px 8px' }}>
             <button
               onClick={() => setCreating({ parentId: null, name: '' })}
-              style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-ai-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
             >+ Create new folder</button>
           </div>
         </div>,

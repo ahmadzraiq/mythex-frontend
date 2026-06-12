@@ -176,7 +176,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
     // get('path') is an escape hatch for arbitrary flat-key state access.
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      '__fns__', '__userFns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__', '__ctxGet__', '__parameters__',
+      '__fns__', '__userFns__', '__collections__', '__variables__', '__ctx__', '__globalCtx__', '__pages__', '__theme__', '__event__', '__state__', '__ctxGet__', '__parameters__', '__env__',
       `"use strict"; ` +
       `const collections = __collections__ ?? {}; ` +
       `const variables = __variables__ ?? {}; ` +
@@ -186,6 +186,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const theme = __theme__ ?? {}; ` +
       `const event = __event__ ?? {}; ` +
       `const parameters = __parameters__ ?? {}; ` +
+      `const env = __env__ ?? {}; ` +
       `const route = (__state__ ?? {})['route'] ?? {}; ` +
       `const auth = (__state__ ?? {})['auth'] ?? {}; ` +
       `const _workflow = (__state__ ?? {})['_workflow'] ?? {}; ` +
@@ -207,6 +208,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       context,
       ctxGet ?? null,
       (context.parameters ?? {}) as Record<string, unknown>,
+      (context.env ?? {}) as Record<string, unknown>,
     );
     return { value, error: null };
   } catch (e) {

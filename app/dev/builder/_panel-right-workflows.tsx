@@ -132,12 +132,12 @@ export function PreviewDataEditor() {
         <span style={{ fontSize: 10, background: '#1e1b4b', color: '#a78bfa', padding: '2px 6px', borderRadius: 4, border: '1px solid #4c1d95' }}>
           App: {appKeyCount} keys
         </span>
-        <span style={{ fontSize: 10, background: '#1f2937', color: '#9ca3af', padding: '2px 6px', borderRadius: 4, border: '1px solid #374151' }}>
+        <span style={{ fontSize: 10, background: '#1f2937', color: 'var(--bld-text-3)', padding: '2px 6px', borderRadius: 4, border: '1px solid #374151' }}>
           Page override: {pageKeyCount} keys
         </span>
       </div>
-      <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
-        Editing saves page-level overrides. App-level data is set in <strong style={{ color: '#9ca3af' }}>App &rarr; Preview Data</strong>.
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
+        Editing saves page-level overrides. App-level data is set in <strong style={{ color: 'var(--bld-text-3)' }}>App &rarr; Preview Data</strong>.
       </div>
       <textarea
         data-testid="preview-data-editor"
@@ -149,7 +149,7 @@ export function PreviewDataEditor() {
           flex: 1,
           minHeight: 200,
           background: '#111827',
-          color: '#e5e7eb',
+          color: 'var(--bld-text-2)',
           border: `1px solid ${error ? '#f87171' : '#374151'}`,
           borderRadius: 6,
           padding: 10,
@@ -184,7 +184,7 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
     <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
-        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px 4px', fontSize: 16, lineHeight: 1, borderRadius: 4 }}
+        style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', padding: '2px 4px', fontSize: 16, lineHeight: 1, borderRadius: 4 }}
         title="More options"
       >
         ⋮
@@ -201,7 +201,7 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
           {uuid && (
             <button
               onClick={() => { setOpen(false); onOpen(); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, cursor: 'pointer' }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 12, cursor: 'pointer' }}
             >
               ↗ Open in canvas
             </button>
@@ -258,8 +258,8 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#d1d5db' }}>Workflows</span>
-        <span style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.5 }}>Select an element to manage its workflows.</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)' }}>Workflows</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Select an element to manage its workflows.</span>
       </div>
     );
   }
@@ -458,7 +458,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
     <div data-testid="right-workflows-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0, gap: 6 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#e5e7eb', letterSpacing: '0.01em' }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: '0.01em' }}>
           ⚡ Workflows
         </span>
 
@@ -507,7 +507,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '4px 10px', background: 'transparent', border: '1px solid #374151',
-                borderRadius: 6, color: '#94a3b8', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
               }}
               onClick={() => setListenPickerOpen(v => !v)}
               title="Add a listener workflow for a component event"
@@ -520,13 +520,13 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
                 background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
                 minWidth: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.4)', overflow: 'hidden',
               }}>
-                <div style={{ padding: '6px 12px 4px', fontSize: 9, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ padding: '6px 12px 4px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   Component events
                 </div>
                 {customTriggers.map(t => (
                   <button
                     key={t.id}
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, cursor: 'pointer' }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 12, cursor: 'pointer' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
                     onClick={() => handleAddListener(t.id, t.name)}
@@ -562,13 +562,13 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#d1d5db' }}>No workflows yet</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)' }}>No workflows yet</span>
             {editingSharedComponentIds.length > 0 ? (
-              <span style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.5 }}>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
                 Select a specific child node in the layer tree to see its workflows (e.g. day cells, buttons).
               </span>
             ) : (
-              <span style={{ fontSize: 11, color: '#4b5563', lineHeight: 1.5 }}>Click + New to attach a workflow to this element.</span>
+              <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Click + New to attach a workflow to this element.</span>
             )}
           </div>
         ) : (
@@ -609,7 +609,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
                   width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                   background: '#1e293b', border: '1px solid #334155',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, color: '#94a3b8',
+                  fontSize: 14, color: 'var(--bld-text-3)',
                 }}>
                   {/* cursor/pointer icon */}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -624,10 +624,10 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
                     onClick={() => openWorkflowCanvas(openTarget)}
                     title={scRef ? 'Open Shared Component workflow' : 'Open workflow canvas'}
                   >
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {displayName}
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginTop: 2 }}>
                       {triggerDisplay}{scRef ? ' · Shared Component' : ''}
                     </div>
                   </div>

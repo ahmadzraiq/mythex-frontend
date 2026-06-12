@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { SearchInput } from './_panel-primitives';
 import { useBuilderStore } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL, SP_SECTION } from './_slide-panel';
 import { ActionBuilder } from './_action-builder';
@@ -23,19 +24,19 @@ import type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 
 const SECTION_HDR: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '8px 12px', borderBottom: '1px solid #1f2937',
+  padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)',
 };
 const SEC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: '#9ca3af',
+  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.08em',
 };
 const EMPTY: React.CSSProperties = {
-  fontSize: 11, color: '#4b5563', fontStyle: 'italic',
+  fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
   padding: '8px 12px',
 };
 const ADD_BTN: React.CSSProperties = {
-  padding: '3px 10px', background: '#1d4ed8', border: 'none',
-  borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer',
+  padding: '3px 10px', background: 'var(--bld-accent-hover)', border: 'none',
+  borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 10, cursor: 'pointer',
 };
 
 // ─── A. Workflows ─────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header: workflow name */}
       <div style={{ ...SP_SECTION, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14, color: '#fbbf24', flexShrink: 0 }}>⚡</span>
+        <span style={{ fontSize: 14, color: 'var(--bld-warning)', flexShrink: 0 }}>⚡</span>
         {nameEditing ? (
           <input
             ref={nameRef}
@@ -85,7 +86,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
           />
         ) : (
           <span
-            style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', flex: 1, cursor: 'pointer' }}
+            style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', flex: 1, cursor: 'pointer' }}
             onDoubleClick={() => { setName(workflowId); setNameEditing(true); setTimeout(() => nameRef.current?.select(), 0); }}
             title="Double-click to rename"
           >
@@ -95,7 +96,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
         {!nameEditing && (
           <button
             onClick={() => { setName(workflowId); setNameEditing(true); setTimeout(() => nameRef.current?.select(), 0); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 12, padding: '0 2px' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 12, padding: '0 2px' }}
             title="Rename"
           >
             ✎
@@ -105,15 +106,15 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
 
       {/* Info about callDataSource */}
       {dsNames.length > 0 && (
-        <div style={{ padding: '5px 12px', fontSize: 10, color: '#4b5563', background: '#0f172a', borderBottom: '1px solid #1f2937' }}>
-          Available data sources: {dsNames.map(n => <code key={n} style={{ color: '#34d399', marginLeft: 4 }}>{n}</code>)}
+        <div style={{ padding: '5px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-base)', borderBottom: '1px solid var(--bld-bg-input)' }}>
+          Available data sources: {dsNames.map(n => <code key={n} style={{ color: 'var(--bld-success)', marginLeft: 4 }}>{n}</code>)}
         </div>
       )}
 
       {/* Steps */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-        <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 6 }}>
-          Add steps — use <code style={{ color: '#34d399' }}>named</code> action type to call a data source by name.
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 6 }}>
+          Add steps — use <code style={{ color: 'var(--bld-success)' }}>named</code> action type to call a data source by name.
         </div>
         <ActionBuilder
           value={eventActions}
@@ -127,7 +128,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
         <button onClick={onClose} style={SP_BTN_SECONDARY}>Done</button>
       </div>
     </div>
@@ -158,7 +159,7 @@ function WorkflowRow({
       data-testid={`workflow-row-${workflowId}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderBottom: '1px solid #1f2937',
+        padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-input)',
         cursor: 'pointer',
         background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
@@ -169,9 +170,9 @@ function WorkflowRow({
       {/* Icon */}
       <div style={{
         width: 30, height: 30, borderRadius: 7, flexShrink: 0,
-        background: '#1e293b', border: '1px solid #334155',
+        background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, color: '#94a3b8',
+        fontSize: 13, color: 'var(--bld-text-3)',
       }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -180,10 +181,10 @@ function WorkflowRow({
 
       {/* Name + trigger subtitle */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: isPinned ? '#60a5fa' : '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: isPinned ? 'var(--bld-info)' : 'var(--bld-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {workflowId}
         </div>
-        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginTop: 2 }}>
           {triggerLabel}{stepsLabel}
         </div>
       </div>
@@ -193,9 +194,9 @@ function WorkflowRow({
         <button
           data-testid={`delete-workflow-${workflowId}`}
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
         >
           ×
         </button>
@@ -281,7 +282,7 @@ function FormulaParamEditor({
   }, [typeOpen]);
 
   return (
-    <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
+    <div style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         {/* Type button */}
         <div style={{ position: 'relative' }}>
@@ -290,8 +291,8 @@ function FormulaParamEditor({
             type="button"
             onClick={e => { e.stopPropagation(); setTypeOpen(o => !o); }}
             style={{
-              minWidth: 42, padding: '3px 7px', background: '#1e293b', border: '1px solid #374151',
-              borderRadius: 4, color: '#60a5fa', fontSize: 10, cursor: 'pointer', fontWeight: 700, fontFamily: 'monospace',
+              minWidth: 42, padding: '3px 7px', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
+              borderRadius: 4, color: 'var(--bld-info)', fontSize: 10, cursor: 'pointer', fontWeight: 700, fontFamily: 'monospace',
             }}
             title="Parameter type"
           >
@@ -301,7 +302,7 @@ function FormulaParamEditor({
             <div
               ref={dropdownRef}
               style={{
-                position: 'fixed', background: '#1e293b', border: '1px solid #334155',
+                position: 'fixed', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
                 borderRadius: 6, zIndex: 99999, minWidth: 110, boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
                 overflow: 'hidden',
               }}
@@ -321,12 +322,12 @@ function FormulaParamEditor({
                   }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    padding: '7px 12px', background: param.type === t ? '#1d4ed8' : 'transparent',
+                    padding: '7px 12px', background: param.type === t ? 'var(--bld-accent-hover)' : 'transparent',
                     border: 'none', cursor: 'pointer', textAlign: 'left',
-                    color: param.type === t ? '#fff' : '#d1d5db', fontSize: 11,
+                    color: param.type === t ? 'var(--bld-accent-fg)' : 'var(--bld-text-2)', fontSize: 11,
                   }}
                 >
-                  <span style={{ color: '#60a5fa', fontFamily: 'monospace', fontWeight: 700, width: 24 }}>
+                  <span style={{ color: 'var(--bld-info)', fontFamily: 'monospace', fontWeight: 700, width: 24 }}>
                     {PARAM_TYPE_ICONS[t]}
                   </span>
                   {t}
@@ -342,8 +343,8 @@ function FormulaParamEditor({
           onChange={e => onUpdate({ name: e.target.value })}
           placeholder="paramName"
           style={{
-            flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-            color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', fontFamily: 'monospace',
+            flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+            color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', fontFamily: 'monospace',
           }}
           onKeyDown={e => e.stopPropagation()}
         />
@@ -352,25 +353,25 @@ function FormulaParamEditor({
         <button
           type="button"
           onClick={onRemove}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', fontSize: 14, padding: 0, lineHeight: 1 }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 14, padding: 0, lineHeight: 1 }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
         >
           ×
         </button>
       </div>
 
       {/* Test value row */}
-      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 4 }}>Test value</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>Test value</div>
       {param.type === 'Boolean' ? (
-        <div style={{ display: 'flex', background: '#1f2937', borderRadius: 4, overflow: 'hidden', gap: 1 }}>
+        <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, overflow: 'hidden', gap: 1 }}>
           {[true, false].map(v => (
             <button key={String(v)} type="button"
               onClick={() => onUpdate({ testValue: v })}
               style={{
                 flex: 1, padding: '4px 0', fontSize: 10, border: 'none', cursor: 'pointer', fontWeight: 600,
-                background: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? '#166534' : '#7f1d1d') : 'transparent',
-                color: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? '#86efac' : '#fca5a5') : '#6b7280',
+                background: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? 'rgba(34,197,94,0.2)' : 'rgba(248,113,113,0.12)') : 'transparent',
+                color: (param.testValue === v || String(param.testValue) === String(v)) ? (v ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)',
               }}
             >{v ? 'true' : 'false'}</button>
           ))}
@@ -378,7 +379,7 @@ function FormulaParamEditor({
       ) : param.type === 'Number' ? (
         <input
           type="number"
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
           value={param.testValue === undefined ? '' : String(param.testValue)}
           placeholder="0"
           onChange={e => onUpdate({ testValue: e.target.value === '' ? '' : Number(e.target.value) })}
@@ -386,7 +387,7 @@ function FormulaParamEditor({
         />
       ) : (param.type === 'Object' || param.type === 'Array') ? (
         <textarea
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace', resize: 'vertical', minHeight: 52 }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace', resize: 'vertical', minHeight: 52 }}
           value={typeof param.testValue === 'string' ? param.testValue : JSON.stringify(param.testValue ?? (param.type === 'Array' ? [] : {}), null, 2)}
           placeholder={param.type === 'Array' ? '[]' : '{}'}
           onChange={e => onUpdate({ testValue: e.target.value })}
@@ -394,7 +395,7 @@ function FormulaParamEditor({
         />
       ) : (
         <input
-          style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
+          style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 7px', outline: 'none', boxSizing: 'border-box' as const }}
           value={String(param.testValue ?? '')}
           placeholder="Test text…"
           onChange={e => onUpdate({ testValue: e.target.value })}
@@ -488,8 +489,8 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
             onKeyDown={e => e.stopPropagation()}
           />
           {name && (
-            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>
-              Call as <code style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{fnName}({paramSig})</code>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 4 }}>
+              Call as <code style={{ color: 'var(--bld-warning)', fontFamily: 'monospace' }}>{fnName}({paramSig})</code>
             </div>
           )}
         </div>
@@ -525,13 +526,13 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
             <button
               type="button"
               onClick={() => setParams(ps => [...ps, { id: `p-${Date.now()}`, name: '', type: 'Text' }])}
-              style={{ padding: '2px 8px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer' }}
+              style={{ padding: '2px 8px', background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 10, cursor: 'pointer' }}
             >
               + Add
             </button>
           </div>
           {params.length === 0 && (
-            <div style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic', marginBottom: 8 }}>No parameters yet.</div>
+            <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic', marginBottom: 8 }}>No parameters yet.</div>
           )}
           {params.map((param, i) => (
             <FormulaParamEditor
@@ -548,8 +549,8 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
           <label style={SP_LABEL}>Formula body</label>
           <div
             style={{
-              background: '#111827', border: '1px solid #374151', borderRadius: 5,
-              padding: '6px 10px', fontSize: 11, color: formula ? '#fbbf24' : '#4b5563',
+              background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+              padding: '6px 10px', fontSize: 11, color: formula ? 'var(--bld-warning)' : 'var(--bld-border-subtle)',
               fontFamily: 'monospace', minHeight: 34, cursor: 'pointer',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
@@ -563,7 +564,7 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
           <button
             type="button"
             onClick={() => setShowFormulaEditor(true)}
-            style={{ marginTop: 5, padding: '4px 10px', background: '#1e293b', border: '1px solid #334155', borderRadius: 4, color: '#60a5fa', fontSize: 10, cursor: 'pointer' }}
+            style={{ marginTop: 5, padding: '4px 10px', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-info)', fontSize: 10, cursor: 'pointer' }}
           >
             ✎ Edit Formula
           </button>
@@ -571,11 +572,11 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #1f2937', display: 'flex', gap: 8, flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', gap: 8, flexShrink: 0 }}>
         {!isNew && onDelete && (
           <button
             onClick={() => { onDelete(); onClose(); }}
-            style={{ padding: '5px 10px', background: 'none', border: '1px solid #7f1d1d', borderRadius: 4, color: '#f87171', fontSize: 11, cursor: 'pointer' }}
+            style={{ padding: '5px 10px', background: 'none', border: '1px solid rgba(248,113,113,0.12)', borderRadius: 4, color: 'var(--bld-error)', fontSize: 11, cursor: 'pointer' }}
           >
             Delete
           </button>
@@ -649,7 +650,7 @@ function FormulaRow({
       data-testid={`formula-row-${formulaId}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderBottom: '1px solid #1f2937',
+        padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-input)',
         cursor: 'pointer',
         background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
@@ -660,25 +661,25 @@ function FormulaRow({
       {/* Icon */}
       <div style={{
         width: 30, height: 30, borderRadius: 7, flexShrink: 0,
-        background: '#1e293b', border: '1px solid #334155',
+        background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 14, color: '#fbbf24', fontStyle: 'italic', fontFamily: 'serif',
+        fontSize: 14, color: 'var(--bld-warning)', fontStyle: 'italic', fontFamily: 'serif',
       }}>
         ƒ
       </div>
 
       {/* Name + signature */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#fbbf24', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-warning)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
           {fnName}({paramSig})
         </div>
         {def.description && (
-          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {def.description}
           </div>
         )}
         {def.folder && (
-          <div style={{ fontSize: 9, color: '#374151', marginTop: 1 }}>{def.folder}</div>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 1 }}>{def.folder}</div>
         )}
       </div>
 
@@ -686,9 +687,9 @@ function FormulaRow({
       <button
         data-testid={`delete-formula-${formulaId}`}
         onClick={e => { e.stopPropagation(); onDelete(); }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
       >
         ×
       </button>
@@ -732,12 +733,12 @@ export function getLogicSlideTitle(slideState: LogicSlideState): string {
 
 const SEARCH_INPUT: React.CSSProperties = {
   width: '100%',
-  background: '#111827',
-  border: '1px solid #374151',
+  background: 'var(--bld-bg-panel)',
+  border: '1px solid var(--bld-border-subtle)',
   borderRadius: 4,
   padding: '4px 8px',
   fontSize: 10,
-  color: '#d1d5db',
+  color: 'var(--bld-text-2)',
   outline: 'none',
   boxSizing: 'border-box' as const,
 };
@@ -785,11 +786,11 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
       {/* ── Top: Workflows ── */}
       <div
         data-testid="workflows-column"
-        style={{ flex: wfOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid #1f2937', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
+        style={{ flex: wfOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
       >
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setWfOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: '#6b7280', transition: 'transform 0.15s', transform: wfOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+            <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s', transform: wfOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
             Workflows
           </span>
           <button
@@ -803,13 +804,7 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
         {wfOpen && (
           <>
             <div style={{ padding: '6px 10px', flexShrink: 0 }}>
-              <input
-                data-testid="workflow-search"
-                value={wfSearch}
-                onChange={e => setWfSearch(e.target.value)}
-                placeholder="Search workflows…"
-                style={SEARCH_INPUT}
-              />
+              <SearchInput value={wfSearch} onChange={setWfSearch} placeholder="Search workflows…" data-testid="workflow-search" />
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredGlobalWorkflows.length === 0 && (
@@ -845,7 +840,7 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
       >
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setFmOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: '#6b7280', transition: 'transform 0.15s', transform: fmOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+            <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s', transform: fmOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
             Formulas
           </span>
           <button
@@ -859,13 +854,7 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
         {fmOpen && (
           <>
             <div style={{ padding: '6px 10px', flexShrink: 0 }}>
-              <input
-                data-testid="formula-search"
-                value={fmSearch}
-                onChange={e => setFmSearch(e.target.value)}
-                placeholder="Search formulas…"
-                style={SEARCH_INPUT}
-              />
+              <SearchInput value={fmSearch} onChange={setFmSearch} placeholder="Search formulas…" data-testid="formula-search" />
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredFormulas.length === 0 && (

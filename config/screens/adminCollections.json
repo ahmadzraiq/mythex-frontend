@@ -56,7 +56,8 @@
             },
             "text": "Collections are used to group products for navigation and filtering."
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -141,7 +142,8 @@
                             "props": {
                               "icon": "lucide:folder",
                               "size": 16,
-                              "color": "var(--theme-admin-label)", "className": "m-auto mt-[10px]"
+                              "color": "var(--theme-admin-label)",
+                              "className": "m-auto mt-[10px]"
                             },
                             "condition": "!context.item.data.featuredAsset?.preview"
                           }
@@ -198,7 +200,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Collections Table"
       }
     ]
   },

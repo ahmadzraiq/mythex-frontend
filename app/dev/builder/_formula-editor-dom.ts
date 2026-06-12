@@ -494,7 +494,7 @@ export const OPERATORS: Array<{ label: string; insert: string; description: stri
 
 // ─── Operator chip helpers ────────────────────────────────────────────────────
 
-export const OP_CHIP = { bg: '#1e293b', border: '#334155', color: '#94a3b8', hoverBg: '#334155' };
+export const OP_CHIP = { bg: '#1e293b', border: '#334155', color: 'var(--bld-text-3)', hoverBg: '#334155' };
 
 export const OP_STYLE: Record<string, { bg: string; border: string; color: string; hoverBg: string }> = {
   comparison: OP_CHIP,

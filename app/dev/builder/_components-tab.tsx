@@ -10,12 +10,14 @@
  * Exports:
  *  - PRIMITIVE_COMPONENTS  — re-exported from lib/builder/primitive-components (single source of truth)
  *  - SectionHeader         — collapsible section header
- *  - DraggablePrimitive    — single draggable component tile
+ *  - DraggablePrimitive    — single draggable component tile (3-col card)
  *  - ComponentsTab         — full components tab panel
  */
 
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { PRIMITIVE_COMPONENTS, type PrimitiveComponent } from '@/lib/builder/primitive-components';
+import { PrimitiveIcon } from '@/lib/builder/primitive-icons';
+import { SearchInput } from './_panel-primitives';
 import { Chevron } from './_layers-panel';
 import { SharedComponentsTab } from './_shared-components-tab';
 import { TemplateLibraryModal } from './_template-library-modal';
@@ -25,64 +27,45 @@ export { PRIMITIVE_COMPONENTS };
 
 // ─── Components tab ───────────────────────────────────────────────────────────
 
+// ─── Components tab ───────────────────────────────────────────────────────────
+
 export function ComponentsTab() {
   const [search, setSearch] = useState('');
-  const [templatesOpen, setTemplatesOpen] = useState(true);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const q = search.toLowerCase();
 
   const flatPrimitives = Object.values(PRIMITIVE_COMPONENTS).flat();
+  const filtered = flatPrimitives.filter(
+    p => !q || p.label.toLowerCase().includes(q) || p.type.toLowerCase().includes(q)
+  );
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
-      {/* Search */}
-      <div style={{ padding: '0 10px 8px' }}>
-        <input
-          placeholder="Search components…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', background: '#111827', border: '1px solid #374151', borderRadius: 5, color: '#d1d5db', fontSize: 11, padding: '5px 8px', boxSizing: 'border-box' }}
-        />
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Search ── */}
+      <div style={{ padding: '8px 8px 6px', flexShrink: 0 }}>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search components…" />
       </div>
 
-      {/* ── Primitive components — flat, no group headers ── */}
-      <SectionHeader label="Primitives" />
-      {flatPrimitives
-        .filter(p => !q || p.label.toLowerCase().includes(q) || p.type.toLowerCase().includes(q))
-        .map(p => (
+      {/* ── Elements label ── */}
+      <div style={{ padding: '2px 10px 4px' }}>
+        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Elements</span>
+      </div>
+
+      {/* ── Primitive components grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, padding: '0 8px 4px' }}>
+        {filtered.map(p => (
           <DraggablePrimitive key={p.label} primitive={p} />
-        ))
-      }
-
-      {/* ── Templates ── */}
-      <SectionHeader
-        label="Templates"
-        collapsible
-        collapsed={!templatesOpen}
-        onToggle={() => setTemplatesOpen(v => !v)}
-      />
-      {templatesOpen && (
-        <div>
-          {/* Import from Library */}
-          <div style={{ padding: '6px 10px 2px' }}>
-            <button
-              onClick={() => setShowTemplateLibrary(true)}
-              style={{
-                width: '100%', padding: '6px 10px', background: 'none',
-                border: '1px dashed #374151', borderRadius: 5,
-                color: '#9ca3af', fontSize: 11, cursor: 'pointer', textAlign: 'left',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#60a5fa'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#374151'; e.currentTarget.style.color = '#9ca3af'; }}
-            >
-              + Import from Library
-            </button>
+        ))}
+        {filtered.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '16px 0', textAlign: 'center', fontSize: 10, color: 'var(--bld-text-3)' }}>
+            No results for &ldquo;{search}&rdquo;
           </div>
+        )}
+      </div>
 
-          {/* Shared components list (includes its own New button + draggable rows) */}
-          <SharedComponentsTab />
-        </div>
-      )}
+      {/* ── Shared section ── */}
+      <SharedComponentsTab onImport={() => setShowTemplateLibrary(true)} />
 
       {showTemplateLibrary && (
         <TemplateLibraryModal open={showTemplateLibrary} onClose={() => setShowTemplateLibrary(false)} />
@@ -91,10 +74,31 @@ export function ComponentsTab() {
   );
 }
 
-export function SectionHeader({ label, collapsible, collapsed, onToggle }: { label: string; collapsible?: boolean; collapsed?: boolean; onToggle?: () => void }) {
+export function SectionHeader({
+  label, collapsible, collapsed, onToggle,
+}: {
+  label: string;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
   return (
     <div
-      style={{ padding: '8px 12px 4px', fontSize: 11, color: '#9ca3af', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: collapsible ? 'pointer' : 'default', borderTop: '1px solid #1f2937', marginTop: 4 }}
+      style={{
+        padding: '8px 12px 4px',
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        color: 'var(--bld-text-3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        cursor: collapsible ? 'pointer' : 'default',
+        borderTop: '1px solid var(--bld-border)',
+        marginTop: 4,
+        userSelect: 'none',
+      }}
       onClick={onToggle}
     >
       <span>{label}</span>
@@ -104,6 +108,8 @@ export function SectionHeader({ label, collapsible, collapsed, onToggle }: { lab
 }
 
 export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponent }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
       draggable
@@ -111,30 +117,42 @@ export function DraggablePrimitive({ primitive }: { primitive: PrimitiveComponen
         const data = JSON.stringify(primitive.builderDefaultNode ?? primitive.defaultNode);
         e.dataTransfer.setData('text/primitive-node', data);
         e.dataTransfer.effectAllowed = 'copy';
-        // Fallback for CDP-simulated drags (e.g. Playwright headless) where
-        // subsequent dragover/drop events may receive an empty dataTransfer.
         (window as unknown as Record<string, unknown>).__primitiveDrag = data;
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
-        padding: '6px 12px',
+        justifyContent: 'center',
+        gap: 5,
+        padding: '10px 4px 8px',
         cursor: 'grab',
-        borderRadius: 4,
-        margin: '1px 4px',
+        borderRadius: 'var(--bld-r-md)',
+        border: `1px solid ${hovered ? 'var(--bld-accent)' : 'var(--bld-border)'}`,
+        background: hovered ? 'var(--bld-bg-hover)' : 'transparent',
         userSelect: 'none',
+        transition: 'border-color 0.12s, background 0.12s',
+        minHeight: 62,
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.15)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      <div style={{ width: 36, height: 24, background: '#1f2937', borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#9ca3af', border: '1px solid #374151' }}>
-        {primitive.icon}
-      </div>
-      <span style={{ fontSize: 11, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ color: hovered ? 'var(--bld-accent)' : 'var(--bld-text-3)', transition: 'color 0.12s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <PrimitiveIcon type={primitive.type} size={18} />
+      </span>
+      <span style={{
+        fontSize: 9,
+        fontWeight: 500,
+        color: hovered ? 'var(--bld-text-2)' : 'var(--bld-text-3)',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        maxWidth: '100%',
+        textAlign: 'center',
+        transition: 'color 0.12s',
+      }}>
         {primitive.label}
       </span>
     </div>
   );
 }
-

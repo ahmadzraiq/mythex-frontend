@@ -12,6 +12,7 @@
  * Settings modal: Name, Folder, Method, Path, Description
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { SearchInput } from './_panel-primitives';
 import {
   backendWorkflows, backendTables,
   type BackendWorkflow, type BackendTable,
@@ -23,21 +24,21 @@ import { WorkflowCanvas } from './_workflow-canvas';
 type WfKind = 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE';
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: '#22c55e', POST: '#3b82f6', PUT: '#f59e0b',
-  PATCH: '#8b5cf6', DELETE: '#ef4444',
+  GET: 'var(--bld-success)', POST: 'var(--bld-accent)', PUT: 'var(--bld-warning)',
+  PATCH: 'var(--bld-ai-accent)', DELETE: 'var(--bld-error)',
 };
 
 const BTN: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 5,
   padding: '4px 10px', fontSize: 11, fontWeight: 500,
-  background: 'transparent', color: '#94a3b8',
-  border: '1px solid #1e293b', borderRadius: 5,
+  background: 'transparent', color: 'var(--bld-text-3)',
+  border: '1px solid var(--bld-border)', borderRadius: 5,
   cursor: 'pointer', whiteSpace: 'nowrap',
 };
 
 const INPUT: React.CSSProperties = {
-  background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-  padding: '7px 10px', fontSize: 12, color: '#e2e8f0', outline: 'none',
+  background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
+  padding: '7px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
 
@@ -76,21 +77,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   }>({ id: '', name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' });
   const [savingSettings, setSavingSettings] = useState(false);
 
-  // publish
-  const [publishing, setPublishing] = useState<string | null>(null); // wfId being published
   const [copied, setCopied] = useState(false);
-
-  const togglePublish = async (wf: BackendWorkflow) => {
-    setPublishing(wf.id);
-    try {
-      const isPublished = wf.status === 'PUBLISHED';
-      const res = isPublished
-        ? await backendWorkflows.unpublish(projectId, wf.id)
-        : await backendWorkflows.publish(projectId, wf.id);
-      setWorkflows((prev) => prev.map((w) => w.id === wf.id ? res.workflow : w));
-    } catch (e) { setError((e as Error).message); }
-    finally { setPublishing(null); }
-  };
 
   const copyEndpointUrl = (wf: BackendWorkflow) => {
     const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
@@ -220,19 +207,19 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
           padding: `6px ${indent ? '28px' : '14px'}`,
           cursor: 'pointer',
           background: active ? 'rgba(79,70,229,0.12)' : 'transparent',
-          borderLeft: `2px solid ${active ? '#6366f1' : 'transparent'}`,
+          borderLeft: `2px solid ${active ? 'var(--bld-ai-accent)' : 'transparent'}`,
         }}
       >
         {wf.method ? (
-          <span style={{ fontSize: 9, fontWeight: 700, fontFamily: 'monospace', flexShrink: 0, padding: '1px 4px', borderRadius: 3, background: `${METHOD_COLORS[wf.method] ?? '#6b7280'}22`, color: METHOD_COLORS[wf.method] ?? '#6b7280' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, fontFamily: 'monospace', flexShrink: 0, padding: '1px 4px', borderRadius: 3, background: `${METHOD_COLORS[wf.method] ?? 'var(--bld-text-disabled)'}22`, color: METHOD_COLORS[wf.method] ?? 'var(--bld-text-disabled)' }}>
             {wf.method}
           </span>
         ) : (
-          <span style={{ fontSize: 11, color: '#475569', flexShrink: 0 }}>ƒ</span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>ƒ</span>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, color: active ? '#e2e8f0' : '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.name}</div>
-          {wf.path && <div style={{ fontSize: 10, color: '#475569', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.path}</div>}
+          <div style={{ fontSize: 12, color: active ? 'var(--bld-text-2)' : 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.name}</div>
+          {wf.path && <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.path}</div>}
         </div>
         <button
           onClick={(e) => {
@@ -240,7 +227,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
             setCtxMenu({ wfId: wf.id, x: rect.right, y: rect.bottom + 4 });
           }}
-          style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 14, padding: '1px 4px', flexShrink: 0, lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '1px 4px', flexShrink: 0, lineHeight: 1 }}
           title="Options"
         >⋮</button>
       </div>
@@ -252,9 +239,9 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       onClick={() => toggleCollapse(sectionKey)}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
     >
-      <span style={{ fontSize: 10, color: '#475569', display: 'inline-block', transform: collapsed[sectionKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>{label}</span>
-      <span style={{ fontSize: 10, color: '#334155' }}>{count}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[sectionKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{count}</span>
     </button>
   );
 
@@ -263,18 +250,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
 
       {/* ── Left sidebar ────────────────────────────────────────────────── */}
-      <div style={{ width: 280, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0, overflow: 'hidden' }}>
+      <div style={{ width: 280, borderRight: '1px solid var(--bld-border)', display: 'flex', flexDirection: 'column', background: 'var(--bld-bg-base)', flexShrink: 0, overflow: 'hidden' }}>
 
         {/* Search + Add button */}
-        <div style={{ padding: '10px 10px 8px', display: 'flex', gap: 6, borderBottom: '1px solid #1e293b' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
-              style={{ ...INPUT, fontSize: 11, padding: '5px 8px 5px 28px' }}
-            />
-            <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#475569', pointerEvents: 'none' }}>⌕</span>
+        <div style={{ padding: '10px 10px 8px', display: 'flex', gap: 6, borderBottom: '1px solid var(--bld-border)' }}>
+          <div style={{ flex: 1 }}>
+            <SearchInput value={search} onChange={setSearch} placeholder="Search…" />
           </div>
           <button
             onClick={() => {
@@ -282,7 +263,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               window.open(`${base}/v1/projects/${projectId}/docs`, '_blank');
             }}
             title="Open interactive API docs (Swagger)"
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: 'var(--bld-success)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
           >
             <span style={{ fontSize: 13 }}>⚡</span> API Docs
           </button>
@@ -295,25 +276,25 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 setSelectedId(null);
               }}
               title="Remove all workflows"
-              style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', fontSize: 12, background: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
+              style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', fontSize: 12, background: 'rgba(239,68,68,0.08)', color: 'var(--bld-error)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
             >🗑</button>
           )}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setShowAddMenu((v) => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, fontWeight: 600, background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, fontWeight: 600, background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
             >
               + Add <span style={{ fontSize: 10 }}>▾</span>
             </button>
             {showAddMenu && (
               <div
-                style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 50, minWidth: 180 }}
+                style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 50, minWidth: 180 }}
                 onMouseLeave={() => setShowAddMenu(false)}
               >
                 {(['API_ENDPOINT', 'FUNCTION', 'MIDDLEWARE'] as WfKind[]).map((k) => (
                   <button key={k}
                     onClick={() => { setNewWf((p) => ({ ...p, kind: k })); setShowAddMenu(false); setShowNewForm(true); }}
-                    style={{ width: '100%', display: 'block', padding: '9px 14px', background: 'none', border: 'none', color: '#e2e8f0', fontSize: 12, textAlign: 'left', cursor: 'pointer' }}>
+                    style={{ width: '100%', display: 'block', padding: '9px 14px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 12, textAlign: 'left', cursor: 'pointer' }}>
                     {k === 'API_ENDPOINT' ? '⟶ API Endpoint' : k === 'FUNCTION' ? 'ƒ Function' : '⊕ Middleware'}
                   </button>
                 ))}
@@ -324,7 +305,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
 
         {/* Workflow list */}
         <div style={{ flex: 1, overflow: 'auto' }}>
-          {loading && <div style={{ padding: 16, fontSize: 12, color: '#475569', textAlign: 'center' }}>Loading…</div>}
+          {loading && <div style={{ padding: 16, fontSize: 12, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>Loading…</div>}
 
           {!loading && (
             <>
@@ -343,9 +324,9 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                           onClick={() => toggleCollapse(folderKey)}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                         >
-                          <span style={{ fontSize: 10, color: '#475569', display: 'inline-block', transform: collapsed[folderKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
-                          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>📁 {folder.displayName}</span>
-                          <span style={{ fontSize: 10, color: '#334155', marginLeft: 'auto' }}>{folder.items.length}</span>
+                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[folderKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
+                          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500 }}>📁 {folder.displayName}</span>
+                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{folder.items.length}</span>
                         </button>
                         {!collapsed[folderKey] && items.map((wf) => <WfRow key={wf.id} wf={wf} indent />)}
                       </div>
@@ -353,7 +334,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                   })}
 
                   {apiEndpoints.filter(filterWf).length === 0 && (
-                    <div style={{ padding: '6px 14px 10px', fontSize: 11, color: '#334155' }}>No endpoints yet</div>
+                    <div style={{ padding: '6px 14px 10px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No endpoints yet</div>
                   )}
                 </>
               )}
@@ -364,7 +345,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 {!collapsed['fn'] && (
                   <>
                     {functions.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
-                    {functions.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: '#334155' }}>No functions yet</div>}
+                    {functions.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No functions yet</div>}
                   </>
                 )}
               </div>
@@ -375,7 +356,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 {!collapsed['mw'] && (
                   <>
                     {middlewares.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
-                    {middlewares.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: '#334155' }}>No middlewares yet</div>}
+                    {middlewares.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No middlewares yet</div>}
                   </>
                 )}
               </div>
@@ -389,25 +370,25 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header bar for selected workflow */}
         {selected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: '1px solid #1e293b', background: '#080d17', flexShrink: 0, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: '1px solid var(--bld-border)', background: 'var(--bld-bg-base)', flexShrink: 0, flexWrap: 'wrap' }}>
             {selected.method && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: `${METHOD_COLORS[selected.method] ?? '#6b7280'}22`, color: METHOD_COLORS[selected.method] ?? '#6b7280' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: `${METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)'}22`, color: METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)' }}>
                 {selected.method}
               </span>
             )}
             {selected.kind === 'FUNCTION' && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(107,114,128,0.2)', color: '#9ca3af' }}>INTERNAL</span>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(107,114,128,0.2)', color: 'var(--bld-text-3)' }}>INTERNAL</span>
             )}
             {selected.kind === 'MIDDLEWARE' && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: '#a78bfa' }}>MIDDLEWARE</span>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: 'var(--bld-ai-accent)' }}>MIDDLEWARE</span>
             )}
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', flex: 1 }}>{selected.name}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1 }}>{selected.name}</span>
 
             {/* Status badge */}
             <span style={{
               fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, letterSpacing: '0.05em',
               background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.2)',
-              color: selected.status === 'PUBLISHED' ? '#4ade80' : '#64748b',
+              color: selected.status === 'PUBLISHED' ? 'var(--bld-success)' : 'var(--bld-text-3)',
               border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
             }}>
               {selected.status}
@@ -418,7 +399,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <button
                 onClick={() => copyEndpointUrl(selected)}
                 title="Copy endpoint URL"
-                style={{ ...BTN, fontSize: 11, padding: '3px 10px', background: 'rgba(15,23,42,0.8)', color: copied ? '#4ade80' : '#64748b', border: '1px solid #1e293b' }}
+                style={{ ...BTN, fontSize: 11, padding: '3px 10px', background: 'rgba(15,23,42,0.8)', color: copied ? 'var(--bld-success)' : 'var(--bld-text-3)', border: '1px solid var(--bld-border)' }}
               >
                 {copied ? '✓ Copied' : '⎘ Copy URL'}
               </button>
@@ -428,7 +409,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             {selected.kind === 'API_ENDPOINT' && (
               <button
                 onClick={() => setSecPopover(selected.id)}
-                style={{ ...BTN, fontSize: 11, padding: '3px 10px', borderRadius: 5, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}
+                style={{ ...BTN, fontSize: 11, padding: '3px 10px', borderRadius: 5, background: 'rgba(99,102,241,0.15)', color: 'var(--bld-accent)', border: '1px solid rgba(99,102,241,0.3)' }}
               >
                 {(() => {
                   const sec = securityState[selected.id];
@@ -442,26 +423,22 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               </button>
             )}
 
-            {/* Publish / Unpublish */}
+            {/* Status badge — reflects deploy state (live = in prod env after project deploy) */}
             {selected.kind === 'API_ENDPOINT' && (
-              <button
-                onClick={() => void togglePublish(selected)}
-                disabled={publishing === selected.id}
-                style={{
-                  fontSize: 11, fontWeight: 600, padding: '3px 12px', borderRadius: 5, cursor: 'pointer',
-                  border: 'none', opacity: publishing === selected.id ? 0.6 : 1,
-                  background: selected.status === 'PUBLISHED' ? 'rgba(239,68,68,0.15)' : '#4f46e5',
-                  color: selected.status === 'PUBLISHED' ? '#f87171' : '#fff',
-                }}
-              >
-                {publishing === selected.id ? '…' : selected.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
-              </button>
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 5,
+                background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
+                color: selected.status === 'PUBLISHED' ? '#22c55e' : '#94a3b8',
+                border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
+              }}>
+                {selected.status === 'PUBLISHED' ? 'Live' : 'Pending deploy'}
+              </span>
             )}
           </div>
         )}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {!selected ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: 13, flexDirection: 'column', gap: 10 }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 13, flexDirection: 'column', gap: 10 }}>
               <span style={{ fontSize: 32, opacity: 0.4 }}>ƒ</span>
               <span>Select a workflow to edit it</span>
             </div>
@@ -480,20 +457,20 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       {showSettings && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSettings(false)} />
-          <div style={{ position: 'relative', zIndex: 1, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 480, maxHeight: '80vh', overflow: 'auto' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>Settings</span>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18 }}>✕</button>
+          <div style={{ position: 'relative', zIndex: 1, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 480, maxHeight: '80vh', overflow: 'auto' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>Settings</span>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18 }}>✕</button>
             </div>
 
             <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Name</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Name</label>
                 <input value={settingsWf.name} onChange={(e) => setSettingsWf((p) => ({ ...p, name: e.target.value }))} style={INPUT} />
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Folder</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder</label>
                 <select style={{ ...INPUT, cursor: 'pointer' }} defaultValue="">
                   <option value="">Select a folder</option>
                   {tables.map((t) => <option key={t.id} value={t.name}>Table: {t.displayName}</option>)}
@@ -503,13 +480,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               {settingsWf.kind === 'API_ENDPOINT' && (
                 <>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Method</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Method</label>
                     <select value={settingsWf.method} onChange={(e) => setSettingsWf((p) => ({ ...p, method: e.target.value }))} style={{ ...INPUT, cursor: 'pointer' }}>
                       {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => <option key={m}>{m}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Path</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Path</label>
                     <input value={settingsWf.path} onChange={(e) => setSettingsWf((p) => ({ ...p, path: e.target.value }))} style={INPUT} />
                   </div>
                 </>
@@ -517,24 +494,24 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Description</label>
-                  <button style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, cursor: 'pointer' }}>✦ Generate</button>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)' }}>Description</label>
+                  <button style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(99,102,241,0.15)', color: 'var(--bld-ai-accent)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, cursor: 'pointer' }}>✦ Generate</button>
                 </div>
-                <div style={{ border: '1px solid #334155', borderRadius: 6, overflow: 'hidden', background: '#1e293b' }}>
-                  <div style={{ display: 'flex', gap: 2, padding: '5px 8px', borderBottom: '1px solid #334155', flexWrap: 'wrap' }}>
+                <div style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', background: 'var(--bld-bg-elevated)' }}>
+                  <div style={{ display: 'flex', gap: 2, padding: '5px 8px', borderBottom: '1px solid var(--bld-border-subtle)', flexWrap: 'wrap' }}>
                     {RICH_TOOLBAR_ICONS.map((ic) => (
-                      <button key={ic} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 11, padding: '2px 5px', borderRadius: 3 }}>{ic}</button>
+                      <button key={ic} style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: '2px 5px', borderRadius: 3 }}>{ic}</button>
                     ))}
                   </div>
-                  <textarea rows={4} style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: '#e2e8f0', fontSize: 13, padding: '10px 12px', resize: 'none', boxSizing: 'border-box' }} />
+                  <textarea rows={4} style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: 'var(--bld-text-2)', fontSize: 13, padding: '10px 12px', resize: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: '12px 18px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <div style={{ padding: '12px 18px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowSettings(false)} style={{ ...BTN, fontSize: 12, padding: '6px 14px' }}>Cancel</button>
               <button onClick={() => void saveSettings()} disabled={savingSettings}
-                style={{ fontSize: 12, fontWeight: 600, padding: '6px 16px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: savingSettings ? 0.6 : 1 }}>
+                style={{ fontSize: 12, fontWeight: 600, padding: '6px 16px', background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: savingSettings ? 0.6 : 1 }}>
                 {savingSettings ? 'Saving…' : 'Save'}
               </button>
             </div>
@@ -546,16 +523,16 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       {showNewForm && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 60 }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowNewForm(false)} />
-          <div style={{ position: 'relative', zIndex: 1, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 460 }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>
+          <div style={{ position: 'relative', zIndex: 1, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 460 }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>
                 New {newWf.kind === 'API_ENDPOINT' ? 'API Endpoint' : newWf.kind === 'FUNCTION' ? 'Function' : 'Middleware'}
               </span>
-              <button onClick={() => setShowNewForm(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18 }}>✕</button>
+              <button onClick={() => setShowNewForm(false)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Workflow name *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Workflow name *</label>
                 <input
                   autoFocus value={newWf.name}
                   onChange={(e) => setNewWf((p) => ({ ...p, name: e.target.value }))}
@@ -564,7 +541,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Folder</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder</label>
                 <select style={{ ...INPUT, cursor: 'pointer' }} defaultValue="">
                   <option value="">Select a folder</option>
                   {tables.map((t) => <option key={t.id} value={t.name}>{t.displayName ?? t.name}</option>)}
@@ -573,24 +550,24 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               {newWf.kind === 'API_ENDPOINT' && (
                 <>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>HTTP Method *</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>HTTP Method *</label>
                     <select value={newWf.method} onChange={(e) => setNewWf((p) => ({ ...p, method: e.target.value }))} style={{ ...INPUT, cursor: 'pointer' }}>
                       {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => <option key={m}>{m}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: 6 }}>Path *</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Path *</label>
                     <input value={newWf.path} onChange={(e) => setNewWf((p) => ({ ...p, path: e.target.value }))} placeholder="/api/endpoint" style={INPUT} />
                   </div>
                 </>
               )}
             </div>
-            <div style={{ padding: '12px 18px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '12px 18px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button onClick={() => setShowNewForm(false)} style={{ ...BTN, fontSize: 12, padding: '6px 14px' }}>← Previous</button>
               <button
                 onClick={() => void createWorkflow()}
                 disabled={saving || !newWf.name.trim()}
-                style={{ fontSize: 12, fontWeight: 600, padding: '6px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: saving || !newWf.name.trim() ? 0.6 : 1 }}
+                style={{ fontSize: 12, fontWeight: 600, padding: '6px 20px', background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: saving || !newWf.name.trim() ? 0.6 : 1 }}
               >
                 {saving ? 'Creating…' : 'Continue →'}
               </button>
@@ -605,12 +582,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         if (!wf) return null;
         const menuStyle: React.CSSProperties = {
           position: 'fixed', top: ctxMenu.y, left: ctxMenu.x - 160,
-          background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8,
+          background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 8,
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 300, minWidth: 160,
         };
         const itemStyle: React.CSSProperties = {
           display: 'block', width: '100%', padding: '8px 14px', background: 'none',
-          border: 'none', color: '#e2e8f0', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+          border: 'none', color: 'var(--bld-text-2)', fontSize: 12, textAlign: 'left', cursor: 'pointer',
         };
         const closeCtx = () => setCtxMenu(null);
         return (
@@ -668,7 +645,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 closeCtx();
               }}>Copy as cURL</button>
             )}
-            <button style={{ ...itemStyle, color: '#ef4444' }} onClick={async () => {
+            <button style={{ ...itemStyle, color: 'var(--bld-error)' }} onClick={async () => {
               if (!confirm(`Delete "${wf.name}"?`)) return;
               await backendWorkflows.delete(projectId, wf.id).catch(() => {});
               setWorkflows((p) => p.filter((w) => w.id !== wf.id));
@@ -691,20 +668,20 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             <div
               style={{
                 position: 'absolute', top: 80, right: 20,
-                background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10,
+                background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.6)', width: 320, padding: 14,
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>Security</span>
-                <button onClick={() => setSecPopover(null)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer' }}>✕</button>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Security</span>
+                <button onClick={() => setSecPopover(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>✕</button>
               </div>
               {/* Access dropdown */}
               <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Access</label>
+                <label style={{ fontSize: 11, color: 'var(--bld-text-3)', display: 'block', marginBottom: 4 }}>Access</label>
                 <select
-                  style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#e2e8f0', outline: 'none', width: '100%', cursor: 'pointer' }}
+                  style={{ background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', width: '100%', cursor: 'pointer' }}
                   value={sec.access}
                   onChange={(e) => setSec({ access: e.target.value as 'public' | 'authenticated' })}
                 >
@@ -714,12 +691,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               </div>
               {/* Middleware chain */}
               <div>
-                <label style={{ fontSize: 11, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Middleware chain</label>
+                <label style={{ fontSize: 11, color: 'var(--bld-text-3)', display: 'block', marginBottom: 4 }}>Middleware chain</label>
                 {sec.middlewareIds.map((mwId, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, color: '#475569', width: 28 }}>and</span>
+                    <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', width: 28 }}>and</span>
                     <select
-                      style={{ flex: 1, background: '#1e293b', border: '1px solid #334155', borderRadius: 5, padding: '5px 8px', fontSize: 11, color: '#e2e8f0', outline: 'none', cursor: 'pointer' }}
+                      style={{ flex: 1, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, padding: '5px 8px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', cursor: 'pointer' }}
                       value={mwId}
                       onChange={(e) => {
                         const ids = [...sec.middlewareIds];
@@ -732,13 +709,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                     </select>
                     <button
                       onClick={() => setSec({ middlewareIds: sec.middlewareIds.filter((_, j) => j !== i) })}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 14 }}
                     >✕</button>
                   </div>
                 ))}
                 <button
                   onClick={() => setSec({ middlewareIds: [...sec.middlewareIds, ''] })}
-                  style={{ fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4 }}
+                  style={{ fontSize: 11, color: 'var(--bld-ai-accent)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4 }}
                 >+ Add middleware for more control</button>
               </div>
               {/* Save */}
@@ -752,7 +729,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                     setSecPopover(null);
                   } catch { /* ignore */ }
                 }}
-                style={{ marginTop: 14, width: '100%', padding: '7px 0', fontSize: 12, fontWeight: 600, background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                style={{ marginTop: 14, width: '100%', padding: '7px 0', fontSize: 12, fontWeight: 600, background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
               >Save</button>
             </div>
           </div>
@@ -761,9 +738,9 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
 
       {/* Error toast */}
       {error && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#7f1d1d', color: '#fca5a5', padding: '8px 16px', borderRadius: 6, fontSize: 12, zIndex: 200, display: 'flex', gap: 8 }}>
+        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(248,113,113,0.15)', color: 'var(--bld-error)', padding: '8px 16px', borderRadius: 6, fontSize: 12, zIndex: 200, display: 'flex', gap: 8 }}>
           {error}
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer' }}>✕</button>
         </div>
       )}
     </div>

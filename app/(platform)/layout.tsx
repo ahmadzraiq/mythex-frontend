@@ -3,6 +3,8 @@
 import { useEffect, useState, createContext, useContext, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { auth, workspaces as workspacesApi, type User, type Workspace } from '@/lib/platform/api-client';
+import AiTokenMeter from './_ai-token-meter';
+import PricingModal from './_pricing-modal';
 
 // ── Context so children can trigger workspace refetches ─────────────────────
 
@@ -10,9 +12,13 @@ interface PlatformCtx {
   user: User | null;
   workspaces: Workspace[];
   refetchWorkspaces: () => void;
+  showPricing: (feature?: string) => void;
+  aiUsageRefreshKey: number;
+  bumpAiUsageRefresh: () => void;
 }
 const PlatformContext = createContext<PlatformCtx>({
   user: null, workspaces: [], refetchWorkspaces: () => {},
+  showPricing: () => {}, aiUsageRefreshKey: 0, bumpAiUsageRefresh: () => {},
 });
 export const usePlatform = () => useContext(PlatformContext);
 
@@ -127,11 +133,11 @@ function Sidebar({
                 </span>
                 <span style={{
                   fontSize: 9, fontWeight: 600,
-                  color: ws.plan === 'PRO' ? '#a78bfa' : '#4b5563',
-                  background: ws.plan === 'PRO' ? '#2e1065' : '#1f2937',
+                  color: ws.plan === 'FREE' ? '#4b5563' : ws.plan === 'ENTERPRISE' ? '#fbbf24' : '#a78bfa',
+                  background: ws.plan === 'FREE' ? '#1f2937' : ws.plan === 'ENTERPRISE' ? '#1c1408' : '#2e1065',
                   borderRadius: 3, padding: '1px 4px', flexShrink: 0,
                 }}>
-                  {ws.plan === 'PRO' ? 'PRO' : 'FREE'}
+                  {ws.plan}
                 </span>
               </button>
             </div>
@@ -204,9 +210,11 @@ function Sidebar({
 function CreateWorkspaceModal({
   onClose,
   onCreate,
+  onUpgrade,
 }: {
   onClose: () => void;
   onCreate: (ws: Workspace) => void;
+  onUpgrade: () => void;
 }) {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -224,7 +232,13 @@ function CreateWorkspaceModal({
       router.push(`/workspaces/${workspace.id}?section=projects`);
       onClose();
     } catch (err) {
-      setError((err as Error).message ?? 'Failed to create workspace');
+      const e = err as Error & { code?: string };
+      if (e.code === 'WORKSPACE_LIMIT') {
+        onClose();
+        onUpgrade();
+        return;
+      }
+      setError(e.message ?? 'Failed to create workspace');
       setSaving(false);
     }
   }
@@ -287,6 +301,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const [workspaceList, setWorkspaceList] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateWs, setShowCreateWs] = useState(false);
+  const [pricingModal, setPricingModal] = useState<{ open: boolean; feature?: string }>({ open: false });
+  const [aiUsageRefreshKey, setAiUsageRefreshKey] = useState(0);
 
   const publicPaths = ['/login', '/signup'];
   const isPublic = publicPaths.some(p => pathname.endsWith(p));
@@ -329,13 +345,28 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     );
   }
 
+  // Extract active workspaceId from path for the token meter
+  const wsMatch = pathname.match(/\/workspaces\/([^/?]+)/);
+  const activeWsId = wsMatch?.[1] ?? null;
+  const activeWs = workspaceList.find(w => w.id === activeWsId) ?? null;
+
+  const showPricing = (feature?: string) => setPricingModal({ open: true, feature });
+  const bumpAiUsageRefresh = () => setAiUsageRefreshKey(k => k + 1);
+
   return (
-    <PlatformContext.Provider value={{ user, workspaces: workspaceList, refetchWorkspaces: fetchWorkspaces }}>
+    <PlatformContext.Provider value={{ user, workspaces: workspaceList, refetchWorkspaces: fetchWorkspaces, showPricing, aiUsageRefreshKey, bumpAiUsageRefresh }}>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0f172a' }}>
         <Sidebar
           user={user}
           workspaces={workspaceList}
-          onNewWorkspace={() => setShowCreateWs(true)}
+          onNewWorkspace={() => {
+            const allFree = workspaceList.every(ws => ws.plan === 'FREE');
+            if (!user.superAdmin && workspaceList.length >= 1 && allFree) {
+              showPricing('Multiple workspaces');
+            } else {
+              setShowCreateWs(true);
+            }
+          }}
           onSignOut={async () => {
             await auth.logout();
             router.push('/login');
@@ -343,15 +374,57 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         />
 
         {/* Main content area */}
-        <main style={{ flex: 1, overflowY: 'auto', background: '#0f172a' }}>
-          {children}
-        </main>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Top bar with AI token meter */}
+          {activeWs && (
+            <div style={{
+              height: 44, minHeight: 44,
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+              padding: '0 20px', gap: 12,
+              borderBottom: '1px solid #1f2937',
+              background: '#0b1120',
+              flexShrink: 0,
+            }}>
+              <AiTokenMeter
+                workspaceId={activeWs.id}
+                plan={activeWs.plan as 'FREE' | 'PRO' | 'ENTERPRISE'}
+                refreshKey={aiUsageRefreshKey}
+                superAdmin={user.superAdmin}
+              />
+              {activeWs.plan === 'FREE' && !user.superAdmin && (
+                <button
+                  onClick={() => showPricing()}
+                  style={{
+                    padding: '4px 12px', borderRadius: 20,
+                    border: '1px solid #6366f1', background: 'transparent',
+                    color: '#818cf8', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Upgrade
+                </button>
+              )}
+            </div>
+          )}
+          <main style={{ flex: 1, overflowY: 'auto', background: '#0f172a' }}>
+            {children}
+          </main>
+        </div>
       </div>
 
       {showCreateWs && (
         <CreateWorkspaceModal
           onClose={() => setShowCreateWs(false)}
           onCreate={ws => setWorkspaceList(prev => [...prev, ws])}
+          onUpgrade={() => showPricing('Multiple workspaces')}
+        />
+      )}
+
+      {pricingModal.open && activeWs && (
+        <PricingModal
+          workspaceId={activeWs.id}
+          currentPlan={activeWs.plan as 'FREE' | 'PRO' | 'ENTERPRISE'}
+          onClose={() => setPricingModal({ open: false })}
+          triggerFeature={pricingModal.feature}
         />
       )}
     </PlatformContext.Provider>

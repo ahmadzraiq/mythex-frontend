@@ -14,10 +14,13 @@
  *  - ContextDataSection, PagesDataSection, ColorsDataSection
  *  - TypographyDataSection, BorderRadiusDataSection, CollectionsDataTab
  *  - FunctionLibrary, FnRow
+ *  - EnvVarsSection
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { envVariables, type EnvVariable } from '@/lib/platform/api-client';
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode, type WorkflowParam } from './_store';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import { useSduiStore } from '@/store/sdui-store';
@@ -63,7 +66,7 @@ export function Tooltip({ text, children }: { text: string; children: React.Reac
       ...(top !== undefined ? { top } : { bottom }),
       width: TIP_W,
       background: '#1e293b', border: '1px solid #374151', borderRadius: 6, padding: '6px 10px',
-      fontSize: 11, color: '#d1d5db', whiteSpace: 'pre-wrap',
+      fontSize: 11, color: 'var(--bld-text-2)', whiteSpace: 'pre-wrap',
       zIndex: 100030, boxShadow: '0 4px 16px rgba(0,0,0,0.6)', pointerEvents: 'none',
       lineHeight: 1.5,
     };
@@ -294,7 +297,7 @@ export function VariableEntry({
       >
         {/* Chevron — click to expand/collapse */}
         <span
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
           onClick={() => setIsOpen(o => !o)}
         >
           <FEChevron open={isOpen} size={8} />
@@ -322,7 +325,7 @@ export function VariableEntry({
       {isOpen && (
         <div>
           {isUndefined ? (
-            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
               No value set yet
             </div>
           ) : typeof treeData === 'object' && treeData !== null && !Array.isArray(treeData) ? (
@@ -343,13 +346,13 @@ export function VariableEntry({
                   value={arrayIndices.get(rootPath) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
                   ))}
                 </select>
-                <span style={{ fontSize: 9, color: '#4b5563' }}>{(treeData as unknown[]).length} items</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{(treeData as unknown[]).length} items</span>
                 {isInsideRepeat && isArrayOfArrays && (
                   <button
                     onClick={e => {
@@ -545,7 +548,7 @@ function FormContainerEntry({
         onClick={() => setOpen(o => !o)}
         onMouseEnter={e => hover(e, true)} onMouseLeave={e => hover(e, false)}
       >
-        <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={7} /></span>
+        <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={7} /></span>
         <span
           data-testid={`form-container-chip-${formId}`}
           style={{ ...pillStyle, cursor: 'pointer' }}
@@ -638,8 +641,8 @@ export function PageComponentsSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#e2e8f0' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>From components in current page</span>
+        <span style={{ color: 'var(--bld-text-2)' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>From components in current page</span>
         <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{totalCount}</span>
       </button>
       {open && (
@@ -687,8 +690,8 @@ export function PageComponentsSection({
                 <span style={{ background: CC.bg, color: CC.text, border: `1px solid ${CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
                   {chipLabel}
                 </span>
-                <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>- value</span>
-                <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 4 }}>- value</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontFamily: 'monospace', marginLeft: 'auto' }}>{displayVal}</span>
               </div>
             );
           })}
@@ -749,7 +752,7 @@ export function VariableTree({
   if (orderedFolders.length === 0) {
   return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
-        <div style={{ padding: '16px', fontSize: 11, color: '#4b5563', fontStyle: 'italic', textAlign: 'center' }}>
+        <div style={{ padding: '16px', fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic', textAlign: 'center' }}>
           {lq ? 'No variables match' : 'No variables configured'}
           </div>
       </div>
@@ -771,10 +774,10 @@ export function VariableTree({
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
             >
-              <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+              <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
                 <FEChevron open={isOpen} size={8} />
               </span>
-              <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>{folderLabel}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>{folderLabel}</span>
               <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{vars.length}</span>
                   </button>
             {isOpen && vars.map(v => (
@@ -878,7 +881,7 @@ export function DataTreeNode({
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         {/* Expand chevron */}
-        <span data-tree-chevron style={{ color: '#4b5563', width: 10, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+        <span data-tree-chevron style={{ color: 'var(--bld-text-disabled)', width: 10, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
           {isExpandable ? <FEChevron open={isOpen} size={8} /> : null}
         </span>
 
@@ -902,7 +905,7 @@ export function DataTreeNode({
             value={arrayIndices.get(path) ?? 0}
             onChange={e => { e.stopPropagation(); setArrayIndex(path, Number(e.target.value)); }}
             onClick={e => e.stopPropagation()}
-            style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+            style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
           >
             {Array.from({ length: Math.min((value as unknown[]).length, 50) }, (_, i) => (
               <option key={i} value={i}>{i}</option>
@@ -949,7 +952,7 @@ export function DataTreeNode({
 
       {/* Empty array */}
       {isOpen && type === 'array' && Array.isArray(value) && (value as unknown[]).length === 0 && (
-        <div style={{ padding: `2px 8px 2px ${indent + 24}px`, fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>empty array</div>
+        <div style={{ padding: `2px 8px 2px ${indent + 24}px`, fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>empty array</div>
       )}
     </>
   );
@@ -1018,7 +1021,7 @@ export function CollectionEntry({ src, onInsert, search }: {
         {/* Chevron — click to expand/collapse */}
         <span
           data-testid={`fe-collection-chevron-${storeKey}`}
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
           onClick={() => setIsOpen(o => !o)}
         >
           <FEChevron open={isOpen} size={8} />
@@ -1042,7 +1045,7 @@ export function CollectionEntry({ src, onInsert, search }: {
       {isOpen && (
         <div>
           {data === undefined ? (
-            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
               Run fetch in Data tab to see structure
             </div>
           ) : typeof data === 'object' && data !== null && !Array.isArray(data) ? (
@@ -1065,13 +1068,13 @@ export function CollectionEntry({ src, onInsert, search }: {
                   value={arrayIndices.get(storeKey) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(storeKey, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((data as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
                   ))}
                 </select>
-                <span style={{ fontSize: 9, color: '#4b5563' }}>{(data as unknown[]).length} items</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{(data as unknown[]).length} items</span>
               </div>
               {/* Selected item subtree */}
               {(data as unknown[]).length > 0 && (() => {
@@ -1161,7 +1164,7 @@ function ContextGroupRow({
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
           onClick={() => setOpen(o => !o)}
         >
           <FEChevron open={open} size={8} />
@@ -1183,7 +1186,7 @@ function ContextGroupRow({
       {open && (
         <div>
           {!data ? (
-            <div style={{ padding: `3px 10px 5px ${indent + 24}px`, fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+            <div style={{ padding: `3px 10px 5px ${indent + 24}px`, fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
               {data === null ? '{empty}' : 'Available at runtime'}
             </div>
           ) : (
@@ -1421,7 +1424,7 @@ export function ItemContextGroup({
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
           onClick={() => setOpen(o => !o)}
         >
           <FEChevron open={open} size={8} />
@@ -1435,7 +1438,7 @@ export function ItemContextGroup({
           <ContextGroupPill icon="{}" label="item" bg={cc.bg} border={cc.border} textColor={cc.text} />
         </div>
         {statusLabel && (
-          <span style={{ fontSize: 9, color: '#4b5563', fontStyle: 'italic', marginLeft: 4 }}>{statusLabel}</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-3)', fontStyle: 'italic', marginLeft: 4 }}>{statusLabel}</span>
         )}
       </div>
 
@@ -1454,7 +1457,7 @@ export function ItemContextGroup({
         </div>
       )}
       {open && !fullItemCtx && (
-        <div style={{ padding: '3px 10px 5px 44px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+        <div style={{ padding: '3px 10px 5px 44px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
           Select a node inside a repeated list
         </div>
       )}
@@ -1565,8 +1568,8 @@ export function FormLocalSection({
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
         >
-          <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-          <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Form container</span>
+          <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Form container</span>
         </button>
         {open && (
           <div style={{ paddingLeft: 8 }}>
@@ -1578,7 +1581,7 @@ export function FormLocalSection({
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
-                <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
+                <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
                 <div
                   onClick={e => { e.stopPropagation(); handleInsert('form', 'local.data.form'); }}
                   style={{ cursor: 'pointer' }}
@@ -1614,7 +1617,7 @@ export function FormLocalSection({
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
                       <span style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace', opacity: 0.8 }}>⊗</span>
-                      <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>{key}</span>
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{key}</span>
                       <span style={{ fontSize: 10, color: '#ef4444', fontFamily: 'monospace', marginLeft: 'auto' }}>
                         {String(formState[key])}
                       </span>
@@ -1638,8 +1641,8 @@ export function FormLocalSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Local</span>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Local</span>
       </button>
 
       {open && (
@@ -1652,7 +1655,7 @@ export function FormLocalSection({
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
-              <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={localDataOpen} size={7} /></span>
+              <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={localDataOpen} size={7} /></span>
               <div
                 onClick={e => { e.stopPropagation(); handleInsert('', 'local.data'); }}
                 style={{ cursor: 'pointer' }}
@@ -1673,7 +1676,7 @@ export function FormLocalSection({
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
-                    <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
+                    <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
                     <div
                       data-testid="formula-local-form-pill"
                       onClick={e => { e.stopPropagation(); handleInsert('form', 'local.data.form'); }}
@@ -1792,8 +1795,8 @@ export function ContextDataSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Context</span>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Context</span>
       </button>
       {open && (
         <div>
@@ -1851,8 +1854,8 @@ export function PagesDataSection({
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Pages</span>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Pages</span>
         <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{routes.length}</span>
       </button>
       {open && (
@@ -1919,7 +1922,7 @@ function ThemeRow({
         {label}
       </button>
       {/* Value preview */}
-      <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{value}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{value}</span>
     </div>
   );
 }
@@ -1933,8 +1936,8 @@ function ThemeSectionHeader({ open, onToggle, accent, label, count }: { open: bo
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
     >
-      <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-      <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
       <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{count}</span>
     </button>
   );
@@ -1989,7 +1992,7 @@ export function ColorsDataSection({
             if (!items?.length) return null;
             return (
               <div key={folder.id} style={{ marginTop: 4 }}>
-                <div style={{ fontSize: 9, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
                   {folder.name}
                 </div>
                 {items.map(c => (
@@ -2007,7 +2010,7 @@ export function ColorsDataSection({
           {/* Ungrouped custom colors */}
           {(grouped.get(undefined)?.length ?? 0) > 0 && (
             <div style={{ marginTop: 4 }}>
-              <div style={{ fontSize: 9, color: '#6b7280', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
                 Custom
               </div>
               {grouped.get(undefined)!.map(c => (
@@ -2061,7 +2064,7 @@ export function TypographyDataSection({
               >
                 {k}
               </button>
-              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{v}</span>
             </div>
           ))}
         </div>
@@ -2117,7 +2120,7 @@ export function BorderRadiusDataSection({
               >
                 {t.label}
               </button>
-              <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{t.cls === 'rounded' ? `${t.cls} (${radiusValue})` : t.value}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>{t.cls === 'rounded' ? `${t.cls} (${radiusValue})` : t.value}</span>
             </div>
           ))}
         </div>
@@ -2151,15 +2154,15 @@ export function CollectionsDataTab({ onInsert, search }: {
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={collectionsOpen} size={8} /></span>
-        <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.05em' }}>Collections</span>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={collectionsOpen} size={8} /></span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Collections</span>
         <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{filtered.length}</span>
       </button>
 
       {collectionsOpen && (
         <>
           {filtered.length === 0 ? (
-            <div style={{ padding: '12px', fontSize: 10, color: '#4b5563', fontStyle: 'italic', textAlign: 'center' }}>
+            <div style={{ padding: '12px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic', textAlign: 'center' }}>
               {pageDataSources.length === 0
                 ? 'Add a data source in the Data tab'
                 : 'No sources match your search'}
@@ -2249,8 +2252,8 @@ export function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }
                 onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
                 onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
               >
-                <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-                <span style={{ fontSize: 10, color: '#e2e8f0', fontWeight: 600, letterSpacing: '0.04em' }}>{cat as string}</span>
+                <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.04em' }}>{cat as string}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151' }}>{(fns as FnDef[]).length}</span>
               </button>
               {open && (
@@ -2283,7 +2286,7 @@ export function FnRow({ fn, onInsertFn }: { fn: FnDef; onInsertFn: (fnInsert: st
         onMouseLeave={ev => { ev.currentTarget.style.borderColor = '#374151'; ev.currentTarget.style.background = '#1f2937'; }}
       >
         <span style={{ fontSize: 9, color: '#a78bfa', fontStyle: 'italic' }}>ƒ</span>
-        <span style={{ fontSize: 11, color: '#e2e8f0' }}>{fn.name}</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{fn.name}</span>
       </button>
     </Tooltip>
   );
@@ -2373,13 +2376,13 @@ export function EventContextSection({
         onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
           <FEChevron open={open} size={8} />
         </span>
         <span style={{ fontSize: 10, fontWeight: 600, color: '#fb923c', letterSpacing: '0.04em' }}>
           Event
         </span>
-        <span style={{ marginLeft: 4, fontSize: 9, color: '#6b7280', fontFamily: 'monospace' }}>
+        <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>
           ({trigger})
         </span>
       </button>
@@ -2448,7 +2451,7 @@ function renderEventFields(
               color: '#fb923c', cursor: 'pointer', whiteSpace: 'nowrap',
             }}>
               {key}
-              <span style={{ color: '#6b7280', fontSize: 9 }}>
+              <span style={{ color: 'var(--bld-text-disabled)', fontSize: 9 }}>
                 {typeof val === 'string' ? 'str' : typeof val === 'number' ? 'num' : typeof val === 'boolean' ? 'bool' : ''}
               </span>
             </span>
@@ -2493,7 +2496,7 @@ function EventFieldGroup({
         onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
-        <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+        <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center' }}>
           <FEChevron open={open} size={7} />
         </span>
         <span style={{ fontSize: 10, color: '#fb923c', fontFamily: 'monospace' }}>
@@ -2549,7 +2552,7 @@ function SCPropChip({
         {label}
       </span>
       {displayVal !== undefined && (
-        <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
           {displayVal}
         </span>
       )}
@@ -2606,7 +2609,7 @@ function SCVariableEntry({
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'pointer', padding: '2px' }}
           onClick={() => setIsOpen(o => !o)}
         >
           <FEChevron open={isOpen} size={8} />
@@ -2631,7 +2634,7 @@ function SCVariableEntry({
       {isOpen && (
         <div>
           {isUndefined ? (
-            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>
               No value set yet
             </div>
           ) : typeof treeData === 'object' && treeData !== null && !Array.isArray(treeData) ? (
@@ -2652,13 +2655,13 @@ function SCVariableEntry({
                   value={arrayIndices.get(rootPath) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
                   ))}
                 </select>
-                <span style={{ fontSize: 9, color: '#4b5563' }}>{(treeData as unknown[]).length} items</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{(treeData as unknown[]).length} items</span>
               </div>
               {(treeData as unknown[]).length > 0 && (() => {
                 const idx = arrayIndices.get(rootPath) ?? 0;
@@ -2717,7 +2720,7 @@ function SCFormulaRow({
         onMouseLeave={ev => { ev.currentTarget.style.borderColor = '#374151'; ev.currentTarget.style.background = '#1f2937'; }}
       >
         <span style={{ fontSize: 9, color: '#fde68a', fontStyle: 'italic' }}>ƒ</span>
-        <span style={{ fontSize: 11, color: '#e2e8f0' }}>{name}</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{name}</span>
       </button>
     </Tooltip>
   );
@@ -2731,8 +2734,8 @@ function SCSectionHeader({ label, open, onToggle }: { label: string; open: boole
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
     >
-      <span style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</span>
     </button>
   );
 }
@@ -2779,7 +2782,7 @@ export function SharedComponentContextSection({
       {propsOpen && (
         <div style={{ paddingBottom: 4 }}>
           {properties.length === 0 ? (
-            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No properties defined</div>
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No properties defined</div>
           ) : properties.map(prop => (
             <SCPropChip
               key={prop.id}
@@ -2798,7 +2801,7 @@ export function SharedComponentContextSection({
       {varsOpen && (
         <div style={{ paddingBottom: 4 }}>
           {varEntries.length === 0 ? (
-            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No variables defined</div>
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No variables defined</div>
           ) : varEntries.map(([uuid, def]) => (
             <SCVariableEntry
               key={uuid}
@@ -2816,7 +2819,7 @@ export function SharedComponentContextSection({
       {formulasOpen && (
         <div style={{ paddingBottom: 4 }}>
           {formulaEntries.length === 0 ? (
-            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: '#4b5563', fontStyle: 'italic' }}>No formulas defined</div>
+            <div style={{ padding: '2px 22px 6px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No formulas defined</div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '2px 10px 6px 22px' }}>
               {formulaEntries.map(([id, def]) => (
@@ -2900,7 +2903,7 @@ function AuthFieldRow({
       >
         {/* Chevron — only shown when value is expandable */}
         <span
-          style={{ color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: isExpandable ? 'pointer' : 'default', padding: '2px', width: 14 }}
+          style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: isExpandable ? 'pointer' : 'default', padding: '2px', width: 14 }}
           onClick={() => isExpandable && setIsOpen(o => !o)}
         >
           {isExpandable && <FEChevron open={isOpen} size={8} />}
@@ -2924,7 +2927,7 @@ function AuthFieldRow({
             {feValuePreview(value)}
           </span>
         ) : (
-          <span style={{ fontSize: 9, color: '#4b5563', marginLeft: 'auto', fontStyle: 'italic' }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-3)', marginLeft: 'auto', fontStyle: 'italic' }}>
             {type === 'array' ? `${(value as unknown[]).length} items` : '{…}'}
           </span>
         )}
@@ -2958,13 +2961,13 @@ function AuthFieldRow({
                   value={arrayIndices.get(label) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(label, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: '#d1d5db', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((value as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
                   ))}
                 </select>
-                <span style={{ fontSize: 9, color: '#4b5563' }}>{(value as unknown[]).length} items</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{(value as unknown[]).length} items</span>
               </div>
               {(value as unknown[]).length > 0 && (() => {
                 const idx = arrayIndices.get(label) ?? 0;
@@ -3008,7 +3011,7 @@ export function AuthDataSection({
 
   return (
     <div style={{ padding: '8px 0', flex: 1 }}>
-      <div style={{ padding: '4px 12px 8px', fontSize: 10, color: '#9ca3af', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', borderBottom: '1px solid #1f2937' }}>
+      <div style={{ padding: '4px 12px 8px', fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', borderBottom: '1px solid #1f2937' }}>
         TOKEN BASED AUTH
       </div>
       <AuthFieldRow label="user"            formula="auth?.['user']"          value={authUser}         onInsert={onInsert} />
@@ -3055,7 +3058,7 @@ export function ParametersSection({
         onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
-        <span style={{ color: '#e2e8f0', display: 'flex', alignItems: 'center' }}>
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
           <FEChevron open={open} size={8} />
         </span>
         <span style={{ fontSize: 10, fontWeight: 600, color: '#60a5fa', letterSpacing: '0.04em' }}>
@@ -3088,12 +3091,12 @@ export function ParametersSection({
                   {PARAM_TYPE_ICONS_FE[p.type] ?? 'T'}
                 </span>
                 {/* Name */}
-                <span style={{ fontSize: 11, color: '#d1d5db', flex: 1, fontWeight: 500 }}>
-                  {p.name || <em style={{ color: '#6b7280' }}>Unnamed</em>}
-                  {p.allowMultiple && <span style={{ fontSize: 9, color: '#6b7280', marginLeft: 4 }}>[ ]</span>}
+                <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flex: 1, fontWeight: 500 }}>
+                  {p.name || <em style={{ color: 'var(--bld-text-disabled)' }}>Unnamed</em>}
+                  {p.allowMultiple && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 4 }}>[ ]</span>}
                 </span>
                 {/* Test value preview */}
-                <span style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   {displayVal}
                 </span>
                 {/* Type badge */}
@@ -3109,6 +3112,89 @@ export function ParametersSection({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── EnvVarsSection ─────────────────────────────────────────────────────────────
+// Shows project env variables in the formula editor "Env" tab.
+// Clicking a variable inserts env['KEY_NAME'] into the formula.
+
+export function useBuilderProjectId(): string | null {
+  const pathname   = usePathname() ?? '';
+  const params     = useSearchParams();
+  const fromSearch = params.get('projectId');
+  const fromPath   = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
+  return fromSearch ?? fromPath;
+}
+
+export function EnvVarsSection({ onInsert }: { onInsert: (chip: string) => void }) {
+  const projectId             = useBuilderProjectId();
+  const [vars, setVars]       = useState<EnvVariable[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!projectId) return;
+    setLoading(true);
+    envVariables.list(projectId)
+      .then((r) => setVars(r.envVariables))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 16, fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
+        Loading env variables…
+      </div>
+    );
+  }
+
+  if (vars.length === 0) {
+    return (
+      <div style={{ padding: 16, fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
+        No environment variables yet.
+        <br />
+        <span style={{ fontSize: 10 }}>Add them with the ⚙ button in the navbar.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ overflowY: 'auto', flex: 1 }}>
+      <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Environment Variables
+      </div>
+      {vars.map((v) => (
+        <div
+          key={v.id}
+          onClick={() => onInsert(`env['${v.name}']`)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '5px 12px', cursor: 'pointer', borderRadius: 4, gap: 8,
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span style={{
+              background: '#1e293b', border: '1px solid #334155', borderRadius: 4,
+              padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
+              color: '#a5b4fc', flexShrink: 0,
+            }}>
+              env
+            </span>
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--bld-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {v.name}
+            </span>
+          </div>
+          {v.devValue && (
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 80, flexShrink: 0 }}>
+              {v.devValue}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

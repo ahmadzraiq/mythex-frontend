@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, type FormEvent } from 'react';
+import { useState, useEffect, useRef, use, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   workspaces as workspacesApi,
@@ -8,11 +8,13 @@ import {
   type Workspace,
   type WorkspaceMember,
   type Project,
+  type WorkspaceUsage,
 } from '@/lib/platform/api-client';
 import { BUSINESS_CATEGORIES, DESIGN_MOODS } from '@/lib/builder/wizard-data';
 import CreateAiProjectWizard from './_create-ai-project-wizard';
+import { usePlatform } from '@/app/(platform)/layout';
 
-type Tab = 'projects' | 'members' | 'settings';
+type Tab = 'projects' | 'members' | 'settings' | 'usage';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -225,6 +227,7 @@ function ProjectCard({
   deleting?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const isLive = project.published === true;
 
   return (
     <div style={{
@@ -252,7 +255,23 @@ function ProjectCard({
           <span style={{ fontSize: 11.5, color: '#f87171', fontWeight: 600 }}>Deleting…</span>
         </div>
       )}
-      {/* Thumbnail — overflow:hidden scoped here so the dropdown is not clipped */}
+
+      {/* Live badge overlay on thumbnail */}
+      {isLive && (
+        <div style={{
+          position: 'absolute', top: 8, left: 8, zIndex: 5,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          fontSize: 10, fontWeight: 700, color: '#4ade80', padding: '2px 7px',
+          background: 'rgba(5, 46, 22, 0.9)', borderRadius: 4,
+          border: '1px solid #16a34a',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block', boxShadow: '0 0 4px #4ade80' }} />
+          Live
+        </div>
+      )}
+
+      {/* Thumbnail */}
       <button
         onClick={onOpen}
         style={{
@@ -338,12 +357,14 @@ function ProjectsSection({
   projectList,
   setProjectList,
   isOwner,
+  isSuperAdmin = false,
 }: {
   workspaceId: string;
   workspace: Workspace;
   projectList: Project[];
   setProjectList: React.Dispatch<React.SetStateAction<Project[]>>;
   isOwner: boolean;
+  isSuperAdmin?: boolean;
 }) {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
@@ -419,7 +440,7 @@ function ProjectsSection({
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Projects</h2>
           <p style={{ fontSize: 12, color: '#4b5563', margin: '3px 0 0' }}>
             {projectList.length} {projectList.length === 1 ? 'project' : 'projects'}
-            {workspace.plan === 'FREE' && ' · Free plan: 1 project max'}
+            {workspace.plan === 'FREE' && !isSuperAdmin && ' · Free plan: 1 project max'}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -480,7 +501,7 @@ function ProjectsSection({
       )}
 
       {/* Free plan upgrade nudge */}
-      {workspace.plan === 'FREE' && projectList.length >= 1 && (
+      {workspace.plan === 'FREE' && !isSuperAdmin && projectList.length >= 1 && (
         <div style={{
           marginTop: 20, borderRadius: 10, border: '1px solid #3b1d8a',
           background: '#1e1040', padding: '14px 16px',
@@ -596,6 +617,123 @@ function ProjectsSection({
   );
 }
 
+// ── Project multi-select dropdown ────────────────────────────────────────────
+
+function ProjectDropdown({
+  projects,
+  selectedIds,
+  onChange,
+  placeholder = 'Select projects…',
+}: {
+  projects: Project[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const allSelected = selectedIds.length === projects.length && projects.length > 0;
+  const selectedNames = projects.filter(p => selectedIds.includes(p.id)).map(p => p.name);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  function toggle(id: string) {
+    onChange(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]);
+  }
+
+  function toggleAll() {
+    onChange(allSelected ? [] : projects.map(p => p.id));
+  }
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px', borderRadius: 8, border: '1px solid #374151',
+          background: '#1f2937', color: selectedIds.length ? '#f9fafb' : '#6b7280',
+          fontSize: 12.5, cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          {selectedIds.length === 0
+            ? placeholder
+            : allSelected
+              ? 'All projects'
+              : selectedNames.join(', ')}
+        </span>
+        <span style={{ marginLeft: 8, fontSize: 10, color: '#6b7280', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+          background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+          marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden',
+        }}>
+          {projects.length === 0 ? (
+            <div style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280' }}>
+              No projects in this workspace yet.
+            </div>
+          ) : (
+            <>
+              <label
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #374151',
+                  background: allSelected ? '#1e2d4a' : 'transparent',
+                }}
+                onClick={toggleAll}
+              >
+                <span style={{
+                  width: 14, height: 14, borderRadius: 3, border: `2px solid ${allSelected ? '#3b82f6' : '#4b5563'}`,
+                  background: allSelected ? '#3b82f6' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {allSelected && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>All projects</span>
+              </label>
+              {projects.map(p => {
+                const checked = selectedIds.includes(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '9px 14px', cursor: 'pointer',
+                      background: checked ? '#1e2d4a' : 'transparent',
+                    }}
+                    onClick={() => toggle(p.id)}
+                  >
+                    <span style={{
+                      width: 14, height: 14, borderRadius: 3, border: `2px solid ${checked ? '#3b82f6' : '#4b5563'}`,
+                      background: checked ? '#3b82f6' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {checked && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                    </span>
+                    <span style={{ fontSize: 12, color: checked ? '#93c5fd' : '#d1d5db' }}>{p.name}</span>
+                  </label>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Section: Members ──────────────────────────────────────────────────────────
 
 function MembersSection({
@@ -604,37 +742,81 @@ function MembersSection({
   setMembers,
   isOwner,
   currentUserId,
+  projects,
 }: {
   workspaceId: string;
   members: WorkspaceMember[];
   setMembers: React.Dispatch<React.SetStateAction<WorkspaceMember[]>>;
   isOwner: boolean;
   currentUserId?: string;
+  projects: Project[];
 }) {
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'EDITOR' | 'VIEWER'>('VIEWER');
+  const [inviteProjectIds, setInviteProjectIds] = useState<string[]>([]);
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState('');
+
+  // Per-member project access editing state
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const [memberProjects, setMemberProjects] = useState<Record<string, { id: string; name: string }[]>>({});
+  const [editingProjectIds, setEditingProjectIds] = useState<string[]>([]);
+  const [savingProjects, setSavingProjects] = useState(false);
+
 
   async function handleInvite(e: FormEvent) {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     setInviting(true);
     setInviteError('');
+    setInviteSuccess('');
     try {
-      const { member } = await workspacesApi.inviteMember(workspaceId, { email: inviteEmail.trim(), role: inviteRole });
-      setMembers(prev => [...prev, member]);
+      const res = await workspacesApi.sendInvitation(workspaceId, {
+        email: inviteEmail.trim(),
+        projectIds: inviteProjectIds,
+      });
+      setInviteSuccess(res.message);
       setInviteEmail('');
+      setInviteProjectIds([]);
     } catch (err) {
-      setInviteError((err as Error).message ?? 'Failed to invite member');
+      setInviteError((err as Error).message ?? 'Failed to send invitation');
     } finally {
       setInviting(false);
     }
   }
 
-  async function handleRoleChange(userId: string, role: 'EDITOR' | 'VIEWER') {
-    await workspacesApi.updateMemberRole(workspaceId, userId, role);
-    setMembers(prev => prev.map(m => m.id === userId ? { ...m, role } : m));
+  async function handleExpandMember(userId: string) {
+    if (expandedMember === userId) {
+      setExpandedMember(null);
+      return;
+    }
+    setExpandedMember(userId);
+    if (!memberProjects[userId]) {
+      try {
+        const res = await workspacesApi.getMemberProjects(workspaceId, userId);
+        setMemberProjects(prev => ({ ...prev, [userId]: res.projects }));
+        setEditingProjectIds(res.projectIds);
+      } catch {
+        setMemberProjects(prev => ({ ...prev, [userId]: [] }));
+        setEditingProjectIds([]);
+      }
+    } else {
+      setEditingProjectIds(memberProjects[userId].map(p => p.id));
+    }
+  }
+
+  async function handleSaveProjectAccess(userId: string) {
+    setSavingProjects(true);
+    try {
+      await workspacesApi.updateMemberProjects(workspaceId, userId, editingProjectIds);
+      const updatedProjects = projects.filter(p => editingProjectIds.includes(p.id));
+      setMemberProjects(prev => ({ ...prev, [userId]: updatedProjects }));
+      setExpandedMember(null);
+    } catch (err) {
+      alert((err as Error).message ?? 'Failed to update project access');
+    } finally {
+      setSavingProjects(false);
+    }
   }
 
   async function handleRemove(userId: string) {
@@ -647,34 +829,44 @@ function MembersSection({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Members</h2>
-        <p style={{ fontSize: 12, color: '#4b5563', margin: '3px 0 0' }}>{members.length} {members.length === 1 ? 'member' : 'members'}</p>
+        <p style={{ fontSize: 12, color: '#4b5563', margin: '3px 0 0' }}>
+          {members.length} {members.length === 1 ? 'member' : 'members'}
+        </p>
       </div>
 
       {/* Invite form */}
       {isOwner && (
         <form onSubmit={handleInvite} style={{ marginBottom: 20, background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 16 }}>
           <p style={{ fontSize: 12.5, fontWeight: 600, color: '#e2e8f0', marginBottom: 12 }}>Invite a member</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input
-              type="email" required placeholder="colleague@example.com" value={inviteEmail}
-              onChange={e => setInviteEmail(e.target.value)}
-              style={{ flex: '1 1 200px', padding: '8px 12px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 12.5, outline: 'none' }}
+
+          <input
+            type="email" required placeholder="colleague@example.com" value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 12.5, outline: 'none', marginBottom: 12 }}
+          />
+
+          {/* Project access dropdown */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#9ca3af', marginBottom: 6 }}>
+              Project access
+            </label>
+            <ProjectDropdown
+              projects={projects}
+              selectedIds={inviteProjectIds}
+              onChange={setInviteProjectIds}
+              placeholder="No projects selected — grant access later"
             />
-            <select
-              value={inviteRole} onChange={e => setInviteRole(e.target.value as 'EDITOR' | 'VIEWER')}
-              style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#d1d5db', fontSize: 12.5, outline: 'none' }}
-            >
-              <option value="EDITOR">Editor</option>
-              <option value="VIEWER">Viewer</option>
-            </select>
-            <button
-              type="submit" disabled={inviting}
-              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1 }}
-            >
-              {inviting ? '…' : 'Invite'}
-            </button>
           </div>
+
+          <button
+            type="submit" disabled={inviting}
+            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1 }}
+          >
+            {inviting ? 'Sending…' : 'Send invitation'}
+          </button>
+
           {inviteError && <p style={{ fontSize: 11.5, color: '#f87171', marginTop: 8 }}>{inviteError}</p>}
+          {inviteSuccess && <p style={{ fontSize: 11.5, color: '#6ee7b7', marginTop: 8 }}>✓ {inviteSuccess}</p>}
         </form>
       )}
 
@@ -683,46 +875,96 @@ function MembersSection({
         {members.map((member, i) => {
           const isSelf = member.id === currentUserId;
           const isOwnerRow = member.role === 'OWNER';
+          const isExpanded = expandedMember === member.id;
+          const accessProjects = memberProjects[member.id];
+
           return (
             <div
               key={member.id ?? member.email ?? i}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px',
-                borderBottom: i < members.length - 1 ? '1px solid #1f2937' : 'none',
-              }}
+              style={{ borderBottom: i < members.length - 1 ? '1px solid #1f2937' : 'none' }}
             >
-              <Avatar name={member.name} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {member.name}
-                  {isSelf && <span style={{ marginLeft: 6, fontSize: 11, color: '#4b5563', fontWeight: 400 }}>(you)</span>}
+              {/* Main row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px' }}>
+                <Avatar name={member.name} size={34} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {member.name}
+                    {isSelf && <span style={{ marginLeft: 6, fontSize: 11, color: '#4b5563', fontWeight: 400 }}>(you)</span>}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
                 </div>
-                <div style={{ fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
+
+                {isOwnerRow ? (
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px' }}>Owner</span>
+                ) : isOwner ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <button
+                      onClick={() => handleExpandMember(member.id)}
+                      style={{
+                        padding: '4px 10px', borderRadius: 6, border: '1px solid #374151',
+                        background: isExpanded ? '#1e3a5f' : 'transparent',
+                        color: isExpanded ? '#93c5fd' : '#9ca3af',
+                        fontSize: 11.5, cursor: 'pointer',
+                      }}
+                    >
+                      {isExpanded ? 'Close' : 'Edit access'}
+                    </button>
+                    <button
+                      onClick={() => handleRemove(member.id)}
+                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #7f1d1d', background: 'transparent', color: '#f87171', fontSize: 11.5, cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  // Non-owner sees project chips (read-only)
+                  accessProjects ? (
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 200 }}>
+                      {accessProjects.length === 0
+                        ? <span style={{ fontSize: 10.5, color: '#6b7280' }}>No access</span>
+                        : accessProjects.map(p => (
+                          <span key={p.id} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#1e3a5f', color: '#93c5fd', border: '1px solid #1d4ed8' }}>
+                            {p.name}
+                          </span>
+                        ))
+                      }
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 10.5, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px' }}>Member</span>
+                  )
+                )}
               </div>
 
-              {isOwnerRow ? (
-                <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px' }}>Owner</span>
-              ) : isOwner && !isSelf ? (
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <select
-                    value={member.role}
-                    onChange={e => handleRoleChange(member.id, e.target.value as 'EDITOR' | 'VIEWER')}
-                    style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #374151', background: '#1f2937', color: '#d1d5db', fontSize: 11.5, outline: 'none' }}
-                  >
-                    <option value="EDITOR">Editor</option>
-                    <option value="VIEWER">Viewer</option>
-                  </select>
-                  <button
-                    onClick={() => handleRemove(member.id)}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #7f1d1d', background: 'transparent', color: '#f87171', fontSize: 11.5, cursor: 'pointer' }}
-                  >
-                    Remove
-                  </button>
+              {/* Expanded project access panel */}
+              {isExpanded && isOwner && (
+                <div style={{ padding: '12px 16px 16px', background: '#0f172a', borderTop: '1px solid #1f2937' }}>
+                  <p style={{ fontSize: 11.5, fontWeight: 600, color: '#9ca3af', marginBottom: 10 }}>
+                    Project access for {member.name}
+                  </p>
+                  <div style={{ marginBottom: 12 }}>
+                    <ProjectDropdown
+                      projects={projects}
+                      selectedIds={editingProjectIds}
+                      onChange={setEditingProjectIds}
+                      placeholder="No project access"
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleSaveProjectAccess(member.id)}
+                      disabled={savingProjects}
+                      style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: 'white', fontSize: 12, fontWeight: 600, cursor: savingProjects ? 'not-allowed' : 'pointer', opacity: savingProjects ? 0.7 : 1 }}
+                    >
+                      {savingProjects ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setExpandedMember(null)}
+                      style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 12, cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px', textTransform: 'capitalize' }}>
-                  {member.role.toLowerCase()}
-                </span>
               )}
             </div>
           );
@@ -813,11 +1055,120 @@ function SettingsSection({
   );
 }
 
+// ── Usage Section ─────────────────────────────────────────────────────────────
+
+function UsageBar({ label, used, limit, color = '#3b82f6', unit = '' }: {
+  label: string;
+  used: number;
+  limit: number | null;
+  color?: string;
+  unit?: string;
+}) {
+  const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
+  const isUnlimited = !limit || limit === Infinity;
+  const usedStr = unit === 'MB' ? (used >= 1024 ? `${(used / 1024).toFixed(1)} GB` : `${used.toFixed(1)} MB`) : used.toLocaleString() + (unit ? ` ${unit}` : '');
+  const limitStr = isUnlimited ? '∞' : (unit === 'MB' ? (limit! >= 1024 ? `${(limit! / 1024).toFixed(0)} GB` : `${limit} MB`) : limit!.toLocaleString() + (unit ? ` ${unit}` : ''));
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>{label}</span>
+        <span style={{ fontSize: 11.5, color: '#6b7280' }}>{usedStr} / {limitStr}</span>
+      </div>
+      <div style={{ height: 5, borderRadius: 99, background: '#1f2937', overflow: 'hidden' }}>
+        {!isUnlimited && (
+          <div style={{
+            height: '100%', width: `${pct}%`, borderRadius: 99,
+            background: pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : color,
+            transition: 'width 400ms ease',
+          }} />
+        )}
+        {isUnlimited && (
+          <div style={{ height: '100%', width: '30%', borderRadius: 99, background: color, opacity: 0.4 }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UsageSection({ workspaceId }: { workspaceId: string }) {
+  const [usage, setUsage] = useState<WorkspaceUsage | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    workspacesApi.getUsage(workspaceId)
+      .then(setUsage)
+      .catch(() => setError('Failed to load usage data'))
+      .finally(() => setLoading(false));
+  }, [workspaceId]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+        <div style={{ width: 20, height: 20, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (error || !usage) {
+    return <p style={{ color: '#f87171', fontSize: 13 }}>{error || 'No data'}</p>;
+  }
+
+  const u = usage.usage;
+
+  const sectionStyle: React.CSSProperties = {
+    background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+  };
+  const sectionTitle: React.CSSProperties = {
+    fontSize: 11.5, fontWeight: 600, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14,
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0', margin: 0 }}>Usage — {usage.period}</h3>
+        <span style={{ fontSize: 11, color: '#4b5563' }}>Plan: {usage.plan}</span>
+      </div>
+
+      <div style={sectionStyle}>
+        <p style={sectionTitle}>AI</p>
+        <UsageBar label="AI tokens" used={u.aiTokens.used} limit={u.aiTokens.limit} color="#8b5cf6" />
+      </div>
+
+      <div style={sectionStyle}>
+        <p style={sectionTitle}>Database</p>
+        <UsageBar label="DB reads" used={u.dbReads.used} limit={u.dbReads.limit} color="#06b6d4" />
+        <UsageBar label="DB writes" used={u.dbWrites.used} limit={u.dbWrites.limit} color="#0ea5e9" />
+      </div>
+
+      <div style={sectionStyle}>
+        <p style={sectionTitle}>Storage</p>
+        <UsageBar label="Capacity used" used={u.storageMb.used} limit={u.storageMb.limit} unit="MB" color="#10b981" />
+        <UsageBar label="Bandwidth" used={u.bandwidthMb.used} limit={u.bandwidthMb.limit} unit="MB" color="#34d399" />
+        <UsageBar label="Storage requests" used={u.storageRequests.used} limit={u.storageRequests.limit} color="#6ee7b7" />
+      </div>
+
+      <div style={sectionStyle}>
+        <p style={sectionTitle}>API & Network</p>
+        <UsageBar label="API calls" used={u.apiCalls.used} limit={u.apiCalls.limit} color="#f59e0b" />
+      </div>
+
+      <div style={sectionStyle}>
+        <p style={sectionTitle}>Realtime</p>
+        <UsageBar label="WebSocket minutes" used={u.wsMinutes.used} limit={u.wsMinutes.limit} unit="min" color="#a78bfa" />
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function WorkspaceDetailPage({ params }: { params: Promise<{ workspaceId: string }> }) {
   const { workspaceId } = use(params);
   const router = useRouter();
+  const { user } = usePlatform();
+  const isSuperAdmin = user?.superAdmin ?? false;
 
   const [tab, setTab] = useState<Tab>('projects');
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -865,11 +1216,14 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
 
   if (!workspace) return null;
 
-  const isOwner = workspace.role === 'OWNER';
+  const myRole = workspace.myRole ?? workspace.role;
+  const isOwner = myRole === 'OWNER';
+  const canEdit = myRole === 'OWNER' || myRole === 'EDITOR';
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'projects', label: 'Projects' },
     { id: 'members', label: `Members${workspace.memberCount > 0 ? ` (${workspace.memberCount})` : ''}` },
+    { id: 'usage', label: 'Usage' },
     ...(isOwner ? [{ id: 'settings' as Tab, label: 'Settings' }] : []),
   ];
 
@@ -881,14 +1235,24 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h1 style={{ fontSize: 17, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{workspace.name}</h1>
-            <span style={{
-              fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-              color: workspace.plan === 'PRO' ? '#a78bfa' : '#6b7280',
-              background: workspace.plan === 'PRO' ? '#2e1065' : '#1f2937',
-              letterSpacing: '0.05em',
-            }}>
-              {workspace.plan}
-            </span>
+            {!isSuperAdmin && (
+              <span style={{
+                fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                color: workspace.plan === 'PRO' ? '#a78bfa' : '#6b7280',
+                background: workspace.plan === 'PRO' ? '#2e1065' : '#1f2937',
+                letterSpacing: '0.05em',
+              }}>
+                {workspace.plan}
+              </span>
+            )}
+            {isSuperAdmin && (
+              <span style={{
+                fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                color: '#a5b4fc', background: '#1e1b4b', letterSpacing: '0.05em',
+              }}>
+                ADMIN
+              </span>
+            )}
           </div>
           <p style={{ fontSize: 11.5, color: '#4b5563', margin: '2px 0 0' }}>
             {workspace.memberCount} {workspace.memberCount === 1 ? 'member' : 'members'} · {projectList.length} {projectList.length === 1 ? 'project' : 'projects'}
@@ -927,6 +1291,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
           projectList={projectList}
           setProjectList={setProjectList}
           isOwner={isOwner}
+          isSuperAdmin={isSuperAdmin}
         />
       )}
       {tab === 'members' && (
@@ -936,7 +1301,11 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
           setMembers={setMembers}
           isOwner={isOwner}
           currentUserId={isOwner ? workspace.ownerId : undefined}
+          projects={projectList}
         />
+      )}
+      {tab === 'usage' && (
+        <UsageSection workspaceId={workspaceId} />
       )}
       {tab === 'settings' && isOwner && (
         <SettingsSection

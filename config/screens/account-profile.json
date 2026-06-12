@@ -37,7 +37,8 @@
             },
             "text": "Manage your account information"
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -169,7 +170,8 @@
         ],
         "props": {
           "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
-        }
+        },
+        "_group": "Personal Information"
       },
       {
         "type": "Box",
@@ -245,7 +247,8 @@
         ],
         "props": {
           "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
-        }
+        },
+        "_group": "Email"
       },
       {
         "type": "Box",
@@ -346,7 +349,8 @@
         ],
         "props": {
           "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
-        }
+        },
+        "_group": "Change Password"
       }
     ]
   }

@@ -80,7 +80,14 @@
                             "type": "Box",
                             "props": {
                               "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
-                            "style": { "backgroundColor": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'" } }
+                              "style": {
+                                "backgroundColor": {
+                                  "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                                },
+                                "color": {
+                                  "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'"
+                                }
+                              }
                             },
                             "children": [
                               {
@@ -372,7 +379,17 @@
                     "type": "Box",
                     "props": {
                       "className": "flex flex-row items-center justify-between w-full py-[16px]",
-                      "style": { "opacity": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 1 : 0.5" }, "pointerEvents": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'" }, "cursor": { "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'" } }
+                      "style": {
+                        "opacity": {
+                          "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 1 : 0.5"
+                        },
+                        "pointerEvents": {
+                          "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'"
+                        },
+                        "cursor": {
+                          "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'"
+                        }
+                      }
                     },
                     "actions": [
                       {
@@ -390,7 +407,14 @@
                             "type": "Box",
                             "props": {
                               "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
-                              "style": { "backgroundColor": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'white' : 'var(--theme-muted-foreground)'" } }
+                              "style": {
+                                "backgroundColor": {
+                                  "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                                },
+                                "color": {
+                                  "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'white' : 'var(--theme-muted-foreground)'"
+                                }
+                              }
                             },
                             "children": [
                               {
@@ -822,7 +846,17 @@
                     "type": "Box",
                     "props": {
                       "className": "flex flex-row items-center justify-between w-full py-[16px]",
-                      "style": { "opacity": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 1 : 0.5" }, "pointerEvents": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 'auto' : 'none'" }, "cursor": { "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 'pointer' : 'not-allowed'" } }
+                      "style": {
+                        "opacity": {
+                          "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 1 : 0.5"
+                        },
+                        "pointerEvents": {
+                          "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 'auto' : 'none'"
+                        },
+                        "cursor": {
+                          "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? 'pointer' : 'not-allowed'"
+                        }
+                      }
                     },
                     "actions": [
                       {
@@ -840,7 +874,14 @@
                             "type": "Box",
                             "props": {
                               "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
-                              "style": { "backgroundColor": { "formula": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'white' : 'var(--theme-muted-foreground)'" } }
+                              "style": {
+                                "backgroundColor": {
+                                  "formula": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                                },
+                                "color": {
+                                  "formula": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'white' : 'var(--theme-muted-foreground)'"
+                                }
+                              }
                             },
                             "children": [
                               {
@@ -939,7 +980,14 @@
                                 "type": "Box",
                                 "props": {
                                   "className": "flex flex-row items-center gap-[12px] p-[16px] border-[2px] rounded-[8px] w-full cursor-pointer",
-                                  "style": { "borderColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'" }, "backgroundColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-muted)' : 'transparent'" } }
+                                  "style": {
+                                    "borderColor": {
+                                      "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'"
+                                    },
+                                    "backgroundColor": {
+                                      "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-muted)' : 'transparent'"
+                                    }
+                                  }
                                 },
                                 "actions": [
                                   {
@@ -951,7 +999,14 @@
                                     "type": "Box",
                                     "props": {
                                       "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0",
-                                      "style": { "borderColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'" }, "backgroundColor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'transparent'" } }
+                                      "style": {
+                                        "borderColor": {
+                                          "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'"
+                                        },
+                                        "backgroundColor": {
+                                          "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'transparent'"
+                                        }
+                                      }
                                     },
                                     "children": [
                                       {
@@ -1028,7 +1083,17 @@
                         "type": "Box",
                         "props": {
                           "className": "flex flex-row items-center justify-center bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] mt-[8px]",
-                          "style": { "opacity": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 1 : 0.5" }, "pointerEvents": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 'auto' : 'none'" }, "cursor": { "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 'pointer' : 'not-allowed'" } }
+                          "style": {
+                            "opacity": {
+                              "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 1 : 0.5"
+                            },
+                            "pointerEvents": {
+                              "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 'auto' : 'none'"
+                            },
+                            "cursor": {
+                              "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] ? 'pointer' : 'not-allowed'"
+                            }
+                          }
                         },
                         "children": [
                           {
@@ -1059,7 +1124,17 @@
                     "type": "Box",
                     "props": {
                       "className": "flex flex-row items-center justify-between w-full py-[16px]",
-                      "style": { "opacity": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 1 : 0.5" }, "pointerEvents": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'auto' : 'none'" }, "cursor": { "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'pointer' : 'not-allowed'" } }
+                      "style": {
+                        "opacity": {
+                          "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 1 : 0.5"
+                        },
+                        "pointerEvents": {
+                          "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'auto' : 'none'"
+                        },
+                        "cursor": {
+                          "formula": "((collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 || variables['b3c4d5e6-f7a8-9012-bcde-123456789012']) ? 'pointer' : 'not-allowed'"
+                        }
+                      }
                     },
                     "children": [
                       {
@@ -1072,7 +1147,14 @@
                             "type": "Box",
                             "props": {
                               "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
-                              "style": { "backgroundColor": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'var(--theme-primary)' : 'var(--theme-muted)')" }, "color": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'white' : 'var(--theme-muted-foreground)'" } }
+                              "style": {
+                                "backgroundColor": {
+                                  "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                                },
+                                "color": {
+                                  "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'white' : 'var(--theme-muted-foreground)'"
+                                }
+                              }
                             },
                             "children": [
                               {
@@ -1264,7 +1346,17 @@
                     "type": "Box",
                     "props": {
                       "className": "flex flex-row items-center justify-between w-full py-[16px]",
-                      "style": { "opacity": { "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 1 : 0.5" }, "pointerEvents": { "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 'auto' : 'none'" }, "cursor": { "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 'pointer' : 'not-allowed'" } }
+                      "style": {
+                        "opacity": {
+                          "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 1 : 0.5"
+                        },
+                        "pointerEvents": {
+                          "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 'auto' : 'none'"
+                        },
+                        "cursor": {
+                          "formula": "(variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' || ((auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && (collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 && variables['b3c4d5e6-f7a8-9012-bcde-123456789012'])) ? 'pointer' : 'not-allowed'"
+                        }
+                      }
                     },
                     "actions": [
                       {
@@ -1282,7 +1374,14 @@
                             "type": "Box",
                             "props": {
                               "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
-                              "style": { "backgroundColor": { "formula": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'var(--theme-primary)' : 'var(--theme-muted)'" }, "color": { "formula": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'white' : 'var(--theme-muted-foreground)'" } }
+                              "style": {
+                                "backgroundColor": {
+                                  "formula": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'var(--theme-primary)' : 'var(--theme-muted)'"
+                                },
+                                "color": {
+                                  "formula": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'white' : 'var(--theme-muted-foreground)'"
+                                }
+                              }
                             },
                             "children": [
                               {
@@ -1594,7 +1693,17 @@
                         "type": "Box",
                         "props": {
                           "className": "flex flex-row items-center justify-center w-full bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)] !py-[12px]",
-                          "style": { "opacity": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 1 : 0.5" }, "pointerEvents": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'auto' : 'none'" }, "cursor": { "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'pointer' : 'not-allowed'" } }
+                          "style": {
+                            "opacity": {
+                              "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 1 : 0.5"
+                            },
+                            "pointerEvents": {
+                              "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'auto' : 'none'"
+                            },
+                            "cursor": {
+                              "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? 'pointer' : 'not-allowed'"
+                            }
+                          }
                         },
                         "children": [
                           {
@@ -1825,7 +1934,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Checkout Form"
       }
     ]
   }

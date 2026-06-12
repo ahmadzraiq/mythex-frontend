@@ -20,11 +20,14 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import {
-  buildStructureAgentPrompt,
-  buildBuildAgentPrompt,
-} from '../lib/ai/agents';
-import { STRUCTURE_AGENT_TOOLS, BUILD_PHASE_TOOLS } from '../lib/ai/builder-tools';
+// Structure agent removed — this script is no longer functional.
+// The Smart Planner (lib/ai/agents/planner/agent.ts) now handles structure building.
+// TODO: rewrite this script to test the Smart Planner instead.
+const buildStructureAgentPrompt = () => ({ static: '// removed', dynamic: '' });
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const buildBuildAgentPrompt = (_opts: Record<string, unknown>) => ({ static: '// removed', dynamic: '' });
+const STRUCTURE_AGENT_TOOLS: unknown[] = [];
+const BUILD_PHASE_TOOLS: unknown[] = [];
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 

@@ -81,7 +81,7 @@ export function SlidePanel({
         minHeight: 32,
       }}>
         {title ? (
-          <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {title}
           </span>
         ) : (
@@ -96,7 +96,7 @@ export function SlidePanel({
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: '#6b7280',
+            color: 'var(--bld-text-disabled)',
             fontSize: 18,
             lineHeight: 1,
             padding: '0 2px',
@@ -149,7 +149,7 @@ export const SP_BTN_SECONDARY: React.CSSProperties = {
   background: 'transparent',
   border: '1px solid #374151',
   borderRadius: 5,
-  color: '#9ca3af',
+  color: 'var(--bld-text-3)',
   fontSize: 12,
   cursor: 'pointer',
 };
@@ -158,7 +158,7 @@ export const SP_INPUT: React.CSSProperties = {
   background: '#1f2937',
   border: '1px solid #374151',
   borderRadius: 4,
-  color: '#f3f4f6',
+  color: 'var(--bld-text-2)',
   fontSize: 11,
   padding: '5px 8px',
   outline: 'none',
@@ -169,7 +169,7 @@ export const SP_INPUT: React.CSSProperties = {
 export const SP_LABEL: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 500,
-  color: '#9ca3af',
+  color: 'var(--bld-text-3)',
   display: 'block',
   marginBottom: 3,
 };

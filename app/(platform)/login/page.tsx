@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, type FormEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/platform/api-client';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  const prefillEmail = searchParams.get('email') ?? '';
+
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +22,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await auth.login({ email, password });
-      router.push('/workspaces');
+      if (inviteToken) {
+        router.push(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
+      } else {
+        router.push('/workspaces');
+      }
     } catch (err) {
       setError((err as Error).message ?? 'Login failed');
     } finally {
@@ -29,7 +37,6 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', fontFamily: 'system-ui, -apple-system, sans-serif', background: '#0b1120' }}>
       <div style={{ width: '100%', maxWidth: 360 }}>
-        {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -38,10 +45,11 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: '#f9fafb', margin: 0 }}>Sign in</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>Welcome back to Builder Platform</p>
+          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
+            {inviteToken ? 'Sign in to accept your invitation' : 'Welcome back to Builder Platform'}
+          </p>
         </div>
 
-        {/* Card */}
         <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 14, padding: '28px 24px' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
@@ -84,11 +92,22 @@ export default function LoginPage() {
 
         <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#6b7280' }}>
           Don&apos;t have an account?{' '}
-          <Link href="/signup" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>
+          <Link
+            href={inviteToken ? `/signup?invite=${encodeURIComponent(inviteToken)}` : '/signup'}
+            style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}
+          >
             Sign up
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

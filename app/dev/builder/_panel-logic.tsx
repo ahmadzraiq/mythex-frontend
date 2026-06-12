@@ -27,10 +27,10 @@ import { ActionBuilder, eventsForNodeType } from './_action-builder';
 
 // ─── Shared panel primitives ──────────────────────────────────────────────────
 
-const SECTION_BG = '#111827';
-const BORDER_COLOR = '#1f2937';
-const LABEL: React.CSSProperties = { fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' };
-const INPUT: React.CSSProperties = { background: '#1f2937', border: '1px solid #374151', borderRadius: 4, padding: '3px 6px', fontSize: 11, color: '#f3f4f6', outline: 'none', fontFamily: 'monospace', width: '100%' };
+const SECTION_BG = 'var(--bld-bg-panel)';
+const BORDER_COLOR = 'var(--bld-bg-input)';
+const LABEL: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' };
+const INPUT: React.CSSProperties = { background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '3px 6px', fontSize: 11, color: 'var(--bld-text-1)', outline: 'none', fontFamily: 'monospace', width: '100%' };
 const SELECT: React.CSSProperties = { ...INPUT, cursor: 'pointer' };
 
 function Field({ label, children, row = false }: { label: string; children: React.ReactNode; row?: boolean }) {
@@ -44,12 +44,12 @@ function Field({ label, children, row = false }: { label: string; children: Reac
 
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#d1d5db' }}>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: 'var(--bld-text-2)' }}>
       <div
         onClick={() => onChange(!value)}
-        style={{ width: 28, height: 16, borderRadius: 8, background: value ? '#3b82f6' : '#374151', position: 'relative', flexShrink: 0, transition: 'background 0.2s', cursor: 'pointer' }}
+        style={{ width: 28, height: 16, borderRadius: 8, background: value ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', flexShrink: 0, transition: 'background 0.2s', cursor: 'pointer' }}
       >
-        <div style={{ position: 'absolute', top: 2, left: value ? 14 : 2, width: 12, height: 12, borderRadius: 6, background: '#fff', transition: 'left 0.2s' }} />
+        <div style={{ position: 'absolute', top: 2, left: value ? 14 : 2, width: 12, height: 12, borderRadius: 6, background: 'var(--bld-accent-fg)', transition: 'left 0.2s' }} />
       </div>
       {label}
     </label>
@@ -69,7 +69,7 @@ interface SectionProps {
   scrollToRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-function Section({ id, title, badge, badgeColor = '#4b5563', hasValue = false, defaultOpen = false, children, scrollToRef }: SectionProps) {
+function Section({ id, title, badge, badgeColor = 'var(--bld-border-subtle)', hasValue = false, defaultOpen = false, children, scrollToRef }: SectionProps) {
   const [open, setOpen] = useState(defaultOpen || hasValue);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -93,13 +93,13 @@ function Section({ id, title, badge, badgeColor = '#4b5563', hasValue = false, d
           border: 'none',
           cursor: 'pointer',
           padding: '8px 12px',
-          color: '#d1d5db',
+          color: 'var(--bld-text-2)',
         }}
       >
-        <span style={{ color: hasValue ? '#60a5fa' : '#6b7280', fontSize: 10 }}>{open ? '▾' : '▸'}</span>
+        <span style={{ color: hasValue ? 'var(--bld-info)' : 'var(--bld-text-disabled)', fontSize: 10 }}>{open ? '▾' : '▸'}</span>
         <span style={{ fontSize: 11, fontWeight: 500, flex: 1, textAlign: 'left' }}>{title}</span>
         {hasValue && (
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: '#3b82f6', flexShrink: 0 }} />
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--bld-accent)', flexShrink: 0 }} />
         )}
         {badge && (
           <span style={{ fontSize: 9, color: badgeColor, background: `${badgeColor}20`, padding: '1px 5px', borderRadius: 9, flexShrink: 0 }}>
@@ -119,8 +119,8 @@ function Section({ id, title, badge, badgeColor = '#4b5563', hasValue = false, d
 function Empty({ text, hint }: { text: string; hint?: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ fontSize: 11, color: '#4b5563', fontStyle: 'italic' }}>{text}</div>
-      {hint && <div style={{ fontSize: 10, color: '#374151', lineHeight: 1.5 }}>{hint}</div>}
+      <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>{text}</div>
+      {hint && <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>{hint}</div>}
     </div>
   );
 }
@@ -170,14 +170,14 @@ function DataBindingSection({ node }: { node: SDUINode }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {bindings.length === 0 && <Empty text="No bindings — all props are static" />}
       {bindings.map(b => (
-        <div key={b.prop} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1f2937', borderRadius: 4, padding: '4px 8px' }}>
-          <span style={{ fontSize: 10, color: '#818cf8', fontFamily: 'monospace', flexShrink: 0, width: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.prop}</span>
-          <span style={{ fontSize: 10, color: '#6b7280' }}>→</span>
-          <span style={{ fontSize: 10, color: '#86efac', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.value}</span>
+        <div key={b.prop} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bld-bg-input)', borderRadius: 4, padding: '4px 8px' }}>
+          <span style={{ fontSize: 10, color: 'var(--bld-ai-accent)', fontFamily: 'monospace', flexShrink: 0, width: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.prop}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>→</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-success)', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.value}</span>
           <button onClick={() => {
             if (b.prop === 'text') store.patchNodeField(node.id!, 'text', '');
             else store.patchProp(node.id!, `props.${b.prop}`, '');
-          }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+          }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12 }}>×</button>
         </div>
       ))}
 
@@ -191,8 +191,8 @@ function DataBindingSection({ node }: { node: SDUINode }) {
         <Field label="Mode">
           <div style={{ display: 'flex', gap: 6 }}>
             {(['path', 'template', 'expression'] as const).map(m => (
-              <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#d1d5db', cursor: 'pointer' }}>
-                <input type="radio" checked={mode === m} onChange={() => setMode(m)} style={{ accentColor: '#3b82f6' }} />
+              <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                <input type="radio" checked={mode === m} onChange={() => setMode(m)} style={{ accentColor: 'var(--bld-accent)' }} />
                 {m}
               </label>
             ))}
@@ -215,7 +215,7 @@ function DataBindingSection({ node }: { node: SDUINode }) {
         )}
         <button
           onClick={applyBinding}
-          style={{ background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}
+          style={{ background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}
         >
           Apply binding
         </button>
@@ -229,13 +229,13 @@ function DataBindingSection({ node }: { node: SDUINode }) {
 type ComponentState = 'normal' | 'hover' | 'loading' | 'error' | 'empty' | 'disabled' | 'custom';
 
 const STATE_INFO: Record<ComponentState, { label: string; description: string; color: string }> = {
-  normal:   { label: 'Normal',   description: 'Base state',         color: '#9ca3af' },
-  hover:    { label: 'Hover',    description: 'Mouse over',         color: '#818cf8' },
-  loading:  { label: 'Loading',  description: '_workflow.loading',  color: '#fbbf24' },
-  error:    { label: 'Error',    description: '_workflow.lastError', color: '#f87171' },
-  empty:    { label: 'Empty',    description: 'Array is empty',     color: '#6ee7b7' },
-  disabled: { label: 'Disabled', description: 'Input disabled',     color: '#9ca3af' },
-  custom:   { label: 'Custom',   description: 'Custom condition',   color: '#c084fc' },
+  normal:   { label: 'Normal',   description: 'Base state',         color: 'var(--bld-text-3)' },
+  hover:    { label: 'Hover',    description: 'Mouse over',         color: 'var(--bld-ai-accent)' },
+  loading:  { label: 'Loading',  description: '_workflow.loading',  color: 'var(--bld-warning)' },
+  error:    { label: 'Error',    description: '_workflow.lastError', color: 'var(--bld-error)' },
+  empty:    { label: 'Empty',    description: 'Array is empty',     color: 'var(--bld-success)' },
+  disabled: { label: 'Disabled', description: 'Input disabled',     color: 'var(--bld-text-3)' },
+  custom:   { label: 'Custom',   description: 'Custom condition',   color: 'var(--bld-ai-accent)' },
 };
 
 function ComponentStatesSection({ node }: { node: SDUINode }) {
@@ -263,8 +263,8 @@ function ComponentStatesSection({ node }: { node: SDUINode }) {
               key={state}
               onClick={() => setEditState(state)}
               style={{
-                background: editState === state ? '#1d4ed8' : isPreview ? '#1e3a5f' : '#1f2937',
-                border: `1px solid ${editState === state ? '#3b82f6' : '#374151'}`,
+                background: editState === state ? 'var(--bld-accent-hover)' : isPreview ? 'var(--bld-bg-elevated)' : 'var(--bld-bg-input)',
+                border: `1px solid ${editState === state ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
                 borderRadius: 4,
                 color: info.color,
                 fontSize: 10,
@@ -282,12 +282,12 @@ function ComponentStatesSection({ node }: { node: SDUINode }) {
       </div>
 
       {editState !== 'normal' && (
-        <div style={{ background: '#1f2937', borderRadius: 5, padding: 8, border: `1px solid #374151`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ background: 'var(--bld-bg-input)', borderRadius: 5, padding: 8, border: `1px solid var(--bld-border-subtle)`, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, color: STATE_INFO[editState].color, fontWeight: 600 }}>{STATE_INFO[editState].label}</span>
             <button
               onClick={() => store.setPreviewState(activePreviewState === editState ? 'normal' : editState)}
-              style={{ fontSize: 10, background: activePreviewState === editState ? '#1d4ed8' : 'none', border: '1px solid #374151', borderRadius: 3, color: '#9ca3af', padding: '2px 6px', cursor: 'pointer' }}
+              style={{ fontSize: 10, background: activePreviewState === editState ? 'var(--bld-accent-hover)' : 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, color: 'var(--bld-text-3)', padding: '2px 6px', cursor: 'pointer' }}
             >
               {activePreviewState === editState ? '● Previewing' : '▶ Preview'}
             </button>
@@ -309,7 +309,7 @@ function ComponentStatesSection({ node }: { node: SDUINode }) {
               />
             </Field>
           )}
-          <div style={{ fontSize: 10, color: '#6b7280' }}>{STATE_INFO[editState].description}</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{STATE_INFO[editState].description}</div>
         </div>
       )}
     </div>
@@ -352,9 +352,9 @@ function VariantsSection({ node }: { node: SDUINode }) {
         <>
           {variants.length === 0 && <Empty text="No variants yet — add a variant to conditionally render different UI" />}
           {variants.map((v, i) => (
-            <div key={v.id} style={{ background: '#1f2937', borderRadius: 5, padding: 8, border: '1px solid #374151', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div key={v.id} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, padding: 8, border: '1px solid var(--bld-border-subtle)', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, color: i === 0 ? '#fb923c' : '#818cf8', fontWeight: 600, width: 32 }}>
+                <span style={{ fontSize: 10, color: i === 0 ? 'var(--bld-warning)' : 'var(--bld-ai-accent)', fontWeight: 600, width: 32 }}>
                   {i === variants.length - 1 && !variants[i].condition ? 'ELSE' : i === 0 ? 'IF' : 'ELIF'}
                 </span>
                 <input
@@ -362,7 +362,7 @@ function VariantsSection({ node }: { node: SDUINode }) {
                   onChange={e => updateVariant(v.id, { name: e.target.value })}
                   style={{ ...INPUT, flex: 1 }}
                 />
-                <button onClick={() => removeVariant(v.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+                <button onClick={() => removeVariant(v.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12 }}>×</button>
               </div>
               {i < variants.length - 1 && (
                 <ExprBuilder
@@ -376,7 +376,7 @@ function VariantsSection({ node }: { node: SDUINode }) {
           ))}
           <button
             onClick={addVariant}
-            style={{ background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '4px 8px', cursor: 'pointer', alignSelf: 'flex-start' }}
+            style={{ background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '4px 8px', cursor: 'pointer', alignSelf: 'flex-start' }}
           >
             + Add variant
           </button>
@@ -405,10 +405,10 @@ function VisibilitySection({ node }: { node: SDUINode }) {
         label="Show when"
       />
       {condition && (
-        <div style={{ fontSize: 10, color: '#6b7280' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
           <button
             onClick={() => store.patchCondition(node.id!, null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 10, padding: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 10, padding: 0 }}
           >
             Remove condition
           </button>
@@ -470,8 +470,8 @@ function DataSourceSection({ node }: { node: SDUINode }) {
           <Field label="Type">
             <div style={{ display: 'flex', gap: 8 }}>
               {(['rest', 'graphql'] as const).map(t => (
-                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#d1d5db', cursor: 'pointer' }}>
-                  <input type="radio" checked={type === t} onChange={() => setType(t)} style={{ accentColor: '#3b82f6' }} />
+                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                  <input type="radio" checked={type === t} onChange={() => setType(t)} style={{ accentColor: 'var(--bld-accent)' }} />
                   {t === 'rest' ? 'REST' : 'GraphQL'}
                 </label>
               ))}
@@ -516,20 +516,20 @@ function DataSourceSection({ node }: { node: SDUINode }) {
           </Field>
 
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={save} style={{ background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '5px 10px', cursor: 'pointer' }}>
+            <button onClick={save} style={{ background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, padding: '5px 10px', cursor: 'pointer' }}>
               Save
             </button>
             {type === 'rest' && url && (
-              <button onClick={testRequest} disabled={testing} style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#9ca3af', fontSize: 11, padding: '5px 10px', cursor: 'pointer' }}>
+              <button onClick={testRequest} disabled={testing} style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', fontSize: 11, padding: '5px 10px', cursor: 'pointer' }}>
                 {testing ? '…' : '▶ Test request'}
               </button>
             )}
           </div>
 
           {testResult && (
-            <div style={{ background: '#0d1117', borderRadius: 4, padding: 8, border: '1px solid #374151' }}>
-              <div style={{ fontSize: 9, color: '#6b7280', marginBottom: 4 }}>Response preview</div>
-              <pre style={{ fontSize: 10, color: '#86efac', margin: 0, overflow: 'auto', maxHeight: 160, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <div style={{ background: 'var(--bld-bg-base)', borderRadius: 4, padding: 8, border: '1px solid var(--bld-border-subtle)' }}>
+              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>Response preview</div>
+              <pre style={{ fontSize: 10, color: 'var(--bld-success)', margin: 0, overflow: 'auto', maxHeight: 160, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 {testResult.length > 2000 ? testResult.slice(0, 2000) + '\n…(truncated)' : testResult}
               </pre>
             </div>
@@ -612,8 +612,8 @@ function RepeatSection({ node }: { node: SDUINode }) {
           <Field label="List mode">
             <div style={{ display: 'flex', gap: 8 }}>
               {(['all', 'paginate', 'infinite'] as const).map(m => (
-                <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#d1d5db', cursor: 'pointer' }}>
-                  <input type="radio" checked={mode === m} onChange={() => setMode(m)} style={{ accentColor: '#3b82f6' }} />
+                <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                  <input type="radio" checked={mode === m} onChange={() => setMode(m)} style={{ accentColor: 'var(--bld-accent)' }} />
                   {m === 'all' ? 'All' : m === 'paginate' ? 'Paginate' : 'Infinite scroll'}
                 </label>
               ))}
@@ -621,7 +621,7 @@ function RepeatSection({ node }: { node: SDUINode }) {
           </Field>
 
           {mode === 'paginate' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: '#1f2937', borderRadius: 4, padding: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--bld-bg-input)', borderRadius: 4, padding: 8 }}>
               <Field label="Page size">
                 <input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value))} style={{ ...INPUT, width: 80 }} />
               </Field>
@@ -638,7 +638,7 @@ function RepeatSection({ node }: { node: SDUINode }) {
           )}
 
           {mode === 'infinite' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: '#1f2937', borderRadius: 4, padding: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--bld-bg-input)', borderRadius: 4, padding: 8 }}>
               <Field label="Fetch more action">
                 <input value={fetchAction} onChange={e => setFetchAction(e.target.value)} placeholder="fetchMore" style={INPUT} />
               </Field>
@@ -681,8 +681,8 @@ function FormSection({ node }: { node: SDUINode }) {
         <Field label="Form path">
           <PathPicker value={formPath} onChange={setFormPath} placeholder="screens.checkout.form" />
         </Field>
-        <div style={{ fontSize: 10, color: '#6b7280' }}>
-          On Submit — configure in the <strong style={{ color: '#d1d5db' }}>Interactions</strong> section
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
+          On Submit — configure in the <strong style={{ color: 'var(--bld-text-2)' }}>Interactions</strong> section
         </div>
       </div>
     );
@@ -697,14 +697,14 @@ function FormSection({ node }: { node: SDUINode }) {
         }} placeholder="screens.checkout.form.email" />
       </Field>
       {bindPath && (
-        <div style={{ fontSize: 10, color: '#6b7280' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
           Auto-generates onChange → setState action
         </div>
       )}
       <div style={{ borderTop: `1px solid ${BORDER_COLOR}`, paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={LABEL}>Validation</span>
         {rules.map((r, i) => (
-          <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', background: '#1f2937', borderRadius: 4, padding: '4px 6px' }}>
+          <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', background: 'var(--bld-bg-input)', borderRadius: 4, padding: '4px 6px' }}>
             <select value={r.type} onChange={e => setRules(rules.map((x, xi) => xi === i ? { ...x, type: e.target.value } : x))} style={{ ...SELECT, flex: 1 }}>
               <option value="required">Required</option>
               <option value="minLength">Min length</option>
@@ -714,10 +714,10 @@ function FormSection({ node }: { node: SDUINode }) {
             </select>
             <input value={r.value} onChange={e => setRules(rules.map((x, xi) => xi === i ? { ...x, value: e.target.value } : x))} placeholder="value" style={{ ...INPUT, flex: 1 }} />
             <input value={r.message} onChange={e => setRules(rules.map((x, xi) => xi === i ? { ...x, message: e.target.value } : x))} placeholder="Error message" style={{ ...INPUT, flex: 2 }} />
-            <button onClick={() => setRules(rules.filter((_, xi) => xi !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+            <button onClick={() => setRules(rules.filter((_, xi) => xi !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12 }}>×</button>
           </div>
         ))}
-        <button onClick={() => setRules([...rules, { type: 'required', value: '', message: 'Required' }])} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
+        <button onClick={() => setRules([...rules, { type: 'required', value: '', message: 'Required' }])} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
           + Add rule
         </button>
       </div>
@@ -767,19 +767,19 @@ function StepperSection({ node }: { node: SDUINode }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={LABEL}>Steps</span>
             {steps.map((step, i) => (
-              <div key={step.id} style={{ background: '#1f2937', borderRadius: 4, padding: 8, border: '1px solid #374151', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div key={step.id} style={{ background: 'var(--bld-bg-input)', borderRadius: 4, padding: 8, border: '1px solid var(--bld-border-subtle)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, color: '#6b7280', width: 20 }}>{i + 1}.</span>
+                  <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', width: 20 }}>{i + 1}.</span>
                   <input value={step.name} onChange={e => setSteps(steps.map(s => s.id === step.id ? { ...s, name: e.target.value } : s))} style={{ ...INPUT, flex: 1 }} />
-                  <button onClick={() => setSteps(steps.filter(s => s.id !== step.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12 }}>×</button>
+                  <button onClick={() => setSteps(steps.filter(s => s.id !== step.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12 }}>×</button>
                 </div>
               </div>
             ))}
-            <button onClick={addStep} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed #374151', borderRadius: 4, color: '#6b7280', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
+            <button onClick={addStep} style={{ alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 11, padding: '2px 8px', cursor: 'pointer' }}>
               + Add step
             </button>
           </div>
-          <button onClick={saveConfig} style={{ background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <button onClick={saveConfig} style={{ background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}>
             Save
           </button>
         </>
@@ -821,14 +821,14 @@ function DirtySection({ node }: { node: SDUINode }) {
           <Field label="Reset on">
             <div style={{ display: 'flex', gap: 8 }}>
               {(['submit', 'navigate'] as const).map(r => (
-                <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d1d5db', cursor: 'pointer' }}>
-                  <input type="radio" checked={resetOn === r} onChange={() => setResetOn(r)} style={{ accentColor: '#3b82f6' }} />
+                <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                  <input type="radio" checked={resetOn === r} onChange={() => setResetOn(r)} style={{ accentColor: 'var(--bld-accent)' }} />
                   {r === 'submit' ? 'Submit success' : 'Navigate'}
                 </label>
               ))}
             </div>
           </Field>
-          <button onClick={save} style={{ background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <button onClick={save} style={{ background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, padding: '5px 10px', cursor: 'pointer', alignSelf: 'flex-start' }}>
             Save
           </button>
         </>
@@ -861,11 +861,11 @@ export function LogicPanel({ node }: LogicPanelProps) {
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', background: SECTION_BG }}>
       {!hasActions && (
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER_COLOR}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 500 }}>No interactions yet</div>
-          <div style={{ fontSize: 10, color: '#374151', lineHeight: 1.6 }}>
-            Use <span style={{ color: '#818cf8' }}>Interactions</span> to wire events to actions.
-            Define reusable <span style={{ color: '#c084fc' }}>Workflows</span> and{' '}
-            <span style={{ color: '#fbbf24' }}>Global Formulas</span> in the <span style={{ color: '#d1d5db' }}>Vars</span> tab on the left.
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontWeight: 500 }}>No interactions yet</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>
+            Use <span style={{ color: 'var(--bld-ai-accent)' }}>Interactions</span> to wire events to actions.
+            Define reusable <span style={{ color: 'var(--bld-ai-accent)' }}>Workflows</span> and{' '}
+            <span style={{ color: 'var(--bld-warning)' }}>Global Formulas</span> in the <span style={{ color: 'var(--bld-text-2)' }}>Vars</span> tab on the left.
           </div>
         </div>
       )}
@@ -873,7 +873,7 @@ export function LogicPanel({ node }: LogicPanelProps) {
       {/* 1. Interactions */}
       <Section id="interactions" title="Interactions" defaultOpen={hasActions} hasValue={hasActions}
         badge={hasActions ? `${Object.keys(node.actions ?? {}).length} event${Object.keys(node.actions ?? {}).length === 1 ? '' : 's'}` : undefined}
-        badgeColor="#818cf8">
+        badgeColor="var(--bld-ai-accent)">
         <InteractionsSection node={node} />
       </Section>
 
@@ -898,26 +898,26 @@ function WorkflowsSection() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
-        Named action sequences you can reference from any interaction with <code style={{ color: '#c084fc' }}>workflow: "name"</code>.
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
+        Named action sequences you can reference from any interaction with <code style={{ color: 'var(--bld-ai-accent)' }}>workflow: "name"</code>.
       </div>
 
       {entries.length === 0 && <Empty text="No workflows defined — add one below." />}
 
       {entries.map(([name, actions]) => (
-        <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+        <div key={name} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, border: '1px solid var(--bld-border-subtle)', overflow: 'hidden' }}>
           <button
             onClick={() => setExpanded(e => e === name ? null : name)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 10, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
-            <span style={{ fontSize: 11, color: '#c084fc', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
-            <span style={{ fontSize: 9, color: '#4b5563' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? '▾' : '▸'}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-ai-accent)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
             <button onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}>×</button>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}>×</button>
           </button>
           {expanded === name && (
-            <div style={{ borderTop: '1px solid #374151', padding: '8px 10px' }}>
+            <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '8px 10px' }}>
               <ActionBuilder
                 value={actions.reduce<Record<string, unknown[]>>((acc, a) => {
                   (acc['run'] ??= []).push(a);
@@ -937,11 +937,11 @@ function WorkflowsSection() {
           onChange={e => setNewName(e.target.value)}
           placeholder="workflow name…"
           onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
-          style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+          style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none' }}
         />
         <button
           onClick={() => { if (newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
-          style={{ padding: '4px 12px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+          style={{ padding: '4px 12px', background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, cursor: 'pointer' }}
         >
           + Add
         </button>
@@ -961,25 +961,25 @@ function GlobalFormulasSection() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.5 }}>
-        Named JSON Logic expressions usable anywhere as <code style={{ color: '#fbbf24' }}>{`{{formula.name}}`}</code>.
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
+        Named JSON Logic expressions usable anywhere as <code style={{ color: 'var(--bld-warning)' }}>{`{{formula.name}}`}</code>.
       </div>
 
       {entries.length === 0 && <Empty text="No formulas defined — add one below." />}
 
       {entries.map(([name, expr]) => (
-        <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+        <div key={name} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, border: '1px solid var(--bld-border-subtle)', overflow: 'hidden' }}>
           <button
             onClick={() => setExpanded(e => e === name ? null : name)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 10, color: '#6b7280' }}>{expanded === name ? '▾' : '▸'}</span>
-            <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? '▾' : '▸'}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-warning)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
             <button onClick={e => { e.stopPropagation(); removeGlobalFormula(name); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}>×</button>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}>×</button>
           </button>
           {expanded === name && (
-            <div style={{ borderTop: '1px solid #374151', padding: '8px 10px' }}>
+            <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '8px 10px' }}>
               <ExprBuilder
                 value={expr as object | null}
                 onChange={v => setGlobalFormula(name, v as import('./_store-types').GlobalFormulaDef)}
@@ -995,11 +995,11 @@ function GlobalFormulasSection() {
           onChange={e => setNewName(e.target.value)}
           placeholder="formula name…"
           onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
-          style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 7px', outline: 'none' }}
+          style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none' }}
         />
         <button
           onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
-          style={{ padding: '4px 12px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+          style={{ padding: '4px 12px', background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, cursor: 'pointer' }}
         >
           + Add
         </button>

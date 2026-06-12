@@ -490,7 +490,7 @@ function InlineChangedLabel({ text, changed, onReset, style: extraStyle }: {
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       <span
         ref={spanRef}
-        style={{ fontSize: 9, color: changed ? '#f97316' : '#6b7280', cursor: changed ? 'pointer' : undefined, ...extraStyle }}
+        style={{ fontSize: 9, color: changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)', cursor: changed ? 'pointer' : undefined, ...extraStyle }}
         onMouseEnter={changed ? showPopup : undefined}
         onMouseLeave={changed ? scheduleHide : undefined}
       >{text}</span>
@@ -501,7 +501,7 @@ function InlineChangedLabel({ text, changed, onReset, style: extraStyle }: {
           style={{
             position: 'fixed', top: popupPos.top, left: popupPos.left,
             zIndex: 99999, pointerEvents: 'auto',
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+            background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
             padding: '5px 9px', whiteSpace: 'nowrap',
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
             textTransform: 'none', letterSpacing: 'normal',
@@ -510,7 +510,7 @@ function InlineChangedLabel({ text, changed, onReset, style: extraStyle }: {
         >
           <button
             onMouseDown={(e) => { e.preventDefault(); onReset(); setPopupPos(null); }}
-            style={{ background: 'none', border: 'none', color: '#e5e7eb', fontSize: 11, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
           >
             <span>↺</span><span>Reset to default</span>
           </button>
@@ -835,10 +835,10 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
   };
 
   const TAB_BASE: React.CSSProperties = { fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' };
-  const TAB_ACTIVE:   React.CSSProperties = { ...TAB_BASE, background: '#374151', color: '#f3f4f6' };
-  const TAB_INACTIVE: React.CSSProperties = { ...TAB_BASE, background: 'none', color: '#6b7280' };
-  const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
-  const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const TAB_ACTIVE:   React.CSSProperties = { ...TAB_BASE, background: 'var(--bld-border-subtle)', color: 'var(--bld-text-1)' };
+  const TAB_INACTIVE: React.CSSProperties = { ...TAB_BASE, background: 'none', color: 'var(--bld-text-disabled)' };
+  const BTN_REMOVE = { fontSize: 9, color: 'var(--bld-error)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const BTN_ADD    = { fontSize: 9, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
 
   const bgSizeVal   = respStyleVal('backgroundSize')      ?? nodeStyleAny.backgroundSize     ?? 'cover';
   const bgPosVal    = respStyleVal('backgroundPosition')  ?? nodeStyleAny.backgroundPosition ?? 'center';
@@ -851,7 +851,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
         <span style={{ marginRight: 4, minWidth: 36 }}>
           <InlineChangedLabel text="Background" changed={mode !== 'solid'} onReset={switchToSolid} />
         </span>
-        <div style={{ display: 'flex', background: '#111827', borderRadius: 5, padding: 2, gap: 1 }}>
+        <div style={{ display: 'flex', background: 'var(--bld-bg-panel)', borderRadius: 5, padding: 2, gap: 1 }}>
           <button style={mode === 'solid'    ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'solid')    switchToSolid(); }}>Solid</button>
           <button style={mode === 'gradient' ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'gradient') switchToGradient(); }}>Gradient</button>
           <button style={mode === 'image'    ? TAB_ACTIVE : TAB_INACTIVE} onClick={() => { if (mode !== 'image')    switchToImage(); }}>Image</button>
@@ -929,7 +929,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           {isGradientFormula ? (
             <button data-testid="edit-gradient-formula-btn"
               onClick={() => { closeAllEditors(); setGradientEditorOpen(true); }}
-              style={{ width: '100%', padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+              style={{ width: '100%', padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
               ƒ Edit formula
             </button>
           ) : (
@@ -961,7 +961,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
               </div>
 
               {/* Preview bar */}
-              <div style={{ height: 20, borderRadius: 4, marginBottom: 8, background: isRadial ? `radial-gradient(circle at center, ${gradientColors.join(', ')})` : `linear-gradient(${gradientDir}, ${gradientColors.join(', ')})`, border: '1px solid #374151' }} />
+              <div style={{ height: 20, borderRadius: 4, marginBottom: 8, background: isRadial ? `radial-gradient(circle at center, ${gradientColors.join(', ')})` : `linear-gradient(${gradientDir}, ${gradientColors.join(', ')})`, border: '1px solid var(--bld-border-subtle)' }} />
 
               {/* Color stops */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -976,9 +976,9 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
                         setGradientColors(next); applyGradient(next, isGradientAnimated);
                       }}
                     />
-                    <span style={{ fontSize: 9, color: '#6b7280', fontFamily: 'monospace', flex: 1 }}>{color}</span>
+                    <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', flex: 1 }}>{color}</span>
                     {gradientColors.length > 2 && (
-                      <button style={{ fontSize: 9, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
+                      <button style={{ fontSize: 9, color: 'var(--bld-text-disabled)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
                         onClick={() => { const next = gradientColors.filter((_, j) => j !== i); setGradientColors(next); applyGradient(next, isGradientAnimated); }}>✕</button>
                     )}
                   </div>
@@ -991,7 +991,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <input type="checkbox" id={`gd-anim-${nodeId}`} checked={isGradientAnimated}
                     onChange={e => applyGradient(gradientColors, e.target.checked)} style={{ cursor: 'pointer' }} />
-                  <label htmlFor={`gd-anim-${nodeId}`} style={{ fontSize: 9, color: '#9ca3af', cursor: 'pointer' }}>Animate</label>
+                  <label htmlFor={`gd-anim-${nodeId}`} style={{ fontSize: 9, color: 'var(--bld-text-3)', cursor: 'pointer' }}>Animate</label>
                 </div>
               </div>
             </>
@@ -1003,7 +1003,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
       {mode === 'image' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-            <span style={{ flex: 1, fontSize: 9, color: '#6b7280' }}>Image URL</span>
+            <span style={{ flex: 1, fontSize: 9, color: 'var(--bld-text-disabled)' }}>Image URL</span>
             <button onClick={switchToSolid} style={BTN_REMOVE}>Remove</button>
           </div>
           <FieldWithBinding
@@ -1031,7 +1031,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
                 setLocalImageUrl(raw);
                 patchStyle({ backgroundImage: wrapUrl(raw) });
               }}
-              style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: '#f3f4f6', fontSize: 11, padding: '4px 8px', width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
+              style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 8px', width: '100%', boxSizing: 'border-box' } as React.CSSProperties}
             />
           </FieldWithBinding>
 
@@ -1348,9 +1348,9 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
     commitHistory();
   }, [nodeId, node, store, commitHistory, abp]);
 
-  const BTN_REMOVE = { fontSize: 9, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
-  const BTN_ADD    = { fontSize: 9, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
-  const SUB_HEADER = { fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.06em', flex: 1 };
+  const BTN_REMOVE = { fontSize: 9, color: 'var(--bld-error)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const BTN_ADD    = { fontSize: 9, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
+  const SUB_HEADER = { fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.06em', flex: 1 };
 
   return (
     <div style={SECTION_STYLE}>
@@ -1392,7 +1392,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
         {/* Formula bound — show edit button */}
         {isShadowFormula && (
           <button data-testid="edit-formula-btn" onClick={() => { closeAllEditors(); setShadowEditorOpen(true); }}
-            style={{ width: '100%', padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed', borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+            style={{ width: '100%', padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
             ƒ Edit formula
           </button>
         )}
@@ -1435,7 +1435,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
               return (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: 9, minWidth: 36, color: '#6b7280' }}>Color</span>
+                    <span style={{ fontSize: 9, minWidth: 36, color: 'var(--bld-text-disabled)' }}>Color</span>
                     {shadowChip(shadowFieldOverriddenBps.color, { color: baseColor })}
                     <FigmaColorPicker
                       testId="input-shadow-color"
@@ -1457,7 +1457,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
       </div>
 
       {/* ── Element Blur ── */}
-      <div style={{ marginTop: 10, borderTop: '1px solid #1f2937', paddingTop: 10 }}>
+      <div style={{ marginTop: 10, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
         <FieldWithBinding
           label="filterBlur"
           displayLabel="Element blur"
@@ -2182,7 +2182,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
   // we can't decode without a full token map. Reading getComputedStyle() from the
   // rendered DOM element always gives the real on-screen value.
 
-  const [computedBgColor,          setComputedBgColor]          = useState<string>('#ffffff');
+  const [computedBgColor,          setComputedBgColor]          = useState<string>('var(--bld-accent-fg)fff');
   const [computedTextColor,        setComputedTextColor]        = useState<string>('#000000');
   const [computedBorderColor,      setComputedBorderColor]      = useState<string>('#000000');
   const [computedPlaceholderColor, setComputedPlaceholderColor] = useState<string>('');
@@ -2234,10 +2234,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
           } else {
             const hex = rgbToHex(cssBg);
             if (hex) setComputedBgColor(hex);
-            else setComputedBgColor('#ffffff');
+            else setComputedBgColor('var(--bld-accent-fg)fff');
           }
         } else {
-          setComputedBgColor('#ffffff');
+          setComputedBgColor('var(--bld-accent-fg)fff');
         }
       }
     } else {
@@ -3295,8 +3295,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
                       onChange={e => { patchText(e.target.value); }}
                       style={{
                         width: '100%', boxSizing: 'border-box',
-                        background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
-                        color: '#f3f4f6', fontSize: 12, padding: '5px 8px', resize: 'vertical',
+                        background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
+                        color: 'var(--bld-text-1)', fontSize: 12, padding: '5px 8px', resize: 'vertical',
                         fontFamily: 'inherit',
                       }}
                     />
@@ -3423,7 +3423,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
         {(positionToken === 'relative' || positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>Inset</div>
+              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>Inset</div>
               {(positionToken === 'absolute' || positionToken === 'fixed') && (
                 <button
                   type="button"
@@ -3432,7 +3432,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                     patchCls(`${cls} inset-0`.trim());
                     patchStyle({ top: '', right: '', bottom: '', left: '' });
                   }}
-                  style={{ fontSize: 9, color: '#60a5fa', background: 'none', border: '1px solid #1e3a5f', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}
+                  style={{ fontSize: 9, color: 'var(--bld-info)', background: 'none', border: '1px solid var(--bld-bg-elevated)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}
                 >
                   Fill parent
                 </button>
@@ -3453,7 +3453,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 {(['top','right','bottom','left'] as const).map(s =>
                   getOverriddenBps(s).length > 0 ? (
                     <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <span style={{ fontSize: 8, color: '#6b7280' }}>{s.charAt(0).toUpperCase()}</span>
+                      <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)' }}>{s.charAt(0).toUpperCase()}</span>
                       <ResponsiveDot cssProp={s} overriddenBreakpoints={getOverriddenBps(s)} onRemove={bp => removeResponsive(bp, s)} onResetAll={() => resetResponsive(s)} />
                     </div>
                   ) : null
@@ -3741,7 +3741,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 </ToggleBtn>
               ))}
             </div>
-            <div style={{ marginTop: 4, fontSize: 9, color: '#4b5563' }}>
+            <div style={{ marginTop: 4, fontSize: 9, color: 'var(--bld-text-disabled)' }}>
               Positions this element within its parent container
             </div>
           </>
@@ -3948,8 +3948,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
                     }}
                     style={{
                       width: 20, height: 20,
-                      background: isActive ? '#3b82f6' : '#1f2937',
-                      border: `1px solid ${isActive ? '#3b82f6' : '#374151'}`,
+                      background: isActive ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                      border: `1px solid ${isActive ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
                       borderRadius: 3, cursor: 'pointer',
                       display: 'flex', alignItems: dotV, justifyContent: dotH,
                       padding: 3,
@@ -3957,7 +3957,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                   >
                     <div style={{
                       width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
-                      background: isActive ? 'rgba(255,255,255,0.9)' : '#4b5563',
+                      background: isActive ? 'rgba(255,255,255,0.9)' : 'var(--bld-border-subtle)',
                     }} />
                   </div>
                 );
@@ -4048,7 +4048,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
             {/* Gap mode: Fixed vs Space-between */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                <span style={{ fontSize: 9, color: isSpaceBetween ? '#f97316' : '#9ca3af' }}>Mode</span>
+                <span style={{ fontSize: 9, color: isSpaceBetween ? 'var(--bld-warning)' : 'var(--bld-text-3)' }}>Mode</span>
                 {getOverriddenBps('justifyContent').length > 0 && (
                   <ResponsiveDot
                     cssProp="justifyContent"
@@ -4094,9 +4094,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
           {isGrid && (
             <>
               {/* Divider + Grid label */}
-              <div style={{ borderTop: '1px solid #1f2937', marginTop: 2, marginBottom: 6, paddingTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.5 }}><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="#9ca3af" strokeWidth="1.2"/></svg>
-                <span style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Grid</span>
+              <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 2, marginBottom: 6, paddingTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.5 }}><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/></svg>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Grid</span>
               </div>
               {/* Columns + Rows */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
@@ -4262,10 +4262,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
         <div data-testid="section-typography" style={SECTION_STYLE}>
           <SectionHeader title="Typography" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
             <MiniPreview
-              style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
+              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
               title={`${fontSizePx}px · ${fontWeight}`}
             >
-              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || '#d1d5db', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
             </MiniPreview>
           </SectionHeader>
           <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
@@ -4337,9 +4337,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </FieldWithBinding>
           </div>
           <div>
-            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. red, #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
+            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. red, var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
               <div>
-                <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
                 <FigmaColorPicker
                   testId="input-text-color"
                   value={computedTextColor}
@@ -4356,7 +4356,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
             {/* Overflow — ellipsis uses Tailwind truncate shorthand (overflow-hidden + whitespace-nowrap + text-ellipsis) */}
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Overflow</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Overflow</span>
               {([
                 { v: '' as const,        label: 'none',     title: 'No overflow handling' },
                 { v: 'truncate' as const, label: 'ellipsis', title: 'Clip + nowrap + ellipsis (truncate)' },
@@ -4384,7 +4384,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </div>
             {/* Whitespace */}
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Whitespace</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Whitespace</span>
               {(['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal'] as const).map(v => {
                 const effWs = rOvr('whiteSpace');
                 const WS_MAP: Record<string, string> = { 'whitespace-nowrap': 'nowrap', 'whitespace-pre': 'pre', 'whitespace-normal': 'normal' };
@@ -4409,7 +4409,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </div>
             {/* Word break */}
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: '#6b7280', width: 60, flexShrink: 0 }}>Word break</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Word break</span>
               {(['', 'break-all', 'break-words', 'break-keep'] as const).map(v => {
                 const effWb = rOvr('wordBreak');
                 const WB_MAP: Record<string, string> = { 'break-all': 'break-all', 'break-words': 'break-word', 'break-keep': 'keep-all' };
@@ -4441,10 +4441,10 @@ export function DesignTab({ node }: { node: SDUINode }) {
         <div data-testid="section-input-text" style={SECTION_STYLE}>
           <SectionHeader title="Input Text" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
             <MiniPreview
-              style={{ width: 36, background: 'transparent', border: '1px solid #374151', borderRadius: 3 }}
+              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
               title={`${fontSizePx}px · ${fontWeight}`}
             >
-              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || '#d1d5db', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
             </MiniPreview>
           </SectionHeader>
           <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
@@ -4462,9 +4462,9 @@ export function DesignTab({ node }: { node: SDUINode }) {
             </FieldWithBinding>
           </div>
           <div>
-            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. #333333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
+            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
               <div>
-                <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
                 <FigmaColorPicker
                   testId="input-field-text-color"
                   value={computedTextColor}
@@ -4484,7 +4484,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
         <div data-testid="section-placeholder" style={SECTION_STYLE}>
           <SectionHeader title="Placeholder" />
           <div>
-            <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Color</span>
+            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
             <FigmaColorPicker
               testId="input-placeholder-color"
               value={computedPlaceholderColor || '#737373'}
@@ -4629,7 +4629,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                 }}
                 style={{ flex: 1 }}
               />
-              <span data-opacity-label style={{ fontSize: 10, color: '#d1d5db', minWidth: 28 }}>{opacityVal}%</span>
+              <span data-opacity-label style={{ fontSize: 10, color: 'var(--bld-text-2)', minWidth: 28 }}>{opacityVal}%</span>
             </div>
           </FieldWithBinding>
         </div>
@@ -4641,14 +4641,14 @@ export function DesignTab({ node }: { node: SDUINode }) {
           <SectionHeader title="Stroke" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['stroke']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['stroke']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['stroke']!)}>
             {borderWidthPx > 0 && (
               <MiniPreview
-                style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || '#6b7280'}` }}
+                style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || 'var(--bld-text-disabled)'}` }}
                 title={`${borderWidthPx}px ${borderStyle}`}
               />
             )}
           </SectionHeader>
         </div>
         <div style={{ marginBottom: 6 }}>
-          <FieldWithBinding label="borderColor" displayLabel="Border Color" cssProp="borderColor" hint="CSS color: e.g. #374151, rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)} responsiveOverrides={getOverriddenBps('borderColor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderColor">
+          <FieldWithBinding label="borderColor" displayLabel="Border Color" cssProp="borderColor" hint="CSS color: e.g. var(--bld-border-subtle), rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)} responsiveOverrides={getOverriddenBps('borderColor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderColor">
             <div>
               <span style={{ fontSize: 9, display: 'block', marginBottom: 2 }}><ChangedLabel text="Color" cssProp="borderColor" /></span>
               <FigmaColorPicker
@@ -4764,7 +4764,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
             <button
               type="button"
               onClick={() => setOpen(o => !o)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#6b7280', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', padding: 0, width: '100%', textAlign: 'left' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--bld-text-disabled)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', padding: 0, width: '100%', textAlign: 'left' }}
             >
               <svg width={8} height={8} viewBox="0 0 8 8" fill="none" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
                 <path d="M2 1.5l3 2.5-3 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -4801,7 +4801,7 @@ export function DesignTab({ node }: { node: SDUINode }) {
                           onChange={hex => patchStyle({ [colorStyle]: hex || '' })}
                         />
                         {isFieldChanged(colorStyle) && (
-                          <span style={{ position: 'absolute', top: 2, right: 2, width: 5, height: 5, borderRadius: '50%', background: '#f97316', pointerEvents: 'none' }} />
+                          <span style={{ position: 'absolute', top: 2, right: 2, width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-warning)', pointerEvents: 'none' }} />
                         )}
                       </div>
                       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 14, width: 14 }}>
@@ -4850,8 +4850,8 @@ export function DesignTab({ node }: { node: SDUINode }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {selectionColors.map(color => (
               <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 3, background: color, border: '1px solid #374151' }} />
-                <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>{color}</span>
+                <div style={{ width: 16, height: 16, borderRadius: 3, background: color, border: '1px solid var(--bld-border-subtle)' }} />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{color}</span>
               </div>
             ))}
           </div>
@@ -4991,8 +4991,8 @@ export default function PanelRight({}: PanelRightProps = {}) {
     <div data-testid="panel-right" style={PANEL_STYLE}>
       {/* Top chrome: node name + "New" component button — shown when a single node is selected */}
       {selectedNode && selectedIds.length === 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0, minHeight: 28 }}>
-          <span style={{ fontSize: 10, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0, minHeight: 28 }}>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>
             {(selectedNode as unknown as Record<string, unknown>).name as string || selectedNode.type as string || 'Node'}
           </span>
           <NewComponentButton selectedNode={selectedNode} />
@@ -5000,13 +5000,13 @@ export default function PanelRight({}: PanelRightProps = {}) {
       )}
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
         {TABS.map(t => (
           <button
             key={t.id}
             data-testid={`tab-right-${t.id}`}
             title={t.label}
-            style={{ flex: 1, padding: '9px 0', background: 'none', border: 'none', borderBottom: tab === t.id ? '2px solid #3b82f6' : '2px solid transparent', color: tab === t.id ? '#f3f4f6' : '#6b7280', fontSize: 11, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ flex: 1, padding: '9px 0', background: 'none', border: 'none', borderBottom: tab === t.id ? '2px solid var(--bld-accent)' : '2px solid transparent', color: tab === t.id ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)', fontSize: 11, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setTab(t.id)}
           >
             {t.icon}
@@ -5035,7 +5035,7 @@ export default function PanelRight({}: PanelRightProps = {}) {
 
       {tab === 'json' && selectedNode && (
         <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-          <pre style={{ fontSize: 10, color: '#86efac', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
+          <pre style={{ fontSize: 10, color: 'var(--bld-success)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
             {JSON.stringify(selectedNode, null, 2)}
           </pre>
         </div>

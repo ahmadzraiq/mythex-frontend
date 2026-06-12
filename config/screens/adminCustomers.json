@@ -28,12 +28,13 @@
                   "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px]"
                 },
                 "text": {
-                  "formula": "concat(String((collections['ad000006-0000-0000-0000-000000000006'] || []).length), ' registered customers')"
+                  "formula": "concat(String((collections['ad000006-0000-0000-0000-000000000006']?.data ?? collections['ad000006-0000-0000-0000-000000000006'] ?? []).length), ' registered customers')"
                 }
               }
             ]
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -93,7 +94,9 @@
             "props": {
               "className": "flex flex-col"
             },
-            "map": "collections.ad000006-0000-0000-0000-000000000006",
+            "map": {
+              "js": "return (collections['ad000006-0000-0000-0000-000000000006'] && collections['ad000006-0000-0000-0000-000000000006'].data) ? collections['ad000006-0000-0000-0000-000000000006'].data : (Array.isArray(collections['ad000006-0000-0000-0000-000000000006']) ? collections['ad000006-0000-0000-0000-000000000006'] : []);"
+            },
             "key": "customer-row",
             "children": [
               {
@@ -134,7 +137,7 @@
                           "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] truncate"
                         },
                         "text": {
-                          "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || '\u2014'"
+                          "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || '—'"
                         }
                       }
                     ]
@@ -152,7 +155,7 @@
                       "className": "text-[13px] text-[var(--theme-admin-label)]"
                     },
                     "text": {
-                      "formula": "context.item.data.created_at ? new Date(context.item.data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014'"
+                      "formula": "context.item.data.created_at ? new Date(context.item.data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'"
                     }
                   },
                   {
@@ -192,7 +195,7 @@
             "props": {
               "className": "flex flex-col items-center justify-center py-[60px] gap-[8px]"
             },
-            "condition": "!(collections['ad000006-0000-0000-0000-000000000006']?.length > 0)",
+            "condition": "!((collections['ad000006-0000-0000-0000-000000000006']?.data ?? collections['ad000006-0000-0000-0000-000000000006'] ?? []).length > 0)",
             "children": [
               {
                 "type": "Icon",
@@ -211,7 +214,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Customers Table"
       },
       {
         "type": "Box",
@@ -293,7 +297,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Customer Detail Panel"
       }
     ]
   },

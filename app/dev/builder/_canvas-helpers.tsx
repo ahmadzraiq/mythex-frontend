@@ -54,7 +54,7 @@ const STABLE_EMPTY_STATE: Record<string, unknown> = {};
 
 export function ZoomBtn({ label, testId, onClick }: { label: string; testId?: string; onClick: () => void }) {
   return (
-    <button data-testid={testId} style={{ fontSize: 14, color: '#d1d5db', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }} onClick={onClick}>
+    <button data-testid={testId} style={{ fontSize: 14, color: 'var(--bld-text-2)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }} onClick={onClick}>
       {label}
     </button>
   );
@@ -64,7 +64,7 @@ export function ZoomBtn({ label, testId, onClick }: { label: string; testId?: st
 
 export function EmptyCanvas() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, color: 'var(--bld-text-3)', fontFamily: 'system-ui', userSelect: 'none' }}>
       <div style={{ fontSize: 32, opacity: 0.4 }}>+</div>
       <div style={{ fontSize: 13, fontWeight: 500 }}>Drop a component or section to get started</div>
       <div style={{ fontSize: 11, opacity: 0.6 }}>Drag from the Components panel on the left</div>
@@ -251,7 +251,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                 onClick={() => focusPage(page.id)}
                 style={{
                   position: 'absolute', left: wx, top: wy - 26, fontSize: 11,
-                  color: '#9ca3af', userSelect: 'none', fontFamily: 'system-ui',
+                  color: 'var(--bld-text-3)', userSelect: 'none', fontFamily: 'system-ui',
                   whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'baseline',
                   cursor: 'grab', zIndex: 1,
                 }}
@@ -259,7 +259,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
               onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}
             >
               <span style={{ fontWeight: 500 }}>{page.name}</span>
-              {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#4b5563' }}>{page.route}</span>}
+              {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'var(--bld-text-disabled)' }}>{page.route}</span>}
               <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
             </div>
             )}
@@ -538,14 +538,14 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       state: screenState,
       ui: {
         type: 'Box',
-        props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+        props: { className: 'flex flex-col w-full min-h-screen relative' },
         children: displayNodes,
       } as SDUIConfig['ui'],
   }), [screenState, displayNodes]);
 
   if (!nodes.length) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: '#9ca3af', fontFamily: 'system-ui', userSelect: 'none' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: 'var(--bld-text-3)', fontFamily: 'system-ui', userSelect: 'none' }}>
         <div style={{ fontSize: 24, opacity: 0.3 }}>+</div>
         <div style={{ fontSize: 12 }}>Empty page</div>
       </div>

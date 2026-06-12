@@ -142,7 +142,7 @@ function CategoryGroup({
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           width: '100%', background: 'none', border: 'none',
-          borderTop: '1px solid #1e293b',
+          borderTop: '1px solid var(--bld-bg-elevated)',
           cursor: 'pointer', padding: '8px 0 6px',
         }}
       >
@@ -150,18 +150,18 @@ function CategoryGroup({
           width="7" height="7" viewBox="0 0 8 8" fill="none"
           style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}
         >
-          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? '#6366f1' : '#374151'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <span style={{
           fontSize: 10, fontWeight: 600, letterSpacing: '0.07em',
-          color: open ? '#94a3b8' : '#475569', textTransform: 'uppercase',
+          color: open ? 'var(--bld-text-3)' : 'var(--bld-text-disabled)', textTransform: 'uppercase',
         }}>
           {label}
         </span>
         {activeCount > 0 && (
           <span style={{
             fontSize: 9, padding: '1px 6px', borderRadius: 99,
-            background: 'rgba(99,102,241,0.2)', color: '#818cf8', fontWeight: 600,
+            background: 'rgba(99,102,241,0.2)', color: 'var(--bld-ai-accent)', fontWeight: 600,
             border: '1px solid rgba(99,102,241,0.3)',
           }}>
             {activeCount}
@@ -200,24 +200,24 @@ function SubSection({
         onMouseLeave={() => setHovered(false)}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: open ? '#0f172a' : '#0a1120',
+          background: open ? 'var(--bld-bg-base)' : 'var(--bld-bg-base)',
           borderRadius: 6, padding: '5px 8px',
-          border: `1px solid ${open ? '#1e3a5f' : '#1e293b'}`,
+          border: `1px solid ${open ? 'var(--bld-bg-elevated)' : 'var(--bld-bg-elevated)'}`,
           marginBottom: open ? 8 : 0,
           cursor: 'pointer',
         }}
         onClick={() => setOpen(o => !o)}
       >
         {isActive && (
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#6366f1', flexShrink: 0 }} />
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-ai-accent)', flexShrink: 0 }} />
         )}
         <svg
           width="7" height="7" viewBox="0 0 8 8" fill="none"
           style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}
         >
-          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? '#e2e8f0' : '#4b5563'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? 'var(--bld-text-2)' : 'var(--bld-border-subtle)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: open ? '#e2e8f0' : '#6b7280' }}>
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: open ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)' }}>
           {label}
         </span>
         {previewEl && <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>{previewEl}</div>}
@@ -228,24 +228,24 @@ function SubSection({
             title="Configure settings"
             style={{
               padding: '3px 5px', background: 'transparent',
-              border: '1px solid #374151', borderRadius: 3,
+              border: '1px solid var(--bld-border-subtle)', borderRadius: 3,
               cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center',
             }}
           >
             {/* Settings: 3 horizontal sliders icon */}
             <svg width="11" height="9" viewBox="0 0 12 10" fill="none">
-              <line x1="1" y1="2" x2="11" y2="2" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round" />
-              <circle cx="8.5" cy="2" r="1.5" fill="#0d1526" stroke="#6b7280" strokeWidth="1.2" />
-              <line x1="1" y1="5" x2="11" y2="5" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round" />
-              <circle cx="3.5" cy="5" r="1.5" fill="#0d1526" stroke="#6b7280" strokeWidth="1.2" />
-              <line x1="1" y1="8" x2="11" y2="8" stroke="#6b7280" strokeWidth="1.2" strokeLinecap="round" />
-              <circle cx="7" cy="8" r="1.5" fill="#0d1526" stroke="#6b7280" strokeWidth="1.2" />
+              <line x1="1" y1="2" x2="11" y2="2" stroke="var(--bld-text-disabled)" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="8.5" cy="2" r="1.5" fill="var(--bld-bg-base)" stroke="var(--bld-text-disabled)" strokeWidth="1.2" />
+              <line x1="1" y1="5" x2="11" y2="5" stroke="var(--bld-text-disabled)" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="3.5" cy="5" r="1.5" fill="var(--bld-bg-base)" stroke="var(--bld-text-disabled)" strokeWidth="1.2" />
+              <line x1="1" y1="8" x2="11" y2="8" stroke="var(--bld-text-disabled)" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="7" cy="8" r="1.5" fill="var(--bld-bg-base)" stroke="var(--bld-text-disabled)" strokeWidth="1.2" />
             </svg>
           </button>
         )}
       </div>
       {open && (
-        <div style={{ paddingLeft: 6, paddingRight: 2, paddingBottom: 4, paddingTop: 2, borderLeft: '2px solid #1e3a5f' }}>
+        <div style={{ paddingLeft: 6, paddingRight: 2, paddingBottom: 4, paddingTop: 2, borderLeft: '2px solid var(--bld-bg-elevated)' }}>
           {children}
         </div>
       )}
@@ -280,7 +280,7 @@ interface OverrideRowProps {
 function OverrideRow({ label, value, placeholder = '—', unit, step = 1, onChange }: OverrideRowProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-      <span style={{ fontSize: 10, color: '#9ca3af', minWidth: 72, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-3)', minWidth: 72, flexShrink: 0 }}>{label}</span>
       <input
         type="number"
         step={step}
@@ -292,17 +292,17 @@ function OverrideRow({ label, value, placeholder = '—', unit, step = 1, onChan
         }}
         style={{
           flex: 1, fontSize: 10, padding: '3px 5px', borderRadius: 3,
-          border: `1px solid ${value !== undefined ? '#4f6b8f' : '#374151'}`,
-          background: '#111827', color: '#f9fafb',
+          border: `1px solid ${value !== undefined ? 'var(--bld-border-subtle)' : 'var(--bld-border-subtle)'}`,
+          background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)',
           fontFamily: 'monospace', boxSizing: 'border-box' as const,
         }}
       />
-      {unit && <span style={{ fontSize: 9, color: '#6b7280', flexShrink: 0 }}>{unit}</span>}
+      {unit && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>{unit}</span>}
       {value !== undefined && (
         <button
           onClick={() => onChange(undefined)}
           title="Clear override"
-          style={{ fontSize: 11, lineHeight: 1, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#6b7280', cursor: 'pointer', flexShrink: 0 }}
+          style={{ fontSize: 11, lineHeight: 1, padding: '1px 4px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'transparent', color: 'var(--bld-text-disabled)', cursor: 'pointer', flexShrink: 0 }}
         >×</button>
       )}
     </div>
@@ -317,11 +317,11 @@ function FromOverrideSection({
   patch: (p: Record<string, number | undefined>) => void;
 }) {
   return (
-    <div style={{ borderTop: '1px solid #1e293b', paddingTop: 10, marginTop: 2 }}>
-      <span style={{ fontSize: 9, color: '#6366f1', fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+    <div style={{ borderTop: '1px solid var(--bld-bg-elevated)', paddingTop: 10, marginTop: 2 }}>
+      <span style={{ fontSize: 9, color: 'var(--bld-ai-accent)', fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
         {label}
       </span>
-      <span style={{ fontSize: 9, color: '#4b5563', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
         Override preset starting values. Leave blank to use type defaults.
       </span>
       <OverrideRow label="Opacity"     value={from?.opacity}     placeholder="auto" step={0.05}  onChange={v => patch({ opacity: v })} />
@@ -382,8 +382,8 @@ function AnimConfigPopover({
       style={{
         position: 'fixed', right: 268, top,
         width: 264, zIndex: 10001,
-        background: '#0d1526',
-        border: '1px solid #1e3a5f',
+        background: 'var(--bld-bg-base)',
+        border: '1px solid var(--bld-bg-elevated)',
         borderRadius: 10,
         boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
         display: 'flex', flexDirection: 'column',
@@ -394,26 +394,26 @@ function AnimConfigPopover({
         position: 'absolute', right: -7, top: 20,
         width: 0, height: 0,
         borderTop: '7px solid transparent', borderBottom: '7px solid transparent',
-        borderLeft: '7px solid #1e3a5f',
+        borderLeft: '7px solid var(--bld-bg-elevated)',
       }} />
       <div style={{
         position: 'absolute', right: -5, top: 22,
         width: 0, height: 0,
         borderTop: '5px solid transparent', borderBottom: '5px solid transparent',
-        borderLeft: '5px solid #0d1526',
+        borderLeft: '5px solid var(--bld-bg-base)',
       }} />
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '10px 14px 9px',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: '1px solid var(--bld-bg-elevated)',
         borderRadius: '10px 10px 0 0',
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', letterSpacing: '0.01em' }}>{title}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', letterSpacing: '0.01em' }}>{title}</span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
         >×</button>
       </div>
       {/* Body — no fixed height, grows with content; scrolls only when near viewport edge */}
@@ -588,7 +588,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
   const patchShimmer    = (p: Partial<typeof shimmerCfg>)       => patch({ shimmer:           { ...shimmerCfg,  ...p } });
   const patchStates     = (p: Partial<NonNullable<AnimationConfig['states']>>) => patch({ states: { ...statesCfg, ...p } });
 
-  const gradColors = gradAnim.colors ?? ['#6366f1', '#ec4899', '#6366f1'];
+  const gradColors = gradAnim.colors ?? ['var(--bld-ai-accent)', 'var(--bld-badge-boolean)', 'var(--bld-ai-accent)'];
   const hasMap = !!(node?.map);
 
   // ── Active-count badges ──────────────────────────────────────────────────
@@ -674,8 +674,8 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           onClick={() => postPreview(nodeId)}
           title="Preview all animations on canvas"
           style={{
-            padding: '2px 8px', fontSize: 10, background: '#1e3a5f',
-            border: '1px solid #1d4ed8', borderRadius: 4, color: '#93c5fd',
+            padding: '2px 8px', fontSize: 10, background: 'var(--bld-bg-elevated)',
+            border: '1px solid var(--bld-accent-hover)', borderRadius: 4, color: 'var(--bld-accent)',
             cursor: 'pointer',
           }}
         >
@@ -766,7 +766,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           defaultOpen={press.scale != null}
           isActive={press.scale != null}
           previewEl={press.scale != null ? (
-            <div style={{ width: 14, height: 14, background: '#1e3a5f', border: '1px solid #3b5c8a', borderRadius: 3, transform: 'scale(0.82)', flexShrink: 0 }} />
+            <div style={{ width: 14, height: 14, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, transform: 'scale(0.82)', flexShrink: 0 }} />
           ) : undefined}
           onConfigure={e => togglePopover('press', e)}
         >
@@ -786,7 +786,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           defaultOpen={hover.scale != null}
           isActive={hover.scale != null}
           previewEl={hover.scale != null ? (
-            <div style={{ width: 14, height: 14, background: '#1e3a5f', border: '1px solid #3b5c8a', borderRadius: 3, transform: 'translateY(-2px)', flexShrink: 0 }} />
+            <div style={{ width: 14, height: 14, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, transform: 'translateY(-2px)', flexShrink: 0 }} />
           ) : undefined}
           onConfigure={e => togglePopover('hover', e)}
         >
@@ -837,7 +837,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           isActive={flipCfg.trigger != null}
           onConfigure={flipCfg.trigger != null ? e => togglePopover('flip', e) : undefined}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Flips the element on hover or click to reveal the back face.
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -847,9 +847,9 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 onClick={() => patchFlip({ trigger: t === 'none' ? undefined : t })}
                 style={{
                   flex: 1, fontSize: 10, padding: '3px 6px', borderRadius: 3, cursor: 'pointer',
-                  background: (flipCfg.trigger ?? 'none') === t ? '#3b82f6' : '#1f2937',
-                  color: (flipCfg.trigger ?? 'none') === t ? '#fff' : '#9ca3af',
-                  border: '1px solid #374151',
+                  background: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                  color: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)',
+                  border: '1px solid var(--bld-border-subtle)',
                 }}
               >{t}</button>
             ))}
@@ -959,7 +959,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           onConfigure={impTrig.type && impTrig.type !== 'none'
             ? e => togglePopover('imperativeTrigger', e) : undefined}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Plays a one-shot animation whenever a variable changes.
           </span>
           <ChipSelect
@@ -989,7 +989,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           defaultOpen={shimmerCfg.duration != null}
           isActive={shimmerCfg.duration != null}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Sweeping shimmer highlight overlay (skeleton-loader style).
           </span>
           <ToggleRow
@@ -997,7 +997,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
             active={shimmerCfg.duration != null}
             onChange={() => {
               if (shimmerCfg.duration != null) patchShimmer({ duration: undefined });
-              else patchShimmer({ duration: 1200, baseColor: '#e5e7eb', highlightColor: '#f9fafb' });
+              else patchShimmer({ duration: 1200, baseColor: 'var(--bld-text-2)', highlightColor: 'var(--bld-text-1)' });
             }}
           />
           {shimmerCfg.duration != null && (
@@ -1005,8 +1005,8 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <SliderField label="Duration (ms)" value={shimmerCfg.duration ?? 1200} min={400} max={3000} step={100} unit="ms" onChange={v => patchShimmer({ duration: v })} />
               <div style={{ height: 4 }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <ColorInput label="Base" value={shimmerCfg.baseColor ?? '#e5e7eb'} onChange={v => patchShimmer({ baseColor: v })} />
-                <ColorInput label="Highlight" value={shimmerCfg.highlightColor ?? '#f9fafb'} onChange={v => patchShimmer({ highlightColor: v })} />
+                <ColorInput label="Base" value={shimmerCfg.baseColor ?? 'var(--bld-text-2)'} onChange={v => patchShimmer({ baseColor: v })} />
+                <ColorInput label="Highlight" value={shimmerCfg.highlightColor ?? 'var(--bld-text-1)'} onChange={v => patchShimmer({ highlightColor: v })} />
               </div>
             </div>
           )}
@@ -1019,7 +1019,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           isActive={splitTextCfg.type != null}
           onConfigure={splitTextCfg.type != null ? e => togglePopover('splitText', e) : undefined}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Animate text character by character or word by word.
           </span>
           <ToggleRow
@@ -1033,14 +1033,14 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           {splitTextCfg.type != null && (
             <div style={{ marginTop: 6 }}>
               <div style={{ marginBottom: 4 }}>
-                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Split by</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', display: 'block', marginBottom: 2 }}>Split by</span>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {(['char', 'word', 'line'] as const).map(s => (
                     <button key={s} onClick={() => patchSplitText({ split: s })}
                       style={{ flex: 1, fontSize: 10, padding: '3px 4px', borderRadius: 3, cursor: 'pointer',
-                        background: (splitTextCfg.split ?? 'char') === s ? '#3b82f6' : '#1f2937',
-                        color: (splitTextCfg.split ?? 'char') === s ? '#fff' : '#9ca3af',
-                        border: '1px solid #374151' }}>{s}</button>
+                        background: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                        color: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)',
+                        border: '1px solid var(--bld-border-subtle)' }}>{s}</button>
                   ))}
                 </div>
               </div>
@@ -1066,16 +1066,16 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           isActive={statesCfg.states && Object.keys(statesCfg.states).length > 0}
           onConfigure={e => togglePopover('statesMachine', e)}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Switch between visual states (e.g. default/hover/active) driven by a variable.
           </span>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 10, color: '#9ca3af' }}>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
               {Object.keys(statesCfg.states ?? {}).length} state(s) configured
             </span>
             <button
               onClick={e => togglePopover('statesMachine', e)}
-              style={{ fontSize: 10, padding: '3px 8px', border: '1px solid #374151', borderRadius: 3, background: '#1f2937', color: '#d1d5db', cursor: 'pointer' }}
+              style={{ fontSize: 10, padding: '3px 8px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', cursor: 'pointer' }}
             >Configure</button>
           </div>
         </SubSection>
@@ -1087,7 +1087,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           isActive={particlesCfg.count != null}
           onConfigure={particlesCfg.count != null ? e => togglePopover('particles', e) : undefined}
         >
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
             Animated particle canvas overlay (network / star field).
           </span>
           <ToggleRow
@@ -1121,7 +1121,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
 
         {/* Custom Bezier */}
         <SubSection label="Custom Bezier Easing" defaultOpen={!!cfg.customBezier} isActive={!!cfg.customBezier}>
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6 }}>
             Override per-animation easing with a custom cubic-bezier(x1, y1, x2, y2).
           </span>
           <PRow>
@@ -1131,10 +1131,10 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
             <NumberInput label="y2" value={bezier[3]} min={-2} max={2} step={0.01} onChange={v => patchBezier([bezier[0], bezier[1], bezier[2], v])} />
           </PRow>
           <PRow>
-            <span style={{ fontSize: 9, color: '#9ca3af' }}>cubic-bezier({bezier.join(', ')})</span>
+            <span style={{ fontSize: 9, color: 'var(--bld-text-3)' }}>cubic-bezier({bezier.join(', ')})</span>
             <button
               onClick={() => patch({ customBezier: undefined })}
-              style={{ fontSize: 9, padding: '2px 6px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#9ca3af', cursor: 'pointer' }}
+              style={{ fontSize: 9, padding: '2px 6px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'transparent', color: 'var(--bld-text-3)', cursor: 'pointer' }}
             >
               Clear
             </button>
@@ -1143,36 +1143,36 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
 
         {/* Declarative Timeline */}
         <SubSection label="Declarative Timeline" defaultOpen={tl.length > 0} isActive={tl.length > 0}>
-          <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 6 }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6 }}>
             Each step animates a CSS property from → to over a time window (ms).
           </span>
           {tl.map((step, i) => (
-            <div key={i} style={{ border: '1px solid #374151', borderRadius: 4, padding: 8, marginBottom: 8 }}>
+            <div key={i} style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: 8, marginBottom: 8 }}>
               <PRow>
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>CSS property</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>CSS property</span>
                   <input
                     type="text"
                     value={step.property}
                     onChange={e => { const next = [...tl]; next[i] = { ...next[i], property: e.target.value }; patch({ timeline: next }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }}
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }}
                   />
                 </div>
                 <button
                   onClick={() => { const next = tl.filter((_, j) => j !== i); patch({ timeline: next }); }}
-                  style={{ alignSelf: 'flex-end', padding: '3px 6px', fontSize: 10, border: '1px solid #374151', borderRadius: 3, background: '#1f2937', color: '#ef4444', cursor: 'pointer' }}
+                  style={{ alignSelf: 'flex-end', padding: '3px 6px', fontSize: 10, border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-input)', color: 'var(--bld-error)', cursor: 'pointer' }}
                 >✕</button>
               </PRow>
               <PRow>
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>From</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>From</span>
                   <input type="text" value={String(step.from)} onChange={e => { const n = [...tl]; n[i] = { ...n[i], from: e.target.value }; patch({ timeline: n }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>To</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>To</span>
                   <input type="text" value={String(step.to)} onChange={e => { const n = [...tl]; n[i] = { ...n[i], to: e.target.value }; patch({ timeline: n }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }} />
                 </div>
               </PRow>
               <PRow>
@@ -1183,7 +1183,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           ))}
           <button
             onClick={() => patch({ timeline: [...tl, { property: 'opacity', from: '0', to: '1', startMs: 0, endMs: 800 }] })}
-            style={{ width: '100%', padding: '5px 0', fontSize: 10, background: '#1e3a5f', border: '1px solid #1d4ed8', borderRadius: 4, color: '#93c5fd', cursor: 'pointer' }}
+            style={{ width: '100%', padding: '5px 0', fontSize: 10, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent-hover)', borderRadius: 4, color: 'var(--bld-accent)', cursor: 'pointer' }}
           >
             + Add step
           </button>
@@ -1228,12 +1228,12 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <ToggleRow label="Cycle colors"  active={!!gradAnim.animateColors} onChange={() => patchGrad({ animateColors: !gradAnim.animateColors })} />
               <ToggleRow label="Rotate angle"  active={!!gradAnim.animateAngle}  onChange={() => patchGrad({ animateAngle: !gradAnim.animateAngle })} />
               <ToggleRow label="Loop"           active={gradAnim.loop !== false}  onChange={() => patchGrad({ loop: !gradAnim.loop })} />
-              <div style={{ fontSize: 10, color: '#888', padding: '6px 0 3px' }}>Colors (one per line):</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '6px 0 3px' }}>Colors (one per line):</div>
               <textarea
                 rows={4}
                 value={gradColors.join('\n')}
                 onChange={e => patchGrad({ colors: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
-                style={{ width: '100%', fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: 4 }}
+                style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: 4 }}
               />
             </>
           )}
@@ -1252,10 +1252,10 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <PRow>
                 <SelectInput label="Easing" value={clipPathCfg.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchClip({ easing: v })} />
               </PRow>
-              <div style={{ fontSize: 10, color: '#888', padding: '2px 0' }}>From (clip-path):</div>
-              <input value={clipPathCfg.from ?? ''} onChange={e => patchClip({ from: e.target.value })} placeholder="inset(0 100% 0 0)" style={{ width: '100%', fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '3px 6px', marginBottom: 6 }} />
-              <div style={{ fontSize: 10, color: '#888', padding: '2px 0' }}>To (clip-path):</div>
-              <input value={clipPathCfg.to ?? ''} onChange={e => patchClip({ to: e.target.value })} placeholder="inset(0 0% 0 0)" style={{ width: '100%', fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '3px 6px' }} />
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '2px 0' }}>From (clip-path):</div>
+              <input value={clipPathCfg.from ?? ''} onChange={e => patchClip({ from: e.target.value })} placeholder="inset(0 100% 0 0)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px', marginBottom: 6 }} />
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '2px 0' }}>To (clip-path):</div>
+              <input value={clipPathCfg.to ?? ''} onChange={e => patchClip({ to: e.target.value })} placeholder="inset(0 0% 0 0)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px' }} />
             </>
           )}
         </SubSection>
@@ -1265,8 +1265,8 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           <ToggleRow label="Enable mask animation" active={!!maskCfg2.enabled} onChange={() => patchMask2({ enabled: !maskCfg2.enabled })} />
           {maskCfg2.enabled && (
             <>
-              <div style={{ fontSize: 10, color: '#888', padding: '6px 0 2px' }}>mask-image CSS value:</div>
-              <input value={maskCfg2.image ?? ''} onChange={e => patchMask2({ image: e.target.value })} placeholder="linear-gradient(to right, black, transparent)" style={{ width: '100%', fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '3px 6px', marginBottom: 8 }} />
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '6px 0 2px' }}>mask-image CSS value:</div>
+              <input value={maskCfg2.image ?? ''} onChange={e => patchMask2({ image: e.target.value })} placeholder="linear-gradient(to right, black, transparent)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px', marginBottom: 8 }} />
               <ToggleRow label="Animate wipe" active={!!maskCfg2.animateSize} onChange={() => patchMask2({ animateSize: !maskCfg2.animateSize })} />
               <div style={{ height: 6 }} />
               <PRow>
@@ -1288,8 +1288,8 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SelectInput label="Trigger" value={pseudoCfg.trigger ?? 'hover'} options={['hover', 'always', 'enter']} onChange={v => patchPseudo({ trigger: v as PseudoElementConfig['trigger'] })} />
               </PRow>
               <PRow>
-                <ColorInput label="Background" value={pseudoCfg.background ?? '#6366f1'} onChange={v => patchPseudo({ background: v })} />
-                <ColorInput label="Hover bg" value={pseudoCfg.hoverBackground ?? '#ec4899'} onChange={v => patchPseudo({ hoverBackground: v })} />
+                <ColorInput label="Background" value={pseudoCfg.background ?? 'var(--bld-ai-accent)'} onChange={v => patchPseudo({ background: v })} />
+                <ColorInput label="Hover bg" value={pseudoCfg.hoverBackground ?? 'var(--bld-badge-boolean)'} onChange={v => patchPseudo({ hoverBackground: v })} />
               </PRow>
               <PRow>
                 <NumberInput label="Width (px/%)" value={parseInt(pseudoCfg.width ?? '100', 10)} min={0} max={100} step={1} onChange={v => patchPseudo({ width: v + '%' })} />
@@ -1314,18 +1314,18 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <SliderField label="Min distance (px)"   value={gestureCfg.swipeThreshold   ?? 50}  min={10}  max={300}  step={5}  unit="px" onChange={v => patchGesture({ swipeThreshold: v })} />
                 <SliderField label="Anim duration (ms)"  value={gestureCfg.animationDuration ?? 400} min={100} max={2000} step={50} unit="ms" onChange={v => patchGesture({ animationDuration: v })} />
               </PRow>
-              <div style={{ fontSize: 10, color: '#888', padding: '4px 0 4px' }}>Workflow action to run on swipe:</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '4px 0 4px' }}>Workflow action to run on swipe:</div>
               <PRow>
-                <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>← Left</span>
-                <input value={gestureCfg.onSwipeLeftAction  ?? ''} onChange={e => patchGesture({ onSwipeLeftAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
-                <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>→ Right</span>
-                <input value={gestureCfg.onSwipeRightAction ?? ''} onChange={e => patchGesture({ onSwipeRightAction: e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>← Left</span>
+                <input value={gestureCfg.onSwipeLeftAction  ?? ''} onChange={e => patchGesture({ onSwipeLeftAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>→ Right</span>
+                <input value={gestureCfg.onSwipeRightAction ?? ''} onChange={e => patchGesture({ onSwipeRightAction: e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
               </PRow>
               <PRow>
-                <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>↑ Up</span>
-                <input value={gestureCfg.onSwipeUpAction    ?? ''} onChange={e => patchGesture({ onSwipeUpAction:    e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
-                <span style={{ fontSize: 10, color: '#aaa', minWidth: 40 }}>↓ Down</span>
-                <input value={gestureCfg.onSwipeDownAction  ?? ''} onChange={e => patchGesture({ onSwipeDownAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 3, padding: '2px 5px' }} />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>↑ Up</span>
+                <input value={gestureCfg.onSwipeUpAction    ?? ''} onChange={e => patchGesture({ onSwipeUpAction:    e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>↓ Down</span>
+                <input value={gestureCfg.onSwipeDownAction  ?? ''} onChange={e => patchGesture({ onSwipeDownAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
               </PRow>
             </>
           )}
@@ -1403,7 +1403,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               </FieldWithBinding>
               <ChipSelect value={loop.direction ?? 'normal'} options={LOOP_DIRS as unknown as string[]} onChange={v => patchLoop({ direction: v })} />
               {(loop.type === 'glowPulse' || loop.type === 'ripple') && (
-                <ColorInput label="Glow color" value={(loop as { color?: string }).color ?? '#6366f1'} onChange={v => patchLoop({ color: v })} />
+                <ColorInput label="Glow color" value={(loop as { color?: string }).color ?? 'var(--bld-ai-accent)'} onChange={v => patchLoop({ color: v })} />
               )}
             </>
           )}
@@ -1428,21 +1428,21 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <SelectInput label="Easing" value={press.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchPress({ easing: v })} />
               {/* Style targets */}
               <div style={{ marginTop: 6 }}>
-                <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Style targets</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600 }}>Style targets</span>
                 {Object.entries(press.styles ?? {}).map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
-                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#d1d5db', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-2)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                     <input type="text" value={String(v)} onChange={e => { const s = { ...(press.styles ?? {}), [k]: e.target.value }; patchPress({ styles: s }); }}
-                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                     <button onClick={() => { const s = { ...(press.styles ?? {}) }; delete s[k]; patchPress({ styles: Object.keys(s).length ? s : undefined }); }}
-                      style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+                      style={{ fontSize: 10, color: 'var(--bld-error)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
                   </div>
                 ))}
                 <button onClick={() => {
                   const name = prompt('CSS property name (e.g. backgroundColor, borderRadius, boxShadow)');
                   if (!name) return;
                   patchPress({ styles: { ...(press.styles ?? {}), [name]: '' } });
-                }} style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
+                }} style={{ fontSize: 10, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
               </div>
             </>
           )}
@@ -1465,21 +1465,21 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <SelectInput label="Easing" value={hover.easing ?? 'easeOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchHover({ easing: v })} />
               {/* Style targets */}
               <div style={{ marginTop: 6 }}>
-                <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600 }}>Style targets</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600 }}>Style targets</span>
                 {Object.entries(hover.styles ?? {}).map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 3 }}>
-                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#d1d5db', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    <input type="text" value={k} readOnly style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-2)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                     <input type="text" value={String(v)} onChange={e => { const s = { ...(hover.styles ?? {}), [k]: e.target.value }; patchHover({ styles: s }); }}
-                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                      style={{ flex: 1, fontSize: 10, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                     <button onClick={() => { const s = { ...(hover.styles ?? {}) }; delete s[k]; patchHover({ styles: Object.keys(s).length ? s : undefined }); }}
-                      style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+                      style={{ fontSize: 10, color: 'var(--bld-error)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
                   </div>
                 ))}
                 <button onClick={() => {
                   const name = prompt('CSS property name (e.g. backgroundColor, borderRadius, boxShadow)');
                   if (!name) return;
                   patchHover({ styles: { ...(hover.styles ?? {}), [name]: '' } });
-                }} style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
+                }} style={{ fontSize: 10, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 3, padding: 0 }}>+ Add style target</button>
               </div>
             </>
           )}
@@ -1519,7 +1519,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           {/* ── Focus Ring ── */}
           {popover.category === 'focus' && (
             <>
-              <ColorInput label="Glow color" value={focusCfg.color ?? '#3b82f6'} onChange={v => patchFocus({ color: v })} />
+              <ColorInput label="Glow color" value={focusCfg.color ?? 'var(--bld-accent)'} onChange={v => patchFocus({ color: v })} />
               <Row>
                 <SliderField label="Blur (px)"   value={focusCfg.blur   ?? 8} min={0} max={40} step={1} unit="px" onChange={v => patchFocus({ blur: v })} />
                 <SliderField label="Spread (px)" value={focusCfg.spread ?? 3} min={0} max={20} step={1} unit="px" onChange={v => patchFocus({ spread: v })} />
@@ -1579,18 +1579,18 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 onChange={v => patchScrollProg({ property: v === 'custom' ? '' : v })} />
               {isCustomProp && (
                 <div>
-                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>CSS property name</span>
+                  <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>CSS property name</span>
                   <input type="text" value={currentProp === 'custom' ? '' : currentProp} placeholder="e.g. letterSpacing"
                     onChange={e => patchScrollProg({ property: e.target.value || 'custom' })}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                 </div>
               )}
               {(currentProp === 'backgroundOpacity') && (
                 <div>
-                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>RGB base (e.g. 255,255,255)</span>
+                  <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>RGB base (e.g. 255,255,255)</span>
                   <input type="text" value={(scrollProg as Record<string, unknown>).rgb as string ?? '255,255,255'} placeholder="255,255,255"
                     onChange={e => patchScrollProg({ rgb: e.target.value || undefined } as Record<string, unknown>)}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                 </div>
               )}
               {isColorProp ? (
@@ -1606,10 +1606,10 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               )}
               {!isColorProp && (
                 <div>
-                  <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>Unit (px/deg/%, auto)</span>
+                  <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>Unit (px/deg/%, auto)</span>
                   <input type="text" value={scrollProg.unit ?? ''} placeholder="px"
                     onChange={e => patchScrollProg({ unit: e.target.value || undefined })}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                 </div>
               )}
               <Row>
@@ -1630,16 +1630,16 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                   <SelectInput label="Property" value={isCustom ? 'custom' : cp} options={COLOR_PROPS as unknown as string[]} onChange={v => patchColor({ property: v === 'custom' ? '' : v })} />
                   {isCustom && (
                     <div>
-                      <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>CSS property name</span>
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>CSS property name</span>
                       <input type="text" value={cp === 'custom' ? '' : cp} placeholder="e.g. caretColor"
                         onChange={e => patchColor({ property: e.target.value || 'custom' })}
-                        style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                        style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                     </div>
                   )}
                 </>;
               })()}
-              <ColorInput label="From" value={color.from ?? '#3b82f6'} onChange={v => patchColor({ from: v })} />
-              <ColorInput label="To"   value={color.to   ?? '#ef4444'} onChange={v => patchColor({ to: v })} />
+              <ColorInput label="From" value={color.from ?? 'var(--bld-accent)'} onChange={v => patchColor({ from: v })} />
+              <ColorInput label="To"   value={color.to   ?? 'var(--bld-error)'} onChange={v => patchColor({ to: v })} />
               <Row>
                 <SelectInput label="Trigger" value={color.trigger ?? 'enter'} options={COLOR_TRIGS as unknown as string[]} onChange={v => patchColor({ trigger: v })} />
                 <NumberInput label="Duration (ms)" value={color.duration ?? 800} min={100} max={5000} step={50} onChange={v => patchColor({ duration: v })} />
@@ -1680,10 +1680,10 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               </Row>
               <Row>
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Drop shadow (CSS)</span>
-                  <input type="text" value={filt.dropShadow ?? ''} placeholder="0 0 12px #3b82f6"
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Drop shadow (CSS)</span>
+                  <input type="text" value={filt.dropShadow ?? ''} placeholder="0 0 12px var(--bld-accent)"
                     onChange={e => patchFilter({ dropShadow: e.target.value })}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
                 </div>
               </Row>
             </>
@@ -1694,16 +1694,16 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
             <>
               <ToggleRow label="Loop" active={morphCfg.loop} onChange={() => patchMorph({ loop: !morphCfg.loop })} />
               <div>
-                <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>From (border-radius)</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>From (border-radius)</span>
                 <input type="text" value={morphCfg.from ?? '50% 50% 50% 50%'} placeholder="50% 50% 50% 50%"
                   onChange={e => patchMorph({ from: e.target.value })}
-                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginBottom: 3 }}>To (border-radius)</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 3 }}>To (border-radius)</span>
                 <input type="text" value={morphCfg.to ?? '60% 40% 70% 30% / 50% 60% 40% 50%'} placeholder="60% 40% 70% 30% / 50% 60% 40% 50%"
                   onChange={e => patchMorph({ to: e.target.value })}
-                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }} />
               </div>
               <Row>
                 <SliderField label="Duration (ms)" value={morphCfg.duration ?? 3000} min={200} max={10000} step={100} unit="ms" onChange={v => patchMorph({ duration: v })} />
@@ -1728,13 +1728,13 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 topAlign
               >
                 <div>
-                  <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 2 }}>Watch Variable (formula)</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Watch Variable (formula)</span>
                   <input
                     type="text"
                     value={typeof impTrig.watchVar === 'string' ? impTrig.watchVar : ''}
                     placeholder="variables['UUID']"
                     onChange={e => patchImpTrig({ watchVar: e.target.value })}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', fontFamily: 'monospace', boxSizing: 'border-box' }}
                   />
                 </div>
               </FieldWithBinding>
@@ -1747,7 +1747,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               <ToggleRow label="Snap back"   active={drag.snapBack}   onChange={() => patchDrag({ snapBack:   !drag.snapBack })} />
               <ToggleRow label="Spring back" active={drag.springBack} onChange={() => patchDrag({ springBack: !drag.springBack })} />
               <SelectInput label="Axis" value={drag.axis ?? 'both'} options={AXIS_OPTS as unknown as string[]} onChange={v => patchDrag({ axis: v })} />
-              <span style={{ fontSize: 10, color: '#6b7280', display: 'block' }}>Bounds (optional)</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block' }}>Bounds (optional)</span>
               <Row>
                 <NumberInput label="Top"    value={drag.bounds?.top    ?? 0} min={-1000} max={0}    onChange={v => patchDrag({ bounds: { ...drag.bounds, top: v } })} />
                 <NumberInput label="Bottom" value={drag.bounds?.bottom ?? 0} min={0}     max={1000} onChange={v => patchDrag({ bounds: { ...drag.bounds, bottom: v } })} />
@@ -1756,12 +1756,12 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                 <NumberInput label="Left"  value={drag.bounds?.left  ?? 0} min={-1000} max={0}    onChange={v => patchDrag({ bounds: { ...drag.bounds, left: v } })} />
                 <NumberInput label="Right" value={drag.bounds?.right ?? 0} min={0}     max={1000} onChange={v => patchDrag({ bounds: { ...drag.bounds, right: v } })} />
               </Row>
-              <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginTop: 6 }}>Slot size (for list reorder snap-back)</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginTop: 6 }}>Slot size (for list reorder snap-back)</span>
               <Row>
                 <NumberInput label="Slot H (px)" value={drag.slotHeight ?? 0} min={0} max={500} onChange={v => patchDrag({ slotHeight: v || undefined })} />
                 <NumberInput label="Slot W (px)"  value={drag.slotWidth  ?? 0} min={0} max={500} onChange={v => patchDrag({ slotWidth:  v || undefined })} />
               </Row>
-              <span style={{ fontSize: 10, color: '#6b7280', display: 'block', marginTop: 6 }}>Attach drag workflows via the Workflows tab (On drag start / update / end).</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'block', marginTop: 6 }}>Attach drag workflows via the Workflows tab (On drag start / update / end).</span>
             </>
           )}
 
@@ -1777,19 +1777,19 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           {popover.category === 'splitText' && (
             <>
               <div style={{ marginBottom: 6 }}>
-                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Split by</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', display: 'block', marginBottom: 2 }}>Split by</span>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {(['char', 'word', 'line'] as const).map(s => (
                     <button key={s} onClick={() => patchSplitText({ split: s })}
                       style={{ flex: 1, fontSize: 10, padding: '3px 4px', borderRadius: 3, cursor: 'pointer',
-                        background: (splitTextCfg.split ?? 'char') === s ? '#3b82f6' : '#1f2937',
-                        color: (splitTextCfg.split ?? 'char') === s ? '#fff' : '#9ca3af',
-                        border: '1px solid #374151' }}>{s}</button>
+                        background: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                        color: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)',
+                        border: '1px solid var(--bld-border-subtle)' }}>{s}</button>
                   ))}
                 </div>
               </div>
               <div style={{ marginBottom: 6 }}>
-                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Animation type</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', display: 'block', marginBottom: 2 }}>Animation type</span>
                 <ChipSelect
                   value={splitTextCfg.type ?? 'fadeIn'}
                   options={ENTER_TYPES as unknown as string[]}
@@ -1806,17 +1806,17 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
           {/* ── States Machine ── */}
           {popover.category === 'statesMachine' && (
             <>
-              <span style={{ fontSize: 9, color: '#6b7280', display: 'block', marginBottom: 8, lineHeight: 1.4 }}>
-                watchVar is a formula expression that returns the current state name (e.g. <code style={{ color: '#a5b4fc' }}>variables{`['`}UUID{`']`}</code>).
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 8, lineHeight: 1.4 }}>
+                watchVar is a formula expression that returns the current state name (e.g. <code style={{ color: 'var(--bld-accent)' }}>variables{`['`}UUID{`']`}</code>).
                 Each state is a set of style overrides applied when watchVar equals that state name.
               </span>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 9, color: '#9ca3af', display: 'block', marginBottom: 2 }}>Watch variable (formula)</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', display: 'block', marginBottom: 2 }}>Watch variable (formula)</span>
                 <input
                   value={typeof statesCfg.watchVar === 'string' ? statesCfg.watchVar : ''}
                   onChange={e => patchStates({ watchVar: e.target.value })}
                   placeholder="variables['UUID']"
-                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }}
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }}
                 />
               </div>
               <div style={{ marginBottom: 8 }}>
@@ -1824,47 +1824,47 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                   value={statesCfg.defaultState ?? ''}
                   onChange={e => patchStates({ defaultState: e.target.value })}
                   placeholder="default state name"
-                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb', boxSizing: 'border-box' }}
+                  style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }}
                 />
-                <span style={{ fontSize: 9, color: '#6b7280' }}>Default state (applies when watchVar is undefined)</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>Default state (applies when watchVar is undefined)</span>
               </div>
               <SliderField label="Transition (ms)" value={statesCfg.duration ?? 300} min={50} max={2000} step={50} unit="ms" onChange={v => patchStates({ duration: v })} />
               <SelectInput label="Easing" value={statesCfg.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchStates({ easing: v })} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, color: '#9ca3af' }}>States</span>
+                  <span style={{ fontSize: 9, color: 'var(--bld-text-3)' }}>States</span>
                   <button
                     onClick={() => {
                       const name = prompt('State name (e.g. "active", "hover"):');
                       if (!name) return;
                       patchStates({ states: { ...(statesCfg.states ?? {}), [name]: {} } });
                     }}
-                    style={{ fontSize: 9, padding: '2px 6px', border: '1px solid #374151', borderRadius: 3, background: '#1f2937', color: '#9ca3af', cursor: 'pointer' }}
+                    style={{ fontSize: 9, padding: '2px 6px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-input)', color: 'var(--bld-text-3)', cursor: 'pointer' }}
                   >+ Add state</button>
                 </div>
                 {Object.entries(statesCfg.states ?? {}).map(([stateName, props]) => (
-                  <div key={stateName} style={{ border: '1px solid #374151', borderRadius: 4, padding: 8, marginBottom: 6 }}>
+                  <div key={stateName} style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: 8, marginBottom: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: '#d1d5db', fontWeight: 600 }}>{stateName}</span>
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>{stateName}</span>
                       <button
                         onClick={() => {
                           const next = { ...(statesCfg.states ?? {}) };
                           delete next[stateName];
                           patchStates({ states: next });
                         }}
-                        style={{ fontSize: 9, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
+                        style={{ fontSize: 9, padding: '1px 4px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'transparent', color: 'var(--bld-error)', cursor: 'pointer' }}
                       >✕</button>
                     </div>
                     {Object.entries(props as Record<string, string>).map(([prop, val]) => (
                       <div key={prop} style={{ display: 'flex', gap: 4, marginBottom: 3 }}>
-                        <input value={prop} readOnly style={{ flex: 1, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#9ca3af' }} />
+                        <input value={prop} readOnly style={{ flex: 1, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-3)' }} />
                         <input
                           value={val}
                           onChange={e => {
                             const newProps = { ...(props as Record<string, string>), [prop]: e.target.value };
                             patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
                           }}
-                          style={{ flex: 2, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid #374151', background: '#111827', color: '#f9fafb' }}
+                          style={{ flex: 2, fontSize: 9, padding: '2px 4px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)' }}
                         />
                         <button
                           onClick={() => {
@@ -1872,7 +1872,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                             delete newProps[prop];
                             patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
                           }}
-                          style={{ fontSize: 9, padding: '1px 4px', border: '1px solid #374151', borderRadius: 3, background: 'transparent', color: '#6b7280', cursor: 'pointer' }}
+                          style={{ fontSize: 9, padding: '1px 4px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'transparent', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}
                         >✕</button>
                       </div>
                     ))}
@@ -1883,7 +1883,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
                         const newProps = { ...(props as Record<string, string>), [propName]: '' };
                         patchStates({ states: { ...(statesCfg.states ?? {}), [stateName]: newProps } });
                       }}
-                      style={{ fontSize: 9, padding: '2px 6px', border: '1px solid #374151', borderRadius: 3, background: '#111827', color: '#6b7280', cursor: 'pointer', width: '100%' }}
+                      style={{ fontSize: 9, padding: '2px 6px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-panel)', color: 'var(--bld-text-disabled)', cursor: 'pointer', width: '100%' }}
                     >+ Add property</button>
                   </div>
                 ))}

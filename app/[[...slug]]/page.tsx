@@ -366,7 +366,7 @@ export default function DynamicRoutePage() {
         state: {},
         ui: {
           type: 'Box',
-          props: { className: 'flex flex-col w-full min-h-screen items-start relative' },
+          props: { className: 'flex flex-col w-full min-h-screen relative' },
           children: (builderLive.nodes ?? []) as SDUINode[],
         } as SDUIConfig['ui'],
       }

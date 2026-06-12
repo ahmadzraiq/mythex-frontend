@@ -58,7 +58,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -147,7 +148,8 @@
         ],
         "props": {
           "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
-        }
+        },
+        "_group": "Order Items"
       },
       {
         "type": "Box",
@@ -295,7 +297,8 @@
               "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
             }
           }
-        ]
+        ],
+        "_group": "Order Summary"
       }
     ]
   }

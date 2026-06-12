@@ -1,4 +1,3 @@
-export { buildStructureAgentPrompt } from './structure/prompt';
 export { buildBindingAgentPrompt } from './binding/prompt';
 export { buildStylingAgentPrompt } from './layout/prompt';
 export { buildWorkflowsAgentPrompt } from './workflows/prompt';
@@ -12,8 +11,7 @@ export type { StylingSubAgentContext } from './shared/styling-subagent';
 export { SHARED_FORMULA_SYNTAX } from './shared/formula-scope';
 export { AGENT_DISPLAY_LABELS, AGENT_REGISTRY, BUILDER_AGENT_IDS, type BuilderAgentId } from './registry';
 
-// New-architecture entry points: planner → structure step → parallel agents.
-export { runPlanner } from './planner/agent';
-export { runStructureStep } from './structure/structure-step';
+// New-architecture entry points: smart planner → parallel agents.
+export { runSmartPlanner } from './planner/agent';
 export { runNewAgentDispatch } from './dispatch';
 export type { ContractManifest, ManifestOperation, AgentScope, AgentContract } from './manifest';

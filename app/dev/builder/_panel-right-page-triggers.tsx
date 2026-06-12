@@ -24,11 +24,11 @@ const SECTION_HDR: React.CSSProperties = {
   padding: '8px 12px', borderBottom: '1px solid #1f2937',
 };
 const SEC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: '#9ca3af',
+  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
   textTransform: 'uppercase', letterSpacing: '0.08em',
 };
 const EMPTY: React.CSSProperties = {
-  fontSize: 11, color: '#4b5563', fontStyle: 'italic',
+  fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
   padding: '10px 14px',
 };
 const ADD_BTN: React.CSSProperties = {
@@ -105,10 +105,10 @@ export function PageTriggersInRightPanel() {
       <div style={{
         padding: '8px 12px 6px', flexShrink: 0, borderBottom: '1px solid #1f2937',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#e2e8f0', marginBottom: 2 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 2 }}>
           Page Triggers
         </div>
-        <div style={{ fontSize: 10, color: '#4b5563' }}>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>
           {pageConfig
             ? <>Scoped to <span style={{ color: '#60a5fa', fontFamily: 'monospace' }}>{pageConfig}</span></>
             : 'Select a page to manage its triggers'}
@@ -126,7 +126,7 @@ export function PageTriggersInRightPanel() {
         >
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{
-              fontSize: 8, color: '#6b7280', transition: 'transform 0.15s',
+              fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s',
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block',
             }}>▶</span>
             {pageName}

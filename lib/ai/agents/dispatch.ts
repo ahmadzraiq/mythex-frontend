@@ -2,21 +2,21 @@
  * New-architecture dispatcher. Pipeline:
  *
  *   user message
- *     → runContextAgent  (resolves "what is the user pointing at?" — search/read tools)
- *     → runPlanner       (single-shot, receives resolved context, produces manifest)
- *     → runStructureStep (deterministic — no LLM)
+ *     → runSmartPlanner (Sonnet agentic loop)
+ *         - searches existing page context if needed
+ *         - calls generate_structure to build the DOM
+ *         - calls add_variable / create_shared_component as needed
+ *         - calls emit_plan when done → ContractManifest + collectedTrees
  *
- * SSE events: context_started, context_complete, planner_started, planner_complete,
- *             structure_started, structure_complete.
+ * SSE events: planner_started, planner_complete.
  *
- * If the context agent sets needsClarification, dispatch returns early with the
- * question — no agents run.
+ * If the planner sets needsClarification, dispatch returns early with the
+ * question — no specialist agents run.
  */
 
-import { runContextAgent, type ContextAgentInput } from './context-agent';
-import { runPlanner } from './planner/agent';
-import { runStructureStep } from './structure/structure-step';
+import { runSmartPlanner, type SmartPlannerInput, type SmartPlannerResult } from './planner/agent';
 import type { ContractManifest } from './manifest';
+import type { CollectedTree, ToolEvent, Marker } from '@/lib/ai/tools/process-structure-tree';
 import { buildReadContext, type ReadContext } from '@/lib/ai/tools/read-tools';
 import { embedNodes } from '@/lib/ai/tools/semantic-search';
 
@@ -28,7 +28,7 @@ export interface NewDispatchInput {
   pageId: string;
   pageNodes: unknown[];
 
-  // Full search context — used by Context Agent
+  // Full search context — used by the smart planner's search tools
   nodeFlat: Array<{ id: string; name?: string; type?: string; text?: string; path: string; parentId?: string; blob: string }>;
   otherPagesIndex: Array<{ pageId: string; pageName: string; pageRoute?: string; nodes: Array<{ id: string; name?: string; type?: string; text?: string; blob?: string }> }>;
   variables: Array<{ id?: string; name: string; label?: string; type: string; initialValue?: unknown }>;
@@ -40,11 +40,25 @@ export interface NewDispatchInput {
   theme?: Record<string, string>;
   currentPageRoute?: string;
 
+  /** Last N compact turn summaries from previous planner calls (passed as chatHistory) */
+  chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+
+  /** Shared allExecutedTools accumulator — populated by the smart planner */
+  allExecutedTools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }>;
+
   signal?: AbortSignal;
 }
 
 export interface NewDispatchResult {
   manifest: ContractManifest;
+  /** Trees built by generate_structure calls inside the smart planner */
+  collectedTrees: CollectedTree[];
+  /** Variable events emitted during the planner loop */
+  addVarEventsCollected: ToolEvent[];
+  /** Loop/showIf markers per tree, in the same order as collectedTrees */
+  allMarkers: Marker[][];
+  /** Compact summary written by the planner for session history */
+  summary: string;
   structureCounts: { nodes: number; variables: number; formulas: number; workflows: number; dataSources: number };
   needsClarification: { question: string; options?: string[] } | null;
 }
@@ -58,7 +72,7 @@ export async function runNewAgentDispatch(
   input: NewDispatchInput,
   emit: DispatchEmitter,
 ): Promise<NewDispatchResult> {
-  // Build the ReadContext once — reused by Context Agent and legacy read handlers in route.ts
+  // Build the ReadContext — used by the planner's search/read tools
   const readContext: ReadContext = buildReadContext({
     nodeFlat: input.nodeFlat,
     otherPagesIndex: input.otherPagesIndex,
@@ -73,16 +87,7 @@ export async function runNewAgentDispatch(
     currentPageRoute: input.currentPageRoute ?? '/',
   });
 
-  // 1) Context Agent — resolves which existing nodes/variables/datasources the user means.
-  //    Phase 1 bypasses instantly for BUILD requests or when nodes are pre-selected.
-  //    Phase 2 runs an agentic Haiku mini-loop (search + read + semantic_search tools, max 8 rounds).
-  const contextStartedAt = Date.now();
-  emit({ type: 'context_started', startedAt: contextStartedAt });
-
-  // Start embedding nodes in parallel — does NOT block.
-  // Embeds ALL pages (current + other) so semantic search works across the whole project.
-  // Cleanup is based on the combined live-ID set, so truly deleted nodes are removed.
-  // Autosave also warms the cache via /api/ai/retrieval/ensure-index (fire-and-forget, all pages).
+  // Start embedding nodes in parallel — awaited lazily inside semantic_search handler
   const nodeEmbeddingsPromise: Promise<Map<string, number[]>> =
     process.env.OPENAI_API_KEY && input.nodeFlat.length > 0
       ? (() => {
@@ -93,14 +98,12 @@ export async function runNewAgentDispatch(
               return hex ? `${match} /* ${key} ${hex} */` : match;
             });
 
-          // Current page nodes (full NodeFlat data + theme expansion)
           const currentPageNodes = input.nodeFlat.map(n => ({
             ...n,
             blob: expandBlob(n.blob),
             pageRoute: input.currentPageRoute ?? '/',
           }));
 
-          // Other pages' nodes (compact index — include only nodes with blob data)
           const otherPagesNodes = input.otherPagesIndex.flatMap(p =>
             p.nodes
               .filter(n => n.blob)
@@ -114,81 +117,82 @@ export async function runNewAgentDispatch(
               }))
           );
 
-          const allPagesNodes = [...currentPageNodes, ...otherPagesNodes];
-          return embedNodes(allPagesNodes).catch(err => {
+          return embedNodes([...currentPageNodes, ...otherPagesNodes]).catch(err => {
             console.warn('[dispatch] embedNodes failed:', err instanceof Error ? err.message : err);
             return new Map<string, number[]>();
           });
         })()
       : Promise.resolve(new Map<string, number[]>());
 
-  const contextAgentInput: ContextAgentInput = {
-    message: input.message,
-    selectedNodeIds: input.selectedNodeIds,
-    readContext,
-    nodeEmbeddingsPromise,
-    signal: input.signal,
-  };
-  const contextResult = await runContextAgent(contextAgentInput);
-
-  const contextDuration = Date.now() - contextStartedAt;
-  emit({
-    type: 'context_complete',
-    duration: contextDuration,
-    skippedSearch: contextResult.skippedSearch,
-    resolvedNodeCount: contextResult.resolvedNodes.length,
-    resolvedVariableCount: contextResult.resolvedVariables.length,
-    toolCalls: contextResult.toolCalls ?? [],
-  });
-
-  // If context agent couldn't determine target, surface clarification early
-  if (contextResult.needsClarification) {
-    // Build a minimal stub manifest so the caller can read needsClarification
-    const stubManifest: ContractManifest = {
-      intent: '',
-      needsClarification: contextResult.needsClarification,
-      operations: [],
-    };
-    return {
-      manifest: stubManifest,
-      structureCounts: { nodes: 0, variables: 0, formulas: 0, workflows: 0, dataSources: 0 },
-      needsClarification: contextResult.needsClarification,
-    };
-  }
-
-  // 2) Planner — single-shot LLM call. Receives the user message + resolved context.
+  // Run the Smart Planner
   const plannerStartedAt = Date.now();
   emit({ type: 'planner_started', startedAt: plannerStartedAt });
 
-  const manifest = await runPlanner({
+  const plannerInput: SmartPlannerInput = {
     message: input.message,
-    selectedNodeIds: input.selectedNodeIds,
-    contextResult,
+    chatHistory: input.chatHistory ?? [],
+    readContext,
+    nodeEmbeddingsPromise,
+    currentPageId: input.pageId,
+    pages: input.pages ?? [],
+    existingVariables: input.variables,
+    emit,
+    allExecutedTools: input.allExecutedTools,
     signal: input.signal,
-  });
+  };
+
+  let plannerResult: SmartPlannerResult;
+  try {
+    plannerResult = await runSmartPlanner(plannerInput);
+  } catch (err) {
+    console.error('[dispatch] runSmartPlanner failed:', err);
+    throw err;
+  }
 
   const plannerDuration = Date.now() - plannerStartedAt;
-  emit({ type: 'planner_complete', manifest, duration: plannerDuration });
+  emit({
+    type: 'planner_complete',
+    manifest: plannerResult.manifest,
+    summary: plannerResult.summary,
+    duration: plannerDuration,
+    collectedTreeCount: plannerResult.collectedTrees.length,
+    varCount: plannerResult.addVarEventsCollected.length,
+  });
 
-  // 3) Clarification early return — if the planner flagged ambiguity, stop here
-  if (manifest.needsClarification) {
+  // Clarification early return
+  if (plannerResult.needsClarification) {
     return {
-      manifest,
+      manifest: plannerResult.manifest,
+      collectedTrees: [],
+      addVarEventsCollected: [],
+      allMarkers: [],
+      summary: '',
       structureCounts: { nodes: 0, variables: 0, formulas: 0, workflows: 0, dataSources: 0 },
-      needsClarification: manifest.needsClarification,
+      needsClarification: plannerResult.needsClarification,
     };
   }
 
-  // 4) Structure step (deterministic — no LLM)
-  const structurePreStartedAt = Date.now();
-  emit({ type: 'structure_started', startedAt: structurePreStartedAt });
-  const struct = runStructureStep(manifest);
-  for (const e of struct.emitted) emit(e as unknown as Record<string, unknown>);
-  emit({ type: 'structure_complete', ...struct.counts, duration: Date.now() - structurePreStartedAt });
+  // Count what was built
+  const nodeCount = plannerResult.collectedTrees.reduce(
+    (sum, ct) => sum + countNodes(ct.tree as Record<string, unknown>),
+    0,
+  );
+  const varCount = plannerResult.addVarEventsCollected.length;
 
   return {
-    manifest,
-    structureCounts: struct.counts,
+    manifest: plannerResult.manifest,
+    collectedTrees: plannerResult.collectedTrees,
+    addVarEventsCollected: plannerResult.addVarEventsCollected,
+    allMarkers: plannerResult.allMarkers,
+    summary: plannerResult.summary,
+    structureCounts: { nodes: nodeCount, variables: varCount, formulas: 0, workflows: 0, dataSources: 0 },
     needsClarification: null,
   };
+}
+
+function countNodes(node: Record<string, unknown>): number {
+  let n = 1;
+  const children = node.children as Record<string, unknown>[] | undefined;
+  if (Array.isArray(children)) for (const c of children) n += countNodes(c);
+  return n;
 }

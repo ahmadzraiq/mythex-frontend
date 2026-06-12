@@ -2385,7 +2385,7 @@ const setStyleTool: BuilderTool[] = [
         // properties as the base call (excluding nodeId and breakpoints itself).
         breakpoints: {
           type: 'object',
-          description: 'Apply responsive overrides for multiple breakpoints in one call. Keys: laptop (≥1024px), tablet (≥768px), mobile (<768px). Base styles (no breakpoint key) apply at desktop — ≥1280px with no upper limit, so they must work at any width. ALWAYS use this instead of making separate set_style calls per breakpoint.',
+          description: 'Apply responsive overrides for multiple breakpoints in one call. Valid keys: laptop, tablet, mobile ONLY — do NOT include a \'desktop\' key (base/desktop styles go directly on the root call parameters). laptop (≥1024px), tablet (≥768px), mobile (<768px). Base styles (no breakpoint key) apply at desktop — ≥1280px with no upper limit, so they must work at any width. ALWAYS use this instead of making separate set_style calls per breakpoint.',
           properties: {
             laptop: { type: 'object', additionalProperties: true, description: 'Styles applied at laptop breakpoint and smaller.' },
             tablet: { type: 'object', additionalProperties: true, description: 'Styles applied at tablet breakpoint and smaller.' },
@@ -2596,6 +2596,29 @@ const backendTools: BuilderTool[] = [
     },
   },
   {
+    name: 'replace_workflow_step',
+    description: TOOL_DESCRIPTIONS['replace_workflow_step'],
+    input_schema: {
+      type: 'object',
+      properties: {
+        workflowId: { type: 'string', description: 'UUID of the server workflow containing the step.' },
+        stepId:     { type: 'string', description: 'ID of the existing step to replace (e.g. "s2"). Must already exist in the graph.' },
+        step: {
+          type: 'object',
+          description: 'Replacement step definition. Must keep the same id as stepId. Config values can be plain scalars or { "formula": "..." } for dynamic expressions. Structural children (trueBranch, falseBranch, tryBody, catchBody, loopBody) go at step TOP LEVEL, not inside config.',
+          properties: {
+            id:     { type: 'string', description: 'Must equal stepId.' },
+            name:   { type: 'string' },
+            type:   { type: 'string', description: 'Step type: tablesInsert, tablesList, tablesGet, tablesUpdate, tablesDelete, hashPassword, verifyPassword, generateToken, verifyToken, sendResponse, throwError, tryCatch, branch, forEach, middlewareNext.' },
+            config: { type: 'object', description: 'Step configuration. Same shape as in add_server_workflow_step.' },
+          },
+          required: ['id', 'type', 'config'],
+        },
+      },
+      required: ['workflowId', 'stepId', 'step'],
+    },
+  },
+  {
     name: 'update_server_workflow',
     description: TOOL_DESCRIPTIONS['update_server_workflow'],
     input_schema: {
@@ -2619,6 +2642,11 @@ const backendTools: BuilderTool[] = [
             },
             required: ['name', 'type'],
           },
+        },
+        middlewareIds: {
+          type: 'array',
+          description: 'IDs of MIDDLEWARE workflows that must run before this endpoint. Set this on every API_ENDPOINT that requires auth or other middleware.',
+          items: { type: 'string' },
         },
       },
       required: ['workflowId'],

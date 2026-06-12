@@ -21,7 +21,7 @@ const ROW_STYLE: React.CSSProperties = {
   gap: 8,
   padding: '4px 0',
   fontSize: 11,
-  color: '#94a3b8',
+  color: 'var(--bld-text-3)',
   fontFamily: 'inherit',
 };
 
@@ -39,7 +39,7 @@ function Row({ tone, label, value }: { tone?: 'ok' | 'warn' | 'err' | 'info'; la
     <div style={ROW_STYLE}>
       <span style={{ ...DOT, background: color }} />
       <span style={{ color, fontWeight: 500 }}>{label}</span>
-      {value && <span style={{ color: '#64748b' }}>· {value}</span>}
+      {value && <span style={{ color: 'var(--bld-text-3)' }}>· {value}</span>}
     </div>
   );
 }
@@ -47,7 +47,7 @@ function Row({ tone, label, value }: { tone?: 'ok' | 'warn' | 'err' | 'info'; la
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 6 }}>
-      <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{title}</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -62,7 +62,8 @@ export const AiActivityFeed = memo(function AiActivityFeed({ msg }: { msg: AiCha
   const [, setTick] = useState(0);
   const anyRunning =
     (debug?.planner?.status === 'running') ||
-    !!(debug?.agents && Object.values(debug.agents).some(a => a.status === 'running'));
+    !!(debug?.agents && Object.values(debug.agents).some(a => a.status === 'running')) ||
+    false;
   useEffect(() => {
     if (!anyRunning) return;
     const id = setInterval(() => setTick(t => t + 1), 1000);
@@ -124,9 +125,19 @@ export const AiActivityFeed = memo(function AiActivityFeed({ msg }: { msg: AiCha
         return (
           <Section title={`Agents${totalRunning > 0 ? ` · ${totalRunning} running` : ''}`}>
             {/* Planner inline row — shown at top of agents section */}
-            {debug.planner?.status === 'running' && (
-              <Row tone="info" label="Planner · thinking…" />
-            )}
+            {debug.planner?.status === 'running' && (() => {
+              const live = debug.planner?.thinkingLive;
+              return (
+                <>
+                  <Row tone="info" label="Planner · thinking…" />
+                  {live && (
+                    <div style={{ paddingLeft: 14, fontSize: 10, color: 'var(--bld-text-3)', opacity: 0.65, maxWidth: 320, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {live}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             {debug.planner?.status === 'done' && (
               <Row tone="ok" label="Planner" value="plan assembled" />
             )}

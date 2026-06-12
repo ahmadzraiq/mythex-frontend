@@ -14,6 +14,7 @@ export const UI_NODE_FIELDS: Record<string, string> = {
   key: 'Key for map items (e.g. "product", "$item").',
   actions: 'Event handlers: click, change, keyDown, valueChange, etc.',
   $slot: 'Layout placeholder: "content".',
+  _group: 'Named section marker (builder-only, ignored by renderer). Value is a display name e.g. "Hero", "Pricing". Makes this node a virtual file at pages/<page>/groups/<name> and a semantic-search chunk.',
 };
 
 /** Recommended key order for predictable AI scanning. */

@@ -8,39 +8,56 @@
     "children": [
       {
         "type": "Box",
-        "props": { "className": "flex flex-col gap-[4px]" },
+        "props": {
+          "className": "flex flex-col gap-[4px]"
+        },
         "children": [
           {
             "type": "Box",
-            "props": { "className": "flex items-center gap-[6px] flex-row" },
+            "props": {
+              "className": "flex items-center gap-[6px] flex-row"
+            },
             "children": [
               {
                 "type": "Text",
-                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
                 "text": "Marketing"
               },
               {
                 "type": "Icon",
-                "props": { "icon": "lucide:chevron-right", "size": 14, "color": "var(--theme-admin-label)" }
+                "props": {
+                  "icon": "lucide:chevron-right",
+                  "size": 14,
+                  "color": "var(--theme-admin-label)"
+                }
               },
               {
                 "type": "Text",
-                "props": { "className": "text-[13px] text-[var(--theme-admin-muted)]" },
+                "props": {
+                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                },
                 "text": "Promotions"
               }
             ]
           },
           {
             "type": "Text",
-            "props": { "className": "text-[24px] font-bold text-[var(--theme-admin-text)]" },
+            "props": {
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+            },
             "text": "Promotions"
           },
           {
             "type": "Text",
-            "props": { "className": "text-[14px] text-[var(--theme-admin-label)]" },
+            "props": {
+              "className": "text-[14px] text-[var(--theme-admin-label)]"
+            },
             "text": "Create discount rules and promotional campaigns."
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -62,22 +79,32 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:percent", "size": 28, "color": "var(--theme-admin-warning)" }
+                    "props": {
+                      "icon": "lucide:percent",
+                      "size": 28,
+                      "color": "var(--theme-admin-warning)"
+                    }
                   }
                 ]
               },
               {
                 "type": "Box",
-                "props": { "className": "flex flex-col items-center gap-[8px] text-center" },
+                "props": {
+                  "className": "flex flex-col items-center gap-[8px] text-center"
+                },
                 "children": [
                   {
                     "type": "Text",
-                    "props": { "className": "text-[18px] font-semibold text-[var(--theme-admin-text)]" },
+                    "props": {
+                      "className": "text-[18px] font-semibold text-[var(--theme-admin-text)]"
+                    },
                     "text": "Promotions"
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[14px] text-[var(--theme-admin-label)] max-w-[420px]" },
+                    "props": {
+                      "className": "text-[14px] text-[var(--theme-admin-label)] max-w-[420px]"
+                    },
                     "text": "Define promotion conditions and actions — for example, offer a 10% discount when the order total exceeds $100. Promotion management is coming soon."
                   }
                 ]
@@ -90,18 +117,24 @@
                 "children": [
                   {
                     "type": "Icon",
-                    "props": { "icon": "lucide:clock", "size": 14 }
+                    "props": {
+                      "icon": "lucide:clock",
+                      "size": 14
+                    }
                   },
                   {
                     "type": "Text",
-                    "props": { "className": "text-[13px] font-medium" },
+                    "props": {
+                      "className": "text-[13px] font-medium"
+                    },
                     "text": "Coming soon"
                   }
                 ]
               }
             ]
           }
-        ]
+        ],
+        "_group": "Promotions List"
       }
     ]
   }

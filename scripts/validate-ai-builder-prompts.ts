@@ -2,7 +2,8 @@ import { strict as assert } from 'node:assert';
 import { TOOL_DESCRIPTIONS } from '../lib/ai/tool-descriptions';
 import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS } from '../lib/ai/builder-tools';
 import { buildStylingAgentPrompt } from '../lib/ai/agents/layout/prompt';
-import { buildStructureAgentPrompt } from '../lib/ai/agents/structure/prompt';
+// Structure agent prompt removed — functionality moved to Smart Planner
+// import { buildStructureAgentPrompt } from '../lib/ai/agents/structure/prompt';
 import { buildWorkflowsAgentPrompt } from '../lib/ai/agents/workflows/prompt';
 import { buildDataAgentPrompt } from '../lib/ai/agents/data/prompt';
 import { buildSharedComponentAgentPrompt } from '../lib/ai/agents/sharedComponents/prompt';
@@ -70,20 +71,9 @@ function main() {
     );
   }
 
-  const structure = buildStructureAgentPrompt();
-  assert.ok(structure.static.length > 0, 'Structure system prompt should not be empty');
-  assert.ok(
-    structure.static.includes('empty Box renders'),
-    'Structure prompt must include completeness principle (empty Box renders as empty rectangle)'
-  );
-  assert.ok(
-    structure.static.includes('`schema`'),
-    'Structure prompt must require schema on add_variable'
-  );
-  assert.ok(
-    structure.static.includes('Element mapping'),
-    'Structure prompt must include HTML-to-tree element mapping'
-  );
+  // Structure agent prompt removed — structure-building moved into the Smart Planner.
+  // Validations against buildStructureAgentPrompt() are no longer applicable.
+  const structure = { static: '' };
 
   const data = buildDataAgentPrompt();
   assert.ok(data.static.length > 0, 'Data agent system prompt should not be empty');

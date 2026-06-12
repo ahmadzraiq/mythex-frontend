@@ -100,7 +100,7 @@ export function CustomColorSlideContent({ initial, onSave, onClose }: CustomColo
           </div>
         )}
         {!nameError && (
-          <div style={{ marginTop: 4, fontSize: 10, color: '#6b7280', lineHeight: 1.4 }}>
+          <div style={{ marginTop: 4, fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.4 }}>
             Used as the CSS variable (<code style={{ color: '#a78bfa' }}>--{name.trim() || 'name'}</code>) and in formulas via <code style={{ color: '#a78bfa' }}>theme.colors[&apos;{name.trim() || 'name'}&apos;]</code>.
           </div>
         )}

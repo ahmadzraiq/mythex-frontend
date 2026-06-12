@@ -94,7 +94,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Hero"
       },
       {
         "type": "Box",
@@ -128,80 +129,94 @@
                     },
                     "children": [
                       {
-                    "type": "Box",
-                    "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.search.items",
-                    "props": {
-                      "className": "snap-start shrink-0 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
-                    },
-                    "children": [
-                      {
                         "type": "Box",
+                        "map": "collections.c3d4e5f6-a7b8-9012-cdef-123456789012.search.items",
                         "props": {
-                          "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--theme-border)]"
+                          "className": "snap-start shrink-0 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                         },
-                        "animation": { "hover": { "duration": 150, "styles": { "boxShadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)" } } },
-                        "actions": [
-                          {
-                            "action": "f6046c33-0164-45b5-86aa-0710fc408247"
-                          }
-                        ],
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
+                              "className": "group w-full text-left bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--theme-border)]"
                             },
+                            "animation": {
+                              "hover": {
+                                "duration": 150,
+                                "styles": {
+                                  "boxShadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+                                }
+                              }
+                            },
+                            "actions": [
+                              {
+                                "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                              }
+                            ],
                             "children": [
                               {
-                                "type": "Image",
+                                "type": "Box",
                                 "props": {
-                                  "src": "{{context.item.data.productAsset.preview}}",
-                                  "alt": "{{context.item.data.productName}}",
-                                  "fill": true,
-                                "className": "w-full h-full object-cover",
-                                "animation": { "hover": { "scale": 1.05, "duration": 300 } }
-                              },
-                              "condition": "context?.item?.data?.productAsset?.preview"
+                                  "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)]"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Image",
+                                    "props": {
+                                      "src": "{{context.item.data.productAsset.preview}}",
+                                      "alt": "{{context.item.data.productName}}",
+                                      "fill": true,
+                                      "className": "w-full h-full object-cover",
+                                      "animation": {
+                                        "hover": {
+                                          "scale": 1.05,
+                                          "duration": 300
+                                        }
+                                      }
+                                    },
+                                    "condition": "context?.item?.data?.productAsset?.preview"
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-full h-full flex items-center justify-center"
+                                    },
+                                    "condition": "!context?.item?.data?.productAsset?.preview",
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[var(--theme-muted-foreground)] text-[14px]"
+                                        },
+                                        "text": "No image"
+                                      }
+                                    ]
+                                  }
+                                ]
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "w-full h-full flex items-center justify-center"
+                                  "className": "p-[16px] space-y-[8px]"
                                 },
-                                "condition": "!context?.item?.data?.productAsset?.preview",
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[var(--theme-muted-foreground)] text-[14px]"
+                                      "className": "text-[24px] font-bold text-foreground font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70"
                                     },
-                                    "text": "No image"
+                                    "text": "{{context.item.data.productName}}"
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[18px] font-bold text-[var(--theme-foreground)]"
+                                    },
+                                    "text": {
+                                      "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                    }
                                   }
                                 ]
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "p-[16px] space-y-[8px]"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[24px] font-bold text-foreground font-medium text-[var(--theme-foreground)] line-clamp-2 hover:opacity-70"
-                                },
-                                "text": "{{context.item.data.productName}}"
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[18px] font-bold text-[var(--theme-foreground)]"
-                                },
-                                "text": {
-                                  "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
-                                }
                               }
                             ]
                           }
@@ -209,13 +224,12 @@
                       }
                     ]
                   }
-                    ]
-                  }
                 ]
               }
             ]
           }
-        ]
+        ],
+        "_group": "Featured Products"
       },
       {
         "type": "Box",
@@ -353,7 +367,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Why Choose Us"
       }
     ]
   }

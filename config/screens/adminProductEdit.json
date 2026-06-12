@@ -116,7 +116,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Page Header"
       },
       {
         "type": "Box",
@@ -321,7 +322,7 @@
                         "props": {
                           "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
                         },
-                        "text": "Price (\u00a2)"
+                        "text": "Price (¢)"
                       },
                       {
                         "type": "Text",
@@ -470,7 +471,8 @@
               }
             ]
           }
-        ]
+        ],
+        "_group": "Product Form"
       }
     ]
   },

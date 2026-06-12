@@ -96,12 +96,15 @@ export interface PhaseODebugEnvelope {
       needsClarification?: { question: string; options?: string[] };
       operations?: Array<{
         id: string;
-        summary: string;
         pageRoute?: string;
         pageName?: string;
-        agents?: Record<string, { briefing?: string }>;
+        agents?: Record<string, Record<string, unknown>>;
       }>;
     };
+    /** Extended-thinking blocks emitted during the planner agentic loop */
+    thinking?: Array<{ round: number; text: string }>;
+    /** Accumulated thinking text currently streaming — cleared when planner status becomes 'done' */
+    thinkingLive?: string;
   };
   structure?: {
     /** 'running' while runStructureStep is executing; 'done' after structure_complete. */
@@ -923,6 +926,11 @@ export interface BuilderStore {
   /** Load Data Sources, Workflows, Variables, Formulas from the app config files via the API.
    *  Only runs if panels are empty (user hasn't manually edited), unless forceReload=true. */
   loadFromConfig: (projectId?: string) => Promise<void>;
+
+  // ── Builder UI Theme ─────────────────────────────────────────────────────────
+  /** Controls the builder chrome color scheme (not the app preview). */
+  builderTheme: 'dark' | 'light';
+  toggleBuilderTheme: () => void;
 
   // ── AI Chat ──────────────────────────────────────────────────────────────────
   aiMode: boolean;

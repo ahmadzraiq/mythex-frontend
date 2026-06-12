@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, type FormEvent, type CSSProperties } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense, type FormEvent, type CSSProperties } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/platform/api-client';
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite') ?? '';
+  const prefillEmail = searchParams.get('email') ?? '';
+
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +27,11 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const result = await auth.register({ name, email, password });
-      router.push(`/workspaces/${result.defaultWorkspaceId}?section=projects`);
+      if (inviteToken) {
+        router.push(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
+      } else {
+        router.push(`/workspaces/${result.defaultWorkspaceId}?section=projects`);
+      }
     } catch (err) {
       setError((err as Error).message ?? 'Registration failed');
     } finally {
@@ -136,7 +144,7 @@ export default function SignupPage() {
               color: '#f8fafc',
             }}
           >
-            Create your <span style={heroGradientText}>account</span>
+            {inviteToken ? <>Accept your <span style={heroGradientText}>invitation</span></> : <>Create your <span style={heroGradientText}>account</span></>}
           </h1>
           <p
             style={{
@@ -147,7 +155,9 @@ export default function SignupPage() {
               maxWidth: 340,
             }}
           >
-            Start building faster—visual screens, workflows, and shared components in one workspace.
+            {inviteToken
+              ? 'Create a free account to join the workspace you were invited to.'
+              : 'Start building faster—visual screens, workflows, and shared components in one workspace.'}
           </p>
         </header>
 
@@ -174,8 +184,9 @@ export default function SignupPage() {
               <input
                 type="email" autoComplete="email" required value={email}
                 onChange={e => setEmail(e.target.value)} placeholder="you@example.com"
-                style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                readOnly={!!prefillEmail}
+                style={{ ...inputStyle, ...(prefillEmail ? { color: '#6b7280', cursor: 'default' } : {}) }}
+                onFocus={e => { if (!prefillEmail) e.currentTarget.style.borderColor = '#3b82f6'; }}
                 onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
               />
             </div>
@@ -209,11 +220,22 @@ export default function SignupPage() {
 
         <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#6b7280' }}>
           Already have an account?{' '}
-          <Link href="/login" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>
+          <Link
+            href={inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : '/login'}
+            style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}
+          >
             Sign in
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupContent />
+    </Suspense>
   );
 }

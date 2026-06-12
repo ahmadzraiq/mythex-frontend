@@ -107,13 +107,13 @@ function IconBtn({ icon, onClick, title, active, danger, activeColor }: {
   icon: React.ReactNode; onClick: (e: React.MouseEvent) => void;
   title?: string; active?: boolean; danger?: boolean; activeColor?: string;
 }) {
-  const color = danger ? '#ef4444' : active ? (activeColor ?? '#3b82f6') : '#9ca3af';
+  const color = danger ? 'var(--bld-error)' : active ? (activeColor ?? 'var(--bld-accent)') : 'var(--bld-text-3)';
   return (
     <button
       onClick={onClick} title={title}
-      style={{ background: active ? `${color}22` : 'none', border: 'none', borderRadius: 4, color, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, padding: 0, flexShrink: 0, transition: 'all 120ms' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = active ? `${color}33` : '#1f2937'; (e.currentTarget as HTMLElement).style.color = danger ? '#f87171' : active ? color : '#e5e7eb'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? `${color}22` : 'none'; (e.currentTarget as HTMLElement).style.color = color; }}
+      style={{ background: active ? 'var(--bld-accent-subtle)' : 'none', border: 'none', borderRadius: 4, color, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, padding: 0, flexShrink: 0, transition: 'all 120ms' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLElement).style.color = danger ? 'var(--bld-error)' : 'var(--bld-text-2)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? 'var(--bld-accent-subtle)' : 'none'; (e.currentTarget as HTMLElement).style.color = color; }}
     >
       {icon}
     </button>
@@ -123,8 +123,8 @@ function IconBtn({ icon, onClick, title, active, danger, activeColor }: {
 // ─── Default Value Input ──────────────────────────────────────────────────────
 
 const INPUT_BASE: React.CSSProperties = {
-  background: '#1f2937', border: '1px solid #374151', borderRadius: 5,
-  color: '#e5e7eb', fontSize: 12, padding: '6px 10px', outline: 'none',
+  background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+  color: 'var(--bld-text-1)', fontSize: 12, padding: '6px 10px', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
 
@@ -134,14 +134,14 @@ function DefaultValueInput({ type, value, onChange }: { type: string; value: unk
   if (type === 'boolean') {
     const on = value === true || value === 'true';
     return (
-      <div style={{ display: 'flex', gap: 3, background: '#111827', borderRadius: 6, padding: 3 }}>
+      <div style={{ display: 'flex', gap: 3, background: 'var(--bld-bg-base)', borderRadius: 6, padding: 3 }}>
         {(['True', 'False'] as const).map(label => {
           const active = label === 'True' ? on : !on;
           return (
             <button key={label} onClick={() => onChange(label === 'True')}
               style={{ flex: 1, fontSize: 11, padding: '5px 0', borderRadius: 4, border: 'none', cursor: 'pointer', transition: 'all 120ms',
-                background: active ? (label === 'True' ? '#064e3b' : '#7f1d1d') : 'transparent',
-                color: active ? (label === 'True' ? '#6ee7b7' : '#fca5a5') : '#6b7280',
+                background: active ? (label === 'True' ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.15)') : 'transparent',
+                color: active ? (label === 'True' ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)',
                 fontWeight: active ? 600 : 400 }}
             >{label}</button>
           );
@@ -205,15 +205,15 @@ function DefaultValueInput({ type, value, onChange }: { type: string; value: unk
 // ─── Type badge ───────────────────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
-  text:    { bg: '#374151', color: '#f9fafb' },
-  number:  { bg: '#1d4ed8', color: '#dbeafe' },
-  boolean: { bg: '#6d28d9', color: '#ede9fe' },
-  color:   { bg: '#b45309', color: '#fef3c7' },
-  any:     { bg: '#065f46', color: '#d1fae5' },
-  size:    { bg: '#0c4a6e', color: '#bae6fd' },
-  select:  { bg: '#3b0764', color: '#e9d5ff' },
-  icon:    { bg: '#292524', color: '#d6d3d1' },
-  list:    { bg: '#14532d', color: '#bbf7d0' },
+  text:    { bg: 'var(--bld-bg-elevated)', color: 'var(--bld-text-2)' },
+  number:  { bg: 'rgba(59,130,246,0.25)', color: 'var(--bld-info)' },
+  boolean: { bg: 'rgba(124,58,237,0.25)', color: '#c084fc' },
+  color:   { bg: 'rgba(245,158,11,0.2)', color: 'var(--bld-warning)' },
+  any:     { bg: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)' },
+  size:    { bg: 'rgba(96,165,250,0.2)', color: 'var(--bld-info)' },
+  select:  { bg: 'rgba(109,40,217,0.2)', color: '#c084fc' },
+  icon:    { bg: 'var(--bld-bg-elevated)', color: 'var(--bld-text-3)' },
+  list:    { bg: 'rgba(34,197,94,0.15)', color: 'var(--bld-success)' },
 };
 
 function TypeBadge({ type }: { type: string }) {
@@ -284,12 +284,12 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #2d3748' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <TypeBadge type={prop.type} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{prop.name || 'Untitled'}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>{prop.name || 'Untitled'}</span>
         </div>
         <button onClick={onClose}
-          style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, padding: 0 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1f2937'; (e.currentTarget as HTMLElement).style.color = '#e5e7eb'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, padding: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
         ><IconClose /></button>
       </div>
 
@@ -297,19 +297,19 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* Name */}
         <div>
-          <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Name</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Name</label>
           <input value={prop.name} onChange={e => onUpdate('name', e.target.value)} placeholder="prop name"
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
-            onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
-          <div style={{ fontSize: 9, color: '#6b7280', marginTop: 4, fontFamily: 'monospace' }}>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 4, fontFamily: 'monospace' }}>
             context.component?.props?.[&apos;{prop.name || '…'}&apos;]
           </div>
         </div>
         {/* Type */}
         <div>
-          <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Type</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Type</label>
           <select
             value={prop.type}
             onChange={e => {
@@ -335,7 +335,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
         {/* Select options editor */}
         {prop.type === 'select' && (
           <div>
-            <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Options</label>
+            <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Options</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {(prop.options ?? []).map((opt, i) => (
                 <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -361,13 +361,13 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
                   />
                   <button
                     onClick={() => onUpdate('options', (prop.options ?? []).filter((_, j) => j !== i))}
-                    style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
                   >×</button>
                 </div>
               ))}
               <button
                 onClick={() => onUpdate('options', [...(prop.options ?? []), { label: '', value: '' }])}
-                style={{ fontSize: 10, color: '#60a5fa', background: 'none', border: '1px dashed #374151', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
+                style={{ fontSize: 10, color: 'var(--bld-info)', background: 'none', border: '1px dashed #374151', borderRadius: 4, padding: '3px 0', cursor: 'pointer', marginTop: 2 }}
               >+ Add option</button>
             </div>
           </div>
@@ -375,7 +375,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
 
         {/* Default value — color gets controlled picker to suppress outside-click */}
         <div>
-          <label style={{ fontSize: 10, color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Default value</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Default value</label>
           {prop.type === 'color' ? (
             <FigmaColorPicker
               value={s || '#000000'}
@@ -403,8 +403,8 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
 
 // ─── Context menu ─────────────────────────────────────────────────────────────
 
-function ContextMenu({ pos, expanded, onRename, onToggleProps, onDelete, onClose }:
-  { pos: { x: number; y: number }; expanded: boolean; onRename: () => void; onToggleProps: () => void; onDelete: () => void; onClose: () => void }
+function ContextMenu({ pos, expanded, onRename, onToggleProps, onDelete, onClose, onEdit, onPreview }:
+  { pos: { x: number; y: number }; expanded: boolean; onRename: () => void; onToggleProps: () => void; onDelete: () => void; onClose: () => void; onEdit?: () => void; onPreview?: () => void }
 ) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -415,18 +415,20 @@ function ContextMenu({ pos, expanded, onRename, onToggleProps, onDelete, onClose
 
   const item = (label: string, action: () => void, red?: boolean): React.ReactNode => (
     <button key={label}
-      style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: red ? '#f87171' : '#d1d5db', fontSize: 12, padding: '6px 14px', cursor: 'pointer' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1f2937'; (e.currentTarget as HTMLElement).style.color = red ? '#fca5a5' : '#f3f4f6'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = red ? '#f87171' : '#d1d5db'; }}
+      style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: red ? 'var(--bld-error)' : 'var(--bld-text-2)', fontSize: 12, padding: '6px 14px', cursor: 'pointer' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; (e.currentTarget as HTMLElement).style.color = red ? 'var(--bld-error)' : 'var(--bld-text-1)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ''; (e.currentTarget as HTMLElement).style.color = red ? 'var(--bld-error)' : 'var(--bld-text-2)'; }}
       onClick={() => { action(); onClose(); }}
     >{label}</button>
   );
 
   return (
-    <div ref={ref} style={{ position: 'fixed', top: pos.y, left: pos.x, background: '#1e2533', border: '1px solid #374151', borderRadius: 8, zIndex: 99999, minWidth: 160, padding: '4px 0', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+    <div ref={ref} style={{ position: 'fixed', top: pos.y, left: pos.x, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8, zIndex: 99999, minWidth: 168, padding: '4px 0', boxShadow: 'var(--bld-shadow-lg)' }} onClick={e => e.stopPropagation()}>
+      {onEdit && item('Edit in canvas', onEdit)}
+      {onPreview && item('Place on page', onPreview)}
       {item('Rename', onRename)}
-      {item(expanded ? 'Hide properties' : 'Edit properties', onToggleProps)}
-      <div style={{ margin: '3px 0', borderTop: '1px solid #374151' }} />
+      {item(expanded ? 'Hide properties' : 'Properties', onToggleProps)}
+      <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
       {item('Delete', onDelete, true)}
     </div>
   );
@@ -443,26 +445,26 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (m: SharedComponentMod
     onCreated(createSharedComponent({ id: `sc-${crypto.randomUUID()}`, name: t, properties: [], content }));
   };
   return (
-    <div style={{ padding: '12px', borderBottom: '1px solid #374151', background: '#111827' }}>
-      <div style={{ fontSize: 10, color: '#9ca3af', marginBottom: 6, fontWeight: 500 }}>Component name</div>
+    <div style={{ padding: '12px', borderBottom: '1px solid #374151', background: 'var(--bld-bg-panel)' }}>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-3)', marginBottom: 6, fontWeight: 500 }}>Component name</div>
       <input autoFocus data-testid="sc-name-input" value={name}
         onChange={e => setName(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') create(); if (e.key === 'Escape') onCancel(); }}
         placeholder="e.g. Modal, Card, Drawer…"
-        style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 5, color: '#f3f4f6', fontSize: 12, padding: '6px 10px', outline: 'none', boxSizing: 'border-box', marginBottom: 8 }}
-        onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-        onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+        style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: 'var(--bld-text-1)', fontSize: 12, padding: '6px 10px', outline: 'none', boxSizing: 'border-box', marginBottom: 8 }}
+        onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
+        onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
       />
       <div style={{ display: 'flex', gap: 6 }}>
         <button data-testid="sc-create-submit" onClick={create}
-          style={{ flex: 1, background: '#2563eb', border: 'none', borderRadius: 5, color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: '6px 0' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#3b82f6'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#2563eb'}
+          style={{ flex: 1, background: 'var(--bld-accent)', border: 'none', borderRadius: 5, color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: '6px 0' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bld-accent-hover)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--bld-accent)'}
         >Create</button>
         <button onClick={onCancel}
-          style={{ flex: 1, background: 'none', border: '1px solid #374151', borderRadius: 5, color: '#9ca3af', cursor: 'pointer', fontSize: 11, padding: '6px 0' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6b7280'; (e.currentTarget as HTMLElement).style.color = '#e5e7eb'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#374151'; (e.currentTarget as HTMLElement).style.color = '#9ca3af'; }}
+          style={{ flex: 1, background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: '6px 0' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-text-3)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
         >Cancel</button>
       </div>
     </div>
@@ -477,169 +479,123 @@ interface ModelRowProps {
   onEdit: (m: SharedComponentModel) => void; onPreview: (m: SharedComponentModel) => void;
 }
 
-function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, onPreview }: ModelRowProps) {
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [renaming, setRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(model.name);
-  const [expanded, setExpanded] = useState(false);
+// ─── Properties floating panel ────────────────────────────────────────────────
+
+function PropertiesPanel({ model, onUpdate, onClose }: {
+  model: SharedComponentModel;
+  onUpdate: (m: SharedComponentModel) => void;
+  onClose: () => void;
+}) {
+  const LEFT_PANEL_WIDTH = 240;
   const [editingPropId, setEditingPropId] = useState<string | null>(null);
   const [editingPropAnchorY, setEditingPropAnchorY] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
 
-  const handleRename = () => {
-    const t = renameValue.trim();
-    if (t && t !== model.name) { const u = { ...model, name: t }; onUpdate(u); updateSCData(u); }
-    setRenaming(false);
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener('mousedown', h, true);
+    return () => window.removeEventListener('mousedown', h, true);
+  }, [onClose]);
+
+  const addProp = (e: React.MouseEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const p: SharedComponentProperty = {
+      id: `prop-${crypto.randomUUID()}`,
+      name: `prop${model.properties.length + 1}`,
+      type: 'text',
+      defaultValue: '',
+    };
+    const u = { ...model, properties: [...model.properties, p] };
+    onUpdate(u); updateSCData(u);
+    setEditingPropId(p.id);
+    setEditingPropAnchorY(r.top);
   };
 
-  const handleDragStart = useCallback((e: React.DragEvent) => {
-    // Ensure the model content has _sharedKey stamped (self-heal for legacy).
-    const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
-    stampSharedKeys(modelContent);
-    // Keep _sharedKey on the instance so it can be walked in parallel with the model.
-    const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
-    cloned._shared = { id: model.id, name: model.name };
-    cloned._overrides = [];
-    const data = JSON.stringify(cloned);
-    e.dataTransfer.setData('text/primitive-node', data);
-    e.dataTransfer.effectAllowed = 'copy';
-    (window as unknown as Record<string, unknown>).__primitiveDrag = data;
-  }, [model]);
-
-  const openMenu = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenuPos({ x: r.left - 158, y: r.bottom + 4 });
+  const deleteProp = (propId: string) => {
+    useBuilderStore.getState()._pushHistory();
+    const u = { ...model, properties: model.properties.filter(p => p.id !== propId) };
+    onUpdate(u); updateSCData(u);
+    if (editingPropId === propId) setEditingPropId(null);
   };
 
   return (
-    <>
-      <div
-        draggable onDragStart={handleDragStart}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '7px 8px 7px 10px',
-          borderBottom: '1px solid #1f2937',
-          borderLeft: isEditing ? '2px solid #3b82f6' : '2px solid transparent',
-          background: isEditing ? '#111827' : 'transparent',
-          cursor: 'grab',
-        }}
-        onMouseEnter={e => { if (!isEditing) (e.currentTarget as HTMLElement).style.background = '#111827'; }}
-        onMouseLeave={e => { if (!isEditing) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-      >
-        {/* Drag grip */}
-        <span style={{ color: '#6b7280', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'grab' }}>
-          <IconGrip />
-        </span>
-
-        {/* Name */}
-        {renaming ? (
-          <input autoFocus value={renameValue}
-            onChange={e => setRenameValue(e.target.value)}
-            onBlur={handleRename}
-            onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setRenaming(false); setRenameValue(model.name); } }}
-            onClick={e => e.stopPropagation()}
-            style={{ flex: 1, minWidth: 0, background: '#1f2937', border: '1px solid #3b82f6', borderRadius: 4, color: '#f3f4f6', fontSize: 12, padding: '2px 6px', outline: 'none' }}
-          />
-        ) : (
-          <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 500, color: isEditing ? '#93c5fd' : '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {model.name}
-          </span>
-        )}
-
-        {/* Action icons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-          <IconBtn
-            icon={isPreviewing ? <IconEyeOff /> : <IconEye />}
-            onClick={e => { e.stopPropagation(); onPreview(model); }}
-            title={isPreviewing ? 'Remove from page' : 'Place on page'}
-            active={isPreviewing}
-            activeColor="#10b981"
-          />
-          <IconBtn
-            icon={isEditing ? <IconClose /> : <IconEdit />}
-            onClick={e => { e.stopPropagation(); onEdit(model); }}
-            title={isEditing ? 'Close editor' : 'Edit in canvas'}
-            active={isEditing}
-            activeColor="#3b82f6"
-          />
-          <IconBtn
-            icon={<IconDots />}
-            onClick={openMenu}
-            title="More options"
-          />
-          {/* Chevron — expands property list */}
-            <button
-            onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
-            title={expanded ? 'Hide properties' : 'Show properties'}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, padding: 0, color: expanded ? '#60a5fa' : '#6b7280', position: 'relative' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1f2937'; (e.currentTarget as HTMLElement).style.color = '#d1d5db'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = expanded ? '#60a5fa' : '#6b7280'; }}
-          >
-            <IconChevron open={expanded} />
-            {model.properties.length > 0 && (
-              <span style={{ position: 'absolute', top: 1, right: 1, width: 5, height: 5, borderRadius: '50%', background: '#3b82f6' }} />
-            )}
-          </button>
+    <div
+      ref={ref}
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: 'fixed',
+        left: LEFT_PANEL_WIDTH + 8,
+        top: 80,
+        zIndex: 99999,
+        width: 260,
+        background: 'var(--bld-bg-elevated)',
+        border: '1px solid var(--bld-border)',
+        borderRadius: 10,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        maxHeight: 'calc(100vh - 100px)',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 9px', borderBottom: '1px solid var(--bld-border)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--bld-accent)', flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>{model.name}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>· Properties</span>
         </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 4, padding: 0, flexShrink: 0 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-input)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+        ><IconClose /></button>
       </div>
 
-      {/* Expanded property list */}
-      {expanded && (
-        <div style={{ background: '#0f1624', borderBottom: '1px solid #1f2937' }}>
-          {model.properties.length === 0 && (
-            <div style={{ padding: '8px 14px 8px 32px', fontSize: 10, color: '#6b7280', fontStyle: 'italic' }}>No properties yet.</div>
-          )}
-          {model.properties.map(prop => (
-            <div key={prop.id}
-              style={{
-                display: 'flex', alignItems: 'center',
-                background: editingPropId === prop.id ? '#1f2937' : 'none',
-                borderBottom: '1px solid #1a2030',
-              }}
-              onMouseEnter={e => { if (editingPropId !== prop.id) (e.currentTarget as HTMLElement).style.background = '#111827'; }}
-              onMouseLeave={e => { if (editingPropId !== prop.id) (e.currentTarget as HTMLElement).style.background = 'none'; }}
-            >
-              {/* Clickable area opens popup */}
-            <button
-                onClick={e => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setEditingPropId(prop.id); setEditingPropAnchorY(r.top); }}
-                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px 5px 28px', background: 'none', border: 'none', cursor: 'pointer', minWidth: 0 }}
-              >
-                <span style={{ flex: 1, fontSize: 11, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>{prop.name}</span>
-                <TypeBadge type={prop.type} />
-                </button>
-              {/* Delete button inline */}
-                <button
-                onClick={e => {
-                  e.stopPropagation();
-                  useBuilderStore.getState()._pushHistory();
-                  const u = { ...model, properties: model.properties.filter(p => p.id !== prop.id) };
-                  onUpdate(u); updateSCData(u);
-                  if (editingPropId === prop.id) setEditingPropId(null);
-                }}
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: '0 10px', height: '100%', minHeight: 28, flexShrink: 0, fontSize: 12, display: 'flex', alignItems: 'center' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6b7280'; }}
-                title="Delete property"
-              >✕</button>
-            </div>
-          ))}
-          {/* Add property row */}
-                <button
-            onClick={e => {
-              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              const p: SharedComponentProperty = { id: `prop-${crypto.randomUUID()}`, name: `prop${model.properties.length + 1}`, type: 'text', defaultValue: '' };
-              const u = { ...model, properties: [...model.properties, p] }; onUpdate(u); updateSCData(u);
-              setEditingPropId(p.id);
-              setEditingPropAnchorY(r.top);
-            }}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, width: '100%', padding: '6px 12px 6px 28px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 11, fontWeight: 500 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#60a5fa'; (e.currentTarget as HTMLElement).style.background = '#111827'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+      {/* Property list */}
+      <div style={{ overflowY: 'auto', flex: 1 }}>
+        {model.properties.length === 0 && (
+          <div style={{ padding: '16px 12px', fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>
+            No properties yet.<br />Add one below.
+          </div>
+        )}
+        {model.properties.map(prop => (
+          <div
+            key={prop.id}
+            style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--bld-border-subtle)', background: editingPropId === prop.id ? 'var(--bld-bg-input)' : 'none' }}
+            onMouseEnter={e => { if (editingPropId !== prop.id) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
+            onMouseLeave={e => { if (editingPropId !== prop.id) (e.currentTarget as HTMLElement).style.background = 'none'; }}
           >
-            <IconPlus /> <span>Add property</span>
-                </button>
-              </div>
-            )}
+            <button
+              onClick={e => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setEditingPropId(prop.id); setEditingPropAnchorY(r.top); }}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px 6px 12px', background: 'none', border: 'none', cursor: 'pointer', minWidth: 0 }}
+            >
+              <span style={{ flex: 1, fontSize: 11, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>{prop.name}</span>
+              <TypeBadge type={prop.type} />
+            </button>
+            <button
+              onClick={() => deleteProp(prop.id)}
+              title="Delete property"
+              style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: '0 10px', height: 32, flexShrink: 0, fontSize: 12, display: 'flex', alignItems: 'center' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >✕</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add property */}
+      <button
+        onClick={addProp}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 12px', background: 'none', border: 'none', borderTop: '1px solid var(--bld-border-subtle)', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 11, fontWeight: 500, flexShrink: 0 }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; (e.currentTarget as HTMLElement).style.background = 'none'; }}
+      >
+        <IconPlus /> <span>Add property</span>
+      </button>
 
       {/* Property edit popup */}
       {editingPropId && (() => {
@@ -658,13 +614,135 @@ function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, 
           />
         );
       })()}
+    </div>
+  );
+}
+
+// ─── Model Card ────────────────────────────────────────────────────────────────
+
+function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, onPreview }: ModelRowProps) {
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(model.name);
+  const [showProps, setShowProps] = useState(false);
+  const [cardHovered, setCardHovered] = useState(false);
+
+  const handleRename = () => {
+    const t = renameValue.trim();
+    if (t && t !== model.name) { const u = { ...model, name: t }; onUpdate(u); updateSCData(u); }
+    setRenaming(false);
+  };
+
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    const modelContent = JSON.parse(JSON.stringify(model.content)) as Record<string, unknown>;
+    stampSharedKeys(modelContent);
+    const cloned = cloneWithFreshIdsKeepSharedKey(modelContent);
+    cloned._shared = { id: model.id, name: model.name };
+    cloned._overrides = [];
+    const data = JSON.stringify(cloned);
+    e.dataTransfer.setData('text/primitive-node', data);
+    e.dataTransfer.effectAllowed = 'copy';
+    (window as unknown as Record<string, unknown>).__primitiveDrag = data;
+  }, [model]);
+
+  const openMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuPos({ x: Math.max(8, r.left - 168), y: r.bottom + 4 });
+  };
+
+  // Deterministic color from component name
+  const thumbColor = (() => {
+    const palette = ['var(--bld-accent)', '#8b5cf6', '#ec4899', 'var(--bld-success)', '#f59e0b', 'var(--bld-error)', '#06b6d4', '#6366f1'];
+    let h = 0;
+    for (let i = 0; i < model.name.length; i++) h = (h * 31 + model.name.charCodeAt(i)) & 0xffff;
+    return palette[h % palette.length];
+  })();
+
+  return (
+    <>
+      <div
+        draggable onDragStart={handleDragStart}
+        onMouseEnter={() => setCardHovered(true)}
+        onMouseLeave={() => setCardHovered(false)}
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 5,
+          padding: '10px 4px 8px',
+          cursor: 'grab',
+          borderRadius: 'var(--bld-r-md)',
+          border: `1px solid ${isEditing ? 'var(--bld-accent)' : cardHovered ? 'var(--bld-accent)' : 'var(--bld-border)'}`,
+          background: isEditing ? 'var(--bld-bg-active)' : cardHovered ? 'var(--bld-bg-hover)' : 'transparent',
+          userSelect: 'none',
+          transition: 'border-color 0.12s, background 0.12s',
+          minHeight: 64,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Thumbnail */}
+        <div style={{
+          width: 28, height: 28, borderRadius: 6,
+          background: `${thumbColor}20`,
+          border: `1px solid ${thumbColor}50`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 700, color: thumbColor, flexShrink: 0,
+        }}>
+          {model.name.slice(0, 1).toUpperCase()}
+        </div>
+
+        {/* Name / rename input */}
+        {renaming ? (
+          <input autoFocus value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onBlur={handleRename}
+            onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setRenaming(false); setRenameValue(model.name); } }}
+            onClick={e => e.stopPropagation()}
+            style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-accent)', borderRadius: 3, color: 'var(--bld-text-1)', fontSize: 9, padding: '2px 4px', outline: 'none', textAlign: 'center', boxSizing: 'border-box' }}
+          />
+        ) : (
+          <span style={{ fontSize: 9, fontWeight: 500, color: isEditing ? 'var(--bld-accent)' : 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center', display: 'block' }}>
+            {model.name}
+          </span>
+        )}
+
+        {/* Hover ⋮ button */}
+        {cardHovered && !renaming && (
+          <div style={{ position: 'absolute', top: 3, right: 3 }}>
+            <button
+              onClick={openMenu}
+              title="Options"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 3, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', color: 'var(--bld-text-3)', cursor: 'pointer', padding: 0 }}
+            >
+              <IconDots />
+            </button>
+          </div>
+        )}
+
+        {/* State indicator dots */}
+        {isEditing && <div style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: 'var(--bld-accent)' }} />}
+        {isPreviewing && <div style={{ position: 'absolute', bottom: 4, left: isEditing ? 'calc(50% + 7px)' : '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: 'var(--bld-success)' }} />}
+      </div>
+
+      {/* Properties floating panel */}
+      {showProps && (
+        <PropertiesPanel
+          model={model}
+          onUpdate={m => onUpdate(m)}
+          onClose={() => setShowProps(false)}
+        />
+      )}
 
       {/* Context menu */}
       {menuPos && (
         <ContextMenu
-          pos={menuPos} expanded={expanded}
+          pos={menuPos} expanded={showProps}
+          onEdit={() => onEdit(model)}
+          onPreview={() => onPreview(model)}
           onRename={() => { setRenaming(true); }}
-          onToggleProps={() => setExpanded(v => !v)}
+          onToggleProps={() => { setShowProps(v => !v); }}
           onDelete={() => onDelete(model.id)}
           onClose={() => setMenuPos(null)}
         />
@@ -675,7 +753,7 @@ function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, 
 
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 
-export function SharedComponentsTab() {
+export function SharedComponentsTab({ onImport }: { onImport?: () => void } = {}) {
   const [models, setModels] = useState<SharedComponentModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -754,19 +832,38 @@ export function SharedComponentsTab() {
     enterSharedComponentEdit(em.id, em.content as unknown as SDUINode, em as unknown as Record<string, unknown>);
   }, [editingSharedComponentIds, exitSharedComponentEdit, enterSharedComponentEdit]);
 
-  if (loading) return <div style={{ fontSize: 11, color: '#6b7280', padding: 12 }}>Loading…</div>;
+  if (loading) return <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', padding: 12 }}>Loading…</div>;
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 10px 10px 12px', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Shared</span>
-        <button data-testid="sc-new-btn" onClick={() => setShowCreate(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, background: showCreate ? '#1e3a8a' : '#2563eb', border: 'none', borderRadius: 5, color: '#fff', cursor: 'pointer', fontSize: 10, fontWeight: 600, padding: '4px 10px' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#3b82f6'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = showCreate ? '#1e3a8a' : '#2563eb'}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px 6px 10px', borderTop: '1px solid var(--bld-border)', borderBottom: '1px solid var(--bld-border)', gap: 4 }}>
+        <span style={{ flex: 1, fontSize: 9, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Shared</span>
+        {/* Browse template library */}
+        {onImport && (
+          <button
+            onClick={onImport}
+            title="Browse template library"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-text-3)', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+          >
+            {/* Stacked-layers / template library icon */}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </button>
+        )}
+        {/* New shared component */}
+        <button
+          data-testid="sc-new-btn"
+          onClick={() => setShowCreate(v => !v)}
+          title="New shared component"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, background: showCreate ? 'var(--bld-accent)' : 'none', border: `1px solid ${showCreate ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`, borderRadius: 6, color: showCreate ? '#fff' : 'var(--bld-text-3)', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+          onMouseEnter={e => { if (!showCreate) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-accent)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; } }}
+          onMouseLeave={e => { if (!showCreate) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; } }}
         >
-          <IconPlus /> New
+          <IconPlus />
         </button>
       </div>
 
@@ -775,18 +872,18 @@ export function SharedComponentsTab() {
 
       {/* Empty state */}
       {models.length === 0 && !showCreate && (
-        <div style={{ padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <div style={{ padding: '24px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
             <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
           </svg>
-          <div style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>No shared components</div>
-          <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.6, maxWidth: 180 }}>Create one, or select a node on the canvas and toggle &quot;Make Shared&quot; in the right panel.</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>No shared components</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', lineHeight: 1.6, maxWidth: 180 }}>Create one, or select a node on the canvas and toggle &quot;Make Shared&quot; in the right panel.</div>
         </div>
       )}
 
       {/* List */}
-      <div data-testid="sc-models-list" style={{ flex: 1 }}>
+      <div data-testid="sc-models-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, padding: '4px 8px 8px' }}>
         {models.map(model => (
           <ModelRow
             key={model.id} model={model}

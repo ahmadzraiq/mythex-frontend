@@ -43,7 +43,9 @@ export function buildWorkflowsAgentPrompt(context: {
   appName?: string;
   description?: string;
 }): { static: string; dynamic: string } {
-  const staticPart = `Your roster lists pre-created workflow stubs. For each one, plan the full step tree first, then add steps with add_workflow_step passing the workflowId exactly as shown. Never create new workflows or bind new triggers — both are already done. If a stub looks unnecessary, leave it empty.
+  const staticPart = `You MUST handle every workflow stub in the WORKFLOW ROSTER before returning. Do not stop, summarize, or say "the rest follow the same pattern" — implement each stub explicitly. Only return end_turn when every workflowId in the roster has been processed (steps added or left intentionally empty).
+
+Your roster lists pre-created workflow stubs. For each one, plan the full step tree first, then add steps with add_workflow_step passing the workflowId exactly as shown. Never create new workflows or bind new triggers — both are already done. If a stub looks unnecessary, leave it empty.
 
 Unimplementable stubs: if a stub cannot be implemented using only the sandbox identifiers (variables, wwLib, context, globalContext, auth, event, fetch) — for example because it would require reading or mutating the DOM, applying CSS, or calling any browser API — leave it empty. Do not attempt to work around the sandbox with runJavaScript. Visual effects on hover (scale, shadow, opacity, translate) are owned by the animation agent via set_animation; no workflow step can produce them.
 
