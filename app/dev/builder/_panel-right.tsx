@@ -50,15 +50,15 @@ import { json as cmJson } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import {
-  PANEL_STYLE, SECTION_STYLE, LABEL_STYLE,
-  SectionHeader, NumberInput, SelectInput, ColorInput, ToggleBtn, MiniPreview,
-  SliderField, ChangedFieldContext, ChangedLabel, ResponsiveDot,
+  PANEL_STYLE, SECTION_STYLE, LABEL_STYLE, ROW_STYLE, SectionDivider,
+  SectionHeader, NumberInput, NumberInputWithUnit, SelectInput, ColorInput, ToggleBtn, MiniPreview,
+  SliderField, ChangedFieldContext, ChangedLabel, ResponsiveDot, SearchInput,
 } from './_panel-primitives';
 import { SettingsTab, AlignDistributePanel } from './_panel-right-settings';
 import { PreviewDataEditor, ElementWorkflowsTab } from './_panel-right-workflows';
 import { PageTriggersInRightPanel } from './_panel-right-page-triggers';
 import { AnimationInDesign } from './_animation-panel';
-import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput } from './_spatial-controls';
+import { SpacingDiagram, CornerRadiusDiagram, InsetDiagram, PanelInput, LinkSidesButton } from './_spatial-controls';
 import { useBuilderStore, findParentNode } from './_store';
 import { useShallow } from 'zustand/react/shallow';
 import type { BuilderStore } from './_store-types';
@@ -110,7 +110,6 @@ import {
   buildAlignCells,
   getAlignCellIndex,
   pxToTw,
-  extractColors,
   parseRoundedNamedTokenPx,
 } from './_tw-utils';
 
@@ -355,7 +354,7 @@ const PROP_DEFAULTS: Record<string, string> = {
   borderTopWidth: '', borderRightWidth: '', borderBottomWidth: '', borderLeftWidth: '',
   borderTopColor: '', borderRightColor: '', borderBottomColor: '', borderLeftColor: '',
   translateX: '', translateY: '', transform: '',
-  lineHeight: '', letterSpacing: '',
+  lineHeight: '',
   boxShadow: '', filterBlur: '',
   gridAutoFlow: '',
 };
@@ -406,7 +405,6 @@ const TW_PROP_PREFIXES: Record<string, string> = {
   display:                '',
   fontSize:               'text-',
   lineHeight:             'leading-',
-  letterSpacing:          'tracking-',
   translateX:             '',
   translateY:             '',
   transform:              '',
@@ -504,7 +502,7 @@ function InlineChangedLabel({ text, changed, onReset, style: extraStyle }: {
             background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
             padding: '5px 9px', whiteSpace: 'nowrap',
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            textTransform: 'none', letterSpacing: 'normal',
+            textTransform: 'none',
             fontWeight: 'normal', fontFamily: 'system-ui, sans-serif',
           }}
         >
@@ -929,7 +927,7 @@ function FillBackgroundSection({ nodeId, node, store, commitHistory, computedBgC
           {isGradientFormula ? (
             <button data-testid="edit-gradient-formula-btn"
               onClick={() => { closeAllEditors(); setGradientEditorOpen(true); }}
-              style={{ width: '100%', padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+              style={{ width: '100%', padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
               ƒ Edit formula
             </button>
           ) : (
@@ -1350,7 +1348,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
 
   const BTN_REMOVE = { fontSize: 9, color: 'var(--bld-error)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
   const BTN_ADD    = { fontSize: 9, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' } as const;
-  const SUB_HEADER = { fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.06em', flex: 1 };
+  const SUB_HEADER = { fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'none' as const, flex: 1 };
 
   return (
     <div style={SECTION_STYLE}>
@@ -1392,7 +1390,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
         {/* Formula bound — show edit button */}
         {isShadowFormula && (
           <button data-testid="edit-formula-btn" onClick={() => { closeAllEditors(); setShadowEditorOpen(true); }}
-            style={{ width: '100%', padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
+            style={{ width: '100%', padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}>
             ƒ Edit formula
           </button>
         )}
@@ -1457,7 +1455,7 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
       </div>
 
       {/* ── Element Blur ── */}
-      <div style={{ marginTop: 10, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
+      <div style={{ marginTop: 10, borderTop: 'none', paddingTop: 10 }}>
         <FieldWithBinding
           label="filterBlur"
           displayLabel="Element blur"
@@ -1488,7 +1486,23 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
 
 // ─── Design Tab ───────────────────────────────────────────────────────────────
 
-export function DesignTab({ node }: { node: SDUINode }) {
+export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { node: SDUINode; searchQuery?: string; hideBehavior?: boolean }) {
+  // Normalize search query for section filtering
+  const sq = searchQuery.toLowerCase().trim();
+  // Returns a style object: hides the section when search is active and it doesn't match
+  const sectionVisible = (title: string, keywords: string[] = []): React.CSSProperties => {
+    if (!sq) return {};
+    const all = [title.toLowerCase(), ...keywords.map(k => k.toLowerCase())];
+    const matches = all.some(k => k.includes(sq));
+    return matches ? {} : { display: 'none' };
+  };
+  // Returns true if this section's title matches the search query (or no search)
+  const showSection = (title: string, keywords: string[] = []) => {
+    if (!sq) return true;
+    const all = [title.toLowerCase(), ...keywords.map(k => k.toLowerCase())];
+    return all.some(k => k.includes(sq));
+  };
+
   const { zoom, pageNodes, activeBreakpoint, editingSharedComponentIds } = useBuilderStore(useShallow(s => ({
     zoom: s.zoom, pageNodes: s.pageNodes, activeBreakpoint: s.activeBreakpoint,
     editingSharedComponentIds: s.editingSharedComponentIds,
@@ -1612,6 +1626,34 @@ export function DesignTab({ node }: { node: SDUINode }) {
     if (cu?.unit === 'vh') return 'vh';
     if (cu?.unit === 'vw') return 'vw';
     return 'px';
+  })();
+
+  // Min / Max size modes — detected from keyword CSS values
+  const minWMode: 'fixed' | 'fill' | 'screen' = (() => {
+    const s = String(nodeStyle.minWidth ?? '');
+    if (s === '100%') return 'fill';
+    if (s === '100vw') return 'screen';
+    return 'fixed';
+  })();
+  const maxWMode: 'fixed' | 'hug' | 'fill' | 'screen' = (() => {
+    const s = String(nodeStyle.maxWidth ?? '');
+    if (s === 'none') return 'hug';
+    if (s === '100%') return 'fill';
+    if (s === '100vw') return 'screen';
+    return 'fixed';
+  })();
+  const minHMode: 'fixed' | 'fill' | 'screen' = (() => {
+    const s = String(nodeStyle.minHeight ?? '');
+    if (s === '100%') return 'fill';
+    if (s === '100vh') return 'screen';
+    return 'fixed';
+  })();
+  const maxHMode: 'fixed' | 'hug' | 'fill' | 'screen' = (() => {
+    const s = String(nodeStyle.maxHeight ?? '');
+    if (s === 'none') return 'hug';
+    if (s === '100%') return 'fill';
+    if (s === '100vh') return 'screen';
+    return 'fixed';
   })();
 
   // Remove height-mode tokens (h-fit, h-screen, any h-* class) AND flex-1 from a className.
@@ -2604,6 +2646,14 @@ export function DesignTab({ node }: { node: SDUINode }) {
     left:   rOvr('marginLeft')   ? parseFloat(rOvr('marginLeft')!)   : baseMargin.left,
   };
 
+  // Link-all state for Padding / Margin compact diagrams
+  const [paddingLinked, setPaddingLinked] = useState(
+    () => padding.top === padding.right && padding.right === padding.bottom && padding.bottom === padding.left
+  );
+  const [marginLinked, setMarginLinked] = useState(
+    () => margin.top === margin.right && margin.right === margin.bottom && margin.bottom === margin.left
+  );
+
   // Position & layer
   const basePositionToken = POSITION_TOKENS.find(t => cls.includes(t)) ?? 'static';
   const positionToken = rOvr('position') ? rOvr('position')! : basePositionToken;
@@ -2624,10 +2674,6 @@ export function DesignTab({ node }: { node: SDUINode }) {
   const textTransform = rOvr('textTransform') ? (CSS_TO_TW_TEXT_TRANSFORM[rOvr('textTransform')!] ?? baseTextTransform) : baseTextTransform;
 
   // padMode/marginMode no longer used — replaced by SpacingDiagram
-
-  // ── Selection colors ─────────────────────────────────────────────────────────
-
-  const selectionColors = useMemo(() => extractColors(node), [node]);
 
   // ── Per-field changed-from-default helpers ─────────────────────────────────
   // Detect whether this node is a shared component instance so we can compare
@@ -3252,9 +3298,95 @@ export function DesignTab({ node }: { node: SDUINode }) {
     }}>
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} onFocus={() => { editingNodeIdRef.current = nodeId; }}>
 
+      {/* ── Size ── */}
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, ...sectionVisible('Size', ['w', 'h', 'width', 'height', 'size']) }}>
+        <SectionHeader title="Size" overriddenBreakpoints={getSectionOverriddenBps(['width', 'height'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['width', 'height'])} onResetAll={() => resetSectionResponsive(['width', 'height'])} />
+        <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+          <FieldWithBinding label="width" displayLabel="W" cssProp="width" hint="e.g. 200px, 50vh, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })} responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width">
+            <NumberInputWithUnit
+              label="W" cssProp="width" testId="input-pos-w"
+              value={(() => {
+                if (rOvr('width')) return parseFloat(rOvr('width')!) || domMetrics.w;
+                const clsW = parseTwArbitrary(cls, 'w-');
+                if (clsW !== null) return clsW;
+                const styleW = baseNodeStyle.width;
+                if (styleW) return parseInt(styleW) || domMetrics.w;
+                return domMetrics.w;
+              })()}
+              onChange={px => { patchStyle({ width: `${px}${wUnit}`, minWidth: '0' }); patchCls(clearWModeTokens(cls)); }}
+              unit={wUnit}
+              onUnitChange={u => {
+                if (u === wUnit) return;
+                const pxVal = domMetrics.w || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                let converted: number;
+                if (u === 'px') converted = Math.round(pxVal);
+                else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
+                else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
+                else converted = Math.round(pxVal / parentW * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ width: `${converted}${u}`, minWidth: '0' });
+                patchCls(clearWModeTokens(cls));
+              }}
+              sizeMode={effectiveWMode}
+              onSizeModeChange={(m, u) => {
+                if (abp !== 'desktop') { applyWModeResponsive(m); return; }
+                if (m === 'hug') { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit')); patchStyle({ width: '', minWidth: '' }); }
+                else if (m === 'fill') { patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full')); patchStyle({ width: '', minWidth: '' }); }
+                else if (m === 'screen') { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-screen')); patchStyle({ width: '', minWidth: '' }); }
+                else { patchCls(clearWModeTokens(cls)); if (u) patchStyle({ width: `${domMetrics.w}${u}`, minWidth: '0' }); }
+              }}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="height" displayLabel="H" cssProp="height" hint="e.g. 100px, 50vh, auto" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => bindOrPatch('height', v, { minHeight: '0' })} responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height">
+            <NumberInputWithUnit
+              label="H" cssProp="height" testId="input-pos-h"
+              value={(() => {
+                if (rOvr('height')) return parseFloat(rOvr('height')!) || domMetrics.h;
+                const clsH = parseTwArbitrary(cls, 'h-');
+                if (clsH !== null) return clsH;
+                const styleH = baseNodeStyle.height;
+                if (styleH) return parseInt(styleH) || domMetrics.h;
+                return domMetrics.h;
+              })()}
+              onChange={px => { patchStyle({ height: `${px}${hUnit}`, minHeight: '0' }); patchCls(clearHModeTokens(cls)); }}
+              unit={hUnit}
+              onUnitChange={u => {
+                if (u === hUnit) return;
+                const pxVal = domMetrics.h || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                let converted: number;
+                if (u === 'px') converted = Math.round(pxVal);
+                else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
+                else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
+                else converted = Math.round(pxVal / parentH * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ height: `${converted}${u}`, minHeight: '0' });
+                patchCls(clearHModeTokens(cls));
+              }}
+              sizeMode={effectiveHMode}
+              onSizeModeChange={(m, u) => {
+                if (abp !== 'desktop') { applyHModeResponsive(m); return; }
+                if (m === 'hug') { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit')); patchStyle({ height: '', minHeight: '' }); }
+                else if (m === 'fill') { const ft = parentIsRow ? 'self-stretch' : 'flex-1'; patchCls(`${clearHMode(cls)} ${ft}`.trim()); patchStyle({ height: '', minHeight: '' }); }
+                else if (m === 'screen') { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-screen')); patchStyle({ height: '', minHeight: '' }); }
+                else { patchCls(clearHModeTokens(cls)); if (u) patchStyle({ height: `${domMetrics.h}${u}`, minHeight: '0' }); }
+              }}
+            />
+          </FieldWithBinding>
+        </div>
+      </div>
+
       {/* ── Content (text value) — shown for text nodes and buttons ── */}
       {hasContent && (
-        <div style={SECTION_STYLE}>
+        <div style={{ ...SECTION_STYLE, ...sectionVisible('Content', ['text']) }}>
           {(() => {
             const textOverrideBps = getTextOverriddenBps();
             // At non-desktop, prefer the cascaded responsive text value.
@@ -3308,10 +3440,566 @@ export function DesignTab({ node }: { node: SDUINode }) {
         </div>
       )}
 
+      {/* ── Typography (text nodes only) ── */}
+      {isTextNode && <SectionDivider />}
+      {isTextNode && (
+        <div data-testid="section-typography" style={{ ...SECTION_STYLE, ...sectionVisible('Typography', ['font', 'text', 'size', 'weight', 'color', 'align', 'decoration', 'leading', 'tracking']) }}>
+          <SectionHeader title="Typography" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
+            <MiniPreview
+              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
+              title={`${fontSizePx}px · ${fontWeight}`}
+            >
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+            </MiniPreview>
+          </SectionHeader>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4, marginTop: 4 }}>
+            <FieldWithBinding label="fontSize" displayLabel="Size" cssProp="fontSize" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
+              <NumberInput
+                label="Size"
+                cssProp="fontSize"
+                testId="input-text-size"
+                value={fontSizePx}
+                onChange={px => patchStyle({ fontSize: `${px}px` })}
+              />
+            </FieldWithBinding>
+            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" cssProp="fontWeight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
+              <SelectInput label="Weight" cssProp="fontWeight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+            </FieldWithBinding>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+            <FieldWithBinding label="leading" displayLabel="Leading" cssProp="lineHeight" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('lineHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="lineHeight">
+              <SelectInput label="Leading" cssProp="lineHeight" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
+            </FieldWithBinding>
+            <FieldWithBinding label="tracking" displayLabel="Tracking" cssProp="letterSpacing" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('letterSpacing')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="letterSpacing">
+              <SelectInput label="Tracking" cssProp="letterSpacing" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
+            </FieldWithBinding>
+          </div>
+          {/* Text alignment — 4 icon buttons with formula binding */}
+          <FieldWithBinding label="textAlign" displayLabel="Align" cssProp="textAlign" hint='e.g. "text-left", "text-center", "text-right", "text-justify"' value={(classFormulas?.['textAlign'] as FormulaValue) ?? textAlign} onChange={v => bindOrPatchCls('textAlign', evaluated => {
+            let next = cls;
+            TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+            patchCls(evaluated === 'text-left' || !evaluated ? next : `${next} ${evaluated}`.trim());
+          }, v)} expectedType="string" stackLayout responsiveOverrides={getOverriddenBps('textAlign')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textAlign">
+            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+              {([['text-left','left'],['text-center','center'],['text-right','right'],['text-justify','justify']] as const).map(([token, icon]) => (
+                <ToggleBtn key={token} active={textAlign === token} style={{ padding: '4px 6px', display: 'flex', alignItems: 'center' }} onClick={() => {
+                  let next = cls;
+                  TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                  patchCls(token === 'text-left' ? next : `${next} ${token}`.trim());
+                }}>
+                  {icon === 'left'    && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="8" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'center'  && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'right'   && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="4" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                  {icon === 'justify' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
+                </ToggleBtn>
+              ))}
+            </div>
+          </FieldWithBinding>
+          {/* Text decoration & transform */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+            <FieldWithBinding label="textDecoration" displayLabel="Decoration" cssProp="textDecoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} responsiveOverrides={getOverriddenBps('textDecoration')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textDecoration" onChange={v => bindOrPatchCls('textDecoration', evaluated => {
+              let next = cls;
+              TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+              patchCls(evaluated === 'no-underline' ? next : `${next} ${evaluated}`.trim());
+            }, v)} expectedType="string">
+              <SelectInput label="Decoration" cssProp="textDecoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
+            <FieldWithBinding label="textTransform" displayLabel="Transform" cssProp="textTransform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} responsiveOverrides={getOverriddenBps('textTransform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textTransform" onChange={v => bindOrPatchCls('textTransform', evaluated => {
+              let next = cls;
+              TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+              patchCls(evaluated === 'normal-case' ? next : `${next} ${evaluated}`.trim());
+            }, v)} expectedType="string">
+              <SelectInput label="Transform" cssProp="textTransform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
+                let next = cls;
+                TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
+              }} />
+            </FieldWithBinding>
+          </div>
+          <div>
+            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. red, var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
+              <div>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
+                <FigmaColorPicker
+                  testId="input-text-color"
+                  value={computedTextColor}
+                  onChange={(hex, cssVar) => cssVar
+                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
+                    : patchStyle({ color: hex || '' })
+                  }
+                />
+              </div>
+            </FieldWithBinding>
+          </div>
+
+          {/* ── Text overflow / whitespace / word-break — compact select row ── */}
+          {(() => {
+            const effTxtOvr = rOvr('textOverflow');
+            const txtOvrValue = effTxtOvr !== undefined
+              ? (effTxtOvr === 'ellipsis' ? 'truncate' : effTxtOvr === 'clip' ? 'clip' : '')
+              : cls.includes('truncate') ? 'truncate' : cls.includes('text-clip') ? 'clip' : '';
+
+            const effWs = rOvr('whiteSpace');
+            const wsValue = effWs !== undefined
+              ? (effWs === 'nowrap' ? 'whitespace-nowrap' : effWs === 'pre' ? 'whitespace-pre' : effWs === 'normal' ? 'whitespace-normal' : '')
+              : cls.includes('whitespace-nowrap') ? 'whitespace-nowrap' : cls.includes('whitespace-pre') ? 'whitespace-pre' : cls.includes('whitespace-normal') ? 'whitespace-normal' : '';
+
+            const effWb = rOvr('wordBreak');
+            const wbValue = effWb !== undefined
+              ? (effWb === 'break-all' ? 'break-all' : effWb === 'break-word' ? 'break-words' : effWb === 'keep-all' ? 'break-keep' : '')
+              : cls.includes('break-all') ? 'break-all' : cls.includes('break-words') ? 'break-words' : cls.includes('break-keep') ? 'break-keep' : '';
+
+            return (
+              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                <FieldWithBinding label="textOverflow" displayLabel="Overflow" cssProp="textOverflow"
+                  value={(nodeStyle.textOverflow ?? '') as FormulaValue}
+                  onChange={v => bindOrPatch('textOverflow', v)}
+                  responsiveOverrides={getOverriddenBps('textOverflow')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textOverflow"
+                >
+                  <SelectInput label="Overflow" cssProp="textOverflow" value={txtOvrValue}
+                    options={['', 'truncate', 'clip']}
+                    optionLabels={['—', 'ellipsis', 'clip']}
+                    onChange={v => {
+                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'truncate'), 'text-clip'), 'overflow-hidden');
+                      if (v === 'truncate') next = `${next} truncate`.trim();
+                      else if (v === 'clip') next = `${next} overflow-hidden text-clip`.trim();
+                      patchCls(next);
+                    }}
+                  />
+                </FieldWithBinding>
+                <FieldWithBinding label="whitespace" displayLabel="Wrap" cssProp="whiteSpace"
+                  value={(nodeStyle.whiteSpace ?? '') as FormulaValue}
+                  onChange={v => bindOrPatch('whiteSpace', v)}
+                  responsiveOverrides={getOverriddenBps('whiteSpace')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="whiteSpace"
+                >
+                  <SelectInput label="Wrap" cssProp="whiteSpace" value={wsValue}
+                    options={['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal']}
+                    optionLabels={['—', 'no-wrap', 'pre', 'normal']}
+                    onChange={v => {
+                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'whitespace-nowrap'), 'whitespace-pre'), 'whitespace-normal');
+                      if (v) next = `${next} ${v}`.trim();
+                      patchCls(next);
+                    }}
+                  />
+                </FieldWithBinding>
+                <FieldWithBinding label="wordBreak" displayLabel="Break" cssProp="wordBreak"
+                  value={(nodeStyle.wordBreak ?? '') as FormulaValue}
+                  onChange={v => bindOrPatch('wordBreak', v)}
+                  responsiveOverrides={getOverriddenBps('wordBreak')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="wordBreak"
+                >
+                  <SelectInput label="Break" cssProp="wordBreak" value={wbValue}
+                    options={['', 'break-all', 'break-words', 'break-keep']}
+                    optionLabels={['—', 'all', 'words', 'keep']}
+                    onChange={v => {
+                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'break-all'), 'break-words'), 'break-keep');
+                      if (v) next = `${next} ${v}`.trim();
+                      patchCls(next);
+                    }}
+                  />
+                </FieldWithBinding>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Fill & Opacity ── */}
+      <SectionDivider />
+      <div data-testid="section-fill" style={{ ...SECTION_STYLE, ...sectionVisible('Fill & Opacity', ['fill', 'background', 'color', 'opacity', 'gradient', 'image']) }}>
+        <SectionHeader title="Fill & Opacity" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['fill-opacity']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['fill-opacity']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['fill-opacity']!)} />
+        <div style={{ marginTop: 4 }}>
+          <FillBackgroundSection
+            nodeId={nodeId}
+            node={node}
+            store={store}
+            commitHistory={commitHistory}
+            computedBgColor={computedBgColor}
+            patchColorResponsive={patchColorResponsive}
+            patchStyle={patchStyle as (patch: Record<string, string>) => void}
+            abp={abp}
+            getOverriddenBps={getOverriddenBps}
+            removeResponsive={removeResponsive}
+            resetResponsive={resetResponsive}
+          />
+        </div>
+        {/* Background alpha is now controlled via rgba() in the color picker above */}
+        <div style={{ marginTop: 6 }}>
+          <FieldWithBinding label="opacity" displayLabel="Opacity" cssProp="opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)} responsiveOverrides={getOverriddenBps('opacity')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="opacity">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 9, minWidth: 60 }}><ChangedLabel text="Element opacity" cssProp="opacity" /></span>
+              <input
+                type="range" min={5} max={100} step={5}
+                key={`${nodeId}-opacity-${opacityVal}`}
+                defaultValue={opacityVal < 5 ? 5 : opacityVal}
+                data-testid="input-opacity-slider"
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
+                  if (el) el.style.opacity = val >= 100 ? '' : String(val / 100);
+                  const label = e.target.closest('[data-field="opacity"]')?.querySelector('[data-opacity-label]') as HTMLElement | null;
+                  if (label) label.textContent = `${val}%`;
+                }}
+                onMouseUp={e => {
+                  const val = parseInt((e.target as HTMLInputElement).value);
+                  if (val >= 100) {
+                    patchStyle({ opacity: undefined as unknown as string });
+                    const cleaned = removeTwToken(cls, 'opacity-');
+                    if (cleaned !== cls) patchCls(cleaned);
+                  } else {
+                    patchStyle({ opacity: String(val / 100) });
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              <span data-opacity-label style={{ fontSize: 10, color: 'var(--bld-text-2)', minWidth: 28 }}>{opacityVal}%</span>
+            </div>
+          </FieldWithBinding>
+        </div>
+      </div>
+
+      {/* ── Padding (hidden for raw text nodes) ── */}
+      {showPadding && <SectionDivider />}
+      {showPadding && (
+        <div data-testid="section-padding" style={{ ...SECTION_STYLE, ...sectionVisible('Padding') }}>
+          <FieldWithBinding label="padding" headerTitle="Padding" cssProp="padding" hint="e.g. 8px, 16px (applies to all sides)" value={(nodeStyle.padding ?? '') as FormulaValue} onChange={v => { const cap = (side: string) => side.charAt(0).toUpperCase() + side.slice(1); (['top','right','bottom','left'] as const).forEach(s => bindOrPatch(`padding${cap(s)}`, v)); }} responsiveOverrides={getSectionOverriddenBps(['paddingTop','paddingRight','paddingBottom','paddingLeft'])} onResponsiveRemove={(bp) => removeSectionBp(bp, ['paddingTop','paddingRight','paddingBottom','paddingLeft'])} onResponsiveReset={() => resetSectionResponsive(['paddingTop','paddingRight','paddingBottom','paddingLeft'])} responsiveCssProp="padding"
+            headerActions={<LinkSidesButton linked={paddingLinked} onToggle={() => setPaddingLinked(l => !l)} />}
+          >
+            <SpacingDiagram
+              compact
+              label="padding"
+              values={{ top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }}
+              onChange={(side, px) => {
+                const cap = side.charAt(0).toUpperCase() + side.slice(1);
+                patchStyle({ [`padding${cap}`]: `${px}px` });
+              }}
+              onChangeAll={px => patchStyle({
+                paddingTop: `${px}px`, paddingRight: `${px}px`,
+                paddingBottom: `${px}px`, paddingLeft: `${px}px`,
+              })}
+              testIdPrefix="pad"
+              linked={paddingLinked}
+              onLinkedChange={setPaddingLinked}
+            />
+          </FieldWithBinding>
+        </div>
+      )}
+
+      {/* ── Margin ── */}
+      <SectionDivider />
+      <div data-testid="section-margin" style={{ ...SECTION_STYLE, ...sectionVisible('Margin') }}>
+        <FieldWithBinding label="margin" headerTitle="Margin" cssProp="margin" hint="e.g. 8px, 16px (applies to all sides)" value={(nodeStyle.margin ?? '') as FormulaValue} onChange={v => { const cap = (side: string) => side.charAt(0).toUpperCase() + side.slice(1); (['top','right','bottom','left'] as const).forEach(s => bindOrPatch(`margin${cap(s)}`, v)); }} responsiveOverrides={getSectionOverriddenBps(['marginTop','marginRight','marginBottom','marginLeft'])} onResponsiveRemove={(bp) => removeSectionBp(bp, ['marginTop','marginRight','marginBottom','marginLeft'])} onResponsiveReset={() => resetSectionResponsive(['marginTop','marginRight','marginBottom','marginLeft'])} responsiveCssProp="margin"
+          headerActions={<LinkSidesButton linked={marginLinked} onToggle={() => setMarginLinked(l => !l)} />}
+        >
+          <SpacingDiagram
+            compact
+            label="margin"
+            values={{ top: margin.top, right: margin.right, bottom: margin.bottom, left: margin.left }}
+            onChange={(side, px) => {
+              const cap = side.charAt(0).toUpperCase() + side.slice(1);
+              patchStyle({ [`margin${cap}`]: `${px}px` });
+            }}
+            onChangeAll={px => patchStyle({
+              marginTop: `${px}px`, marginRight: `${px}px`,
+              marginBottom: `${px}px`, marginLeft: `${px}px`,
+            })}
+            testIdPrefix="margin"
+            linked={marginLinked}
+            onLinkedChange={setMarginLinked}
+          />
+        </FieldWithBinding>
+      </div>
+
+      {/* ── Auto Layout (only for flex containers) ── */}
+      {showLayout && <SectionDivider />}
+      {showLayout && (
+        <div style={{ ...SECTION_STYLE, ...sectionVisible('Auto Layout', ['flex', 'row', 'col', 'gap', 'grid', 'wrap', 'direction']) }}>
+          <FieldWithBinding label="layoutDir" headerTitle="Auto Layout" cssProp="flexDirection" hint='e.g. flex-row, flex-col, grid' value={(nodeStyle.flexDirection ?? '') as FormulaValue} onChange={v => bindOrPatch('flexDirection', v)} responsiveOverrides={getSectionOverriddenBps(SECTION_CSS_PROPS['auto-layout']!)} onResponsiveRemove={bp => removeSectionBp(bp, SECTION_CSS_PROPS['auto-layout']!)} onResponsiveReset={() => resetSectionResponsive(SECTION_CSS_PROPS['auto-layout']!)} responsiveCssProp="flexDirection">
+          {/* Flow direction — 4 icons */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+            {([
+              ['flex-row',          'row', 'Row'],
+              ['flex-col',          'col', 'Column'],
+              ['flex-row flex-wrap','wrap', 'Row wrap'],
+              ['grid',              'grid', 'Grid'],
+            ] as const).map(([token, icon, label]) => {
+              const active = token === 'flex-row flex-wrap'
+                ? (flexDir === 'flex-row' && isFlexWrap)
+                : token === 'grid'
+                ? isGrid
+                : flexDir === token && !isFlexWrap && !isGrid;
+              return (
+                <ToggleBtn key={token} active={active} title={label} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
+                  if (abp !== 'desktop') {
+                    const writes: Array<[string, string]> = [];
+                    if (token === 'flex-row flex-wrap') {
+                      writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'wrap']);
+                    } else if (token === 'grid') {
+                      writes.push(['display', 'grid'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
+                    } else if (token === 'flex-row') {
+                      writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
+                    } else if (token === 'flex-col') {
+                      writes.push(['display', 'flex'], ['flexDirection', 'column'], ['flexWrap', 'nowrap']);
+                    }
+                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                    for (const [prop, val] of writes) {
+                      store.patchResponsive(nodeId, bp, `styles.${prop}`, val);
+                    }
+                    commitHistory();
+                    return;
+                  }
+                  let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
+                  if (token === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
+                  else if (token === 'grid')          next = `${next} grid`.trim();
+                  else                                next = `${next} flex ${token}`.trim();
+                  patchCls(next);
+                }}>
+                  {icon === 'row'  && <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="5.5" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="2" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
+                  {icon === 'col'  && <svg width="10" height="14" viewBox="0 0 10 14" fill="none"><rect x="2" y="1" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="5.5" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="10" width="6" height="3" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
+                  {icon === 'wrap' && <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="6" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M11 5l1.5-1.5L14 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {icon === 'grid' && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/></svg>}
+                </ToggleBtn>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+            <FieldWithBinding label="gap" displayLabel="Gap" cssProp="gap" hint="e.g. 8px, 1rem, 16px" value={(nodeStyle.gap ?? '') as FormulaValue} onChange={v => bindOrPatch('gap', v)} responsiveOverrides={getOverriddenBps('gap')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gap">
+              <NumberInput
+                label="Gap"
+                cssProp="gap"
+                testId="input-gap"
+                value={gapPx}
+                onChange={px => {
+                  patchStyle({ gap: px > 0 ? `${px}px` : undefined as unknown as string });
+                }}
+              />
+            </FieldWithBinding>
+          </div>
+
+          {/* Grid controls — only when grid layout is active */}
+          {isGrid && (
+            <>
+              {/* Divider + Grid label */}
+              <div style={{ borderTop: 'none', marginTop: 2, marginBottom: 4, paddingTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.5 }}><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/></svg>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', fontWeight: 600 }}>Grid</span>
+              </div>
+              {/* Columns + Rows */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                {(() => {
+                  const effColsCss = rOvr('gridTemplateColumns');
+                  const colsToken = effColsCss ? (CSS_TO_TW_GRID_COLS[effColsCss] ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')) : (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1');
+                  const effRowsCss = rOvr('gridTemplateRows');
+                  const rowsToken = effRowsCss ? (CSS_TO_TW_GRID_ROWS[effRowsCss] ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')) : (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1');
+                  return (
+                    <>
+                      <FieldWithBinding label="gridCols" displayLabel="Columns" cssProp="gridTemplateColumns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? colsToken} responsiveOverrides={getOverriddenBps('gridTemplateColumns')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateColumns" onChange={v => bindOrPatchCls('gridCols', evaluated => {
+                        let next = cls;
+                        GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                        patchCls(`${next} ${evaluated}`.trim());
+                      }, v)} expectedType="string">
+                        <SelectInput
+                          label="Columns"
+                          cssProp="gridTemplateColumns"
+                          value={colsToken}
+                          options={[...GRID_COLS_TOKENS]}
+                          onChange={v => {
+                            let next = cls;
+                            GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                            patchCls(`${next} ${v}`.trim());
+                          }}
+                        />
+                      </FieldWithBinding>
+                      <FieldWithBinding label="gridRows" displayLabel="Rows" cssProp="gridTemplateRows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? rowsToken} responsiveOverrides={getOverriddenBps('gridTemplateRows')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateRows" onChange={v => bindOrPatchCls('gridRows', evaluated => {
+                        let next = cls;
+                        GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                        patchCls(`${next} ${evaluated}`.trim());
+                      }, v)} expectedType="string">
+                        <SelectInput
+                          label="Rows"
+                          cssProp="gridTemplateRows"
+                          value={rowsToken}
+                          options={[...GRID_ROWS_TOKENS]}
+                          onChange={v => {
+                            let next = cls;
+                            GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                            patchCls(`${next} ${v}`.trim());
+                          }}
+                        />
+                      </FieldWithBinding>
+                    </>
+                  );
+                })()}
+              </div>
+              {/* Auto flow */}
+              {(() => {
+                const effFlowCss = rOvr('gridAutoFlow');
+                const flowToken = effFlowCss
+                  ? (GRID_FLOW_CSS_TO_TW[effFlowCss] ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row'))
+                  : ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row');
+                return (
+                  <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense"
+                    responsiveOverrides={getOverriddenBps('gridAutoFlow')}
+                    onResponsiveRemove={removeResponsive}
+                    onResponsiveReset={resetResponsive}
+                    responsiveCssProp="gridAutoFlow"
+                    value={(classFormulas?.['gridFlow'] as FormulaValue) ?? flowToken} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
+                    const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
+                    patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
+                  }, v)} expectedType="string">
+                    <SelectInput
+                      label="Auto flow"
+                      cssProp="gridAutoFlow"
+                      value={flowToken}
+                      options={['grid-flow-row','grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense']}
+                      onChange={v => {
+                        const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
+                        patchCls(v && v !== 'grid-flow-row' ? `${next} ${v}`.trim() : next);
+                      }}
+                    />
+                  </FieldWithBinding>
+                );
+              })()}
+            </>
+          )}
+          </FieldWithBinding>
+        </div>
+      )}
+
+      {/* ── Alignment (only for flex containers) ── */}
+      {showLayout && <SectionDivider />}
+      {showLayout && (
+        <div style={{ ...SECTION_STYLE, ...sectionVisible('Alignment', ['align', 'justify', 'flex', 'center']) }}>
+          <SectionHeader title="Alignment" overriddenBreakpoints={getSectionOverriddenBps(['alignItems','justifyContent'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['alignItems','justifyContent'])} onResetAll={() => resetSectionResponsive(['alignItems','justifyContent'])} />
+          <FieldWithBinding label="alignment" displayLabel="Align" cssProp="alignItems" hint='e.g. "items-center justify-start"'
+            responsiveOverrides={Array.from(new Set([...getOverriddenBps('alignItems'), ...getOverriddenBps('justifyContent')]))}
+            onResponsiveRemove={(bp) => { removeResponsive(bp, 'alignItems'); removeResponsive(bp, 'justifyContent'); }}
+            onResponsiveReset={() => { resetResponsive('alignItems'); resetResponsive('justifyContent'); }}
+            responsiveCssProp="alignItems"
+            value={(classFormulas?.['alignment'] as FormulaValue) ?? (() => {
+            const items = (parseTwToken(cls, 'items-') ?? '');
+            const justify = (parseTwToken(cls, 'justify-') ?? '');
+            return [items, justify].filter(Boolean).join(' ');
+          })()} onChange={v => bindOrPatchCls('alignment', evaluated => {
+            let next = removeTwToken(removeTwToken(cls, 'items-'), 'justify-');
+            evaluated.split(' ').forEach(token => {
+              if (token.startsWith('items-') || token.startsWith('justify-')) {
+                next = `${next} ${token}`.trim();
+              }
+            });
+            patchCls(next);
+          }, v)} expectedType="string" stackLayout>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, width: 72 }}>
+              {Array.from({ length: 9 }, (_, i) => {
+                const isActive = activeCell === i;
+                const FLEX_POS = ['flex-start', 'center', 'flex-end'] as const;
+                const dotV = FLEX_POS[Math.floor(i / 3)];
+                const dotH = FLEX_POS[i % 3];
+                return (
+                  <div
+                    key={i}
+                    data-testid="alignment-cell"
+                    data-cell-index={i}
+                    onClick={() => {
+                      const bp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
+                      if (bp === 'desktop') {
+                        patchCls(applyAlignment(cls, i, isRow));
+                        return;
+                      }
+                      // Responsive breakpoint: write intent directly so the
+                      // click always lands the chosen cell, even when it
+                      // matches the base className on one or both axes. The
+                      // class-diff in patchCls would otherwise be empty on a
+                      // matching axis and leave a stale override from a prior
+                      // click in place (most visible for the center cell when
+                      // base already contains items-center or justify-center).
+                      const cell = buildAlignCells(isRow)[i];
+                      if (!cell) return;
+                      const rbp = bp as 'laptop' | 'tablet' | 'mobile';
+                      const baseItems   = parseTwToken(cls, 'items-')   ?? 'items-start';
+                      const baseJustify = parseTwToken(cls, 'justify-') ?? 'justify-start';
+                      const itemsCss   = twTokenToCss(cell.items)?.value;
+                      const justifyCss = twTokenToCss(cell.justify)?.value;
+                      if (cell.items === baseItems) {
+                        store.removeResponsiveOverride(nodeId, rbp, 'styles.alignItems');
+                      } else if (itemsCss !== undefined) {
+                        store.patchResponsive(nodeId, rbp, 'styles.alignItems', itemsCss);
+                      }
+                      if (cell.justify === baseJustify) {
+                        store.removeResponsiveOverride(nodeId, rbp, 'styles.justifyContent');
+                      } else if (justifyCss !== undefined) {
+                        store.patchResponsive(nodeId, rbp, 'styles.justifyContent', justifyCss);
+                      }
+                      commitHistory();
+                    }}
+                    style={{
+                      width: 20, height: 20,
+                      background: isActive ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
+                      border: `1px solid ${isActive ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
+                      borderRadius: 3, cursor: 'pointer',
+                      display: 'flex', alignItems: dotV, justifyContent: dotH,
+                      padding: 3,
+                    }}
+                  >
+                    <div style={{
+                      width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
+                      background: isActive ? 'rgba(255,255,255,0.9)' : 'var(--bld-border-subtle)',
+                    }} />
+                  </div>
+                );
+              })}
+            </div>
+          </FieldWithBinding>
+        </div>
+      )}
+
+      {/* ── Self Alignment — how this node positions itself in its parent ── */}
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, ...sectionVisible('Self Alignment', ['align', 'self', 'stretch', 'center', 'start', 'end']) }}>
+        <FieldWithBinding label="selfAlignment" hint="e.g. self-center, self-start, self-stretch, self-auto" value={(classFormulas?.['selfAlignment'] as FormulaValue) ?? selfToken} onChange={v => bindOrPatchCls('selfAlignment', evaluated => {
+          patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', evaluated === 'self-auto' ? '' : evaluated).trim());
+        }, v)} expectedType="string" headerTitle="Self Alignment" cssProp="alignSelf" responsiveOverrides={getOverriddenBps('alignSelf')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="alignSelf">
+          <>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {([
+                ['self-start',   'Start (left)'],
+                ['self-center',  'Center'],
+                ['self-end',     'End (right)'],
+                ['self-stretch', 'Stretch (fill width)'],
+                ['self-auto',    'Auto (inherit from parent)'],
+              ] as const).map(([token, label]) => (
+                <ToggleBtn
+                  key={token}
+                  active={selfToken === token}
+                  title={label}
+                  data-testid={`self-align-${token}`}
+                  onClick={() => patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', token === 'self-auto' ? '' : token).trim())}
+                  style={{ padding: '4px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {token === 'self-start' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="1" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M3.5 5h7M8 2.5l2.5 2.5L8 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-center' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="5.4" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2 5h8M9 2.5l2.5 2.5L9 7.5M3 2.5L.5 5 3 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-end' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="9.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M8.5 5H1.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-stretch' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="0" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><rect x="10.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2.5 5h7M8 2.5l2.5 2.5L8 7.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {token === 'self-auto' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><circle cx="6" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="2" x2="6" y2="8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/><line x1="3" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/></svg>}
+                </ToggleBtn>
+              ))}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 9, color: 'var(--bld-text-disabled)' }}>
+              Positions this element within its parent container
+            </div>
+          </>
+        </FieldWithBinding>
+      </div>
+
       {/* ── Position & Size ── */}
-      <div style={SECTION_STYLE}>
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, ...sectionVisible('Position & Size', ['position', 'x', 'y', 'w', 'h', 'width', 'height', 'size']) }}>
         <SectionHeader title="Position & Size" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['position-size']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['position-size']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['position-size']!)} />
-        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
           <FieldWithBinding label="position" displayLabel="Position" cssProp="position" hint="e.g. relative, absolute, fixed" value={(classFormulas?.['position'] as FormulaValue) ?? positionToken} onChange={v => bindOrPatchCls('position', evaluated => {
             let next = cls;
             POSITION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
@@ -3340,90 +4028,16 @@ export function DesignTab({ node }: { node: SDUINode }) {
             />
           </FieldWithBinding>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
           <NumberInput label="X" testId="input-pos-x" value={domMetrics.x} onChange={() => {}} />
           <NumberInput label="Y" testId="input-pos-y" value={domMetrics.y} onChange={() => {}} />
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="width" displayLabel="W" cssProp="width" hint="e.g. 200px, 50vh, auto" value={(nodeStyle.width ?? '') as FormulaValue} onChange={v => bindOrPatch('width', v, { minWidth: '0' })} responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput label="W" cssProp="width" testId="input-pos-w" value={(() => {
-                if (rOvr('width')) return parseFloat(rOvr('width')!) || domMetrics.w;
-                const clsW = parseTwArbitrary(cls, 'w-');
-                if (clsW !== null) return clsW;
-                const styleW = baseNodeStyle.width;
-                if (styleW) return parseInt(styleW) || domMetrics.w;
-                return domMetrics.w;
-              })()} onChange={px => {
-                patchStyle({ width: `${px}${wUnit}`, minWidth: '0' });
-                patchCls(clearWModeTokens(cls));
-              }} />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={wUnit === u} onClick={() => {
-                    if (u === wUnit) return;
-                    // Convert the current rendered width (always px) to the target unit
-                    const pxVal = domMetrics.w || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(pxVal);
-                    else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
-                    else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
-                    else /* % */ converted = Math.round(pxVal / parentW * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ width: `${converted}${u}`, minWidth: '0' });
-                    patchCls(clearWModeTokens(cls));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
-          </FieldWithBinding>
-          <FieldWithBinding label="height" displayLabel="H" cssProp="height" hint="e.g. 100px, 50vh, auto" value={(nodeStyle.height ?? '') as FormulaValue} onChange={v => bindOrPatch('height', v, { minHeight: '0' })} responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput label="H" cssProp="height" testId="input-pos-h" value={(() => {
-                if (rOvr('height')) return parseFloat(rOvr('height')!) || domMetrics.h;
-                const clsH = parseTwArbitrary(cls, 'h-');
-                if (clsH !== null) return clsH;
-                const styleH = baseNodeStyle.height;
-                if (styleH) return parseInt(styleH) || domMetrics.h;
-                return domMetrics.h;
-              })()} onChange={px => {
-                patchStyle({ height: `${px}${hUnit}`, minHeight: '0' });
-                patchCls(clearHModeTokens(cls));
-              }} />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={hUnit === u} onClick={() => {
-                    if (u === hUnit) return;
-                    // Convert the current rendered height (always px) to the target unit
-                    const pxVal = domMetrics.h || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(pxVal);
-                    else if (u === 'vh') converted = Math.round(pxVal / frameH * 100 * 10) / 10;
-                    else if (u === 'vw') converted = Math.round(pxVal / frameW * 100 * 10) / 10;
-                    else /* % */ converted = Math.round(pxVal / parentH * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ height: `${converted}${u}`, minHeight: '0' });
-                    patchCls(clearHModeTokens(cls));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
-          </FieldWithBinding>
         </div>
 
         {/* ── Inset controls (shown when position is relative / absolute / fixed / sticky) ── */}
         {(positionToken === 'relative' || positionToken === 'absolute' || positionToken === 'fixed' || positionToken === 'sticky') && (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>Inset</div>
+              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', flex: 1 }}>Inset</div>
               {(positionToken === 'absolute' || positionToken === 'fixed') && (
                 <button
                   type="button"
@@ -3464,292 +4078,482 @@ export function DesignTab({ node }: { node: SDUINode }) {
         )}
       </div>
 
-      {/* ── W/H Resize modes ── */}
-      <div style={SECTION_STYLE}>
-        <SectionHeader title="Dimensions" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['dimensions']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['dimensions']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['dimensions']!)} />
-        <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-          {/* W mode — headerTitle puts bind icon beside "W" label */}
-          <FieldWithBinding label="wMode" hint="hug=w-fit, fill=w-full/flex-1, screen=w-screen, fixed=''" headerTitle="W" cssProp="width" responsiveOverrides={getOverriddenBps('width')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="width" value={(classFormulas?.['wMode'] as FormulaValue) ?? (cls.includes('w-fit') ? 'w-fit' : cls.includes('w-screen') ? 'w-screen' : (cls.includes('w-full') || (parentIsRow && cls.includes('flex-1'))) ? 'w-full' : '')} onChange={v => bindOrPatchCls('wMode', evaluated => {
-            // Non-desktop uses the intent-based applyWModeResponsive so stale
-            // fill-via-flex-1 / width overrides from prior clicks can't leak
-            // through empty class-diffs and keep the wrong button active.
-            if (abp !== 'desktop') {
-              const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
-                evaluated === 'w-fit'    ? 'hug'    :
-                evaluated === 'w-full'   ? 'fill'   :
-                evaluated === 'w-screen' ? 'screen' : 'fixed';
-              applyWModeResponsive(mode);
-              return;
-            }
-            if (evaluated === 'w-fit')    { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-fit'));    patchStyle({ width: '', minWidth: '' }); }
-            else if (evaluated === 'w-full') {
-              patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
-              patchStyle({ width: '', minWidth: '' });
-            }
-            else if (evaluated === 'w-screen') { patchCls(replaceTwToken(clearWMode(cls), 'w-', 'w-screen')); patchStyle({ width: '', minWidth: '' }); }
-            else { patchCls(clearWModeTokens(cls)); }
-          }, v)} expectedType="string">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              {([['Hug', 'w-fit', 'Shrink to content (w-fit)'], ['Fill', 'w-full', 'Fill parent flex space (flex-1 in flex-row parent, w-full in flex-col parent)'], ['Screen', 'w-screen', 'Full viewport width (w-screen / 100vw)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const active =
-                  token === 'w-fit'    ? effectiveWMode === 'hug'    :
-                  token === 'w-full'   ? effectiveWMode === 'fill'   :
-                  token === 'w-screen' ? effectiveWMode === 'screen' :
-                  /* Fixed */            effectiveWMode === 'fixed';
-                return (
-                  <ToggleBtn key={label} data-testid={`dim-w-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
-                    if (abp !== 'desktop') {
-                      const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
-                        token === 'w-fit'    ? 'hug'    :
-                        token === 'w-full'   ? 'fill'   :
-                        token === 'w-screen' ? 'screen' : 'fixed';
-                      applyWModeResponsive(mode);
-                      return;
-                    }
-                    if (token === 'w-full') {
-                      patchCls(parentIsRow ? `${clearWMode(cls)} flex-1`.trim() : replaceTwToken(clearWMode(cls), 'w-', 'w-full'));
-                      patchStyle({ width: '', minWidth: '' });
-                    } else if (token) {
-                      patchCls(replaceTwToken(clearWMode(cls), 'w-', token));
-                      patchStyle({ width: '', minWidth: '' });
-                    } else {
-                      patchCls(clearWModeTokens(cls));
-                    }
-                  }}>
-                    {label}
-                  </ToggleBtn>
-                );
-              })}
-            </div>
-          </FieldWithBinding>
-          {/* H mode — headerTitle puts bind icon beside "H" label */}
-          {/* Fill = flex-1 (grow in flex parent, matches Figma behaviour)       */}
-          {/* Screen = h-screen (100vh, always resolves regardless of parent)    */}
-          <FieldWithBinding label="hMode" hint="hug=h-fit, fill=flex-1/self-stretch, screen=h-screen, fixed=''" headerTitle="H" cssProp="height" responsiveOverrides={getOverriddenBps('height')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="height" value={(classFormulas?.['hMode'] as FormulaValue) ?? (cls.includes('h-fit') ? 'h-fit' : cls.includes('h-screen') ? 'h-screen' : (parentIsRow ? cls.includes('self-stretch') : (cls.includes('flex-1') || cls.includes('self-stretch'))) ? 'flex-1' : '')} onChange={v => bindOrPatchCls('hMode', evaluated => {
-            if (abp !== 'desktop') {
-              const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
-                evaluated === 'h-fit'    ? 'hug'    :
-                evaluated === 'flex-1'   ? 'fill'   :
-                evaluated === 'h-screen' ? 'screen' : 'fixed';
-              applyHModeResponsive(mode);
-              return;
-            }
-            if (evaluated === 'h-fit')    { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-fit'));    patchStyle({ height: '', minHeight: '' }); }
-            else if (evaluated === 'flex-1') {
-              const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
-              patchCls(`${clearHMode(cls)} ${fillToken}`.trim());
-              patchStyle({ height: '', minHeight: '' });
-            }
-            else if (evaluated === 'h-screen') { patchCls(replaceTwToken(clearHMode(cls), 'h-', 'h-screen')); patchStyle({ height: '', minHeight: '' }); }
-            else { patchCls(clearHModeTokens(cls)); }
-          }, v)} expectedType="string">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              {([['Hug', 'h-fit', 'Shrink to content (h-fit)'], ['Fill', 'flex-1', 'Fill parent flex space (flex-1 in flex-col parent, self-stretch in flex-row parent)'], ['Screen', 'h-screen', 'Full viewport height (h-screen / 100vh)'], ['Fixed', '', 'Exact pixel / vh / vw size']] as const).map(([label, token, tooltip]) => {
-                const active =
-                  token === 'h-fit'    ? effectiveHMode === 'hug'    :
-                  token === 'flex-1'   ? effectiveHMode === 'fill'   :
-                  token === 'h-screen' ? effectiveHMode === 'screen' :
-                  /* Fixed */            effectiveHMode === 'fixed';
-                return (
-                  <ToggleBtn key={label} data-testid={`dim-h-${label.toLowerCase()}`} active={active} title={tooltip} style={{ textAlign: 'center' }} onClick={() => {
-                    if (abp !== 'desktop') {
-                      const mode: 'hug' | 'fill' | 'screen' | 'fixed' =
-                        token === 'h-fit'    ? 'hug'    :
-                        token === 'flex-1'   ? 'fill'   :
-                        token === 'h-screen' ? 'screen' : 'fixed';
-                      applyHModeResponsive(mode);
-                      return;
-                    }
-                    if (token === 'flex-1') {
-                      const fillToken = parentIsRow ? 'self-stretch' : 'flex-1';
-                      patchCls(`${clearHMode(cls)} ${fillToken}`.trim());
-                      patchStyle({ height: '', minHeight: '' });
-                    } else if (token) {
-                      patchCls(replaceTwToken(clearHMode(cls), 'h-', token));
-                      patchStyle({ height: '', minHeight: '' });
-                    } else {
-                      patchCls(clearHModeTokens(cls));
-                    }
-                  }}>
-                    {label}
-                  </ToggleBtn>
-                );
-              })}
-            </div>
-          </FieldWithBinding>
-        </div>
+      {/* ── Min / Max constraints (mode dropdowns are now inline with W/H above) ── */}
+      <div style={{ ...SECTION_STYLE, paddingTop: 0, ...sectionVisible('Dimensions', ['min', 'max', 'width', 'height']) }}>
         {/* Min / Max constraints */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           <FieldWithBinding label="minWidth" displayLabel="Min W" cssProp="minWidth" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('minWidth', v)} responsiveOverrides={getOverriddenBps('minWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minWidth">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput
-                label="Min W"
-                cssProp="minWidth"
-                testId="input-min-w"
-                value={(nodeStyle.minWidth ? parseFloat(nodeStyle.minWidth) || 0 : parseTwArbitrary(cls, 'min-w-')) || 0}
-                onChange={px => { patchStyle({ minWidth: px > 0 ? `${px}${minWUnit}` : '' }); patchCls(removeTwToken(cls, 'min-w-')); }}
-              />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={minWUnit === u} onClick={() => {
-                    if (u === minWUnit) return;
-                    const cur = parseFloat(String(nodeStyle.minWidth ?? parseTwArbitrary(cls, 'min-w-') ?? 0)) || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
-                    const inPx = minWUnit === 'px' ? cur : minWUnit === '%' ? cur / 100 * parentW : minWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(inPx);
-                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
-                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
-                    else converted = Math.round(inPx / parentW * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ minWidth: converted > 0 ? `${converted}${u}` : '' });
-                    patchCls(removeTwToken(cls, 'min-w-'));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
+            <NumberInputWithUnit
+              label="Min W" cssProp="minWidth" testId="input-min-w"
+              value={(nodeStyle.minWidth ? parseFloat(nodeStyle.minWidth) || 0 : parseTwArbitrary(cls, 'min-w-')) || 0}
+              onChange={px => { patchStyle({ minWidth: px > 0 ? `${px}${minWUnit}` : '' }); patchCls(removeTwToken(cls, 'min-w-')); }}
+              unit={minWUnit}
+              onUnitChange={u => {
+                if (u === minWUnit) return;
+                const cur = parseFloat(String(nodeStyle.minWidth ?? parseTwArbitrary(cls, 'min-w-') ?? 0)) || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                const inPx = minWUnit === 'px' ? cur : minWUnit === '%' ? cur / 100 * parentW : minWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
+                let converted: number;
+                if (u === 'px') converted = Math.round(inPx);
+                else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                else converted = Math.round(inPx / parentW * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ minWidth: converted > 0 ? `${converted}${u}` : '' });
+                patchCls(removeTwToken(cls, 'min-w-'));
+              }}
+              sizeMode={minWMode}
+              onSizeModeChange={(m, u) => {
+                if (m === 'fill') { patchStyle({ minWidth: '100%' }); patchCls(removeTwToken(cls, 'min-w-')); }
+                else if (m === 'screen') { patchStyle({ minWidth: '100vw' }); patchCls(removeTwToken(cls, 'min-w-')); }
+                else { patchStyle({ minWidth: '' }); if (u) patchStyle({ minWidth: `0${u}` }); }
+              }}
+              sizeModes={['fill', 'screen']}
+            />
           </FieldWithBinding>
           <FieldWithBinding label="maxWidth" displayLabel="Max W" cssProp="maxWidth" hint="e.g. 100%, 800px, none" value={(nodeStyle.maxWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('maxWidth', v)} responsiveOverrides={getOverriddenBps('maxWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxWidth">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput
-                label="Max W"
-                cssProp="maxWidth"
-                testId="input-max-w"
-                value={(nodeStyle.maxWidth ? parseFloat(nodeStyle.maxWidth) || 0 : parseTwArbitrary(cls, 'max-w-')) ?? 0}
-                onChange={px => { patchStyle({ maxWidth: px > 0 ? `${px}${maxWUnit}` : '' }); patchCls(removeTwToken(cls, 'max-w-')); }}
-              />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={maxWUnit === u} onClick={() => {
-                    if (u === maxWUnit) return;
-                    const cur = parseFloat(String(nodeStyle.maxWidth ?? parseTwArbitrary(cls, 'max-w-') ?? 0)) || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
-                    const inPx = maxWUnit === 'px' ? cur : maxWUnit === '%' ? cur / 100 * parentW : maxWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(inPx);
-                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
-                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
-                    else converted = Math.round(inPx / parentW * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ maxWidth: converted > 0 ? `${converted}${u}` : '' });
-                    patchCls(removeTwToken(cls, 'max-w-'));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
+            <NumberInputWithUnit
+              label="Max W" cssProp="maxWidth" testId="input-max-w"
+              value={(nodeStyle.maxWidth ? parseFloat(nodeStyle.maxWidth) || 0 : parseTwArbitrary(cls, 'max-w-')) ?? 0}
+              onChange={px => { patchStyle({ maxWidth: px > 0 ? `${px}${maxWUnit}` : '' }); patchCls(removeTwToken(cls, 'max-w-')); }}
+              unit={maxWUnit}
+              onUnitChange={u => {
+                if (u === maxWUnit) return;
+                const cur = parseFloat(String(nodeStyle.maxWidth ?? parseTwArbitrary(cls, 'max-w-') ?? 0)) || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentW = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientWidth ?? frameW;
+                const inPx = maxWUnit === 'px' ? cur : maxWUnit === '%' ? cur / 100 * parentW : maxWUnit === 'vw' ? cur / 100 * frameW : cur / 100 * frameH;
+                let converted: number;
+                if (u === 'px') converted = Math.round(inPx);
+                else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                else converted = Math.round(inPx / parentW * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ maxWidth: converted > 0 ? `${converted}${u}` : '' });
+                patchCls(removeTwToken(cls, 'max-w-'));
+              }}
+              sizeMode={maxWMode}
+              onSizeModeChange={(m, u) => {
+                if (m === 'hug') { patchStyle({ maxWidth: 'none' }); patchCls(removeTwToken(cls, 'max-w-')); }
+                else if (m === 'fill') { patchStyle({ maxWidth: '100%' }); patchCls(removeTwToken(cls, 'max-w-')); }
+                else if (m === 'screen') { patchStyle({ maxWidth: '100vw' }); patchCls(removeTwToken(cls, 'max-w-')); }
+                else { patchStyle({ maxWidth: '' }); if (u) patchStyle({ maxWidth: `0${u}` }); }
+              }}
+              sizeModeLabels={{ hug: 'None' }}
+            />
           </FieldWithBinding>
           <FieldWithBinding label="minHeight" displayLabel="Min H" cssProp="minHeight" hint="e.g. 0, 100px, 50%" value={(nodeStyle.minHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('minHeight', v)} responsiveOverrides={getOverriddenBps('minHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="minHeight">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput
-                label="Min H"
-                cssProp="minHeight"
-                testId="input-min-h"
-                value={(nodeStyle.minHeight ? parseFloat(nodeStyle.minHeight) || 0 : parseTwArbitrary(cls, 'min-h-')) || 0}
-                onChange={px => { patchStyle({ minHeight: px > 0 ? `${px}${minHUnit}` : '' }); patchCls(removeTwToken(cls, 'min-h-')); }}
-              />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={minHUnit === u} onClick={() => {
-                    if (u === minHUnit) return;
-                    const cur = parseFloat(String(nodeStyle.minHeight ?? parseTwArbitrary(cls, 'min-h-') ?? 0)) || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
-                    const inPx = minHUnit === 'px' ? cur : minHUnit === '%' ? cur / 100 * parentH : minHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(inPx);
-                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
-                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
-                    else converted = Math.round(inPx / parentH * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ minHeight: converted > 0 ? `${converted}${u}` : '' });
-                    patchCls(removeTwToken(cls, 'min-h-'));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
+            <NumberInputWithUnit
+              label="Min H" cssProp="minHeight" testId="input-min-h"
+              value={(nodeStyle.minHeight ? parseFloat(nodeStyle.minHeight) || 0 : parseTwArbitrary(cls, 'min-h-')) || 0}
+              onChange={px => { patchStyle({ minHeight: px > 0 ? `${px}${minHUnit}` : '' }); patchCls(removeTwToken(cls, 'min-h-')); }}
+              unit={minHUnit}
+              onUnitChange={u => {
+                if (u === minHUnit) return;
+                const cur = parseFloat(String(nodeStyle.minHeight ?? parseTwArbitrary(cls, 'min-h-') ?? 0)) || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                const inPx = minHUnit === 'px' ? cur : minHUnit === '%' ? cur / 100 * parentH : minHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
+                let converted: number;
+                if (u === 'px') converted = Math.round(inPx);
+                else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                else converted = Math.round(inPx / parentH * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ minHeight: converted > 0 ? `${converted}${u}` : '' });
+                patchCls(removeTwToken(cls, 'min-h-'));
+              }}
+              sizeMode={minHMode}
+              onSizeModeChange={(m, u) => {
+                if (m === 'fill') { patchStyle({ minHeight: '100%' }); patchCls(removeTwToken(cls, 'min-h-')); }
+                else if (m === 'screen') { patchStyle({ minHeight: '100vh' }); patchCls(removeTwToken(cls, 'min-h-')); }
+                else { patchStyle({ minHeight: '' }); if (u) patchStyle({ minHeight: `0${u}` }); }
+              }}
+              sizeModes={['fill', 'screen']}
+            />
           </FieldWithBinding>
           <FieldWithBinding label="maxHeight" displayLabel="Max H" cssProp="maxHeight" hint="e.g. 100px, 50vh, none" value={(nodeStyle.maxHeight ?? '') as FormulaValue} onChange={v => bindOrPatch('maxHeight', v)} responsiveOverrides={getOverriddenBps('maxHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="maxHeight">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <NumberInput
-                label="Max H"
-                cssProp="maxHeight"
-                testId="input-max-h"
-                value={(nodeStyle.maxHeight ? parseFloat(nodeStyle.maxHeight) || 0 : parseTwArbitrary(cls, 'max-h-')) ?? 0}
-                onChange={px => { patchStyle({ maxHeight: px > 0 ? `${px}${maxHUnit}` : '' }); patchCls(removeTwToken(cls, 'max-h-')); }}
-              />
-              <div style={{ display: 'flex', gap: 2 }}>
-                {(['px', '%', 'vh', 'vw'] as const).map(u => (
-                  <ToggleBtn key={u} active={maxHUnit === u} onClick={() => {
-                    if (u === maxHUnit) return;
-                    const cur = parseFloat(String(nodeStyle.maxHeight ?? parseTwArbitrary(cls, 'max-h-') ?? 0)) || 0;
-                    const frame = document.querySelector('[data-builder-page-frame]');
-                    const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
-                    const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
-                    const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
-                    const inPx = maxHUnit === 'px' ? cur : maxHUnit === '%' ? cur / 100 * parentH : maxHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
-                    let converted: number;
-                    if (u === 'px') converted = Math.round(inPx);
-                    else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
-                    else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
-                    else converted = Math.round(inPx / parentH * 100 * 10) / 10;
-                    if (!isFinite(converted) || isNaN(converted)) return;
-                    patchStyle({ maxHeight: converted > 0 ? `${converted}${u}` : '' });
-                    patchCls(removeTwToken(cls, 'max-h-'));
-                  }} style={{ fontSize: 9, padding: '1px 5px', minWidth: 0 }}>{u}</ToggleBtn>
-                ))}
-              </div>
-            </div>
+            <NumberInputWithUnit
+              label="Max H" cssProp="maxHeight" testId="input-max-h"
+              value={(nodeStyle.maxHeight ? parseFloat(nodeStyle.maxHeight) || 0 : parseTwArbitrary(cls, 'max-h-')) ?? 0}
+              onChange={px => { patchStyle({ maxHeight: px > 0 ? `${px}${maxHUnit}` : '' }); patchCls(removeTwToken(cls, 'max-h-')); }}
+              unit={maxHUnit}
+              onUnitChange={u => {
+                if (u === maxHUnit) return;
+                const cur = parseFloat(String(nodeStyle.maxHeight ?? parseTwArbitrary(cls, 'max-h-') ?? 0)) || 0;
+                const frame = document.querySelector('[data-builder-page-frame]');
+                const frameW = (frame as HTMLElement | null)?.clientWidth ?? window.innerWidth;
+                const frameH = (frame as HTMLElement | null)?.clientHeight ?? window.innerHeight;
+                const parentH = (document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null)?.parentElement?.clientHeight ?? frameH;
+                const inPx = maxHUnit === 'px' ? cur : maxHUnit === '%' ? cur / 100 * parentH : maxHUnit === 'vh' ? cur / 100 * frameH : cur / 100 * frameW;
+                let converted: number;
+                if (u === 'px') converted = Math.round(inPx);
+                else if (u === 'vh') converted = Math.round(inPx / frameH * 100 * 10) / 10;
+                else if (u === 'vw') converted = Math.round(inPx / frameW * 100 * 10) / 10;
+                else converted = Math.round(inPx / parentH * 100 * 10) / 10;
+                if (!isFinite(converted) || isNaN(converted)) return;
+                patchStyle({ maxHeight: converted > 0 ? `${converted}${u}` : '' });
+                patchCls(removeTwToken(cls, 'max-h-'));
+              }}
+              sizeMode={maxHMode}
+              onSizeModeChange={(m, u) => {
+                if (m === 'hug') { patchStyle({ maxHeight: 'none' }); patchCls(removeTwToken(cls, 'max-h-')); }
+                else if (m === 'fill') { patchStyle({ maxHeight: '100%' }); patchCls(removeTwToken(cls, 'max-h-')); }
+                else if (m === 'screen') { patchStyle({ maxHeight: '100vh' }); patchCls(removeTwToken(cls, 'max-h-')); }
+                else { patchStyle({ maxHeight: '' }); if (u) patchStyle({ maxHeight: `0${u}` }); }
+              }}
+              sizeModeLabels={{ hug: 'None' }}
+            />
           </FieldWithBinding>
         </div>
       </div>
 
-      {/* ── Self Alignment — how this node positions itself in its parent ── */}
-      <div style={SECTION_STYLE}>
-        <FieldWithBinding label="selfAlignment" hint="e.g. self-center, self-start, self-stretch, self-auto" value={(classFormulas?.['selfAlignment'] as FormulaValue) ?? selfToken} onChange={v => bindOrPatchCls('selfAlignment', evaluated => {
-          patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', evaluated === 'self-auto' ? '' : evaluated).trim());
-        }, v)} expectedType="string" headerTitle="Self Alignment" cssProp="alignSelf" responsiveOverrides={getOverriddenBps('alignSelf')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="alignSelf">
-          <>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {([
-                ['self-start',   'Start (left)'],
-                ['self-center',  'Center'],
-                ['self-end',     'End (right)'],
-                ['self-stretch', 'Stretch (fill width)'],
-                ['self-auto',    'Auto (inherit from parent)'],
-              ] as const).map(([token, label]) => (
-                <ToggleBtn
-                  key={token}
-                  active={selfToken === token}
-                  title={label}
-                  data-testid={`self-align-${token}`}
-                  onClick={() => patchCls(replaceTwToken(removeTwToken(cls, 'self-'), 'self-', token === 'self-auto' ? '' : token).trim())}
-                  style={{ padding: '4px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {token === 'self-start' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="1" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M3.5 5h7M8 2.5l2.5 2.5L8 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {token === 'self-center' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="5.4" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2 5h8M9 2.5l2.5 2.5L9 7.5M3 2.5L.5 5 3 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {token === 'self-end' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="9.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M8.5 5H1.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {token === 'self-stretch' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><rect x="0" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><rect x="10.8" y="0" width="1.2" height="10" fill="currentColor" rx="0.5"/><path d="M2.5 5h7M8 2.5l2.5 2.5L8 7.5M4 2.5L1.5 5 4 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {token === 'self-auto' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><circle cx="6" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="2" x2="6" y2="8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/><line x1="3" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.5"/></svg>}
-                </ToggleBtn>
-              ))}
+      {/* ── Stroke ── */}
+      <SectionDivider />
+      <div data-testid="section-border" style={{ ...SECTION_STYLE, ...sectionVisible('Stroke', ['border', 'stroke', 'outline']) }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionHeader title="Stroke" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['stroke']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['stroke']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['stroke']!)}>
+            {borderWidthPx > 0 && (
+              <MiniPreview
+                style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || 'var(--bld-text-disabled)'}` }}
+                title={`${borderWidthPx}px ${borderStyle}`}
+              />
+            )}
+          </SectionHeader>
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          <FieldWithBinding label="borderColor" displayLabel="Border Color" cssProp="borderColor" hint="CSS color: e.g. var(--bld-border-subtle), rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)} responsiveOverrides={getOverriddenBps('borderColor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderColor">
+            <div>
+              <span style={{ fontSize: 9, display: 'block', marginBottom: 2 }}><ChangedLabel text="Color" cssProp="borderColor" /></span>
+              <FigmaColorPicker
+                testId="input-stroke-color"
+                value={computedBorderColor}
+                onChange={(hex, cssVar) => cssVar
+                  ? patchColorResponsive('borderColor', 'props.style.borderColor', 'border', cssVar)
+                  : patchStyle({ borderColor: hex || '' })
+                }
+              />
             </div>
-            <div style={{ marginTop: 4, fontSize: 9, color: 'var(--bld-text-disabled)' }}>
-              Positions this element within its parent container
-            </div>
-          </>
+          </FieldWithBinding>
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          <FieldWithBinding label="borderWidth" displayLabel="Width" cssProp="borderWidth" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string" responsiveOverrides={getOverriddenBps('borderWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderWidth">
+            <NumberInput
+              label="Width"
+              cssProp="borderWidth"
+              testId="input-border-width"
+              value={borderWidthPx}
+              onChange={px => patchStyle({ borderWidth: `${px}px` })}
+            />
+          </FieldWithBinding>
+          <FieldWithBinding label="borderStyle" displayLabel="Style" cssProp="borderStyle" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} responsiveOverrides={getOverriddenBps('borderStyle')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderStyle" onChange={v => bindOrPatchCls('borderStyle', evaluated => {
+            let next = cls;
+            BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+            patchCls(`${next} ${evaluated}`.trim());
+          }, v)} expectedType="string">
+            <SelectInput
+              label="Style"
+              cssProp="borderStyle"
+              value={borderStyle}
+              options={BORDER_STYLE_TOKENS}
+              onChange={v => {
+                let next = cls;
+                BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
+                patchCls(`${next} ${v}`.trim());
+              }}
+            />
+          </FieldWithBinding>
+        </div>
+      </div>
+
+      {/* ── Per-side Border ── */}
+      <SectionDivider />
+      {(() => {
+        const sides = [
+          { key: 't', label: 'T', widthStyle: 'borderTopWidth',    colorStyle: 'borderTopColor',    title: 'Top' },
+          { key: 'r', label: 'R', widthStyle: 'borderRightWidth',  colorStyle: 'borderRightColor',  title: 'Right' },
+          { key: 'b', label: 'B', widthStyle: 'borderBottomWidth', colorStyle: 'borderBottomColor', title: 'Bottom' },
+          { key: 'l', label: 'L', widthStyle: 'borderLeftWidth',   colorStyle: 'borderLeftColor',   title: 'Left' },
+        ] as const;
+        const hasPerSide = sides.some(s => (nodeStyle as Record<string, unknown>)[s.widthStyle] || (nodeStyle as Record<string, unknown>)[s.colorStyle]);
+        const [open, setOpen] = React.useState(hasPerSide);
+        return (
+          <div style={SECTION_STYLE}>
+            <button
+              type="button"
+              onClick={() => setOpen(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--bld-text-disabled)', fontSize: 9, fontWeight: 600, textTransform: 'none', padding: 0, width: '100%', textAlign: 'left' }}
+            >
+              <svg width={8} height={8} viewBox="0 0 8 8" fill="none" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+                <path d="M2 1.5l3 2.5-3 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Per-side border
+            </button>
+            {open && (
+              <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '14px 44px 1fr 14px', gap: '5px 6px', alignItems: 'center' }}>
+                {sides.map(({ key, label, widthStyle, colorStyle, title }) => {
+                  const widthFromOvr = rOvr(widthStyle);
+                  const widthPx = parseTwArbitraryPx(cls, `border-${key}-`)
+                    ?? (widthFromOvr != null
+                          ? parseInt(String(widthFromOvr)) || 0
+                          : parseInt(String((nodeStyle as Record<string, unknown>)[widthStyle] ?? '0')) || 0);
+                  const colorVal = String(rOvr(colorStyle) ?? (nodeStyle as Record<string, unknown>)[colorStyle] ?? '');
+                  const sideChanged = isFieldChanged(widthStyle) || isFieldChanged(colorStyle);
+                  const resetSide = () => { resetField(widthStyle); resetField(colorStyle); };
+                  const sideBps = Array.from(new Set([...getOverriddenBps(widthStyle), ...getOverriddenBps(colorStyle)]));
+                  const sideChipCssProp = `border${title}`;
+                  return (
+                    <React.Fragment key={key}>
+                      <span title={title} style={{ fontSize: 9, fontWeight: 600, lineHeight: '26px' }}>
+                        <InlineChangedLabel text={label} changed={sideChanged} onReset={resetSide} />
+                      </span>
+                      <PanelInput
+                        value={widthPx}
+                        onChange={px => patchStyle({ [widthStyle]: `${px}px` })}
+                        min={0}
+                        width={44}
+                      />
+                      <div style={{ position: 'relative' }}>
+                        <FigmaColorPicker
+                          value={colorVal || computedBorderColor}
+                          onChange={hex => patchStyle({ [colorStyle]: hex || '' })}
+                        />
+                        {isFieldChanged(colorStyle) && (
+                          <span style={{ position: 'absolute', top: 2, right: 2, width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-warning)', pointerEvents: 'none' }} />
+                        )}
+                      </div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 14, width: 14 }}>
+                        {sideBps.length > 0 && (
+                          <ResponsiveDot
+                            cssProp={sideChipCssProp}
+                            overriddenBreakpoints={sideBps}
+                            onRemove={(bp) => { removeResponsive(bp, widthStyle); removeResponsive(bp, colorStyle); }}
+                            onResetAll={() => { resetResponsive(widthStyle); resetResponsive(colorStyle); }}
+                          />
+                        )}
+                      </span>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Border Radius ── */}
+      <SectionDivider />
+      {(() => {
+        const baseTlPx = parseTwArbitraryPx(cls, 'rounded-tl-') ?? parseTwArbitraryPx(cls, 'rounded-') ?? parseRoundedNamedTokenPx(cls, 'rounded-tl-') ?? parseRoundedNamedTokenPx(cls, 'rounded-') ?? 0;
+        const tlPx = rOvr('borderTopLeftRadius') ? parseFloat(rOvr('borderTopLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : baseTlPx);
+        const trPx = rOvr('borderTopRightRadius') ? parseFloat(rOvr('borderTopRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-tr-') ?? baseTlPx));
+        const brPx = rOvr('borderBottomRightRadius') ? parseFloat(rOvr('borderBottomRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-br-') ?? baseTlPx));
+        const blPx = rOvr('borderBottomLeftRadius') ? parseFloat(rOvr('borderBottomLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-bl-') ?? baseTlPx));
+        // Uniform bind: read from borderRadius (all-corners style prop) for the formula value
+        const uniformRadiusFormula = (nodeStyle.borderRadius ?? nodeStyle.borderTopLeftRadius ?? '') as FormulaValue;
+        const isBound = isBoundValue(uniformRadiusFormula);
+        return (
+          <div style={SECTION_STYLE}>
+            <FieldWithBinding
+              label="border-radius"
+              headerTitle="Border Radius"
+              cssProp="borderRadius"
+              hint="e.g. 8 (px number) or variables['UUID']"
+              value={uniformRadiusFormula}
+              onChange={v => {
+                bindOrPatch('borderRadius', v);
+              }}
+              responsiveOverrides={getOverriddenBps('borderRadius')}
+              onResponsiveRemove={removeResponsive}
+              onResponsiveReset={resetResponsive}
+              responsiveCssProp="borderRadius"
+            >
+              <CornerRadiusDiagram
+                values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
+                onChange={(corner, px) => {
+                  const styleMap = {
+                    tl: 'borderTopLeftRadius',
+                    tr: 'borderTopRightRadius',
+                    br: 'borderBottomRightRadius',
+                    bl: 'borderBottomLeftRadius',
+                  } as const;
+                  patchStyle({ [styleMap[corner]]: `${px}px` });
+                }}
+                onChangeAll={px => patchStyle({
+                  borderTopLeftRadius:     `${px}px`,
+                  borderTopRightRadius:    `${px}px`,
+                  borderBottomRightRadius: `${px}px`,
+                  borderBottomLeftRadius:  `${px}px`,
+                })}
+                perCornerOverrides={{
+                  tl: getOverriddenBps('borderTopLeftRadius'),
+                  tr: getOverriddenBps('borderTopRightRadius'),
+                  br: getOverriddenBps('borderBottomRightRadius'),
+                  bl: getOverriddenBps('borderBottomLeftRadius'),
+                }}
+                onPerCornerRemove={removeResponsive}
+                onPerCornerReset={resetResponsive}
+              />
+            </FieldWithBinding>
+          </div>
+        );
+      })()}
+
+      {/* ── Effects (Shadow, Blur, Backdrop) ── */}
+      <SectionDivider />
+      <EffectsSection
+        nodeId={nodeId}
+        node={node}
+        store={store}
+        commitHistory={commitHistory}
+        abp={abp}
+        getOverriddenBps={getOverriddenBps}
+        removeResponsive={removeResponsive}
+        resetResponsive={resetResponsive}
+      />
+
+      {/* ── Input Text (Input / Textarea nodes only) ── */}
+      {isInputNode && (
+        <div data-testid="section-input-text" style={SECTION_STYLE}>
+          <SectionHeader title="Input Text" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
+            <MiniPreview
+              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
+              title={`${fontSizePx}px · ${fontWeight}`}
+            >
+              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
+            </MiniPreview>
+          </SectionHeader>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4, marginTop: 4 }}>
+            <FieldWithBinding label="fontSize" displayLabel="Size" cssProp="fontSize" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
+              <NumberInput
+                label="Size"
+                cssProp="fontSize"
+                testId="input-field-text-size"
+                value={fontSizePx}
+                onChange={px => patchStyle({ fontSize: `${px}px` })}
+              />
+            </FieldWithBinding>
+            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" cssProp="fontWeight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
+              <SelectInput label="Weight" cssProp="fontWeight" testId="select-input-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
+            </FieldWithBinding>
+          </div>
+          <div>
+            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
+              <div>
+                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
+                <FigmaColorPicker
+                  testId="input-field-text-color"
+                  value={computedTextColor}
+                  onChange={(hex, cssVar) => cssVar
+                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
+                    : patchStyle({ color: hex || '' })
+                  }
+                />
+              </div>
+            </FieldWithBinding>
+          </div>
+        </div>
+      )}
+
+      {/* ── Placeholder (Input / Textarea nodes only) ── */}
+      {isInputNode && <SectionDivider />}
+      {isInputNode && (
+        <div data-testid="section-placeholder" style={{ ...SECTION_STYLE, ...sectionVisible('Placeholder', ['input', 'textarea']) }}>
+          <SectionHeader title="Placeholder" />
+          <div>
+            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
+            <FigmaColorPicker
+              testId="input-placeholder-color"
+              value={computedPlaceholderColor || '#737373'}
+              onChange={(hex) => {
+                store.patchProp(nodeId, 'props.placeholderTextColor', hex || '');
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Overflow ── */}
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, ...sectionVisible('Overflow', ['clip', 'scroll', 'hidden']) }}>
+        <FieldWithBinding
+          label="overflow"
+          displayLabel="Overflow"
+          cssProp="overflow"
+          hint='e.g. overflow-hidden, overflow-auto, overflow-x-auto, overflow-y-auto'
+          value={(classFormulas?.['overflow'] as FormulaValue) ?? (currentOverflow === 'none' ? '' : currentOverflow)}
+          responsiveOverrides={Array.from(new Set([...getOverriddenBps('overflow'), ...getOverriddenBps('overflowX'), ...getOverriddenBps('overflowY')]))}
+          onResponsiveRemove={(bp) => { removeResponsive(bp, 'overflow'); removeResponsive(bp, 'overflowX'); removeResponsive(bp, 'overflowY'); }}
+          onResponsiveReset={() => { resetResponsive('overflow'); resetResponsive('overflowX'); resetResponsive('overflowY'); }}
+          responsiveCssProp="overflow"
+          onChange={v => bindOrPatchCls('overflow', evaluated => {
+            let next = removeTwToken(cls, 'overflow-');
+            if (evaluated && evaluated !== 'none') next = `${next} ${evaluated}`.trim();
+            patchCls(next);
+          }, v)}
+          expectedType="string"
+          stackLayout
+        >
+          <div style={{ display: 'flex', gap: 2 }}>
+            {([
+              ['none',             '—',     'Default (no overflow class)'],
+              ['overflow-hidden',  'clip',  'overflow-hidden — clips content'],
+              ['overflow-auto',    'auto',  'overflow-auto — scrolls when needed'],
+              ['overflow-scroll',  'scroll','overflow-scroll — always shows scrollbar'],
+              ['overflow-x-auto',  'x',     'overflow-x-auto — horizontal scroll'],
+              ['overflow-y-auto',  'y',     'overflow-y-auto — vertical scroll'],
+            ] as const).map(([token, label, title]) => (
+              <ToggleBtn
+                key={token}
+                title={title}
+                active={currentOverflow === token}
+                style={{ padding: '3px 6px', fontSize: 10 }}
+                onClick={() => {
+                  // Intent-based at non-desktop: clear any existing overflow*
+                  // overrides at this breakpoint, then set the desired one.
+                  // Going only through patchCls would miss two cases:
+                  //   1. Clicking "none" when base has no overflow-* token
+                  //      (token diff is empty → override persists).
+                  //   2. Switching from overflow-x-auto to overflow-hidden
+                  //      leaves a stale overflowX override behind.
+                  if (abp !== 'desktop') {
+                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
+                    for (const p of ['overflow', 'overflowX', 'overflowY']) {
+                      if (rOvr(p) !== undefined) {
+                        store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
+                      }
+                    }
+                    if (token === 'overflow-hidden')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'hidden');
+                    else if (token === 'overflow-auto')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'auto');
+                    else if (token === 'overflow-scroll') store.patchResponsive(nodeId, bp, 'styles.overflow',  'scroll');
+                    else if (token === 'overflow-x-auto') store.patchResponsive(nodeId, bp, 'styles.overflowX', 'auto');
+                    else if (token === 'overflow-y-auto') store.patchResponsive(nodeId, bp, 'styles.overflowY', 'auto');
+                    // 'none' → just clear, already done above.
+                    commitHistory();
+                    return;
+                  }
+                  let next = removeTwToken(cls, 'overflow-');
+                  if (token !== 'none') next = `${next} ${token}`.trim();
+                  patchCls(next);
+                }}
+              >
+                {label}
+              </ToggleBtn>
+            ))}
+          </div>
         </FieldWithBinding>
       </div>
 
       {/* ── Rotation + Flip ── */}
-      <div style={SECTION_STYLE}>
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, ...sectionVisible('Transform', ['rotate', 'flip', 'translate']) }}>
         <SectionHeader title="Transform" overriddenBreakpoints={getSectionOverriddenBps(['transform','translateX','translateY'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['transform','translateX','translateY'])} onResetAll={() => resetSectionResponsive(['transform','translateX','translateY'])} />
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
           <FieldWithBinding label="rotate" displayLabel="Rotate °" hint="degrees: e.g. 45, -90, 180" value={rawTransform as FormulaValue} onChange={v => bindOrPatch('transform', v)} responsiveOverrides={getOverriddenBps('transform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="transform">
@@ -3881,994 +4685,30 @@ export function DesignTab({ node }: { node: SDUINode }) {
         </div>
       </div>
 
-      {/* ── Alignment (only for flex containers) ── */}
-      {showLayout && (
-        <div style={SECTION_STYLE}>
-          <SectionHeader title="Alignment" overriddenBreakpoints={getSectionOverriddenBps(['alignItems','justifyContent'])} onRemoveBreakpoint={bp => removeSectionBp(bp, ['alignItems','justifyContent'])} onResetAll={() => resetSectionResponsive(['alignItems','justifyContent'])} />
-          <FieldWithBinding label="alignment" displayLabel="Align" cssProp="alignItems" hint='e.g. "items-center justify-start"'
-            responsiveOverrides={Array.from(new Set([...getOverriddenBps('alignItems'), ...getOverriddenBps('justifyContent')]))}
-            onResponsiveRemove={(bp) => { removeResponsive(bp, 'alignItems'); removeResponsive(bp, 'justifyContent'); }}
-            onResponsiveReset={() => { resetResponsive('alignItems'); resetResponsive('justifyContent'); }}
-            responsiveCssProp="alignItems"
-            value={(classFormulas?.['alignment'] as FormulaValue) ?? (() => {
-            const items = (parseTwToken(cls, 'items-') ?? '');
-            const justify = (parseTwToken(cls, 'justify-') ?? '');
-            return [items, justify].filter(Boolean).join(' ');
-          })()} onChange={v => bindOrPatchCls('alignment', evaluated => {
-            let next = removeTwToken(removeTwToken(cls, 'items-'), 'justify-');
-            evaluated.split(' ').forEach(token => {
-              if (token.startsWith('items-') || token.startsWith('justify-')) {
-                next = `${next} ${token}`.trim();
-              }
-            });
-            patchCls(next);
-          }, v)} expectedType="string" stackLayout>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, width: 72 }}>
-              {Array.from({ length: 9 }, (_, i) => {
-                const isActive = activeCell === i;
-                const FLEX_POS = ['flex-start', 'center', 'flex-end'] as const;
-                const dotV = FLEX_POS[Math.floor(i / 3)];
-                const dotH = FLEX_POS[i % 3];
-                return (
-                  <div
-                    key={i}
-                    data-testid="alignment-cell"
-                    data-cell-index={i}
-                    onClick={() => {
-                      const bp = useBuilderStore.getState().activeBreakpoint as ActiveBreakpoint;
-                      if (bp === 'desktop') {
-                        patchCls(applyAlignment(cls, i, isRow));
-                        return;
-                      }
-                      // Responsive breakpoint: write intent directly so the
-                      // click always lands the chosen cell, even when it
-                      // matches the base className on one or both axes. The
-                      // class-diff in patchCls would otherwise be empty on a
-                      // matching axis and leave a stale override from a prior
-                      // click in place (most visible for the center cell when
-                      // base already contains items-center or justify-center).
-                      const cell = buildAlignCells(isRow)[i];
-                      if (!cell) return;
-                      const rbp = bp as 'laptop' | 'tablet' | 'mobile';
-                      const baseItems   = parseTwToken(cls, 'items-')   ?? 'items-start';
-                      const baseJustify = parseTwToken(cls, 'justify-') ?? 'justify-start';
-                      const itemsCss   = twTokenToCss(cell.items)?.value;
-                      const justifyCss = twTokenToCss(cell.justify)?.value;
-                      if (cell.items === baseItems) {
-                        store.removeResponsiveOverride(nodeId, rbp, 'styles.alignItems');
-                      } else if (itemsCss !== undefined) {
-                        store.patchResponsive(nodeId, rbp, 'styles.alignItems', itemsCss);
-                      }
-                      if (cell.justify === baseJustify) {
-                        store.removeResponsiveOverride(nodeId, rbp, 'styles.justifyContent');
-                      } else if (justifyCss !== undefined) {
-                        store.patchResponsive(nodeId, rbp, 'styles.justifyContent', justifyCss);
-                      }
-                      commitHistory();
-                    }}
-                    style={{
-                      width: 20, height: 20,
-                      background: isActive ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
-                      border: `1px solid ${isActive ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
-                      borderRadius: 3, cursor: 'pointer',
-                      display: 'flex', alignItems: dotV, justifyContent: dotH,
-                      padding: 3,
-                    }}
-                  >
-                    <div style={{
-                      width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
-                      background: isActive ? 'rgba(255,255,255,0.9)' : 'var(--bld-border-subtle)',
-                    }} />
-                  </div>
-                );
-              })}
+      {!hideBehavior && (
+        <>
+          {/* ── Repeat / Visibility / Disable ── */}
+          <SectionDivider />
+          <RepeatInDesign node={node} />
+          <VisibilityInDesign node={node} />
+          <DisableInDesign node={node} />
+
+          {/* ── Interaction ── */}
+          <SectionDivider />
+          <div style={{ ...SECTION_STYLE }}>
+            <SectionHeader title="Interaction" />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <FieldWithBinding label="cursor" displayLabel="Cursor" cssProp="cursor" hint="e.g. cursor-pointer, cursor-default" value={(classFormulas?.['cursor'] as FormulaValue) ?? cursorToken} onChange={v => bindOrPatchCls('cursor', evaluated => patchCls(replaceTwToken(cls, 'cursor-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('cursor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="cursor">
+                <SelectInput label="Cursor" cssProp="cursor" value={cursorToken} options={CURSOR_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'cursor-', v))} />
+              </FieldWithBinding>
             </div>
-          </FieldWithBinding>
-        </div>
+          </div>
+
+          {/* ── Animation ── */}
+          <SectionDivider />
+          <AnimationInDesign nodeId={nodeId} node={node} store={store} commitHistory={commitHistory} />
+        </>
       )}
-
-      {/* ── Auto Layout (only for flex containers) ── */}
-      {showLayout && (
-        <div style={SECTION_STYLE}>
-          <SectionHeader title="Auto Layout" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['auto-layout']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['auto-layout']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['auto-layout']!)} />
-          <FieldWithBinding label="layoutDir" hint="e.g. flex-row, flex-col, grid" cssProp="flexDirection" value={(classFormulas?.['layoutDir'] as FormulaValue) ?? (isGrid ? 'grid' : isFlexWrap ? 'flex-row flex-wrap' : flexDir)} responsiveOverrides={getOverriddenBps('flexDirection')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="flexDirection" onChange={v => bindOrPatchCls('layoutDir', evaluated => {
-            let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
-            if (evaluated === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
-            else if (evaluated === 'grid')          next = `${next} grid`.trim();
-            else if (evaluated)                     next = `${next} flex ${evaluated}`.trim();
-            patchCls(next);
-          }, v)} expectedType="string" stackLayout>
-            {/* Flow direction — 4 icons */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-              {([
-                ['flex-row',          'row', 'Row'],
-                ['flex-col',          'col', 'Column'],
-                ['flex-row flex-wrap','wrap', 'Row wrap'],
-                ['grid',              'grid', 'Grid'],
-              ] as const).map(([token, icon, label]) => {
-                const active = token === 'flex-row flex-wrap'
-                  ? (flexDir === 'flex-row' && isFlexWrap)
-                  : token === 'grid'
-                  ? isGrid
-                  : flexDir === token && !isFlexWrap && !isGrid;
-                return (
-                  <ToggleBtn key={token} active={active} title={label} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
-                    // At non-desktop breakpoints we can't rely on patchCls's
-                    // token diffing because `flex` and `grid` aren't in
-                    // TW_TOKEN_MAP — those `display` swaps would be silently
-                    // dropped. Write display/flexDirection/flexWrap overrides
-                    // directly so the canvas reflects the change AND the
-                    // responsive-aware active state lights up.
-                    if (abp !== 'desktop') {
-                      const writes: Array<[string, string]> = [];
-                      if (token === 'flex-row flex-wrap') {
-                        writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'wrap']);
-                      } else if (token === 'grid') {
-                        writes.push(['display', 'grid'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
-                      } else if (token === 'flex-row') {
-                        writes.push(['display', 'flex'], ['flexDirection', 'row'], ['flexWrap', 'nowrap']);
-                      } else if (token === 'flex-col') {
-                        writes.push(['display', 'flex'], ['flexDirection', 'column'], ['flexWrap', 'nowrap']);
-                      }
-                      const bp = abp as 'laptop' | 'tablet' | 'mobile';
-                      for (const [prop, val] of writes) {
-                        store.patchResponsive(nodeId, bp, `styles.${prop}`, val);
-                      }
-                      commitHistory();
-                      return;
-                    }
-                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'flex-'), 'grid'), 'flex-wrap');
-                    if (token === 'flex-row flex-wrap') next = `${next} flex flex-row flex-wrap`.trim();
-                    else if (token === 'grid')          next = `${next} grid`.trim();
-                    else                                next = `${next} flex ${token}`.trim();
-                    patchCls(next);
-                  }}>
-                    {icon === 'row'  && <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="5.5" y="2" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="2" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
-                    {icon === 'col'  && <svg width="10" height="14" viewBox="0 0 10 14" fill="none"><rect x="2" y="1" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="5.5" width="6" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="2" y="10" width="6" height="3" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>}
-                    {icon === 'wrap' && <svg width="14" height="12" viewBox="0 0 14 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="6" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M11 5l1.5-1.5L14 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    {icon === 'grid' && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2"/></svg>}
-                  </ToggleBtn>
-                );
-              })}
-            </div>
-          </FieldWithBinding>
-
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="gap" displayLabel="Gap" cssProp="gap" hint="e.g. 8px, 1rem, 16px" value={(nodeStyle.gap ?? '') as FormulaValue} onChange={v => bindOrPatch('gap', v)} responsiveOverrides={getOverriddenBps('gap')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gap">
-              <NumberInput
-                label="Gap"
-                cssProp="gap"
-                testId="input-gap"
-                value={gapPx}
-                onChange={px => {
-                  patchStyle({ gap: px > 0 ? `${px}px` : undefined as unknown as string });
-                }}
-              />
-            </FieldWithBinding>
-            {/* Gap mode: Fixed vs Space-between */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                <span style={{ fontSize: 9, color: isSpaceBetween ? 'var(--bld-warning)' : 'var(--bld-text-3)' }}>Mode</span>
-                {getOverriddenBps('justifyContent').length > 0 && (
-                  <ResponsiveDot
-                    cssProp="justifyContent"
-                    overriddenBreakpoints={getOverriddenBps('justifyContent')}
-                    onRemove={removeResponsive}
-                    onResetAll={resetResponsive}
-                  />
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 2 }}>
-                <ToggleBtn active={!isSpaceBetween} onClick={() => {
-                  // At non-desktop, "Fixed" should clear any responsive
-                  // justifyContent override so the base value (or its absence)
-                  // takes effect. Going through patchCls misses this when the
-                  // base cls doesn't contain `justify-between` — token diffing
-                  // finds nothing changed and leaves the override in place.
-                  if (abp !== 'desktop') {
-                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
-                    if (rOvr('justifyContent') !== undefined) {
-                      store.removeResponsiveOverride(nodeId, bp, 'styles.justifyContent');
-                      commitHistory();
-                    }
-                    return;
-                  }
-                  patchCls(removeTwToken(cls, 'justify-between'));
-                }}>Fixed</ToggleBtn>
-                <ToggleBtn data-testid="gap-mode-space-between" active={isSpaceBetween} style={{ padding: '4px 7px', display: 'flex', alignItems: 'center' }} onClick={() => {
-                  if (abp !== 'desktop') {
-                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
-                    store.patchResponsive(nodeId, bp, 'styles.justifyContent', 'space-between');
-                    commitHistory();
-                    return;
-                  }
-                  patchCls(replaceTwToken(cls, 'justify-', 'justify-between'));
-                }}>
-                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="1" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="1" width="3" height="8" rx="0.8" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 5h5M3 3l-1.5 2L3 7M11 3l1.5 2L11 7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </ToggleBtn>
-              </div>
-            </div>
-          </div>
-
-          {/* Grid controls — only when grid layout is active */}
-          {isGrid && (
-            <>
-              {/* Divider + Grid label */}
-              <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 2, marginBottom: 6, paddingTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.5 }}><rect x="1" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="1" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="1" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/><rect x="7" y="7" width="4" height="4" rx="0.8" stroke="var(--bld-text-3)" strokeWidth="1.2"/></svg>
-                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Grid</span>
-              </div>
-              {/* Columns + Rows */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                {(() => {
-                  const effColsCss = rOvr('gridTemplateColumns');
-                  const colsToken = effColsCss ? (CSS_TO_TW_GRID_COLS[effColsCss] ?? (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1')) : (GRID_COLS_TOKENS.find(t => cls.includes(t)) ?? 'grid-cols-1');
-                  const effRowsCss = rOvr('gridTemplateRows');
-                  const rowsToken = effRowsCss ? (CSS_TO_TW_GRID_ROWS[effRowsCss] ?? (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1')) : (GRID_ROWS_TOKENS.find(t => cls.includes(t)) ?? 'grid-rows-1');
-                  return (
-                    <>
-                      <FieldWithBinding label="gridCols" displayLabel="Columns" cssProp="gridTemplateColumns" hint="e.g. grid-cols-2, grid-cols-4" value={(classFormulas?.['gridCols'] as FormulaValue) ?? colsToken} responsiveOverrides={getOverriddenBps('gridTemplateColumns')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateColumns" onChange={v => bindOrPatchCls('gridCols', evaluated => {
-                        let next = cls;
-                        GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                        patchCls(`${next} ${evaluated}`.trim());
-                      }, v)} expectedType="string">
-                        <SelectInput
-                          label="Columns"
-                          cssProp="gridTemplateColumns"
-                          value={colsToken}
-                          options={[...GRID_COLS_TOKENS]}
-                          onChange={v => {
-                            let next = cls;
-                            GRID_COLS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                            patchCls(`${next} ${v}`.trim());
-                          }}
-                        />
-                      </FieldWithBinding>
-                      <FieldWithBinding label="gridRows" displayLabel="Rows" cssProp="gridTemplateRows" hint="e.g. grid-rows-2, grid-rows-4" value={(classFormulas?.['gridRows'] as FormulaValue) ?? rowsToken} responsiveOverrides={getOverriddenBps('gridTemplateRows')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="gridTemplateRows" onChange={v => bindOrPatchCls('gridRows', evaluated => {
-                        let next = cls;
-                        GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                        patchCls(`${next} ${evaluated}`.trim());
-                      }, v)} expectedType="string">
-                        <SelectInput
-                          label="Rows"
-                          cssProp="gridTemplateRows"
-                          value={rowsToken}
-                          options={[...GRID_ROWS_TOKENS]}
-                          onChange={v => {
-                            let next = cls;
-                            GRID_ROWS_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                            patchCls(`${next} ${v}`.trim());
-                          }}
-                        />
-                      </FieldWithBinding>
-                    </>
-                  );
-                })()}
-              </div>
-              {/* Auto flow */}
-              {(() => {
-                const effFlowCss = rOvr('gridAutoFlow');
-                const flowToken = effFlowCss
-                  ? (GRID_FLOW_CSS_TO_TW[effFlowCss] ?? ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row'))
-                  : ((['grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense'] as const).find(t => cls.includes(t)) ?? 'grid-flow-row');
-                return (
-                  <FieldWithBinding label="gridFlow" displayLabel="Auto flow" cssProp="gridAutoFlow" hint="e.g. grid-flow-row, grid-flow-col, grid-flow-row-dense"
-                    responsiveOverrides={getOverriddenBps('gridAutoFlow')}
-                    onResponsiveRemove={removeResponsive}
-                    onResponsiveReset={resetResponsive}
-                    responsiveCssProp="gridAutoFlow"
-                    value={(classFormulas?.['gridFlow'] as FormulaValue) ?? flowToken} onChange={v => bindOrPatchCls('gridFlow', evaluated => {
-                    const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
-                    patchCls(evaluated && evaluated !== 'grid-flow-row' ? `${next} ${evaluated}`.trim() : next);
-                  }, v)} expectedType="string">
-                    <SelectInput
-                      label="Auto flow"
-                      cssProp="gridAutoFlow"
-                      value={flowToken}
-                      options={['grid-flow-row','grid-flow-col','grid-flow-row-dense','grid-flow-col-dense','grid-flow-dense']}
-                      onChange={v => {
-                        const next = removeTwToken(removeTwToken(removeTwToken(removeTwToken(removeTwToken(cls, 'grid-flow-col-dense'), 'grid-flow-row-dense'), 'grid-flow-col'), 'grid-flow-dense'), 'grid-flow-row');
-                        patchCls(v && v !== 'grid-flow-row' ? `${next} ${v}`.trim() : next);
-                      }}
-                    />
-                  </FieldWithBinding>
-                );
-              })()}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── Padding (hidden for raw text nodes) ── */}
-      {showPadding && (
-        <div data-testid="section-padding" style={SECTION_STYLE}>
-          <SpacingDiagram
-            label="padding"
-            values={{ top: padding.top, right: padding.right, bottom: padding.bottom, left: padding.left }}
-            onChange={(side, px) => {
-              const cap = side.charAt(0).toUpperCase() + side.slice(1);
-              patchStyle({ [`padding${cap}`]: `${px}px` });
-            }}
-            onChangeAll={px => patchStyle({
-              paddingTop: `${px}px`, paddingRight: `${px}px`,
-              paddingBottom: `${px}px`, paddingLeft: `${px}px`,
-            })}
-            formulaValues={{
-              top:    (nodeStyle.paddingTop    ?? '') as FormulaValue,
-              right:  (nodeStyle.paddingRight  ?? '') as FormulaValue,
-              bottom: (nodeStyle.paddingBottom ?? '') as FormulaValue,
-              left:   (nodeStyle.paddingLeft   ?? '') as FormulaValue,
-            }}
-            onFormulaChange={(side, v) => {
-              const cap = side.charAt(0).toUpperCase() + side.slice(1);
-              bindOrPatch(`padding${cap}`, v);
-            }}
-            testIdPrefix="pad"
-            responsiveOverrides={getSectionOverriddenBps(['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
-            onResponsiveRemove={(bp) => removeSectionBp(bp, ['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
-            onResponsiveReset={() => resetSectionResponsive(['paddingTop','paddingRight','paddingBottom','paddingLeft'])}
-            perSideOverrides={{
-              top: getOverriddenBps('paddingTop'),
-              right: getOverriddenBps('paddingRight'),
-              bottom: getOverriddenBps('paddingBottom'),
-              left: getOverriddenBps('paddingLeft'),
-            }}
-            onPerSideRemove={removeResponsive}
-            onPerSideReset={resetResponsive}
-          />
-        </div>
-      )}
-
-      {/* ── Margin ── */}
-      <div data-testid="section-margin" style={SECTION_STYLE}>
-        <SpacingDiagram
-          label="margin"
-          values={{ top: margin.top, right: margin.right, bottom: margin.bottom, left: margin.left }}
-          onChange={(side, px) => {
-            const cap = side.charAt(0).toUpperCase() + side.slice(1);
-            patchStyle({ [`margin${cap}`]: `${px}px` });
-          }}
-          onChangeAll={px => patchStyle({
-            marginTop: `${px}px`, marginRight: `${px}px`,
-            marginBottom: `${px}px`, marginLeft: `${px}px`,
-          })}
-          formulaValues={{
-            top:    (nodeStyle.marginTop    ?? '') as FormulaValue,
-            right:  (nodeStyle.marginRight  ?? '') as FormulaValue,
-            bottom: (nodeStyle.marginBottom ?? '') as FormulaValue,
-            left:   (nodeStyle.marginLeft   ?? '') as FormulaValue,
-          }}
-          onFormulaChange={(side, v) => {
-            const cap = side.charAt(0).toUpperCase() + side.slice(1);
-            bindOrPatch(`margin${cap}`, v);
-          }}
-          testIdPrefix="margin"
-          responsiveOverrides={getSectionOverriddenBps(['marginTop','marginRight','marginBottom','marginLeft'])}
-          onResponsiveRemove={(bp) => removeSectionBp(bp, ['marginTop','marginRight','marginBottom','marginLeft'])}
-          onResponsiveReset={() => resetSectionResponsive(['marginTop','marginRight','marginBottom','marginLeft'])}
-          perSideOverrides={{
-            top: getOverriddenBps('marginTop'),
-            right: getOverriddenBps('marginRight'),
-            bottom: getOverriddenBps('marginBottom'),
-            left: getOverriddenBps('marginLeft'),
-          }}
-          onPerSideRemove={removeResponsive}
-          onPerSideReset={resetResponsive}
-        />
-      </div>
-
-      {/* ── Typography (text nodes only) ── */}
-      {isTextNode && (
-        <div data-testid="section-typography" style={SECTION_STYLE}>
-          <SectionHeader title="Typography" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
-            <MiniPreview
-              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
-              title={`${fontSizePx}px · ${fontWeight}`}
-            >
-              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
-            </MiniPreview>
-          </SectionHeader>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
-            <FieldWithBinding label="fontSize" displayLabel="Size" cssProp="fontSize" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
-              <NumberInput
-                label="Size"
-                cssProp="fontSize"
-                testId="input-text-size"
-                value={fontSizePx}
-                onChange={px => patchStyle({ fontSize: `${px}px` })}
-              />
-            </FieldWithBinding>
-            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" cssProp="fontWeight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
-              <SelectInput label="Weight" cssProp="fontWeight" testId="select-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
-            </FieldWithBinding>
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="leading" displayLabel="Leading" cssProp="lineHeight" hint="e.g. leading-tight, leading-relaxed, leading-6" value={(classFormulas?.['leading'] as FormulaValue) ?? leading} onChange={v => bindOrPatchCls('leading', evaluated => patchCls(replaceTwToken(cls, 'leading-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('lineHeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="lineHeight">
-              <SelectInput label="Leading" cssProp="lineHeight" testId="select-leading" value={leading} options={LEADING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'leading-', v))} />
-            </FieldWithBinding>
-            <FieldWithBinding label="tracking" displayLabel="Tracking" cssProp="letterSpacing" hint="e.g. tracking-wide, tracking-tight, tracking-normal" value={(classFormulas?.['tracking'] as FormulaValue) ?? tracking} onChange={v => bindOrPatchCls('tracking', evaluated => patchCls(replaceTwToken(cls, 'tracking-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('letterSpacing')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="letterSpacing">
-              <SelectInput label="Tracking" cssProp="letterSpacing" testId="select-tracking" value={tracking} options={TRACKING_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'tracking-', v))} />
-            </FieldWithBinding>
-          </div>
-          {/* Text alignment — 4 icon buttons with formula binding */}
-          <FieldWithBinding label="textAlign" displayLabel="Align" cssProp="textAlign" hint='e.g. "text-left", "text-center", "text-right", "text-justify"' value={(classFormulas?.['textAlign'] as FormulaValue) ?? textAlign} onChange={v => bindOrPatchCls('textAlign', evaluated => {
-            let next = cls;
-            TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-            patchCls(evaluated === 'text-left' || !evaluated ? next : `${next} ${evaluated}`.trim());
-          }, v)} expectedType="string" stackLayout responsiveOverrides={getOverriddenBps('textAlign')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textAlign">
-            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-              {([['text-left','left'],['text-center','center'],['text-right','right'],['text-justify','justify']] as const).map(([token, icon]) => (
-                <ToggleBtn key={token} active={textAlign === token} style={{ padding: '4px 6px', display: 'flex', alignItems: 'center' }} onClick={() => {
-                  let next = cls;
-                  TEXT_ALIGN_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                  patchCls(token === 'text-left' ? next : `${next} ${token}`.trim());
-                }}>
-                  {icon === 'left'    && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="8" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
-                  {icon === 'center'  && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
-                  {icon === 'right'   && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="4" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="2" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
-                  {icon === 'justify' && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
-                </ToggleBtn>
-              ))}
-            </div>
-          </FieldWithBinding>
-          {/* Text decoration & transform */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <FieldWithBinding label="textDecoration" displayLabel="Decoration" cssProp="textDecoration" hint="e.g. underline, line-through, no-underline" value={(classFormulas?.['textDecoration'] as FormulaValue) ?? textDecor} responsiveOverrides={getOverriddenBps('textDecoration')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textDecoration" onChange={v => bindOrPatchCls('textDecoration', evaluated => {
-              let next = cls;
-              TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(evaluated === 'no-underline' ? next : `${next} ${evaluated}`.trim());
-            }, v)} expectedType="string">
-              <SelectInput label="Decoration" cssProp="textDecoration" value={textDecor} options={TEXT_DECORATION_TOKENS} onChange={v => {
-                let next = cls;
-                TEXT_DECORATION_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(v === 'no-underline' ? next : `${next} ${v}`.trim());
-              }} />
-            </FieldWithBinding>
-            <FieldWithBinding label="textTransform" displayLabel="Transform" cssProp="textTransform" hint="e.g. uppercase, lowercase, capitalize, normal-case" value={(classFormulas?.['textTransform'] as FormulaValue) ?? textTransform} responsiveOverrides={getOverriddenBps('textTransform')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="textTransform" onChange={v => bindOrPatchCls('textTransform', evaluated => {
-              let next = cls;
-              TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-              patchCls(evaluated === 'normal-case' ? next : `${next} ${evaluated}`.trim());
-            }, v)} expectedType="string">
-              <SelectInput label="Transform" cssProp="textTransform" value={textTransform} options={TEXT_TRANSFORM_TOKENS} onChange={v => {
-                let next = cls;
-                TEXT_TRANSFORM_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(v === 'normal-case' ? next : `${next} ${v}`.trim());
-              }} />
-            </FieldWithBinding>
-          </div>
-          <div>
-            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. red, var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
-              <div>
-                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
-                <FigmaColorPicker
-                  testId="input-text-color"
-                  value={computedTextColor}
-                  onChange={(hex, cssVar) => cssVar
-                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
-                    : patchStyle({ color: hex || '' })
-                  }
-                />
-              </div>
-            </FieldWithBinding>
-          </div>
-
-          {/* ── Text overflow / whitespace / word-break ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-            {/* Overflow — ellipsis uses Tailwind truncate shorthand (overflow-hidden + whitespace-nowrap + text-ellipsis) */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Overflow</span>
-              {([
-                { v: '' as const,        label: 'none',     title: 'No overflow handling' },
-                { v: 'truncate' as const, label: 'ellipsis', title: 'Clip + nowrap + ellipsis (truncate)' },
-                { v: 'clip' as const,    label: 'clip',     title: 'Clip text, no ellipsis' },
-              ]).map(({ v, label, title }) => {
-                const effectiveTxtOvr = rOvr('textOverflow');
-                const active = effectiveTxtOvr !== undefined
-                  ? (v === '' ? !effectiveTxtOvr : v === 'truncate' ? effectiveTxtOvr === 'ellipsis' : effectiveTxtOvr === 'clip')
-                  : v === ''
-                    ? !cls.includes('truncate') && !cls.includes('text-clip')
-                    : v === 'truncate' ? cls.includes('truncate')
-                    : cls.includes('text-clip') && !cls.includes('truncate');
-                return (
-                  <ToggleBtn key={v || 'none'} active={active} title={title} onClick={() => {
-                    let next = removeTwToken(removeTwToken(removeTwToken(cls, 'truncate'), 'text-clip'), 'overflow-hidden');
-                    if (v === 'truncate') next = `${next} truncate`.trim();
-                    else if (v === 'clip') next = `${next} overflow-hidden text-clip`.trim();
-                    patchCls(next);
-                  }} style={{ fontSize: 9, padding: '2px 5px' }}>{label}</ToggleBtn>
-                );
-              })}
-              {getOverriddenBps('textOverflow').length > 0 && (
-                <ResponsiveDot cssProp="textOverflow" overriddenBreakpoints={getOverriddenBps('textOverflow')} onRemove={bp => removeResponsive(bp, 'textOverflow')} onResetAll={() => resetResponsive('textOverflow')} />
-              )}
-            </div>
-            {/* Whitespace */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Whitespace</span>
-              {(['', 'whitespace-nowrap', 'whitespace-pre', 'whitespace-normal'] as const).map(v => {
-                const effWs = rOvr('whiteSpace');
-                const WS_MAP: Record<string, string> = { 'whitespace-nowrap': 'nowrap', 'whitespace-pre': 'pre', 'whitespace-normal': 'normal' };
-                const active = effWs !== undefined
-                  ? (v === '' ? !effWs : effWs === WS_MAP[v])
-                  : v === '' ? (!cls.includes('whitespace-nowrap') && !cls.includes('whitespace-pre') && !cls.includes('whitespace-normal')) : cls.includes(v);
-                return (
-                  <ToggleBtn
-                    key={v || 'default'}
-                    active={active}
-                    title={v === '' ? 'Default (wrap normally)' : v === 'whitespace-nowrap' ? 'No wrapping' : v === 'whitespace-pre' ? 'Preserve whitespace' : 'Normal wrapping'}
-                    onClick={() => {
-                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'whitespace-nowrap'), 'whitespace-pre'), 'whitespace-normal');
-                      if (v) next = `${next} ${v}`.trim();
-                      patchCls(next);
-                    }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('whitespace-', '') : 'def'}</ToggleBtn>
-                );
-              })}
-              {getOverriddenBps('whiteSpace').length > 0 && (
-                <ResponsiveDot cssProp="whiteSpace" overriddenBreakpoints={getOverriddenBps('whiteSpace')} onRemove={bp => removeResponsive(bp, 'whiteSpace')} onResetAll={() => resetResponsive('whiteSpace')} />
-              )}
-            </div>
-            {/* Word break */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', width: 60, flexShrink: 0 }}>Word break</span>
-              {(['', 'break-all', 'break-words', 'break-keep'] as const).map(v => {
-                const effWb = rOvr('wordBreak');
-                const WB_MAP: Record<string, string> = { 'break-all': 'break-all', 'break-words': 'break-word', 'break-keep': 'keep-all' };
-                const active = effWb !== undefined
-                  ? (v === '' ? !effWb : effWb === WB_MAP[v])
-                  : v === '' ? (!cls.includes('break-all') && !cls.includes('break-words') && !cls.includes('break-keep')) : cls.includes(v);
-                return (
-                  <ToggleBtn
-                    key={v || 'none'}
-                    active={active}
-                    title={v === '' ? 'Default' : v === 'break-all' ? 'Break at any character' : v === 'break-words' ? 'Break long words only' : 'Keep CJK words together'}
-                    onClick={() => {
-                      let next = removeTwToken(removeTwToken(removeTwToken(cls, 'break-all'), 'break-words'), 'break-keep');
-                      if (v) next = `${next} ${v}`.trim();
-                      patchCls(next);
-                    }} style={{ fontSize: 9, padding: '2px 5px' }}>{v ? v.replace('break-', '') : 'none'}</ToggleBtn>
-                );
-              })}
-              {getOverriddenBps('wordBreak').length > 0 && (
-                <ResponsiveDot cssProp="wordBreak" overriddenBreakpoints={getOverriddenBps('wordBreak')} onRemove={bp => removeResponsive(bp, 'wordBreak')} onResetAll={() => resetResponsive('wordBreak')} />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Input Text (Input / Textarea nodes only) ── */}
-      {isInputNode && (
-        <div data-testid="section-input-text" style={SECTION_STYLE}>
-          <SectionHeader title="Input Text" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['typography']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['typography']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['typography']!)}>
-            <MiniPreview
-              style={{ width: 36, background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 3 }}
-              title={`${fontSizePx}px · ${fontWeight}`}
-            >
-              <span style={{ fontSize: Math.max(8, Math.min(fontSizePx, 13)), color: computedTextColor || 'var(--bld-text-2)', fontFamily: 'serif', lineHeight: 1, userSelect: 'none' }}>Aa</span>
-            </MiniPreview>
-          </SectionHeader>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 6, marginTop: 4 }}>
-            <FieldWithBinding label="fontSize" displayLabel="Size" cssProp="fontSize" hint="e.g. 14px, 16px, 24px" value={(nodeStyle.fontSize ?? '') as FormulaValue} onChange={v => bindOrPatch('fontSize', v)} responsiveOverrides={getOverriddenBps('fontSize')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontSize">
-              <NumberInput
-                label="Size"
-                cssProp="fontSize"
-                testId="input-field-text-size"
-                value={fontSizePx}
-                onChange={px => patchStyle({ fontSize: `${px}px` })}
-              />
-            </FieldWithBinding>
-            <FieldWithBinding label="fontWeightClass" displayLabel="Weight" cssProp="fontWeight" hint="e.g. font-bold, font-semibold, font-normal" value={(classFormulas?.['fontWeightClass'] as FormulaValue) ?? fontWeight} onChange={v => bindOrPatchCls('fontWeightClass', evaluated => patchCls(replaceTwToken(cls, 'font-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('fontWeight')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="fontWeight">
-              <SelectInput label="Weight" cssProp="fontWeight" testId="select-input-font-weight" value={fontWeight} options={FONT_WEIGHT_TOKENS} onChange={v => patchCls(replaceTwToken(cls, 'font-', v))} />
-            </FieldWithBinding>
-          </div>
-          <div>
-            <FieldWithBinding label="color" displayLabel="Color" cssProp="color" hint="CSS color: e.g. var(--bld-border-subtle)333, rgba(0,0,0,0.8)" value={(nodeStyle.color as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('color', v)} responsiveOverrides={getOverriddenBps('color')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="color">
-              <div>
-                <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
-                <FigmaColorPicker
-                  testId="input-field-text-color"
-                  value={computedTextColor}
-                  onChange={(hex, cssVar) => cssVar
-                    ? patchColorResponsive('color', 'props.style.color', 'text', cssVar)
-                    : patchStyle({ color: hex || '' })
-                  }
-                />
-              </div>
-            </FieldWithBinding>
-          </div>
-        </div>
-      )}
-
-      {/* ── Placeholder (Input / Textarea nodes only) ── */}
-      {isInputNode && (
-        <div data-testid="section-placeholder" style={SECTION_STYLE}>
-          <SectionHeader title="Placeholder" />
-          <div>
-            <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>Color</span>
-            <FigmaColorPicker
-              testId="input-placeholder-color"
-              value={computedPlaceholderColor || '#737373'}
-              onChange={(hex) => {
-                store.patchProp(nodeId, 'props.placeholderTextColor', hex || '');
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Interaction ── */}
-      <div style={SECTION_STYLE}>
-        <SectionHeader title="Interaction" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['display']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['display']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['display']!)} />
-        <div style={{ display: 'flex', gap: 6 }}>
-          <FieldWithBinding label="cursor" displayLabel="Cursor" cssProp="cursor" hint="e.g. cursor-pointer, cursor-default" value={(classFormulas?.['cursor'] as FormulaValue) ?? cursorToken} onChange={v => bindOrPatchCls('cursor', evaluated => patchCls(replaceTwToken(cls, 'cursor-', evaluated)), v)} expectedType="string" responsiveOverrides={getOverriddenBps('cursor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="cursor">
-            <SelectInput
-              label="Cursor"
-              cssProp="cursor"
-              value={cursorToken}
-              options={CURSOR_TOKENS}
-              onChange={v => patchCls(replaceTwToken(cls, 'cursor-', v))}
-            />
-          </FieldWithBinding>
-        </div>
-      </div>
-
-      {/* ── Overflow ── */}
-      <div style={SECTION_STYLE}>
-        <FieldWithBinding
-          label="overflow"
-          displayLabel="Overflow"
-          cssProp="overflow"
-          hint='e.g. overflow-hidden, overflow-auto, overflow-x-auto, overflow-y-auto'
-          value={(classFormulas?.['overflow'] as FormulaValue) ?? (currentOverflow === 'none' ? '' : currentOverflow)}
-          responsiveOverrides={Array.from(new Set([...getOverriddenBps('overflow'), ...getOverriddenBps('overflowX'), ...getOverriddenBps('overflowY')]))}
-          onResponsiveRemove={(bp) => { removeResponsive(bp, 'overflow'); removeResponsive(bp, 'overflowX'); removeResponsive(bp, 'overflowY'); }}
-          onResponsiveReset={() => { resetResponsive('overflow'); resetResponsive('overflowX'); resetResponsive('overflowY'); }}
-          responsiveCssProp="overflow"
-          onChange={v => bindOrPatchCls('overflow', evaluated => {
-            let next = removeTwToken(cls, 'overflow-');
-            if (evaluated && evaluated !== 'none') next = `${next} ${evaluated}`.trim();
-            patchCls(next);
-          }, v)}
-          expectedType="string"
-          stackLayout
-        >
-          <div style={{ display: 'flex', gap: 2 }}>
-            {([
-              ['none',             '—',     'Default (no overflow class)'],
-              ['overflow-hidden',  'clip',  'overflow-hidden — clips content'],
-              ['overflow-auto',    'auto',  'overflow-auto — scrolls when needed'],
-              ['overflow-scroll',  'scroll','overflow-scroll — always shows scrollbar'],
-              ['overflow-x-auto',  'x',     'overflow-x-auto — horizontal scroll'],
-              ['overflow-y-auto',  'y',     'overflow-y-auto — vertical scroll'],
-            ] as const).map(([token, label, title]) => (
-              <ToggleBtn
-                key={token}
-                title={title}
-                active={currentOverflow === token}
-                style={{ padding: '3px 6px', fontSize: 10 }}
-                onClick={() => {
-                  // Intent-based at non-desktop: clear any existing overflow*
-                  // overrides at this breakpoint, then set the desired one.
-                  // Going only through patchCls would miss two cases:
-                  //   1. Clicking "none" when base has no overflow-* token
-                  //      (token diff is empty → override persists).
-                  //   2. Switching from overflow-x-auto to overflow-hidden
-                  //      leaves a stale overflowX override behind.
-                  if (abp !== 'desktop') {
-                    const bp = abp as 'laptop' | 'tablet' | 'mobile';
-                    for (const p of ['overflow', 'overflowX', 'overflowY']) {
-                      if (rOvr(p) !== undefined) {
-                        store.removeResponsiveOverride(nodeId, bp, `styles.${p}`);
-                      }
-                    }
-                    if (token === 'overflow-hidden')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'hidden');
-                    else if (token === 'overflow-auto')   store.patchResponsive(nodeId, bp, 'styles.overflow',  'auto');
-                    else if (token === 'overflow-scroll') store.patchResponsive(nodeId, bp, 'styles.overflow',  'scroll');
-                    else if (token === 'overflow-x-auto') store.patchResponsive(nodeId, bp, 'styles.overflowX', 'auto');
-                    else if (token === 'overflow-y-auto') store.patchResponsive(nodeId, bp, 'styles.overflowY', 'auto');
-                    // 'none' → just clear, already done above.
-                    commitHistory();
-                    return;
-                  }
-                  let next = removeTwToken(cls, 'overflow-');
-                  if (token !== 'none') next = `${next} ${token}`.trim();
-                  patchCls(next);
-                }}
-              >
-                {label}
-              </ToggleBtn>
-            ))}
-          </div>
-        </FieldWithBinding>
-      </div>
-
-      {/* ── Fill & Opacity ── */}
-      <div data-testid="section-fill" style={SECTION_STYLE}>
-        <SectionHeader title="Fill & Opacity" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['fill-opacity']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['fill-opacity']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['fill-opacity']!)} />
-        <div style={{ marginTop: 4 }}>
-          <FillBackgroundSection
-            nodeId={nodeId}
-            node={node}
-            store={store}
-            commitHistory={commitHistory}
-            computedBgColor={computedBgColor}
-            patchColorResponsive={patchColorResponsive}
-            patchStyle={patchStyle as (patch: Record<string, string>) => void}
-            abp={abp}
-            getOverriddenBps={getOverriddenBps}
-            removeResponsive={removeResponsive}
-            resetResponsive={resetResponsive}
-          />
-        </div>
-        {/* Background alpha is now controlled via rgba() in the color picker above */}
-        <div style={{ marginTop: 6 }}>
-          <FieldWithBinding label="opacity" displayLabel="Opacity" cssProp="opacity" hint="number 0–1 e.g. 0.5, 0.8, 1 (no quotes)" value={(nodeStyle.opacity ?? '') as FormulaValue} onChange={v => bindOrPatch('opacity', v)} responsiveOverrides={getOverriddenBps('opacity')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="opacity">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 9, minWidth: 60 }}><ChangedLabel text="Element opacity" cssProp="opacity" /></span>
-              <input
-                type="range" min={5} max={100} step={5}
-                key={`${nodeId}-opacity-${opacityVal}`}
-                defaultValue={opacityVal < 5 ? 5 : opacityVal}
-                data-testid="input-opacity-slider"
-                onChange={e => {
-                  const val = parseInt(e.target.value);
-                  const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
-                  if (el) el.style.opacity = val >= 100 ? '' : String(val / 100);
-                  const label = e.target.closest('[data-field="opacity"]')?.querySelector('[data-opacity-label]') as HTMLElement | null;
-                  if (label) label.textContent = `${val}%`;
-                }}
-                onMouseUp={e => {
-                  const val = parseInt((e.target as HTMLInputElement).value);
-                  if (val >= 100) {
-                    patchStyle({ opacity: undefined as unknown as string });
-                    const cleaned = removeTwToken(cls, 'opacity-');
-                    if (cleaned !== cls) patchCls(cleaned);
-                  } else {
-                    patchStyle({ opacity: String(val / 100) });
-                  }
-                }}
-                style={{ flex: 1 }}
-              />
-              <span data-opacity-label style={{ fontSize: 10, color: 'var(--bld-text-2)', minWidth: 28 }}>{opacityVal}%</span>
-            </div>
-          </FieldWithBinding>
-        </div>
-      </div>
-
-      {/* ── Stroke ── */}
-      <div data-testid="section-border" style={SECTION_STYLE}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <SectionHeader title="Stroke" overriddenBreakpoints={getSectionOverriddenBps(SECTION_CSS_PROPS['stroke']!)} onRemoveBreakpoint={bp => removeSectionBp(bp, SECTION_CSS_PROPS['stroke']!)} onResetAll={() => resetSectionResponsive(SECTION_CSS_PROPS['stroke']!)}>
-            {borderWidthPx > 0 && (
-              <MiniPreview
-                style={{ background: 'transparent', border: `${Math.min(borderWidthPx, 4)}px solid ${computedBorderColor || 'var(--bld-text-disabled)'}` }}
-                title={`${borderWidthPx}px ${borderStyle}`}
-              />
-            )}
-          </SectionHeader>
-        </div>
-        <div style={{ marginBottom: 6 }}>
-          <FieldWithBinding label="borderColor" displayLabel="Border Color" cssProp="borderColor" hint="CSS color: e.g. var(--bld-border-subtle), rgba(0,0,0,0.5)" value={(nodeStyle.borderColor as unknown as FormulaValue) ?? ''} onChange={v => bindOrPatch('borderColor', v)} responsiveOverrides={getOverriddenBps('borderColor')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderColor">
-            <div>
-              <span style={{ fontSize: 9, display: 'block', marginBottom: 2 }}><ChangedLabel text="Color" cssProp="borderColor" /></span>
-              <FigmaColorPicker
-                testId="input-stroke-color"
-                value={computedBorderColor}
-                onChange={(hex, cssVar) => cssVar
-                  ? patchColorResponsive('borderColor', 'props.style.borderColor', 'border', cssVar)
-                  : patchStyle({ borderColor: hex || '' })
-                }
-              />
-            </div>
-          </FieldWithBinding>
-        </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-          <FieldWithBinding label="borderWidth" displayLabel="Width" cssProp="borderWidth" hint="e.g. 1px, 2px, 0" value={(nodeStyle.borderWidth ?? '') as FormulaValue} onChange={v => bindOrPatch('borderWidth', v)} expectedType="string" responsiveOverrides={getOverriddenBps('borderWidth')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderWidth">
-            <NumberInput
-              label="Width"
-              cssProp="borderWidth"
-              testId="input-border-width"
-              value={borderWidthPx}
-              onChange={px => patchStyle({ borderWidth: `${px}px` })}
-            />
-          </FieldWithBinding>
-          <FieldWithBinding label="borderStyle" displayLabel="Style" cssProp="borderStyle" hint="e.g. border-solid, border-dashed, border-dotted" value={(classFormulas?.['borderStyle'] as FormulaValue) ?? borderStyle} responsiveOverrides={getOverriddenBps('borderStyle')} onResponsiveRemove={removeResponsive} onResponsiveReset={resetResponsive} responsiveCssProp="borderStyle" onChange={v => bindOrPatchCls('borderStyle', evaluated => {
-            let next = cls;
-            BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-            patchCls(`${next} ${evaluated}`.trim());
-          }, v)} expectedType="string">
-            <SelectInput
-              label="Style"
-              cssProp="borderStyle"
-              value={borderStyle}
-              options={BORDER_STYLE_TOKENS}
-              onChange={v => {
-                let next = cls;
-                BORDER_STYLE_TOKENS.forEach(t => { next = removeTwToken(next, t); });
-                patchCls(`${next} ${v}`.trim());
-              }}
-            />
-          </FieldWithBinding>
-        </div>
-      </div>
-
-      {/* ── Border Radius ── */}
-      {(() => {
-        const baseTlPx = parseTwArbitraryPx(cls, 'rounded-tl-') ?? parseTwArbitraryPx(cls, 'rounded-') ?? parseRoundedNamedTokenPx(cls, 'rounded-tl-') ?? parseRoundedNamedTokenPx(cls, 'rounded-') ?? 0;
-        const tlPx = rOvr('borderTopLeftRadius') ? parseFloat(rOvr('borderTopLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : baseTlPx);
-        const trPx = rOvr('borderTopRightRadius') ? parseFloat(rOvr('borderTopRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-tr-') ?? baseTlPx));
-        const brPx = rOvr('borderBottomRightRadius') ? parseFloat(rOvr('borderBottomRightRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-br-') ?? baseTlPx));
-        const blPx = rOvr('borderBottomLeftRadius') ? parseFloat(rOvr('borderBottomLeftRadius')!) : (rOvr('borderRadius') ? parseFloat(rOvr('borderRadius')!) : (parseTwArbitraryPx(cls, 'rounded-bl-') ?? baseTlPx));
-        // Uniform bind: read from borderRadius (all-corners style prop) for the formula value
-        const uniformRadiusFormula = (nodeStyle.borderRadius ?? nodeStyle.borderTopLeftRadius ?? '') as FormulaValue;
-        const isBound = isBoundValue(uniformRadiusFormula);
-        return (
-          <div style={SECTION_STYLE}>
-            <FieldWithBinding
-              label="border-radius"
-              headerTitle="Border Radius"
-              cssProp="borderRadius"
-              hint="e.g. 8 (px number) or variables['UUID']"
-              value={uniformRadiusFormula}
-              onChange={v => {
-                bindOrPatch('borderRadius', v);
-              }}
-              responsiveOverrides={getOverriddenBps('borderRadius')}
-              onResponsiveRemove={removeResponsive}
-              onResponsiveReset={resetResponsive}
-              responsiveCssProp="borderRadius"
-            >
-              <CornerRadiusDiagram
-                values={{ tl: tlPx, tr: trPx, br: brPx, bl: blPx }}
-                onChange={(corner, px) => {
-                  const styleMap = {
-                    tl: 'borderTopLeftRadius',
-                    tr: 'borderTopRightRadius',
-                    br: 'borderBottomRightRadius',
-                    bl: 'borderBottomLeftRadius',
-                  } as const;
-                  patchStyle({ [styleMap[corner]]: `${px}px` });
-                }}
-                onChangeAll={px => patchStyle({
-                  borderTopLeftRadius:     `${px}px`,
-                  borderTopRightRadius:    `${px}px`,
-                  borderBottomRightRadius: `${px}px`,
-                  borderBottomLeftRadius:  `${px}px`,
-                })}
-                perCornerOverrides={{
-                  tl: getOverriddenBps('borderTopLeftRadius'),
-                  tr: getOverriddenBps('borderTopRightRadius'),
-                  br: getOverriddenBps('borderBottomRightRadius'),
-                  bl: getOverriddenBps('borderBottomLeftRadius'),
-                }}
-                onPerCornerRemove={removeResponsive}
-                onPerCornerReset={resetResponsive}
-              />
-            </FieldWithBinding>
-          </div>
-        );
-      })()}
-
-      {/* ── Per-side Border ── */}
-      {(() => {
-        const sides = [
-          { key: 't', label: 'T', widthStyle: 'borderTopWidth',    colorStyle: 'borderTopColor',    title: 'Top' },
-          { key: 'r', label: 'R', widthStyle: 'borderRightWidth',  colorStyle: 'borderRightColor',  title: 'Right' },
-          { key: 'b', label: 'B', widthStyle: 'borderBottomWidth', colorStyle: 'borderBottomColor', title: 'Bottom' },
-          { key: 'l', label: 'L', widthStyle: 'borderLeftWidth',   colorStyle: 'borderLeftColor',   title: 'Left' },
-        ] as const;
-        const hasPerSide = sides.some(s => (nodeStyle as Record<string, unknown>)[s.widthStyle] || (nodeStyle as Record<string, unknown>)[s.colorStyle]);
-        const [open, setOpen] = React.useState(hasPerSide);
-        return (
-          <div style={SECTION_STYLE}>
-            <button
-              type="button"
-              onClick={() => setOpen(o => !o)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--bld-text-disabled)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', padding: 0, width: '100%', textAlign: 'left' }}
-            >
-              <svg width={8} height={8} viewBox="0 0 8 8" fill="none" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
-                <path d="M2 1.5l3 2.5-3 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Per-side border
-            </button>
-            {open && (
-              <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '14px 44px 1fr 14px', gap: '5px 6px', alignItems: 'center' }}>
-                {sides.map(({ key, label, widthStyle, colorStyle, title }) => {
-                  const widthFromOvr = rOvr(widthStyle);
-                  const widthPx = parseTwArbitraryPx(cls, `border-${key}-`)
-                    ?? (widthFromOvr != null
-                          ? parseInt(String(widthFromOvr)) || 0
-                          : parseInt(String((nodeStyle as Record<string, unknown>)[widthStyle] ?? '0')) || 0);
-                  const colorVal = String(rOvr(colorStyle) ?? (nodeStyle as Record<string, unknown>)[colorStyle] ?? '');
-                  const sideChanged = isFieldChanged(widthStyle) || isFieldChanged(colorStyle);
-                  const resetSide = () => { resetField(widthStyle); resetField(colorStyle); };
-                  const sideBps = Array.from(new Set([...getOverriddenBps(widthStyle), ...getOverriddenBps(colorStyle)]));
-                  const sideChipCssProp = `border${title}`;
-                  return (
-                    <React.Fragment key={key}>
-                      <span title={title} style={{ fontSize: 9, fontWeight: 600, lineHeight: '26px' }}>
-                        <InlineChangedLabel text={label} changed={sideChanged} onReset={resetSide} />
-                      </span>
-                      <PanelInput
-                        value={widthPx}
-                        onChange={px => patchStyle({ [widthStyle]: `${px}px` })}
-                        min={0}
-                        width={44}
-                      />
-                      <div style={{ position: 'relative' }}>
-                        <FigmaColorPicker
-                          value={colorVal || computedBorderColor}
-                          onChange={hex => patchStyle({ [colorStyle]: hex || '' })}
-                        />
-                        {isFieldChanged(colorStyle) && (
-                          <span style={{ position: 'absolute', top: 2, right: 2, width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-warning)', pointerEvents: 'none' }} />
-                        )}
-                      </div>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 14, width: 14 }}>
-                        {sideBps.length > 0 && (
-                          <ResponsiveDot
-                            cssProp={sideChipCssProp}
-                            overriddenBreakpoints={sideBps}
-                            onRemove={(bp) => { removeResponsive(bp, widthStyle); removeResponsive(bp, colorStyle); }}
-                            onResetAll={() => { resetResponsive(widthStyle); resetResponsive(colorStyle); }}
-                          />
-                        )}
-                      </span>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ── Effects (Shadow, Blur, Backdrop) ── */}
-      <EffectsSection
-        nodeId={nodeId}
-        node={node}
-        store={store}
-        commitHistory={commitHistory}
-        abp={abp}
-        getOverriddenBps={getOverriddenBps}
-        removeResponsive={removeResponsive}
-        resetResponsive={resetResponsive}
-      />
-
-      {/* ── Animation ── */}
-      <AnimationInDesign
-        nodeId={nodeId}
-        node={node}
-        store={store}
-        commitHistory={commitHistory}
-      />
-
-      {/* ── Selection colors ── */}
-      {selectionColors.length > 0 && (
-        <div style={SECTION_STYLE}>
-          <SectionHeader title="Selection colors" />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {selectionColors.map(color => (
-              <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 3, background: color, border: '1px solid var(--bld-border-subtle)' }} />
-                <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{color}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Grid overlay toggle ── */}
-      <GridOverlayPanel />
-
-      {/* ── Repeat / List ── */}
-      <RepeatInDesign node={node} />
-
-      {/* ── Visibility ── */}
-      <VisibilityInDesign node={node} />
-
-      {/* ── Disable (all nodes) ── */}
-      <DisableInDesign node={node} />
 
     </div>
     </ChangedFieldContext.Provider>
@@ -4880,17 +4720,89 @@ export function DesignTab({ node }: { node: SDUINode }) {
 import {
   INTERACTIVE_TYPES, FORM_INPUT_TYPES, DESIGN_INLINE_STYLE,
   ToggleBind, VisibilityInDesign, DisableInDesign, RepeatInDesign,
-  NodeNameInDesign, GridOverlayPanel, PropsTab, JsonTab,
+  NodeNameInDesign, PropsTab, JsonTab,
 } from './_panel-right-design-sections';
 
 
+
+// ─── Element Behavior Panel (Settings tab) ────────────────────────────────────
+
+function ElementBehaviorPanel({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as unknown as Record<string, unknown>).id as string;
+  const cls: string = ((node.props as Record<string, unknown>)?.className as string) ?? '';
+  const cursorToken = parseTwToken(cls, 'cursor-') ?? '';
+  const histTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const commitHistory = useCallback(() => {
+    if (histTimerRef.current) clearTimeout(histTimerRef.current);
+    histTimerRef.current = setTimeout(() => store._pushHistory(), 400);
+  }, [store]);
+
+  const patchCls = useCallback((next: string) => {
+    store.patchProp(nodeId, 'props.className', next);
+    commitHistory();
+  }, [store, nodeId, commitHistory]);
+
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      {/* Repeat / Visibility / Disable */}
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE, paddingBottom: 4 }}>
+        <SectionHeader title="Element" />
+      </div>
+      <RepeatInDesign node={node} />
+      <VisibilityInDesign node={node} />
+      <DisableInDesign node={node} />
+
+      {/* Interaction — cursor style */}
+      <SectionDivider />
+      <div style={{ ...SECTION_STYLE }}>
+        <SectionHeader title="Interaction" />
+        <div style={{ display: 'flex', gap: 6 }}>
+          <SelectInput
+            label="Cursor"
+            cssProp="cursor"
+            value={cursorToken}
+            options={CURSOR_TOKENS}
+            onChange={v => patchCls(replaceTwToken(cls, 'cursor-', v))}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Motion Panel (Animation tab) ─────────────────────────────────────────────
+
+function MotionPanel({ node }: { node: SDUINode }) {
+  const store = useBuilderStore();
+  const nodeId = (node as unknown as Record<string, unknown>).id as string;
+  const histTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const commitHistory = useCallback(() => {
+    if (histTimerRef.current) clearTimeout(histTimerRef.current);
+    histTimerRef.current = setTimeout(() => store._pushHistory(), 400);
+  }, [store]);
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+      <AnimationInDesign
+        nodeId={nodeId}
+        node={node}
+        store={store}
+        commitHistory={commitHistory}
+      />
+    </div>
+  );
+}
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 
 export interface PanelRightProps {}
 
 export default function PanelRight({}: PanelRightProps = {}) {
-  const [tab, setTab] = useState<'design' | 'workflows' | 'json'>('design');
+  const [tab, setTab] = useState<'design' | 'settings' | 'motion' | 'workflows'>('design');
+  const [designSearch, setDesignSearch] = useState('');
   const {
     selectedIds, pageNodes, activePreviewStates,
     editingSharedComponentId, editingSharedComponentContent,
@@ -4926,7 +4838,7 @@ export default function PanelRight({}: PanelRightProps = {}) {
       ?? findNode(canvasNodes, selectedIds[0]);
   }, [selectedIds, searchNodes, canvasNodes]);
 
-  const TABS: Array<{ id: 'design' | 'workflows' | 'json'; label: string; icon: React.ReactNode }> = [
+  const TABS: Array<{ id: 'design' | 'settings' | 'motion' | 'workflows'; label: string; icon: React.ReactNode }> = [
     {
       id: 'design',
       label: 'Design',
@@ -4937,20 +4849,29 @@ export default function PanelRight({}: PanelRightProps = {}) {
       ),
     },
     {
+      id: 'settings',
+      label: 'Settings',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'motion',
+      label: 'Animation',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+        </svg>
+      ),
+    },
+    {
       id: 'workflows',
       label: 'Workflows',
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      ),
-    },
-    {
-      id: 'json',
-      label: 'JSON',
-      icon: (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
         </svg>
       ),
     },
@@ -4989,18 +4910,8 @@ export default function PanelRight({}: PanelRightProps = {}) {
 
   return (
     <div data-testid="panel-right" style={PANEL_STYLE}>
-      {/* Top chrome: node name + "New" component button — shown when a single node is selected */}
-      {selectedNode && selectedIds.length === 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0, minHeight: 28 }}>
-          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>
-            {(selectedNode as unknown as Record<string, unknown>).name as string || selectedNode.type as string || 'Node'}
-          </span>
-          <NewComponentButton selectedNode={selectedNode} />
-        </div>
-      )}
-
       {/* Tab bar */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: 'none', flexShrink: 0 }}>
         {TABS.map(t => (
           <button
             key={t.id}
@@ -5017,29 +4928,46 @@ export default function PanelRight({}: PanelRightProps = {}) {
       {tab === 'workflows' && <ElementWorkflowsTab node={selectedNode} />}
 
       {tab === 'design' && (
-        <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-          {/* Multi-select align/distribute */}
-          {selectedIds.length > 1 && <AlignDistributePanel ids={selectedIds} />}
-
-          {/* Specific section — component-specific settings at the top of the Design tab */}
+        <>
+          {/* Search bar — filters Design tab sections */}
           {selectedNode && selectedIds.length === 1 && (
-            <SettingsTab node={selectedNode} pageNodes={searchNodes} />
+            <div style={{ padding: '6px 8px 4px', flexShrink: 0 }}>
+              <SearchInput
+                value={designSearch}
+                onChange={setDesignSearch}
+                placeholder="Search properties…"
+              />
+            </div>
           )}
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+            {/* Multi-select align/distribute */}
+            {selectedIds.length > 1 && <AlignDistributePanel ids={selectedIds} />}
 
-          {/* Design panel for selected node */}
-          {selectedNode && selectedIds.length <= 1 && (
-            <DesignTab node={selectedNode} />
-          )}
+            {/* Design panel for selected node — behavior sections hidden (they live in Settings + Motion tabs) */}
+            {selectedNode && selectedIds.length <= 1 && (
+              <DesignTab node={selectedNode} searchQuery={designSearch} hideBehavior />
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'settings' && selectedNode && selectedIds.length === 1 && (
+        <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+          {/* Save as component — previously in the panel header */}
+          <div style={{ padding: '8px 12px 0' }}>
+            <NewComponentButton selectedNode={selectedNode} />
+          </div>
+          {/* Component-specific settings (shared component properties, etc.) */}
+          <SettingsTab node={selectedNode} pageNodes={searchNodes} />
+          {/* Behavioral properties: repeat, visibility, disable, interaction */}
+          <ElementBehaviorPanel node={selectedNode} />
         </div>
       )}
 
-      {tab === 'json' && selectedNode && (
-        <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-          <pre style={{ fontSize: 10, color: 'var(--bld-success)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
-            {JSON.stringify(selectedNode, null, 2)}
-          </pre>
-        </div>
+      {tab === 'motion' && selectedNode && selectedIds.length === 1 && (
+        <MotionPanel node={selectedNode} />
       )}
+
     </div>
   );
 }

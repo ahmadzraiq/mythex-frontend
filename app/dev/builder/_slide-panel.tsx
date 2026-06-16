@@ -64,7 +64,7 @@ export function SlidePanel({
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        background: '#111827',
+        background: 'var(--bld-bg-panel)',
         ...borderSide,
         overflow: 'hidden',
         zIndex: 10,
@@ -103,7 +103,7 @@ export function SlidePanel({
             flexShrink: 0,
           }}
           onMouseEnter={e => (e.currentTarget.style.color = '#f3f4f6')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
         >
           ×
         </button>
@@ -135,7 +135,7 @@ export function SlidePanel({
 
 export const SP_BTN_PRIMARY: React.CSSProperties = {
   padding: '6px 16px',
-  background: '#7c3aed',
+  background: 'var(--bld-accent)',
   border: 'none',
   borderRadius: 5,
   color: '#fff',
@@ -155,7 +155,7 @@ export const SP_BTN_SECONDARY: React.CSSProperties = {
 };
 
 export const SP_INPUT: React.CSSProperties = {
-  background: '#1f2937',
+  background: 'var(--bld-bg-input)',
   border: '1px solid #374151',
   borderRadius: 4,
   color: 'var(--bld-text-2)',

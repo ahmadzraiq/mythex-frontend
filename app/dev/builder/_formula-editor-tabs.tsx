@@ -65,7 +65,7 @@ export function Tooltip({ text, children }: { text: string; children: React.Reac
       left,
       ...(top !== undefined ? { top } : { bottom }),
       width: TIP_W,
-      background: '#1e293b', border: '1px solid #374151', borderRadius: 6, padding: '6px 10px',
+      background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '6px 10px',
       fontSize: 11, color: 'var(--bld-text-2)', whiteSpace: 'pre-wrap',
       zIndex: 100030, boxShadow: '0 4px 16px rgba(0,0,0,0.6)', pointerEvents: 'none',
       lineHeight: 1.5,
@@ -92,7 +92,7 @@ export function Tooltip({ text, children }: { text: string; children: React.Reac
 
 const TYPE_COLOR: Record<string, string> = {
   string: '#86efac', number: '#fde68a', boolean: '#c4b5fd',
-  array: '#67e8f9', object: '#f9a8d4', unknown: '#9ca3af', form: '#fb923c',
+  array: '#67e8f9', object: '#f9a8d4', unknown: 'var(--bld-text-3)', form: '#fb923c',
 };
 
 const TYPE_BADGE_COLOR: Record<string, string> = {
@@ -292,7 +292,7 @@ export function VariableEntry({
       {/* Header row — matches CollectionEntry exactly */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         {/* Chevron — click to expand/collapse */}
@@ -313,9 +313,9 @@ export function VariableEntry({
         </div>
         {/* Live value preview for primitives; status for undefined */}
         {isUndefined ? (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
         ) : typeof treeData !== 'object' || treeData === null ? (
-          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? 'var(--bld-text-3)', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {feValuePreview(treeData)}
           </span>
         ) : null}
@@ -346,7 +346,7 @@ export function VariableEntry({
                   value={arrayIndices.get(rootPath) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
@@ -382,7 +382,7 @@ export function VariableEntry({
               })()}
             </div>
           ) : (
-            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace' }}>
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? 'var(--bld-text-3)', fontFamily: 'monospace' }}>
               {feValuePreview(treeData)}
             </div>
           )}
@@ -469,8 +469,8 @@ export function collectPageComponents(
 
 // ─── FormContainerEntry ───────────────────────────────────────────────────────
 /** Renders one FormContainer as the full tree matching the image:
- *  ▾ { } Form Container - {name}
- *      ▾ { } formData
+ *  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> { } Form Container - {name}
+ *      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> { } formData
  *            T fieldName  ""
  *      > { } fields
  *        ⊗ isSubmitting  false
@@ -596,7 +596,7 @@ function FormContainerEntry({
               >
                 <span style={{ ...pillStyle, opacity: 0.7, fontSize: 9 }}>⊗</span>
                 <span style={{ ...pillStyle }}>{key}</span>
-                <span style={{ fontSize: 10, color: '#ef4444', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                <span style={{ fontSize: 10, color: 'var(--bld-error)', fontFamily: 'monospace', marginLeft: 'auto' }}>
                   {String(val ?? false)}
                 </span>
               </div>
@@ -634,16 +634,16 @@ export function PageComponentsSection({
   const CC = { bg: '#0f766e', border: '#0d9488', text: '#ccfbf1' };
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-2)' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>From components in current page</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{totalCount}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>From components in current page</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{totalCount}</span>
       </button>
       {open && (
         <div style={{ paddingLeft: 8, paddingBottom: 8 }}>
@@ -684,7 +684,7 @@ export function PageComponentsSection({
                 key={nodeId}
                 onClick={() => onInsert(`variables['${globalId}']`, chipLabel, 'variable')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', cursor: 'pointer' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
                 <span style={{ background: CC.bg, color: CC.text, border: `1px solid ${CC.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
@@ -766,19 +766,19 @@ export function VariableTree({
         const vars = folderMap.get(folderId)!;
         const isOpen = folderOpen[folderId] ?? true;
         return (
-          <div key={folderId} style={{ borderTop: '1px solid #1f2937' }}>
+          <div key={folderId} style={{ borderTop: 'none' }}>
             {/* Folder header */}
             <button
               onClick={() => toggleFolder(folderId)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
             >
               <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
                 <FEChevron open={isOpen} size={8} />
               </span>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>{folderLabel}</span>
-              <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{vars.length}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>{folderLabel}</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{vars.length}</span>
                   </button>
             {isOpen && vars.map(v => (
               <VariableEntry
@@ -815,12 +815,12 @@ const FE_TYPE_ICON: Record<string, string> = {
   number: '#', string: 'T', boolean: '⊘', array: '[]', object: '{}', null: '·', unknown: '?',
 };
 const FE_TYPE_COLOR: Record<string, string> = {
-  number: '#fbbf24', string: '#34d399', boolean: '#a78bfa',
-  array: '#60a5fa', object: '#f472b6', null: '#6b7280', unknown: '#6b7280',
+  number: 'var(--bld-warning)', string: '#34d399', boolean: '#a78bfa',
+  array: 'var(--bld-info)', object: '#f472b6', null: 'var(--bld-text-disabled)', unknown: 'var(--bld-text-disabled)',
 };
 const FE_VALUE_COLOR: Record<string, string> = {
   number: '#fcd34d', string: '#86efac', boolean: '#c4b5fd',
-  null: '#6b7280', unknown: '#9ca3af', array: '#60a5fa', object: '#f9a8d4',
+  null: 'var(--bld-text-disabled)', unknown: 'var(--bld-text-3)', array: 'var(--bld-info)', object: '#f9a8d4',
 };
 
 function feValuePreview(v: unknown): string {
@@ -863,7 +863,7 @@ export function DataTreeNode({
 }) {
   const type = feInferType(value);
   const icon = FE_TYPE_ICON[type] ?? '?';
-  const iconColor = FE_TYPE_COLOR[type] ?? '#6b7280';
+  const iconColor = FE_TYPE_COLOR[type] ?? 'var(--bld-text-disabled)';
   const isExpandable = type === 'object' || type === 'array';
   const isOpen = expanded.has(path);
   const indent = 10 + depth * 14;
@@ -877,7 +877,7 @@ export function DataTreeNode({
         data-tree-path={path}
         style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `3px 8px 3px ${indent}px`, cursor: 'pointer' }}
         onClick={() => { if (isExpandable) toggleExpand(path); else onInsert(path); }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         {/* Expand chevron */}
@@ -905,7 +905,7 @@ export function DataTreeNode({
             value={arrayIndices.get(path) ?? 0}
             onChange={e => { e.stopPropagation(); setArrayIndex(path, Number(e.target.value)); }}
             onClick={e => e.stopPropagation()}
-            style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+            style={{ background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
           >
             {Array.from({ length: Math.min((value as unknown[]).length, 50) }, (_, i) => (
               <option key={i} value={i}>{i}</option>
@@ -915,7 +915,7 @@ export function DataTreeNode({
 
         {/* Value preview for primitives */}
         {!isExpandable && (
-          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[type] ?? '#9ca3af', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[type] ?? 'var(--bld-text-3)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
             {feValuePreview(value)}
           </span>
         )}
@@ -1015,7 +1015,7 @@ export function CollectionEntry({ src, onInsert, search }: {
       <div
         data-testid={`fe-collection-header-${storeKey}`}
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         {/* Chevron — click to expand/collapse */}
@@ -1037,7 +1037,7 @@ export function CollectionEntry({ src, onInsert, search }: {
           <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 600, fontFamily: 'monospace' }}>{displayName}</span>
         </div>
         {data === undefined && (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not fetched</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginLeft: 'auto' }}>not fetched</span>
         )}
       </div>
 
@@ -1063,12 +1063,12 @@ export function CollectionEntry({ src, onInsert, search }: {
             <div>
               {/* Array index selector row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px 3px 28px' }}>
-                <span style={{ fontSize: 9, color: '#60a5fa', fontFamily: 'monospace', fontWeight: 700, minWidth: 14 }}>[]</span>
+                <span style={{ fontSize: 9, color: 'var(--bld-info)', fontFamily: 'monospace', fontWeight: 700, minWidth: 14 }}>[]</span>
                 <select
                   value={arrayIndices.get(storeKey) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(storeKey, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((data as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
@@ -1160,7 +1160,7 @@ function ContextGroupRow({
     <div>
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `5px 10px 5px ${indent}px`, cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
@@ -1177,7 +1177,7 @@ function ContextGroupRow({
           <ContextGroupPill icon={icon} label={label} bg={bg} border={border} textColor={textColor} />
         </div>
         {data === undefined && (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>live</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginLeft: 'auto' }}>live</span>
         )}
         {data === null && (
           <span style={{ fontSize: 9, color: '#fca5a5', fontStyle: 'italic', marginLeft: 'auto' }}>empty</span>
@@ -1230,14 +1230,19 @@ export function ItemContextGroup({
     const id = selectedIds[0];
     if (!id) return { innerMap: null, outerMap: null };
     let node = findNode(pageNodes, id);
-    let inner: string | null = null;
-    let outer: string | null = null;
+    let inner: string | { js: string } | null = null;
+    let outer: string | { js: string } | null = null;
     while (node) {
       if (node.map) {
-        const mapVal = typeof node.map === 'string'
+        // Preserve { js } bindings as objects so evaluateFormula receives the right
+        // type — string formulas are passed as strings, JS bindings as { js } objects.
+        const mapVal: string | { js: string } | null = typeof node.map === 'string'
           ? node.map
           : (typeof node.map === 'object' && node.map !== null)
-            ? ((node.map as { formula?: string }).formula ?? null)
+            ? ((node.map as { formula?: string }).formula
+                ?? ((node.map as { js?: string }).js
+                    ? { js: (node.map as { js: string }).js }
+                    : null))
             : null;
         if (mapVal) {
           if (!inner) { inner = mapVal; }
@@ -1263,7 +1268,7 @@ export function ItemContextGroup({
   //   - For the innermost map, pass selectedMapIndex so the preview matches the cell the user
   //     clicked on the canvas (e.g. picking day 17 in the DatePicker shows that cell's data).
   //   - For outer maps, pass 0; selectedMapIndex applies to the innermost iteration only.
-  const resolveFirstItem = useCallback((mapBinding: string | null, parentItem?: Record<string, unknown> | null, pickIndex: number = 0): Record<string, unknown> | null => {
+  const resolveFirstItem = useCallback((mapBinding: string | { js: string } | null, parentItem?: Record<string, unknown> | null, pickIndex: number = 0): Record<string, unknown> | null => {
     if (!mapBinding) return null;
 
     // Try evaluateFormula first — this is the same path the SDUI runtime uses, so any expression
@@ -1298,14 +1303,25 @@ export function ItemContextGroup({
         collections: collectionsMap,
         context: parentItemCtx ? { item: parentItemCtx, index: 0 } : {},
       };
-      const value = evaluateFormula(mapBinding, snapshot).value;
+      // Pass { js } bindings as objects so evaluateFormula routes to the JS evaluator;
+      // plain strings go through the formula evaluator as before.
+      const value = evaluateFormula(mapBinding as string | object, snapshot).value;
       if (Array.isArray(value) && value.length > 0) {
         const target = value[pickIndex] ?? value[0];
         if (target && typeof target === 'object' && !Array.isArray(target)) return target as Record<string, unknown>;
+        // Primitive items (strings, numbers): wrap in a sentinel so the Quick tab can
+        // display `data` directly as the clickable path (context.item.data = the value).
+        if (target !== null && target !== undefined) {
+          return { _isPrimitive: true, _value: target } as unknown as Record<string, unknown>;
+        }
       } else if (value && typeof value === 'object' && !Array.isArray(value)) {
         return value as Record<string, unknown>;
       }
     } catch { /* fall through to legacy resolvers below */ }
+
+    // The fallback resolvers below only apply to plain string paths — { js } bindings
+    // are fully handled by evaluateFormula above and don't need string-based fallbacks.
+    if (typeof mapBinding !== 'string') return null;
 
     // Handle context-relative paths like "context.item.data.X" or "$item.X"
     // These reference a nested array inside the outer repeat's current item.
@@ -1400,16 +1416,25 @@ export function ItemContextGroup({
   const parentCtxValue = parentData
     ? { data: { ...parentData, index: 0, repeatIndex: 0, isACopy: false, parent: null, repeatedItems: [parentData] } }
     : null;
-  const fullItemCtx = innerMap ? {
-    data: {
-      ...(itemData ?? {}),
-      index: innerPickIdx,
-      repeatIndex: innerPickIdx,
-      isACopy: false,
-      parent: parentCtxValue,
-      repeatedItems: itemData ? [itemData] : [],
-    },
-  } : null;
+  // Primitive sentinel: inner map items are strings/numbers — context.item.data IS the value.
+  const isPrimitiveItem = (itemData as Record<string, unknown> | null)?._isPrimitive === true;
+  const primitiveValue = isPrimitiveItem ? (itemData as Record<string, unknown>)._value : undefined;
+  const fullItemCtx = innerMap ? (
+    isPrimitiveItem
+      // For primitive items show `data` (the value itself) and `index` so the user
+      // can click the right chip. context.item.data = the primitive at runtime.
+      ? { data: primitiveValue, index: innerPickIdx, repeatIndex: innerPickIdx }
+      : {
+          data: {
+            ...(itemData ?? {}),
+            index: innerPickIdx,
+            repeatIndex: innerPickIdx,
+            isACopy: false,
+            parent: parentCtxValue,
+            repeatedItems: itemData ? [itemData] : [],
+          },
+        }
+  ) : null;
 
   const statusLabel = !innerMap ? 'no repeat context'
     : !itemData ? 'fetch to inspect'
@@ -1420,7 +1445,7 @@ export function ItemContextGroup({
       {/* item row header */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px 5px 24px', cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
@@ -1561,15 +1586,15 @@ export function FormLocalSection({
   if (variant === 'variables') {
     const cc = VAR_GREEN;
     return (
-      <div style={{ borderTop: '1px solid #1f2937' }}>
+      <div style={{ borderTop: 'none' }}>
         <button
           onClick={() => setOpen(o => !o)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
         >
           <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-          <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Form container</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>Form container</span>
         </button>
         {open && (
           <div style={{ paddingLeft: 8 }}>
@@ -1578,7 +1603,7 @@ export function FormLocalSection({
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
                 onClick={() => setFormOpen(o => !o)}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               >
                 <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
@@ -1613,12 +1638,12 @@ export function FormLocalSection({
                       key={key}
                       onClick={() => handleInsert(`form.${key}`, `local.data.form.${key}`)}
                       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 12px', cursor: 'pointer' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
                       <span style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, borderRadius: 5, padding: '1px 5px', fontSize: 10, fontWeight: 600, fontFamily: 'monospace', opacity: 0.8 }}>⊗</span>
                       <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{key}</span>
-                      <span style={{ fontSize: 10, color: '#ef4444', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                      <span style={{ fontSize: 10, color: 'var(--bld-error)', fontFamily: 'monospace', marginLeft: 'auto' }}>
                         {String(formState[key])}
                       </span>
                     </div>
@@ -1638,11 +1663,11 @@ export function FormLocalSection({
       <button
         onClick={() => setOpen(o => !o)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Local</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>Local</span>
       </button>
 
       {open && (
@@ -1652,7 +1677,7 @@ export function FormLocalSection({
             <div
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
               onClick={() => setLocalDataOpen(o => !o)}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
               <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={localDataOpen} size={7} /></span>
@@ -1673,7 +1698,7 @@ export function FormLocalSection({
                   <div
                     style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 12px', cursor: 'pointer' }}
                     onClick={() => setFormOpen(o => !o)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
                     <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', marginRight: 2 }}><FEChevron open={formOpen} size={7} /></span>
@@ -1715,7 +1740,7 @@ export function FormLocalSection({
                           data-testid={`formula-local-${key}`}
                           onClick={() => handleInsert(`form.${key}`, `local.data.form.${key}`)}
                           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 12px', cursor: 'pointer' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         >
                           <span
@@ -1726,7 +1751,7 @@ export function FormLocalSection({
                           >
                             {key}
                           </span>
-                          <span style={{ fontSize: 10, color: String(formState[key]) === 'true' ? '#4ade80' : '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto' }}>
+                          <span style={{ fontSize: 10, color: String(formState[key]) === 'true' ? '#4ade80' : 'var(--bld-text-3)', fontFamily: 'monospace', marginLeft: 'auto' }}>
                             {String(formState[key])}
                           </span>
                         </div>
@@ -1788,15 +1813,15 @@ export function ContextDataSection({
   }, []);
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Context</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>Context</span>
       </button>
       {open && (
         <div>
@@ -1847,16 +1872,16 @@ export function PagesDataSection({
   const routes = (routesConfig as { routes?: RouteEntry[] }).routes ?? [];
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Pages</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{routes.length}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>Pages</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{routes.length}</span>
       </button>
       {open && (
         <div>
@@ -1903,7 +1928,7 @@ function ThemeRow({
   return (
     <div
       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       onClick={() => onInsert(formulaPath, displayLabel, 'theme')}
     >
@@ -1933,12 +1958,12 @@ function ThemeSectionHeader({ open, onToggle, accent, label, count }: { open: bo
     <button
       onClick={onToggle}
       style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
     >
       <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-      <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>{label}</span>
-      <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{count}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{count}</span>
     </button>
   );
 }
@@ -1972,7 +1997,7 @@ export function ColorsDataSection({
   }, [customColors]);
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Colors" count={totalCount} />
       {open && (
         <div>
@@ -1992,7 +2017,7 @@ export function ColorsDataSection({
             if (!items?.length) return null;
             return (
               <div key={folder.id} style={{ marginTop: 4 }}>
-                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', padding: '4px 12px 2px 24px' }}>
                   {folder.name}
                 </div>
                 {items.map(c => (
@@ -2010,7 +2035,7 @@ export function ColorsDataSection({
           {/* Ungrouped custom colors */}
           {(grouped.get(undefined)?.length ?? 0) > 0 && (
             <div style={{ marginTop: 4 }}>
-              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 12px 2px 24px' }}>
+              <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', padding: '4px 12px 2px 24px' }}>
                 Custom
               </div>
               {grouped.get(undefined)!.map(c => (
@@ -2042,7 +2067,7 @@ export function TypographyDataSection({
   if (Object.keys(fonts).length === 0) return null;
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Typography" count={Object.keys(fonts).length} />
       {open && (
         <div>
@@ -2050,12 +2075,12 @@ export function TypographyDataSection({
             <div
               key={k}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               onClick={() => onInsert(`theme?.['fonts']?.['${k}']`, `Typography - ${k}`, 'theme')}
             >
               {/* Live font preview */}
-              <span style={{ fontSize: 13, color: THEME_ACCENT, fontWeight: 700, flexShrink: 0, minWidth: 20, letterSpacing: '-0.03em' }}>Aa</span>
+              <span style={{ fontSize: 13, color: THEME_ACCENT, fontWeight: 700, flexShrink: 0, minWidth: 20 }}>Aa</span>
               <button
                 style={{ background: THEME_CHIP.bg, color: THEME_CHIP.text, borderRadius: 5, padding: '2px 5px', fontSize: 11, border: `1px solid ${THEME_CHIP.border}`, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, flexShrink: 0 }}
                 onClick={e => { e.stopPropagation(); onInsert(`theme?.['fonts']?.['${k}']`, `Typography - ${k}`, 'theme'); }}
@@ -2098,7 +2123,7 @@ export function BorderRadiusDataSection({
   ];
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       <ThemeSectionHeader open={open} onToggle={() => setOpen(o => !o)} accent={THEME_ACCENT} label="Border Radius" count={tokens.length} />
       {open && (
         <div>
@@ -2106,7 +2131,7 @@ export function BorderRadiusDataSection({
             <div
               key={t.label}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 24px', cursor: 'pointer' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               onClick={() => onInsert(`theme?.['radius']?.['${t.label}']`, `Radius - ${t.label}`, 'theme')}
             >
@@ -2150,13 +2175,13 @@ export function CollectionsDataTab({ onInsert, search }: {
       {/* COLLECTIONS section */}
       <button
         onClick={() => setCollectionsOpen(o => !o)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', borderBottom: '1px solid #1f2937', cursor: 'pointer', textAlign: 'left' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f172a'; }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 12px', background: 'none', border: 'none', borderBottom: 'none', cursor: 'pointer', textAlign: 'left' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={collectionsOpen} size={8} /></span>
-        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.05em' }}>Collections</span>
-        <span style={{ fontSize: 9, color: '#374151', marginLeft: 'auto' }}>{filtered.length}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>Collections</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{filtered.length}</span>
       </button>
 
       {collectionsOpen && (
@@ -2249,12 +2274,12 @@ export function FunctionLibrary({ onInsert, onInsertFn, search, globalFormulas }
               <button
                 onClick={() => toggleCat(cat as string)}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, width: '100%', padding: '5px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #0f172a' }}
-                onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
+                onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-base)')}
                 onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
               >
                 <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-                <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600, letterSpacing: '0.04em' }}>{cat as string}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 9, color: '#374151' }}>{(fns as FnDef[]).length}</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-2)', fontWeight: 600 }}>{cat as string}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--bld-text-disabled)' }}>{(fns as FnDef[]).length}</span>
               </button>
               {open && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '6px 10px 8px' }}>
@@ -2279,13 +2304,13 @@ export function FnRow({ fn, onInsertFn }: { fn: FnDef; onInsertFn: (fnInsert: st
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 3,
           padding: '2px 7px',
-          background: '#1f2937', border: '1px solid #374151', borderRadius: 12,
+          background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 12,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
-        onMouseEnter={ev => { ev.currentTarget.style.borderColor = '#818cf8'; ev.currentTarget.style.background = '#2e1065'; }}
-        onMouseLeave={ev => { ev.currentTarget.style.borderColor = '#374151'; ev.currentTarget.style.background = '#1f2937'; }}
+        onMouseEnter={ev => { ev.currentTarget.style.borderColor = 'var(--bld-accent)'; ev.currentTarget.style.background = 'rgba(59,130,246,0.08)'; }}
+        onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'var(--bld-border-subtle)'; ev.currentTarget.style.background = 'var(--bld-bg-input)'; }}
       >
-        <span style={{ fontSize: 9, color: '#a78bfa', fontStyle: 'italic' }}>ƒ</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-accent)', fontStyle: 'italic' }}>ƒ</span>
         <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{fn.name}</span>
       </button>
     </Tooltip>
@@ -2364,7 +2389,7 @@ export function EventContextSection({
   const [open, setOpen] = useState(true);
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
+    <div style={{ borderBottom: 'none' }}>
       {/* Section header */}
       <button
         onClick={() => setOpen(v => !v)}
@@ -2373,13 +2398,13 @@ export function EventContextSection({
           padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
           borderBottom: open ? '1px solid #1f2937' : 'none',
         }}
-        onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
+        onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-base)')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
           <FEChevron open={open} size={8} />
         </span>
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#fb923c', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#fb923c' }}>
           Event
         </span>
         <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>
@@ -2441,7 +2466,7 @@ function renderEventFields(
               padding: '2px 4px 2px 0', background: 'none', border: 'none',
               cursor: 'pointer', textAlign: 'left',
             }}
-            onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
+            onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-input)')}
             onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
           >
             <span style={{
@@ -2493,7 +2518,7 @@ function EventFieldGroup({
           padding: '2px 4px 2px 0', background: 'none', border: 'none',
           cursor: 'pointer', textAlign: 'left',
         }}
-        onMouseEnter={ev => (ev.currentTarget.style.background = '#1f2937')}
+        onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-input)')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
         <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center' }}>
@@ -2535,7 +2560,7 @@ function SCPropChip({
   return (
     <div
       style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px 3px 22px', cursor: 'default' }}
-      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#0f1929')}
+      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)')}
       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
     >
       <span
@@ -2605,7 +2630,7 @@ function SCVariableEntry({
     <div>
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         <span
@@ -2623,9 +2648,9 @@ function SCVariableEntry({
           <span style={{ fontSize: 11, color: VAR_CHIP.text, fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
         </div>
         {isUndefined ? (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginLeft: 'auto' }}>not set</span>
         ) : typeof treeData !== 'object' || treeData === null ? (
-          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? 'var(--bld-text-3)', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {feValuePreview(treeData)}
           </span>
         ) : null}
@@ -2655,7 +2680,7 @@ function SCVariableEntry({
                   value={arrayIndices.get(rootPath) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(rootPath, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((treeData as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
@@ -2677,7 +2702,7 @@ function SCVariableEntry({
               })()}
             </div>
           ) : (
-            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? '#9ca3af', fontFamily: 'monospace' }}>
+            <div style={{ padding: '3px 10px 5px 34px', fontSize: 10, color: FE_VALUE_COLOR[feInferType(treeData)] ?? 'var(--bld-text-3)', fontFamily: 'monospace' }}>
               {feValuePreview(treeData)}
             </div>
           )}
@@ -2713,11 +2738,11 @@ function SCFormulaRow({
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 3,
           padding: '2px 7px',
-          background: '#1f2937', border: '1px solid #374151', borderRadius: 12,
+          background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 12,
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}
         onMouseEnter={ev => { ev.currentTarget.style.borderColor = '#d97706'; ev.currentTarget.style.background = '#78350f'; }}
-        onMouseLeave={ev => { ev.currentTarget.style.borderColor = '#374151'; ev.currentTarget.style.background = '#1f2937'; }}
+        onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'var(--bld-border-subtle)'; ev.currentTarget.style.background = 'var(--bld-bg-input)'; }}
       >
         <span style={{ fontSize: 9, color: '#fde68a', fontStyle: 'italic' }}>ƒ</span>
         <span style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>{name}</span>
@@ -2731,11 +2756,11 @@ function SCSectionHeader({ label, open, onToggle }: { label: string; open: boole
     <button
       onClick={onToggle}
       style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
     >
       <span style={{ color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center' }}><FEChevron open={open} size={8} /></span>
-      <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 700, textTransform: 'none' }}>{label}</span>
     </button>
   );
 }
@@ -2776,7 +2801,7 @@ export function SharedComponentContextSection({
   const formulaEntries = Object.entries(formulas);
 
   return (
-    <div style={{ borderTop: '1px solid #1f2937' }}>
+    <div style={{ borderTop: 'none' }}>
       {/* PROPERTIES */}
       <SCSectionHeader label="Properties" open={propsOpen} onToggle={() => setPropsOpen(o => !o)} />
       {propsOpen && (
@@ -2898,7 +2923,7 @@ function AuthFieldRow({
       {/* Header row — exact same structure as CollectionEntry / VariableRow */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', cursor: 'default' }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
         {/* Chevron — only shown when value is expandable */}
@@ -2921,9 +2946,9 @@ function AuthFieldRow({
 
         {/* Value preview */}
         {value === null || value === undefined ? (
-          <span style={{ fontSize: 9, color: '#374151', fontStyle: 'italic', marginLeft: 'auto' }}>null</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginLeft: 'auto' }}>null</span>
         ) : !isExpandable ? (
-          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[type] ?? '#9ca3af', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+          <span style={{ fontSize: 10, color: FE_VALUE_COLOR[type] ?? 'var(--bld-text-3)', fontFamily: 'monospace', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
             {feValuePreview(value)}
           </span>
         ) : (
@@ -2961,7 +2986,7 @@ function AuthFieldRow({
                   value={arrayIndices.get(label) ?? 0}
                   onChange={e => { e.stopPropagation(); setArrayIndex(label, Number(e.target.value)); }}
                   onClick={e => e.stopPropagation()}
-                  style={{ background: '#1f2937', color: 'var(--bld-text-2)', border: '1px solid #374151', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
+                  style={{ background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, fontSize: 10, padding: '0 2px', cursor: 'pointer', maxWidth: 52 }}
                 >
                   {Array.from({ length: Math.min((value as unknown[]).length, 50) }, (_, i) => (
                     <option key={i} value={i}>{i}</option>
@@ -3011,7 +3036,7 @@ export function AuthDataSection({
 
   return (
     <div style={{ padding: '8px 0', flex: 1 }}>
-      <div style={{ padding: '4px 12px 8px', fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', borderBottom: '1px solid #1f2937' }}>
+      <div style={{ padding: '4px 12px 8px', fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'none', borderBottom: 'none' }}>
         TOKEN BASED AUTH
       </div>
       <AuthFieldRow label="user"            formula="auth?.['user']"          value={authUser}         onInsert={onInsert} />
@@ -3046,7 +3071,7 @@ export function ParametersSection({
   if (params.length === 0) return null;
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
+    <div style={{ borderBottom: 'none' }}>
       {/* Section header */}
       <button
         onClick={() => setOpen(v => !v)}
@@ -3055,13 +3080,13 @@ export function ParametersSection({
           padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
           borderBottom: open ? '1px solid #1f2937' : 'none',
         }}
-        onMouseEnter={ev => (ev.currentTarget.style.background = '#0f172a')}
+        onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-base)')}
         onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
       >
         <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
           <FEChevron open={open} size={8} />
         </span>
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#60a5fa', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-info)' }}>
           PARAMETERS
         </span>
       </button>
@@ -3078,13 +3103,13 @@ export function ParametersSection({
               <div
                 key={p.id}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 10px', cursor: 'pointer' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 onClick={() => onInsert(formula, `param: ${p.name}`, 'parameter')}
               >
                 {/* Type icon */}
                 <span style={{
-                  fontSize: 9, color: '#60a5fa', fontFamily: 'monospace',
+                  fontSize: 9, color: 'var(--bld-info)', fontFamily: 'monospace',
                   background: '#1e3a5f', borderRadius: 3, padding: '1px 4px',
                   flexShrink: 0, minWidth: 22, textAlign: 'center', fontWeight: 700,
                 }}>
@@ -3101,7 +3126,7 @@ export function ParametersSection({
                 </span>
                 {/* Type badge */}
                 <span style={{
-                  background: '#1e3a5f', color: '#60a5fa', borderRadius: 4,
+                  background: '#1e3a5f', color: 'var(--bld-info)', borderRadius: 4,
                   padding: '1px 6px', fontSize: 10, border: '1px solid #1d4ed8',
                   fontFamily: 'monospace', flexShrink: 0,
                 }}>
@@ -3162,7 +3187,7 @@ export function EnvVarsSection({ onInsert }: { onInsert: (chip: string) => void 
 
   return (
     <div style={{ overflowY: 'auto', flex: 1 }}>
-      <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none' }}>
         Environment Variables
       </div>
       {vars.map((v) => (
@@ -3178,9 +3203,9 @@ export function EnvVarsSection({ onInsert }: { onInsert: (chip: string) => void 
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <span style={{
-              background: '#1e293b', border: '1px solid #334155', borderRadius: 4,
+              background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
               padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
-              color: '#a5b4fc', flexShrink: 0,
+              color: 'var(--bld-badge-text)', flexShrink: 0,
             }}>
               env
             </span>

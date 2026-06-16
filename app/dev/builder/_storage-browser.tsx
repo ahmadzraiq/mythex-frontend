@@ -100,9 +100,9 @@ export function StorageBrowser({ projectId }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Toolbar */}
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {/* Bucket tabs */}
-        <div style={{ display: 'flex', background: '#111827', borderRadius: 6, padding: 2, gap: 2 }}>
+        <div style={{ display: 'flex', background: 'var(--bld-bg-panel)', borderRadius: 6, padding: 2, gap: 2 }}>
           {(['private', 'public'] as const).map((b) => (
             <button
               key={b}
@@ -112,7 +112,7 @@ export function StorageBrowser({ projectId }: Props) {
                 fontSize: 11,
                 fontWeight: 600,
                 background: bucket === b ? '#1e3a5f' : 'transparent',
-                color: bucket === b ? '#60a5fa' : '#6b7280',
+                color: bucket === b ? 'var(--bld-info)' : 'var(--bld-text-disabled)',
                 border: 'none',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -129,7 +129,7 @@ export function StorageBrowser({ projectId }: Props) {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          style={{ fontSize: 11, padding: '5px 14px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', borderRadius: 5, cursor: 'pointer', fontWeight: 600 }}
+          style={{ fontSize: 11, padding: '5px 14px', background: 'rgba(59,130,246,0.15)', color: 'var(--bld-info)', border: 'none', borderRadius: 5, cursor: 'pointer', fontWeight: 600 }}
         >
           {uploading ? '⟳ Uploading…' : '↑ Upload file'}
         </button>
@@ -155,8 +155,8 @@ export function StorageBrowser({ projectId }: Props) {
                 key={file.id}
                 onClick={() => void openFile(file)}
                 style={{
-                  background: selected?.id === file.id ? 'rgba(59,130,246,0.12)' : '#111827',
-                  border: `1px solid ${selected?.id === file.id ? '#3b82f6' : '#1e293b'}`,
+                  background: selected?.id === file.id ? 'rgba(59,130,246,0.12)' : 'var(--bld-bg-panel)',
+                  border: `1px solid ${selected?.id === file.id ? '#3b82f6' : 'var(--bld-bg-elevated)'}`,
                   borderRadius: 8,
                   padding: 10,
                   cursor: 'pointer',
@@ -178,7 +178,7 @@ export function StorageBrowser({ projectId }: Props) {
 
         {/* File detail panel */}
         {selected && (
-          <div style={{ width: 260, borderLeft: '1px solid #1e293b', padding: 16, display: 'flex', flexDirection: 'column', gap: 14, flexShrink: 0, overflow: 'auto' }}>
+          <div style={{ width: 260, borderLeft: '1px solid var(--bld-bg-elevated)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14, flexShrink: 0, overflow: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>File details</span>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14 }}>✕</button>
@@ -206,11 +206,11 @@ export function StorageBrowser({ projectId }: Props) {
                   <input
                     readOnly
                     value={presignedUrl}
-                    style={{ flex: 1, fontSize: 10, background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '4px 6px', color: 'var(--bld-text-disabled)', outline: 'none', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    style={{ flex: 1, fontSize: 10, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '4px 6px', color: 'var(--bld-text-disabled)', outline: 'none', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis' }}
                   />
                   <button
                     onClick={() => void navigator.clipboard.writeText(presignedUrl)}
-                    style={{ fontSize: 10, padding: '4px 8px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    style={{ fontSize: 10, padding: '4px 8px', background: 'rgba(59,130,246,0.15)', color: 'var(--bld-info)', border: 'none', borderRadius: 4, cursor: 'pointer' }}
                   >
                     Copy
                   </button>
@@ -224,7 +224,7 @@ export function StorageBrowser({ projectId }: Props) {
 
             <button
               onClick={() => void deleteFile(selected.id)}
-              style={{ padding: '7px 0', fontSize: 11, background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid #f8717140', borderRadius: 5, cursor: 'pointer', marginTop: 'auto' }}
+              style={{ padding: '7px 0', fontSize: 11, background: 'rgba(239,68,68,0.1)', color: 'var(--bld-error)', border: '1px solid #f8717140', borderRadius: 5, cursor: 'pointer', marginTop: 'auto' }}
             >
               🗑 Delete file
             </button>

@@ -494,7 +494,7 @@ export const OPERATORS: Array<{ label: string; insert: string; description: stri
 
 // ─── Operator chip helpers ────────────────────────────────────────────────────
 
-export const OP_CHIP = { bg: '#1e293b', border: '#334155', color: 'var(--bld-text-3)', hoverBg: '#334155' };
+export const OP_CHIP = { bg: 'var(--bld-bg-elevated)', border: 'var(--bld-border)', color: 'var(--bld-text-3)', hoverBg: 'var(--bld-bg-hover)' };
 
 export const OP_STYLE: Record<string, { bg: string; border: string; color: string; hoverBg: string }> = {
   comparison: OP_CHIP,
@@ -556,7 +556,7 @@ export function buildFunctionChip(fnName: string): HTMLSpanElement {
   span.contentEditable = 'false';
   span.dataset.type = 'function';
   span.dataset.formula = fnName;
-  span.style.cssText = 'background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:5px;padding:2px 4px;display:inline-flex;align-items:center;font-size:11px;line-height:1.4;cursor:default;font-family:monospace;font-weight:600;vertical-align:middle;margin:0 1px;max-width:160px';
+  span.style.cssText = 'background:var(--bld-bg-elevated);color:var(--bld-text-2);border:1px solid var(--bld-border);border-radius:5px;padding:2px 4px;display:inline-flex;align-items:center;font-size:11px;line-height:1.4;cursor:default;font-family:monospace;font-weight:600;vertical-align:middle;margin:0 1px;max-width:160px';
   const inner = document.createElement('span');
   inner.textContent = fnName;
   inner.style.cssText = CHIP_INNER_CSS;

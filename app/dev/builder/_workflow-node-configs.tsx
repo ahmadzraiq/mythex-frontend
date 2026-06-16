@@ -144,7 +144,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 22, height: 22, flexShrink: 0, cursor: 'pointer',
             border: 'none', borderRadius: 6,
-            background: isBound ? 'var(--bld-ai-accent)' : 'var(--bld-bg-input)',
+            background: isBound ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
             color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
             transition: 'background 0.15s, color 0.15s',
             padding: 0,
@@ -162,8 +162,8 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
         style={{
-          flex: 1, textAlign: 'left', background: isBound ? 'rgba(124,58,237,0.15)' : 'var(--bld-bg-panel)',
-          border: `1px solid ${isBound ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
+          flex: 1, textAlign: 'left', background: isBound ? 'rgba(59,130,246,0.1)' : 'var(--bld-bg-panel)',
+          border: `1px solid ${isBound ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
           borderRadius: 6, padding: '4px 8px', fontSize: 11,
           color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', cursor: 'pointer',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -176,7 +176,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             Global
           </span>
         )}
-        <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>▾</span>
+        <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
       </button>
 
       {/* Clear button when bound */}
@@ -218,7 +218,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             )}
             {/* Global workflows group */}
             {!globalOnly && filtered.some(w => w._scope === 'global') && (
-              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
                 Global
               </div>
             )}
@@ -246,7 +246,7 @@ export function WorkflowBindButton({ value, onChange, globalOnly = false }: Work
             ))}
             {/* Page workflows group — hidden when globalOnly */}
             {!globalOnly && filtered.some(w => w._scope === 'page') && (
-              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
                 Page
               </div>
             )}
@@ -344,7 +344,7 @@ export function TypeSearchDropdown({
           {currentLabel}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -473,7 +473,7 @@ export function ParamsConfigPanel({
 
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--bld-bg-input)' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: 'none' }}>
         <span style={{ fontSize: 14 }}>Φ</span>
         <span>Parameters</span>
       </div>
@@ -713,7 +713,7 @@ function ParamEditor({
 
       {/* Expanded body */}
       {expanded && (
-        <div style={{ padding: '0 8px 10px', borderTop: '1px solid var(--bld-bg-input)' }}>
+        <div style={{ padding: '0 8px 10px', borderTop: 'none' }}>
 
           {/* Name */}
           <label style={{ ...S.fieldLabel, marginTop: 8 }}>Name *</label>
@@ -737,7 +737,7 @@ function ParamEditor({
                 {PARAM_TYPE_ICONS[param.type]}
               </span>
               <span style={{ flex: 1, color: 'var(--bld-text-2)', fontSize: 11 }}>{param.type}</span>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>▾</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
             </button>
             {/* Dropdown — absolute inside a no-overflow wrapper so it escapes the card */}
             {typeOpen && (
@@ -896,7 +896,7 @@ export function PagePickerDropdown({
           {currentLabel}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -993,7 +993,7 @@ export function OptionPickerDropdown({
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
           fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -1103,7 +1103,7 @@ export function CollectionPickerDropdown({
           {selected ? getLabel(selected) : placeholder}
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -1196,8 +1196,8 @@ export function NavigateToConfig({
             {isBoundValue(cfg.externalUrl as FormulaValue) ? (
               <button
                 onClick={() => setOpenField(f => f === 'externalUrl' ? null : 'externalUrl')}
-                style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-                  borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+                  borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                   textAlign: 'left' }}
               >ƒ Edit formula</button>
             ) : (
@@ -1230,8 +1230,8 @@ export function NavigateToConfig({
             {isBoundValue(cfg.path as FormulaValue) ? (
               <button
                 onClick={() => setOpenField(f => f === 'path' ? null : 'path')}
-                style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-                  borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+                  borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                   textAlign: 'left' }}
               >ƒ Edit formula</button>
             ) : (
@@ -1269,8 +1269,8 @@ export function NavigateToConfig({
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <button
                   onClick={() => setOpenField(f => f === 'queries' ? null : 'queries')}
-                  style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-                    borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                  style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+                    borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                     textAlign: 'left' }}
                 >
                   ƒ Edit formula
@@ -1319,8 +1319,8 @@ export function NavigateToConfig({
                       {nameBound ? (
                         <button
                           onClick={() => setOpenField(f => f === `query-name-${idx}` ? null : `query-name-${idx}`)}
-                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-                            borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+                            borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                             textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           ƒ Edit formula
@@ -1341,8 +1341,8 @@ export function NavigateToConfig({
                       {valBound ? (
                         <button
                           onClick={() => setOpenField(f => f === `query-${idx}` ? null : `query-${idx}`)}
-                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-                            borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                          style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+                            borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                             textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           ƒ Edit formula
@@ -1485,7 +1485,7 @@ function SCPropInput({ prop, value, onChange, onFormulaClick, formulaOpen }: {
     return (
       <button
         onClick={onFormulaClick}
-        style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+        style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
       >{'\u0192'} Edit formula</button>
     );
   }
@@ -1633,7 +1633,7 @@ export function AddSharedComponentConfig({
 
       {selectedModel && selectedModel.properties.length > 0 && (
         <>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 10, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Properties</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 10, marginBottom: 2, textTransform: 'none' }}>Properties</div>
           {selectedModel.properties.map(prop => {
             const fieldKey = `prop_${prop.id}`;
             const currentVal = propValues[prop.name];
@@ -1703,7 +1703,7 @@ export function DeleteSharedComponentConfig({
         {isBound ? (
           <button
             onClick={() => setOpenField(f => f === 'returnValue' ? null : 'returnValue')}
-            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
           >{'\u0192'} Edit formula</button>
         ) : (
           <input
@@ -1814,8 +1814,8 @@ export function ResetFormConfig({
         {bound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
@@ -1877,7 +1877,7 @@ function kvArrToObj(pairs: KvPair[]): Record<string, unknown> {
 }
 
 const FORMULA_BTN_STYLE: React.CSSProperties = {
-  flex: 1, background: 'rgba(124,58,237,0.15)', border: '1px solid var(--bld-ai-accent)',
+  flex: 1, background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
   color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left',
   fontFamily: 'monospace', fontSize: 10, padding: '3px 6px',
   borderRadius: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -1964,7 +1964,7 @@ function WorkflowKvEditor({
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => setSectionFEOpen(true)}
-              style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
+              style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500, textAlign: 'left' }}
             >ƒ Edit formula</button>
             <BindingIcon isBound onClick={() => setSectionFEOpen(true)} />
           </div>
@@ -2155,7 +2155,7 @@ function NodePickerDropdown({
         </span>
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
           fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -2504,7 +2504,7 @@ function GraphQLStepConfig({
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {endpointBound ? (
           <button
-            style={{ flex: 1, ...S.fieldInput, background: 'rgba(124,58,237,0.15)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '4px 7px' }}
+            style={{ flex: 1, ...S.fieldInput, background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '4px 7px' }}
             onClick={() => setEndpointOpen(true)}
             title={String(cfg.endpoint ?? '')}
           >ƒ formula</button>
@@ -2828,7 +2828,7 @@ function EmitComponentTriggerConfig({
 
       {selected && (
         <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 6 }}>
-          Fires <span style={{ color: 'var(--bld-ai-accent)', fontWeight: 600 }}>{selected.name}</span>.
+          Fires <span style={{ color: 'var(--bld-accent)', fontWeight: 600 }}>{selected.name}</span>.
           The payload is defined on the trigger declaration and delivered to listeners as
           <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3, margin: '0 3px' }}>context.event</code>.
         </div>
@@ -2978,7 +2978,7 @@ function ExecuteComponentActionConfig({
             </span>
           )}
           <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-            {open ? '▴' : '▾'}
+            {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
           </span>
         </button>
 
@@ -2998,7 +2998,7 @@ function ExecuteComponentActionConfig({
             )}
             {Array.from(byModel.entries()).map(([modelId, { modelName, items }]) => (
               <div key={modelId}>
-                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
                   {modelName}
                 </div>
                 {items.map(r => {
@@ -3049,7 +3049,7 @@ function ExecuteComponentActionConfig({
         if (!declared.length) return null;
         const savedArgs = (cfg.args as Record<string, unknown>) ?? {};
         return (
-          <div style={{ marginTop: 14, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
+          <div style={{ marginTop: 14, borderTop: 'none', paddingTop: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 12 }}>Φ</span> Arguments
             </div>
@@ -3076,7 +3076,7 @@ const TYPE_COLOR: Record<string, string> = {
   string: 'var(--bld-warning)',
   number: 'var(--bld-info)',
   boolean: 'var(--bld-success)',
-  object: 'var(--bld-ai-accent)',
+  object: 'var(--bld-accent)',
   array: 'var(--bld-warning)',
   form: 'var(--bld-badge-boolean)',
 };
@@ -3203,7 +3203,7 @@ function ResetVariableValueConfig({
                 ) : (
                   <span style={{ color: 'var(--bld-text-disabled)' }}>Choose a variable</span>
                 )}
-                <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{row.open ? '▴' : '▾'}</span>
+                <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{row.open ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(180deg)"}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
               </button>
 
               {row.open && (
@@ -3215,7 +3215,7 @@ function ResetVariableValueConfig({
                     marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     maxHeight: 200, display: 'flex', flexDirection: 'column' }}
                 >
-                  <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+                  <div style={{ padding: '6px 8px', borderBottom: 'none' }}>
                     <input
                       autoFocus
                       value={row.search}
@@ -3363,8 +3363,8 @@ export function BoundToggleField({
         {isBound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '5px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
@@ -3514,8 +3514,8 @@ export function BoundField({
           <button
             type="button"
             onClick={handleOpenEditor}
-            style={{ flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '5px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : code ? (
@@ -3684,7 +3684,7 @@ function ChangeVariableValueConfig({
           ) : (
             <span style={{ color: 'var(--bld-text-disabled)' }}>Choose a variable</span>
           )}
-          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 10, flexShrink: 0 }}>{open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
         </button>
 
         {open && (
@@ -3698,7 +3698,7 @@ function ChangeVariableValueConfig({
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+            <div style={{ padding: '6px 8px', borderBottom: 'none' }}>
               <input
                 autoFocus
                 value={search}
@@ -3872,8 +3872,8 @@ function BranchConditionField({
         {isBound ? (
           <button
             onClick={() => setOpen(v => !v)}
-            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >ƒ Edit formula</button>
         ) : (
@@ -4006,8 +4006,8 @@ function ParamBoundField({
           <button
             onClick={handleOpenEditor}
             style={{
-              flex: 1, padding: '5px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer',
+              flex: 1, padding: '5px 8px', background: 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer',
               fontWeight: 500, textAlign: 'left',
             }}
           >
@@ -4199,7 +4199,7 @@ function GlobalWorkflowPicker({
           </span>
         )}
         <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
-          {open ? '▴' : '▾'}
+          {open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
         </span>
       </button>
 
@@ -4278,7 +4278,7 @@ function RunProjectWorkflowConfig({
 
       {/* Param input fields — only shown when the selected workflow has declared params */}
       {params.length > 0 && (
-        <div style={{ marginTop: 14, borderTop: '1px solid var(--bld-bg-input)', paddingTop: 10 }}>
+        <div style={{ marginTop: 14, borderTop: 'none', paddingTop: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ fontSize: 12 }}>Φ</span> Parameters
           </div>
@@ -4346,8 +4346,8 @@ function RunJavaScriptConfig({
     <>
       <label style={{ ...S.fieldLabel, marginTop: 10 }}>JavaScript code *</label>
       <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, lineHeight: 1.5 }}>
-        Async function body. Available globals: <code style={{ color: 'var(--bld-ai-accent)' }}>variables</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>collections</code>,{' '}
-        <code style={{ color: 'var(--bld-ai-accent)' }}>context</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>parameters</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>wwLib</code>.
+        Async function body. Available globals: <code style={{ color: 'var(--bld-accent)' }}>variables</code>, <code style={{ color: 'var(--bld-accent)' }}>collections</code>,{' '}
+        <code style={{ color: 'var(--bld-accent)' }}>context</code>, <code style={{ color: 'var(--bld-accent)' }}>parameters</code>, <code style={{ color: 'var(--bld-accent)' }}>wwLib</code>.
         Return value is stored at <code style={{ color: 'var(--bld-warning)' }}>{`context.workflow["${step.id}"].result`}</code>.
       </div>
       <button
@@ -4358,9 +4358,9 @@ function RunJavaScriptConfig({
           display: 'flex', alignItems: 'center', gap: 6,
           width: '100%', padding: '6px 8px',
           background: code ? 'rgba(139, 92, 246, 0.12)' : 'var(--bld-bg-base)',
-          border: `1px solid ${code ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
+          border: `1px solid ${code ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
           borderRadius: 5,
-          color: code ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
+          color: code ? 'var(--bld-accent)' : 'var(--bld-text-3)',
           fontSize: 11,
           fontFamily: '"JetBrains Mono","Fira Mono",monospace',
           textAlign: 'left',
@@ -4418,7 +4418,7 @@ function CollapsibleSection({
       >
         <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
         <span style={{ fontSize: 11, color, marginRight: 8 }}>{status}</span>
-        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
       </div>
       {open && (
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-elevated)' }}>
@@ -4508,7 +4508,7 @@ function KeyValueBuilderField({
       ))}
       <button
         onClick={addRow}
-        style={{ marginTop: 6, fontSize: 11, color: 'var(--bld-ai-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+        style={{ marginTop: 6, fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer' }}
       >+ Add Property</button>
     </div>
   );
@@ -4604,7 +4604,7 @@ function TablesListConfig({
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); setSortOpen(false); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
-            ▽ Configure Filter {conditions.length + groups.length > 0 ? `(${conditions.length + groups.length})` : ''}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter {conditions.length + groups.length > 0 ? `(${conditions.length + groups.length})` : ''}
           </button>
           <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
@@ -4783,7 +4783,7 @@ function TablesUpdateConfig({
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
-            ▽ Configure Filter *
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter *
           </button>
           <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
@@ -4884,7 +4884,7 @@ function TablesDeleteConfig({
             onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
             style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
           >
-            ▽ Configure Filter * (required)
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter * (required)
           </button>
           <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
             <FilterPanel
@@ -4965,8 +4965,8 @@ function HashPasswordConfig({
         onChange={v => setCfg('password', v)}
         placeholder="Plain-text password to hash"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
-        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.hash</code> — bcrypt hash (cost 10)
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-accent)' }}>result.hash</code> — bcrypt hash (cost 10)
       </div>
     </>
   );
@@ -4993,8 +4993,8 @@ function VerifyPasswordConfig({
         onChange={v => setCfg('hash', v)}
         placeholder="Stored bcrypt hash to compare against"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
-        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.match</code> — boolean
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-accent)' }}>result.match</code> — boolean
       </div>
     </>
   );
@@ -5023,9 +5023,9 @@ function GenerateTokenConfig({
           placeholder="7d, 1h, 30m …"
         />
       </div>
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
-        Result: <code style={{ color: 'var(--bld-ai-accent)' }}>result.token</code> — signed JWT<br />
-        All payload fields are also echoed on the result (e.g. <code style={{ color: 'var(--bld-ai-accent)' }}>result.userId</code>)
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-accent)' }}>
+        Result: <code style={{ color: 'var(--bld-accent)' }}>result.token</code> — signed JWT<br />
+        All payload fields are also echoed on the result (e.g. <code style={{ color: 'var(--bld-accent)' }}>result.userId</code>)
       </div>
     </>
   );
@@ -5045,10 +5045,10 @@ function VerifyTokenConfig({
         onChange={v => setCfg('token', v)}
         placeholder="JWT to verify (e.g. from Authorization header)"
       />
-      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-ai-accent)' }}>
-        Result: full decoded payload (all fields you put in <code style={{ color: 'var(--bld-ai-accent)' }}>generateToken</code>)<br />
-        e.g. <code style={{ color: 'var(--bld-ai-accent)' }}>result.userId</code>, <code style={{ color: 'var(--bld-ai-accent)' }}>result.role</code>, …<br />
-        <span style={{ color: 'var(--bld-ai-accent)' }}>result.valid</span> — always <code>true</code>; throws 401 on invalid/expired
+      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(124,58,237,0.08)', borderRadius: 6, fontSize: 11, color: 'var(--bld-accent)' }}>
+        Result: full decoded payload (all fields you put in <code style={{ color: 'var(--bld-accent)' }}>generateToken</code>)<br />
+        e.g. <code style={{ color: 'var(--bld-accent)' }}>result.userId</code>, <code style={{ color: 'var(--bld-accent)' }}>result.role</code>, …<br />
+        <span style={{ color: 'var(--bld-accent)' }}>result.valid</span> — always <code>true</code>; throws 401 on invalid/expired
       </div>
     </>
   );

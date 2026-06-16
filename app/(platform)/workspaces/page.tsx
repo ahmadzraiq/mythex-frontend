@@ -40,8 +40,8 @@ export default function WorkspacesPage() {
       {/* Illustration */}
       <div style={{
         width: 56, height: 56, borderRadius: 14, marginBottom: 4,
-        background: 'linear-gradient(135deg, #1e3a5f, #1e1b4b)',
-        border: '1px solid #1d4ed8',
+        background: 'linear-gradient(135deg, #312e81, #312e81)',
+        border: '1px solid #4f46e5',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -50,14 +50,14 @@ export default function WorkspacesPage() {
         </svg>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f9fafb', margin: 0 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--bld-text-1)', margin: 0 }}>
         No workspaces yet
       </h2>
-      <p style={{ fontSize: 13, color: '#6b7280', maxWidth: 280, lineHeight: 1.6, margin: 0 }}>
+      <p style={{ fontSize: 13, color: 'var(--bld-text-disabled)', maxWidth: 280, lineHeight: 1.6, margin: 0 }}>
         Create a workspace to organize your projects and collaborate with your team.
       </p>
-      <p style={{ fontSize: 12, color: '#4b5563', margin: 0 }}>
-        Click <strong style={{ color: '#9ca3af' }}>New workspace</strong> in the sidebar to get started.
+      <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)', margin: 0 }}>
+        Click <strong style={{ color: 'var(--bld-text-3)' }}>New workspace</strong> in the sidebar to get started.
       </p>
     </div>
   );

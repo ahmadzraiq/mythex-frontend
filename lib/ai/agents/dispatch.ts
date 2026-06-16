@@ -18,8 +18,6 @@ import { runSmartPlanner, type SmartPlannerInput, type SmartPlannerResult } from
 import type { ContractManifest } from './manifest';
 import type { CollectedTree, ToolEvent, Marker } from '@/lib/ai/tools/process-structure-tree';
 import { buildReadContext, type ReadContext } from '@/lib/ai/tools/read-tools';
-import { embedNodes } from '@/lib/ai/tools/semantic-search';
-
 
 export interface NewDispatchInput {
   projectId: string;
@@ -87,43 +85,6 @@ export async function runNewAgentDispatch(
     currentPageRoute: input.currentPageRoute ?? '/',
   });
 
-  // Start embedding nodes in parallel — awaited lazily inside semantic_search handler
-  const nodeEmbeddingsPromise: Promise<Map<string, number[]>> =
-    process.env.OPENAI_API_KEY && input.nodeFlat.length > 0
-      ? (() => {
-          const themeMap = input.theme ?? {};
-          const expandBlob = (blob: string) =>
-            blob.replace(/var\(--theme-([^)]+)\)/g, (match, key: string) => {
-              const hex = themeMap[key];
-              return hex ? `${match} /* ${key} ${hex} */` : match;
-            });
-
-          const currentPageNodes = input.nodeFlat.map(n => ({
-            ...n,
-            blob: expandBlob(n.blob),
-            pageRoute: input.currentPageRoute ?? '/',
-          }));
-
-          const otherPagesNodes = input.otherPagesIndex.flatMap(p =>
-            p.nodes
-              .filter(n => n.blob)
-              .map(n => ({
-                id: n.id,
-                name: n.name,
-                type: n.type,
-                blob: expandBlob(n.blob!),
-                path: n.id,
-                pageRoute: p.pageRoute ?? '/',
-              }))
-          );
-
-          return embedNodes([...currentPageNodes, ...otherPagesNodes]).catch(err => {
-            console.warn('[dispatch] embedNodes failed:', err instanceof Error ? err.message : err);
-            return new Map<string, number[]>();
-          });
-        })()
-      : Promise.resolve(new Map<string, number[]>());
-
   // Run the Smart Planner
   const plannerStartedAt = Date.now();
   emit({ type: 'planner_started', startedAt: plannerStartedAt });
@@ -132,7 +93,6 @@ export async function runNewAgentDispatch(
     message: input.message,
     chatHistory: input.chatHistory ?? [],
     readContext,
-    nodeEmbeddingsPromise,
     currentPageId: input.pageId,
     pages: input.pages ?? [],
     existingVariables: input.variables,

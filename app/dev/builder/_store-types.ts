@@ -186,6 +186,8 @@ export interface AiChatMessage {
   buildPlan?: { mode: string; needsStyling?: boolean; needsBinding?: boolean; needsWorkflows?: boolean; editSummary?: string; buildUnits: unknown[] };
   /** Repeat/condition/direction markers extracted by the structure agent — populated by structure_markers SSE event */
   structureMarkers?: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string; direction?: string }>;
+  /** Apply errors from file-agent write operations — populated when applyVirtualFile fails */
+  fileApplyErrors?: Array<{ path: string; error: string }>;
 }
 
 // ─── Viewport ─────────────────────────────────────────────────────────────────
@@ -662,6 +664,8 @@ export interface BuilderStore {
   prependNodeIntoPage: (pageId: string, node: SDUINode) => void;
   /** Append a node (e.g. Footer) at the end of a specific page. */
   appendNodeIntoPage: (pageId: string, node: SDUINode) => void;
+  /** Fully replace the node tree of a specific page (works whether or not the page is currently focused). */
+  replacePageNodes: (pageId: string, nodes: SDUINode[]) => void;
   /** Append a child node into an existing node (found by nodeId) — used for streaming AI generation. */
   appendChildToNode: (pageId: string, nodeId: string, child: SDUINode) => void;
   moveNode: (nodeId: string, newParentId: string | null, atIdx: number) => void;

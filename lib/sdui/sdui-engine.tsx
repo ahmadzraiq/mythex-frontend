@@ -426,6 +426,9 @@ export function SDUIEngine({
       const runOne = async (a: SDUIAction): Promise<unknown> => {
         const actionName = String((a as { action: string }).action);
         let payload = a.payload;
+        if (a.params && !(payload as Record<string, unknown> | undefined)?.parameters) {
+          payload = { ...(payload as Record<string, unknown> | undefined), parameters: a.params };
+        }
         let actionDef = actionsConfig[actionName] as {
           type?: string;
           url?: string;

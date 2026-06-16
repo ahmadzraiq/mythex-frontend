@@ -55,7 +55,7 @@ function Btn({
         border: 'none',
         borderRadius: 3,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        color: danger ? '#f87171' : accent ? '#bfdbfe' : '#d1d5db',
+        color: danger ? 'var(--bld-error)' : accent ? '#bfdbfe' : '#d1d5db',
         fontSize: 11,
         padding: '3px 6px',
         whiteSpace: 'nowrap',
@@ -74,7 +74,7 @@ function Btn({
 }
 
 function Divider() {
-  return <div style={{ width: 1, height: 16, background: '#374151', margin: '0 2px', flexShrink: 0 }} />;
+  return <div style={{ width: 1, height: 16, background: 'var(--bld-bg-elevated)', margin: '0 2px', flexShrink: 0 }} />;
 }
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ function Breadcrumb({ nodeId, pageNodes }: { nodeId: string; pageNodes: SDUINode
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: isLast ? '#f3f4f6' : '#9ca3af',
+                color: isLast ? '#f3f4f6' : 'var(--bld-text-3)',
                 fontSize: 10,
                 padding: '1px 3px',
                 borderRadius: 3,
@@ -165,8 +165,8 @@ function MoreMenu({ nodeId, onClose }: { nodeId: string; onClose: () => void }) 
       data-more-menu="1"
       style={{
         position: 'fixed',
-        background: '#1f2937',
-        border: '1px solid #374151',
+        background: 'var(--bld-bg-input)',
+        border: '1px solid var(--bld-border-subtle)',
         borderRadius: 6,
         zIndex: 100001,
         minWidth: 160,
@@ -176,7 +176,7 @@ function MoreMenu({ nodeId, onClose }: { nodeId: string; onClose: () => void }) 
     >
       {items.map((item, i) =>
         item === null ? (
-          <div key={i} style={{ height: 1, background: '#374151', margin: '2px 0' }} />
+          <div key={i} style={{ height: 1, background: 'var(--bld-bg-elevated)', margin: '2px 0' }} />
         ) : (
           <button
             key={item.label}
@@ -243,7 +243,7 @@ export function FloatingToolbar({ selectedRect, node, canvasContainerRef }: Floa
         <div
           style={{
             background: 'rgba(15,23,42,0.95)',
-            border: '1px solid #374151',
+            border: '1px solid var(--bld-border-subtle)',
             borderRadius: '4px 4px 0 0',
             padding: '3px 8px',
             backdropFilter: 'blur(8px)',
@@ -257,7 +257,7 @@ export function FloatingToolbar({ selectedRect, node, canvasContainerRef }: Floa
         <div
           style={{
             background: 'rgba(15,23,42,0.95)',
-            border: '1px solid #374151',
+            border: '1px solid var(--bld-border-subtle)',
             borderRadius: '0 0 4px 4px',
             padding: '3px 6px',
             backdropFilter: 'blur(8px)',

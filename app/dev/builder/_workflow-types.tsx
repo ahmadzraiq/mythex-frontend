@@ -497,7 +497,7 @@ export const ACTION_CATEGORIES: { category: string; context?: 'client' | 'server
     items: [
       { type: 'breakLoop', label: 'Break loop', icon: '⊙' },
       { type: 'continueLoop', label: 'Continue loop', icon: '→' },
-      { type: 'passThroughCondition', label: 'Pass through condition', icon: '▽' },
+      { type: 'passThroughCondition', label: 'Pass through condition', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>' },
     ],
   },
   {
@@ -640,7 +640,7 @@ export function getServerActionCategories(kind: ServerWorkflowKind): { category:
 
   const flowLogic: ActionTypeDef[] = [
     ...terminators,
-    { type: 'passThroughCondition',    label: 'Pass through condition',    icon: '▽' },
+    { type: 'passThroughCondition',    label: 'Pass through condition',    icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>' },
     { type: 'branch',                  label: 'True/False split',          icon: '⟐', isStructural: true },
     { type: 'multiOptionBranch',       label: 'Multi-option split',        icon: '⟐', isStructural: true },
     { type: 'tryCatch',                label: 'Try/Catch',                 icon: '⚡', isStructural: true },

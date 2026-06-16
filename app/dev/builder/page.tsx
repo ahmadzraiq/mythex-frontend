@@ -27,7 +27,8 @@ export const dynamic = 'force-dynamic';
  *   Cmd+P               — toggle preview
  */
 
-import { useEffect, useRef, useState, useCallback, startTransition } from 'react';
+import React, { useEffect, useRef, useState, useCallback, startTransition, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, usePathname } from 'next/navigation';
 
 /**
@@ -57,7 +58,8 @@ import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
 import { ExportModal } from './_export-modal';
-import { projects as projectsApi, envVariables } from '@/lib/platform/api-client';
+import { projects as projectsApi, workspaces as workspacesApi, envVariables, auth } from '@/lib/platform/api-client';
+import AiTokenMeter from '@/app/(platform)/_ai-token-meter';
 import EnvVarsPanel from './_env-vars-panel';
 import { SlidePanel } from './_slide-panel';
 import { CustomColorSlideContent } from './_custom-color-form';
@@ -90,6 +92,18 @@ function BuilderThemeToggle() {
   const builderTheme = useBuilderStore(s => s.builderTheme);
   const toggleBuilderTheme = useBuilderStore(s => s.toggleBuilderTheme);
   const isDark = builderTheme === 'dark';
+
+  // Sync theme to <html> so portals (ReactDOM.createPortal → document.body)
+  // also receive the light-theme token overrides.
+  useEffect(() => {
+    const el = document.documentElement;
+    if (builderTheme === 'light') {
+      el.setAttribute('data-bld-theme', 'light');
+    } else {
+      el.removeAttribute('data-bld-theme');
+    }
+    return () => el.removeAttribute('data-bld-theme');
+  }, [builderTheme]);
 
   return (
     <button
@@ -238,107 +252,101 @@ function PagesPicker({ onOpenPageConfig }: { onOpenPageConfig: () => void }) {
     !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.route ?? '').includes(search)
   );
 
+  const PageIcon = () => (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V6L9 2z"/>
+      <path d="M9 2v4h4"/>
+    </svg>
+  );
+
   return (
     <div ref={containerRef} style={{ position: 'relative' }} data-testid="pages-picker">
-      {/* Trigger button */}
+      {/* Trigger */}
       <button
         data-testid="pages-picker-trigger"
         onClick={() => { setOpen(v => !v); setSearch(''); setShowAdd(false); }}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '4px 10px',
-          background: open ? 'var(--bld-bg-input)' : 'transparent',
-          border: `1px solid ${open ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
-          borderRadius: 6,
-          color: 'var(--bld-text-2)',
-          cursor: 'pointer',
-          fontSize: 11,
-          fontFamily: 'system-ui',
-          minWidth: 120,
-          maxWidth: 220,
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 8px',
+          background: open ? 'var(--bld-bg-elevated)' : 'transparent',
+          border: `1px solid ${open ? 'var(--bld-glass-border)' : 'transparent'}`,
+          borderRadius: 7, color: 'var(--bld-text-2)', cursor: 'pointer',
+          fontSize: 11, minWidth: 100, maxWidth: 200, transition: 'all 0.12s',
         }}
+        onMouseEnter={e => { if (!open) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.borderColor = 'var(--bld-glass-border)'; } }}
+        onMouseLeave={e => { if (!open) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; } }}
       >
-        <span style={{ fontSize: 12, opacity: 0.7 }}>📄</span>
+        <span style={{ color: 'var(--bld-text-disabled)', flexShrink: 0 }}><PageIcon /></span>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: 'var(--bld-text-1)' }}>
           {currentPage?.name ?? 'Select page'}
         </span>
-        {currentPage?.route && (
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', flexShrink: 0 }}>
-            {currentPage.route}
-          </span>
-        )}
-        <span style={{ color: 'var(--bld-text-disabled)', fontSize: 9, flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ color: 'var(--bld-text-disabled)', flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            minWidth: 260,
-            maxWidth: 320,
-            background: 'var(--bld-bg-panel)',
-            border: '1px solid var(--bld-border-subtle)',
-            borderRadius: 8,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-            zIndex: 99999,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+          minWidth: 260, maxWidth: 320,
+          background: 'var(--bld-glass-bg)',
+          border: '1px solid var(--bld-glass-border)',
+          borderRadius: 12,
+          boxShadow: 'var(--bld-shadow-lg)',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          zIndex: 99999, overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+        }}>
           {/* Search */}
-          <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bld-border)' }}>
-            <input
-              autoFocus
-              placeholder="Search pages…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
-                borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '5px 8px',
-                boxSizing: 'border-box', outline: 'none',
-              }}
-            />
+          <div style={{ padding: '8px 10px 6px' }}>
+            <div style={{ position: 'relative' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
+                style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bld-text-disabled)', pointerEvents: 'none' }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                autoFocus placeholder="Search pages…" value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border)',
+                  borderRadius: 7, color: 'var(--bld-text-2)', fontSize: 11, padding: '5px 8px 5px 26px',
+                  boxSizing: 'border-box', outline: 'none',
+                }}
+              />
+            </div>
           </div>
 
           {/* Page list */}
-          <div style={{ overflowY: 'auto', maxHeight: 260 }}>
+          <div style={{ overflowY: 'auto', maxHeight: 240, padding: '2px 6px' }}>
             {filtered.length === 0 && (
-              <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No pages match</div>
+              <div style={{ padding: '10px 8px', fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No pages match</div>
             )}
             {filtered.map((page: BuilderPage) => {
               const isActive = page.id === currentPageId;
               const isRenaming = renamingId === page.id;
               return (
-                <div
-                  key={page.id}
-                  data-testid={`pages-picker-row-${page.id}`}
-                  onClick={() => {
-                    if (!isRenaming) { navigatePage(page.id); setOpen(false); setSearch(''); }
-                  }}
+                <div key={page.id} data-testid={`pages-picker-row-${page.id}`}
+                  onClick={() => { if (!isRenaming) { navigatePage(page.id); setOpen(false); setSearch(''); } }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 10px', cursor: 'pointer',
-                    background: isActive ? 'rgba(59,130,246,0.15)' : 'transparent',
-                    borderLeft: isActive ? '2px solid var(--bld-accent)' : '2px solid transparent',
+                    display: 'flex', alignItems: 'center', gap: 7,
+                    padding: '6px 8px', cursor: 'pointer', borderRadius: 7,
+                    background: isActive ? 'var(--bld-bg-active)' : 'transparent',
+                    marginBottom: 1,
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bld-bg-hover)'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <span style={{ fontSize: 12, opacity: 0.6, flexShrink: 0 }}>📄</span>
+                  <span style={{ color: isActive ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', flexShrink: 0 }}><PageIcon /></span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {isRenaming ? (
-                      <input
-                        autoFocus
-                        value={renameValue}
+                      <input autoFocus value={renameValue}
                         onChange={e => setRenameValue(e.target.value)}
                         onBlur={commitRename}
                         onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenamingId(null); e.stopPropagation(); }}
                         onClick={e => e.stopPropagation()}
-                        style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-accent)', borderRadius: 3, color: 'var(--bld-text-1)', fontSize: 11, padding: '1px 5px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-accent)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '1px 5px', boxSizing: 'border-box' }}
                       />
                     ) : (
                       <>
@@ -346,84 +354,79 @@ function PagesPicker({ onOpenPageConfig }: { onOpenPageConfig: () => void }) {
                           onDoubleClick={e => { e.stopPropagation(); setRenamingId(page.id); setRenameValue(page.name); }}>
                           {page.name}
                         </div>
-                        {page.route && <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{page.route}</div>}
+                        {page.route && <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{page.route}</div>}
                       </>
                     )}
                   </div>
                   {!isRenaming && (
-                    <>
-                      <button
-                        title="Page settings"
-                        onClick={e => {
-                          e.stopPropagation();
-                          navigatePage(page.id);
-                          setOpen(false);
-                          onOpenPageConfig();
-                        }}
-                        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 12, padding: '2px 4px', borderRadius: 3, flexShrink: 0, lineHeight: 1 }}
+                    <div style={{ display: 'flex', gap: 2, opacity: 0, transition: 'opacity 0.1s' }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <button title="Page settings"
+                        onClick={e => { e.stopPropagation(); navigatePage(page.id); setOpen(false); onOpenPageConfig(); }}
+                        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center' }}
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-2)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                         </svg>
                       </button>
                       <button title="Remove page" onClick={e => { e.stopPropagation(); removePage(page.id); }}
-                        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 13, padding: '2px 4px', borderRadius: 3, flexShrink: 0 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', fontSize: 13, lineHeight: 1 }}
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}>×</button>
-                    </>
+                    </div>
                   )}
                 </div>
               );
             })}
           </div>
 
-          {/* Add page / route picker */}
-          <div style={{ borderTop: '1px solid var(--bld-border)' }}>
+          {/* Add page footer */}
+          <div style={{ borderTop: '1px solid var(--bld-border)', margin: '4px 0 0' }}>
             {!showAdd ? (
-              <button
-                data-testid="pages-picker-add"
-                onClick={() => setShowAdd(true)}
+              <button data-testid="pages-picker-add" onClick={() => setShowAdd(true)}
                 style={{
-                  width: '100%', padding: '8px 12px', background: 'transparent', border: 'none',
-                  color: 'var(--bld-text-disabled)', fontSize: 11, cursor: 'pointer', textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'system-ui',
+                  width: '100%', padding: '8px 14px', background: 'transparent', border: 'none',
+                  color: 'var(--bld-text-disabled)', fontSize: 11, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 7, transition: 'all 0.1s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-2)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-hover)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
               >
-                <span style={{ fontSize: 14 }}>+</span> Add page
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+                New page
               </button>
             ) : (
-              <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {/* Custom route */}
-                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', letterSpacing: '0.04em' }}>CUSTOM ROUTE</div>
+              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500 }}>Custom route</div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input autoFocus placeholder="/my-page" value={customRoute}
                     onChange={e => setCustomRoute(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleAddCustom(); if (e.key === 'Escape') setShowAdd(false); e.stopPropagation(); }}
-                    style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 8px', outline: 'none', fontFamily: 'monospace' }}
+                    style={{ flex: 1, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border)', borderRadius: 6, color: 'var(--bld-text-1)', fontSize: 11, padding: '5px 8px', outline: 'none', fontFamily: 'monospace' }}
                   />
                   <button onClick={handleAddCustom} disabled={!customRoute.trim()}
-                    style={{ padding: '4px 10px', background: customRoute.trim() ? 'var(--bld-accent-hover)' : 'var(--bld-bg-elevated)', border: 'none', borderRadius: 4, color: customRoute.trim() ? '#fff' : 'var(--bld-text-disabled)', fontSize: 11, cursor: customRoute.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
+                    style={{ padding: '5px 12px', background: customRoute.trim() ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)', border: 'none', borderRadius: 6, color: customRoute.trim() ? '#fff' : 'var(--bld-text-disabled)', fontSize: 11, fontWeight: 500, cursor: customRoute.trim() ? 'pointer' : 'default', flexShrink: 0 }}>
                     Add
                   </button>
                 </div>
-                {/* App routes — only shown in admin/dev mode (static config routes) */}
                 {isAdminMode && (
                   <>
-                    <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', letterSpacing: '0.04em', marginTop: 4 }}>APP ROUTES</div>
+                    <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500, marginTop: 2 }}>App routes</div>
                     <div style={{ maxHeight: 160, overflowY: 'auto' }}>
                       {allRoutes.map(r => {
                         const alreadyAdded = pages.some((p: BuilderPage) => p.route === r.path);
                         return (
                           <button key={r.config} disabled={alreadyAdded}
                             onClick={() => { if (!alreadyAdded) { addPage(r.path, r.config); setShowAdd(false); setOpen(false); } }}
-                            style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 6, padding: '5px 4px', background: 'none', border: 'none', color: alreadyAdded ? 'var(--bld-text-disabled)' : 'var(--bld-text-2)', fontSize: 11, textAlign: 'left', cursor: alreadyAdded ? 'default' : 'pointer' }}
-                            onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'rgba(59,130,246,0.15)'; }}
+                            style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: 6, padding: '5px 4px', background: 'none', border: 'none', color: alreadyAdded ? 'var(--bld-text-disabled)' : 'var(--bld-text-2)', fontSize: 11, textAlign: 'left', cursor: alreadyAdded ? 'default' : 'pointer', borderRadius: 5 }}
+                            onMouseEnter={e => { if (!alreadyAdded) e.currentTarget.style.background = 'var(--bld-bg-hover)'; }}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? 'var(--bld-border-subtle)' : 'var(--bld-info)', flexShrink: 0 }}>{r.path}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: 10, color: alreadyAdded ? 'var(--bld-text-disabled)' : 'var(--bld-info)', flexShrink: 0 }}>{r.path}</span>
                             <span style={{ opacity: alreadyAdded ? 0.35 : 0.6 }}>{r.config}</span>
                             {alreadyAdded && <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--bld-text-disabled)' }}>✓</span>}
                           </button>
@@ -740,21 +743,103 @@ function URLParamsPopover() {
   );
 }
 
-function SaveStatusBadge({ status }: { status: SaveStatus }) {
-  if (status === 'idle') return null;
-  const config: Record<SaveStatus, { label: string; color: string }> = {
-    idle:   { label: '',          color: 'transparent' },
-    saving: { label: 'Saving…',   color: 'var(--bld-text-disabled)' },
-    saved:  { label: '✓ Saved',   color: '#10b981' },
-    error:  { label: '⚠ Save failed', color: '#ef4444' },
+// ─── Node JSON Panel ──────────────────────────────────────────────────────────
+
+function NodeJsonPanel({ onClose }: { onClose: () => void }) {
+  const { selectedIds, pageNodes } = useBuilderStore(useShallow(s => ({ selectedIds: s.selectedIds, pageNodes: s.pageNodes })));
+  const [copyDone, setCopyDone] = React.useState(false);
+
+  // Find selected node in pageNodes
+  const selectedNode = React.useMemo(() => {
+    if (selectedIds.length !== 1) return null;
+    function find(nodes: unknown[]): unknown {
+      for (const n of nodes) {
+        const node = n as Record<string, unknown>;
+        if (node.id === selectedIds[0]) return node;
+        if (Array.isArray(node.children)) {
+          const found = find(node.children as unknown[]);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+    return find(pageNodes as unknown[]);
+  }, [selectedIds, pageNodes]);
+
+  const json = selectedNode ? JSON.stringify(selectedNode, null, 2) : '// No node selected';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(json).then(() => {
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 1500);
+    });
   };
-  const { label, color } = config[status];
+
   return (
-    <span style={{ fontSize: 10, color, fontFamily: 'system-ui', transition: 'color 0.3s' }}>
-      {label}
-    </span>
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', pointerEvents: 'none' }}
+    >
+      <div
+        style={{
+          marginTop: 44, marginRight: 268, width: 340, maxHeight: 'calc(100vh - 60px)',
+          background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)',
+          borderRadius: 10, boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+          display: 'flex', flexDirection: 'column', pointerEvents: 'all',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>Node JSON</span>
+          <button
+            onClick={handleCopy}
+            style={{ fontSize: 10, padding: '3px 8px', borderRadius: 4, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', color: copyDone ? 'var(--bld-success)' : 'var(--bld-text-3)', cursor: 'pointer' }}
+          >{copyDone ? '✓ Copied' : 'Copy'}</button>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
+          >×</button>
+        </div>
+        {/* Body */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '10px 14px' }}>
+          <pre style={{ fontSize: 10, color: 'var(--bld-success)', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0, lineHeight: 1.5 }}>
+            {json}
+          </pre>
+        </div>
+      </div>
+    </div>
   );
 }
+
+function SaveStatusBadge({ status }: { status: SaveStatus }) {
+  if (status === 'saving') return (
+    <span title="Saving…" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginRight: 8, color: 'var(--bld-text-disabled)' }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+          style={{ animation: 'spin 1s linear infinite', transformOrigin: '12px 12px' }}/>
+      </svg>
+    </span>
+  );
+  if (status === 'error') return (
+    <span title="Save failed" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, marginRight: 8, color: 'var(--bld-warning, #f59e0b)' }}>
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <path d="M8 2L14.5 13H1.5L8 2z"/><path d="M8 6.5v3M8 11v.5"/>
+      </svg>
+    </span>
+  );
+  return null;
+}
+
+/** Overlay tab buttons shown in the navbar (no Config Files — it lives in the left panel) */
+const OVERLAY_TABS: Array<{ id: LeftTabId; label: string; icon: React.ReactNode }> = [
+  {
+    id: 'triggers', label: 'Triggers',
+    icon: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M8 1.5L3.5 7.5H7L5 13l6-8H8l0-3.5z" fill="currentColor"/></svg>,
+  },
+  {
+    id: 'assets', label: 'Assets',
+    icon: <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="11" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.2" fill="none"/><circle cx="5" cy="5.5" r="1.1" fill="currentColor"/><path d="M1.5 9.5L4.5 6.5 7 9 9.5 6.5 12.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>,
+  },
+];
 
 function TopBar({
   onPreview,
@@ -766,6 +851,10 @@ function TopBar({
   onSetLeftTab,
   onOpenAuthConfig,
   onOpenPageConfig,
+  workspaceId,
+  workspacePlan,
+  superAdmin,
+  aiRefreshKey,
 }: {
   onPreview: () => void | Promise<void>;
   saveStatus: SaveStatus;
@@ -776,6 +865,10 @@ function TopBar({
   onSetLeftTab: (t: LeftTabId) => void;
   onOpenAuthConfig: () => void;
   onOpenPageConfig: () => void;
+  workspaceId: string | null;
+  workspacePlan: 'FREE' | 'PRO' | 'ENTERPRISE';
+  superAdmin: boolean;
+  aiRefreshKey: number;
 }) {
   const { undo, redo, historyIdx, history, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
     useShallow(s => ({
@@ -799,6 +892,7 @@ function TopBar({
   const [exportPaywallLoading, setExportPaywallLoading] = useState(false);
   const [exportPaywallError, setExportPaywallError] = useState('');
   const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  const [jsonPanelOpen, setJsonPanelOpen] = useState(false);
 
   // ── Deploy state ────────────────────────────────────────────────────────────
   const [deployOpen, setDeployOpen] = useState(false);
@@ -959,395 +1053,376 @@ function TopBar({
       const res = await projectsApi.authoriseExport(projectId);
       if (res.approved) {
         if (res.price === 0) {
-          // Super admin or free — go straight to export
           setExportOpen(true);
         } else {
-          // Show paywall confirmation
           setExportPaywall({ price: res.price, message: res.message });
         }
       }
     } catch (err) {
       setExportPaywallError((err as Error).message ?? 'Export not available');
-      setExportPaywall({ price: -1, message: '' }); // show error state
+      setExportPaywall({ price: -1, message: '' });
     } finally {
       setExportPaywallLoading(false);
     }
   }
 
+  // ── More menu (three-dots) state ─────────────────────────────────────────
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [moreOpen]);
+
+  const iconBtn: React.CSSProperties = {
+    width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent', border: '1px solid transparent', borderRadius: 5,
+    color: 'var(--bld-text-disabled)', cursor: 'pointer', transition: 'all 0.15s',
+  };
+
   return (
+    <>
     <div
       style={{
-        height: 44,
+        height: 46,
         display: 'flex',
         alignItems: 'center',
-        background: 'var(--bld-bg-base)',
-        borderBottom: '1px solid var(--bld-border)',
-        padding: '0 12px',
-        gap: 8,
+        backgroundColor: 'var(--bld-glass-bg)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid var(--bld-glass-border)',
+        padding: '0 10px',
+        gap: 4,
+        position: 'relative',
         flexShrink: 0,
         zIndex: 10,
       }}
     >
-      {/* Back to workspace link (only when opened from a project) */}
-      {projectId && (
-        <a
-          href="/workspaces"
-          title="Back to workspaces"
-          style={{
-            display: 'flex', alignItems: 'center',
-            fontSize: 10, color: 'var(--bld-text-disabled)',
-            textDecoration: 'none',
-            padding: '2px 6px',
-            borderRadius: 4,
-            fontFamily: 'system-ui',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-3)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
-        >
-          ← Projects
-        </a>
-      )}
+      {/* ── LEFT: three-dots + edit controls + panel tabs ─────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
 
-      <div style={{ width: 1, height: 20, background: 'var(--bld-border)' }} />
-
-      {/* History */}
-      <TopBarBtn disabled={!canUndo} onClick={undo} title="Undo (⌘Z)"   testId="btn-undo">↩</TopBarBtn>
-      <TopBarBtn disabled={!canRedo} onClick={redo} title="Redo (⌘⇧Z)" testId="btn-redo">↪</TopBarBtn>
-
-      <div style={{ width: 1, height: 20, background: 'var(--bld-border)' }} />
-
-      {/* Pages picker dropdown (replaces the static page name in the centre) */}
-      <PagesPicker onOpenPageConfig={onOpenPageConfig} />
-
-      {/* URL query parameter definitions for the current page */}
-      <URLParamsPopover />
-
-      <div style={{ width: 1, height: 20, background: 'var(--bld-border)' }} />
-
-      {/* Mode switcher — icon-only */}
-      {([
-        {
-          id: 'interface' as const,
-          title: 'Interface',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-              <rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-              <rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-              <rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/>
-            </svg>
-          ),
-        },
-        {
-          id: 'data-api' as const,
-          title: 'Data & API',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <ellipse cx="7" cy="3.5" rx="5" ry="2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-              <path d="M2 3.5v3.5c0 1.1 2.24 2 5 2s5-.9 5-2V3.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-              <path d="M2 7v3c0 1.1 2.24 2 5 2s5-.9 5-2V7" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-            </svg>
-          ),
-        },
-      ] as const).map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => onMainModeChange(tab.id)}
-          title={tab.title}
-          style={{
-            width: 28, height: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: mainMode === tab.id ? 'var(--bld-accent-hover)' : 'transparent',
-            border: `1px solid ${mainMode === tab.id ? 'var(--bld-accent)' : 'transparent'}`,
-            borderRadius: 5,
-            color: mainMode === tab.id ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { if (mainMode !== tab.id) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
-          onMouseLeave={e => { if (mainMode !== tab.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
-        >
-          {tab.icon}
-        </button>
-      ))}
-
-      <div style={{ width: 1, height: 20, background: 'var(--bld-border)' }} />
-
-      {/* ── Left-panel overlay tabs: Triggers / Assets / Theme ── */}
-      {([
-        {
-          id: 'triggers' as LeftTabId,
-          title: 'App Triggers',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M8 1.5L3.5 7.5H7L5 13l6-8H8l0-3.5z" fill="currentColor"/>
-            </svg>
-          ),
-        },
-        {
-          id: 'assets' as LeftTabId,
-          title: 'Assets',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="1.5" y="2.5" width="11" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-              <circle cx="5" cy="5.5" r="1.1" fill="currentColor"/>
-              <path d="M1.5 9.5L4.5 6.5 7 9 9.5 6.5 12.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            </svg>
-          ),
-        },
-        {
-          id: 'theme' as LeftTabId,
-          title: 'Theme',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-              <circle cx="5" cy="5" r="1.2" fill="currentColor"/>
-              <circle cx="9" cy="5" r="1.2" fill="currentColor"/>
-              <circle cx="5" cy="9" r="1.2" fill="currentColor"/>
-              <circle cx="9" cy="9" r="1.2" fill="currentColor"/>
-            </svg>
-          ),
-        },
-        {
-          id: 'files' as LeftTabId,
-          title: 'Config Files',
-          icon: (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3.5 2h4.5l3 3v6.5a1 1 0 01-1 1h-6.5a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round"/>
-              <path d="M8 2v3h3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M5 7.5h4M5 9.5h2.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-            </svg>
-          ),
-        },
-      ] as const).map(btn => {
-        const isActive = leftTab === btn.id && mainMode === 'interface';
-        return (
-          <button
-            key={btn.id}
-            data-testid={`navbar-tab-${btn.id}`}
-            onClick={() => {
-              if (mainMode !== 'interface') onMainModeChange('interface');
-              onSetLeftTab(isActive && leftTab === btn.id ? 'components' : btn.id);
-            }}
-            title={btn.title}
-            style={{
-              width: 28, height: 28,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: isActive ? 'var(--bld-accent-hover)' : 'transparent',
-              border: `1px solid ${isActive ? 'var(--bld-accent)' : 'transparent'}`,
-              borderRadius: 5,
-              color: isActive ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
-            onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+        {/* Three-dots — far left */}
+        <div ref={moreRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button onClick={() => setMoreOpen(o => !o)} title="More options"
+            style={{ ...iconBtn, color: moreOpen ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)', background: moreOpen ? 'var(--bld-bg-elevated)' : 'transparent', border: `1px solid ${moreOpen ? 'rgba(255,255,255,0.1)' : 'transparent'}` }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            onMouseLeave={e => { if (!moreOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; e.currentTarget.style.borderColor = 'transparent'; } }}
           >
-            {btn.icon}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
           </button>
-        );
-      })}
+          {moreOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: 200, zIndex: 500,
+              background: 'var(--bld-popup-bg)',
+              border: '1px solid var(--bld-glass-border)',
+              borderRadius: 12, boxShadow: 'var(--bld-shadow-lg)',
+              padding: '6px 0', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+            }}>
+              {/* Back to workspaces */}
+              {projectId && (
+                <>
+                  <a href="/workspaces"
+                    style={{
+                      width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                      padding: '7px 14px', fontSize: 12, color: 'var(--bld-text-2)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+                    Back to workspaces
+                  </a>
+                  <div style={{ height: 1, background: 'var(--bld-border)', margin: '5px 0' }} />
+                </>
+              )}
+              {([
+                { testId: 'btn-export', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3H13C13.6 3 14 3.4 14 4V13C14 13.6 13.6 14 13 14H3C2.4 14 2 13.6 2 13V4C2 3.4 2.4 3 3 3H6M8 1V9M6 3L8 1L10 3"/></svg>, label: 'Export', onClick: () => { setMoreOpen(false); handleExportClick(); }, disabled: exportPaywallLoading, danger: false },
+              ] as const).map(item => (
+                <button key={item.testId} data-testid={item.testId} onClick={item.onClick} disabled={item.disabled}
+                  style={{
+                    width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                    padding: '7px 14px', fontSize: 12, color: 'var(--bld-text-2)', cursor: 'pointer',
+                    opacity: item.disabled ? 0.45 : 1, display: 'flex', alignItems: 'center', gap: 9, transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >{item.icon}{item.label}</button>
+              ))}
+              <div style={{ height: 1, background: 'var(--bld-border)', margin: '5px 0' }} />
+              <div style={{ padding: '5px 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'var(--bld-text-2)' }}>Builder theme</span>
+                <BuilderThemeToggle />
+              </div>
+              <div style={{ height: 1, background: 'var(--bld-border)', margin: '5px 0' }} />
+              {/* Logout */}
+              <button
+                data-testid="navbar-logout-btn"
+                onClick={async () => { setMoreOpen(false); await auth.logout(); window.location.href = '/login'; }}
+                style={{
+                  width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                  padding: '7px 14px', fontSize: 12, color: 'var(--bld-error, #f87171)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 9, transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/></svg>
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
 
-      {/* Env vars panel button */}
-      <button
-        data-testid="navbar-env-btn"
-        onClick={() => setEnvVarsOpen(true)}
-        title="Environment Variables"
-        style={{
-          width: 28, height: 28,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'transparent',
-          border: '1px solid transparent',
-          borderRadius: 5,
-          color: 'var(--bld-text-disabled)',
-          cursor: 'pointer',
-          transition: 'all 0.15s',
-          fontSize: 13,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
-      >⚙</button>
+        {mainMode === 'interface' && (
+          <>
+            <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.07)', margin: '0 2px' }} />
+            <TopBarBtn disabled={!canUndo} onClick={undo} title="Undo (⌘Z)" testId="btn-undo">↩</TopBarBtn>
+            <TopBarBtn disabled={!canRedo} onClick={redo} title="Redo (⌘⇧Z)" testId="btn-redo">↪</TopBarBtn>
+            <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.07)', margin: '0 2px' }} />
+            <PagesPicker onOpenPageConfig={onOpenPageConfig} />
+            <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.07)', margin: '0 2px' }} />
+            {/* Triggers · Assets · Auth · Env — tight group */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {OVERLAY_TABS.map(btn => {
+                const isActive = leftTab === btn.id;
+                return (
+                  <button key={btn.id} data-testid={`navbar-tab-${btn.id}`}
+                    onClick={() => onSetLeftTab(isActive ? 'components' : btn.id)}
+                    title={btn.label}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '4px 8px',
+                      background: isActive ? 'rgba(99,102,241,0.18)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(99,102,241,0.45)' : 'transparent'}`,
+                      borderRadius: 7,
+                      color: isActive ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
+                      cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 500 : 400,
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+                  >
+                    {btn.icon}
+                    {btn.label}
+                  </button>
+                );
+              })}
+              <button
+                data-testid="navbar-auth-btn"
+                onClick={onOpenAuthConfig}
+                title="Auth Settings"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+                  background: 'transparent', border: '1px solid transparent',
+                  borderRadius: 7, color: 'var(--bld-text-disabled)',
+                  cursor: 'pointer', fontSize: 11, fontWeight: 400, transition: 'all 0.12s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>
+                Auth
+              </button>
+              <button
+                data-testid="navbar-env-btn"
+                onClick={() => setEnvVarsOpen(true)}
+                title="Environment Variables"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+                  background: 'transparent', border: '1px solid transparent',
+                  borderRadius: 7, color: 'var(--bld-text-disabled)',
+                  cursor: 'pointer', fontSize: 11, fontWeight: 400, transition: 'all 0.12s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42"/></svg>
+                Env
+              </button>
+              {/* Config Files — dev only */}
+              {(() => {
+                const isActive = leftTab === 'files';
+                return (
+                  <button
+                    data-testid="navbar-config-btn"
+                    onClick={() => onSetLeftTab(isActive ? 'components' : 'files')}
+                    title="Config Files"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+                      background: isActive ? 'rgba(99,102,241,0.18)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(99,102,241,0.45)' : 'transparent'}`,
+                      borderRadius: 7,
+                      color: isActive ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
+                      cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 500 : 400, transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v3h3"/>
+                    </svg>
+                    Files
+                  </button>
+                );
+              })()}
+              {/* JSON viewer — shows selected node's JSON */}
+              {(() => {
+                const isActive = jsonPanelOpen;
+                return (
+                  <button
+                    data-testid="navbar-json-btn"
+                    onClick={() => setJsonPanelOpen(v => !v)}
+                    title="View selected node JSON"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+                      background: isActive ? 'rgba(99,102,241,0.18)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(99,102,241,0.45)' : 'transparent'}`,
+                      borderRadius: 7,
+                      color: isActive ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
+                      cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 500 : 400, transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="10 2 14 8 10 14"/><polyline points="6 2 2 8 6 14"/>
+                    </svg>
+                    JSON
+                  </button>
+                );
+              })()}
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* Auth settings icon button */}
-      <button
-        data-testid="navbar-auth-btn"
-        onClick={onOpenAuthConfig}
-        title="Auth settings (token, user endpoint, redirects)"
-        style={{
-          width: 28, height: 28,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'transparent',
-          border: '1px solid transparent',
-          borderRadius: 5,
-          color: 'var(--bld-text-disabled)',
-          cursor: 'pointer',
-          transition: 'all 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </button>
-
-      <div style={{ flex: 1 }} />
-
-      {/* ── Responsive viewport breakpoints ── */}
-      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-        {(Object.keys(VIEWPORT_WIDTHS) as ViewportSize[]).map(v => (
-          <button
-            key={v}
-            data-testid={`viewport-${v}`}
-            onClick={() => startTransition(() => setViewport(v))}
-            title={`${v} (${VIEWPORT_LABELS[v]}px)`}
+      {/* ── CENTER: mode switcher (absolutely centered) ────────────────── */}
+      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 1, background: 'var(--bld-bg-elevated)', borderRadius: 8, padding: '3px' }}>
+        {([
+          { id: 'interface' as const, label: 'Interface' },
+          { id: 'data-api'  as const, label: 'Data & API' },
+        ] as const).map(tab => (
+          <button key={tab.id} onClick={() => onMainModeChange(tab.id)} title={tab.label}
             style={{
-              display: 'flex', alignItems: 'center', gap: 3,
-              padding: '3px 7px',
-            background: viewport === v ? 'var(--bld-accent-hover)' : 'transparent',
-            border: `1px solid ${viewport === v ? 'var(--bld-accent)' : 'transparent'}`,
-            borderRadius: 4,
-            color: viewport === v ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
-              cursor: 'pointer',
-              fontSize: 10,
-              fontFamily: 'system-ui',
+              padding: '4px 14px', fontSize: 11, fontWeight: mainMode === tab.id ? 600 : 400,
+              color: mainMode === tab.id ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
+              background: mainMode === tab.id ? 'var(--bld-bg-input)' : 'transparent',
+              border: 'none', borderRadius: 6, cursor: 'pointer', transition: 'all 0.13s',
+              boxShadow: mainMode === tab.id ? 'var(--bld-shadow-sm)' : 'none',
             }}
-          >
-            <span>{VIEWPORT_ICONS[v]}</span>
-            <span>{VIEWPORT_LABELS[v]}</span>
-          </button>
+            onMouseEnter={e => { if (mainMode !== tab.id) e.currentTarget.style.color = 'var(--bld-text-3)'; }}
+            onMouseLeave={e => { if (mainMode !== tab.id) e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
+          >{tab.label}</button>
         ))}
       </div>
 
-      <div style={{ flex: 1 }} />
+      {/* ── RIGHT: action buttons + save indicator ─────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, justifyContent: 'flex-end', minWidth: 0 }}>
 
-      {/* Builder chrome theme toggle */}
-      <BuilderThemeToggle />
-      {/* App preview dark/light toggle */}
-      <DarkModeToggle />
+        {/* AI token meter */}
+        {workspaceId && (
+          <AiTokenMeter
+            workspaceId={workspaceId}
+            plan={workspacePlan}
+            superAdmin={superAdmin}
+            refreshKey={aiRefreshKey}
+          />
+        )}
 
-      {/* AI Assistant toggle */}
-      <button
-        data-testid="btn-ai-mode"
-        onClick={toggleAiMode}
-        title={aiMode ? 'Close AI Assistant' : 'Open AI Assistant'}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '4px 10px',
-          background: aiMode ? 'linear-gradient(135deg, #7c3aed, #4f46e5)' : 'var(--bld-bg-elevated)',
-          border: `1px solid ${aiMode ? '#7c3aed' : 'var(--bld-border-subtle)'}`,
-          borderRadius: 5,
-          color: aiMode ? '#fff' : 'var(--bld-text-3)',
-          cursor: 'pointer',
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: 'system-ui',
-          letterSpacing: '0.02em',
-          transition: 'all 0.15s',
-        }}
-      >
-        ✦ AI
-      </button>
+        {/* Save indicator */}
+        <SaveStatusBadge status={saveStatus} />
 
-      {/* Preview button — opens preview subdomain at the selected page route */}
-      <button
-        data-testid="btn-preview"
-        onClick={canPreview ? onPreview : undefined}
-        disabled={!canPreview}
-        title={previewTooltip}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '4px 12px',
-          background: canPreview ? 'var(--bld-success)' : 'var(--bld-border-subtle)',
-          border: 'none',
-          borderRadius: 5,
-          color: canPreview ? '#fff' : 'var(--bld-text-disabled)',
-          cursor: canPreview ? 'pointer' : 'not-allowed',
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: 'system-ui',
-          letterSpacing: '0.02em',
-          opacity: canPreview ? 1 : 0.6,
-          transition: 'background 0.15s, color 0.15s, opacity 0.15s',
-        }}
-      >
-        ↗ Preview
-      </button>
-
-      {/* Deploy button */}
-      {projectId && (
-        <button
-          data-testid="btn-deploy"
-          onClick={() => setDeployOpen(true)}
-          title="Deploy your app to the web"
+        {/* AI button */}
+        <button data-testid="btn-ai-mode" onClick={toggleAiMode} title={aiMode ? 'Close AI' : 'Open AI Assistant'}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '4px 12px',
-            background: deployPublished
-              ? 'linear-gradient(135deg, #059669, #047857)'
-              : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-            border: 'none',
-            borderRadius: 5,
-            color: '#fff',
-            cursor: 'pointer',
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: 'system-ui',
-            letterSpacing: '0.02em',
-            transition: 'opacity 0.15s',
+            display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px',
+            background: aiMode
+              ? 'linear-gradient(135deg, rgba(124,58,237,0.85), rgba(99,102,241,0.85))'
+              : 'var(--bld-bg-elevated)',
+            border: `1px solid ${aiMode ? 'rgba(124,58,237,0.5)' : 'var(--bld-border)'}`,
+            borderRadius: 8,
+            color: aiMode ? '#fff' : 'var(--bld-text-2)',
+            cursor: 'pointer', fontSize: 11, fontWeight: 500, transition: 'all 0.15s',
+            boxShadow: aiMode ? '0 2px 12px rgba(124,58,237,0.3)' : 'none',
           }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          onMouseEnter={e => { if (!aiMode) { e.currentTarget.style.background = 'var(--bld-bg-input)'; e.currentTarget.style.color = 'var(--bld-text-1)'; } }}
+          onMouseLeave={e => { if (!aiMode) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
         >
-          {deployPublished ? (
-            <>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', boxShadow: '0 0 4px #4ade80' }} />
-              Live
-            </>
-          ) : '🚀 Deploy'}
+          {/* 4-point sparkle */}
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 2C8 2 8.6 5.4 10 6.5 11.4 7.6 14 8 14 8 14 8 11.4 8.4 10 9.5 8.6 10.6 8 14 8 14 8 14 7.4 10.6 6 9.5 4.6 8.4 2 8 2 8Z"/>
+          </svg>
+          AI
         </button>
-      )}
 
-      {/* Export button */}
-      <button
-        data-testid="btn-export"
-        onClick={handleExportClick}
-        disabled={exportPaywallLoading}
-        title="Export as standalone React/Next.js project"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '4px 12px',
-          background: 'var(--bld-accent-hover)',
-          border: 'none',
-          borderRadius: 5,
-          color: '#fff',
-          cursor: exportPaywallLoading ? 'not-allowed' : 'pointer',
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: 'system-ui',
-          letterSpacing: '0.02em',
-          opacity: exportPaywallLoading ? 0.7 : 1,
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => { if (!exportPaywallLoading) (e.currentTarget.style.background = 'var(--bld-accent)'); }}
-        onMouseLeave={e => (e.currentTarget.style.background = 'var(--bld-accent-hover)')}
-      >
-        {exportPaywallLoading ? '…' : '↓ Export'}
-      </button>
+        {/* Preview */}
+        <button data-testid="btn-preview" onClick={canPreview ? onPreview : undefined} disabled={!canPreview} title={previewTooltip}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px',
+            background: canPreview ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${canPreview ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}`,
+            borderRadius: 8, color: canPreview ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)',
+            cursor: canPreview ? 'pointer' : 'not-allowed',
+            fontSize: 11, fontWeight: 500, opacity: canPreview ? 1 : 0.5, transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { if (canPreview) { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'var(--bld-text-1)'; } }}
+          onMouseLeave={e => { if (canPreview) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M1 8C1 8 3.5 3 8 3C12.5 3 15 8 15 8C15 8 12.5 13 8 13C3.5 13 1 8 1 8Z"/><circle cx="8" cy="8" r="2.2" fill="currentColor" stroke="none"/></svg>
+          Preview
+        </button>
 
-      {exportOpen && <ExportModal onClose={() => setExportOpen(false)} />}
+        {/* Deploy */}
+        {projectId && (
+          <button data-testid="btn-deploy" onClick={() => setDeployOpen(true)} title="Deploy your app"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, padding: '5px 13px',
+              background: deployPublished
+                ? 'linear-gradient(135deg, rgba(5,150,105,0.9), rgba(4,120,87,0.9))'
+                : 'linear-gradient(135deg, rgba(99,102,241,0.95), rgba(79,70,229,0.95))',
+              border: `1px solid ${deployPublished ? 'rgba(5,150,105,0.5)' : 'rgba(99,102,241,0.45)'}`,
+              borderRadius: 8, color: '#fff', cursor: 'pointer',
+              fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
+              boxShadow: deployPublished ? '0 0 10px rgba(5,150,105,0.25)' : '0 0 10px rgba(99,102,241,0.2)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            {deployPublished ? (
+              <>
+                {/* pulse dot */}
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', boxShadow: '0 0 6px rgba(74,222,128,0.9)' }} />
+                Live
+              </>
+            ) : (
+              <>
+                {/* cloud-upload */}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12H3.5C2.1 12 1 10.9 1 9.5C1 8.3 1.9 7.3 3 7.1C2.9 6.8 3 6.4 3 6C3 4.3 4.3 3 6 3C6.6 3 7.2 3.2 7.7 3.5C8.3 2.6 9.4 2 10.5 2C12.4 2 14 3.6 14 5.5C14 5.7 14 5.8 13.9 6C14.6 6.4 15 7.1 15 8C15 9.1 14.1 10 13 10H11"/>
+                  <path d="M8 7V14M6 9.5L8 7L10 9.5"/>
+                </svg>
+                Deploy
+              </>
+            )}
+          </button>
+        )}
 
-      {/* Env vars panel */}
-      <EnvVarsPanel
-        projectId={projectId ?? ''}
-        open={envVarsOpen}
-        onClose={() => setEnvVarsOpen(false)}
-      />
+      </div>
 
-      {/* Deploy modal */}
-      {deployOpen && (
+    </div>
+
+    {/* ── Modals — rendered outside navbar to avoid backdropFilter stacking context ── */}
+    {exportOpen && <ExportModal onClose={() => setExportOpen(false)} />}
+    <EnvVarsPanel projectId={projectId ?? ''} open={envVarsOpen} onClose={() => setEnvVarsOpen(false)} />
+    {jsonPanelOpen && <NodeJsonPanel onClose={() => setJsonPanelOpen(false)} />}
+
+    {/* Deploy modal */}
+    {deployOpen && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
           onClick={e => { if (e.target === e.currentTarget) setDeployOpen(false); }}
@@ -1610,13 +1685,9 @@ function TopBar({
             )}
           </div>
         </div>
-      )}
+    )}
 
-      <div style={{ width: 1, height: 20, background: 'var(--bld-border)' }} />
-
-      {/* Autosave status */}
-      <SaveStatusBadge status={saveStatus} />
-    </div>
+    </>
   );
 }
 
@@ -1703,7 +1774,11 @@ function BuilderPageInner() {
   const builderTheme = useBuilderStore(s => s.builderTheme);
   const workflowCanvasTarget = useBuilderStore(s => s.workflowCanvasTarget);
   const closeWorkflowCanvas = useBuilderStore(s => s.closeWorkflowCanvas);
-  const [mainMode, setMainMode] = useState<'interface' | 'data-api'>('interface');
+  const [mainMode, setMainMode] = useState<'interface' | 'data-api'>(() => {
+    if (typeof window === 'undefined') return 'interface';
+    const saved = sessionStorage.getItem('bld:mainMode');
+    return (saved === 'data-api' ? 'data-api' : 'interface') as 'interface' | 'data-api';
+  });
   const [leftTab, setLeftTab] = useState<LeftTabId>('components');
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
@@ -1723,6 +1798,37 @@ function BuilderPageInner() {
   const previewWinRef = useRef<Window | null>(null);
 
   const projectId = useProjectId();
+  const isAdminMode = !projectId || projectId === 'admin';
+
+  // Workspace info for the token meter
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [workspacePlan, setWorkspacePlan] = useState<'FREE' | 'PRO' | 'ENTERPRISE'>('FREE');
+  const [superAdmin, setSuperAdmin] = useState(false);
+  const [aiRefreshKey, setAiRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!projectId || isAdminMode) return;
+    projectsApi.get(projectId)
+      .then(({ project }) => {
+        setWorkspaceId(project.workspaceId);
+        return Promise.all([
+          workspacesApi.get(project.workspaceId),
+          auth.me(),
+        ]);
+      })
+      .then(([{ workspace }, { user }]) => {
+        setWorkspacePlan(workspace.plan as 'FREE' | 'PRO' | 'ENTERPRISE');
+        setSuperAdmin(user.superAdmin ?? false);
+      })
+      .catch(() => {});
+  }, [projectId, isAdminMode]);
+
+  // Bump aiRefreshKey after each AI turn so the token meter re-fetches usage
+  useEffect(() => {
+    const handler = () => setAiRefreshKey(k => k + 1);
+    window.addEventListener('builder:ai-turn-done', handler);
+    return () => window.removeEventListener('builder:ai-turn-done', handler);
+  }, []);
 
   // Sync left-panel tab from custom events (e.g. "Open Theme tab" from right-click menu)
   useEffect(() => {
@@ -2127,7 +2233,8 @@ function BuilderPageInner() {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        background: 'var(--bld-bg-base)',
+        backgroundColor: 'var(--bld-bg-base)',
+        backgroundImage: 'radial-gradient(ellipse 120% 80% at 50% -10%, rgba(99,102,241,0.07) 0%, transparent 55%)',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
@@ -2136,17 +2243,21 @@ function BuilderPageInner() {
         saveStatus={saveStatus}
         projectId={projectId}
         mainMode={mainMode}
-        onMainModeChange={setMainMode}
+        onMainModeChange={(m) => { setMainMode(m); sessionStorage.setItem('bld:mainMode', m); }}
         leftTab={leftTab}
         onSetLeftTab={setLeftTab}
         onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
         onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
+        workspaceId={workspaceId}
+        workspacePlan={workspacePlan}
+        superAdmin={superAdmin}
+        aiRefreshKey={aiRefreshKey}
       />
 
       {/* ── Data & API full-screen view ────────────────────────────────────── */}
-      {mainMode === 'data-api' && projectId && (
+      {mainMode === 'data-api' && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <DataApiTab projectId={projectId} />
+          <DataApiTab projectId={projectId ?? ''} />
         </div>
       )}
 
@@ -2155,6 +2266,7 @@ function BuilderPageInner() {
         <PanelLeft
           activeTab={leftTab}
           onTabChange={setLeftTab}
+          isDevMode={true}
           dataSlideState={leftSlide?.kind === 'data' ? leftSlide.subState : null}
           onSetDataSlide={s => {
             // Reset width to default when switching to a non-datasource slide (e.g. variable)

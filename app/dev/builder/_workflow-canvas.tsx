@@ -1147,7 +1147,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                     {isFixedTrigger ? <TI.Zap /> : getTriggerIcon(triggerValue)}
                   </span>
                   <span>{triggerLabel}</span>
-                  {!isFixedTrigger && <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>▾</span>}
+                  {!isFixedTrigger && <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>}
                 </div>
                 {triggerDropdownOpen && !isFixedTrigger && (
                   <TriggerDropdown
@@ -1276,7 +1276,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
               />
             ) : selectedStep ? (
               <>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--bld-bg-input)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: 'none' }}>
                   <span style={{ fontSize: 14 }}>{getActionIcon(selectedStep.type)}</span>
                   <span>{selectedStep.name || getActionLabel(selectedStep.type)}</span>
                 </div>

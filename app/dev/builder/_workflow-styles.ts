@@ -27,7 +27,7 @@ export const S = {
     justifyContent: 'space-between',
     padding: '0 16px',
     height: 48,
-    borderBottom: '1px solid var(--bld-bg-input)',
+    borderBottom: 'none',
     background: 'var(--bld-bg-base)',
     flexShrink: 0,
     gap: 12,
@@ -261,7 +261,7 @@ export const S = {
     alignItems: 'center',
     gap: 8,
     padding: '10px 12px',
-    borderBottom: '1px solid var(--bld-bg-input)',
+    borderBottom: 'none',
     flexShrink: 0,
   },
   rightPanelBody: {
@@ -343,9 +343,8 @@ export const S = {
     fontSize: 10,
     fontWeight: 600,
     color: 'var(--bld-text-disabled)',
-    textTransform: 'uppercase' as const,
+    textTransform: 'none' as const,
     padding: '8px 12px 4px',
-    letterSpacing: '0.05em',
     background: 'var(--bld-bg-input)',
   },
   dropdownItem: (active: boolean) => ({

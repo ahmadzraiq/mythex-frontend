@@ -17,9 +17,9 @@ interface Props {
 }
 
 const SECURITY_OPTIONS = [
-  { value: 'PUBLIC',        label: 'Public',        color: '#22c55e' },
-  { value: 'AUTHENTICATED', label: 'Authenticated',  color: '#f59e0b' },
-  { value: 'ROLE',          label: 'Role-based',     color: '#ef4444' },
+  { value: 'PUBLIC',        label: 'Public',        color: 'var(--bld-success)' },
+  { value: 'AUTHENTICATED', label: 'Authenticated',  color: 'var(--bld-warning)' },
+  { value: 'ROLE',          label: 'Role-based',     color: 'var(--bld-error)' },
 ] as const;
 
 type Security = 'PUBLIC' | 'AUTHENTICATED' | 'ROLE';
@@ -91,8 +91,8 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
   };
 
   const inputStyle: React.CSSProperties = {
-    background: '#111827',
-    border: '1px solid #374151',
+    background: 'var(--bld-bg-panel)',
+    border: '1px solid var(--bld-border-subtle)',
     borderRadius: 4,
     padding: '5px 8px',
     fontSize: 12,
@@ -105,9 +105,9 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* ── Table selector + view tabs ────────────────────────────────── */}
-      <div style={{ width: 220, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', background: '#0a0f1a', flexShrink: 0 }}>
+      <div style={{ width: 220, borderRight: '1px solid var(--bld-bg-elevated)', display: 'flex', flexDirection: 'column', background: '#0a0f1a', flexShrink: 0 }}>
         {/* Table picker */}
-        <div style={{ padding: 10, borderBottom: '1px solid #1e293b' }}>
+        <div style={{ padding: 10, borderBottom: '1px solid var(--bld-bg-elevated)' }}>
           <select
             value={selectedTableId ?? ''}
             onChange={(e) => { onSelectTable(e.target.value || null); setSelectedView(null); }}
@@ -123,10 +123,10 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
           {selectedTableId && (
             <>
               <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Views</span>
+                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none' }}>Views</span>
                 <button
                   onClick={() => setShowNewView(true)}
-                  style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: 'rgba(59,130,246,0.15)', color: 'var(--bld-info)', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
                 >
                   + New
                 </button>
@@ -143,7 +143,7 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
                     <button onClick={() => void createView()} disabled={saving} style={{ flex: 1, padding: '4px 0', fontSize: 11, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                       {saving ? '…' : 'Create'}
                     </button>
-                    <button onClick={() => setShowNewView(false)} style={{ padding: '4px 8px', fontSize: 11, background: 'transparent', color: 'var(--bld-text-disabled)', border: '1px solid #374151', borderRadius: 4, cursor: 'pointer' }}>✕</button>
+                    <button onClick={() => setShowNewView(false)} style={{ padding: '4px 8px', fontSize: 11, background: 'transparent', color: 'var(--bld-text-disabled)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, cursor: 'pointer' }}>✕</button>
                   </div>
                 </div>
               )}
@@ -169,7 +169,7 @@ export function ViewsEditor({ projectId, selectedTableId, onSelectTable }: Props
                     <span style={{ fontSize: 11, color: 'var(--bld-text-3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {view.name}
                     </span>
-                    <span style={{ fontSize: 9, color: sec?.color ?? '#6b7280' }}>●</span>
+                    <span style={{ fontSize: 9, color: sec?.color ?? 'var(--bld-text-disabled)' }}>●</span>
                     <button onClick={(e) => { e.stopPropagation(); void deleteView(view.id); }} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 10, opacity: 0, transition: 'opacity 0.15s' }} onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')} onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}>✕</button>
                   </div>
                 );
@@ -239,7 +239,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
                 fontWeight: 600,
                 borderRadius: 5,
                 cursor: 'pointer',
-                border: `1px solid ${view.security === o.value ? o.color : '#374151'}`,
+                border: `1px solid ${view.security === o.value ? o.color : 'var(--bld-border-subtle)'}`,
                 background: view.security === o.value ? `${o.color}18` : 'transparent',
                 color: view.security === o.value ? o.color : 'var(--bld-text-disabled)',
                 transition: 'all 0.15s',
@@ -300,8 +300,8 @@ function ViewConfig({ view, table, onUpdate, saving }: {
                     borderRadius: 4,
                     cursor: 'pointer',
                     background: isSelected ? 'rgba(59,130,246,0.15)' : 'transparent',
-                    border: `1px solid ${isSelected ? '#3b82f6' : '#374151'}`,
-                    color: isSelected ? '#60a5fa' : '#6b7280',
+                    border: `1px solid ${isSelected ? '#3b82f6' : 'var(--bld-border-subtle)'}`,
+                    color: isSelected ? 'var(--bld-info)' : 'var(--bld-text-disabled)',
                     fontFamily: 'monospace',
                   }}
                 >
@@ -321,7 +321,7 @@ function ViewConfig({ view, table, onUpdate, saving }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none', marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -339,7 +339,7 @@ function FilterSortEditor({ label, items, onChange, table }: {
         <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 6 }}>No {label}s applied. All rows returned.</div>
       )}
       {items.map((item, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 11, color: 'var(--bld-text-2)', fontFamily: 'monospace', background: '#111827', padding: '4px 8px', borderRadius: 4 }}>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 11, color: 'var(--bld-text-2)', fontFamily: 'monospace', background: 'var(--bld-bg-panel)', padding: '4px 8px', borderRadius: 4 }}>
           <span style={{ flex: 1 }}>{JSON.stringify(item)}</span>
           <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>✕</button>
         </div>
@@ -352,7 +352,7 @@ function FilterSortEditor({ label, items, onChange, table }: {
             onChange([...items, { field: 'id', operator: 'eq', value: '' }]);
           }
         }}
-        style={{ fontSize: 11, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}
+        style={{ fontSize: 11, color: 'var(--bld-info)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 2 }}
       >
         + Add {label}
       </button>

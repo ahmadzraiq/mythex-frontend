@@ -219,7 +219,7 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
 function TypeBadge({ type }: { type: string }) {
   const c = TYPE_COLORS[type] ?? TYPE_COLORS.text;
   return (
-    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 3, background: c.bg, color: c.color, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 3, background: c.bg, color: c.color, textTransform: 'none', flexShrink: 0 }}>
       {type}
     </span>
   );
@@ -297,7 +297,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* Name */}
         <div>
-          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Name</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', display: 'block', marginBottom: 4 }}>Name</label>
           <input value={prop.name} onChange={e => onUpdate('name', e.target.value)} placeholder="prop name"
             style={{ ...INPUT_BASE, padding: '5px 8px', fontSize: 11 }}
             onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
@@ -309,7 +309,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
         </div>
         {/* Type */}
         <div>
-          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Type</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', display: 'block', marginBottom: 4 }}>Type</label>
           <select
             value={prop.type}
             onChange={e => {
@@ -335,7 +335,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
         {/* Select options editor */}
         {prop.type === 'select' && (
           <div>
-            <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Options</label>
+            <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', display: 'block', marginBottom: 4 }}>Options</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {(prop.options ?? []).map((opt, i) => (
                 <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -375,7 +375,7 @@ function PropertyEditPopup({ prop, anchorY, onUpdate, onClose }: {
 
         {/* Default value — color gets controlled picker to suppress outside-click */}
         <div>
-          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 }}>Default value</label>
+          <label style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', display: 'block', marginBottom: 4 }}>Default value</label>
           {prop.type === 'color' ? (
             <FigmaColorPicker
               value={s || '#000000'}
@@ -428,7 +428,7 @@ function ContextMenu({ pos, expanded, onRename, onToggleProps, onDelete, onClose
       {onPreview && item('Place on page', onPreview)}
       {item('Rename', onRename)}
       {item(expanded ? 'Hide properties' : 'Properties', onToggleProps)}
-      <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
+      <div style={{ margin: '3px 0', borderTop: 'none' }} />
       {item('Delete', onDelete, true)}
     </div>
   );
@@ -541,7 +541,7 @@ function PropertiesPanel({ model, onUpdate, onClose }: {
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 9px', borderBottom: '1px solid var(--bld-border)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 9px', borderBottom: 'none', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--bld-accent)', flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>{model.name}</span>
@@ -653,7 +653,7 @@ function ModelRow({ model, isEditing, isPreviewing, onDelete, onUpdate, onEdit, 
 
   // Deterministic color from component name
   const thumbColor = (() => {
-    const palette = ['var(--bld-accent)', '#8b5cf6', '#ec4899', 'var(--bld-success)', '#f59e0b', 'var(--bld-error)', '#06b6d4', '#6366f1'];
+    const palette = ['var(--bld-accent)', '#8b5cf6', '#ec4899', 'var(--bld-success)', 'var(--bld-warning)', 'var(--bld-error)', '#06b6d4', 'var(--bld-accent)'];
     let h = 0;
     for (let i = 0; i < model.name.length; i++) h = (h * 31 + model.name.charCodeAt(i)) & 0xffff;
     return palette[h % palette.length];
@@ -837,8 +837,8 @@ export function SharedComponentsTab({ onImport }: { onImport?: () => void } = {}
   return (
     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px 6px 10px', borderTop: '1px solid var(--bld-border)', borderBottom: '1px solid var(--bld-border)', gap: 4 }}>
-        <span style={{ flex: 1, fontSize: 9, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Shared</span>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px 6px 10px', borderTop: '0.5px solid var(--bld-bg-input)', borderBottom: 'none', gap: 4 }}>
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', textTransform: 'none' }}>Shared</span>
         {/* Browse template library */}
         {onImport && (
           <button

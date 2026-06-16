@@ -21,9 +21,7 @@ import remarkGfm from 'remark-gfm';
 import { useBuilderStore } from './_store';
 import { useAiChat } from './_use-ai-chat';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
-import { BUILDER_MODELS, type BuilderModelId } from './_store-types';
-import { AgentDebugOverlay, type DebugSnapshot } from './_agent-debug-overlay';
-import { AiActivityFeed } from './_ai-activity-feed';
+import { type BuilderModelId } from './_store-types';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -294,7 +292,7 @@ function PhaseGroupSection({ label, tools, active }: {
             {blindCount > 0 && (
               <span style={{ color: 'var(--bld-warning)', fontSize: 8, fontWeight: 600 }}>{blindCount} blind</span>
             )}
-            {expanded ? ' ▲' : ' ▼'}
+            {expanded ? ' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle",transform:"rotate(180deg)"}}><polyline points="6 9 12 15 18 9"/></svg>' : ' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>'}
           </span>
         )}
       </button>
@@ -447,7 +445,7 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
   const doneDotColor = hasError ? 'var(--bld-error)' : 'var(--bld-success)';
   return (
     <div style={{ marginBottom: 10 }}>
-      {/* Summary line: dot · N steps · Xs ▼ */}
+      {/* Summary line: dot · N steps · Xs <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> */}
       <button
         data-testid="tool-calls-group-btn"
         onClick={() => setExpanded(o => !o)}
@@ -464,7 +462,7 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
         {timeLabel && (
           <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>· {timeLabel}</span>
         )}
-        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
       </button>
 
       {/* Expanded: phase-grouped or flat */}
@@ -567,7 +565,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
           {totalTurnMs != null ? ` · total ${(totalTurnMs / 1000).toFixed(1)}s` : ''}
         </span>
         <span style={{ fontSize: 9, color: blindCount > 0 ? 'var(--bld-warning)' : 'var(--bld-text-disabled)' }}>
-          {expanded ? '▲ Stats' : '▼ Stats'}
+          {expanded ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle",transform:"rotate(180deg)"}}><polyline points="6 9 12 15 18 9"/></svg> Stats' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Stats'}
         </span>
       </button>
       {expanded && (
@@ -658,7 +656,7 @@ function BuildStats({ msg }: { msg: AiChatMessage }) {
                     {agentErrors > 0 ? ` · ${agentErrors} err` : ''}
                   </span>
                   <span style={{ marginLeft: 'auto', fontSize: 8, color: 'var(--bld-text-disabled)' }}>
-                    {isExpanded ? '▲' : '▼'}
+                    {isExpanded ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:isExpanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:isExpanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}
                   </span>
                 </button>
                 {isExpanded && (
@@ -727,7 +725,7 @@ function ThinkingBlock({ content, streaming }: { content: string; streaming?: bo
         ) : (
           <>
             <span>{expanded ? 'Hide reasoning' : 'View reasoning'}</span>
-            <span style={{ fontSize: 8, opacity: 0.7 }}>{expanded ? '▲' : '▼'}</span>
+            <span style={{ fontSize: 8, opacity: 0.7 }}>{expanded ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
           </>
         )}
       </button>
@@ -917,7 +915,7 @@ function MentionTypeahead({
       )}
       {pageMatches.length > 0 && (
         <>
-          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Pages</div>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', letterSpacing: 0.5 }}>Pages</div>
           {pageMatches.map(p => (
             <button
               key={p.id}
@@ -933,7 +931,7 @@ function MentionTypeahead({
       )}
       {nodeMatches.length > 0 && (
         <>
-          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Selected nodes</div>
+          <div style={{ padding: '4px 8px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', letterSpacing: 0.5 }}>Selected nodes</div>
           {nodeMatches.map(id => (
             <button
               key={id}
@@ -1211,8 +1209,6 @@ function MessageBubble({
             </div>
           )}
           <ToolCallsGroup tools={msg.toolCalls} streaming={isThisStreaming} isThinking={msg.isThinking} agentDebugInfo={msg.agentDebugInfo} />
-          {!isThisStreaming && <BuildStats msg={msg} />}
-          <AiActivityFeed msg={msg} />
           {!isThisStreaming && (
             <CopyMsgLogBtn msg={msg} />
           )}
@@ -1307,7 +1303,6 @@ function MessageBubble({
               </span>
             </div>
           )}
-          <AiActivityFeed msg={msg} />
         </div>
       )}
     </div>
@@ -1315,80 +1310,6 @@ function MessageBubble({
 }
 
 // ---------------------------------------------------------------------------
-// ModelSelector — small pill dropdown in the chat header
-// ---------------------------------------------------------------------------
-
-function ModelSelector({ value, onChange }: { value: BuilderModelId; onChange: (id: BuilderModelId) => void }) {
-  const [open, setOpen] = useState(false);
-  const current = BUILDER_MODELS.find(m => m.id === value) ?? BUILDER_MODELS[0];
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-        title={`Model: ${current.label} — ${current.description}`}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '4px 8px', borderRadius: 6,
-          border: `1px solid ${current.supportsThinking ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'}`,
-          background: current.supportsThinking ? 'rgba(91,33,182,0.18)' : 'var(--bld-bg-elevated)',
-          color: current.supportsThinking ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
-          fontSize: 10, fontWeight: 500, cursor: 'pointer',
-          fontFamily: 'inherit', transition: 'all 0.15s',
-        }}
-      >
-        {current.supportsThinking && (
-          <span style={{ fontSize: 9, opacity: 0.8 }}>✦</span>
-        )}
-        {current.label}
-        <span style={{ fontSize: 8, opacity: 0.6 }}>▾</span>
-      </button>
-
-      {open && (
-        <div
-          style={{
-            position: 'fixed', zIndex: 1001,
-            top: 44, right: 48,
-            background: 'var(--bld-ai-bg)', border: '1px solid var(--bld-ai-border)',
-            borderRadius: 10, overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-            minWidth: 180,
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {BUILDER_MODELS.map(m => (
-            <button key={m.id}
-              onClick={() => { onChange(m.id); setOpen(false); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', padding: '9px 12px',
-                border: 'none', borderBottom: '1px solid #0a1220',
-                background: m.id === value ? '#1a2744' : 'transparent',
-                color: 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer',
-                textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => { if (m.id !== value) (e.currentTarget as HTMLButtonElement).style.background = '#121e30'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = m.id === value ? '#1a2744' : 'transparent'; }}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {m.supportsThinking && <span style={{ fontSize: 9, color: 'var(--bld-ai-accent)' }}>✦</span>}
-                  <span style={{ fontWeight: 600 }}>{m.label}</span>
-                  {m.id === value && <span style={{ fontSize: 8, color: 'var(--bld-ai-accent)', marginLeft: 'auto' }}>✓</span>}
-                </div>
-                <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 1 }}>{m.description}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }} onClick={() => setOpen(false)} />
-      )}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Clock icon SVG
@@ -1460,8 +1381,8 @@ function ThreadMenu({
       {/* Header */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-ai-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <ClockIcon size={13} color="#64748b" />
-          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <ClockIcon size={13} color="var(--bld-text-disabled)" />
+          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'none' }}>
             Chat History
           </span>
         </div>
@@ -1485,12 +1406,12 @@ function ThreadMenu({
           <div key={t.id} data-testid="ai-thread-item"
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px',
-              background: t.id === aiCurrentThreadId ? '#1a2744' : 'transparent',
-              borderBottom: '1px solid #0a1220', cursor: 'pointer', transition: 'background 0.1s',
+              background: t.id === aiCurrentThreadId ? 'var(--bld-bg-active)' : 'transparent',
+              borderBottom: '1px solid var(--bld-ai-border)', cursor: 'pointer', transition: 'background 0.1s',
             }}
             onClick={() => { onSelect(t.id); onClose(); }}
-            onMouseEnter={e => { if (t.id !== aiCurrentThreadId) (e.currentTarget as HTMLDivElement).style.background = '#121e30'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = t.id === aiCurrentThreadId ? '#1a2744' : 'transparent'; }}
+            onMouseEnter={e => { if (t.id !== aiCurrentThreadId) (e.currentTarget as HTMLDivElement).style.background = 'var(--bld-bg-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = t.id === aiCurrentThreadId ? 'var(--bld-bg-active)' : 'transparent'; }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, color: t.id === aiCurrentThreadId ? 'var(--bld-ai-accent)' : 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: t.id === aiCurrentThreadId ? 600 : 400 }}>
@@ -1553,7 +1474,6 @@ export function AiChatPanel() {
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
   // @-mention typeahead state.
   const [mentionState, setMentionState] = useState<{ open: boolean; query: string; anchor: number } | null>(null);
-  const [debugSnapshot, setDebugSnapshot] = useState<DebugSnapshot | null>(null);
 
   const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel, pages, currentPageId } = store;
   const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? 'Home';
@@ -1667,10 +1587,8 @@ export function AiChatPanel() {
               toolCallCount: a.toolCallCount,
               duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
               tools: a.tools,
-              systemPrompt: a.systemPrompt,
-              userMessage: a.userMessage ?? null,
               toolCalls: a.toolCalls.map(t => ({
-                name: t.name, status: t.status, input: t.input, result: t.result,
+                name: t.name, status: t.status, input: t.input,
                 round: t.round, aiBlind: t.aiBlind || undefined,
               })),
             };
@@ -1710,13 +1628,35 @@ export function AiChatPanel() {
           stats,
           ...(Object.keys(timing).length > 0 ? { timing } : {}),
           ...(contextSearchLog ? { contextSearch: contextSearchLog } : {}),
-          manifest: lastMsg?.debug?.planner?.manifest ?? null,
-          buildPlan: lastMsg?.buildPlan ?? null,
-          phaseLog: lastMsg?.phaseLog ?? null,
-          compactTree: structureCtx?.compactTree ?? null,
-          varRoster: structureCtx?.varRoster ?? null,
-          markers: lastMsg?.structureMarkers ?? null,
           agents,
+        };
+        await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
+        setCopyToolsLabel('copied');
+        setTimeout(() => setCopyToolsLabel('idle'), 2000);
+        return;
+      }
+
+      // Detect file-agent run (all tool calls are file-agent tools)
+      const FILE_AGENT_TOOLS = new Set([
+        'write_file', 'read_file', 'edit_file', 'delete_file', 'list_dir', 'grep', 'codebase_search',
+      ]);
+      const isFileAgent = allToolCalls.length > 0 && allToolCalls.every(t => FILE_AGENT_TOOLS.has(t.name));
+
+      if (isFileAgent) {
+        const roundMax = allToolCalls.reduce((m, t) => Math.max(m, t.round ?? 0), 0);
+        const writes = allToolCalls
+          .filter(t => t.name === 'write_file' || t.name === 'edit_file')
+          .map(t => ({ path: (t.input as Record<string, unknown>)?.path, status: t.status }));
+        const reads = allToolCalls
+          .filter(t => t.name === 'read_file' || t.name === 'list_dir' || t.name === 'grep' || t.name === 'codebase_search')
+          .map(t => ({ tool: t.name, path: (t.input as Record<string, unknown>)?.path ?? (t.input as Record<string, unknown>)?.prefix, status: t.status }));
+        const applyErrors = lastMsg?.fileApplyErrors ?? [];
+        const output = {
+          agent: 'file-agent',
+          stats: { totalTools: allToolCalls.length, rounds: roundMax },
+          writes,
+          reads,
+          ...(applyErrors.length > 0 ? { applyErrors } : {}),
         };
         await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
         setCopyToolsLabel('copied');
@@ -1735,28 +1675,30 @@ export function AiChatPanel() {
         other:      { systemPrompt: info.systemPrompt ?? '', tools: info.mainTools ?? [] },
       };
 
-      const phases: Record<string, { systemPrompt: string; tools: string[]; calls: unknown[] }> = {};
+      const phases: Record<string, { tools: string[]; calls: unknown[] }> = {};
       const phaseKeys = ['planning', 'structure', 'media', 'styling', 'workflows', 'other'] as const;
 
       for (const key of phaseKeys) {
         const calls = allToolCalls
           .filter(t => (t.phase ?? 'other') === key)
           .map(t => ({
-            name: t.name, status: t.status, input: t.input, result: t.result,
+            name: t.name, status: t.status, input: t.input,
             round: t.round, aiBlind: t.aiBlind || undefined,
           }));
         if (calls.length > 0 || phaseContext[key].systemPrompt) {
-          phases[key] = { ...phaseContext[key], calls };
+          phases[key] = { tools: phaseContext[key].tools, calls };
         }
       }
 
+      // Only report MISSING for phases that actually ran but had no system prompt
       const PHASES_WITH_PROMPTS = new Set(['planning', 'structure', 'styling', 'workflows']);
       const health: Record<string, string> = {};
       for (const [key, ctx] of Object.entries(phaseContext)) {
         if (!PHASES_WITH_PROMPTS.has(key)) continue;
-        if (!ctx.systemPrompt) {
+        const hasCalls = allToolCalls.some(t => (t.phase ?? 'other') === key);
+        if (hasCalls && !ctx.systemPrompt) {
           health[key] = 'MISSING — prompt returned empty string';
-        } else if (ctx.systemPrompt.startsWith('(ERROR:')) {
+        } else if (ctx.systemPrompt?.startsWith('(ERROR:')) {
           health[key] = ctx.systemPrompt;
         }
       }
@@ -1918,14 +1860,18 @@ export function AiChatPanel() {
 
   return (
     <>
-    {debugSnapshot && (
-      <AgentDebugOverlay
-        snapshot={debugSnapshot}
-        onClose={() => setDebugSnapshot(null)}
-      />
-    )}
     <div
-      style={{ width: 440, display: 'flex', flexDirection: 'column', background: 'var(--bld-ai-bg)', borderLeft: '1px solid var(--bld-ai-border)', overflow: 'hidden', height: '100%' }}
+      style={{
+        width: 440, display: 'flex', flexDirection: 'column',
+        backgroundColor: 'var(--bld-ai-bg)',
+        backgroundImage: [
+          'radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,0.11) 0%, transparent 60%)',
+          'radial-gradient(ellipse 60% 50% at 10% 100%, rgba(99,102,241,0.07) 0%, transparent 55%)',
+          'radial-gradient(circle, rgba(255,255,255,0.028) 1px, transparent 1px)',
+        ].join(', '),
+        backgroundSize: 'auto, auto, 22px 22px',
+        borderLeft: '1px solid var(--bld-ai-border)', overflow: 'hidden', height: '100%',
+      }}
       data-testid="ai-chat-panel"
       onKeyDown={e => e.stopPropagation()}
       onKeyUp={e => e.stopPropagation()}>
@@ -1944,65 +1890,46 @@ export function AiChatPanel() {
           </div>
         </div>
 
-        {/* Model selector */}
-        <ModelSelector value={aiSelectedModel} onChange={id => store.setAiSelectedModel(id)} />
-
-        {/* Debug Visualizer — open /dev/agent-debug with current turn data */}
-        <button
-          data-testid="ai-debug-viz-btn"
-          onClick={() => void handleOpenDebugViz()}
-          title="Open agent debug visualizer (React Flow)"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 9px', borderRadius: 6,
-            border: '1px solid var(--bld-border-subtle)',
-            background: 'var(--bld-bg-elevated)',
-            color: 'var(--bld-text-3)',
-            fontSize: 11, fontWeight: 500, cursor: 'pointer',
-            fontFamily: 'inherit', transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
-        >
-          ⬡ Debug
-        </button>
-
-        {/* Copy Log — conversation history + all phase prompts & tool lists */}
-        <button
-          data-testid="ai-copy-tools-btn"
-          onClick={() => void handleCopyToolsLog()}
-          title="Copy conversation log + all phase prompts and tool lists to clipboard"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 9px', borderRadius: 6,
-            border: `1px solid ${copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-border-subtle)'}`,
-            background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.12)' : 'var(--bld-bg-elevated)',
-            color: copyToolsLabel === 'copied' ? 'var(--bld-success)' : copyToolsLabel === 'loading' ? 'var(--bld-ai-accent)' : 'var(--bld-text-3)',
-            fontSize: 11, fontWeight: 500, cursor: copyToolsLabel === 'loading' ? 'wait' : 'pointer',
-            fontFamily: 'inherit', transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = '#a5b4fc'; } }}
-          onMouseLeave={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; } }}
-        >
-          {copyToolsLabel === 'copied' ? '✓ Copied' : copyToolsLabel === 'loading' ? '…' : '⎘ Copy Log'}
-        </button>
-
         {/* New Chat button */}
         <button
           data-testid="ai-new-thread-btn"
           onClick={() => { startNewChat(); setRewindLabel(null); setInputValue(''); }}
-          title="Start a new conversation"
+          title="New conversation"
           style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '4px 10px', borderRadius: 6,
-            border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)',
-            color: '#a5b4fc', fontSize: 11, fontWeight: 500, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '5px 12px', borderRadius: 7,
+            border: '1px solid var(--bld-ai-border)', background: 'var(--bld-bg-elevated)',
+            color: 'var(--bld-text-2)', fontSize: 11, fontWeight: 500, cursor: 'pointer',
             fontFamily: 'inherit', transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-2)'; }}
         >
-          <span style={{ fontSize: 13, lineHeight: 1 }}>＋</span> New
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 2v12M2 8h12"/></svg>
+          New
+        </button>
+
+        {/* Copy Log */}
+        <button
+          data-testid="ai-copy-tools-btn"
+          onClick={() => void handleCopyToolsLog()}
+          title="Copy conversation log to clipboard"
+          style={{
+            padding: '5px 7px', borderRadius: 6, display: 'flex', alignItems: 'center',
+            border: `1px solid ${copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-border-subtle)'}`,
+            background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.1)' : 'transparent',
+            color: copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-text-3)',
+            cursor: copyToolsLabel === 'loading' ? 'wait' : 'pointer', lineHeight: 1, transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; } }}
+          onMouseLeave={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; } }}
+        >
+          {copyToolsLabel === 'copied'
+            ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l3 3 7-7"/></svg>
+            : copyToolsLabel === 'loading'
+            ? <span style={{ fontSize: 11 }}>…</span>
+            : <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="8" height="10" rx="1.2"/><path d="M3 5H2.5A1.5 1.5 0 001 6.5v7A1.5 1.5 0 002.5 15H9"/></svg>
+          }
         </button>
 
         {/* History menu button */}
@@ -2021,7 +1948,7 @@ export function AiChatPanel() {
               color: 'var(--bld-text-3)', cursor: 'pointer', lineHeight: 1,
             }}
           >
-            <ClockIcon size={14} color={showThreadMenu ? '#a5b4fc' : 'var(--bld-text-3)'} />
+            <ClockIcon size={14} color={showThreadMenu ? 'var(--bld-badge-text)' : 'var(--bld-text-3)'} />
           </button>
           {showThreadMenu && (
             <ThreadMenu
@@ -2058,36 +1985,11 @@ export function AiChatPanel() {
 
         {/* Empty state */}
         {aiChatHistory.length === 0 && !aiGenerating && (
-          <div style={{ padding: '20px 8px', color: 'var(--bld-text-disabled)' }}>
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 32, marginBottom: 8, filter: 'drop-shadow(0 0 12px var(--bld-ai-accent)88)' }}>✦</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-ai-accent)', marginBottom: 4 }}>What can I build for you?</div>
-              <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>Describe a page, section, or change — I'll do the rest.</div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-              {[
-                { icon: '🎨', text: 'Make the hero more vibrant' },
-                { icon: '💰', text: 'Add a pricing section' },
-                { icon: '📬', text: 'Build a contact form' },
-                { icon: '🔐', text: 'Create a login page' },
-                { icon: '🛒', text: 'Design a product card' },
-                { icon: '✨', text: 'Add animations to buttons' },
-              ].map(({ icon, text }) => (
-                <button key={text} data-testid="ai-prompt-suggestion" data-prompt={text}
-                  onClick={() => setInputValue(text)}
-                  style={{
-                    padding: '9px 10px', borderRadius: 10, border: '1px solid var(--bld-ai-border)',
-                    background: '#0d1526', color: 'var(--bld-text-3)', fontSize: 11, cursor: 'pointer',
-                    textAlign: 'left', fontFamily: 'inherit', display: 'flex',
-                    alignItems: 'center', gap: 6, lineHeight: 1.4, transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#111d35'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#2d3f5a'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d1526'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
-                >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
-                  <span>{text}</span>
-                </button>
-              ))}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', gap: 10 }}>
+            <div style={{ fontSize: 28, color: 'var(--bld-ai-accent)', filter: 'drop-shadow(0 0 14px rgba(124,58,237,0.6))' }}>✦</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-1)', textAlign: 'center' }}>What can I build for you?</div>
+            <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)', lineHeight: 1.7, textAlign: 'center', maxWidth: 260 }}>
+              Describe a page, component, or change and I'll handle the rest.
             </div>
           </div>
         )}
@@ -2154,12 +2056,12 @@ export function AiChatPanel() {
                 <span key={id} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 3,
                   fontSize: 10, padding: '2px 7px', borderRadius: 20,
-                  background: 'rgba(79,70,229,0.18)', color: '#a5b4fc',
+                  background: 'rgba(79,70,229,0.18)', color: 'var(--bld-badge-text)',
                   border: '1px solid rgba(79,70,229,0.3)',
                 }}>
                   ◈ {getNodeName(id)}
                   <button onClick={() => handleRemoveNode(id)}
-                    style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
+                    style={{ background: 'none', border: 'none', color: 'var(--bld-accent)', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
                 </span>
               ))}
             </div>

@@ -69,7 +69,7 @@ export const JavaScriptEditor = forwardRef<JavaScriptEditorHandle, JavaScriptEdi
   const extensions = useMemo(() => [javascript({ jsx: false, typescript: false })], []);
 
   return (
-    <div data-testid={testId} style={{ background: '#0a0e1a', border: '1px solid #1e3050', borderRadius: 6, overflow: 'hidden' }}>
+    <div data-testid={testId} style={{ background: 'var(--bld-bg-canvas)', border: '1px solid #1e3050', borderRadius: 6, overflow: 'hidden' }}>
       <CodeMirror
         ref={cmRef}
         value={value}

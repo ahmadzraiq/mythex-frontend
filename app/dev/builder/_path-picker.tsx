@@ -100,8 +100,8 @@ const TYPE_COLOR: Record<PathEntry['type'], string> = {
   boolean: '#fcd34d',
   array:   '#c4b5fd',
   object:  '#fb923c',
-  null:    '#9ca3af',
-  unknown: '#6b7280',
+  null:    'var(--bld-text-3)',
+  unknown: 'var(--bld-text-disabled)',
 };
 
 function TypeBadge({ type }: { type: PathEntry['type'] }) {
@@ -235,8 +235,8 @@ export function PathPicker({
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          background: '#1f2937',
-          border: '1px solid #374151',
+          background: 'var(--bld-bg-input)',
+          border: '1px solid var(--bld-border-subtle)',
           borderRadius: 4,
           padding: '3px 6px',
           cursor: disabled ? 'not-allowed' : 'pointer',
@@ -244,10 +244,10 @@ export function PathPicker({
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        <span style={{ fontSize: 11, color: value ? '#93c5fd' : '#6b7280', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+        <span style={{ fontSize: 11, color: value ? '#93c5fd' : 'var(--bld-text-disabled)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
           {value || placeholder}
         </span>
-        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>▼</span>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
       </div>
 
       {open && dropdownPos && (
@@ -259,8 +259,8 @@ export function PathPicker({
             left: dropdownPos.left,
             width: dropdownPos.width,
             maxHeight: 320,
-            background: '#111827',
-            border: '1px solid #374151',
+            background: 'var(--bld-bg-panel)',
+            border: '1px solid var(--bld-border-subtle)',
             borderRadius: 6,
             zIndex: 100000,
             boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
@@ -279,8 +279,8 @@ export function PathPicker({
               placeholder="Filter paths…"
               style={{
                 width: '100%',
-                background: '#1f2937',
-                border: '1px solid #374151',
+                background: 'var(--bld-bg-input)',
+                border: '1px solid var(--bld-border-subtle)',
                 borderRadius: 4,
                 padding: '4px 8px',
                 fontSize: 11,
@@ -299,7 +299,7 @@ export function PathPicker({
             )}
             {Object.entries(grouped).map(([group, entries]) => (
               <div key={group}>
-                <div style={{ padding: '4px 10px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#0d1117' }}>
+                <div style={{ padding: '4px 10px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', background: 'var(--bld-bg-canvas)' }}>
                   {GROUP_LABELS[group as PathEntry['group']] ?? group}
                 </div>
                 {entries.map((entry, i) => {
@@ -336,7 +336,7 @@ export function PathPicker({
             <div
               onClick={() => select(query)}
               style={{ padding: '6px 10px', borderTop: '1px solid #1f2937', cursor: 'pointer', fontSize: 11, color: 'var(--bld-text-3)', flexShrink: 0 }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#1f2937')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-input)')}
               onMouseLeave={e => (e.currentTarget.style.background = '')}
             >
               Use custom path: <span style={{ color: '#93c5fd', fontFamily: 'monospace' }}>{query}</span>

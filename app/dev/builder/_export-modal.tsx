@@ -116,8 +116,8 @@ export function ExportModal({ onClose }: ExportModalProps) {
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: '#1e293b',
-        border: '1px solid #334155',
+        background: 'var(--bld-bg-elevated)',
+        border: '1px solid var(--bld-border-subtle)',
         borderRadius: 12,
         padding: 28,
         width: 540,
@@ -147,7 +147,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
 
         {/* App name input */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none' }}>
             App Name
           </label>
           <input
@@ -160,8 +160,8 @@ export function ExportModal({ onClose }: ExportModalProps) {
               width: '100%',
               marginTop: 6,
               padding: '8px 12px',
-              background: '#0f172a',
-              border: '1px solid #334155',
+              background: 'var(--bld-bg-base)',
+              border: '1px solid var(--bld-border-subtle)',
               borderRadius: 6,
               color: 'var(--bld-text-1)',
               fontSize: 13,
@@ -170,7 +170,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               outline: 'none',
             }}
             onFocus={e => (e.currentTarget.style.borderColor = '#3b82f6')}
-            onBlur={e => (e.currentTarget.style.borderColor = '#334155')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
           />
         </div>
 
@@ -180,7 +180,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{
                 fontSize: 12, fontWeight: 600,
-                color: isError ? '#f87171' : isDone ? '#10b981' : '#60a5fa',
+                color: isError ? 'var(--bld-error)' : isDone ? 'var(--bld-success)' : 'var(--bld-info)',
               }}>
                 {phaseLabel[progress.phase]}
               </span>
@@ -194,7 +194,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               <div style={{ height: 4, background: '#1e3a5f', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
-                  background: isDone ? '#10b981' : '#3b82f6',
+                  background: isDone ? 'var(--bld-success)' : '#3b82f6',
                   borderRadius: 2,
                   width: isDone ? '100%' : progress.filesTotal > 0
                     ? `${Math.round((progress.filesDone / progress.filesTotal) * 100)}%`
@@ -222,7 +222,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
           }}>
             {progress.error}
             {progress.errorNodeId && (
-              <div style={{ marginTop: 6, color: '#f87171' }}>
+              <div style={{ marginTop: 6, color: 'var(--bld-error)' }}>
                 Node: <strong>{progress.errorNodeId}</strong>
               </div>
             )}
@@ -232,12 +232,12 @@ export function ExportModal({ onClose }: ExportModalProps) {
         {/* File tree preview */}
         {fileTree.length > 0 && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 6, textTransform: 'none' }}>
               Generated Files ({fileTree.length})
             </div>
             <div style={{
-              background: '#0f172a',
-              border: '1px solid #1e293b',
+              background: 'var(--bld-bg-base)',
+              border: '1px solid var(--bld-bg-elevated)',
               borderRadius: 6,
               padding: '8px 10px',
               maxHeight: 160,
@@ -248,7 +248,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               lineHeight: 1.8,
             }}>
               {fileTree.map(f => (
-                <div key={f} style={{ color: f.endsWith('.tsx') ? '#818cf8' : f.endsWith('.ts') ? '#60a5fa' : f.endsWith('.css') ? '#34d399' : '#94a3b8' }}>
+                <div key={f} style={{ color: f.endsWith('.tsx') ? 'var(--bld-badge-text)' : f.endsWith('.ts') ? 'var(--bld-info)' : f.endsWith('.css') ? '#34d399' : 'var(--bld-text-3)' }}>
                   {f}
                 </div>
               ))}
@@ -279,7 +279,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
             style={{
               padding: '8px 16px',
               background: 'none',
-              border: '1px solid #334155',
+              border: '1px solid var(--bld-border-subtle)',
               borderRadius: 6,
               color: 'var(--bld-text-3)',
               fontSize: 12,
@@ -298,7 +298,7 @@ export function ExportModal({ onClose }: ExportModalProps) {
               background: isRunning ? '#1e3a5f' : '#1d4ed8',
               border: 'none',
               borderRadius: 6,
-              color: isRunning ? '#64748b' : '#fff',
+              color: isRunning ? 'var(--bld-text-disabled)' : '#fff',
               fontSize: 12,
               fontWeight: 700,
               cursor: isRunning ? 'not-allowed' : 'pointer',

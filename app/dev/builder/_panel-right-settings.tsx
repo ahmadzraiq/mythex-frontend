@@ -192,46 +192,18 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
   // need to mark internal nodes as controlled, so the toggle is always shown there.
   if (isScWithValue && !isInsideScEdit) return null;
 
-  // ── Auto-tracked (Input / Textarea): always controlled, show read-only badge ──
-  if (isAutoTracked) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <span style={{ fontSize: 11, color: 'var(--bld-text-1)', fontWeight: 500 }}>Controlled</span>
-            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace' }}>{`variables['${varId}']`}</span>
-          </div>
-          <span style={{ fontSize: 10, color: 'var(--bld-success)', background: 'rgba(34,197,94,0.15)', borderRadius: 3, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>Auto</span>
-        </div>
-        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ color: 'var(--bld-ai-accent)' }}>Live:</span>
-          <span style={{ color: 'var(--bld-text-1)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-            {liveValue === undefined || liveValue === null ? '—' : String(liveValue)}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  // ── Auto-tracked (Input / Textarea): auto-controlled, nothing to show ──
+  if (isAutoTracked) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', borderBottom: 'none' }}>
       {/* Toggle row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 11, color: 'var(--bld-text-1)', fontWeight: 500 }}>Controlled</span>
-        <button
-          onClick={toggle}
-          style={{
-            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-            background: isControlled ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
-            position: 'relative', transition: 'background 0.15s',
-          }}
-          title={isControlled ? 'Disable controlled mode' : 'Enable controlled mode — creates a page variable'}
-        >
-          <span style={{
-            position: 'absolute', top: 2, left: isControlled ? 18 : 2, width: 16, height: 16,
-            borderRadius: 8, background: 'white', transition: 'left 0.15s',
-          }} />
-        </button>
+        <div style={{ display: 'flex', gap: 2 }}>
+          <ToggleBtn active={isControlled} onClick={() => { if (!isControlled) toggle(); }} style={{ padding: '2px 8px', fontSize: 10 }} title="Enable controlled mode">On</ToggleBtn>
+          <ToggleBtn active={!isControlled} onClick={() => { if (isControlled) toggle(); }} style={{ padding: '2px 8px', fontSize: 10 }} title="Disable controlled mode">Off</ToggleBtn>
+        </div>
       </div>
 
       {/* Extra rows when controlled is ON — shown for SC nodes and plain controlled nodes alike */}
@@ -274,22 +246,10 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
               }}
               expectedType="boolean"
             >
-              <button
-                onClick={() => {
-                  const next = !initValueRaw;
-                  patchNodeField(nodeId, '_initialValue' as keyof SDUINode, next);
-                  getGlobalVariableStore().getState().set(varId, next);
-                }}
-                style={{
-                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-                  background: initValueRaw ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', transition: 'background 0.15s',
-                }}
-              >
-                <span style={{
-                  position: 'absolute', top: 2, left: initValueRaw ? 18 : 2, width: 16, height: 16,
-                  borderRadius: 8, background: 'white', transition: 'left 0.15s',
-                }} />
-              </button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <ToggleBtn active={!!initValueRaw} onClick={() => { const next = true; patchNodeField(nodeId, '_initialValue' as keyof SDUINode, next); getGlobalVariableStore().getState().set(varId, next); }} style={{ padding: '2px 8px', fontSize: 10 }}>On</ToggleBtn>
+                <ToggleBtn active={!initValueRaw} onClick={() => { const next = false; patchNodeField(nodeId, '_initialValue' as keyof SDUINode, next); getGlobalVariableStore().getState().set(varId, next); }} style={{ padding: '2px 8px', fontSize: 10 }}>Off</ToggleBtn>
+              </div>
             </FieldWithBinding>
           ) : resolvedType === 'number' ? (
             <FieldWithBinding
@@ -364,18 +324,10 @@ function ControlledToggleRow({ node }: { node: SDUINode }) {
           {/* Debounce toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flexShrink: 0, minWidth: 80 }}>Debounce</span>
-            <button
-              onClick={() => patchDebounce({ enabled: !debounceEnabled })}
-              style={{
-                width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-                background: debounceEnabled ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', transition: 'background 0.15s',
-              }}
-            >
-              <span style={{
-                position: 'absolute', top: 2, left: debounceEnabled ? 18 : 2, width: 16, height: 16,
-                borderRadius: 8, background: 'white', transition: 'left 0.15s',
-              }} />
-            </button>
+            <div style={{ display: 'flex', gap: 2 }}>
+              <ToggleBtn active={debounceEnabled} onClick={() => patchDebounce({ enabled: true })} style={{ padding: '2px 8px', fontSize: 10 }}>On</ToggleBtn>
+              <ToggleBtn active={!debounceEnabled} onClick={() => patchDebounce({ enabled: false })} style={{ padding: '2px 8px', fontSize: 10 }}>Off</ToggleBtn>
+            </div>
           </div>
 
           {/* Delay (only when debounce on) */}
@@ -447,24 +399,10 @@ function SettingsRow({
 
 /** On/Off segmented toggle reused from design tab style */
 function OnOffToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  const btnBase: React.CSSProperties = {
-    padding: '2px 10px',
-    fontSize: 10,
-    border: 'none',
-    cursor: 'pointer',
-    borderRadius: 3,
-    fontWeight: 500,
-  };
   return (
-    <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2 }}>
-      <button
-        style={{ ...btnBase, background: value ? 'var(--bld-border-subtle)' : 'transparent', color: value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
-        onClick={() => onChange(true)}
-      >On</button>
-      <button
-        style={{ ...btnBase, background: !value ? 'var(--bld-border-subtle)' : 'transparent', color: !value ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)' }}
-        onClick={() => onChange(false)}
-      >Off</button>
+    <div style={{ display: 'flex', gap: 2 }}>
+      <ToggleBtn active={value} onClick={() => onChange(true)} style={{ padding: '2px 8px', fontSize: 10 }}>On</ToggleBtn>
+      <ToggleBtn active={!value} onClick={() => onChange(false)} style={{ padding: '2px 8px', fontSize: 10 }}>Off</ToggleBtn>
     </div>
   );
 }
@@ -728,8 +666,8 @@ function IconifySettings({ nodeId, nodeProps }: { nodeId: string; nodeProps: Rec
     : null;
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Icon</div>
+    <div style={{ borderBottom: 'none', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, fontWeight: 600 }}>Icon</div>
 
       {/* Preview + icon identifier (with binding support) */}
       <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -844,8 +782,8 @@ function ImageSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
   };
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Image</div>
+    <div style={{ borderBottom: 'none', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, fontWeight: 600 }}>Image</div>
 
       {/* Source URL — with binding support */}
       <SpecificRow
@@ -937,8 +875,8 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
   ];
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
-      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.05em', fontWeight: 600 }}>Video</div>
+    <div style={{ borderBottom: 'none', padding: '8px 0 4px' }}>
+      <div style={{ padding: '0 12px 6px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, fontWeight: 600 }}>Video</div>
 
       {/* Source URL — with binding support */}
       <SpecificRow
@@ -993,7 +931,7 @@ function VideoSettings({ nodeId, nodeProps, nodeSrc }: { nodeId: string; nodePro
 
       {/* Playback toggles — with binding support */}
       <div style={{ padding: '6px 12px 4px', borderTop: '1px solid var(--bld-bg-panel)' }}>
-        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Playback</div>
+        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'none' as const }}>Playback</div>
         {TOGGLES.map(({ key, label, value }) => (
           <SpecificRow
             key={key}
@@ -1314,8 +1252,8 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
       {/* ── Name (all types; hidden when inside FormContainer — field name serves as name) ── */}
       {!formContainerAncestor && (
-        <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 12px' }}>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Name</div>
+        <div style={{ borderBottom: 'none', padding: '8px 12px' }}>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 4, textTransform: 'none' as const }}>Name</div>
           <input
             data-testid="settings-name-input"
             value={nameDraft}
@@ -1344,8 +1282,8 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
         if (!scModel || !scModel.properties?.length) return null;
         const rootProps = (linkedRoot.props ?? {}) as Record<string, unknown>;
         return (
-          <div style={{ borderBottom: '1px solid var(--bld-bg-input)', overflow: 'hidden' }}>
-            <div style={{ padding: '6px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ borderBottom: 'none', overflow: 'hidden' }}>
+            <div style={{ padding: '6px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{
                 fontSize: 9,
                 color: 'var(--bld-info)',
@@ -1483,7 +1421,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
       {/* ── "Specific" section header — only shown when there IS component-specific content ── */}
       {hasSpecific && (
-        <div style={{ padding: '8px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ padding: '8px 12px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
@@ -1512,12 +1450,12 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
       {/* ── Form Container Section (input types only) ────────────────────────── */}
       {(SETTINGS_INPUT_TYPES.has(nodeType) || isScControlled) && formContainerAncestor && (
-        <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
+        <div style={{ borderBottom: 'none', padding: '8px 0 4px' }}>
           <div style={{ padding: '0 12px 4px', display: 'flex', alignItems: 'center', gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 12 11 14 15 10"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
             </svg>
-            <span style={{ fontSize: 10, color: 'var(--bld-success)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Form container</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-success)', fontWeight: 600, textTransform: 'none' as const }}>Form container</span>
           </div>
 
           {/* Field name */}
@@ -1564,10 +1502,10 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
           {/* ── Validation rules list ──────────────────────────────────────────── */}
           <div style={{ padding: '4px 12px 2px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rules</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>Rules</span>
               <button
                 onClick={addRule}
-                style={{ fontSize: 10, color: 'var(--bld-ai-accent)', background: 'none', border: '1px solid var(--bld-ai-accent)', borderRadius: 3, padding: '1px 7px', cursor: 'pointer' }}
+                style={{ fontSize: 10, color: 'var(--bld-accent)', background: 'none', border: '1px solid var(--bld-accent)', borderRadius: 3, padding: '1px 7px', cursor: 'pointer' }}
               >
                 + Add rule
               </button>
@@ -1630,7 +1568,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
                         <div style={{ position: 'relative', flex: 1 }}>
                           <button
                             onClick={e => openRuleFormula(e, idx)}
-                            style={{ padding: '2px 8px', background: isFormulaOpen ? 'rgba(124,58,237,0.25)' : 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', borderRadius: 4, color: 'var(--bld-ai-accent)', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
+                            style={{ padding: '2px 8px', background: isFormulaOpen ? 'rgba(124,58,237,0.25)' : 'rgba(59,130,246,0.1)', border: '1px solid var(--bld-accent)', borderRadius: 4, color: 'var(--bld-accent)', fontSize: 10, cursor: 'pointer', fontWeight: 500, width: '100%', textAlign: 'left' }}
                           >
                             ƒ {(rule.formula || rule.value) ? 'Edit formula' : 'Add formula'}
                           </button>
@@ -1800,7 +1738,7 @@ export function SettingsTab({ node, pageNodes }: { node: SDUINode; pageNodes: SD
 
 // ─── OpenVariable Picker (searchable, workflow-style) ─────────────────────────
 
-const OV_TYPE_COLOR: Record<string, string> = { string: 'var(--bld-warning)', number: 'var(--bld-info)', boolean: 'var(--bld-success)', object: 'var(--bld-ai-accent)', array: 'var(--bld-warning)' };
+const OV_TYPE_COLOR: Record<string, string> = { string: 'var(--bld-warning)', number: 'var(--bld-info)', boolean: 'var(--bld-success)', object: 'var(--bld-accent)', array: 'var(--bld-warning)' };
 
 function OpenVariablePicker({ value, customVars, onChange }: {
   value: string | undefined;
@@ -1874,7 +1812,7 @@ function OpenVariablePicker({ value, customVars, onChange }: {
           ) : (
             <span style={{ color: 'var(--bld-text-disabled)' }}>(none)</span>
           )}
-          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 9, flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+          <span style={{ color: 'var(--bld-text-disabled)', fontSize: 9, flexShrink: 0 }}>{open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
         </button>
 
         {open && (
@@ -1887,7 +1825,7 @@ function OpenVariablePicker({ value, customVars, onChange }: {
               maxHeight: 200, display: 'flex', flexDirection: 'column',
             }}
           >
-            <div style={{ padding: '5px 6px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+            <div style={{ padding: '5px 6px', borderBottom: 'none' }}>
               <input
                 autoFocus
                 value={search}
@@ -2028,7 +1966,7 @@ function PopoverSection({ nodeId, node }: { nodeId: string; node: SDUINode }) {
   }, [store.pageNodes, store.customVars, nodeId]);
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
+    <div style={{ borderBottom: 'none' }}>
       <div
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', cursor: 'pointer' }}
         onClick={() => setExpanded(!expanded)}
@@ -2274,19 +2212,19 @@ function FormContainerFieldsPanel({ nodeId }: { nodeId: string }) {
   const fieldNames = Object.keys(formData);
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)', padding: '8px 0 4px' }}>
+    <div style={{ borderBottom: 'none', padding: '8px 0 4px' }}>
       <div style={{ padding: '0 12px 6px', display: 'flex', alignItems: 'center', gap: 5 }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-ai-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h8M8 14h5"/>
         </svg>
-        <span style={{ fontSize: 10, color: 'var(--bld-ai-accent)', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Registered Fields</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-accent)', fontWeight: 600, textTransform: 'none' as const }}>Registered Fields</span>
       </div>
 
       {/* Formula path hint */}
       {formStoreKey && (
         <div style={{ padding: '0 12px 6px', fontSize: 9, color: 'var(--bld-text-disabled)', lineHeight: 1.4 }}>
           Formula path:{' '}
-          <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3, color: 'var(--bld-ai-accent)' }}>
+          <code style={{ background: 'var(--bld-bg-input)', padding: '1px 4px', borderRadius: 3, color: 'var(--bld-accent)' }}>
             variables[&apos;{formStoreKey}&apos;].formData.fieldName
           </code>
         </div>

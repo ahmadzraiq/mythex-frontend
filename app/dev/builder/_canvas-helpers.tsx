@@ -105,15 +105,15 @@ export function CanvasContextMenu({ x, y, nodeId, onClose }: CanvasCtxMenuProps)
     <div
       data-canvas-ctx-menu="1"
       data-testid={nodeId ? 'canvas-node-ctx-menu' : 'canvas-empty-ctx-menu'}
-      style={{ position: 'fixed', left: x, top: y, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, zIndex: 99999, minWidth: 160, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
+      style={{ position: 'fixed', left: x, top: y, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, zIndex: 99999, minWidth: 160, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.6)' }}
     >
       {nodeItems.map((item, i) =>
         item === null ? (
-          <div key={i} style={{ height: 1, background: '#374151', margin: '2px 0' }} />
+          <div key={i} style={{ height: 1, background: 'var(--bld-bg-elevated)', margin: '2px 0' }} />
         ) : (
           <button
             key={item.label}
-            style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: (item as { danger?: boolean }).danger ? '#f87171' : '#d1d5db', fontSize: 12, fontFamily: 'system-ui', textAlign: 'left', cursor: 'pointer' }}
+            style={{ display: 'block', width: '100%', padding: '7px 14px', background: 'none', border: 'none', color: (item as { danger?: boolean }).danger ? 'var(--bld-error)' : '#d1d5db', fontSize: 12, fontFamily: 'system-ui', textAlign: 'left', cursor: 'pointer' }}
             onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             onClick={() => { item.action(); onClose(); }}
@@ -256,11 +256,11 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                   cursor: 'grab', zIndex: 1,
                 }}
               onMouseEnter={e => (e.currentTarget.style.color = '#d1d5db')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#9ca3af')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-3)')}
             >
               <span style={{ fontWeight: 500 }}>{page.name}</span>
               {page.route && <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'var(--bld-text-disabled)' }}>{page.route}</span>}
-              <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#374151' }}>{vpWidth}px</span>
+              <span style={{ fontSize: 9, fontFamily: 'monospace', color: 'var(--bld-text-disabled)' }}>{vpWidth}px</span>
             </div>
             )}
 
@@ -278,7 +278,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
                 minHeight: VIEWPORT_H,
                 background: 'rgb(var(--background, 255 255 255))',
                 overflow: 'hidden',
-                boxShadow: isFocused ? '0 8px 40px rgba(0,0,0,0.6)' : '0 8px 40px rgba(0,0,0,0.5)',
+                boxShadow: 'none',
                 transform: 'translateZ(0)',
                 // Let the browser skip layout/paint for offscreen frames entirely.
                 // containIntrinsicSize reserves the correct box so scroll/pan geometry

@@ -34,9 +34,9 @@ interface IconifySearchResult {
 
 const ICONIFY_API = 'https://api.iconify.design';
 
-const TEXT_DIM = '#6b7280';
-const TEXT_MUTED = '#9ca3af';
-const BG_INPUT = '#1f2937';
+const TEXT_DIM = 'var(--bld-text-disabled)';
+const TEXT_MUTED = 'var(--bld-text-3)';
+const BG_INPUT = 'var(--bld-bg-input)';
 const BORDER = '1px solid #374151';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

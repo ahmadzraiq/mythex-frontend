@@ -49,7 +49,7 @@ export function ComponentsTab() {
 
       {/* ── Elements label ── */}
       <div style={{ padding: '2px 10px 4px' }}>
-        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Elements</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', textTransform: 'none' }}>Elements</span>
       </div>
 
       {/* ── Primitive components grid ── */}
@@ -86,11 +86,10 @@ export function SectionHeader({
     <div
       style={{
         padding: '8px 12px 4px',
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        color: 'var(--bld-text-3)',
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'none',
+        color: 'var(--bld-text-2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',

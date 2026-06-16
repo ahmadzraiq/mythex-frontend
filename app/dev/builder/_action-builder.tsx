@@ -474,7 +474,7 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
           onClick={() => setExpanded(v => !v)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 10, padding: 0 }}
         >
-          {expanded ? '▾' : '▸'}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <select
           value={action.type}
@@ -508,7 +508,7 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
 
           {/* Condition */}
           {showCondition && (
-            <div style={{ borderTop: '1px solid var(--bld-bg-input)', paddingTop: 6 }}>
+            <div style={{ borderTop: 'none', paddingTop: 6 }}>
               <span style={{ fontSize: 10, color: 'var(--bld-info)', display: 'block', marginBottom: 4 }}>Only if…</span>
               <ExprBuilder
                 value={action.condition ?? null}
@@ -521,12 +521,12 @@ function ActionRow({ action, onUpdate, onRemove, inMapContext, depth = 0 }: {
 
           {/* OnSuccess / OnError chain */}
           {hasChain && (
-            <div style={{ borderTop: '1px solid var(--bld-bg-input)', paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ borderTop: 'none', paddingTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button
                 onClick={() => setShowOnSuccess(v => !v)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, textAlign: 'left', padding: 0 }}
               >
-                {showOnSuccess ? '▾ Then…' : '▸ Then…'} (on success)
+                {showOnSuccess ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Then…' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle",transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> Then…'} (on success)
               </button>
               {showOnSuccess && (
                 <ActionList
@@ -634,7 +634,7 @@ function EventSection({ event, actions, onChange, inMapContext }: {
   const [expanded, setExpanded] = useState(actions.length > 0);
 
   return (
-    <div style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
+    <div style={{ borderBottom: 'none' }}>
       {/* Use div instead of button to avoid <button> inside <button> hydration error */}
       <div
         role="button"
@@ -655,7 +655,7 @@ function EventSection({ event, actions, onChange, inMapContext }: {
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: actions.length ? 'var(--bld-info)' : 'var(--bld-text-disabled)' }}>{expanded ? '▾' : '▸'}</span>
+          <span style={{ color: actions.length ? 'var(--bld-info)' : 'var(--bld-text-disabled)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg></span>
           <span style={{ fontWeight: 500 }}>{EVENT_LABELS[event]}</span>
           {actions.length > 0 && (
             <span style={{ fontSize: 9, background: 'var(--bld-accent-hover)', color: 'var(--bld-accent)', padding: '1px 5px', borderRadius: 9 }}>

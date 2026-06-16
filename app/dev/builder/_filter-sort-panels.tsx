@@ -62,26 +62,26 @@ export const filterPanelStyles = {
   BTN_PRIMARY: {
     display: 'inline-flex', alignItems: 'center', gap: 5,
     padding: '4px 10px', fontSize: 12, fontWeight: 600,
-    background: '#4f46e5', color: '#fff',
+    background: 'var(--bld-accent-hover)', color: '#fff',
     border: '1px solid #4f46e5', borderRadius: 5,
     cursor: 'pointer', whiteSpace: 'nowrap',
   } as React.CSSProperties,
 
   INPUT_STYLE: {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
+    background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
     padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box',
   } as React.CSSProperties,
 
   SELECT_STYLE: {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
+    background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
     padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box', cursor: 'pointer',
   } as React.CSSProperties,
 
   PANEL_STYLE: {
     position: 'absolute', zIndex: 50,
-    background: '#0f172a', border: '1px solid #1e293b',
+    background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)',
     borderRadius: 8, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     minWidth: 280,
   } as React.CSSProperties,
@@ -96,7 +96,7 @@ export function Toggle({ on, onClick }: { on: boolean; onClick?: () => void }) {
       style={{
         width: 28, height: 15, borderRadius: 8,
         cursor: onClick ? 'pointer' : 'default',
-        background: on ? '#4f46e5' : '#374151',
+        background: on ? 'var(--bld-accent-hover)' : 'var(--bld-border-subtle)',
         position: 'relative', flexShrink: 0, transition: 'background 0.15s',
       }}
     >
@@ -114,7 +114,7 @@ export function Toggle({ on, onClick }: { on: boolean; onClick?: () => void }) {
 export function PanelFooter({ onReset, onSave }: { onReset: () => void; onSave: () => void }) {
   const { BTN, BTN_PRIMARY } = filterPanelStyles;
   return (
-    <div style={{ padding: '8px 14px', borderTop: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+    <div style={{ padding: '8px 14px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
       <button onClick={onReset} style={{ ...BTN, fontSize: 12 }}>Reset</button>
       <button onClick={onSave} style={{ ...BTN_PRIMARY, padding: '5px 16px' }}>Save</button>
     </div>
@@ -214,8 +214,8 @@ export function FloatingAnchor({
     minWidth,
     maxHeight: 440,
     overflow: 'auto',
-    background: '#0f172a',
-    border: '1px solid #1e293b',
+    background: 'var(--bld-bg-base)',
+    border: '1px solid var(--bld-bg-elevated)',
     borderRadius: 8,
     boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
   };
@@ -278,7 +278,7 @@ export function FilterPanel({
             >
               <option>And</option><option>Or</option>
             </select>
-            <span style={{ fontSize: 12, color: '#60a5fa', flex: 1 }}>⚷ Condition group ({group.conditions.length} conditions)</span>
+            <span style={{ fontSize: 12, color: 'var(--bld-info)', flex: 1 }}>⚷ Condition group ({group.conditions.length} conditions)</span>
             <button onClick={() => onChangeGroups(groups.filter((g) => g.id !== group.id))} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>⋮</button>
           </div>
           {group.conditions.map((cond) => (
@@ -296,12 +296,12 @@ export function FilterPanel({
               onClick={() => onChangeGroups(groups.map((g) => g.id === group.id ? {
                 ...g, conditions: [...g.conditions, { id: uid(), field: allCols[0] ?? 'id', operator: 'Is', value: '', active: true }],
               } : g))}
-              style={{ ...BTN, fontSize: 11, color: '#6366f1', padding: '2px 0' }}
+              style={{ ...BTN, fontSize: 11, color: 'var(--bld-accent)', padding: '2px 0' }}
             >+ Add condition</button>
           </div>
         </div>
       ))}
-      <div style={{ padding: '8px 14px', display: 'flex', gap: 16, borderTop: empty ? 'none' : '1px solid #1e293b' }}>
+      <div style={{ padding: '8px 14px', display: 'flex', gap: 16, borderTop: empty ? 'none' : '1px solid var(--bld-bg-elevated)' }}>
         <button onClick={addCondition} style={{ ...BTN, fontSize: 11, color: 'var(--bld-text-3)', padding: '2px 0' }}>+ Add condition</button>
         <button onClick={addGroup} style={{ ...BTN, fontSize: 11, color: 'var(--bld-text-3)', padding: '2px 0' }}>+ Add condition group</button>
       </div>

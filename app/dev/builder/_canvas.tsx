@@ -11,7 +11,7 @@
  * correct canvas-relative X/Y coordinates.
  */
 
-import React, { useRef, useEffect, useCallback, useMemo, useState, memo, useDeferredValue } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState, memo, useDeferredValue, startTransition } from 'react';
 import {
   VIEWPORT_H,
   CanvasContextMenu, type CanvasCtxMenuProps,
@@ -20,7 +20,7 @@ import {
   CanvasNodeEngine,
   sanitizeGhostClone,
 } from './_canvas-helpers';
-import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable } from './_store';
+import { useBuilderStore, findNode, findParentNode, VIEWPORT_WIDTHS, REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable, type ViewportSize } from './_store';
 import { findLinkedRoot, getNodeSubtrees } from './_store-node-helpers';
 import { getOverrides } from './_shared-overrides';
 import { useCanvasPanZoom, MIN_ZOOM, MAX_ZOOM, PAGE_GAP } from './_canvas-hooks';
@@ -110,6 +110,7 @@ export default function BuilderCanvas() {
   const panX = useBuilderStore(s => s.panX);
   const panY = useBuilderStore(s => s.panY);
   const viewport = useBuilderStore(s => s.viewport);
+  const setViewport = useBuilderStore(s => s.setViewport);
   const gridOverlay = useBuilderStore(s => s.gridOverlay);
   const pages = useBuilderStore(s => s.pages);
   const currentPageId = useBuilderStore(s => s.currentPageId);
@@ -2471,7 +2472,21 @@ export default function BuilderCanvas() {
     <div
       ref={canvasRef}
       data-testid="builder-canvas"
-      style={{ flex: 1, overflow: 'hidden', background: '#1a1a2e', position: 'relative', cursor: cursorStyle }}
+      style={{
+        flex: 1, overflow: 'hidden', position: 'relative', cursor: cursorStyle,
+        backgroundColor: 'var(--bld-bg-canvas)',
+        backgroundImage: [
+          /* spotlight bottom-left */
+          'radial-gradient(ellipse 65% 55% at 12% 88%, rgba(99,102,241,0.13) 0%, transparent 65%)',
+          /* spotlight top-right */
+          'radial-gradient(ellipse 50% 45% at 88% 10%, rgba(99,102,241,0.08) 0%, transparent 60%)',
+          /* subtle centre warmth */
+          'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.03) 0%, transparent 70%)',
+          /* dot grid */
+          'radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px)',
+        ].join(', '),
+        backgroundSize: 'auto, auto, auto, 22px 22px',
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -2506,7 +2521,7 @@ export default function BuilderCanvas() {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, textAlign: 'left' }}>
               <div style={{
                 flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-                background: '#1d4ed8', color: '#fff',
+                background: 'var(--bld-accent)', color: '#fff',
                 fontSize: 11, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>1</div>
@@ -2515,7 +2530,7 @@ export default function BuilderCanvas() {
                   Add a page
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2, lineHeight: 1.5 }}>
-                  Open <span style={{ color: '#93c5fd', fontWeight: 500 }}>Select page</span> in the top bar and click <span style={{ color: '#93c5fd', fontWeight: 500 }}>+ Add page</span>
+                  Open <span style={{ color: 'var(--bld-accent)', fontWeight: 500 }}>Select page</span> in the top bar and click <span style={{ color: 'var(--bld-accent)', fontWeight: 500 }}>+ Add page</span>
                 </div>
               </div>
             </div>
@@ -2523,7 +2538,7 @@ export default function BuilderCanvas() {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, textAlign: 'left' }}>
               <div style={{
                 flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
-                background: '#1d4ed8', color: '#fff',
+                background: 'var(--bld-accent)', color: '#fff',
                 fontSize: 11, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>2</div>
@@ -2532,7 +2547,7 @@ export default function BuilderCanvas() {
                   Drag a component
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2, lineHeight: 1.5 }}>
-                  Open the <span style={{ color: '#93c5fd', fontWeight: 500 }}>Components</span> tab in the left panel and drag any component onto the canvas
+                  Open the <span style={{ color: 'var(--bld-accent)', fontWeight: 500 }}>Components</span> tab in the left panel and drag any component onto the canvas
                 </div>
               </div>
             </div>
@@ -2676,7 +2691,6 @@ export default function BuilderCanvas() {
             color: 'rgba(99, 130, 246, 0.65)',
             userSelect: 'none',
             fontFamily: 'monospace',
-            letterSpacing: '0.02em',
           }}>
             {VIEWPORT_H}px — viewport
           </span>
@@ -3284,15 +3298,15 @@ export default function BuilderCanvas() {
             position: 'fixed',
             left: absDragPos.clientX + 14,
             top:  absDragPos.clientY - 28,
-            background: '#1e293b',
-            color: '#93c5fd',
+            background: 'var(--bld-bg-elevated)',
+            color: 'var(--bld-accent)',
             padding: '2px 7px',
             borderRadius: 4,
             fontSize: 10,
             fontFamily: 'monospace',
             pointerEvents: 'none',
             zIndex: 99999,
-            border: '1px solid #334155',
+            border: '1px solid var(--bld-border)',
             whiteSpace: 'nowrap',
           }}>
               {Math.round(absDragPos.x)} × {Math.round(absDragPos.y)}
@@ -3302,7 +3316,7 @@ export default function BuilderCanvas() {
       })()}
 
       {/* ── Zoom controls ── */}
-      <div style={{ position: 'absolute', bottom: 52, right: 16, display: 'flex', gap: 4, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
+      <div style={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 4, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border)', borderRadius: 6, padding: '4px 6px', pointerEvents: 'all' }}>
         <ZoomBtn label="−" testId="zoom-out" onClick={() => setZoom(Math.max(MIN_ZOOM, zoom / 1.25))} />
         <button data-testid="zoom-label" style={{ fontSize: 11, color: 'var(--bld-text-2)', background: 'none', border: 'none', cursor: 'pointer', minWidth: 40, textAlign: 'center' }} onClick={fitToCanvas}>
           {Math.round(zoom * 100)}%
@@ -3310,9 +3324,44 @@ export default function BuilderCanvas() {
         <ZoomBtn label="+" testId="zoom-in" onClick={() => setZoom(Math.min(MAX_ZOOM, zoom * 1.25))} />
       </div>
 
-      {/* ── State Bar ── */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9990, pointerEvents: 'all' }}>
-        <StateBar />
+      {/* ── Floating viewport switcher ── */}
+      <div style={{
+        position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', gap: 2, alignItems: 'center',
+        background: 'var(--bld-glass-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid var(--bld-glass-border)', borderRadius: 10,
+        padding: '4px 5px', zIndex: 9990, pointerEvents: 'all',
+        boxShadow: 'var(--bld-glass-shadow)',
+      }}>
+        {(Object.keys(VIEWPORT_WIDTHS) as ViewportSize[]).map(v => {
+          const icons: Record<ViewportSize, React.ReactNode> = {
+            desktop: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 14h5M8 11v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+            laptop:  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><path d="M0.5 13h15" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+            tablet:  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="1" width="11" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="8" cy="13" r="0.85" fill="currentColor"/></svg>,
+            mobile:  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="4" y="1" width="8" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="8" cy="13" r="0.85" fill="currentColor"/><path d="M6.5 2.5h3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>,
+          };
+          const labels: Record<ViewportSize, string> = { desktop: '1280', laptop: '1024', tablet: '768', mobile: '390' };
+          const isActive = viewport === v;
+          return (
+            <button key={v} data-testid={`viewport-${v}`}
+              onClick={() => startTransition(() => setViewport(v))}
+              title={`${v} — ${labels[v]}px`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+                background: isActive ? 'rgba(99,102,241,0.9)' : 'transparent',
+                border: 'none', borderRadius: 7,
+                color: isActive ? '#fff' : 'var(--bld-text-disabled)',
+                cursor: 'pointer', fontSize: 10, fontWeight: isActive ? 600 : 400,
+                transition: 'all 0.12s',
+              }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-hover)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+            >
+              {icons[v]}
+              <span>{labels[v]}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Canvas toast (resize guard messages, etc.) ── */}
@@ -3320,10 +3369,10 @@ export default function BuilderCanvas() {
         <div
           data-testid="canvas-toast"
           style={{
-            position: 'absolute', bottom: 52, left: '50%', transform: 'translateX(-50%)',
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+            position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border)', borderRadius: 8,
             padding: '8px 14px', zIndex: 9995, pointerEvents: 'none',
-            fontSize: 12, color: '#fbbf24', whiteSpace: 'nowrap',
+            fontSize: 12, color: 'var(--bld-warning)', whiteSpace: 'nowrap',
             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           }}
         >

@@ -99,7 +99,7 @@ const TW_PREFIX: Record<string, string> = {
   borderWidth: 'border-', borderStyle: 'border-',
   borderTopWidth: 'border-t-', borderRightWidth: 'border-r-',
   borderBottomWidth: 'border-b-', borderLeftWidth: 'border-l-',
-  fontSize: 'text-', lineHeight: 'leading-', letterSpacing: 'tracking-',
+  fontSize: 'text-', lineHeight: 'leading-',
   backgroundColor: 'bg-', opacity: 'opacity-',
 };
 

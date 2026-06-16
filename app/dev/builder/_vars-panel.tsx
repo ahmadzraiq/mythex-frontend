@@ -23,12 +23,12 @@ import type { WorkflowCanvasTarget } from './_store';
 // ─── Vars Panel ───────────────────────────────────────────────────────────────
 
 const VARS_INPUT: React.CSSProperties = {
-  background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+  background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
   padding: '3px 6px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', width: '100%',
 };
 const VARS_SELECT: React.CSSProperties = { ...VARS_INPUT, cursor: 'pointer' };
 const VARS_SECTION_LABEL: React.CSSProperties = {
-  fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+  fontSize: 9, fontWeight: 700, textTransform: 'none',
   color: 'var(--bld-text-disabled)', padding: '10px 12px 4px',
 };
 
@@ -57,13 +57,13 @@ export function CustomVarsSection() {
           </div>
         )}
         {customVars.map(v => (
-          <div key={v.name} style={{ background: '#1f2937', borderRadius: 4, border: '1px solid #374151', padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div key={v.name} style={{ background: 'var(--bld-bg-input)', borderRadius: 4, border: '1px solid var(--bld-border-subtle)', padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ flex: 1, fontSize: 11, color: '#c084fc', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
-              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', background: '#111827', borderRadius: 3, padding: '1px 5px', flexShrink: 0 }}>{v.type}</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-panel)', borderRadius: 3, padding: '1px 5px', flexShrink: 0 }}>{v.type}</span>
               <button
                 onClick={() => removeCustomVar(v.name)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px', flexShrink: 0 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px', flexShrink: 0 }}
               >×</button>
             </div>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -112,7 +112,7 @@ export function CustomVarsSection() {
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
             placeholder="variable name…"
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+            style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
           />
           <select value={newType} onChange={e => setNewType(e.target.value as CustomVar['type'])} style={{ ...VARS_SELECT, width: 70 }}>
             <option value="string">str</option>
@@ -148,7 +148,7 @@ export function VarsWorkflowsSection() {
           <div style={{ fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No workflows yet</div>
         )}
         {entries.map(([name, actions]) => (
-          <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+          <div key={name} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, border: '1px solid var(--bld-border-subtle)', overflow: 'hidden' }}>
             <button
               onClick={() => setExpanded(e => e === name ? null : name)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -158,11 +158,11 @@ export function VarsWorkflowsSection() {
               <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
               <button
                 onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}
               >×</button>
             </button>
             {expanded === name && (
-              <div style={{ borderTop: '1px solid #374151', padding: '8px' }}>
+              <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '8px' }}>
                 <ActionBuilder
                   value={actions.reduce<Record<string, unknown[]>>((acc, a) => { (acc['run'] ??= []).push(a); return acc; }, {})}
                   onChange={v => setPageWorkflow(name, Object.values(v ?? {}).flat() as object[])}
@@ -178,7 +178,7 @@ export function VarsWorkflowsSection() {
             onChange={e => setNewName(e.target.value)}
             placeholder="workflow name…"
             onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+            style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
           />
           <button
             onClick={() => { if (newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
@@ -201,26 +201,26 @@ export function VarsFormulasSection() {
       <div style={VARS_SECTION_LABEL}>Global Formulas</div>
       <div style={{ padding: '0 8px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5, marginBottom: 2 }}>
-          Named JSON Logic expressions — use anywhere as <code style={{ color: '#fbbf24', fontSize: 9 }}>{`{{formula.name}}`}</code>.
+          Named JSON Logic expressions — use anywhere as <code style={{ color: 'var(--bld-warning)', fontSize: 9 }}>{`{{formula.name}}`}</code>.
         </div>
         {entries.length === 0 && (
           <div style={{ fontSize: 10, color: 'var(--bld-text-3)', fontStyle: 'italic' }}>No formulas yet</div>
         )}
         {entries.map(([name, expr]) => (
-          <div key={name} style={{ background: '#1f2937', borderRadius: 5, border: '1px solid #374151', overflow: 'hidden' }}>
+          <div key={name} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, border: '1px solid var(--bld-border-subtle)', overflow: 'hidden' }}>
             <button
               onClick={() => setExpanded(e => e === name ? null : name)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '5px 8px', background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <Chevron open={expanded === name} size={10} />
-              <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+              <span style={{ fontSize: 11, color: 'var(--bld-warning)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
               <button
                 onClick={e => { e.stopPropagation(); removeGlobalFormula(name); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 12, padding: '0 2px' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}
               >×</button>
             </button>
             {expanded === name && (
-              <div style={{ borderTop: '1px solid #374151', padding: '8px' }}>
+              <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '8px' }}>
                 <ExprBuilder
                   value={expr as object | null}
                   onChange={v => setGlobalFormula(name, v as import('./_store-types').GlobalFormulaDef)}
@@ -235,7 +235,7 @@ export function VarsFormulasSection() {
             onChange={e => setNewName(e.target.value)}
             placeholder="formula name…"
             onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
-            style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
+            style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
           />
           <button
             onClick={() => { if (newName.trim()) { setGlobalFormula(newName.trim(), { name: newName.trim(), params: [], formula: '' }); setNewName(''); } }}
@@ -247,7 +247,7 @@ export function VarsFormulasSection() {
   );
 }
 
-const DIVIDER = <div style={{ height: 1, background: '#1f2937', margin: '4px 0' }} />;
+const DIVIDER = <div style={{ height: 1, background: 'var(--bld-bg-input)', margin: '4px 0' }} />;
 
 export function VarsPanel() {
   return (

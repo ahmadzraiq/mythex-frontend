@@ -71,14 +71,14 @@ export interface DebugSnapshot {
 
 const FAMILY_COLORS: Record<string, { bg: string; border: string; title: string; sub: string }> = {
   context:          { bg: '#161b22', border: '#8b949e', title: '#c9d1d9', sub: '#8b949e' },
-  planner:          { bg: '#1a1f6e', border: '#818cf8', title: '#c7d2fe', sub: '#a5b4fc' },
+  planner:          { bg: '#1a1f6e', border: 'var(--bld-badge-text)', title: '#c7d2fe', sub: 'var(--bld-badge-text)' },
   structure:        { bg: '#0a3622', border: '#3fb950', title: '#56d364', sub: '#3fb950' },
   styling:          { bg: '#2d1a00', border: '#f97316', title: '#fb923c', sub: '#ea580c' },
   animation:        { bg: '#2a1060', border: '#c084fc', title: '#d8b4fe', sub: '#a855f7' },
   binding:          { bg: '#031d2e', border: '#38bdf8', title: '#7dd3fc', sub: '#0ea5e9' },
-  workflows:        { bg: '#2d1a00', border: '#f59e0b', title: '#fcd34d', sub: '#d97706' },
+  workflows:        { bg: '#2d1a00', border: 'var(--bld-warning)', title: '#fcd34d', sub: '#d97706' },
   media:            { bg: '#00201f', border: '#2dd4bf', title: '#5eead4', sub: '#14b8a6' },
-  sharedComponents: { bg: '#1a1f6e', border: '#a5b4fc', title: '#c7d2fe', sub: '#818cf8' },
+  sharedComponents: { bg: '#1a1f6e', border: 'var(--bld-badge-text)', title: '#c7d2fe', sub: 'var(--bld-badge-text)' },
   data:             { bg: '#161b22', border: '#8b949e', title: '#c9d1d9', sub: '#6e7681' },
   default:          { bg: '#161b22', border: '#30363d', title: '#8b949e', sub: '#484f58' },
 };
@@ -117,14 +117,14 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
           userSelect: 'none', marginBottom: 6,
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none', letterSpacing: 0.8 }}>
           {label}
         </span>
-        <span style={{ fontSize: 10, color: '#334155' }}>
+        <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)' }}>
           {charCount ?? text.length} chars
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--bld-text-disabled)' }}>
-          {expanded ? '▾ collapse' : '▸ expand'}
+          {expanded ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> collapse' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle",transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> expand'}
         </span>
       </div>
 
@@ -138,7 +138,7 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             maxHeight: 90, overflow: 'hidden', cursor: 'pointer',
             fontFamily: 'ui-monospace, monospace',
-            borderLeft: '2px solid #1e293b',
+            borderLeft: '2px solid var(--bld-bg-elevated)',
             position: 'relative',
           }}
         >
@@ -163,7 +163,7 @@ function TextBlock({ label, text, charCount }: { label: string; text: string; ch
             width: '100%', boxSizing: 'border-box',
             height: Math.min(Math.max(200, text.split('\n').length * 18), 600),
             background: '#020617', borderRadius: 6,
-            border: '1px solid #1e293b', padding: '10px 12px',
+            border: '1px solid var(--bld-bg-elevated)', padding: '10px 12px',
             fontSize: 11, lineHeight: 1.7, color: 'var(--bld-text-2)',
             fontFamily: 'ui-monospace, monospace',
             resize: 'vertical', outline: 'none',
@@ -196,13 +196,13 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
       <span>
         <button onClick={() => setOpen(o => !o)}
           style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: 0 }}>
-          {open ? '▾' : '▸'} [{value.length}]
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> [{value.length}]
         </button>
         {open && (
-          <div style={{ paddingLeft: 16, borderLeft: '1px solid #1e293b', marginTop: 2 }}>
+          <div style={{ paddingLeft: 16, borderLeft: '1px solid var(--bld-bg-elevated)', marginTop: 2 }}>
             {value.map((v, i) => (
               <div key={i} style={{ margin: '3px 0' }}>
-                <span style={{ color: '#334155', marginRight: 6, fontSize: 10 }}>{i}</span>
+                <span style={{ color: 'var(--bld-border-subtle)', marginRight: 6, fontSize: 10 }}>{i}</span>
                 <JsonTree value={v} depth={depth + 1} />
               </div>
             ))}
@@ -218,10 +218,10 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
       <span>
         <button onClick={() => setOpen(o => !o)}
           style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: 0 }}>
-          {open ? '▾' : '▸'} {'{…}'}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> {'{…}'}
         </button>
         {open && (
-          <div style={{ paddingLeft: 16, borderLeft: '1px solid #1e293b', marginTop: 2 }}>
+          <div style={{ paddingLeft: 16, borderLeft: '1px solid var(--bld-bg-elevated)', marginTop: 2 }}>
             {keys.map(k => (
               <div key={k} style={{ margin: '3px 0' }}>
                 <span style={{ color: '#7dd3fc', marginRight: 6 }}>{k}:</span>
@@ -240,11 +240,11 @@ function JsonTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
 
 function ToolCallRow({ tc, idx }: { tc: DebugToolCall; idx: number }) {
   const [open, setOpen] = useState(false);
-  const statusColor = tc.status === 'success' ? '#34d399' : tc.status === 'error' ? '#f87171' : '#64748b';
+  const statusColor = tc.status === 'success' ? '#34d399' : tc.status === 'error' ? 'var(--bld-error)' : 'var(--bld-text-disabled)';
   return (
     <div style={{
       background: '#020617', borderRadius: 6, marginBottom: 6,
-      border: `1px solid ${open ? '#334155' : '#0f172a'}`,
+      border: `1px solid ${open ? 'var(--bld-border-subtle)' : 'var(--bld-bg-base)'}`,
     }}>
       <div
         onClick={() => setOpen(o => !o)}
@@ -253,38 +253,38 @@ function ToolCallRow({ tc, idx }: { tc: DebugToolCall; idx: number }) {
           padding: '7px 10px', cursor: 'pointer', userSelect: 'none',
         }}
       >
-        <span style={{ fontSize: 10, color: '#334155', minWidth: 22, textAlign: 'right' }}>#{idx + 1}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)', minWidth: 22, textAlign: 'right' }}>#{idx + 1}</span>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
         <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, flex: 1, fontFamily: 'ui-monospace, monospace' }}>
           {tc.name}
         </span>
         {tc.round !== undefined && (
-          <span style={{ fontSize: 10, color: '#334155', background: '#0f172a', padding: '1px 5px', borderRadius: 4 }}>
+          <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)', background: 'var(--bld-bg-base)', padding: '1px 5px', borderRadius: 4 }}>
             r{tc.round}
           </span>
         )}
         {tc.aiBlind && (
-          <span style={{ fontSize: 9, color: '#f87171', background: '#450a0a', borderRadius: 3, padding: '1px 5px' }}>
+          <span style={{ fontSize: 9, color: 'var(--bld-error)', background: '#450a0a', borderRadius: 3, padding: '1px 5px' }}>
             blind
           </span>
         )}
-        <span style={{ fontSize: 10, color: '#334155' }}>{open ? '▾' : '▸'}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg></span>
       </div>
       {open && (
         <div style={{ padding: '0 10px 12px', fontSize: 11 }}>
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'none', letterSpacing: 0.5 }}>
               Input
             </div>
-            <div style={{ background: '#0f172a', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
+            <div style={{ background: 'var(--bld-bg-base)', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
               <JsonTree value={tc.input} depth={0} />
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, textTransform: 'none', letterSpacing: 0.5 }}>
               Result
             </div>
-            <div style={{ background: '#0f172a', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
+            <div style={{ background: 'var(--bld-bg-base)', borderRadius: 5, padding: '8px 10px', lineHeight: 1.6 }}>
               <JsonTree value={tc.result} depth={0} />
             </div>
           </div>
@@ -304,12 +304,12 @@ function ManifestView({ manifest }: { manifest: NonNullable<DebugAgentData['mani
       {/* Intent */}
       {manifest.intent && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-accent)', textTransform: 'none', letterSpacing: 0.8, marginBottom: 6 }}>
             Intent
           </div>
           <div style={{
-            background: '#0f172a', borderRadius: 6, padding: '10px 12px',
-            fontSize: 12, color: '#a5b4fc', lineHeight: 1.6, borderLeft: '2px solid #6366f1',
+            background: 'var(--bld-bg-base)', borderRadius: 6, padding: '10px 12px',
+            fontSize: 12, color: 'var(--bld-badge-text)', lineHeight: 1.6, borderLeft: '2px solid #6366f1',
           }}>
             {manifest.intent}
           </div>
@@ -319,10 +319,10 @@ function ManifestView({ manifest }: { manifest: NonNullable<DebugAgentData['mani
       {/* Clarification needed */}
       {manifest.needsClarification && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-warning)', textTransform: 'none', letterSpacing: 0.8, marginBottom: 6 }}>
             Needs Clarification
           </div>
-          <div style={{ background: '#0f172a', borderRadius: 6, padding: '10px 12px', borderLeft: '2px solid #f59e0b' }}>
+          <div style={{ background: 'var(--bld-bg-base)', borderRadius: 6, padding: '10px 12px', borderLeft: '2px solid #f59e0b' }}>
             <div style={{ fontSize: 12, color: '#fcd34d', marginBottom: 8 }}>{manifest.needsClarification.question}</div>
             {(manifest.needsClarification.options ?? []).map((o, i) => (
               <div key={i} style={{ fontSize: 11, color: '#92400e', padding: '2px 0' }}>• {o}</div>
@@ -334,7 +334,7 @@ function ManifestView({ manifest }: { manifest: NonNullable<DebugAgentData['mani
       {/* Operations */}
       {(manifest.operations ?? []).length > 0 && (
         <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none', letterSpacing: 0.8, marginBottom: 8 }}>
             Operations ({manifest.operations!.length})
           </div>
           {manifest.operations!.map((op, i) => (
@@ -355,8 +355,8 @@ function OperationCard({ op, idx }: {
 
   return (
     <div style={{
-      background: '#0f172a', borderRadius: 7, marginBottom: 8,
-      border: '1px solid #1e293b', overflow: 'hidden',
+      background: 'var(--bld-bg-base)', borderRadius: 7, marginBottom: 8,
+      border: '1px solid var(--bld-bg-elevated)', overflow: 'hidden',
     }}>
       {/* Op header */}
       <div
@@ -364,16 +364,16 @@ function OperationCard({ op, idx }: {
         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', cursor: 'pointer', userSelect: 'none' }}
       >
         <span style={{
-          fontSize: 10, fontWeight: 700, color: '#6366f1',
-          background: '#1e1b4b', borderRadius: 4, padding: '2px 7px', flexShrink: 0,
+          fontSize: 10, fontWeight: 700, color: 'var(--bld-accent)',
+          background: 'rgba(99,102,241,0.12)', borderRadius: 4, padding: '2px 7px', flexShrink: 0,
         }}>#{idx + 1}</span>
         <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: 600, flex: 1 }}>{op.id}</span>
         {op.pageName && (
-          <span style={{ fontSize: 10, color: '#334155', background: '#020617', borderRadius: 4, padding: '2px 6px' }}>
+          <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)', background: '#020617', borderRadius: 4, padding: '2px 6px' }}>
             {op.pageName}
           </span>
         )}
-        <span style={{ fontSize: 10, color: '#334155' }}>{open ? '▾' : '▸'}</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg></span>
       </div>
 
       {open && agentKeys.length > 0 && (
@@ -382,7 +382,7 @@ function OperationCard({ op, idx }: {
             const col = colorOf(agentName);
             return (
               <span key={agentName} style={{
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                fontSize: 10, fontWeight: 700, textTransform: 'none', letterSpacing: 0.5,
                 color: col.border, background: `${col.border}18`, borderRadius: 4, padding: '2px 7px',
                 border: `1px solid ${col.border}33`,
               }}>
@@ -448,7 +448,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             background: `${col.border}22`, border: `1px solid ${col.border}55`,
             borderRadius: 5, padding: '2px 8px', marginBottom: 5,
           }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: col.border, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: col.border, textTransform: 'none', letterSpacing: 0.8 }}>
               {family}
             </span>
           </div>
@@ -459,11 +459,11 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             {toolCount} call{toolCount !== 1 ? 's' : ''}
             {agent.rounds ? ` · ${agent.rounds} rounds` : ''}
             {' · '}{durationStr}
-            {agent.status === 'skipped' && <span style={{ color: '#fbbf24', marginLeft: 6 }}>skipped</span>}
+            {agent.status === 'skipped' && <span style={{ color: 'var(--bld-warning)', marginLeft: 6 }}>skipped</span>}
           </div>
         </div>
         <button onClick={onClose} style={{
-          background: 'none', border: '1px solid #1e293b', borderRadius: 6,
+          background: 'none', border: '1px solid var(--bld-bg-elevated)', borderRadius: 6,
           color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: '3px 10px',
           lineHeight: 1, flexShrink: 0,
         }}>✕</button>
@@ -475,7 +475,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 4px', background: 'none', border: 'none',
             borderBottom: `2px solid ${tab === t ? col.border : 'transparent'}`,
-            color: tab === t ? col.title : '#475569',
+            color: tab === t ? col.title : 'var(--bld-border-subtle)',
             fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             transition: 'color 0.15s',
           }}>
@@ -496,10 +496,10 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             {/* Extra info (context agent) */}
             {agent.extra && Object.keys(agent.extra).length > 0 && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none', letterSpacing: 0.8, marginBottom: 6 }}>
                   Context Info
                 </div>
-                <div style={{ background: '#0f172a', borderRadius: 6, padding: '8px 10px', fontSize: 11 }}>
+                <div style={{ background: 'var(--bld-bg-base)', borderRadius: 6, padding: '8px 10px', fontSize: 11 }}>
                   {Object.entries(agent.extra).map(([k, v]) => (
                     <div key={k} style={{ marginBottom: 4 }}>
                       <span style={{ color: 'var(--bld-text-disabled)', marginRight: 6 }}>{k}:</span>
@@ -514,8 +514,8 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
                 {(agent.tools ?? []).map(t => (
                   <span key={t} style={{
-                    fontSize: 10, background: '#0f172a', color: 'var(--bld-text-3)',
-                    borderRadius: 4, padding: '2px 7px', border: '1px solid #1e293b',
+                    fontSize: 10, background: 'var(--bld-bg-base)', color: 'var(--bld-text-3)',
+                    borderRadius: 4, padding: '2px 7px', border: '1px solid var(--bld-bg-elevated)',
                     fontFamily: 'ui-monospace, monospace',
                   }}>{t}</span>
                 ))}
@@ -523,11 +523,11 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             )}
             {agent.systemPrompt
               ? <TextBlock label="System Prompt" text={agent.systemPrompt} />
-              : <div style={{ fontSize: 11, color: '#334155', marginBottom: 10 }}>No system prompt recorded.</div>
+              : <div style={{ fontSize: 11, color: 'var(--bld-border-subtle)', marginBottom: 10 }}>No system prompt recorded.</div>
             }
             {agent.userMessage
               ? <TextBlock label="User Message" text={agent.userMessage} />
-              : <div style={{ fontSize: 11, color: '#334155' }}>No user message recorded.</div>
+              : <div style={{ fontSize: 11, color: 'var(--bld-border-subtle)' }}>No user message recorded.</div>
             }
           </>
         )}
@@ -537,7 +537,7 @@ function DetailPanel({ agent, onClose }: { agent: DebugAgentData; onClose: () =>
             {hasTools ? (
               (agent.toolCalls ?? []).map((tc, i) => <ToolCallRow key={i} tc={tc} idx={i} />)
             ) : (
-              <div style={{ fontSize: 11, color: '#334155' }}>No tool calls recorded.</div>
+              <div style={{ fontSize: 11, color: 'var(--bld-border-subtle)' }}>No tool calls recorded.</div>
             )}
           </>
         )}
@@ -554,7 +554,7 @@ function AgentNode({ data }: NodeProps) {
   const family = familyOf(d.agent.agent);
   const toolCount = d.agent.toolCallCount ?? d.agent.toolCalls?.length ?? 0;
   const durationStr = typeof d.agent.duration === 'number' ? `${(d.agent.duration / 1000).toFixed(1)}s` : '';
-  const statusColor = toolCount > 0 ? '#34d399' : d.agent.status === 'running' ? '#60a5fa' : '#475569';
+  const statusColor = toolCount > 0 ? '#34d399' : d.agent.status === 'running' ? 'var(--bld-info)' : 'var(--bld-border-subtle)';
 
   // Subtitle: short displayLabel if it differs from the agent key, otherwise nothing
   const sub = d.agent.displayLabel && !d.agent.displayLabel.startsWith(family)
@@ -784,7 +784,7 @@ export function AgentDebugOverlay({ snapshot, onClose }: AgentDebugOverlayProps)
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: '#0d1117',
+        background: 'var(--bld-bg-canvas)',
         display: 'flex', flexDirection: 'column',
       }}
       onKeyDown={e => e.stopPropagation()}
@@ -793,11 +793,11 @@ export function AgentDebugOverlay({ snapshot, onClose }: AgentDebugOverlayProps)
       {/* Override React Flow CSS variables so edge strokes are visible */}
       <style>{`
         .agent-debug-flow {
-          --xy-edge-stroke-default: #94a3b8;
+          --xy-edge-stroke-default: var(--bld-text-3);
           --xy-edge-stroke-width-default: 2;
           --xy-edge-stroke-selected-default: #f0f6fc;
           --xy-attribution-background-color-default: transparent;
-          --xy-background-color-default: #0d1117;
+          --xy-background-color-default: var(--bld-bg-canvas);
           --xy-background-pattern-color-default: #21262d;
           --xy-node-border-radius-default: 10px;
           --xy-node-boxshadow-hover-default: none;
@@ -877,7 +877,7 @@ export function AgentDebugOverlay({ snapshot, onClose }: AgentDebugOverlayProps)
           panOnDrag={true}
           zoomOnScroll={true}
           proOptions={{ hideAttribution: true }}
-          style={{ background: '#0d1117', width: '100%', height: '100%' }}
+          style={{ background: 'var(--bld-bg-canvas)', width: '100%', height: '100%' }}
           defaultEdgeOptions={{
             type: 'smoothstep',
             style: { stroke: 'var(--bld-text-3)', strokeWidth: 2 },

@@ -3,7 +3,7 @@
  * Backend Workflows Panel — WeWeb-style layout.
  *
  * Layout:
- *   Left sidebar (280px): search + "+ Add ▾" | collapsible sections
+ *   Left sidebar (280px): search + "+ Add <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>" | collapsible sections
  *                         API Endpoints (table folders + standalone)
  *                         Functions  |  Middlewares
  *   Center (flex-1):     WorkflowCanvas rendered inline (not full-screen overlay)
@@ -25,7 +25,7 @@ type WfKind = 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'var(--bld-success)', POST: 'var(--bld-accent)', PUT: 'var(--bld-warning)',
-  PATCH: 'var(--bld-ai-accent)', DELETE: 'var(--bld-error)',
+  PATCH: 'var(--bld-accent)', DELETE: 'var(--bld-error)',
 };
 
 const BTN: React.CSSProperties = {
@@ -207,7 +207,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
           padding: `6px ${indent ? '28px' : '14px'}`,
           cursor: 'pointer',
           background: active ? 'rgba(79,70,229,0.12)' : 'transparent',
-          borderLeft: `2px solid ${active ? 'var(--bld-ai-accent)' : 'transparent'}`,
+          borderLeft: `2px solid ${active ? 'var(--bld-accent)' : 'transparent'}`,
         }}
       >
         {wf.method ? (
@@ -239,8 +239,8 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       onClick={() => toggleCollapse(sectionKey)}
       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
     >
-      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[sectionKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[sectionKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none', flex: 1 }}>{label}</span>
       <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{count}</span>
     </button>
   );
@@ -253,7 +253,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       <div style={{ width: 280, borderRight: '1px solid var(--bld-border)', display: 'flex', flexDirection: 'column', background: 'var(--bld-bg-base)', flexShrink: 0, overflow: 'hidden' }}>
 
         {/* Search + Add button */}
-        <div style={{ padding: '10px 10px 8px', display: 'flex', gap: 6, borderBottom: '1px solid var(--bld-border)' }}>
+        <div style={{ padding: '10px 10px 8px', display: 'flex', gap: 6, borderBottom: 'none' }}>
           <div style={{ flex: 1 }}>
             <SearchInput value={search} onChange={setSearch} placeholder="Search…" />
           </div>
@@ -282,9 +282,9 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setShowAddMenu((v) => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, fontWeight: 600, background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, fontWeight: 600, background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
             >
-              + Add <span style={{ fontSize: 10 }}>▾</span>
+              + Add <span style={{ fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
             </button>
             {showAddMenu && (
               <div
@@ -324,7 +324,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                           onClick={() => toggleCollapse(folderKey)}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                         >
-                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[folderKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
+                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[folderKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
                           <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500 }}>📁 {folder.displayName}</span>
                           <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{folder.items.length}</span>
                         </button>
@@ -370,7 +370,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header bar for selected workflow */}
         {selected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: '1px solid var(--bld-border)', background: 'var(--bld-bg-base)', flexShrink: 0, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: 'none', background: 'var(--bld-bg-base)', flexShrink: 0, flexWrap: 'wrap' }}>
             {selected.method && (
               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: `${METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)'}22`, color: METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)' }}>
                 {selected.method}
@@ -380,13 +380,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(107,114,128,0.2)', color: 'var(--bld-text-3)' }}>INTERNAL</span>
             )}
             {selected.kind === 'MIDDLEWARE' && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: 'var(--bld-ai-accent)' }}>MIDDLEWARE</span>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: 'var(--bld-accent)' }}>MIDDLEWARE</span>
             )}
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1 }}>{selected.name}</span>
 
             {/* Status badge */}
             <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, letterSpacing: '0.05em',
+              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
               background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.2)',
               color: selected.status === 'PUBLISHED' ? 'var(--bld-success)' : 'var(--bld-text-3)',
               border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
@@ -428,7 +428,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <span style={{
                 fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 5,
                 background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
-                color: selected.status === 'PUBLISHED' ? '#22c55e' : '#94a3b8',
+                color: selected.status === 'PUBLISHED' ? 'var(--bld-success)' : 'var(--bld-text-3)',
                 border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
               }}>
                 {selected.status === 'PUBLISHED' ? 'Live' : 'Pending deploy'}
@@ -458,7 +458,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 48 }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSettings(false)} />
           <div style={{ position: 'relative', zIndex: 1, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 480, maxHeight: '80vh', overflow: 'auto' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '14px 18px', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>Settings</span>
               <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18 }}>✕</button>
             </div>
@@ -495,7 +495,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)' }}>Description</label>
-                  <button style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(99,102,241,0.15)', color: 'var(--bld-ai-accent)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, cursor: 'pointer' }}>✦ Generate</button>
+                  <button style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(99,102,241,0.15)', color: 'var(--bld-accent)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 5, cursor: 'pointer' }}>✦ Generate</button>
                 </div>
                 <div style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', background: 'var(--bld-bg-elevated)' }}>
                   <div style={{ display: 'flex', gap: 2, padding: '5px 8px', borderBottom: '1px solid var(--bld-border-subtle)', flexWrap: 'wrap' }}>
@@ -511,7 +511,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             <div style={{ padding: '12px 18px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowSettings(false)} style={{ ...BTN, fontSize: 12, padding: '6px 14px' }}>Cancel</button>
               <button onClick={() => void saveSettings()} disabled={savingSettings}
-                style={{ fontSize: 12, fontWeight: 600, padding: '6px 16px', background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: savingSettings ? 0.6 : 1 }}>
+                style={{ fontSize: 12, fontWeight: 600, padding: '6px 16px', background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: savingSettings ? 0.6 : 1 }}>
                 {savingSettings ? 'Saving…' : 'Save'}
               </button>
             </div>
@@ -524,7 +524,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 60 }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowNewForm(false)} />
           <div style={{ position: 'relative', zIndex: 1, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', width: 460 }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '14px 18px', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>
                 New {newWf.kind === 'API_ENDPOINT' ? 'API Endpoint' : newWf.kind === 'FUNCTION' ? 'Function' : 'Middleware'}
               </span>
@@ -567,7 +567,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <button
                 onClick={() => void createWorkflow()}
                 disabled={saving || !newWf.name.trim()}
-                style={{ fontSize: 12, fontWeight: 600, padding: '6px 20px', background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: saving || !newWf.name.trim() ? 0.6 : 1 }}
+                style={{ fontSize: 12, fontWeight: 600, padding: '6px 20px', background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: saving || !newWf.name.trim() ? 0.6 : 1 }}
               >
                 {saving ? 'Creating…' : 'Continue →'}
               </button>
@@ -715,7 +715,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 ))}
                 <button
                   onClick={() => setSec({ middlewareIds: [...sec.middlewareIds, ''] })}
-                  style={{ fontSize: 11, color: 'var(--bld-ai-accent)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4 }}
+                  style={{ fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4 }}
                 >+ Add middleware for more control</button>
               </div>
               {/* Save */}
@@ -729,7 +729,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                     setSecPopover(null);
                   } catch { /* ignore */ }
                 }}
-                style={{ marginTop: 14, width: '100%', padding: '7px 0', fontSize: 12, fontWeight: 600, background: 'var(--bld-ai-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                style={{ marginTop: 14, width: '100%', padding: '7px 0', fontSize: 12, fontWeight: 600, background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
               >Save</button>
             </div>
           </div>

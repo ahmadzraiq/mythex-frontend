@@ -29,12 +29,12 @@ const DOT: React.CSSProperties = {
   width: 6,
   height: 6,
   borderRadius: 3,
-  background: '#475569',
+  background: 'var(--bld-border-subtle)',
 };
 
 function Row({ tone, label, value }: { tone?: 'ok' | 'warn' | 'err' | 'info'; label: string; value?: string }) {
   const color =
-    tone === 'ok' ? '#34d399' : tone === 'warn' ? '#fbbf24' : tone === 'err' ? '#f87171' : '#94a3b8';
+    tone === 'ok' ? '#34d399' : tone === 'warn' ? 'var(--bld-warning)' : tone === 'err' ? 'var(--bld-error)' : 'var(--bld-text-3)';
   return (
     <div style={ROW_STYLE}>
       <span style={{ ...DOT, background: color }} />
@@ -47,7 +47,7 @@ function Row({ tone, label, value }: { tone?: 'ok' | 'warn' | 'err' | 'info'; la
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 6 }}>
-      <div style={{ fontSize: 10, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{title}</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-3)', textTransform: 'none', letterSpacing: 0.5, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -82,7 +82,7 @@ export const AiActivityFeed = memo(function AiActivityFeed({ msg }: { msg: AiCha
       style={{
         marginTop: 8,
         padding: '8px 10px',
-        borderLeft: '2px solid #1e293b',
+        borderLeft: '2px solid var(--bld-bg-elevated)',
         background: 'rgba(15,23,42,0.4)',
         borderRadius: 4,
       }}

@@ -25,6 +25,7 @@
 
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { searchImages, searchPexelsVideos, searchIconify } from '@/lib/ai/media-search';
 import { ALL_BUILDER_TOOLS, PHASE_W_TOOLS, BINDING_AGENT_TOOLS, STYLING_AGENT_TOOLS, ANIMATION_AGENT_TOOLS, MEDIA_AGENT_TOOLS, DATA_AGENT_TOOLS, SC_AGENT_TOOLS, BACKEND_AGENT_TOOLS } from '@/lib/ai/builder-tools';
 import { buildBindingAgentPrompt, buildWorkflowsAgentPrompt, buildStylingAgentPrompt, buildAnimationAgentPrompt, buildMediaAgentPrompt, buildDataAgentPrompt } from '@/lib/ai/agents';
 import type { CollectedTree, ToolEvent, Marker } from '@/lib/ai/tools/process-structure-tree';
@@ -310,51 +311,22 @@ function detectTernaryContrastNodes(
 }
 
 // ── Server-side media search helpers (Tier 0 pre-fetch) ──────────────────────
+// Thin wrappers that preserve the old call-site names while delegating to the
+// shared lib/ai/media-search.ts utilities.
 
-// Random page offset (1–4) so repeated runs with identical queries get different photos/videos.
-function randPage(max = 4): number { return Math.ceil(Math.random() * max); }
-
-async function searchUnsplashServer(query: string, count = 5, signal?: AbortSignal): Promise<Array<{ url: string; alt: string }>> {
-  try {
-    const apiKey = process.env.UNSPLASH_ACCESS_KEY;
-    if (!apiKey || !query) return [];
-    const page = randPage(4);
-    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&page=${page}&client_id=${apiKey}`, { signal });
-    if (!r.ok) return [];
-    const d = await r.json() as { results?: Array<{ urls: { regular: string }; alt_description: string }> };
-    return (d.results ?? []).map(p => ({ url: p.urls.regular, alt: p.alt_description ?? '' }));
-  } catch { return []; }
+function searchUnsplashServer(query: string, count = 5, signal?: AbortSignal) {
+  return searchImages(query, count, signal);
 }
 
-async function searchPexelsServer(query: string, count = 4, signal?: AbortSignal): Promise<Array<{ src: string; poster: string }>> {
-  try {
-    const apiKey = process.env.PEXELS_API_KEY;
-    if (!apiKey) return [];
-    if (!query) return [];
-    const q = encodeURIComponent(query);
-    const page = randPage(3);
-    const r = await fetch(`https://api.pexels.com/videos/search?query=${q}&page=${page}&per_page=${count}`, { headers: { Authorization: apiKey }, signal });
-    if (!r.ok) return [];
-    const d = await r.json() as { videos?: Array<{ image: string; video_files: Array<{ quality: string; link: string }> }> };
-    return (d.videos ?? []).map(v => {
-      // Prefer hd (1280x720) over sd (640x360) so background videos aren't tiny/blurry.
-      const file = v.video_files.find(f => f.quality === 'hd') ?? v.video_files.find(f => f.quality === 'sd') ?? v.video_files[0];
-      return { src: file?.link ?? '', poster: v.image };
-    }).filter(v => v.src);
-  } catch { return []; }
+function searchPexelsServer(query: string, count = 4, signal?: AbortSignal) {
+  return searchPexelsVideos(query, count, signal);
 }
 
-async function searchPexelsPhotosServer(query: string, count = 5, signal?: AbortSignal): Promise<Array<{ url: string; alt: string }>> {
-  try {
-    const apiKey = process.env.PEXELS_API_KEY;
-    if (!apiKey || !query) return [];
-    const q = encodeURIComponent(query);
-    const page = randPage(4);
-    const r = await fetch(`https://api.pexels.com/v1/search?query=${q}&page=${page}&per_page=${count}`, { headers: { Authorization: apiKey }, signal });
-    if (!r.ok) return [];
-    const d = await r.json() as { photos?: Array<{ src: { large: string }; alt: string }> };
-    return (d.photos ?? []).map(p => ({ url: p.src.large, alt: p.alt ?? '' }));
-  } catch { return []; }
+function searchPexelsPhotosServer(query: string, count = 5, signal?: AbortSignal) {
+  // searchImages already falls back to Pexels photos; call searchImages with
+  // a Pexels-only path by wrapping — or just reuse searchImages here since
+  // this call site only needs the same [{url, alt}] shape.
+  return searchImages(query, count, signal);
 }
 
 /** Walk the resolved tree, extract icon/searchQuery/bgImage media hints from Phase 2, strip them from tree.
@@ -695,13 +667,12 @@ async function runHaikuAgentLoop(
         }
       } else if (tool.name === 'search_icons') {
         try {
-          const q = encodeURIComponent(String(tool.input.query ?? ''));
+          const q = String(tool.input.query ?? '');
           const count = Number(tool.input.count ?? 10);
-          const prefix = tool.input.prefix ? `&prefix=${tool.input.prefix}` : '';
-          const r = await fetch(`https://api.iconify.design/search?query=${q}&limit=${count}${prefix}`, { signal });
-          const d = r.ok ? await r.json() as { icons?: string[] } : { icons: [] as string[] };
+          const prefix = tool.input.prefix ? String(tool.input.prefix) : undefined;
+          const icons = await searchIconify(q, prefix, count, signal);
           // search_icons is a read tool — return data to AI without emitting tool_executed
-          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(d.icons ?? []) });
+          toolResults.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(icons) });
         } catch {
           toolResults.push({
             type: 'tool_result',
@@ -1160,10 +1131,17 @@ export async function POST(req: NextRequest) {
     toolResults,
     model: requestedModel,
     isPhase3Continuation = false,
-  } = body;
+    // File-agent payload (replaces nodeFlat/variables/etc. when present)
+    virtualFiles,
+  } = body as typeof body & { virtualFiles?: Record<string, string> };
 
-  // Resolve model — only accept known models, default to haiku
-  const modelId = (requestedModel && VALID_MODELS.has(requestedModel)) ? requestedModel : 'claude-haiku-4-5';
+  // Resolve model — only accept known models.
+  // File-agent path (virtualFiles present) defaults to Sonnet for better schema adherence.
+  // All other paths default to Haiku.
+  const isFileAgentRequest = virtualFiles && typeof virtualFiles === 'object' && Object.keys(virtualFiles).length > 0;
+  const defaultModel = isFileAgentRequest ? 'claude-haiku-4-5' : 'claude-haiku-4-5';
+  console.log("🚀 ~ POST ~ defaultModel:", defaultModel)
+  const modelId = (requestedModel && VALID_MODELS.has(requestedModel)) ? requestedModel : defaultModel;
   const supportsThinking = THINKING_MODELS.has(modelId);
   const requestId = threadId || crypto.randomUUID();
   const modelSignalCtl = buildTimeoutSignal(req.signal, MODEL_TIMEOUT_MS);
@@ -1178,13 +1156,16 @@ export async function POST(req: NextRequest) {
         { headers: { Cookie: req.headers.get('cookie') ?? '' } },
       );
       if (usageResp.ok) {
-        const usageData = await usageResp.json() as { usage?: { aiTokens?: { remaining: number | null } } };
-        const remaining = usageData.usage?.aiTokens?.remaining;
-        if (remaining !== null && remaining !== undefined && remaining <= 0) {
-          return new Response(
-            JSON.stringify({ error: 'AI token quota exhausted for this billing period. Please upgrade your plan.', code: 'AI_QUOTA_EXCEEDED' }),
-            { status: 402, headers: { 'Content-Type': 'application/json' } },
-          );
+        const usageData = await usageResp.json() as { isSuperAdmin?: boolean; usage?: { aiTokens?: { remaining: number | null } } };
+        // Super admins bypass all quota checks
+        if (!usageData.isSuperAdmin) {
+          const remaining = usageData.usage?.aiTokens?.remaining;
+          if (remaining !== null && remaining !== undefined && remaining <= 0) {
+            return new Response(
+              JSON.stringify({ error: 'AI token quota exhausted for this billing period. Please upgrade your plan.', code: 'AI_QUOTA_EXCEEDED' }),
+              { status: 402, headers: { 'Content-Type': 'application/json' } },
+            );
+          }
         }
       }
     } catch { /* non-critical — allow through if check fails */ }
@@ -1292,14 +1273,31 @@ export async function POST(req: NextRequest) {
       // stream closed
     }
   };
+  // Resolved lazily once per request
+  const { workspaceId: wsIdFromBody, projectId: projIdFromBody } = body as { workspaceId?: string; projectId?: string };
+
+  /** Fire-and-forget: record a round's tokens immediately so partial turns are counted even on refresh/abort */
+  const recordTokens = (inputTokens: number, outputTokens: number) => {
+    if (!wsIdFromBody || (inputTokens + outputTokens) === 0) return;
+    fetch(`${process.env.BACKEND_URL ?? 'http://localhost:4000'}/v1/workspaces/${wsIdFromBody}/usage/ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: req.headers.get('cookie') ?? '' },
+      body: JSON.stringify({ projectId: projIdFromBody, inputTokens, outputTokens, model: modelId }),
+    }).catch(err => console.error('[token-record] round failed:', err));
+  };
+
   const send = (event: Record<string, unknown>) => {
     const t = event.type as string | undefined;
     if (t === 'tool_executed') turnCounters.toolCalls += 1;
     else if (t === 'agent_context' && typeof event.agent === 'string') turnCounters.agents.add(event.agent);
     else if (t === 'planner_complete' && event.manifest && Array.isArray((event.manifest as Record<string, unknown>).operations)) turnCounters.ops = ((event.manifest as Record<string, unknown>).operations as unknown[]).length;
     else if (t === '_internal_token_usage') {
-      turnCounters.inputTokens += (event.inputTokens as number) ?? 0;
-      turnCounters.outputTokens += (event.outputTokens as number) ?? 0;
+      const roundInput = (event.inputTokens as number) ?? 0;
+      const roundOutput = (event.outputTokens as number) ?? 0;
+      turnCounters.inputTokens += roundInput;
+      turnCounters.outputTokens += roundOutput;
+      // Record immediately — captures tokens even if the user refreshes mid-turn
+      recordTokens(roundInput, roundOutput);
       return; // don't forward internal events to the SSE stream
     }
     rawSend(event);
@@ -2902,20 +2900,7 @@ ${effectiveMessage}`,
         outputTokens: turnCounters.outputTokens,
       });
 
-      // Report token usage to backend (fire-and-forget, don't block the response)
-      const { workspaceId: wsId, projectId: projId } = body as { workspaceId?: string; projectId?: string };
-      if (wsId && (turnCounters.inputTokens + turnCounters.outputTokens) > 0) {
-        fetch(`${process.env.BACKEND_URL ?? 'http://localhost:4000'}/v1/workspaces/${wsId}/usage/ai`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...req.headers.get('cookie') ? { Cookie: req.headers.get('cookie')! } : {} },
-          body: JSON.stringify({
-            projectId: projId,
-            inputTokens: turnCounters.inputTokens,
-            outputTokens: turnCounters.outputTokens,
-            model: modelId,
-          }),
-        }).catch(() => { /* non-critical */ });
-      }
+      // Tokens already recorded incrementally per-round via recordTokens() above — no end-of-turn batch needed
 
       // Emit a brief completion message.
       const completionText = manifestIntent
@@ -2928,7 +2913,67 @@ ${effectiveMessage}`,
 
 
     try {
-      // ── Always run the build pipeline — planner decides if dynamic or specialist ──
+      if (virtualFiles && typeof virtualFiles === 'object' && Object.keys(virtualFiles).length > 0) {
+        // ── File-agent path (new architecture) ─────────────────────────────────
+        const { runFileAgent, FILE_AGENT_DEFAULT_MODEL } = await import('@/lib/ai/agents/file-agent/agent');
+        const { FILE_AGENT_SYSTEM_PROMPT } = await import('@/lib/ai/agents/file-agent/prompt');
+        const { FILE_AGENT_TOOLS } = await import('@/lib/ai/agents/file-agent/tools');
+        const { embedFiles } = await import('@/lib/ai/vfs/embed-files');
+
+        send({ type: 'build_plan', mode: 'file-agent', buildUnits: [{ name: message.slice(0, 60), pageRoute: currentPage.route, pageName: currentPage.name, description: message }] });
+
+        const fileAgentStartedAt = Date.now();
+        send({
+          type: 'agent_context',
+          agent: 'file-agent',
+          displayLabel: 'File Agent',
+          systemPrompt: FILE_AGENT_SYSTEM_PROMPT,
+          userMessage: message,
+          tools: (FILE_AGENT_TOOLS as Array<{ name: string }>).map(t => t.name),
+          syntheticMessageCount: 0,
+          startedAt: fileAgentStartedAt,
+        });
+
+        const entityIndex = await embedFiles(virtualFiles).catch(() => new Map<string, { vector: number[]; entity: import('@/lib/ai/vfs/entities').Entity }>());
+
+        const result = await runFileAgent({
+          files: virtualFiles,
+          message,
+          chatHistory: chatHistory.slice(-6).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          model: modelId ?? FILE_AGENT_DEFAULT_MODEL,
+          entityIndex,
+          emit: send,
+          signal: modelSignalCtl.signal,
+        });
+
+        send({
+          type: 'agent_complete',
+          agent: 'file-agent',
+          rounds: result.rounds,
+          toolCallCount: result.toolCallCount,
+          duration: Date.now() - fileAgentStartedAt,
+          endedAt: Date.now(),
+        });
+
+        send({
+          type: 'turn_stats',
+          totalDurationMs: Date.now() - turnStartedAt,
+          toolCalls: result.ops.length,
+          ops: result.ops.length,
+          agents: 1,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+        });
+
+        // File-agent tokens are already recorded per-round via _internal_token_usage → recordTokens()
+        // No additional recording needed here (would double-count)
+
+        if (!result.answer) send({ type: 'text_delta', content: 'Done.' });
+        send({ type: 'done', tools: [] });
+        return;
+      }
+
+      // ── Legacy build pipeline ───────────────────────────────────────────────
       await runBuildPipeline();
       return; // runBuildPipeline sends its own 'done' event
 

@@ -22,7 +22,6 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { ContractManifest } from '../manifest';
 import { SMART_PLANNER_SYSTEM } from './prompt';
 import { runSearch, runRead, type ReadContext } from '@/lib/ai/tools/read-tools';
-import { runSemanticSearch } from '@/lib/ai/tools/semantic-search';
 import {
   processStructureTree,
   type CollectedTree,
@@ -43,7 +42,6 @@ export interface SmartPlannerInput {
   /** Last N compact turn summaries from previous planner calls */
   chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
   readContext: ReadContext;
-  nodeEmbeddingsPromise: Promise<Map<string, number[]>>;
   /** Page ID to assign to generated trees on the current page */
   currentPageId: string;
   /** All known pages — used to resolve/create page IDs for new routes */
@@ -83,17 +81,6 @@ const PLANNER_TOOLS: Anthropic.Messages.Tool[] = [
         kinds: { type: 'array', items: { type: 'string' }, description: 'Limit to these artifact kinds.' },
         scope: { type: 'string', enum: ['currentPage', 'allPages'], description: 'currentPage is faster for edits to the active page.' },
         limit: { type: 'number', description: 'Max results (default 30).' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'semantic_search',
-    description: 'Find nodes by meaning: colors, visual roles, interaction patterns. Use when the literal word may not appear in the markup.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        query: { type: 'string', description: 'Natural language description, e.g. "red primary action button".' },
       },
       required: ['query'],
     },
@@ -416,26 +403,6 @@ export async function runSmartPlanner(input: SmartPlannerInput): Promise<SmartPl
             input.readContext,
           );
           break;
-
-        case 'semantic_search': {
-          const embeddings = await input.nodeEmbeddingsPromise;
-          if (embeddings.size === 0) {
-            result = { results: [], totalMatches: 0, note: 'No embeddings available — use search() instead.' };
-          } else {
-            const allNodes = [
-              ...input.readContext.nodeFlat.map(n => ({ ...n, pageRoute: input.readContext.currentPageRoute ?? '/' })),
-              ...input.readContext.otherPagesIndex.flatMap(p =>
-                p.nodes.filter(n => n.blob).map(n => ({
-                  id: n.id, name: n.name, type: n.type, blob: n.blob!,
-                  path: n.id, pageRoute: p.pageRoute ?? '/',
-                }))
-              ),
-            ];
-            const hits = await runSemanticSearch(String(toolInput.query ?? ''), embeddings, allNodes);
-            result = { results: hits, totalMatches: hits.length };
-          }
-          break;
-        }
 
         case 'read':
           result = runRead(

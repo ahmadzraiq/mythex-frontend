@@ -21,6 +21,7 @@ import {
   Nunito,
 } from 'next/font/google';
 import './globals.css';
+import './dev/builder/builder-tokens.css';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import StyledJsxRegistry from './registry';
 import { ThemeStyles } from '@/lib/ThemeStyles';

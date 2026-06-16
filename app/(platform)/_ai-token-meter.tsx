@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useContext } from 'react';
 import { workspaces as workspacesApi, type WorkspaceUsage } from '@/lib/platform/api-client';
-import PricingModal from './_pricing-modal';
+
+// Optional platform context — only available inside the platform layout
+let _usePlatform: (() => { showPricing: (feature?: string) => void }) | null = null;
+try {
+  // Dynamic require so this file can be used outside the platform layout too
+  _usePlatform = require('./layout').usePlatform;
+} catch { /* not in platform context */ }
 
 interface Props {
   workspaceId: string;
@@ -10,6 +16,8 @@ interface Props {
   /** Pass a refreshKey that changes after each AI turn to re-fetch usage */
   refreshKey?: number;
   superAdmin?: boolean;
+  /** Called when the user clicks upgrade; falls back to platform context's showPricing */
+  onUpgrade?: (feature?: string) => void;
 }
 
 function formatTokens(n: number): string {
@@ -18,9 +26,11 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
-export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superAdmin = false }: Props) {
+export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superAdmin = false, onUpgrade }: Props) {
   const [usage, setUsage] = useState<WorkspaceUsage | null>(null);
-  const [showPricing, setShowPricing] = useState(false);
+  // Use prop first, then platform context, then no-op
+  const platformCtx = _usePlatform ? (() => { try { return _usePlatform!(); } catch { return null; } })() : null;
+  const showPricing = onUpgrade ?? platformCtx?.showPricing ?? (() => {});
 
   const fetchUsage = useCallback(() => {
     workspacesApi.getUsage(workspaceId)
@@ -34,30 +44,20 @@ export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superA
 
   if (plan === 'FREE' && !superAdmin) {
     return (
-      <>
-        <button
-          onClick={() => setShowPricing(true)}
-          title="AI builder requires Pro plan"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '4px 10px', borderRadius: 20,
-            border: '1px solid #374151', background: '#1f2937',
-            color: '#4b5563', fontSize: 11.5, fontWeight: 600,
-            cursor: 'pointer', whiteSpace: 'nowrap',
-          }}
-        >
-          <span style={{ fontSize: 13 }}>🔒</span>
-          AI locked
-        </button>
-        {showPricing && (
-          <PricingModal
-            workspaceId={workspaceId}
-            currentPlan={plan}
-            onClose={() => setShowPricing(false)}
-            triggerFeature="AI builder"
-          />
-        )}
-      </>
+      <button
+        onClick={() => showPricing('AI builder')}
+        title="AI builder requires Pro plan"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 10px', borderRadius: 20,
+          border: '1px solid #374151', background: '#1f2937',
+          color: 'var(--bld-text-disabled)', fontSize: 11.5, fontWeight: 600,
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ fontSize: 13 }}>🔒</span>
+        AI locked
+      </button>
     );
   }
 
@@ -66,7 +66,7 @@ export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superA
       <div style={{
         display: 'flex', alignItems: 'center', gap: 5,
         padding: '4px 10px', borderRadius: 20,
-        border: '1px solid #6366f133', background: '#1e1b4b',
+        border: '1px solid var(--bld-accent)33', background: '#1e1b4b',
         color: '#a5b4fc', fontSize: 11.5, fontWeight: 600,
         whiteSpace: 'nowrap',
       }}>
@@ -82,7 +82,7 @@ export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superA
         display: 'flex', alignItems: 'center', gap: 5,
         padding: '4px 10px', borderRadius: 20,
         border: '1px solid #374151', background: '#1f2937',
-        color: '#4b5563', fontSize: 11.5, fontWeight: 600,
+        color: 'var(--bld-text-disabled)', fontSize: 11.5, fontWeight: 600,
       }}>
         <span style={{ fontSize: 13 }}>⚡</span>
         Loading…
@@ -100,42 +100,30 @@ export default function AiTokenMeter({ workspaceId, plan, refreshKey = 0, superA
   const bg = isExhausted || isLow ? '#1f0707' : isMid ? '#1f1507' : '#071f10';
 
   return (
-    <>
-      <button
-        onClick={() => (isExhausted || isLow) && setShowPricing(true)}
-        title={`AI tokens: ${formatTokens(used)} used of ${formatTokens(limit)}`}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '4px 10px', borderRadius: 20,
-          border: `1px solid ${color}33`,
-          background: bg,
-          color,
-          fontSize: 11.5, fontWeight: 600,
-          cursor: (isExhausted || isLow) ? 'pointer' : 'default',
-          whiteSpace: 'nowrap',
-          transition: 'all 200ms',
-        }}
-      >
-        <span style={{ fontSize: 13 }}>⚡</span>
-        {isExhausted ? (
-          <span>Tokens exhausted — upgrade</span>
-        ) : (
-          <span>{formatTokens(used)} / {formatTokens(limit)}</span>
-        )}
-        {/* Mini progress bar */}
-        <div style={{ width: 36, height: 3, background: '#374151', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 400ms' }} />
-        </div>
-      </button>
-
-      {showPricing && (
-        <PricingModal
-          workspaceId={workspaceId}
-          currentPlan={plan}
-          onClose={() => setShowPricing(false)}
-          triggerFeature={isExhausted ? 'AI tokens exhausted' : undefined}
-        />
+    <button
+      onClick={() => (isExhausted || isLow) && showPricing(isExhausted ? 'AI tokens exhausted' : undefined)}
+      title={`AI tokens: ${formatTokens(used)} used of ${formatTokens(limit)}`}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '4px 10px', borderRadius: 20,
+        border: `1px solid ${color}33`,
+        background: bg,
+        color,
+        fontSize: 11.5, fontWeight: 600,
+        cursor: (isExhausted || isLow) ? 'pointer' : 'default',
+        whiteSpace: 'nowrap',
+        transition: 'all 200ms',
+      }}
+    >
+      <span style={{ fontSize: 13 }}>⚡</span>
+      {isExhausted ? (
+        <span>Tokens exhausted — upgrade</span>
+      ) : (
+        <span>{formatTokens(used)} / {formatTokens(limit)}</span>
       )}
-    </>
+      <div style={{ width: 36, height: 3, background: '#374151', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 400ms' }} />
+      </div>
+    </button>
   );
 }

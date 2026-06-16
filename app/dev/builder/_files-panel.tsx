@@ -305,7 +305,7 @@ function JsonEditor({ path, store, onClose }: JsonEditorProps) {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 8px', borderBottom: '1px solid var(--bld-bg-input)',
+        padding: '6px 8px', borderBottom: 'none',
         flexShrink: 0,
       }}>
         <button
@@ -356,7 +356,7 @@ function JsonEditor({ path, store, onClose }: JsonEditorProps) {
         <div style={{
           padding: '5px 8px', background: 'rgba(239, 68, 68, 0.1)',
           borderBottom: '1px solid rgba(239, 68, 68, 0.3)',
-          fontSize: 10, color: '#ef4444', flexShrink: 0,
+          fontSize: 10, color: 'var(--bld-error)', flexShrink: 0,
           fontFamily: 'monospace',
         }}>
           {parseError ?? applyError}
@@ -382,7 +382,7 @@ function JsonEditor({ path, store, onClose }: JsonEditorProps) {
       {/* Footer actions */}
       <div style={{
         display: 'flex', gap: 6, padding: '6px 8px',
-        borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0,
+        borderTop: 'none', flexShrink: 0,
       }}>
         <button
           onClick={handleApply}
@@ -441,9 +441,9 @@ export function FilesPanel() {
       {/* Panel header */}
       <div style={{
         padding: '7px 8px 5px',
-        fontSize: 10, fontWeight: 600, letterSpacing: '0.6px', textTransform: 'uppercase',
+        fontSize: 10, fontWeight: 600, textTransform: 'none',
         color: 'var(--bld-text-disabled)',
-        borderBottom: '1px solid var(--bld-bg-input)',
+        borderBottom: 'none',
         flexShrink: 0,
       }}>
         Config Files

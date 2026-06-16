@@ -29,7 +29,7 @@ import { ActionBuilder, eventsForNodeType } from './_action-builder';
 
 const SECTION_BG = 'var(--bld-bg-panel)';
 const BORDER_COLOR = 'var(--bld-bg-input)';
-const LABEL: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' };
+const LABEL: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none', display: 'block' };
 const INPUT: React.CSSProperties = { background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '3px 6px', fontSize: 11, color: 'var(--bld-text-1)', outline: 'none', fontFamily: 'monospace', width: '100%' };
 const SELECT: React.CSSProperties = { ...INPUT, cursor: 'pointer' };
 
@@ -96,7 +96,7 @@ function Section({ id, title, badge, badgeColor = 'var(--bld-border-subtle)', ha
           color: 'var(--bld-text-2)',
         }}
       >
-        <span style={{ color: hasValue ? 'var(--bld-info)' : 'var(--bld-text-disabled)', fontSize: 10 }}>{open ? '▾' : '▸'}</span>
+        <span style={{ color: hasValue ? 'var(--bld-info)' : 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg></span>
         <span style={{ fontSize: 11, fontWeight: 500, flex: 1, textAlign: 'left' }}>{title}</span>
         {hasValue && (
           <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--bld-accent)', flexShrink: 0 }} />
@@ -171,7 +171,7 @@ function DataBindingSection({ node }: { node: SDUINode }) {
       {bindings.length === 0 && <Empty text="No bindings — all props are static" />}
       {bindings.map(b => (
         <div key={b.prop} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bld-bg-input)', borderRadius: 4, padding: '4px 8px' }}>
-          <span style={{ fontSize: 10, color: 'var(--bld-ai-accent)', fontFamily: 'monospace', flexShrink: 0, width: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.prop}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-accent)', fontFamily: 'monospace', flexShrink: 0, width: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.prop}</span>
           <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>→</span>
           <span style={{ fontSize: 10, color: 'var(--bld-success)', fontFamily: 'monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.value}</span>
           <button onClick={() => {
@@ -230,12 +230,12 @@ type ComponentState = 'normal' | 'hover' | 'loading' | 'error' | 'empty' | 'disa
 
 const STATE_INFO: Record<ComponentState, { label: string; description: string; color: string }> = {
   normal:   { label: 'Normal',   description: 'Base state',         color: 'var(--bld-text-3)' },
-  hover:    { label: 'Hover',    description: 'Mouse over',         color: 'var(--bld-ai-accent)' },
+  hover:    { label: 'Hover',    description: 'Mouse over',         color: 'var(--bld-accent)' },
   loading:  { label: 'Loading',  description: '_workflow.loading',  color: 'var(--bld-warning)' },
   error:    { label: 'Error',    description: '_workflow.lastError', color: 'var(--bld-error)' },
   empty:    { label: 'Empty',    description: 'Array is empty',     color: 'var(--bld-success)' },
   disabled: { label: 'Disabled', description: 'Input disabled',     color: 'var(--bld-text-3)' },
-  custom:   { label: 'Custom',   description: 'Custom condition',   color: 'var(--bld-ai-accent)' },
+  custom:   { label: 'Custom',   description: 'Custom condition',   color: 'var(--bld-accent)' },
 };
 
 function ComponentStatesSection({ node }: { node: SDUINode }) {
@@ -354,7 +354,7 @@ function VariantsSection({ node }: { node: SDUINode }) {
           {variants.map((v, i) => (
             <div key={v.id} style={{ background: 'var(--bld-bg-input)', borderRadius: 5, padding: 8, border: '1px solid var(--bld-border-subtle)', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, color: i === 0 ? 'var(--bld-warning)' : 'var(--bld-ai-accent)', fontWeight: 600, width: 32 }}>
+                <span style={{ fontSize: 10, color: i === 0 ? 'var(--bld-warning)' : 'var(--bld-accent)', fontWeight: 600, width: 32 }}>
                   {i === variants.length - 1 && !variants[i].condition ? 'ELSE' : i === 0 ? 'IF' : 'ELIF'}
                 </span>
                 <input
@@ -863,8 +863,8 @@ export function LogicPanel({ node }: LogicPanelProps) {
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER_COLOR}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontWeight: 500 }}>No interactions yet</div>
           <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>
-            Use <span style={{ color: 'var(--bld-ai-accent)' }}>Interactions</span> to wire events to actions.
-            Define reusable <span style={{ color: 'var(--bld-ai-accent)' }}>Workflows</span> and{' '}
+            Use <span style={{ color: 'var(--bld-accent)' }}>Interactions</span> to wire events to actions.
+            Define reusable <span style={{ color: 'var(--bld-accent)' }}>Workflows</span> and{' '}
             <span style={{ color: 'var(--bld-warning)' }}>Global Formulas</span> in the <span style={{ color: 'var(--bld-text-2)' }}>Vars</span> tab on the left.
           </div>
         </div>
@@ -873,7 +873,7 @@ export function LogicPanel({ node }: LogicPanelProps) {
       {/* 1. Interactions */}
       <Section id="interactions" title="Interactions" defaultOpen={hasActions} hasValue={hasActions}
         badge={hasActions ? `${Object.keys(node.actions ?? {}).length} event${Object.keys(node.actions ?? {}).length === 1 ? '' : 's'}` : undefined}
-        badgeColor="var(--bld-ai-accent)">
+        badgeColor="var(--bld-accent)">
         <InteractionsSection node={node} />
       </Section>
 
@@ -899,7 +899,7 @@ function WorkflowsSection() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
-        Named action sequences you can reference from any interaction with <code style={{ color: 'var(--bld-ai-accent)' }}>workflow: "name"</code>.
+        Named action sequences you can reference from any interaction with <code style={{ color: 'var(--bld-accent)' }}>workflow: "name"</code>.
       </div>
 
       {entries.length === 0 && <Empty text="No workflows defined — add one below." />}
@@ -910,8 +910,8 @@ function WorkflowsSection() {
             onClick={() => setExpanded(e => e === name ? null : name)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? '▾' : '▸'}</span>
-            <span style={{ fontSize: 11, color: 'var(--bld-ai-accent)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
+            <span style={{ fontSize: 11, color: 'var(--bld-accent)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
             <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
             <button onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}>×</button>
@@ -973,7 +973,7 @@ function GlobalFormulasSection() {
             onClick={() => setExpanded(e => e === name ? null : name)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? '▾' : '▸'}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
             <span style={{ fontSize: 11, color: 'var(--bld-warning)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
             <button onClick={e => { e.stopPropagation(); removeGlobalFormula(name); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}>×</button>

@@ -118,21 +118,21 @@ export function PreviewDataEditor() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: 12, gap: 8, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#a78bfa', letterSpacing: '0.05em' }}>PREVIEW DATA</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>PREVIEW DATA</span>
         <button
           data-testid="preview-data-save"
           onClick={handleSave}
-          style={{ padding: '3px 10px', background: '#7c3aed', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
+          style={{ padding: '3px 10px', background: 'var(--bld-accent)', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer' }}
         >
           Apply
         </button>
       </div>
       {/* Badge showing app vs page key counts */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, background: '#1e1b4b', color: '#a78bfa', padding: '2px 6px', borderRadius: 4, border: '1px solid #4c1d95' }}>
+        <span style={{ fontSize: 10, background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-3)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--bld-border-subtle)' }}>
           App: {appKeyCount} keys
         </span>
-        <span style={{ fontSize: 10, background: '#1f2937', color: 'var(--bld-text-3)', padding: '2px 6px', borderRadius: 4, border: '1px solid #374151' }}>
+        <span style={{ fontSize: 10, background: 'var(--bld-bg-input)', color: 'var(--bld-text-3)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--bld-border-subtle)' }}>
           Page override: {pageKeyCount} keys
         </span>
       </div>
@@ -148,9 +148,9 @@ export function PreviewDataEditor() {
         style={{
           flex: 1,
           minHeight: 200,
-          background: '#111827',
+          background: 'var(--bld-bg-panel)',
           color: 'var(--bld-text-2)',
-          border: `1px solid ${error ? '#f87171' : '#374151'}`,
+          border: `1px solid ${error ? 'var(--bld-error)' : '#374151'}`,
           borderRadius: 6,
           padding: 10,
           fontSize: 11,
@@ -160,7 +160,7 @@ export function PreviewDataEditor() {
           lineHeight: 1.6,
         }}
       />
-      {error && <span style={{ fontSize: 11, color: '#f87171' }}>{error}</span>}
+      {error && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>{error}</span>}
     </div>
   );
 }
@@ -193,7 +193,7 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
         <div
           style={{
             position: 'absolute', right: 0, top: '100%', zIndex: 999,
-            background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
+            background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 150, overflow: 'hidden',
           }}
           onClick={e => e.stopPropagation()}
@@ -209,7 +209,7 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
           {onRemove && (
             <button
               onClick={() => { setOpen(false); onRemove(); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: '#f87171', fontSize: 12, cursor: 'pointer' }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', color: 'var(--bld-error)', fontSize: 12, cursor: 'pointer' }}
             >
               × Remove
             </button>
@@ -458,7 +458,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
     <div data-testid="right-workflows-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #1f2937', flexShrink: 0, gap: 6 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: '0.01em' }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)' }}>
           ⚡ Workflows
         </span>
 
@@ -493,7 +493,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
               padding: '3px 7px', fontSize: 10, borderRadius: 4, cursor: 'pointer',
               background: hasActionsOverrideAtActive ? '#1e3a5f' : 'transparent',
               border: `1px solid ${hasActionsOverrideAtActive ? '#1d4ed8' : '#374151'}`,
-              color: hasActionsOverrideAtActive ? '#93c5fd' : '#6b7280',
+              color: hasActionsOverrideAtActive ? '#93c5fd' : 'var(--bld-text-disabled)',
             }}
           >
             {hasActionsOverrideAtActive ? '⚡ Override' : 'Override'}
@@ -506,7 +506,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
             <button
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                padding: '4px 10px', background: 'transparent', border: '1px solid #374151',
+                padding: '4px 10px', background: 'transparent', border: '1px solid var(--bld-border-subtle)',
                 borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
               }}
               onClick={() => setListenPickerOpen(v => !v)}
@@ -517,10 +517,10 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
             {listenPickerOpen && (
               <div style={{
                 position: 'absolute', top: '100%', right: 0, marginTop: 4, zIndex: 200,
-                background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+                background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
                 minWidth: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.4)', overflow: 'hidden',
               }}>
-                <div style={{ padding: '6px 12px 4px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ padding: '6px 12px 4px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
                   Component events
                 </div>
                 {customTriggers.map(t => (
@@ -607,7 +607,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
                 {/* Left: trigger icon */}
                 <div style={{
                   width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                  background: '#1e293b', border: '1px solid #334155',
+                  background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 14, color: 'var(--bld-text-3)',
                 }}>

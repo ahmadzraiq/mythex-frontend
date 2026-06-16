@@ -150,18 +150,18 @@ function CategoryGroup({
           width="7" height="7" viewBox="0 0 8 8" fill="none"
           style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}
         >
-          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 1.5L5.5 4 2 6.5" stroke={open ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <span style={{
-          fontSize: 10, fontWeight: 600, letterSpacing: '0.07em',
-          color: open ? 'var(--bld-text-3)' : 'var(--bld-text-disabled)', textTransform: 'uppercase',
+          fontSize: 10, fontWeight: 600,
+          color: open ? 'var(--bld-text-3)' : 'var(--bld-text-disabled)', textTransform: 'none',
         }}>
           {label}
         </span>
         {activeCount > 0 && (
           <span style={{
             fontSize: 9, padding: '1px 6px', borderRadius: 99,
-            background: 'rgba(99,102,241,0.2)', color: 'var(--bld-ai-accent)', fontWeight: 600,
+            background: 'rgba(99,102,241,0.2)', color: 'var(--bld-accent)', fontWeight: 600,
             border: '1px solid rgba(99,102,241,0.3)',
           }}>
             {activeCount}
@@ -209,7 +209,7 @@ function SubSection({
         onClick={() => setOpen(o => !o)}
       >
         {isActive && (
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-ai-accent)', flexShrink: 0 }} />
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bld-accent)', flexShrink: 0 }} />
         )}
         <svg
           width="7" height="7" viewBox="0 0 8 8" fill="none"
@@ -318,7 +318,7 @@ function FromOverrideSection({
 }) {
   return (
     <div style={{ borderTop: '1px solid var(--bld-bg-elevated)', paddingTop: 10, marginTop: 2 }}>
-      <span style={{ fontSize: 9, color: 'var(--bld-ai-accent)', fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+      <span style={{ fontSize: 9, color: 'var(--bld-accent)', fontWeight: 600, display: 'block', marginBottom: 6, textTransform: 'none' as const }}>
         {label}
       </span>
       <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
@@ -410,7 +410,7 @@ function AnimConfigPopover({
         borderRadius: '10px 10px 0 0',
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', letterSpacing: '0.01em' }}>{title}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
         <button
           onClick={onClose}
           style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
@@ -588,7 +588,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
   const patchShimmer    = (p: Partial<typeof shimmerCfg>)       => patch({ shimmer:           { ...shimmerCfg,  ...p } });
   const patchStates     = (p: Partial<NonNullable<AnimationConfig['states']>>) => patch({ states: { ...statesCfg, ...p } });
 
-  const gradColors = gradAnim.colors ?? ['var(--bld-ai-accent)', 'var(--bld-badge-boolean)', 'var(--bld-ai-accent)'];
+  const gradColors = gradAnim.colors ?? ['var(--bld-accent)', 'var(--bld-badge-boolean)', 'var(--bld-accent)'];
   const hasMap = !!(node?.map);
 
   // ── Active-count badges ──────────────────────────────────────────────────
@@ -653,687 +653,389 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
     return Array.from(set);
   }, [animOverrideBps]);
 
-  // ── Render ───────────────────────────────────────────────────────────────
+
+// ─── Flat animation tab-bar ──────────────────────────────────────────────────
+
+type AnimTab = 'basic' | 'interactive' | 'scroll' | 'fx';
+
+function AnimTabBar({ active, onChange }: { active: AnimTab; onChange: (t: AnimTab) => void }) {
+  const tabs: { id: AnimTab; label: string; count?: number }[] = [
+    { id: 'basic', label: 'Basic' },
+    { id: 'interactive', label: 'Interact' },
+    { id: 'scroll', label: 'Scroll' },
+    { id: 'fx', label: 'FX' },
+  ];
   return (
-    <div style={SECTION_STYLE}>
-      <SectionHeader
-        title="Animation"
-        overriddenBreakpoints={allAnimOverrideBps}
-        onRemoveBreakpoint={bp => {
-          store.removeResponsiveOverride(nodeId, bp as BreakpointKey, undefined as unknown as string);
-          commitHistory();
-        }}
-        onResetAll={() => {
-          for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
-            store.removeResponsiveOverride(nodeId, bp, undefined as unknown as string);
-          }
-          commitHistory();
+    <div style={{ display: 'flex', gap: 0, marginBottom: 12, borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => onChange(t.id)}
+          style={{
+            flex: 1, padding: '7px 2px', background: 'none', border: 'none',
+            borderBottom: active === t.id ? '2px solid var(--bld-accent)' : '2px solid transparent',
+            color: active === t.id ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
+            fontSize: 11, fontWeight: active === t.id ? 600 : 400, cursor: 'pointer',
+            marginBottom: -1, transition: 'color 0.12s',
+          }}
+        >{t.label}</button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Shared toggle knob ───────────────────────────────────────────────────────
+
+function ToggleSwitch({ active, onChange }: { active: boolean; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      style={{
+        width: 30, height: 17, borderRadius: 9, border: 'none', cursor: 'pointer', flexShrink: 0,
+        background: active ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',
+        position: 'relative', transition: 'background 0.15s', padding: 0,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: 3, left: active ? 15 : 2, width: 11, height: 11,
+        borderRadius: '50%', background: 'white', transition: 'left 0.15s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+      }} />
+    </button>
+  );
+}
+
+// ─── AnimToggleRow — flat row with enable toggle + settings button ────────────
+
+function AnimToggleRow({
+  label, description, isActive, onToggle, onConfigure, children,
+}: {
+  label: string;
+  description?: string;
+  isActive: boolean;
+  onToggle: () => void;
+  onConfigure?: (e: React.MouseEvent) => void;
+  children?: React.ReactNode;
+}) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ marginBottom: 0 }}
+    >
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 0', borderBottom: isActive && children ? 'none' : '1px solid var(--bld-bg-elevated)',
+      }}>
+        <div style={{
+          width: 5, height: 5, borderRadius: '50%', flexShrink: 0, transition: 'background 0.15s',
+          background: isActive ? 'var(--bld-accent)' : 'transparent',
+          border: isActive ? 'none' : '1px solid var(--bld-border-subtle)',
+        }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 11, color: isActive ? 'var(--bld-text-2)' : 'var(--bld-text-3)', fontWeight: isActive ? 500 : 400 }}>
+            {label}
+          </span>
+          {description && (
+            <span style={{ display: 'block', fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 1, lineHeight: 1.3 }}>
+              {description}
+            </span>
+          )}
+        </div>
+        {onConfigure && (isActive || hovered) && (
+          <button
+            onClick={onConfigure}
+            title="Configure"
+            style={{
+              width: 22, height: 22, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <svg width="10" height="8" viewBox="0 0 12 10" fill="none" stroke="var(--bld-text-3)" strokeWidth="1.2" strokeLinecap="round">
+              <line x1="1" y1="2" x2="11" y2="2"/><circle cx="8.5" cy="2" r="1.5" fill="var(--bld-bg-base)"/>
+              <line x1="1" y1="7" x2="11" y2="7"/><circle cx="3.5" cy="7" r="1.5" fill="var(--bld-bg-base)"/>
+            </svg>
+          </button>
+        )}
+        <ToggleSwitch active={isActive} onChange={onToggle} />
+      </div>
+      {isActive && children && (
+        <div style={{ padding: '8px 12px 10px', background: 'var(--bld-bg-elevated)', borderRadius: '0 0 6px 6px', marginBottom: 4, borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── AnimTypeSection — select-based type picker for Enter / Exit / Loop ───────
+
+function AnimTypeSection({
+  label, value, options, isActive, onConfigure, badge, onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  isActive: boolean;
+  onConfigure?: (e: React.MouseEvent) => void;
+  badge?: React.ReactNode;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div style={{ padding: '8px 0 10px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{
+          width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+          background: isActive ? 'var(--bld-accent)' : 'transparent',
+          border: isActive ? 'none' : '1px solid var(--bld-border-subtle)',
+        }} />
+        <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: isActive ? 'var(--bld-text-1)' : 'var(--bld-text-3)' }}>
+          {label}
+        </span>
+        {badge && isActive && <div style={{ flexShrink: 0 }}>{badge}</div>}
+        {onConfigure && isActive && (
+          <button
+            onClick={onConfigure}
+            style={{
+              padding: '2px 8px', fontSize: 10, background: 'var(--bld-bg-elevated)',
+              border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', cursor: 'pointer',
+            }}
+          >⚙ Timing</button>
+        )}
+      </div>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          width: '100%', fontSize: 11, padding: '6px 8px',
+          borderRadius: 6, border: `1px solid ${isActive ? 'var(--bld-border-subtle)' : 'var(--bld-bg-elevated)'}`,
+          background: isActive ? 'var(--bld-bg-input)' : 'var(--bld-bg-elevated)',
+          color: isActive ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
+          cursor: 'pointer', outline: 'none', boxSizing: 'border-box' as const,
         }}
       >
-        <button
-          onClick={() => postPreview(nodeId)}
-          title="Preview all animations on canvas"
-          style={{
-            padding: '2px 8px', fontSize: 10, background: 'var(--bld-bg-elevated)',
-            border: '1px solid var(--bld-accent-hover)', borderRadius: 4, color: 'var(--bld-accent)',
-            cursor: 'pointer',
+        {(options as string[]).map(o => <option key={o} value={o}>{o === 'none' ? '— none —' : o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+
+  const [animTab, setAnimTab] = useState<AnimTab>('basic');
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  return (
+    <div style={{ ...SECTION_STYLE, paddingBottom: 0 }}>
+      {/* Responsive override chip — no title text */}
+      {allAnimOverrideBps.length > 0 && (
+        <SectionHeader
+          title=""
+          overriddenBreakpoints={allAnimOverrideBps}
+          onRemoveBreakpoint={bp => {
+            store.removeResponsiveOverride(nodeId, bp as BreakpointKey, undefined as unknown as string);
+            commitHistory();
           }}
-        >
-          ▶ Preview
-        </button>
-      </SectionHeader>
+          onResetAll={() => {
+            for (const bp of BREAKPOINT_CASCADE as BreakpointKey[]) {
+              store.removeResponsiveOverride(nodeId, bp, undefined as unknown as string);
+            }
+            commitHistory();
+          }}
+        />
+      )}
 
-      {/* ── BASIC ─────────────────────────────────────────────────────────── */}
-      <CategoryGroup label="Basic" hasActive={basicActive > 0} activeCount={basicActive}>
+      {/* Flat tab bar */}
+      <AnimTabBar active={animTab} onChange={setAnimTab} />
 
-        {/* Enter */}
-        <SubSection
-          label="Enter"
-          defaultOpen={!!(enter.type && enter.type !== 'none')}
-          isActive={!!(enter.type && enter.type !== 'none')}
-          previewEl={enter.type && enter.type !== 'none'
-            ? <AnimPreview type={enter.type} category="enter" />
-            : undefined}
-          onConfigure={enter.type && enter.type !== 'none'
-            ? e => togglePopover('enter', e) : undefined}
-        >
-          <ChipSelect
+      {/* ── Basic: Enter / Exit / Loop ── */}
+      {animTab === 'basic' && (
+        <div style={{ paddingBottom: 8 }}>
+          <AnimTypeSection
+            label="Enter"
             value={enter.type ?? 'none'}
-            options={ENTER_TYPES as unknown as string[]}
-            onChange={(v, e) => {
+            options={ENTER_TYPES}
+            isActive={!!(enter.type && enter.type !== 'none')}
+            badge={enter.type && enter.type !== 'none' ? <AnimPreview type={enter.type} category="enter" /> : undefined}
+            onConfigure={enter.type && enter.type !== 'none' ? e => togglePopover('enter', e) : undefined}
+            onChange={v => {
               patchEnter({ type: v });
-              if (v !== 'none') {
-                openPopover('enter', e.clientY);
-                // Auto-preview after a tick so the patch propagates to the canvas first
-                setTimeout(() => postPreview(nodeId), 80);
-              } else setPopover(null);
+              if (v !== 'none') setTimeout(() => postPreview(nodeId), 80);
+              else setPopover(null);
             }}
           />
-        </SubSection>
-
-        {/* Exit */}
-        <SubSection
-          label="Exit"
-          defaultOpen={!!(exit.type && exit.type !== 'none')}
-          isActive={!!(exit.type && exit.type !== 'none')}
-          previewEl={exit.type && exit.type !== 'none'
-            ? <AnimPreview type={exit.type} category="exit" />
-            : undefined}
-          onConfigure={exit.type && exit.type !== 'none'
-            ? e => togglePopover('exit', e) : undefined}
-        >
-          <ChipSelect
+          <AnimTypeSection
+            label="Exit"
             value={exit.type ?? 'none'}
-            options={EXIT_TYPES as unknown as string[]}
-            onChange={(v, e) => {
+            options={EXIT_TYPES}
+            isActive={!!(exit.type && exit.type !== 'none')}
+            badge={exit.type && exit.type !== 'none' ? <AnimPreview type={exit.type} category="exit" /> : undefined}
+            onConfigure={exit.type && exit.type !== 'none' ? e => togglePopover('exit', e) : undefined}
+            onChange={v => {
               patchExit({ type: v });
-              if (v !== 'none') openPopover('exit', e.clientY);
-              else setPopover(null);
+              if (v === 'none') setPopover(null);
             }}
           />
-        </SubSection>
-
-        {/* Loop */}
-        <SubSection
-          label="Loop"
-          defaultOpen={!!(loop.type && loop.type !== 'none')}
-          isActive={!!(loop.type && loop.type !== 'none')}
-          previewEl={loop.type && loop.type !== 'none'
-            ? <AnimPreview type={loop.type} category="loop" />
-            : undefined}
-          onConfigure={loop.type && loop.type !== 'none'
-            ? e => togglePopover('loop', e) : undefined}
-        >
-          <ChipSelect
+          <AnimTypeSection
+            label="Loop"
             value={loop.type ?? 'none'}
-            options={LOOP_TYPES as unknown as string[]}
-            onChange={(v, e) => {
+            options={LOOP_TYPES}
+            isActive={!!(loop.type && loop.type !== 'none')}
+            badge={loop.type && loop.type !== 'none' ? <AnimPreview type={loop.type} category="loop" /> : undefined}
+            onConfigure={loop.type && loop.type !== 'none' ? e => togglePopover('loop', e) : undefined}
+            onChange={v => {
               patchLoop({ type: v });
-              if (v !== 'none') openPopover('loop', e.clientY);
-              else setPopover(null);
+              if (v === 'none') setPopover(null);
             }}
           />
-        </SubSection>
+        </div>
+      )}
 
-      </CategoryGroup>
-
-      {/* ── INTERACTION ───────────────────────────────────────────────────── */}
-      <CategoryGroup label="Interaction" hasActive={interactionActive > 0} activeCount={interactionActive}>
-
-        {/* Press */}
-        <SubSection
-          label="Press"
-          defaultOpen={press.scale != null}
-          isActive={press.scale != null}
-          previewEl={press.scale != null ? (
-            <div style={{ width: 14, height: 14, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, transform: 'scale(0.82)', flexShrink: 0 }} />
-          ) : undefined}
-          onConfigure={e => togglePopover('press', e)}
-        >
-          <ToggleRow
-            label="Enable press"
-            active={press.scale != null}
-            onChange={() => {
-              if (press.scale == null) patchPress({ scale: 0.95, duration: 120, easing: 'easeOut' });
-              else patch({ press: undefined });
-            }}
+      {/* ── Interactive ── */}
+      {animTab === 'interactive' && (
+        <div style={{ paddingBottom: 8 }}>
+          <AnimToggleRow
+            label="Hover"
+            description="Scale or move on hover"
+            isActive={hover.scale != null}
+            onToggle={() => hover.scale == null ? patchHover({ scale: 1.05, duration: 200, easing: 'easeOut' }) : patch({ hover: undefined })}
+            onConfigure={e => togglePopover('hover', e)}
           />
-        </SubSection>
-
-        {/* Hover */}
-        <SubSection
-          label="Hover"
-          defaultOpen={hover.scale != null}
-          isActive={hover.scale != null}
-          previewEl={hover.scale != null ? (
-            <div style={{ width: 14, height: 14, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, transform: 'translateY(-2px)', flexShrink: 0 }} />
-          ) : undefined}
-          onConfigure={e => togglePopover('hover', e)}
-        >
-          <ToggleRow
-            label="Enable hover"
-            active={hover.scale != null}
-            onChange={() => {
-              if (hover.scale == null) patchHover({ scale: 1.05, duration: 200, easing: 'easeOut' });
-              else patch({ hover: undefined });
-            }}
+          <AnimToggleRow
+            label="Press"
+            description="Scale on click / tap"
+            isActive={press.scale != null}
+            onToggle={() => press.scale == null ? patchPress({ scale: 0.95, duration: 120, easing: 'easeOut' }) : patch({ press: undefined })}
+            onConfigure={e => togglePopover('press', e)}
           />
-        </SubSection>
-
-        {/* 3D Tilt */}
-        <SubSection
-          label="3D Tilt (Mouse)"
-          defaultOpen={!!tiltCfg.enabled}
-          isActive={!!tiltCfg.enabled}
-          onConfigure={e => togglePopover('tilt', e)}
-        >
-          <ToggleRow label="Enable tilt" active={tiltCfg.enabled} onChange={() => patchTilt({ enabled: !tiltCfg.enabled })} />
-        </SubSection>
-
-        {/* Mouse Parallax */}
-        <SubSection
-          label="Mouse Parallax"
-          defaultOpen={!!mousePar.enabled}
-          isActive={!!mousePar.enabled}
-          onConfigure={e => togglePopover('mouseParallax', e)}
-        >
-          <ToggleRow label="Enable mouse parallax" active={mousePar.enabled} onChange={() => patchMousePar({ enabled: !mousePar.enabled })} />
-        </SubSection>
-
-        {/* Focus Ring */}
-        <SubSection
-          label="Focus Ring"
-          defaultOpen={!!focusCfg.enabled}
-          isActive={!!focusCfg.enabled}
-          onConfigure={e => togglePopover('focus', e)}
-        >
-          <ToggleRow label="Enable focus ring" active={focusCfg.enabled} onChange={() => patchFocus({ enabled: !focusCfg.enabled })} />
-        </SubSection>
-
-        {/* Flip Card */}
-        <SubSection
-          label="Flip Card"
-          defaultOpen={flipCfg.trigger != null}
-          isActive={flipCfg.trigger != null}
-          onConfigure={flipCfg.trigger != null ? e => togglePopover('flip', e) : undefined}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Flips the element on hover or click to reveal the back face.
-          </span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {(['hover', 'click', 'none'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => patchFlip({ trigger: t === 'none' ? undefined : t })}
-                style={{
-                  flex: 1, fontSize: 10, padding: '3px 6px', borderRadius: 3, cursor: 'pointer',
-                  background: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
-                  color: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)',
-                  border: '1px solid var(--bld-border-subtle)',
-                }}
-              >{t}</button>
-            ))}
+          <AnimToggleRow
+            label="3D Tilt"
+            description="Perspective tilt on mouse"
+            isActive={!!tiltCfg.enabled}
+            onToggle={() => patchTilt({ enabled: !tiltCfg.enabled })}
+            onConfigure={e => togglePopover('tilt', e)}
+          />
+          <AnimToggleRow
+            label="Mouse Parallax"
+            description="Depth effect on mouse move"
+            isActive={!!mousePar.enabled}
+            onToggle={() => patchMousePar({ enabled: !mousePar.enabled })}
+            onConfigure={e => togglePopover('mouseParallax', e)}
+          />
+          <AnimToggleRow
+            label="Focus Ring"
+            description="Animated ring on focus"
+            isActive={!!focusCfg.enabled}
+            onToggle={() => patchFocus({ enabled: !focusCfg.enabled })}
+            onConfigure={e => togglePopover('focus', e)}
+          />
+          <AnimToggleRow
+            label="Drag & Drop"
+            description="Draggable with snap / spring"
+            isActive={!!drag.enabled}
+            onToggle={() => patchDrag({ enabled: !drag.enabled })}
+            onConfigure={e => togglePopover('drag', e)}
+          />
+          {/* Flip Card — trigger selector */}
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: flipCfg.trigger ? 8 : 0 }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: flipCfg.trigger ? 'var(--bld-accent)' : 'transparent', border: flipCfg.trigger ? 'none' : '1px solid var(--bld-border-subtle)' }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: flipCfg.trigger ? 500 : 400, color: flipCfg.trigger ? 'var(--bld-text-2)' : 'var(--bld-text-3)' }}>Flip Card</span>
+              {flipCfg.trigger && (
+                <button onClick={e => togglePopover('flip', e)} style={{ padding: '2px 6px', fontSize: 10, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', cursor: 'pointer' }}>⚙ Timing</button>
+              )}
+            </div>
+            {flipCfg.trigger && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['hover', 'click', 'none'] as const).map(t => (
+                  <button key={t} onClick={() => patchFlip({ trigger: t === 'none' ? undefined : t })}
+                    style={{ flex: 1, fontSize: 10, padding: '4px 6px', borderRadius: 5, cursor: 'pointer', background: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)', color: (flipCfg.trigger ?? 'none') === t ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)', border: '1px solid var(--bld-border-subtle)' }}
+                  >{t}</button>
+                ))}
+              </div>
+            )}
+            {!flipCfg.trigger && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['hover', 'click'] as const).map(t => (
+                  <button key={t} onClick={() => patchFlip({ trigger: t })}
+                    style={{ flex: 1, fontSize: 10, padding: '4px 6px', borderRadius: 5, cursor: 'pointer', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-3)', border: '1px solid var(--bld-border-subtle)' }}
+                  >{t}</button>
+                ))}
+              </div>
+            )}
           </div>
-          {flipCfg.trigger && (
-            <div style={{ marginTop: 6 }}>
-              <SliderField label="Duration (ms)" value={flipCfg.duration ?? 400} min={100} max={1500} step={50} unit="ms" onChange={v => patchFlip({ duration: v })} />
+        </div>
+      )}
+
+      {/* ── Scroll ── */}
+      {animTab === 'scroll' && (
+        <div style={{ paddingBottom: 8 }}>
+          {/* Scroll Trigger — enable toggle + type select */}
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: scroll.enabled ? 8 : 0 }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: scroll.enabled ? 'var(--bld-accent)' : 'transparent', border: scroll.enabled ? 'none' : '1px solid var(--bld-border-subtle)' }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: scroll.enabled ? 600 : 400, color: scroll.enabled ? 'var(--bld-text-1)' : 'var(--bld-text-3)' }}>Scroll Trigger</span>
+              {scroll.enabled && (
+                <button onClick={e => togglePopover('scroll', e)} style={{ padding: '2px 6px', fontSize: 10, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', cursor: 'pointer' }}>⚙ Timing</button>
+              )}
+              <ToggleSwitch active={!!scroll.enabled} onChange={() => patchScroll({ enabled: !scroll.enabled })} />
             </div>
-          )}
-        </SubSection>
-
-      </CategoryGroup>
-
-      {/* ── SCROLL ────────────────────────────────────────────────────────── */}
-      <CategoryGroup label="Scroll" hasActive={scrollActive > 0} activeCount={scrollActive}>
-
-        {/* Scroll Trigger */}
-        <SubSection
-          label="Scroll Trigger"
-          defaultOpen={!!scroll.enabled}
-          isActive={!!scroll.enabled}
-          onConfigure={!!scroll.enabled ? e => togglePopover('scroll', e) : undefined}
-        >
-          <ToggleRow label="Enable scroll trigger" active={scroll.enabled} onChange={() => patchScroll({ enabled: !scroll.enabled })} />
-          {scroll.enabled && (
-            <>
-              <div style={{ height: 6 }} />
-              <ChipSelect
-                value={scroll.type ?? 'fadeIn'}
-                options={ENTER_TYPES as unknown as string[]}
-                onChange={v => patchScroll({ type: v })}
-              />
-            </>
-          )}
-        </SubSection>
-
-        {/* Parallax */}
-        <SubSection
-          label="Parallax"
-          defaultOpen={!!par.enabled}
-          isActive={!!par.enabled}
-          onConfigure={e => togglePopover('parallax', e)}
-        >
-          <ToggleRow label="Enable parallax" active={par.enabled} onChange={() => patchPar({ enabled: !par.enabled })} />
-        </SubSection>
-
-        {/* Scroll Progress */}
-        <SubSection
-          label="Scroll Progress"
-          defaultOpen={!!scrollProg.enabled}
-          isActive={!!scrollProg.enabled}
-          onConfigure={e => togglePopover('scrollProgress', e)}
-        >
-          <ToggleRow label="Enable scroll progress" active={scrollProg.enabled} onChange={() => patchScrollProg({ enabled: !scrollProg.enabled })} />
-        </SubSection>
-
-      </CategoryGroup>
-
-      {/* ── STATES & FX ───────────────────────────────────────────────────── */}
-      <CategoryGroup label="States & FX" hasActive={statesActive > 0} activeCount={statesActive}>
-
-        {/* Color Transition */}
-        <SubSection
-          label="Color Transition"
-          defaultOpen={!!color.enabled}
-          isActive={!!color.enabled}
-          onConfigure={e => togglePopover('colorTransition', e)}
-        >
-          <ToggleRow label="Enable color transition" active={color.enabled} onChange={() => patchColor({ enabled: !color.enabled })} />
-        </SubSection>
-
-        {/* Layout Animation */}
-        <SubSection
-          label="Layout Animation"
-          defaultOpen={!!layout.enabled}
-          isActive={!!layout.enabled}
-          onConfigure={e => togglePopover('layout', e)}
-        >
-          <ToggleRow label="Enable layout animation" active={layout.enabled} onChange={() => patchLayout({ enabled: !layout.enabled })} />
-        </SubSection>
-
-        {/* Filter / Visual Effects */}
-        <SubSection
-          label="Filter / Visual Effects"
-          defaultOpen={!!filt.enabled}
-          isActive={!!filt.enabled}
-          onConfigure={e => togglePopover('filter', e)}
-        >
-          <ToggleRow label="Enable filter" active={filt.enabled} onChange={() => patchFilter({ enabled: !filt.enabled })} />
-        </SubSection>
-
-        {/* Morph Shape */}
-        <SubSection
-          label="Morph Shape"
-          defaultOpen={!!morphCfg.enabled}
-          isActive={!!morphCfg.enabled}
-          onConfigure={e => togglePopover('morph', e)}
-        >
-          <ToggleRow label="Enable morph" active={morphCfg.enabled} onChange={() => patchMorph({ enabled: !morphCfg.enabled })} />
-        </SubSection>
-
-        {/* Imperative Trigger */}
-        <SubSection
-          label="Imperative Trigger"
-          defaultOpen={!!(impTrig.type && impTrig.type !== 'none')}
-          isActive={!!(impTrig.type && impTrig.type !== 'none')}
-          onConfigure={impTrig.type && impTrig.type !== 'none'
-            ? e => togglePopover('imperativeTrigger', e) : undefined}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Plays a one-shot animation whenever a variable changes.
-          </span>
-          <ChipSelect
-            value={impTrig.type ?? 'none'}
-            options={LOOP_TYPES as unknown as string[]}
-            onChange={(v, e) => {
-              patchImpTrig({ type: v });
-              if (v !== 'none') openPopover('imperativeTrigger', e.clientY);
-              else setPopover(null);
-            }}
-          />
-        </SubSection>
-
-        {/* Drag */}
-        <SubSection
-          label="Drag"
-          defaultOpen={!!drag.enabled}
-          isActive={!!drag.enabled}
-          onConfigure={e => togglePopover('drag', e)}
-        >
-          <ToggleRow label="Enable drag" active={drag.enabled} onChange={() => patchDrag({ enabled: !drag.enabled })} />
-        </SubSection>
-
-        {/* Shimmer */}
-        <SubSection
-          label="Shimmer"
-          defaultOpen={shimmerCfg.duration != null}
-          isActive={shimmerCfg.duration != null}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Sweeping shimmer highlight overlay (skeleton-loader style).
-          </span>
-          <ToggleRow
-            label="Enable shimmer"
-            active={shimmerCfg.duration != null}
-            onChange={() => {
-              if (shimmerCfg.duration != null) patchShimmer({ duration: undefined });
-              else patchShimmer({ duration: 1200, baseColor: 'var(--bld-text-2)', highlightColor: 'var(--bld-text-1)' });
-            }}
-          />
-          {shimmerCfg.duration != null && (
-            <div style={{ marginTop: 6 }}>
-              <SliderField label="Duration (ms)" value={shimmerCfg.duration ?? 1200} min={400} max={3000} step={100} unit="ms" onChange={v => patchShimmer({ duration: v })} />
-              <div style={{ height: 4 }} />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <ColorInput label="Base" value={shimmerCfg.baseColor ?? 'var(--bld-text-2)'} onChange={v => patchShimmer({ baseColor: v })} />
-                <ColorInput label="Highlight" value={shimmerCfg.highlightColor ?? 'var(--bld-text-1)'} onChange={v => patchShimmer({ highlightColor: v })} />
-              </div>
-            </div>
-          )}
-        </SubSection>
-
-        {/* Split Text */}
-        <SubSection
-          label="Split Text"
-          defaultOpen={splitTextCfg.type != null}
-          isActive={splitTextCfg.type != null}
-          onConfigure={splitTextCfg.type != null ? e => togglePopover('splitText', e) : undefined}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Animate text character by character or word by word.
-          </span>
-          <ToggleRow
-            label="Enable split text"
-            active={splitTextCfg.type != null}
-            onChange={() => {
-              if (splitTextCfg.type != null) patchSplitText({ type: undefined });
-              else patchSplitText({ type: 'fadeIn', split: 'char', stagger: 30, duration: 400 });
-            }}
-          />
-          {splitTextCfg.type != null && (
-            <div style={{ marginTop: 6 }}>
-              <div style={{ marginBottom: 4 }}>
-                <span style={{ fontSize: 9, color: 'var(--bld-text-3)', display: 'block', marginBottom: 2 }}>Split by</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {(['char', 'word', 'line'] as const).map(s => (
-                    <button key={s} onClick={() => patchSplitText({ split: s })}
-                      style={{ flex: 1, fontSize: 10, padding: '3px 4px', borderRadius: 3, cursor: 'pointer',
-                        background: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent)' : 'var(--bld-bg-input)',
-                        color: (splitTextCfg.split ?? 'char') === s ? 'var(--bld-accent-fg)' : 'var(--bld-text-3)',
-                        border: '1px solid var(--bld-border-subtle)' }}>{s}</button>
-                  ))}
-                </div>
-              </div>
-              <ChipSelect
-                value={splitTextCfg.type ?? 'fadeIn'}
-                options={ENTER_TYPES as unknown as string[]}
-                onChange={v => patchSplitText({ type: v })}
-              />
-              <div style={{ height: 6 }} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                <SliderField label="Duration" value={splitTextCfg.duration ?? 400} min={100} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ duration: v })} />
-                <SliderField label="Stagger" value={splitTextCfg.stagger ?? 30} min={0} max={200} step={5} unit="ms" onChange={v => patchSplitText({ stagger: v })} />
-                <SliderField label="Delay" value={splitTextCfg.delay ?? 0} min={0} max={2000} step={50} unit="ms" onChange={v => patchSplitText({ delay: v })} />
-              </div>
-            </div>
-          )}
-        </SubSection>
-
-        {/* States Machine */}
-        <SubSection
-          label="States Machine"
-          defaultOpen={statesCfg.states && Object.keys(statesCfg.states).length > 0}
-          isActive={statesCfg.states && Object.keys(statesCfg.states).length > 0}
-          onConfigure={e => togglePopover('statesMachine', e)}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Switch between visual states (e.g. default/hover/active) driven by a variable.
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
-              {Object.keys(statesCfg.states ?? {}).length} state(s) configured
-            </span>
-            <button
-              onClick={e => togglePopover('statesMachine', e)}
-              style={{ fontSize: 10, padding: '3px 8px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)', cursor: 'pointer' }}
-            >Configure</button>
+            {scroll.enabled && (
+              <select value={scroll.type ?? 'fadeIn'} onChange={e => patchScroll({ type: e.target.value })}
+                style={{ width: '100%', fontSize: 11, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-input)', color: 'var(--bld-text-1)', cursor: 'pointer', outline: 'none' }}>
+                {(ENTER_TYPES as unknown as string[]).map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            )}
           </div>
-        </SubSection>
+          <AnimToggleRow label="Parallax" description="Vertical depth while scrolling" isActive={!!par.enabled} onToggle={() => patchPar({ enabled: !par.enabled })} onConfigure={e => togglePopover('parallax', e)} />
+          <AnimToggleRow label="Scroll Progress" description="Animate property on scroll position" isActive={!!scrollProg.enabled} onToggle={() => patchScrollProg({ enabled: !scrollProg.enabled })} onConfigure={e => togglePopover('scrollProgress', e)} />
+        </div>
+      )}
 
-        {/* Particles */}
-        <SubSection
-          label="Particles"
-          defaultOpen={particlesCfg.count != null}
-          isActive={particlesCfg.count != null}
-          onConfigure={particlesCfg.count != null ? e => togglePopover('particles', e) : undefined}
-        >
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
-            Animated particle canvas overlay (network / star field).
-          </span>
-          <ToggleRow
-            label="Enable particles"
-            active={particlesCfg.count != null}
-            onChange={() => {
-              if (particlesCfg.count != null) patchParticles({ count: undefined });
-              else patchParticles({ count: 50, color: '#ffffff', speed: 1, maxRadius: 3, connectDistance: 80 });
-            }}
-          />
-          {particlesCfg.count != null && (
-            <div style={{ marginTop: 6 }}>
-              <SliderField label="Count" value={particlesCfg.count ?? 50} min={5} max={300} step={5} unit="" onChange={v => patchParticles({ count: v })} />
-              <div style={{ height: 4 }} />
-              <SliderField label="Speed" value={particlesCfg.speed ?? 1} min={0.1} max={5} step={0.1} unit="" onChange={v => patchParticles({ speed: v })} />
-              <div style={{ height: 4 }} />
-              <SliderField label="Connect dist" value={particlesCfg.connectDistance ?? 80} min={20} max={250} step={10} unit="px" onChange={v => patchParticles({ connectDistance: v })} />
-              <div style={{ height: 4 }} />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <ColorInput label="Particles" value={particlesCfg.color ?? '#ffffff'} onChange={v => patchParticles({ color: v })} />
-                <ColorInput label="Background" value={particlesCfg.background ?? 'transparent'} onChange={v => patchParticles({ background: v })} />
-              </div>
-            </div>
-          )}
-        </SubSection>
-
-      </CategoryGroup>
-
-      {/* ── ADVANCED ──────────────────────────────────────────────────────── */}
-      <CategoryGroup label="Advanced" hasActive={advancedActive > 0} activeCount={advancedActive}>
-
-        {/* Custom Bezier */}
-        <SubSection label="Custom Bezier Easing" defaultOpen={!!cfg.customBezier} isActive={!!cfg.customBezier}>
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6 }}>
-            Override per-animation easing with a custom cubic-bezier(x1, y1, x2, y2).
-          </span>
-          <PRow>
-            <NumberInput label="x1" value={bezier[0]} min={0} max={1} step={0.01} onChange={v => patchBezier([v, bezier[1], bezier[2], bezier[3]])} />
-            <NumberInput label="y1" value={bezier[1]} min={-2} max={2} step={0.01} onChange={v => patchBezier([bezier[0], v, bezier[2], bezier[3]])} />
-            <NumberInput label="x2" value={bezier[2]} min={0} max={1} step={0.01} onChange={v => patchBezier([bezier[0], bezier[1], v, bezier[3]])} />
-            <NumberInput label="y2" value={bezier[3]} min={-2} max={2} step={0.01} onChange={v => patchBezier([bezier[0], bezier[1], bezier[2], v])} />
-          </PRow>
-          <PRow>
-            <span style={{ fontSize: 9, color: 'var(--bld-text-3)' }}>cubic-bezier({bezier.join(', ')})</span>
-            <button
-              onClick={() => patch({ customBezier: undefined })}
-              style={{ fontSize: 9, padding: '2px 6px', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'transparent', color: 'var(--bld-text-3)', cursor: 'pointer' }}
-            >
-              Clear
-            </button>
-          </PRow>
-        </SubSection>
-
-        {/* Declarative Timeline */}
-        <SubSection label="Declarative Timeline" defaultOpen={tl.length > 0} isActive={tl.length > 0}>
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 6 }}>
-            Each step animates a CSS property from → to over a time window (ms).
-          </span>
-          {tl.map((step, i) => (
-            <div key={i} style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: 8, marginBottom: 8 }}>
-              <PRow>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>CSS property</span>
-                  <input
-                    type="text"
-                    value={step.property}
-                    onChange={e => { const next = [...tl]; next[i] = { ...next[i], property: e.target.value }; patch({ timeline: next }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <button
-                  onClick={() => { const next = tl.filter((_, j) => j !== i); patch({ timeline: next }); }}
-                  style={{ alignSelf: 'flex-end', padding: '3px 6px', fontSize: 10, border: '1px solid var(--bld-border-subtle)', borderRadius: 3, background: 'var(--bld-bg-input)', color: 'var(--bld-error)', cursor: 'pointer' }}
-                >✕</button>
-              </PRow>
-              <PRow>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>From</span>
-                  <input type="text" value={String(step.from)} onChange={e => { const n = [...tl]; n[i] = { ...n[i], from: e.target.value }; patch({ timeline: n }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', display: 'block', marginBottom: 2 }}>To</span>
-                  <input type="text" value={String(step.to)} onChange={e => { const n = [...tl]; n[i] = { ...n[i], to: e.target.value }; patch({ timeline: n }); }}
-                    style={{ width: '100%', fontSize: 10, padding: '3px 5px', borderRadius: 3, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-1)', boxSizing: 'border-box' }} />
-                </div>
-              </PRow>
-              <PRow>
-                <NumberInput label="Start ms" value={step.startMs ?? 0}    min={0} max={10000} step={50} onChange={v => { const n = [...tl]; n[i] = { ...n[i], startMs: v }; patch({ timeline: n }); }} />
-                <NumberInput label="End ms"   value={step.endMs   ?? 1000} min={0} max={10000} step={50} onChange={v => { const n = [...tl]; n[i] = { ...n[i], endMs: v };   patch({ timeline: n }); }} />
-              </PRow>
-            </div>
-          ))}
-          <button
-            onClick={() => patch({ timeline: [...tl, { property: 'opacity', from: '0', to: '1', startMs: 0, endMs: 800 }] })}
-            style={{ width: '100%', padding: '5px 0', fontSize: 10, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent-hover)', borderRadius: 4, color: 'var(--bld-accent)', cursor: 'pointer' }}
+      {/* ── FX ── */}
+      {animTab === 'fx' && (
+        <div style={{ paddingBottom: 8 }}>
+          <AnimToggleRow label="Color Transition" description="Animated color change" isActive={!!color.enabled} onToggle={() => patchColor({ enabled: !color.enabled })} onConfigure={e => togglePopover('colorTransition', e)} />
+          <AnimToggleRow label="Layout Animation" description="Smooth position / size changes" isActive={!!layout.enabled} onToggle={() => patchLayout({ enabled: !layout.enabled })} onConfigure={e => togglePopover('layout', e)} />
+          <AnimToggleRow label="Filter / Visual FX" description="Blur, brightness, contrast" isActive={!!filt.enabled} onToggle={() => patchFilter({ enabled: !filt.enabled })} onConfigure={e => togglePopover('filter', e)} />
+          <AnimToggleRow label="Morph Shape" description="Animate border-radius morphing" isActive={!!morphCfg.enabled} onToggle={() => patchMorph({ enabled: !morphCfg.enabled })} onConfigure={e => togglePopover('morph', e)} />
+          <AnimToggleRow
+            label="Shimmer"
+            description="Skeleton loader shimmer overlay"
+            isActive={shimmerCfg.duration != null}
+            onToggle={() => shimmerCfg.duration != null ? patchShimmer({ duration: undefined }) : patchShimmer({ duration: 1200, baseColor: 'var(--bld-text-2)', highlightColor: 'var(--bld-text-1)' })}
           >
-            + Add step
-          </button>
-        </SubSection>
+            {shimmerCfg.duration != null && (
+              <div>
+                <SliderField label="Duration (ms)" value={shimmerCfg.duration ?? 1200} min={400} max={3000} step={100} unit="ms" onChange={v => patchShimmer({ duration: v })} />
+                <div style={{ height: 4 }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <ColorInput label="Base" value={shimmerCfg.baseColor ?? 'var(--bld-text-2)'} onChange={v => patchShimmer({ baseColor: v })} />
+                  <ColorInput label="Highlight" value={shimmerCfg.highlightColor ?? 'var(--bld-text-1)'} onChange={v => patchShimmer({ highlightColor: v })} />
+                </div>
+              </div>
+            )}
+          </AnimToggleRow>
+          <AnimToggleRow label="Split Text" description="Per-char / word animation" isActive={splitTextCfg.type != null} onToggle={() => splitTextCfg.type != null ? patchSplitText({ type: undefined }) : patchSplitText({ type: 'fadeIn', split: 'char', duration: 400, stagger: 30, delay: 0, easing: 'easeOut' })} onConfigure={splitTextCfg.type != null ? e => togglePopover('splitText', e) : undefined} />
+          <AnimToggleRow label="States Machine" description="CSS state transitions via variable" isActive={!!(statesCfg.watchVar || Object.keys(statesCfg.states ?? {}).length)} onToggle={() => { const a = !!(statesCfg.watchVar || Object.keys(statesCfg.states ?? {}).length); if (a) patchStates({ watchVar: undefined, states: {} }); else patchStates({ watchVar: '', states: {}, duration: 300, easing: 'easeInOut' }); }} onConfigure={e => togglePopover('statesMachine', e)} />
+          <AnimToggleRow label="Particles" description="Interactive particle canvas" isActive={!!particlesCfg.count} onToggle={() => particlesCfg.count ? patchParticles({ count: 0 }) : patchParticles({ count: 50, speed: 1, maxRadius: 3, connectDistance: 80, color: '#ffffff', background: 'transparent' })} onConfigure={e => togglePopover('particles', e)} />
+          {/* Imperative Trigger */}
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: (impTrig.type && impTrig.type !== 'none') ? 'var(--bld-accent)' : 'transparent', border: (impTrig.type && impTrig.type !== 'none') ? 'none' : '1px solid var(--bld-border-subtle)' }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: (impTrig.type && impTrig.type !== 'none') ? 600 : 400, color: (impTrig.type && impTrig.type !== 'none') ? 'var(--bld-text-1)' : 'var(--bld-text-3)' }}>Imperative Trigger</span>
+              {(impTrig.type && impTrig.type !== 'none') && (
+                <button onClick={e => togglePopover('imperativeTrigger', e)} style={{ padding: '2px 6px', fontSize: 10, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-3)', cursor: 'pointer' }}>⚙ Settings</button>
+              )}
+            </div>
+            <select value={impTrig.type ?? 'none'} onChange={e => { const v = e.target.value; patchImpTrig({ type: v }); if (v === 'none') setPopover(null); }}
+              style={{ width: '100%', fontSize: 11, padding: '6px 8px', borderRadius: 6, border: `1px solid ${(impTrig.type && impTrig.type !== 'none') ? 'var(--bld-border-subtle)' : 'var(--bld-bg-elevated)'}`, background: (impTrig.type && impTrig.type !== 'none') ? 'var(--bld-bg-input)' : 'var(--bld-bg-elevated)', color: (impTrig.type && impTrig.type !== 'none') ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)', cursor: 'pointer', outline: 'none' }}>
+              {(LOOP_TYPES as unknown as string[]).map(o => <option key={o} value={o}>{o === 'none' ? '— none —' : o}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
 
-        {/* SVG Stroke Draw */}
-        <SubSection label="SVG Stroke Draw" defaultOpen={!!svgStr.enabled} isActive={!!svgStr.enabled}>
-          <ToggleRow label="Enable stroke draw" active={!!svgStr.enabled} onChange={() => patchSvgStroke({ enabled: !svgStr.enabled })} />
-          {svgStr.enabled && (
-            <>
-              <div style={{ height: 8 }} />
-              <PRow>
-                <SliderField label="Duration (ms)" value={svgStr.duration ?? 1500} min={100} max={5000} step={100} unit="ms" onChange={v => patchSvgStroke({ duration: v })} />
-                <SliderField label="Delay (ms)"    value={svgStr.delay    ?? 0}    min={0}   max={3000} step={50}  unit="ms" onChange={v => patchSvgStroke({ delay: v })} />
-              </PRow>
-              <PRow>
-                <SelectInput label="Easing" value={svgStr.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchSvgStroke({ easing: v })} />
-                <NumberInput label="Stroke length (0=auto)" value={svgStr.length ?? 0} min={0} max={10000} step={10} onChange={v => patchSvgStroke({ length: v })} />
-              </PRow>
-            </>
-          )}
-        </SubSection>
-
-        {/* Gradient Animation */}
-        <SubSection
-          label="Gradient Animation"
-          defaultOpen={!!gradAnim.enabled}
-          isActive={!!gradAnim.enabled}
-          previewEl={gradAnim.enabled ? <AnimPreview type="gradientDrift" category="loop" /> : undefined}
-        >
-          <ToggleRow label="Enable gradient animation" active={!!gradAnim.enabled} onChange={() => patchGrad({ enabled: !gradAnim.enabled })} />
-          {gradAnim.enabled && (
-            <>
-              <div style={{ height: 8 }} />
-              <PRow>
-                <SelectInput label="Type" value={gradAnim.type ?? 'linear'} options={['linear', 'radial', 'conic']} onChange={v => patchGrad({ type: v as GradientAnimationConfig['type'] })} />
-                <NumberInput label="Angle (deg)" value={gradAnim.angle ?? 135} min={0} max={360} step={5} onChange={v => patchGrad({ angle: v })} />
-              </PRow>
-              <PRow>
-                <SliderField label="Duration (ms)" value={gradAnim.duration ?? 4000} min={500} max={20000} step={500} unit="ms" onChange={v => patchGrad({ duration: v })} />
-              </PRow>
-              <ToggleRow label="Cycle colors"  active={!!gradAnim.animateColors} onChange={() => patchGrad({ animateColors: !gradAnim.animateColors })} />
-              <ToggleRow label="Rotate angle"  active={!!gradAnim.animateAngle}  onChange={() => patchGrad({ animateAngle: !gradAnim.animateAngle })} />
-              <ToggleRow label="Loop"           active={gradAnim.loop !== false}  onChange={() => patchGrad({ loop: !gradAnim.loop })} />
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '6px 0 3px' }}>Colors (one per line):</div>
-              <textarea
-                rows={4}
-                value={gradColors.join('\n')}
-                onChange={e => patchGrad({ colors: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
-                style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: 4 }}
-              />
-            </>
-          )}
-        </SubSection>
-
-        {/* Clip-Path Animation */}
-        <SubSection label="Clip-Path Animation" defaultOpen={!!clipPathCfg.enabled} isActive={!!clipPathCfg.enabled}>
-          <ToggleRow label="Enable clip-path animation" active={!!clipPathCfg.enabled} onChange={() => patchClip({ enabled: !clipPathCfg.enabled })} />
-          {clipPathCfg.enabled && (
-            <>
-              <div style={{ height: 8 }} />
-              <PRow>
-                <SelectInput label="Trigger" value={clipPathCfg.trigger ?? 'enter'} options={['enter', 'hover', 'always']} onChange={v => patchClip({ trigger: v as ClipPathConfig['trigger'] })} />
-                <SliderField label="Duration (ms)" value={clipPathCfg.duration ?? 600} min={100} max={3000} step={50} unit="ms" onChange={v => patchClip({ duration: v })} />
-              </PRow>
-              <PRow>
-                <SelectInput label="Easing" value={clipPathCfg.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchClip({ easing: v })} />
-              </PRow>
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '2px 0' }}>From (clip-path):</div>
-              <input value={clipPathCfg.from ?? ''} onChange={e => patchClip({ from: e.target.value })} placeholder="inset(0 100% 0 0)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px', marginBottom: 6 }} />
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '2px 0' }}>To (clip-path):</div>
-              <input value={clipPathCfg.to ?? ''} onChange={e => patchClip({ to: e.target.value })} placeholder="inset(0 0% 0 0)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px' }} />
-            </>
-          )}
-        </SubSection>
-
-        {/* Mask Animation */}
-        <SubSection label="Mask Animation" defaultOpen={!!maskCfg2.enabled} isActive={!!maskCfg2.enabled}>
-          <ToggleRow label="Enable mask animation" active={!!maskCfg2.enabled} onChange={() => patchMask2({ enabled: !maskCfg2.enabled })} />
-          {maskCfg2.enabled && (
-            <>
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '6px 0 2px' }}>mask-image CSS value:</div>
-              <input value={maskCfg2.image ?? ''} onChange={e => patchMask2({ image: e.target.value })} placeholder="linear-gradient(to right, black, transparent)" style={{ width: '100%', fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '3px 6px', marginBottom: 8 }} />
-              <ToggleRow label="Animate wipe" active={!!maskCfg2.animateSize} onChange={() => patchMask2({ animateSize: !maskCfg2.animateSize })} />
-              <div style={{ height: 6 }} />
-              <PRow>
-                <SliderField label="Duration (ms)" value={maskCfg2.duration ?? 800} min={100} max={5000} step={100} unit="ms" onChange={v => patchMask2({ duration: v })} />
-                <SelectInput label="Easing" value={maskCfg2.easing ?? 'easeInOut'} options={EASING_OPTS as unknown as string[]} onChange={v => patchMask2({ easing: v })} />
-              </PRow>
-            </>
-          )}
-        </SubSection>
-
-        {/* Pseudo-Element Effects */}
-        <SubSection label="Pseudo-Element Effects" defaultOpen={!!pseudoCfg.enabled} isActive={!!pseudoCfg.enabled}>
-          <ToggleRow label="Enable pseudo-element" active={!!pseudoCfg.enabled} onChange={() => patchPseudo({ enabled: !pseudoCfg.enabled })} />
-          {pseudoCfg.enabled && (
-            <>
-              <div style={{ height: 8 }} />
-              <PRow>
-                <SelectInput label="Target" value={pseudoCfg.target ?? '::before'} options={['::before', '::after']} onChange={v => patchPseudo({ target: v as PseudoElementConfig['target'] })} />
-                <SelectInput label="Trigger" value={pseudoCfg.trigger ?? 'hover'} options={['hover', 'always', 'enter']} onChange={v => patchPseudo({ trigger: v as PseudoElementConfig['trigger'] })} />
-              </PRow>
-              <PRow>
-                <ColorInput label="Background" value={pseudoCfg.background ?? 'var(--bld-ai-accent)'} onChange={v => patchPseudo({ background: v })} />
-                <ColorInput label="Hover bg" value={pseudoCfg.hoverBackground ?? 'var(--bld-badge-boolean)'} onChange={v => patchPseudo({ hoverBackground: v })} />
-              </PRow>
-              <PRow>
-                <NumberInput label="Width (px/%)" value={parseInt(pseudoCfg.width ?? '100', 10)} min={0} max={100} step={1} onChange={v => patchPseudo({ width: v + '%' })} />
-                <NumberInput label="Height (px)" value={parseInt(pseudoCfg.height ?? '2', 10)} min={1} max={100} step={1} onChange={v => patchPseudo({ height: v + 'px' })} />
-                <NumberInput label="Hover opacity" value={(pseudoCfg.hoverOpacity ?? 1) * 100} min={0} max={100} step={5} onChange={v => patchPseudo({ hoverOpacity: v / 100 })} />
-              </PRow>
-              <PRow>
-                <NumberInput label="Hover width %" value={parseInt(pseudoCfg.hoverWidth ?? '100', 10)} min={0} max={200} step={5} onChange={v => patchPseudo({ hoverWidth: v + '%' })} />
-              </PRow>
-            </>
-          )}
-        </SubSection>
-
-        {/* Gesture / Swipe */}
-        <SubSection label="Gesture / Swipe" defaultOpen={!!gestureCfg.enabled} isActive={!!gestureCfg.enabled}>
-          <ToggleRow label="Enable gesture" active={!!gestureCfg.enabled} onChange={() => patchGesture({ enabled: !gestureCfg.enabled })} />
-          {gestureCfg.enabled && (
-            <>
-              <ToggleRow label="Swipe detection" active={!!gestureCfg.swipe} onChange={() => patchGesture({ swipe: !gestureCfg.swipe })} />
-              <div style={{ height: 8 }} />
-              <PRow>
-                <SliderField label="Min distance (px)"   value={gestureCfg.swipeThreshold   ?? 50}  min={10}  max={300}  step={5}  unit="px" onChange={v => patchGesture({ swipeThreshold: v })} />
-                <SliderField label="Anim duration (ms)"  value={gestureCfg.animationDuration ?? 400} min={100} max={2000} step={50} unit="ms" onChange={v => patchGesture({ animationDuration: v })} />
-              </PRow>
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', padding: '4px 0 4px' }}>Workflow action to run on swipe:</div>
-              <PRow>
-                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>← Left</span>
-                <input value={gestureCfg.onSwipeLeftAction  ?? ''} onChange={e => patchGesture({ onSwipeLeftAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
-                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>→ Right</span>
-                <input value={gestureCfg.onSwipeRightAction ?? ''} onChange={e => patchGesture({ onSwipeRightAction: e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
-              </PRow>
-              <PRow>
-                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>↑ Up</span>
-                <input value={gestureCfg.onSwipeUpAction    ?? ''} onChange={e => patchGesture({ onSwipeUpAction:    e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
-                <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', minWidth: 40 }}>↓ Down</span>
-                <input value={gestureCfg.onSwipeDownAction  ?? ''} onChange={e => patchGesture({ onSwipeDownAction:  e.target.value })} placeholder="myActionName" style={{ flex: 1, fontSize: 11, background: 'var(--bld-bg-base)', color: 'var(--bld-accent-fg)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, padding: '2px 5px' }} />
-              </PRow>
-            </>
-          )}
-        </SubSection>
-
-      </CategoryGroup>
-
-      {/* ── Config Popover ────────────────────────────────────────────────── */}
       {popover && (
         <AnimConfigPopover
           y={popover.y}
@@ -1403,7 +1105,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
               </FieldWithBinding>
               <ChipSelect value={loop.direction ?? 'normal'} options={LOOP_DIRS as unknown as string[]} onChange={v => patchLoop({ direction: v })} />
               {(loop.type === 'glowPulse' || loop.type === 'ripple') && (
-                <ColorInput label="Glow color" value={(loop as { color?: string }).color ?? 'var(--bld-ai-accent)'} onChange={v => patchLoop({ color: v })} />
+                <ColorInput label="Glow color" value={(loop as { color?: string }).color ?? 'var(--bld-accent)'} onChange={v => patchLoop({ color: v })} />
               )}
             </>
           )}
@@ -1910,6 +1612,7 @@ export function AnimationInDesign({ nodeId, node, store, commitHistory }: Animat
 
         </AnimConfigPopover>
       )}
+
     </div>
   );
 }

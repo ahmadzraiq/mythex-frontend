@@ -53,20 +53,45 @@ const ArrowRight = () => (
   </svg>
 );
 
-function LinkIcon({ linked }: { linked: boolean }) {
-  const c = linked ? '#818cf8' : '#4b5563';
+function LinkIcon() {
   return (
     <svg width={11} height={11} viewBox="0 0 12 12" fill="none">
-      <path d="M4.5 6h3" stroke={c} strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M3 4.5A2 2 0 003 7.5" stroke={c} strokeWidth="1.4" strokeLinecap="round" fill="none" />
-      <path d="M9 4.5A2 2 0 019 7.5" stroke={c} strokeWidth="1.4" strokeLinecap="round" fill="none" />
+      <path d="M4.5 6h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M3 4.5A2 2 0 003 7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+      <path d="M9 4.5A2 2 0 019 7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
     </svg>
+  );
+}
+
+// ─── LinkSidesButton ──────────────────────────────────────────────────────────
+// Compact 20×20 button passed as headerActions to FieldWithBinding for Padding/Margin.
+
+export function LinkSidesButton({ linked, onToggle }: { linked: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={linked ? 'Unlink sides' : 'Link all sides'}
+      style={{
+        width: 20, height: 20, padding: 0, flexShrink: 0,
+        background: linked ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',
+        border: 'none',
+        borderRadius: 5, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: linked ? '#fff' : 'var(--bld-text-disabled)',
+        transition: 'background 0.15s, color 0.15s',
+      }}
+      onMouseEnter={e => { if (!linked) { e.currentTarget.style.background = 'var(--bld-bg-hover)'; e.currentTarget.style.color = 'var(--bld-accent)'; } }}
+      onMouseLeave={e => { if (!linked) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+    >
+      <LinkIcon />
+    </button>
   );
 }
 
 // Small chain icon for bind buttons
 function ChainIcon({ bound }: { bound: boolean }) {
-  const c = bound ? '#818cf8' : '#6b7280';
+  const c = bound ? 'var(--bld-badge-text)' : 'var(--bld-text-disabled)';
   return (
     <svg width={9} height={9} viewBox="0 0 10 10" fill="none">
       <path d="M3.5 5h3" stroke={c} strokeWidth="1.3" strokeLinecap="round" />
@@ -132,8 +157,8 @@ export function PanelInput({
     delayRef.current = setTimeout(() => { itvRef.current = setInterval(fire, 50); }, 250);
   };
 
-  const borderColor = changed ? '#f97316' : bound ? '#6366f1' : '#374151';
-  const textColor   = changed ? '#f97316' : bound ? '#a5b4fc' : '#f3f4f6';
+  const borderColor = changed ? '#f97316' : bound ? 'var(--bld-accent)' : 'var(--bld-border-subtle)';
+  const textColor   = changed ? '#f97316' : bound ? 'var(--bld-badge-text)' : '#f3f4f6';
 
   const inputEl = (
     <input
@@ -160,7 +185,7 @@ export function PanelInput({
       }}
       style={{
         width: '100%',
-        background: noBorder ? 'transparent' : '#1f2937',
+        background: noBorder ? 'transparent' : 'var(--bld-bg-input)',
         border: noBorder ? 'none' : `1px solid ${borderColor}`,
         borderRadius: noBorder ? 0 : 4,
         color: textColor,
@@ -192,7 +217,7 @@ export function PanelInput({
           style={{
             position: 'fixed', top: popupPos.top, left: popupPos.left,
             zIndex: 99999, pointerEvents: 'auto',
-            background: '#1f2937', border: '1px solid #374151', borderRadius: 6,
+            background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
             padding: '4px 8px', whiteSpace: 'nowrap',
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
           }}
@@ -207,6 +232,143 @@ export function PanelInput({
           >
             <span>↺</span><span>Reset to default</span>
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CompactSpacingCell ───────────────────────────────────────────────────────
+// Compact variant: [icon] [ input | ⛓ ] — bind icon integrated into the border.
+
+function CompactSpacingCell({
+  side, value, icon, onChange,
+  formulaValue, onFormulaChange, fieldLabel, testId, cssProp,
+}: {
+  side: SpacingSide;
+  value: number;
+  icon: React.ReactNode;
+  onChange: (v: number) => void;
+  formulaValue?: FormulaValue;
+  onFormulaChange?: (v: FormulaValue) => void;
+  fieldLabel: string;
+  testId?: string;
+  cssProp?: string;
+}) {
+  const changedCtx = useContext(ChangedFieldContext);
+  const isCellChanged = !!(cssProp && changedCtx && changedCtx.isChanged(cssProp));
+  const resetCell = cssProp && changedCtx ? () => changedCtx.resetField(cssProp) : undefined;
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [localVal, setLocalVal] = useState(String(value));
+  const liveRef = useRef(value);
+
+  useEffect(() => { liveRef.current = value; setLocalVal(String(value)); }, [value]);
+
+  const showBind = !!onFormulaChange;
+  const bound = showBind && formulaValue !== undefined && isBoundValue(formulaValue);
+  const borderColor = isCellChanged ? 'var(--bld-warning)'
+    : bound   ? 'var(--bld-accent)'
+    : focused  ? 'var(--bld-accent)'
+    : hovered  ? 'var(--bld-text-disabled)'
+    : 'var(--bld-border-subtle)';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
+      {/* Bordered container: icon + input inside (matching CornerCell style) */}
+      <div
+        style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', background: 'var(--bld-bg-input)', border: `1px solid ${borderColor}`, borderRadius: 4, padding: '0 5px', gap: 4, overflow: 'hidden', transition: 'border-color 0.12s' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Direction icon inside the border */}
+        <span style={{ color: 'var(--bld-text-disabled)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon}
+        </span>
+        <input
+          className="spatial-input"
+          data-testid={testId}
+          type="number"
+          value={localVal}
+          onChange={e => {
+            setLocalVal(e.target.value);
+            const n = Number(e.target.value);
+            if (!Number.isNaN(n)) { liveRef.current = n; onChange(n); }
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={e => {
+            setFocused(false);
+            const dom = Number(e.currentTarget.value);
+            const live = Number.isNaN(dom) ? liveRef.current : dom;
+            liveRef.current = live;
+            if (live !== value) onChange(live);
+            setLocalVal(String(live));
+          }}
+          style={{
+            flex: 1, minWidth: 0, width: 0,
+            background: 'transparent',
+            border: 'none',
+            color: isCellChanged ? 'var(--bld-warning)' : bound ? 'var(--bld-badge-text)' : 'var(--bld-text-1)',
+            fontSize: 11,
+            padding: '3px 0',
+            textAlign: 'center',
+            outline: 'none',
+            boxSizing: 'border-box',
+          } as React.CSSProperties}
+        />
+        {isCellChanged && resetCell && (
+          <button
+            type="button"
+            title="Reset to default"
+            onMouseDown={e => { e.preventDefault(); resetCell(); }}
+            style={{
+              flexShrink: 0, width: 16, padding: 0, marginRight: -5,
+              background: 'var(--bld-bg-elevated)',
+              border: 'none',
+              borderLeft: `1px solid ${borderColor}`,
+              cursor: 'pointer', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <span style={{ fontSize: 9, color: 'var(--bld-warning)' }}>↺</span>
+          </button>
+        )}
+      </div>
+      {/* Bind button — separate BindingIcon-style button beside the input */}
+      {showBind && (
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            title={bound ? 'Edit formula binding' : 'Bind to variable or expression'}
+            onClick={() => setEditorOpen(o => !o)}
+            style={{
+              width: 20, height: 20, padding: 0, flexShrink: 0,
+              background: bound ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',
+              border: 'none',
+              borderRadius: 5,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: bound ? '#fff' : 'var(--bld-text-disabled)',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { if (!bound) { e.currentTarget.style.background = 'var(--bld-bg-hover)'; e.currentTarget.style.color = 'var(--bld-accent)'; } }}
+            onMouseLeave={e => { if (!bound) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+          >
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+              <path d="M6.5 9.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95l-1.1 1.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.5 6.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l1.1-1.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          {editorOpen && onFormulaChange && (
+            <FormulaEditor
+              label={`${fieldLabel}-${side}`}
+              value={bound ? formulaValue! : value}
+              onChange={v => { onFormulaChange(v); setEditorOpen(false); }}
+              onClose={() => setEditorOpen(false)}
+              anchor="right"
+            />
+          )}
         </div>
       )}
     </div>
@@ -270,7 +432,7 @@ function SpacingCell({
             style={{
               width: 14, height: 14, padding: 0, flexShrink: 0,
               background: bound ? 'rgba(99,102,241,0.15)' : 'transparent',
-              border: `1px solid ${bound ? '#6366f1' : '#374151'}`,
+              border: `1px solid ${bound ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
               borderRadius: 3,
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -304,6 +466,8 @@ export function SpacingDiagram({
   values, onChange, onChangeAll, formulaValues, onFormulaChange, label = 'padding', testIdPrefix,
   responsiveOverrides, onResponsiveRemove, onResponsiveReset,
   perSideOverrides, onPerSideRemove, onPerSideReset,
+  compact = false,
+  linked: linkedProp, onLinkedChange,
 }: {
   values: SpacingValues;
   onChange: (side: SpacingSide, v: number) => void;
@@ -319,10 +483,21 @@ export function SpacingDiagram({
   perSideOverrides?: Partial<Record<SpacingSide, string[]>>;
   onPerSideRemove?: (breakpoint: string, cssProp: string) => void;
   onPerSideReset?: (cssProp: string) => void;
+  /** Compact mode: 4 small inputs in a row instead of compass diagram */
+  compact?: boolean;
+  /** Controlled linked state — when provided, the internal link toggle is hidden */
+  linked?: boolean;
+  onLinkedChange?: (v: boolean) => void;
 }) {
-  const [linked, setLinked] = useState(
+  const [linkedInternal, setLinkedInternal] = useState(
     values.top === values.right && values.right === values.bottom && values.bottom === values.left
   );
+  const linked = linkedProp !== undefined ? linkedProp : linkedInternal;
+  const setLinked = (v: boolean | ((p: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(linked) : v;
+    setLinkedInternal(next);
+    onLinkedChange?.(next);
+  };
   const [editorOpen, setEditorOpen] = useState(false);
 
   const sides: SpacingSide[] = ['top', 'right', 'bottom', 'left'];
@@ -368,6 +543,8 @@ export function SpacingDiagram({
         icon={icons[side]}
         isHoriz={isHoriz}
         onChange={v => handleChange(side, v)}
+        formulaValue={formulaValues?.[side]}
+        onFormulaChange={onFormulaChange ? (v) => onFormulaChange(side, v) : undefined}
         fieldLabel={label}
         testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
         dotEl={sideDot}
@@ -376,11 +553,51 @@ export function SpacingDiagram({
     );
   };
 
+  if (compact) {
+    // Compact cells have no per-side bind buttons — binding is global, in the header row
+    const compactCell = (side: SpacingSide) => (
+      <CompactSpacingCell
+        key={side}
+        side={side}
+        value={values[side]}
+        icon={icons[side]}
+        onChange={v => handleChange(side, v)}
+        fieldLabel={label}
+        testId={testIdPrefix ? `input-${testIdPrefix}-${side}` : undefined}
+        cssProp={SIDE_CSS_MAP[side]}
+      />
+    );
+
+    return (
+      <div>
+        {/* Responsive dot — only when overrides exist */}
+        {responsiveOverrides && responsiveOverrides.length > 0 && onResponsiveRemove && (
+          <div style={{ marginBottom: 4 }}>
+            <ResponsiveDot
+              cssProp={`section-${label}`}
+              testId={`responsive-dot-${label}`}
+              overriddenBreakpoints={responsiveOverrides}
+              onRemove={onResponsiveRemove}
+              onResetAll={onResponsiveReset}
+            />
+          </div>
+        )}
+        {/* 2×2 grid — top/bottom row, then left/right row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '4px 6px' }}>
+          {compactCell('top')}
+          {compactCell('bottom')}
+          {compactCell('left')}
+          {compactCell('right')}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header row: label + responsive dot + bind button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'flex', alignItems: 'center' }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--bld-text-disabled)', textTransform: 'none', display: 'flex', alignItems: 'center' }}>
           {label}
           {responsiveOverrides && responsiveOverrides.length > 0 && onResponsiveRemove && (
             <ResponsiveDot
@@ -426,10 +643,10 @@ export function SpacingDiagram({
         {cell('left', true)}
         <div style={{
           width: '100%', minHeight: 28,
-          background: '#1a2234', border: '1px dashed #2d3748', borderRadius: 3,
+          background: 'var(--bld-bg-sunken)', border: '1px dashed var(--bld-border)', borderRadius: 3,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <span style={{ fontSize: 8, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', userSelect: 'none' }}>
+          <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)', textTransform: 'none', userSelect: 'none' }}>
             {label === 'padding' ? 'content' : 'element'}
           </span>
         </div>
@@ -447,13 +664,13 @@ export function SpacingDiagram({
         style={{
           marginTop: 5, width: '100%',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          background: linked ? 'rgba(99,102,241,0.1)' : '#111827',
-          border: `1px solid ${linked ? '#6366f1' : '#1f2937'}`,
+          background: linked ? 'rgba(99,102,241,0.1)' : 'var(--bld-bg-panel)',
+          border: `1px solid ${linked ? 'var(--bld-accent)' : 'var(--bld-bg-input)'}`,
           borderRadius: 4, cursor: 'pointer', padding: '3px 8px',
-          color: linked ? '#a5b4fc' : '#4b5563', fontSize: 10, fontWeight: 500,
+          color: linked ? 'var(--bld-badge-text)' : 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500,
         }}
       >
-        <LinkIcon linked={linked} />
+        <LinkIcon />
         {linked ? 'All sides linked' : 'Link sides'}
       </button>
     </div>
@@ -484,7 +701,7 @@ function CornerCell({
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
-      background: '#1f2937', border: `1px solid ${bound ? '#6366f1' : '#374151'}`, borderRadius: 4, padding: '3px 6px',
+      background: 'var(--bld-bg-input)', border: `1px solid ${bound ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`, borderRadius: 4, padding: '3px 6px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
         <svg width={10} height={10} viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
@@ -568,13 +785,13 @@ export function CornerRadiusDiagram({
         style={{
           marginTop: 5, width: '100%',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          background: linked ? 'rgba(99,102,241,0.1)' : '#111827',
-          border: `1px solid ${linked ? '#6366f1' : '#1f2937'}`,
+          background: linked ? 'rgba(99,102,241,0.1)' : 'var(--bld-bg-panel)',
+          border: `1px solid ${linked ? 'var(--bld-accent)' : 'var(--bld-bg-input)'}`,
           borderRadius: 4, cursor: 'pointer', padding: '3px 8px',
-          color: linked ? '#a5b4fc' : '#4b5563', fontSize: 10, fontWeight: 500,
+          color: linked ? 'var(--bld-badge-text)' : 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500,
         }}
       >
-        <LinkIcon linked={linked} />
+        <LinkIcon />
         {linked ? 'All corners linked' : 'Link corners'}
       </button>
     </div>
@@ -618,7 +835,7 @@ export function InsetDiagram({
       {cell('top', <ArrowUp />, false)}
       <div />
       {cell('left', <ArrowLeft />, true)}
-      <div style={{ width: 24, height: 24, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 24, height: 24, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width={10} height={10} viewBox="0 0 10 10" fill="none">
           <circle cx="5" cy="5" r="1.5" fill="#4b5563" />
           <line x1="5" y1="1" x2="5" y2="3.5" stroke="var(--bld-text-disabled)" strokeWidth="1" strokeLinecap="round" />

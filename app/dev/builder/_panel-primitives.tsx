@@ -23,6 +23,38 @@ import { useBuilderStore } from './_store';
 import { BREAKPOINT_CASCADE } from '@/lib/sdui/types/node';
 import type { BreakpointKey, ResponsiveOverride } from '@/lib/sdui/types/node';
 
+// ─── Chevron icon ─────────────────────────────────────────────────────────────
+
+/**
+ * Rotatable chevron — points down when open=true, right when open=false.
+ * Drop-in replacement for <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>/<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle",transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> unicode triangles everywhere in the builder.
+ */
+export function Chevron({
+  open,
+  size = 10,
+  style,
+}: {
+  open?: boolean;
+  size?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2.2"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{
+        display: 'block', flexShrink: 0,
+        transition: 'transform 0.15s',
+        transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+        ...style,
+      }}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 // ─── Changed-field context ────────────────────────────────────────────────────
 
 /**
@@ -89,7 +121,7 @@ export function ChangedLabel({
 
   const color = inherited ? 'var(--bld-success)' : (changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)');
   const baseStyle: React.CSSProperties = {
-    fontSize: 9,
+    fontSize: 10,
     color,
     cursor: resettable && ctx ? 'pointer' : undefined,
     ...extraStyle,
@@ -126,7 +158,7 @@ export function ChangedLabel({
             background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
             padding: '5px 9px', whiteSpace: 'nowrap',
             boxShadow: 'var(--bld-shadow-md)',
-            textTransform: 'none', letterSpacing: 'normal',
+            textTransform: 'none',
             fontWeight: 'normal', fontFamily: 'system-ui, sans-serif',
           }}
         >
@@ -152,23 +184,45 @@ export const PANEL_STYLE: React.CSSProperties = {
   width: 260,
   display: 'flex',
   flexDirection: 'column',
-  background: 'var(--bld-bg-panel)',
+  backgroundColor: 'var(--bld-bg-panel)',
+  backgroundImage: [
+    'radial-gradient(ellipse 120% 40% at 50% 0%, rgba(99,102,241,0.07) 0%, transparent 60%)',
+    'radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px)',
+  ].join(', '),
+  backgroundSize: 'auto, 22px 22px',
   borderLeft: '1px solid var(--bld-border)',
   overflow: 'hidden',
 };
 
 export const SECTION_STYLE: React.CSSProperties = {
-  borderBottom: '1px solid var(--bld-border)',
-  padding: '10px 12px',
+  borderBottom: 'none',
+  padding: '7px 12px 7px',
 };
 
 export const LABEL_STYLE: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 500,
   color: 'var(--bld-text-3)',
-  marginBottom: 6,
+  marginBottom: 4,
   display: 'block',
 };
+
+export const ROW_STYLE: React.CSSProperties = {
+  display: 'flex',
+  gap: 6,
+  marginBottom: 4,
+};
+
+export function SectionDivider() {
+  return (
+    <div style={{
+      height: 1,
+      background: 'linear-gradient(90deg, transparent 0%, var(--bld-border) 20%, var(--bld-border) 80%, transparent 100%)',
+      opacity: 0.45,
+      flexShrink: 0,
+    }} />
+  );
+}
 
 // ─── SectionHeader ────────────────────────────────────────────────────────────
 
@@ -187,7 +241,7 @@ export const SectionHeader = React.memo(function SectionHeader({ title, children
   const sectionKey = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
       <span
         style={{ ...LABEL_STYLE, display: 'flex', alignItems: 'center', gap: 3 }}
       >
@@ -260,7 +314,7 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         style={{
           width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: '#22c55e', flexShrink: 0,
+          backgroundColor: 'var(--bld-success)', flexShrink: 0,
           cursor: 'pointer', marginLeft: 3,
           boxShadow: '0 0 4px rgba(34,197,94,0.5)',
         }}
@@ -301,7 +355,7 @@ export function ResponsiveDot({ cssProp, overriddenBreakpoints, onRemove, onRese
           </div>
           {onResetAll && (
             <>
-              <div style={{ borderTop: '1px solid var(--bld-border)', margin: '8px 0' }} />
+              <div style={{ borderTop: 'none', margin: '8px 0' }} />
               <button
                 data-testid={`responsive-reset-${cssProp}`}
                 onClick={(e) => { e.stopPropagation(); onResetAll(cssProp); setOpen(false); }}
@@ -343,7 +397,7 @@ export function DirectChangedLabel({ text, changed, onReset }: { text: string; c
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       <span
         ref={spanRef}
-        style={{ fontSize: 9, color: changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)', cursor: changed ? 'pointer' : undefined }}
+        style={{ fontSize: 10, color: changed ? 'var(--bld-warning)' : 'var(--bld-text-disabled)', cursor: changed ? 'pointer' : undefined }}
         onMouseEnter={changed ? showPopup : undefined}
         onMouseLeave={changed ? scheduleHide : undefined}
       >{text}</span>
@@ -351,7 +405,7 @@ export function DirectChangedLabel({ text, changed, onReset }: { text: string; c
         <div
           onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); }}
           onMouseLeave={scheduleHide}
-          style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 99999, pointerEvents: 'auto', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: 'var(--bld-shadow-md)', textTransform: 'none', letterSpacing: 'normal', fontWeight: 'normal', fontFamily: 'system-ui, sans-serif' }}
+          style={{ position: 'fixed', top: popupPos.top, left: popupPos.left, zIndex: 99999, pointerEvents: 'auto', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 9px', whiteSpace: 'nowrap', boxShadow: 'var(--bld-shadow-md)', textTransform: 'none', fontWeight: 'normal', fontFamily: 'system-ui, sans-serif' }}
         >
           <button
             onMouseDown={e => { e.preventDefault(); onReset(); setPopupPos(null); }}
@@ -372,6 +426,8 @@ export function NumberInput({
   changedOverride, onResetOverride,
 }: { label: string; value: number | string; onChange: (v: number) => void; min?: number; max?: number; step?: number; testId?: string; onFocus?: () => void; afterLabel?: React.ReactNode; cssProp?: string; changedOverride?: boolean; onResetOverride?: () => void }) {
   const [local, setLocal] = useState(String(value));
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const liveRef    = useRef(Number(value));
   const inputRef   = useRef<HTMLInputElement | null>(null);
   const delayRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -440,8 +496,9 @@ export function NumberInput({
         onChange={e => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
-        onFocus={onFocus}
+        onFocus={e => { setFocused(true); onFocus?.(); }}
         onBlur={e => {
+          setFocused(false);
           clearRepeat();
           const domVal = Number(e.currentTarget.value);
           const live   = Number.isNaN(domVal) ? liveRef.current : domVal;
@@ -449,8 +506,189 @@ export function NumberInput({
           if (live !== Number(value)) onChange(live);
           setLocal(String(live));
         }}
-        style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          background: 'var(--bld-bg-input)',
+          border: `1px solid ${focused ? 'var(--bld-accent)' : hovered ? 'var(--bld-text-disabled)' : 'var(--bld-border-subtle)'}`,
+          borderRadius: 5,
+          color: 'var(--bld-text-1)',
+          fontSize: 11,
+          padding: '3px 6px',
+          width: '100%',
+          boxSizing: 'border-box',
+          outline: 'none',
+          transition: 'border-color 0.12s',
+        }}
       />
+    </div>
+  );
+}
+
+// ─── NumberInputWithUnit ──────────────────────────────────────────────────────
+// Composite: number input + inline unit dropdown as one grouped control.
+// Replaces the pattern of <NumberInput> + separate row of unit ToggleBtns.
+
+/**
+ * Size mode sentinel values used when sizeMode is non-fixed.
+ * The dropdown shows these as options alongside the unit list.
+ */
+const SIZE_MODE_VALUES = ['__hug__', '__fill__', '__screen__'] as const;
+type SizeModeValue = typeof SIZE_MODE_VALUES[number];
+
+function isSizeModeValue(v: string): v is SizeModeValue {
+  return (SIZE_MODE_VALUES as readonly string[]).includes(v);
+}
+
+const SIZE_MODE_LABELS: Record<SizeModeValue, string> = {
+  __hug__: 'Hug',
+  __fill__: 'Fill',
+  __screen__: 'Screen',
+};
+
+const DEFAULT_SIZE_MODES: Array<SizeModeValue> = ['__hug__', '__fill__', '__screen__'];
+
+export function NumberInputWithUnit({
+  label, value, onChange, unit, onUnitChange,
+  units = ['px', '%', 'vh', 'vw'],
+  min = 0, max = 9999, step = 1,
+  testId, cssProp, disabled,
+  sizeMode, onSizeModeChange,
+  sizeModeLabels,
+  sizeModes = ['hug', 'fill', 'screen'],
+}: {
+  label: string;
+  value: number | string;
+  onChange: (v: number) => void;
+  unit: string;
+  onUnitChange: (u: string) => void;
+  units?: readonly string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  testId?: string;
+  cssProp?: string;
+  disabled?: boolean;
+  /** When provided, Hug/Fill/Screen options are appended to the unit dropdown */
+  sizeMode?: 'fixed' | 'hug' | 'fill' | 'screen';
+  /** Called when the user picks a mode option OR switches back to a unit (mode='fixed') */
+  onSizeModeChange?: (mode: 'fixed' | 'hug' | 'fill' | 'screen', unit?: string) => void;
+  /** Override display labels for size modes, e.g. { hug: 'None' } for max-width */
+  sizeModeLabels?: Partial<Record<'hug' | 'fill' | 'screen', string>>;
+  /** Which size modes to show in the dropdown (defaults to all three) */
+  sizeModes?: Array<'hug' | 'fill' | 'screen'>;
+}) {
+  const [local, setLocal] = useState(String(value));
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const liveRef = useRef(Number(value));
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    liveRef.current = Number(value);
+    setLocal(String(value));
+  }, [value]);
+
+  const isModeActive = sizeMode && sizeMode !== 'fixed';
+  const isDisabled = disabled;
+  const borderColor = focused ? 'var(--bld-accent)' : hovered ? 'var(--bld-text-disabled)' : 'var(--bld-border-subtle)';
+
+  // The select value: one of the unit strings, or a sentinel like '__hug__'
+  const selectValue = isModeActive
+    ? (`__${sizeMode}__` as SizeModeValue)
+    : unit;
+
+  const selectColor = isModeActive ? 'var(--bld-accent)' : 'var(--bld-text-3)';
+
+  const handleSelectChange = (raw: string) => {
+    if (isSizeModeValue(raw)) {
+      // user picked a mode — map sentinel back to mode string
+      const modeMap: Record<SizeModeValue, 'hug' | 'fill' | 'screen'> = {
+        __hug__: 'hug', __fill__: 'fill', __screen__: 'screen',
+      };
+      onSizeModeChange?.(modeMap[raw as SizeModeValue]);
+    } else {
+      // user picked a regular unit — switch back to fixed if we were in a mode
+      if (isModeActive) onSizeModeChange?.('fixed', raw);
+      onUnitChange(raw);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+      {label && <ChangedLabel text={label} cssProp={cssProp} />}
+      <div
+        style={{ display: 'flex', border: `1px solid ${borderColor}`, borderRadius: 5, overflow: 'hidden', transition: 'border-color 0.12s' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <input
+          ref={inputRef}
+          data-testid={testId}
+          type="number" min={min} max={max} step={step}
+          value={local}
+          disabled={isDisabled}
+          onChange={e => {
+            setLocal(e.target.value);
+            const n = Number(e.target.value);
+            if (!Number.isNaN(n)) { liveRef.current = n; onChange(n); }
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={e => {
+            setFocused(false);
+            const domVal = Number(e.currentTarget.value);
+            const live = Number.isNaN(domVal) ? liveRef.current : domVal;
+            liveRef.current = live;
+            if (live !== Number(value)) onChange(live);
+            setLocal(String(live));
+          }}
+          style={{
+            flex: 1, minWidth: 0, width: 0,
+            background: 'var(--bld-bg-input)',
+            border: 'none',
+            color: isModeActive ? 'var(--bld-text-disabled)' : isDisabled ? 'var(--bld-text-disabled)' : 'var(--bld-text-1)',
+            fontSize: 11,
+            padding: '3px 4px',
+            outline: 'none',
+            boxSizing: 'border-box',
+            opacity: isDisabled ? 0.5 : 1,
+            pointerEvents: isModeActive ? 'none' : 'auto',
+          }}
+        />
+        <select
+          value={selectValue}
+          onChange={e => handleSelectChange(e.target.value)}
+          disabled={disabled}
+          style={{
+            background: 'var(--bld-bg-elevated)',
+            border: 'none',
+            borderLeft: `1px solid ${borderColor}`,
+            color: selectColor,
+            fontSize: 10,
+            fontWeight: isModeActive ? 600 : 400,
+            padding: '0 3px',
+            cursor: 'pointer',
+            outline: 'none',
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            width: isModeActive ? 44 : 28,
+            minWidth: isModeActive ? 44 : 28,
+            maxWidth: isModeActive ? 44 : 28,
+            flexShrink: 0,
+            textAlign: 'center',
+            transition: 'border-color 0.12s',
+          } as React.CSSProperties}
+        >
+          {units.map(u => <option key={u} value={u}>{u}</option>)}
+          {onSizeModeChange && DEFAULT_SIZE_MODES
+            .filter(sentinel => sizeModes.includes(sentinel.replace(/__/g, '') as 'hug' | 'fill' | 'screen'))
+            .map(sentinel => {
+              const key = sentinel.replace(/__/g, '') as 'hug' | 'fill' | 'screen';
+              const lbl = sizeModeLabels?.[key] ?? SIZE_MODE_LABELS[sentinel];
+              return <option key={sentinel} value={sentinel}>{lbl}</option>;
+            })}
+        </select>
+      </div>
     </div>
   );
 }
@@ -458,8 +696,10 @@ export function NumberInput({
 // ─── SelectInput ──────────────────────────────────────────────────────────────
 
 export function SelectInput({
-  label, value, options, onChange, testId, afterLabel, cssProp,
-}: { label: string; value: string; options: readonly string[] | string[]; onChange: (v: string) => void; testId?: string; afterLabel?: React.ReactNode; cssProp?: string }) {
+  label, value, options, optionLabels, onChange, testId, afterLabel, cssProp,
+}: { label: string; value: string; options: readonly string[] | string[]; optionLabels?: readonly string[] | string[]; onChange: (v: string) => void; testId?: string; afterLabel?: React.ReactNode; cssProp?: string }) {
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <div style={{ flex: 1 }}>
       {label && (
@@ -471,9 +711,23 @@ export function SelectInput({
       <select
         data-testid={testId}
         value={value} onChange={e => onChange(e.target.value)}
-        style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '3px 5px', width: '100%' }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          background: 'var(--bld-bg-input)',
+          border: `1px solid ${focused ? 'var(--bld-accent)' : hovered ? 'var(--bld-text-disabled)' : 'var(--bld-border-subtle)'}`,
+          borderRadius: 5,
+          color: 'var(--bld-text-1)',
+          fontSize: 11,
+          padding: '3px 5px',
+          width: '100%',
+          outline: 'none',
+          transition: 'border-color 0.12s',
+        }}
       >
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        {options.map((o, i) => <option key={o} value={o}>{optionLabels ? optionLabels[i] : o}</option>)}
       </select>
     </div>
   );
@@ -665,7 +919,7 @@ export function SliderField({
         min={min} max={max} step={step}
         value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ width: '100%', accentColor: '#6366f1', cursor: 'pointer', margin: 0, height: 5 }}
+        style={{ width: '100%', accentColor: 'var(--bld-accent)', cursor: 'pointer', margin: 0, height: 5 }}
       />
     </div>
   );
@@ -698,7 +952,6 @@ export function ChipSelect({
               padding: '3px 8px',
               fontSize: 9,
               fontWeight: 500,
-              letterSpacing: '0.02em',
               borderRadius: 999,
               border: value === opt ? '1px solid var(--bld-accent)' : '1px solid var(--bld-bg-elevated)',
               background: value === opt ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',

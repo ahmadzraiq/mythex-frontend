@@ -63,8 +63,15 @@ function Sidebar({
       style={{
         width: 232,
         minWidth: 232,
-        background: '#111827',
-        borderRight: '1px solid #1f2937',
+        backgroundColor: 'rgba(24,24,27,0.82)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        backgroundImage: [
+          'radial-gradient(ellipse 140% 50% at 50% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)',
+          'radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px)',
+        ].join(', '),
+        backgroundSize: 'auto, 22px 22px',
+        borderRight: '1px solid rgba(63,63,70,0.55)',
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
@@ -72,14 +79,14 @@ function Sidebar({
       }}
     >
       {/* Logo */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
         <a
           href="/workspaces"
           style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
         >
           <div style={{
             width: 28, height: 28, borderRadius: 7,
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            background: 'linear-gradient(135deg, #3b82f6, var(--bld-accent))',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
@@ -87,7 +94,7 @@ function Sidebar({
               <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
             </svg>
           </div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#f9fafb', letterSpacing: '-0.01em' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', letterSpacing: '-0.01em' }}>
             Builder Platform
           </span>
         </a>
@@ -95,7 +102,7 @@ function Sidebar({
 
       {/* Workspace list — scrollable */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px 0' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#4b5563', letterSpacing: '0.08em', padding: '8px 8px 4px', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-text-disabled)', letterSpacing: '0.08em', padding: '8px 8px 4px', textTransform: 'none' }}>
           Workspaces
         </div>
 
@@ -110,15 +117,15 @@ function Sidebar({
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                   padding: '6px 8px', borderRadius: 7, border: 'none', cursor: 'pointer',
-                  background: isActive ? '#1d2937' : 'transparent',
+                  background: isActive ? 'var(--bld-bg-elevated)' : 'transparent',
                   transition: 'background 120ms', textAlign: 'left',
                 }}
-                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = '#1a2230'; }}
+                onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'; }}
                 onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
                 <div style={{
                   width: 22, height: 22, borderRadius: 5, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                  background: 'linear-gradient(135deg, #3b82f6, var(--bld-accent))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 10, fontWeight: 700, color: 'white',
                 }}>
@@ -126,19 +133,21 @@ function Sidebar({
                 </div>
                 <span style={{
                   flex: 1, fontSize: 12.5, fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#f3f4f6' : '#9ca3af',
+                  color: isActive ? 'var(--bld-text-1)' : 'var(--bld-text-3)',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
                   {ws.name}
                 </span>
-                <span style={{
-                  fontSize: 9, fontWeight: 600,
-                  color: ws.plan === 'FREE' ? '#4b5563' : ws.plan === 'ENTERPRISE' ? '#fbbf24' : '#a78bfa',
-                  background: ws.plan === 'FREE' ? '#1f2937' : ws.plan === 'ENTERPRISE' ? '#1c1408' : '#2e1065',
-                  borderRadius: 3, padding: '1px 4px', flexShrink: 0,
-                }}>
-                  {ws.plan}
-                </span>
+                {ws.plan !== 'FREE' && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 600,
+                    color: ws.plan === 'ENTERPRISE' ? '#fbbf24' : '#a78bfa',
+                    background: ws.plan === 'ENTERPRISE' ? '#1c1408' : '#2e1065',
+                    borderRadius: 3, padding: '1px 4px', flexShrink: 0,
+                  }}>
+                    {ws.plan}
+                  </span>
+                )}
               </button>
             </div>
           );
@@ -150,14 +159,14 @@ function Sidebar({
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8,
             padding: '6px 8px', borderRadius: 7, border: 'none', cursor: 'pointer',
-            background: 'transparent', color: '#4b5563',
+            background: 'transparent', color: 'var(--bld-text-disabled)',
             fontSize: 12, fontWeight: 500, transition: 'all 100ms', marginTop: 4,
             textAlign: 'left',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1a2230'; (e.currentTarget as HTMLButtonElement).style.color = '#9ca3af'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#4b5563'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-disabled)'; }}
         >
-          <span style={{ width: 22, height: 22, borderRadius: 5, border: '1px dashed #374151', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ width: 22, height: 22, borderRadius: 5, border: '1px dashed var(--bld-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IconPlus />
           </span>
           New workspace
@@ -165,11 +174,11 @@ function Sidebar({
       </div>
 
       {/* User section */}
-      <div style={{ padding: '10px 8px 12px', borderTop: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ padding: '10px 8px 12px', borderTop: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 8px' }}>
           <div style={{
             width: 28, height: 28, borderRadius: 7,
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+            background: 'linear-gradient(135deg, #3b82f6, var(--bld-accent))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 11, fontWeight: 700, color: 'white', flexShrink: 0,
           }}>
@@ -177,11 +186,11 @@ function Sidebar({
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             {user.name && (
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#f3f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {user.name}
               </div>
             )}
-            <div style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.email}
             </div>
           </div>
@@ -190,12 +199,12 @@ function Sidebar({
             title="Sign out"
             style={{
               width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: 'transparent', color: '#4b5563', flexShrink: 0,
+              background: 'transparent', color: 'var(--bld-text-disabled)', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 100ms, color 100ms',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'; (e.currentTarget as HTMLButtonElement).style.color = '#9ca3af'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#4b5563'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-disabled)'; }}
           >
             <IconLogout />
           </button>
@@ -248,11 +257,11 @@ function CreateWorkspaceModal({
       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '0 16px' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ width: '100%', maxWidth: 380, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f9fafb', marginBottom: 20 }}>New workspace</h2>
+      <div style={{ width: '100%', maxWidth: 380, background: 'var(--bld-bg-panel)', borderRadius: 14, border: '1px solid var(--bld-bg-elevated)', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--bld-text-1)', marginBottom: 20 }}>New workspace</h2>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#9ca3af', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 6 }}>
               Workspace name
             </label>
             <input
@@ -264,8 +273,8 @@ function CreateWorkspaceModal({
               placeholder="My workspace"
               style={{
                 width: '100%', padding: '9px 12px', borderRadius: 8,
-                border: '1px solid #374151', background: '#1f2937',
-                color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)',
+                color: 'var(--bld-text-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box',
               }}
             />
           </div>
@@ -274,14 +283,14 @@ function CreateWorkspaceModal({
             <button
               type="button"
               onClick={onClose}
-              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}
+              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 13, cursor: 'pointer' }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
+              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
             >
               {saving ? 'Creating…' : 'Create'}
             </button>
@@ -304,8 +313,11 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const [pricingModal, setPricingModal] = useState<{ open: boolean; feature?: string }>({ open: false });
   const [aiUsageRefreshKey, setAiUsageRefreshKey] = useState(0);
 
-  const publicPaths = ['/login', '/signup'];
-  const isPublic = publicPaths.some(p => pathname.endsWith(p));
+  const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isPublic = publicPaths.some(p => pathname.endsWith(p) || pathname.startsWith(`/${p.replace(/^\//, '')}`))
+    || pathname.startsWith('/invitations/')
+    || pathname.startsWith('/forgot-password')
+    || pathname.startsWith('/reset-password');
 
   const fetchWorkspaces = useCallback(() => {
     workspacesApi.list()
@@ -316,11 +328,17 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     auth.me()
       .then(({ user: u }) => {
+        // Check verification before setting user to avoid a flash of the sidebar
+        if (u.emailVerified === false && !isPublic) {
+          router.replace('/signup?verify=1');
+          return Promise.reject('unverified');
+        }
         setUser(u);
         return workspacesApi.list();
       })
       .then(({ workspaces }) => setWorkspaceList(workspaces))
-      .catch(() => {
+      .catch((reason) => {
+        if (reason === 'unverified') return;
         setUser(null);
         if (!isPublic) router.replace('/login');
       })
@@ -329,7 +347,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b1120' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bld-bg-panel)' }}>
         <div style={{ width: 24, height: 24, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -339,7 +357,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   // Public pages (login/signup) — no sidebar
   if (isPublic || !user) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0b1120' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bld-bg-panel)' }}>
         {children}
       </div>
     );
@@ -355,7 +373,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   return (
     <PlatformContext.Provider value={{ user, workspaces: workspaceList, refetchWorkspaces: fetchWorkspaces, showPricing, aiUsageRefreshKey, bumpAiUsageRefresh }}>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0f172a' }}>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bld-bg-panel)' }}>
         <Sidebar
           user={user}
           workspaces={workspaceList}
@@ -381,8 +399,10 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               height: 44, minHeight: 44,
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
               padding: '0 20px', gap: 12,
-              borderBottom: '1px solid #1f2937',
-              background: '#0b1120',
+              borderBottom: '1px solid rgba(63,63,70,0.55)',
+              backgroundColor: 'rgba(24,24,27,0.78)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
               flexShrink: 0,
             }}>
               <AiTokenMeter
@@ -396,7 +416,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                   onClick={() => showPricing()}
                   style={{
                     padding: '4px 12px', borderRadius: 20,
-                    border: '1px solid #6366f1', background: 'transparent',
+                    border: '1px solid var(--bld-accent)', background: 'transparent',
                     color: '#818cf8', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
                   }}
                 >
@@ -405,7 +425,17 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               )}
             </div>
           )}
-          <main style={{ flex: 1, overflowY: 'auto', background: '#0f172a' }}>
+          <main style={{
+            flex: 1, overflowY: 'auto',
+            backgroundColor: 'var(--bld-bg-panel)',
+            backgroundImage: [
+              'radial-gradient(ellipse 80% 50% at 70% 0%, rgba(99,102,241,0.09) 0%, transparent 60%)',
+              'radial-gradient(ellipse 60% 40% at 10% 90%, rgba(99,102,241,0.06) 0%, transparent 55%)',
+              'radial-gradient(circle, rgba(255,255,255,0.028) 1px, transparent 1px)',
+            ].join(', '),
+            backgroundSize: 'auto, auto, 24px 24px',
+            backgroundAttachment: 'local',
+          }}>
             {children}
           </main>
         </div>

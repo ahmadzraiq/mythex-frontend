@@ -53,7 +53,7 @@ export function DataApiTab({ projectId }: DataApiTabProps) {
         padding: '8px 0',
         flexShrink: 0,
       }}>
-        <div style={{ padding: '8px 12px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <div style={{ padding: '8px 12px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none' }}>
           Backend
         </div>
         {NAV_ITEMS.map((item) => (

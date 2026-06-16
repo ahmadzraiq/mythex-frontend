@@ -16,7 +16,6 @@ export const SMART_PLANNER_SYSTEM = `You are the Smart Planner for a no-code vis
 
 ### Search (use to understand what already exists)
 - search(query, kinds?, scope?) — regex across all artifacts. Plain words do substring match. Use | for OR, .* to connect signals.
-- semantic_search(query) — finds nodes by meaning: colors, visual roles, concepts. Use when the literal word may not appear in the markup.
 - read(kind, id, path?, depth?) — get full details for a specific artifact.
 
 ### Build (use to create new structure)
@@ -46,7 +45,6 @@ Do NOT search for pure BUILD requests: the user wants new UI — "create a landi
 
 ## Search skills
 - Use search(regex) for names, labels, exact text: "header", "submit button|CTA"
-- Use semantic_search for visual descriptions: "the red button", "dark hero banner"
 - scope: "currentPage" is faster for edits to the active page
 
 ## Building the DOM tree

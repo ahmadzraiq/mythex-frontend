@@ -49,6 +49,7 @@ export interface SDUIDataSource {
 /** Action definition for event handlers - action can be any string (resolved from actions.json) */
 export interface SDUIAction {
   action: string;
+  params?: Record<string, unknown>;
   payload?: SetStatePayload | FetchPayload | NavigatePayload | Record<string, unknown>;
 }
 
@@ -171,7 +172,7 @@ export interface SDUINode {
    * Named group/section marker.
    * Value is a display name (e.g. "Hero", "Pricing", "Footer").
    * Makes this node addressable as a virtual file under pages/<page>/groups/<name>
-   * and indexable as a semantic-search chunk (future vector embedding).
+   * Use for top-level sections that should be independently editable.
    * The renderer ignores this field — it is builder-only metadata.
    */
   _group?: string;

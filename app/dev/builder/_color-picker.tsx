@@ -153,20 +153,20 @@ const LIGHT_DEFAULTS = themeConfig.cssVariables.root as Record<string, string>;
 const GLOBAL_SWATCHES: ThemeSwatch[] = [
   { label: 'Background',    cssVar: 'background',              defaultHex: LIGHT_DEFAULTS['--background']              ?? '#ffffff' },
   { label: 'Foreground',    cssVar: 'foreground',              defaultHex: LIGHT_DEFAULTS['--foreground']              ?? '#171923' },
-  { label: 'Primary',       cssVar: 'primary',                 defaultHex: LIGHT_DEFAULTS['--primary']                 ?? '#1e293b' },
+  { label: 'Primary',       cssVar: 'primary',                 defaultHex: LIGHT_DEFAULTS['--primary']                 ?? 'var(--bld-bg-elevated)' },
   { label: 'Pri. Text',     cssVar: 'primary-foreground',      defaultHex: LIGHT_DEFAULTS['--primary-foreground']      ?? '#f8fafc' },
   { label: 'Secondary',     cssVar: 'secondary',               defaultHex: LIGHT_DEFAULTS['--secondary']               ?? '#f1f5f9' },
-  { label: 'Sec. Text',     cssVar: 'secondary-foreground',    defaultHex: LIGHT_DEFAULTS['--secondary-foreground']    ?? '#1e293b' },
+  { label: 'Sec. Text',     cssVar: 'secondary-foreground',    defaultHex: LIGHT_DEFAULTS['--secondary-foreground']    ?? 'var(--bld-bg-elevated)' },
   { label: 'Muted',         cssVar: 'muted',                   defaultHex: LIGHT_DEFAULTS['--muted']                   ?? '#f1f5f9' },
-  { label: 'Muted Text',    cssVar: 'muted-foreground',        defaultHex: LIGHT_DEFAULTS['--muted-foreground']        ?? '#64748b' },
+  { label: 'Muted Text',    cssVar: 'muted-foreground',        defaultHex: LIGHT_DEFAULTS['--muted-foreground']        ?? 'var(--bld-text-disabled)' },
   { label: 'Accent',        cssVar: 'accent',                  defaultHex: LIGHT_DEFAULTS['--accent']                  ?? '#f1f5f9' },
-  { label: 'Acc. Text',     cssVar: 'accent-foreground',       defaultHex: LIGHT_DEFAULTS['--accent-foreground']       ?? '#1e293b' },
-  { label: 'Destructive',   cssVar: 'destructive',             defaultHex: LIGHT_DEFAULTS['--destructive']             ?? '#ef4444' },
+  { label: 'Acc. Text',     cssVar: 'accent-foreground',       defaultHex: LIGHT_DEFAULTS['--accent-foreground']       ?? 'var(--bld-bg-elevated)' },
+  { label: 'Destructive',   cssVar: 'destructive',             defaultHex: LIGHT_DEFAULTS['--destructive']             ?? 'var(--bld-error)' },
   { label: 'Dest. Text',    cssVar: 'destructive-foreground',  defaultHex: LIGHT_DEFAULTS['--destructive-foreground']  ?? '#ffffff' },
   { label: 'Card',          cssVar: 'card',                    defaultHex: LIGHT_DEFAULTS['--card']                    ?? '#ffffff' },
   { label: 'Card Text',     cssVar: 'card-foreground',         defaultHex: LIGHT_DEFAULTS['--card-foreground']         ?? '#171923' },
   { label: 'Border',        cssVar: 'border',                  defaultHex: LIGHT_DEFAULTS['--border']                  ?? '#e2e8f0' },
-  { label: 'Ring',          cssVar: 'ring',                    defaultHex: LIGHT_DEFAULTS['--ring']                    ?? '#94a3b8' },
+  { label: 'Ring',          cssVar: 'ring',                    defaultHex: LIGHT_DEFAULTS['--ring']                    ?? 'var(--bld-text-3)' },
 ];
 
 function resolveCssVar(cssVar: string): string | null {
@@ -556,8 +556,8 @@ function ColorPopover({
       style={{
         position: 'fixed', top, left, zIndex: 99999,
         width: POPOVER_WIDTH,
-        background: '#111827',
-        border: '1px solid #374151',
+        background: 'var(--bld-bg-panel)',
+        border: '1px solid var(--bld-border-subtle)',
         borderRadius: 10,
         padding: 12,
         boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
@@ -573,7 +573,7 @@ function ColorPopover({
         <div style={{
           width: 28, height: 28, borderRadius: 5, flexShrink: 0,
           backgroundImage: CHECKER, backgroundSize: '8px 8px',
-          border: '1px solid #374151',
+          border: '1px solid var(--bld-border-subtle)',
         }}>
           <div style={{ width: '100%', height: '100%', borderRadius: 5, background: previewColor }} />
         </div>
@@ -593,10 +593,10 @@ function ColorPopover({
             onClick={() => handleFormatChange(f)}
             style={{
               flex: 1, padding: '3px 0', fontSize: 10, fontWeight: 600,
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-              background: format === f ? '#374151' : 'transparent',
-              border: `1px solid ${format === f ? '#6b7280' : '#1f2937'}`,
-              borderRadius: 4, color: format === f ? '#f3f4f6' : '#4b5563',
+              textTransform: 'none',
+              background: format === f ? 'var(--bld-border-subtle)' : 'transparent',
+              border: `1px solid ${format === f ? 'var(--bld-text-disabled)' : 'var(--bld-bg-input)'}`,
+              borderRadius: 4, color: format === f ? '#f3f4f6' : 'var(--bld-text-disabled)',
               cursor: 'pointer',
             }}
           >
@@ -616,7 +616,7 @@ function ColorPopover({
               onBlur={() => commitHex(hexText)}
               onKeyDown={e => { if (e.key === 'Enter') commitHex(hexText); }}
               placeholder="#000000"
-              style={{ flex: 1, background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', fontFamily: 'monospace' }}
+              style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', fontFamily: 'monospace' }}
             />
           </div>
         )}
@@ -635,7 +635,7 @@ function ColorPopover({
                   onBlur={() => onCommit(text)}
                   onKeyDown={e => { if (e.key === 'Enter') onCommit(text); }}
                   style={{
-                    width: '100%', background: '#1f2937', border: '1px solid #374151',
+                    width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
                     borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 4px',
                     textAlign: 'center', boxSizing: 'border-box',
                   }}
@@ -652,7 +652,7 @@ function ColorPopover({
 
       {/* Theme swatches */}
       <div>
-        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Theme Colors</div>
+        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', marginBottom: 6 }}>Theme Colors</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
           {GLOBAL_SWATCHES.map(s => (
             <Swatch
@@ -672,7 +672,7 @@ function ColorPopover({
       {/* Custom swatches — user-defined theme colors, behave identically to system swatches */}
       {customSwatches && customSwatches.length > 0 && (
         <div>
-          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Custom Colors</div>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', marginBottom: 6 }}>Custom Colors</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 1 }}>
             {customSwatches.map(s => (
               <Swatch
@@ -797,7 +797,7 @@ export function FigmaColorPicker({
           readOnly
           placeholder="#000000 or rgba(...)"
           style={{
-            background: '#1f2937', border: `1px solid ${open ? '#3b82f6' : '#374151'}`, borderRadius: 4,
+            background: 'var(--bld-bg-input)', border: `1px solid ${open ? '#3b82f6' : 'var(--bld-border-subtle)'}`, borderRadius: 4,
             color: selectedCssVar ? '#a78bfa' : '#f3f4f6', fontSize: 11, padding: '3px 6px', width: '100%', boxSizing: 'border-box',
             cursor: 'pointer', caretColor: 'transparent',
           }}

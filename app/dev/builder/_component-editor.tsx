@@ -83,7 +83,7 @@ const BTN_GHOST: React.CSSProperties = {
 
 const SECTION_LABEL: React.CSSProperties = {
   fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700,
-  textTransform: 'uppercase', letterSpacing: '0.07em',
+  textTransform: 'none',
   display: 'block', marginBottom: 4,
 };
 
@@ -131,15 +131,15 @@ const IconEdit = () => (
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   text:    { bg: 'var(--bld-border-subtle)', text: 'var(--bld-text-1)' },
   number:  { bg: 'var(--bld-accent-hover)', text: 'var(--bld-accent)' },
-  boolean: { bg: 'var(--bld-ai-accent)', text: 'var(--bld-ai-accent)' },
+  boolean: { bg: 'var(--bld-accent)', text: 'var(--bld-accent)' },
   color:   { bg: 'rgba(245,158,11,0.2)', text: 'var(--bld-warning)' },
   any:     { bg: 'rgba(34,197,94,0.15)', text: 'var(--bld-success)' },
   size:    { bg: 'rgba(96,165,250,0.2)', text: 'var(--bld-info)' },
-  select:  { bg: 'rgba(124,58,237,0.25)', text: 'var(--bld-ai-accent)' },
+  select:  { bg: 'rgba(124,58,237,0.25)', text: 'var(--bld-accent)' },
   icon:    { bg: 'var(--bld-bg-elevated)', text: 'var(--bld-text-3)' },
   list:    { bg: 'rgba(34,197,94,0.15)', text: 'var(--bld-success)' },
   string:  { bg: 'var(--bld-border-subtle)', text: 'var(--bld-text-1)' },
-  object:  { bg: 'var(--bld-ai-accent)', text: 'var(--bld-ai-accent)' },
+  object:  { bg: 'var(--bld-accent)', text: 'var(--bld-accent)' },
   array:   { bg: 'rgba(219,39,119,0.15)', text: 'var(--bld-badge-boolean)' },
 };
 
@@ -149,7 +149,7 @@ function TypeBadge({ type }: { type: string }) {
     <span style={{
       fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 3,
       background: c.bg, color: c.text,
-      textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0,
+      textTransform: 'none', flexShrink: 0,
     }}>
       {type}
     </span>
@@ -166,7 +166,7 @@ function SectionBar({
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>{label}</span>
         {count > 0 && (
           <span style={{ fontSize: 9, background: 'var(--bld-bg-input)', color: 'var(--bld-text-disabled)', borderRadius: 10, padding: '1px 6px', fontWeight: 600 }}>
             {count}
@@ -314,7 +314,7 @@ export function CreateComponentPopover({ anchorRect, sourceNode, onClose }: Crea
       onClick={e => e.stopPropagation()}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: 'none' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)' }}>Create Component</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', display: 'flex', padding: 2, borderRadius: 3 }}>
           <IconClose />
@@ -519,7 +519,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
       {/* ── Top bar ── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px',
-        borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0,
+        borderBottom: 'none', flexShrink: 0,
       }}>
         {/* Back to instance */}
         <button
@@ -580,7 +580,7 @@ export function ComponentEditorPanel({ selectedNode, editTabContent }: Component
       </div>
 
       {/* ── Scoped tab bar ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: 'none', flexShrink: 0 }}>
         {tabData.map(t => (
           <button
             key={t.id}
@@ -725,7 +725,7 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
     <div>
       {/* Component meta header */}
       {(model.description || model.folder) && (
-        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)' }}>
+        <div style={{ padding: '8px 12px', borderBottom: 'none' }}>
           {model.folder && (
             <div style={{ marginBottom: model.description ? 4 : 0 }}>
               <span style={{ fontSize: 9, background: 'var(--bld-bg-input)', color: 'var(--bld-text-disabled)', borderRadius: 3, padding: '1px 5px', fontWeight: 600 }}>
@@ -744,12 +744,12 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
       {/* Properties section */}
       <PropertiesSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
+      <div style={{ borderTop: 'none' }} />
 
       {/* Variables section */}
       <VariablesSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
+      <div style={{ borderTop: 'none' }} />
 
       {/* Workflows section */}
       <ActionsTab
@@ -759,12 +759,12 @@ function ComponentDefinitionTab({ model, modelId, openWorkflowId, onOpenWorkflow
         onOpenWorkflow={onOpenWorkflow}
       />
 
-      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
+      <div style={{ borderTop: 'none' }} />
 
       {/* Triggers (custom component events) */}
       <TriggersSection model={model} modelId={modelId} />
 
-      <div style={{ borderTop: '1px solid var(--bld-bg-input)' }} />
+      <div style={{ borderTop: 'none' }} />
 
       {/* Formulas section */}
       <FormulasSection model={model} modelId={modelId} />
@@ -872,7 +872,7 @@ function SettingsTab({ model, modelId, designContent }: {
     <div>
       {/* Component description */}
       {model.description && (
-        <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-3)', borderBottom: '1px solid var(--bld-bg-input)', fontStyle: 'italic' }}>
+        <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-3)', borderBottom: 'none', fontStyle: 'italic' }}>
           {model.description}
         </div>
       )}
@@ -906,7 +906,7 @@ function SettingsTab({ model, modelId, designContent }: {
 
       {/* Normal design content below */}
       {designContent && (
-        <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 4 }}>
+        <div style={{ borderTop: 'none', marginTop: 4 }}>
           {designContent}
         </div>
       )}
@@ -1173,7 +1173,7 @@ type VarType = typeof VAR_TYPES[number];
 
 const VAR_TYPE_COLORS: Record<VarType, string> = {
   string: 'var(--bld-accent)', number: 'var(--bld-warning)', boolean: 'var(--bld-success)',
-  object: 'var(--bld-ai-accent)', array: 'var(--bld-badge-boolean)',
+  object: 'var(--bld-accent)', array: 'var(--bld-badge-boolean)',
 };
 
 // ─── Shared slide-panel overlay (used by Variables + Formulas) ────────────────
@@ -1200,7 +1200,7 @@ function ComponentSlideOverlay({
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', padding: '8px 12px',
-        borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0, gap: 8,
+        borderBottom: 'none', flexShrink: 0, gap: 8,
       }}>
         <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
         <button
@@ -1357,7 +1357,7 @@ const FP_ICON_BTN: React.CSSProperties = {
   fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0,
 };
 const FP_INLINE_INPUT: React.CSSProperties = {
-  flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-ai-accent)', borderRadius: 3,
+  flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-accent)', borderRadius: 3,
   color: 'var(--bld-text-1)', fontSize: 11, padding: '2px 6px', outline: 'none',
 };
 
@@ -1432,7 +1432,7 @@ function ComponentFolderPicker({
           maxHeight: 280, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* No folder row */}
-          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700, letterSpacing: '0.05em' }}>NO FOLDER</div>
+          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700 }}>NO FOLDER</div>
           <div
             style={{ ...FP_ROW, background: !value ? 'var(--bld-bg-elevated)' : 'transparent' }}
             onClick={() => { onChange(undefined); setOpen(false); }}
@@ -1506,10 +1506,10 @@ function ComponentFolderPicker({
           </div>
 
           {/* Footer */}
-          <div style={{ borderTop: '1px solid var(--bld-bg-input)', padding: '6px 8px' }}>
+          <div style={{ borderTop: 'none', padding: '6px 8px' }}>
             <button
               onClick={() => setCreating('')}
-              style={{ background: 'none', border: 'none', color: 'var(--bld-ai-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
             >+ Create new folder</button>
           </div>
         </div>,
@@ -1734,7 +1734,7 @@ function DataTab({ model, modelId }: { model: SharedComponentModel; modelId: str
   return (
     <div>
       <VariablesSection model={model} modelId={modelId} />
-      <div style={{ borderTop: '1px solid var(--bld-bg-input)', marginTop: 6 }} />
+      <div style={{ borderTop: 'none', marginTop: 6 }} />
       <FormulasSection model={model} modelId={modelId} />
     </div>
   );
@@ -1777,7 +1777,7 @@ function VariableRow({ id, varDef, depth = 0, isEditing, onEdit, onClose, onChan
         </button>
       </div>
       {isEditing && (
-        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: '1px solid var(--bld-bg-input)', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: 'none', borderBottom: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
             <label style={SECTION_LABEL}>Label</label>
             <input
@@ -1849,7 +1849,7 @@ function FormulaRow({ id, formulaDef, isEditing, onEdit, onClose, onChange, onDe
         </button>
       </div>
       {isEditing && (
-        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: '1px solid var(--bld-bg-input)', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '6px 12px 10px', background: 'var(--bld-bg-base)', borderTop: 'none', borderBottom: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
             <label style={SECTION_LABEL}>Name</label>
             <input
@@ -2052,7 +2052,7 @@ function TriggerRow({ trigger, onEdit, onDelete }: {
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-base)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: 12, color: 'var(--bld-ai-accent)', flexShrink: 0 }}>⚡</span>
+      <span style={{ fontSize: 12, color: 'var(--bld-accent)', flexShrink: 0 }}>⚡</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {trigger.name}
@@ -2302,7 +2302,7 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
       display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
       background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
       color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0,
-      fontWeight: 600, letterSpacing: '0.04em',
+      fontWeight: 600,
     };
     return (
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -2361,12 +2361,12 @@ export function NewComponentButton({ selectedNode }: { selectedNode: SDUINode | 
           display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px',
           background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
           color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0,
-          fontWeight: 600, letterSpacing: '0.04em',
+          fontWeight: 600,
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-ai-accent)';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-accent)';
           (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)';
-          (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.12)';
+          (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.1)';
         }}
         onMouseLeave={e => {
           (e.currentTarget as HTMLElement).style.borderColor = 'var(--bld-border-subtle)';

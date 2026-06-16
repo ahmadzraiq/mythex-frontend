@@ -61,21 +61,21 @@ export function BindingIcon({ isBound, onClick, 'data-testid': testId }: Binding
         cursor: 'pointer',
         border: 'none',
         borderRadius: 6,
-        background: isBound ? '#3730a3' : '#1f2937',
-        color: isBound ? '#a5b4fc' : '#6b7280',
+        background: isBound ? 'var(--bld-accent)' : 'var(--bld-bg-elevated)',
+        color: isBound ? '#fff' : 'var(--bld-text-disabled)',
         transition: 'background 0.15s, color 0.15s',
         padding: 0,
       }}
       onMouseEnter={e => {
         if (!isBound) {
-          (e.currentTarget as HTMLElement).style.background = '#2d3748';
-          (e.currentTarget as HTMLElement).style.color = '#a5b4fc';
+          (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)';
         }
       }}
       onMouseLeave={e => {
         if (!isBound) {
-          (e.currentTarget as HTMLElement).style.background = '#1f2937';
-          (e.currentTarget as HTMLElement).style.color = '#6b7280';
+          (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)';
         }
       }}
     >
@@ -132,11 +132,18 @@ interface FieldWithBindingProps {
    * the field differs from its default and shows a Reset popup on hover.
    */
   cssProp?: string;
+  /**
+   * Extra nodes rendered in the header row (headerTitle layout only),
+   * placed between the title and the bind icon. Use for compact action
+   * buttons like a "link sides" toggle that should sit next to the bind icon.
+   */
+  headerActions?: React.ReactNode;
 }
 
 export function FieldWithBinding({
   label, displayLabel, hint, value, onChange, children, expectedType = 'any', stackLayout = false, headerTitle, topAlign = false,
   responsiveDot = false, responsiveOverrides, onResponsiveRemove, onResponsiveReset, responsiveCssProp, cssProp,
+  headerActions,
 }: FieldWithBindingProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const bound = isBoundValue(value);
@@ -192,8 +199,8 @@ export function FieldWithBinding({
               data-testid="edit-formula-btn"
               onClick={openEditor}
               style={{
-                flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.08)', border: '1px solid var(--bld-accent)',
+                borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                 textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}
             >
@@ -209,17 +216,20 @@ export function FieldWithBinding({
     );
   }
 
-  // ── Header-title layout: "TITLE  [bind]" on top, children/formula below ──────
+  // ── Header-title layout: "TITLE  [headerActions] [bind]" on top, children/formula below ──────
   if (headerTitle) {
     return (
       <div data-field={label} style={{ position: 'relative' }}>
-        {/* Title row — bind icon flush right */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center' }}>
+        {/* Title row — optional headerActions + bind icon flush right */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontWeight: 700, textTransform: 'none', display: 'flex', alignItems: 'center' }}>
             <ChangedLabel text={headerTitle!} cssProp={cssProp} style={{ fontSize: 9 }} />
             {dotEl}
           </span>
-          <BindingIcon isBound={bound} onClick={openEditor} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {headerActions}
+            <BindingIcon isBound={bound} onClick={openEditor} />
+          </div>
         </div>
         {/* Content row */}
         {bound ? (
@@ -227,8 +237,8 @@ export function FieldWithBinding({
             data-testid="edit-formula-btn"
             onClick={openEditor}
             style={{
-              width: '100%', padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              width: '100%', padding: '3px 8px', background: 'rgba(59,130,246,0.08)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left',
             }}
           >
@@ -269,8 +279,8 @@ export function FieldWithBinding({
               data-testid="edit-formula-btn"
               onClick={openEditor}
               style={{
-                flex: 1, padding: '3px 8px', background: '#2e1065', border: '1px solid #7c3aed',
-                borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+                flex: 1, padding: '3px 8px', background: 'rgba(59,130,246,0.08)', border: '1px solid var(--bld-accent)',
+                borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
                 textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}
             >

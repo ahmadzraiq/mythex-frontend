@@ -1386,16 +1386,31 @@ export const workflowStepsHandler =
     // (ReferenceError, SyntaxError, etc.) the string is a literal, not a
     // formula, so we keep the original string value.
     const resolveParamValue = (v: unknown, callingCtx: Record<string, unknown>): unknown => {
-      if (typeof v !== 'string' || v.trim().length === 0) return v;
-      try {
-        const result = evaluateFormula(v, callingCtx);
-        // Evaluator flagged the string as an invalid formula → treat as a
-        // literal string value (e.g. "World", "Hi", "Ahmad").
-        if (result.error != null) return v;
-        return result.value;
-      } catch {
-        return v;
+      if (typeof v === 'string') {
+        if (v.trim().length === 0) return v;
+        try {
+          const result = evaluateFormula(v, callingCtx);
+          // Evaluator flagged the string as an invalid formula → treat as a
+          // literal string value (e.g. "World", "Hi", "Ahmad").
+          if (result.error != null) return v;
+          return result.value;
+        } catch {
+          return v;
+        }
       }
+      // Evaluate { js } / { formula } binding objects so element action params
+      // like { js: "context?.item?.data?.value" } resolve to their primitive
+      // values before being stored as workflow parameters.
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+        const obj = v as Record<string, unknown>;
+        if (typeof obj.js === 'string' || typeof obj.formula === 'string') {
+          try {
+            const result = evaluateFormula(obj as object, callingCtx);
+            if (result.error == null) return result.value;
+          } catch { /* fall through to raw value */ }
+        }
+      }
+      return v;
     };
 
     let parameters: Record<string, unknown> | undefined;

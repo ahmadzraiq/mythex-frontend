@@ -159,6 +159,13 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
     else if (clean === 'grow-0')   { (style as Record<string, string>).flexGrow = '0'; }
     else if (clean === 'shrink')   { (style as Record<string, string>).flexShrink = '1'; }
     else if (clean === 'shrink-0') { (style as Record<string, string>).flexShrink = '0'; }
+    // grid column/row span utilities — NOT compiled by NativeWind JIT for JSON-config classes.
+    // Must emit as inline styles so the outer Animated.View wrapper forwards gridColumn/gridRow
+    // to the grid container and col-span-* / row-span-* work correctly on mapped nodes.
+    else if (clean === 'col-span-full') { (style as Record<string, string>).gridColumn = '1 / -1'; }
+    else if (/^col-span-(\d+)$/.test(clean)) { (style as Record<string, string>).gridColumn = `span ${clean.split('-')[2]}`; }
+    else if (clean === 'row-span-full') { (style as Record<string, string>).gridRow = '1 / -1'; }
+    else if (/^row-span-(\d+)$/.test(clean)) { (style as Record<string, string>).gridRow = `span ${clean.split('-')[2]}`; }
     // margin-auto utilities — critical for centering animated nodes that use mx-auto.
     // classToInlineStyle only handles arbitrary [Npx] values, not keyword values like auto.
     // Without emitting them as inline styles, the outer Animated.View wrapper (which carries
@@ -1079,9 +1086,15 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
             parent: outerItemCtx,
             repeatedItems: arr,
           };
+          // For primitive items (string, number, boolean, null) set context.item.data to the
+          // primitive itself so that text bindings (`context?.item?.data`) and strict-equality
+          // checks (`context?.item?.data === '='`) both resolve correctly at runtime.
+          // Index / parent are still reachable via context.item.index / context.item.parent.
+          // For object items, data is the enriched dataCtx (fields + metadata).
+          const itemData = typeof item !== 'object' || item === null ? item : dataCtx;
           const itemCtx = {
             ...(typeof item === 'object' && item !== null ? (item as object) : {}),
-            data: dataCtx,
+            data: itemData,
             // top-level aliases kept for backward compat
             parent: outerItemCtx,
             index,
@@ -2051,7 +2064,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       // Also forward borderRadius variants so box-shadow on the outer wrapper follows the node's
       // rounded corners. Without this the shadow is rectangular while the inner content is rounded,
       // creating a visible corner artifact in both preview and builder modes.
-      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'margin', 'marginHorizontal', 'marginVertical', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'borderStyle', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'] as const) {
+      for (const key of ['top', 'right', 'bottom', 'left', 'zIndex', 'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'margin', 'marginHorizontal', 'marginVertical', 'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'borderStyle', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'gridColumn', 'gridRow'] as const) {
         if ((arbStyles as Record<string, unknown>)[key] !== undefined) {
           sizeOverride[key] = (arbStyles as Record<string, unknown>)[key];
         }

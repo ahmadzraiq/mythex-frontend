@@ -25,18 +25,18 @@ const ALL_PAGES = (routesConfig as { routes: Array<{ path: string; config: strin
 
 const SECTION_HDR: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '8px 12px', borderBottom: '1px solid #1f2937',
+  padding: '8px 12px',
 };
 const SEC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.08em',
+  fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)',
+  textTransform: 'none',
 };
 const EMPTY: React.CSSProperties = {
   fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
   padding: '10px 14px',
 };
 const ADD_BTN: React.CSSProperties = {
-  padding: '3px 10px', background: '#1d4ed8', border: 'none',
+  padding: '3px 10px', background: 'var(--bld-accent)', border: 'none',
   borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer',
 };
 
@@ -133,14 +133,14 @@ export const PAGE_TRIGGER_DEFS: TriggerTypeDef[] = [
 const TRIGGER_ICONS: Record<string, { Icon: IconComponent; color: string }> = {
   appLoadBefore:        { Icon: Icons.Globe,       color: '#a78bfa' },
   appLoad:              { Icon: Icons.Globe,       color: '#a78bfa' },
-  pageLoadBefore:       { Icon: Icons.Page,        color: '#60a5fa' },
-  pageLoad:             { Icon: Icons.Page,        color: '#60a5fa' },
-  pageUnload:           { Icon: Icons.Page,        color: '#60a5fa' },
+  pageLoadBefore:       { Icon: Icons.Page,        color: 'var(--bld-info)' },
+  pageLoad:             { Icon: Icons.Page,        color: 'var(--bld-info)' },
+  pageUnload:           { Icon: Icons.Page,        color: 'var(--bld-info)' },
   scroll:               { Icon: Icons.Scroll,      color: '#34d399' },
   resize:               { Icon: Icons.Resize,      color: '#34d399' },
   keydown:              { Icon: Icons.Keyboard,    color: '#34d399' },
   keyup:                { Icon: Icons.Keyboard,    color: '#34d399' },
-  collectionFetchError: { Icon: Icons.AlertCircle, color: '#f87171' },
+  collectionFetchError: { Icon: Icons.AlertCircle, color: 'var(--bld-error)' },
 };
 
 // ─── Trigger workflow row (exported for reuse in PageTriggersInRightPanel) ────
@@ -161,7 +161,7 @@ export function TriggerRow({
   const [hovered, setHovered] = useState(false);
   const iconDef = TRIGGER_ICONS[triggerValue];
   const Icon = iconDef?.Icon ?? Icons.Zap;
-  const iconColor = iconDef?.color ?? '#60a5fa';
+  const iconColor = iconDef?.color ?? 'var(--bld-info)';
   const stepsLabel = `${stepCount} step${stepCount !== 1 ? 's' : ''}`;
 
   return (
@@ -182,7 +182,7 @@ export function TriggerRow({
         {/* Icon */}
         <div style={{
           width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-          background: '#1e293b', border: '1px solid #334155',
+          background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: iconColor,
         }}>
@@ -204,8 +204,8 @@ export function TriggerRow({
 
         {/* Trigger value badge */}
         <div style={{
-          fontSize: 9, color: 'var(--bld-text-disabled)', background: '#0f172a',
-          border: '1px solid #1e293b', borderRadius: 3, padding: '2px 5px',
+          fontSize: 9, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-base)',
+          border: '1px solid var(--bld-bg-elevated)', borderRadius: 3, padding: '2px 5px',
           flexShrink: 0, maxWidth: 80, overflow: 'hidden',
           textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
@@ -219,8 +219,8 @@ export function TriggerRow({
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--bld-text-disabled)', fontSize: 16, padding: '0 2px', flexShrink: 0, lineHeight: 1,
           }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-border-subtle)')}
         >
           ×
         </button>
@@ -282,7 +282,7 @@ function TriggerSection({
   return (
     <div style={{
       flex: open ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0,
-      borderBottom: '2px solid #1f2937', display: 'flex', flexDirection: 'column',
+      borderBottom: '0.5px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column',
       overflow: 'hidden', transition: 'flex 0.2s',
     }}>
       {/* Header */}
@@ -291,19 +291,14 @@ function TriggerSection({
         onClick={onToggle}
       >
         <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{
-            fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s',
-            transform: open ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block',
-          }}>▶</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}><polyline points="9 18 15 12 9 6" /></svg>
           {title}
         </span>
         <button
           data-testid={`add-trigger-${title.toLowerCase().replace(' ', '-')}`}
           onClick={e => { e.stopPropagation(); addNew(); }}
           style={ADD_BTN}
-        >
-          + New
-        </button>
+        >+ New</button>
       </div>
 
       {open && (
@@ -340,14 +335,6 @@ export function TriggersTab() {
       data-testid="triggers-tab"
       style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
     >
-      {/* Description */}
-      <div style={{
-        padding: '6px 12px 5px', fontSize: 10, color: 'var(--bld-text-disabled)',
-        borderBottom: '1px solid #1f2937', flexShrink: 0,
-      }}>
-        Workflows that run automatically on every page (app lifecycle events).
-      </div>
-
       <TriggerSection
         title="App Triggers"
         defaultTrigger="appLoad"

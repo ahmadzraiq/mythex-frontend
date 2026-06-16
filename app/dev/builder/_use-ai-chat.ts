@@ -16,8 +16,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import type { AiChatMessage } from './_store-types';
 import { executeTool, CLIENT_SIDE_TOOLS } from '@/lib/ai/tool-executor';
+import { serializeVirtualFiles, applyVirtualFile, deleteVirtualFile } from './_virtual-files';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
+import { projects as projectsApi } from '@/lib/platform/api-client';
 import themeConfig from '@/config/theme.json';
+
+// Module-level cache: projectId → workspaceId (avoids repeated fetches)
+const workspaceIdCache = new Map<string, string>();
+async function resolveWorkspaceId(projectId: string): Promise<string | null> {
+  if (workspaceIdCache.has(projectId)) return workspaceIdCache.get(projectId)!;
+  try {
+    const { project } = await projectsApi.get(projectId);
+    workspaceIdCache.set(projectId, project.workspaceId);
+    return project.workspaceId;
+  } catch { return null; }
+}
 
 // Pre-compute default palette from the app's CSS variable defaults (strip '--' prefix).
 // Used when the user hasn't applied a theme preset yet so the AI always receives real hex values.
@@ -92,7 +105,9 @@ type BuilderChatSSE =
   | { type: 'planner_thinking_delta'; round: number; delta: string }
   | { type: 'turn_stats'; totalDurationMs: number; usdEstimate?: number; toolCalls: number; ops: number; agents: number }
   | { type: 'done'; tools: Array<{ name: string; input: Record<string, unknown>; result?: unknown }> }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'file_written'; path: string; content: string }
+  | { type: 'file_deleted'; path: string };
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -593,6 +608,9 @@ export function useAiChat() {
       .map(id => findNodeById(store.pageNodes, id))
       .filter(Boolean);
 
+    const currentProjectId = getProjectId();
+    const resolvedWorkspaceId = currentProjectId ? await resolveWorkspaceId(currentProjectId) : null;
+
     try {
       const res = await fetch('/api/ai/builder-chat', {
         method: 'POST',
@@ -655,6 +673,11 @@ export function useAiChat() {
           threadId,
           chatHistory: store.aiChatHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
           model: store.aiSelectedModel,
+          // File-agent payload: full virtual file snapshot for this turn
+          virtualFiles: serializeVirtualFiles(store).files,
+          // For token usage recording
+          projectId: currentProjectId,
+          workspaceId: resolvedWorkspaceId,
         }),
         signal: abort.signal,
       });
@@ -698,7 +721,24 @@ export function useAiChat() {
           try {
             const ev = JSON.parse(json) as BuilderChatSSE;
 
-            if (ev.type === 'round_start') {
+            if (ev.type === 'file_written') {
+              // File-agent write: apply the new file content to the store
+              const fileStore = useBuilderStore.getState();
+              const applyResult = applyVirtualFile(fileStore, ev.path as string, ev.content as string);
+              if (!applyResult.ok) {
+                console.warn('[file_written] apply failed:', ev.path, applyResult.error);
+                store.updateLastAiMessage({
+                  fileApplyErrors: [
+                    ...(store.aiChatHistory[store.aiChatHistory.length - 1]?.fileApplyErrors ?? []),
+                    { path: ev.path as string, error: applyResult.error ?? 'unknown error' },
+                  ],
+                });
+              }
+            } else if (ev.type === 'file_deleted') {
+              // File-agent delete: remove resource from the store
+              const fileStore = useBuilderStore.getState();
+              deleteVirtualFile(fileStore, ev.path as string);
+            } else if (ev.type === 'round_start') {
               // New Anthropic call starting — show "Planning…" between rounds (round > 1 only)
               accRoundCount = Math.max(accRoundCount, ev.round ?? 1);
               if (ev.round > 1) {
@@ -955,6 +995,8 @@ export function useAiChat() {
               store.updateLastAiMessage({ debug: { ...debug }, streaming: true });
             } else if (ev.type === 'done') {
               store.setAiCurrentTool(null);
+              // Notify the token meter to refresh
+              window.dispatchEvent(new CustomEvent('builder:ai-turn-done'));
               // Read current buildPlanUnits so it is preserved in the final update
               const lastMsg = store.aiChatHistory[store.aiChatHistory.length - 1];
               const existingBuildPlanUnits = lastMsg?.buildPlanUnits;

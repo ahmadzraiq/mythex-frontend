@@ -65,22 +65,22 @@ const BTN: React.CSSProperties = {
   cursor: 'pointer', whiteSpace: 'nowrap',
 };
 const BTN_ACTIVE: React.CSSProperties = {
-  ...BTN, background: 'rgba(99,102,241,0.15)', color: '#a5b4fc',
+  ...BTN, background: 'rgba(99,102,241,0.15)', color: 'var(--bld-badge-text)',
   border: '1px solid rgba(99,102,241,0.3)',
 };
 const BTN_PRIMARY: React.CSSProperties = {
-  ...BTN, background: '#4f46e5', color: '#fff',
+  ...BTN, background: 'var(--bld-accent-hover)', color: '#fff',
   border: '1px solid #4f46e5', fontWeight: 600,
 };
 const INPUT_STYLE: React.CSSProperties = {
-  background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
+  background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
   padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
 const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: 'pointer' };
 const PANEL_STYLE: React.CSSProperties = {
   position: 'absolute', zIndex: 50,
-  background: '#0f172a', border: '1px solid #1e293b',
+  background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)',
   borderRadius: 8, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
   minWidth: 280,
 };
@@ -517,7 +517,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
         {selectedTable && (
           <>
             {/* Breadcrumb + Settings */}
-            <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #1e293b', flexShrink: 0, position: 'relative', zIndex: 41 }}>
+            <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, position: 'relative', zIndex: 41 }}>
               <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>⊞</span>
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>{selectedTable.displayName}</span>
               <div style={{ flex: 1 }} />
@@ -585,7 +585,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
 
             {/* Runtime param value bar — shown when the active view has defined parameters */}
             {activeView !== 'data' && (viewParamsMap[activeView] ?? []).length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, padding: '8px 16px', borderBottom: '1px solid #1e293b', background: '#080d17' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, padding: '8px 16px', borderBottom: '1px solid var(--bld-bg-elevated)', background: '#080d17' }}>
                 {(viewParamsMap[activeView] ?? []).map((p) => (
                   <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>{p.name}</span>
@@ -593,7 +593,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
                       value={paramValues[p.id] ?? p.defaultValue}
                       onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
                       placeholder="Enter a value"
-                      style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', width: 160 }}
+                      style={{ background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', width: 160 }}
                     />
                   </div>
                 ))}
@@ -744,7 +744,7 @@ function SettingsCard({
       {/* Name */}
       <div style={{ padding: '16px 16px 12px' }}>
         <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-          Name <span style={{ color: '#ef4444' }}>*</span>
+          Name <span style={{ color: 'var(--bld-error)' }}>*</span>
         </label>
         <input
           value={name}
@@ -763,10 +763,10 @@ function SettingsCard({
       </div>
 
       {/* Divider + Delete */}
-      <div style={{ borderTop: '1px solid #1e293b', padding: '12px 16px' }}>
+      <div style={{ borderTop: '1px solid var(--bld-bg-elevated)', padding: '12px 16px' }}>
         <button
           onClick={onDelete}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--bld-text-3)', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--bld-text-3)', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
         >
           🗑 Delete
         </button>
@@ -786,8 +786,8 @@ const RICH_TOOLBAR = [
 
 function RichTextArea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div style={{ border: '1px solid #334155', borderRadius: 6, overflow: 'hidden', background: '#1e293b' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', borderBottom: '1px solid #334155', flexWrap: 'wrap' }}>
+    <div style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', background: 'var(--bld-bg-elevated)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', borderBottom: '1px solid var(--bld-border-subtle)', flexWrap: 'wrap' }}>
         {RICH_TOOLBAR.map((t) => (
           <button
             key={t.title}
@@ -837,29 +837,29 @@ function Sidebar({
   onDeleteAll: () => void;
 }) {
   const sideInputStyle: React.CSSProperties = {
-    background: '#111827', border: '1px solid #374151', borderRadius: 4,
+    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
     padding: '4px 8px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none',
     width: '100%', boxSizing: 'border-box',
   };
 
   return (
-    <div style={{ width: 220, borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0 }}>
-      <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
+    <div style={{ width: 220, borderRight: '1px solid var(--bld-bg-elevated)', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>Tables</span>
         <div style={{ display: 'flex', gap: 5 }}>
           <button
             onClick={onImportErd}
             title="Import from ERD (dbdiagram.io)"
-            style={{ ...BTN, border: '1px solid #374151', padding: '3px 8px', fontSize: 11, color: 'var(--bld-text-3)' }}
+            style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', padding: '3px 8px', fontSize: 11, color: 'var(--bld-text-3)' }}
           >⬆ ERD</button>
           <button onClick={onToggleAddTable} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+ Add</button>
         </div>
       </div>
-      <div style={{ padding: '8px 10px', borderBottom: '1px solid #1e293b' }}>
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
         <input value={tableSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search tables" style={sideInputStyle} />
       </div>
       {showAddTable && (
-        <div style={{ padding: 10, borderBottom: '1px solid #1e293b', background: 'rgba(79,70,229,0.05)' }}>
+        <div style={{ padding: 10, borderBottom: '1px solid var(--bld-bg-elevated)', background: 'rgba(79,70,229,0.05)' }}>
           <input
             autoFocus value={newTableName} onChange={(e) => onNewTableNameChange(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') onCreateTable(); if (e.key === 'Escape') onCancelAddTable(); }}
@@ -869,7 +869,7 @@ function Sidebar({
             <button onClick={onCreateTable} disabled={creatingTable || !newTableName.trim()} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: creatingTable ? 0.6 : 1, fontSize: 11 }}>
               {creatingTable ? '…' : 'Create'}
             </button>
-            <button onClick={onCancelAddTable} style={{ ...BTN, border: '1px solid #374151', fontSize: 11 }}>✕</button>
+            <button onClick={onCancelAddTable} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', fontSize: 11 }}>✕</button>
           </div>
         </div>
       )}
@@ -884,22 +884,22 @@ function Sidebar({
             <div key={t.id} onClick={() => onSelectTable(t.id)} style={{
               display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', cursor: 'pointer',
               background: active ? 'rgba(79,70,229,0.12)' : 'transparent',
-              borderLeft: `2px solid ${active ? '#6366f1' : 'transparent'}`,
+              borderLeft: `2px solid ${active ? 'var(--bld-accent)' : 'transparent'}`,
             }}>
-              <span style={{ fontSize: 12, color: active ? '#818cf8' : '#475569' }}>⊞</span>
-              <span style={{ flex: 1, fontSize: 12, color: active ? '#e2e8f0' : '#94a3b8', fontWeight: active ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, color: active ? 'var(--bld-badge-text)' : 'var(--bld-border-subtle)' }}>⊞</span>
+              <span style={{ flex: 1, fontSize: 12, color: active ? '#e2e8f0' : 'var(--bld-text-3)', fontWeight: active ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {t.displayName}
               </span>
-              <span style={{ fontSize: 10, color: '#334155' }}>{t.columns.length + 3}</span>
+              <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)' }}>{t.columns.length + 3}</span>
             </div>
           );
         })}
       </div>
       {tables.length > 0 && (
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #1e293b' }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--bld-bg-elevated)' }}>
           <button
             onClick={onDeleteAll}
-            style={{ width: '100%', padding: '5px 0', fontSize: 11, background: 'rgba(239,68,68,0.08)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 5, cursor: 'pointer' }}
+            style={{ width: '100%', padding: '5px 0', fontSize: 11, background: 'rgba(239,68,68,0.08)', color: 'var(--bld-error)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 5, cursor: 'pointer' }}
           >
             🗑 Remove All Tables
           </button>
@@ -948,12 +948,12 @@ function ViewTabBar({
   };
 
   const sideInput: React.CSSProperties = {
-    background: '#111827', border: '1px solid #374151', borderRadius: 4,
+    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
     padding: '3px 7px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', boxSizing: 'border-box',
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #1e293b', flexShrink: 0, overflow: 'visible', position: 'relative', zIndex: 41 }}>
+    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, overflow: 'visible', position: 'relative', zIndex: 41 }}>
       <button style={activeView === 'data' ? tabActive : tabBase} onClick={() => onSelectView('data')}>
         <span style={{ fontSize: 11 }}>⊞</span> Data
       </button>
@@ -1004,10 +1004,10 @@ function ViewTabBar({
             placeholder="View name" style={{ ...sideInput, width: 120 }}
           />
           <button onClick={onCreateView} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+</button>
-          <button onClick={onCancelNewView} style={{ ...BTN, border: '1px solid #374151', padding: '3px 6px', fontSize: 11 }}>✕</button>
+          <button onClick={onCancelNewView} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', padding: '3px 6px', fontSize: 11 }}>✕</button>
         </div>
       ) : (
-        <button style={{ ...tabBase, color: '#6366f1' }} onClick={onToggleNewView}>
+        <button style={{ ...tabBase, color: 'var(--bld-accent)' }} onClick={onToggleNewView}>
           + New view
         </button>
       )}
@@ -1028,18 +1028,18 @@ function Toolbar({
   hasActiveSorts: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderBottom: '1px solid #1e293b', flexShrink: 0, background: '#080d17' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, background: '#080d17' }}>
       {isDataTab
         ? <button style={activePanel === 'insert' ? BTN_ACTIVE : BTN_PRIMARY} onClick={() => onTogglePanel('insert')}>+ Insert</button>
-        : <button style={(activePanel as string) === 'parameters' ? BTN_ACTIVE : { ...BTN, background: '#1e293b', border: '1px solid #334155', color: 'var(--bld-text-2)', borderRadius: 6 }} onClick={() => onTogglePanel('parameters')}>⊕ Parameters</button>
+        : <button style={(activePanel as string) === 'parameters' ? BTN_ACTIVE : { ...BTN, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', color: 'var(--bld-text-2)', borderRadius: 6 }} onClick={() => onTogglePanel('parameters')}>⊕ Parameters</button>
       }
-      <div style={{ width: 1, height: 16, background: '#1e293b', margin: '0 4px' }} />
+      <div style={{ width: 1, height: 16, background: 'var(--bld-bg-elevated)', margin: '0 4px' }} />
       <button style={activePanel === 'columns' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('columns')}>⊞ Columns</button>
-      <button style={activePanel === 'filter' ? BTN_ACTIVE : (hasActiveFilters ? { ...BTN, color: '#818cf8' } : BTN)} onClick={() => onTogglePanel('filter')}>
-        ⫠ Filter{hasActiveFilters && <span style={{ fontSize: 10, background: '#4f46e5', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
+      <button style={activePanel === 'filter' ? BTN_ACTIVE : (hasActiveFilters ? { ...BTN, color: 'var(--bld-badge-text)' } : BTN)} onClick={() => onTogglePanel('filter')}>
+        ⫠ Filter{hasActiveFilters && <span style={{ fontSize: 10, background: 'var(--bld-accent-hover)', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
       </button>
-      <button style={activePanel === 'sort' ? BTN_ACTIVE : (hasActiveSorts ? { ...BTN, color: '#818cf8' } : BTN)} onClick={() => onTogglePanel('sort')}>
-        ↕ Sort{hasActiveSorts && <span style={{ fontSize: 10, background: '#4f46e5', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
+      <button style={activePanel === 'sort' ? BTN_ACTIVE : (hasActiveSorts ? { ...BTN, color: 'var(--bld-badge-text)' } : BTN)} onClick={() => onTogglePanel('sort')}>
+        ↕ Sort{hasActiveSorts && <span style={{ fontSize: 10, background: 'var(--bld-accent-hover)', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
       </button>
       <button style={activePanel === 'pagination' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('pagination')}>⎘ Pagination</button>
       <div style={{ flex: 1 }} />
@@ -1074,7 +1074,7 @@ function InsertPanel({
 
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 300, maxHeight: 420, overflow: 'auto' }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Insert a row</span>
         <button onClick={() => setMode('menu')} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 11 }}>← Back</button>
       </div>
@@ -1083,7 +1083,7 @@ function InsertPanel({
           <div key={col.id}>
             <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 3 }}>
               {typeIcon(col.type)} {col.displayName ?? col.name}
-              {col.required && <span style={{ color: '#ef4444', marginLeft: 2 }}>*</span>}
+              {col.required && <span style={{ color: 'var(--bld-error)', marginLeft: 2 }}>*</span>}
             </label>
             <input
               style={{ ...INPUT_STYLE, fontSize: 12, padding: '4px 8px' }}
@@ -1095,11 +1095,11 @@ function InsertPanel({
         ))}
         {table.columns.length === 0 && <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)' }}>No custom columns. Add columns via the + button.</p>}
       </div>
-      <div style={{ padding: '10px 14px', borderTop: '1px solid #1e293b', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '10px 14px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', gap: 8 }}>
         <button onClick={onInsertRow} disabled={inserting} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: inserting ? 0.6 : 1 }}>
           {inserting ? 'Inserting…' : 'Insert row'}
         </button>
-        <button onClick={onClose} style={{ ...BTN, border: '1px solid #374151' }}>Cancel</button>
+        <button onClick={onClose} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)' }}>Cancel</button>
       </div>
     </div>
   );
@@ -1110,7 +1110,7 @@ function MenuItem({ icon, title, subtitle, onClick }: { icon: string; title: str
   return (
     <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', cursor: 'pointer', background: hover ? 'rgba(99,102,241,0.08)' : 'transparent' }}>
-      <div style={{ width: 28, height: 28, background: '#1e293b', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#818cf8', flexShrink: 0 }}>{icon}</div>
+      <div style={{ width: 28, height: 28, background: 'var(--bld-bg-elevated)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--bld-badge-text)', flexShrink: 0 }}>{icon}</div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</div>
         <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2 }}>{subtitle}</div>
@@ -1134,7 +1134,7 @@ function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: 
 
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 260 }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #1e293b' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Columns</span>
       </div>
       <div style={{ padding: '6px 0', maxHeight: 280, overflow: 'auto' }}>
@@ -1165,14 +1165,14 @@ function PaginationPanel({ pending, onChange, onSave }: { pending: number; onCha
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 320 }}>
       <div style={{ padding: '12px 14px' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Rows per page <span style={{ color: '#ef4444' }}>*</span></div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Rows per page <span style={{ color: 'var(--bld-error)' }}>*</span></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {PAGE_SIZE_OPTIONS.map((opt) => (
             <button key={opt} onClick={() => onChange(opt)} style={{
               padding: '5px 14px', fontSize: 12, borderRadius: 20, cursor: 'pointer',
               background: pending === opt ? 'rgba(99,102,241,0.2)' : 'transparent',
-              border: `1px solid ${pending === opt ? '#6366f1' : '#374151'}`,
-              color: pending === opt ? '#a5b4fc' : '#94a3b8',
+              border: `1px solid ${pending === opt ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`,
+              color: pending === opt ? 'var(--bld-badge-text)' : 'var(--bld-text-3)',
               fontWeight: pending === opt ? 600 : 400,
             }}>
               {opt === 0 ? 'Unlimited' : opt}
@@ -1180,7 +1180,7 @@ function PaginationPanel({ pending, onChange, onSave }: { pending: number; onCha
           ))}
         </div>
       </div>
-      <div style={{ padding: '8px 14px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ padding: '8px 14px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'flex-end' }}>
         <button onClick={onSave} style={{ ...BTN_PRIMARY, padding: '5px 16px' }}>Save</button>
       </div>
     </div>
@@ -1204,7 +1204,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
     onChange(pending.map((p) => p.id === id ? { ...p, ...patch } : p));
 
   const s: React.CSSProperties = {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
+    background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
     padding: '6px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none',
     boxSizing: 'border-box',
   };
@@ -1214,7 +1214,7 @@ function ParametersPanel({ pending, onChange, onReset, onSave }: {
       {pending.length > 0 && (
         <>
           {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 32px', gap: 8, padding: '10px 16px 4px', borderBottom: '1px solid #1e293b' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 32px', gap: 8, padding: '10px 16px 4px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
             {['Parameter name', 'Parameter type', 'Default value', ''].map((h) => (
               <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>{h}</span>
             ))}
@@ -1301,28 +1301,28 @@ function DataGrid({
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <thead>
           <tr style={{ background: '#0a0f1a', position: 'sticky', top: 0, zIndex: 5 }}>
-            <th style={{ width: 36, borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', padding: 0 }}>
+            <th style={{ width: 36, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34 }}>
-                <input type="checkbox" style={{ accentColor: '#6366f1' }} />
+                <input type="checkbox" style={{ accentColor: 'var(--bld-accent)' }} />
               </div>
             </th>
             {displayCols.map((col) => {
               const meta = colMeta(col);
               const system = col === 'id' || col === 'created_at' || col === 'updated_at';
               return (
-                <th key={col} style={{ width: COL_WIDTH, borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', padding: 0, textAlign: 'left' }}>
+                <th key={col} style={{ width: COL_WIDTH, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0, textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', height: 34 }}>
                     <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: system ? '#94a3b8' : '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col}</span>
-                    <span style={{ fontSize: 11, color: '#334155', cursor: 'pointer', flexShrink: 0 }}>⋮</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: system ? 'var(--bld-text-3)' : '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col}</span>
+                    <span style={{ fontSize: 11, color: 'var(--bld-border-subtle)', cursor: 'pointer', flexShrink: 0 }}>⋮</span>
                   </div>
                 </th>
               );
             })}
             {/* + add column — only on Data tab */}
             {isDataTab && (
-              <th style={{ width: 40, borderBottom: '1px solid #1e293b', padding: 0 }}>
-                <button onClick={onAddColumn} style={{ width: '100%', height: 34, background: 'none', border: 'none', cursor: 'pointer', color: '#334155', fontSize: 16 }} title="Add column">+</button>
+              <th style={{ width: 40, borderBottom: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
+                <button onClick={onAddColumn} style={{ width: '100%', height: 34, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-border-subtle)', fontSize: 16 }} title="Add column">+</button>
               </th>
             )}
           </tr>
@@ -1364,11 +1364,11 @@ function DataRow({
   const [hover, setHover] = useState(false);
   return (
     <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ background: hover ? 'rgba(99,102,241,0.04)' : 'transparent' }}>
-      <td style={{ width: 36, borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', padding: 0 }}>
+      <td style={{ width: 36, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 36 }}>
           {hover
-            ? <button onClick={() => onDeleteRow(rowId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, padding: 2 }} title="Delete row">✕</button>
-            : <input type="checkbox" style={{ accentColor: '#6366f1' }} />
+            ? <button onClick={() => onDeleteRow(rowId)} style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 12, padding: 2 }} title="Delete row">✕</button>
+            : <input type="checkbox" style={{ accentColor: 'var(--bld-accent)' }} />
           }
         </div>
       </td>
@@ -1377,21 +1377,21 @@ function DataRow({
         const system = col === 'id' || col === 'created_at' || col === 'updated_at';
         const raw = row[col];
         return (
-          <td key={col} style={{ borderBottom: '1px solid #1e293b', borderRight: '1px solid #1e293b', padding: 0, maxWidth: 180 }} onClick={() => !system && onStartEdit(rowId, col, raw)}>
+          <td key={col} style={{ borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0, maxWidth: 180 }} onClick={() => !system && onStartEdit(rowId, col, raw)}>
             {isEditing ? (
               <input autoFocus value={editingValue} onChange={(e) => onEditValue(e.target.value)}
                 onBlur={onCommitEdit} onKeyDown={(e) => { if (e.key === 'Enter') onCommitEdit(); if (e.key === 'Escape') onCancelEdit(); }}
-                style={{ width: '100%', height: 36, border: 'none', outline: '2px solid #6366f1', background: '#111827', color: 'var(--bld-text-2)', padding: '0 10px', fontSize: 12, boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 36, border: 'none', outline: '2px solid #6366f1', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-2)', padding: '0 10px', fontSize: 12, boxSizing: 'border-box' }}
               />
             ) : (
-              <div style={{ padding: '0 10px', height: 36, display: 'flex', alignItems: 'center', fontSize: 12, color: system ? '#475569' : '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: system ? 'default' : 'text' }}>
+              <div style={{ padding: '0 10px', height: 36, display: 'flex', alignItems: 'center', fontSize: 12, color: system ? 'var(--bld-border-subtle)' : '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: system ? 'default' : 'text' }}>
                 {formatCell(raw)}
               </div>
             )}
           </td>
         );
       })}
-      <td style={{ borderBottom: '1px solid #1e293b' }} />
+      <td style={{ borderBottom: '1px solid var(--bld-bg-elevated)' }} />
     </tr>
   );
 }
@@ -1404,7 +1404,7 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
   const [inputVal, setInputVal] = useState(String(page));
   useEffect(() => setInputVal(String(page)), [page]);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', borderTop: '1px solid #1e293b', fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0, background: '#080d17' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', borderTop: '1px solid var(--bld-bg-elevated)', fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0, background: '#080d17' }}>
       <span>{totalRows} {totalRows === 1 ? 'row' : 'rows'}</span>
       <div style={{ flex: 1 }} />
       <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...BTN, padding: '2px 8px', opacity: page <= 1 ? 0.3 : 1 }}>‹</button>
@@ -1412,7 +1412,7 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
       <input value={inputVal} onChange={(e) => setInputVal(e.target.value)}
         onBlur={() => { const n = parseInt(inputVal, 10); if (!isNaN(n) && n >= 1 && n <= totalPages) onPageChange(n); else setInputVal(String(page)); }}
         onKeyDown={(e) => { if (e.key === 'Enter') { const n = parseInt(inputVal, 10); if (!isNaN(n) && n >= 1 && n <= totalPages) onPageChange(n); } }}
-        style={{ width: 40, textAlign: 'center', background: '#111827', border: '1px solid #374151', borderRadius: 4, padding: '2px 4px', color: 'var(--bld-text-2)', fontSize: 12, outline: 'none' }}
+        style={{ width: 40, textAlign: 'center', background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '2px 4px', color: 'var(--bld-text-2)', fontSize: 12, outline: 'none' }}
       />
       <span>of {totalPages}</span>
       <button onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ ...BTN, padding: '2px 8px', opacity: page >= totalPages ? 0.3 : 1 }}>›</button>
@@ -1432,7 +1432,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
   return (
     <div style={{
       position: 'absolute', right: 0, top: 0, bottom: 0, width: 340, zIndex: 60,
-      background: '#0d1526', borderLeft: '1px solid #1e293b',
+      background: '#0d1526', borderLeft: '1px solid var(--bld-bg-elevated)',
       display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 20px rgba(0,0,0,0.4)',
     }}>
       {/* Rows */}
@@ -1440,7 +1440,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
         {/* Column Name */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-            Column Name <span style={{ color: '#ef4444' }}>*</span>
+            Column Name <span style={{ color: 'var(--bld-error)' }}>*</span>
           </label>
           <input
             autoFocus
@@ -1454,7 +1454,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
         {/* Column Type */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-            Column Type <span style={{ color: '#ef4444' }}>*</span>
+            Column Type <span style={{ color: 'var(--bld-error)' }}>*</span>
           </label>
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--bld-text-3)', pointerEvents: 'none', zIndex: 1 }}>
@@ -1517,7 +1517,7 @@ function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '14px 20px', borderTop: '1px solid #1e293b', flexShrink: 0 }}>
+      <div style={{ padding: '14px 20px', borderTop: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
         <button
           onClick={() => void onSave()}
           disabled={saving || !col.name?.trim()}
@@ -1569,12 +1569,12 @@ function ImportErdModal({ projectId, onImported, onClose }: {
     alignItems: 'center', justifyContent: 'center',
   };
   const CARD: React.CSSProperties = {
-    background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10,
+    background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10,
     boxShadow: '0 24px 64px rgba(0,0,0,0.7)', width: 560, maxWidth: '95vw',
     display: 'flex', flexDirection: 'column', overflow: 'hidden',
   };
   const INPUT: React.CSSProperties = {
-    background: '#111827', border: '1px solid #374151', borderRadius: 6,
+    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
     color: 'var(--bld-text-2)', fontSize: 12, fontFamily: 'monospace', padding: '10px 12px',
     resize: 'vertical', outline: 'none', width: '100%', boxSizing: 'border-box',
   };
@@ -1583,7 +1583,7 @@ function ImportErdModal({ projectId, onImported, onClose }: {
     <div style={OVERLAY} onClick={onClose}>
       <div style={CARD} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--bld-text-2)' }}>Import ERD</span>
             <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--bld-text-3)' }}>dbdiagram.io / DBML format</span>
@@ -1604,13 +1604,13 @@ function ImportErdModal({ projectId, onImported, onClose }: {
 
           {/* Preview */}
           {tableCount > 0 && !result && (
-            <div style={{ fontSize: 11, color: '#60a5fa', background: 'rgba(59,130,246,0.08)', borderRadius: 5, padding: '6px 10px' }}>
+            <div style={{ fontSize: 11, color: 'var(--bld-info)', background: 'rgba(59,130,246,0.08)', borderRadius: 5, padding: '6px 10px' }}>
               {tableCount} table{tableCount !== 1 ? 's' : ''} detected — will create tables + CRUD API endpoints
             </div>
           )}
 
           {err && (
-            <div style={{ fontSize: 11, color: '#f87171', background: 'rgba(239,68,68,0.08)', borderRadius: 5, padding: '6px 10px' }}>{err}</div>
+            <div style={{ fontSize: 11, color: 'var(--bld-error)', background: 'rgba(239,68,68,0.08)', borderRadius: 5, padding: '6px 10px' }}>{err}</div>
           )}
 
           {result && (
@@ -1621,15 +1621,15 @@ function ImportErdModal({ projectId, onImported, onClose }: {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid #374151', borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer' }}>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer' }}>
             {result ? 'Close' : 'Cancel'}
           </button>
           {!result && (
             <button
               onClick={() => void handleImport()}
               disabled={loading || !erd.trim()}
-              style={{ padding: '6px 16px', background: loading || !erd.trim() ? '#1e3a5f' : '#3b82f6', border: 'none', borderRadius: 6, color: loading || !erd.trim() ? '#4b5563' : '#fff', fontSize: 12, cursor: loading || !erd.trim() ? 'default' : 'pointer', fontWeight: 600 }}
+              style={{ padding: '6px 16px', background: loading || !erd.trim() ? '#1e3a5f' : '#3b82f6', border: 'none', borderRadius: 6, color: loading || !erd.trim() ? 'var(--bld-text-disabled)' : '#fff', fontSize: 12, cursor: loading || !erd.trim() ? 'default' : 'pointer', fontWeight: 600 }}
             >
               {loading ? 'Importing…' : 'Import'}
             </button>

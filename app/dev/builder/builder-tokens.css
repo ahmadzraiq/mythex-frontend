@@ -9,20 +9,23 @@
  */
 
 /* ─── Dark Theme (default) ─────────────────────────────────────────────────── */
+/* `:root` ensures tokens are available in portals (ReactDOM.createPortal renders
+ * outside [data-builder-ui], so tokens must also live on the document root). */
+:root,
 [data-builder-ui] {
   /* Surfaces */
-  --bld-bg-base:     #0f172a;
-  --bld-bg-panel:    #111827;
-  --bld-bg-elevated: #1e293b;
-  --bld-bg-input:    #1f2937;
-  --bld-bg-canvas:   #161d2e;
-  --bld-bg-hover:    rgba(255, 255, 255, 0.045);
-  --bld-bg-active:   rgba(59, 130, 246, 0.15);
+  --bld-bg-base:     #18181b;
+  --bld-bg-panel:    #18181b;
+  --bld-bg-elevated: #27272a;
+  --bld-bg-input:    #27272a;
+  --bld-bg-canvas:   #0d0d0f;
+  --bld-bg-hover:    rgba(255, 255, 255, 0.055);
+  --bld-bg-active:   rgba(99, 102, 241, 0.15);
 
   /* Borders */
-  --bld-border:        #1f2937;
-  --bld-border-subtle: #374151;
-  --bld-border-focus:  #3b82f6;
+  --bld-border:        rgba(255, 255, 255, 0.09);
+  --bld-border-subtle: rgba(255, 255, 255, 0.13);
+  --bld-border-focus:  #6366f1;
 
   /* Text */
   --bld-text-1:        #f1f5f9;
@@ -31,15 +34,15 @@
   --bld-text-disabled: #6b7280;
 
   /* Accent (blue) */
-  --bld-accent:        #3b82f6;
-  --bld-accent-hover:  #2563eb;
-  --bld-accent-subtle: rgba(59, 130, 246, 0.15);
+  --bld-accent:        #6366f1;
+  --bld-accent-hover:  #4f46e5;
+  --bld-accent-subtle: rgba(99, 102, 241, 0.15);
   --bld-accent-fg:     #ffffff;
 
   /* AI surface */
-  --bld-ai-bg:     #0a0f1e;
-  --bld-ai-accent: #7c3aed;
-  --bld-ai-border: #1e293b;
+  --bld-ai-bg:     #111115;
+  --bld-ai-accent: #6366f1;
+  --bld-ai-border: var(--bld-border);
 
   /* Feedback */
   --bld-success: #22c55e;
@@ -76,13 +79,22 @@
   --bld-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5);
   --bld-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6);
 
+  /* Glass surfaces (navbar, floating pills) */
+  --bld-glass-bg:     rgba(24, 24, 27, 0.82);
+  --bld-glass-border: rgba(63, 63, 70, 0.5);
+  --bld-glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+  /* Popups / dropdowns — more opaque than glass */
+  --bld-popup-bg:     rgba(22, 22, 25, 0.97);
+
   /* Misc */
-  --bld-scrollbar-thumb: #374151;
+  --bld-scrollbar-thumb: #3f3f46;
   --bld-scrollbar-track: transparent;
 }
 
 /* ─── Light Theme ───────────────────────────────────────────────────────────── */
-[data-builder-ui][data-bld-theme="light"] {
+[data-builder-ui][data-bld-theme="light"],
+[data-bld-theme="light"] {
   /* Surfaces */
   --bld-bg-base:     #f8fafc;
   --bld-bg-panel:    #ffffff;
@@ -93,9 +105,9 @@
   --bld-bg-active:   rgba(59, 130, 246, 0.1);
 
   /* Borders */
-  --bld-border:        #e2e8f0;
-  --bld-border-subtle: #cbd5e1;
-  --bld-border-focus:  #3b82f6;
+  --bld-border:        rgba(0, 0, 0, 0.1);
+  --bld-border-subtle: rgba(0, 0, 0, 0.15);
+  --bld-border-focus:  #4f46e5;
 
   /* Text */
   --bld-text-1:        #0f172a;
@@ -104,14 +116,14 @@
   --bld-text-disabled: #94a3b8;
 
   /* Accent — same blue works on light */
-  --bld-accent:        #2563eb;
-  --bld-accent-hover:  #1d4ed8;
-  --bld-accent-subtle: rgba(37, 99, 235, 0.1);
+  --bld-accent:        #4f46e5;
+  --bld-accent-hover:  #4338ca;
+  --bld-accent-subtle: rgba(79, 70, 229, 0.1);
   --bld-accent-fg:     #ffffff;
 
   /* AI surface */
   --bld-ai-bg:     #f0f4ff;
-  --bld-ai-accent: #7c3aed;
+  --bld-ai-accent: #6366f1;
   --bld-ai-border: #ddd6fe;
 
   /* Feedback — keep semantic meaning, adjusted for light */
@@ -140,6 +152,14 @@
   --bld-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.1);
   --bld-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.12);
   --bld-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* Glass surfaces (navbar, floating pills) */
+  --bld-glass-bg:     rgba(255, 255, 255, 0.88);
+  --bld-glass-border: rgba(0, 0, 0, 0.09);
+  --bld-glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  /* Popups / dropdowns — more opaque than glass */
+  --bld-popup-bg:     rgba(252, 252, 253, 0.98);
 
   /* Misc */
   --bld-scrollbar-thumb: #cbd5e1;
@@ -170,6 +190,21 @@
 }
 [data-builder-ui] input[type="range"] {
   accent-color: var(--bld-accent);
+}
+
+/* ─── Canvas dot-grid (light mode override) ─────────────────────────────────── */
+[data-bld-theme="light"] [data-testid="builder-canvas"] {
+  background-image:
+    radial-gradient(ellipse 65% 55% at 12% 88%, rgba(99,102,241,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 45% at 88% 10%, rgba(99,102,241,0.05) 0%, transparent 60%),
+    radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px) !important;
+  background-size: auto, auto, 22px 22px !important;
+}
+
+/* ─── Save spinner ──────────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* ─── Focus ring ────────────────────────────────────────────────────────────── */

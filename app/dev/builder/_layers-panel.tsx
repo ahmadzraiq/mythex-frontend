@@ -19,7 +19,7 @@ import { useBuilderStore, findParentNode, findNode, isNonDraggable } from './_st
 import type { BuilderStore } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
 
-export function Chevron({ open, size = 10, color = '#6b7280' }: { open?: boolean; size?: number; color?: string }) {
+export function Chevron({ open, size = 10, color = 'var(--bld-text-disabled)' }: { open?: boolean; size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       style={{ flexShrink: 0, transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
@@ -122,12 +122,12 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
 
   return (
     <div
-      style={{ position: 'fixed', left: x, top: y, background: '#1f2937', border: '1px solid #374151', borderRadius: 6, zIndex: 9999, minWidth: 140, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+      style={{ position: 'fixed', left: x, top: y, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, zIndex: 9999, minWidth: 140, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
       onMouseDown={e => e.stopPropagation()}
     >
       {items.map((item, i) =>
         item === null ? (
-          <div key={i} style={{ height: 1, background: '#374151', margin: '2px 0' }} />
+          <div key={i} style={{ height: 1, background: 'var(--bld-bg-elevated)', margin: '2px 0' }} />
         ) : (
           <button
             key={item.label}
@@ -137,13 +137,13 @@ export function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
               padding: '7px 14px',
               background: 'none',
               border: 'none',
-              color: item.danger ? '#f87171' : (item as { shared?: boolean }).shared ? '#60a5fa' : '#d1d5db',
+              color: item.danger ? 'var(--bld-error)' : (item as { shared?: boolean }).shared ? 'var(--bld-info)' : '#d1d5db',
               fontSize: 12,
               fontFamily: 'system-ui',
               textAlign: 'left',
               cursor: 'pointer',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#374151')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-border-subtle)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             onClick={() => { item.action(); onClose(); }}
           >
@@ -245,7 +245,7 @@ export const LayerRow = memo(function LayerRow_({
   if (condition != null) {
     const preview = JSON.stringify(condition);
     const short = preview.length > 40 ? preview.slice(0, 38) + '…' : preview;
-    badges.push({ key: 'if', label: 'if', icon: 'if', color: '#60a5fa', bg: '#1e3a5f', title: `Condition: ${short}` });
+    badges.push({ key: 'if', label: 'if', icon: 'if', color: 'var(--bld-info)', bg: '#1e3a5f', title: `Condition: ${short}` });
   }
 
   const mapPath = (node as { map?: unknown }).map;
@@ -256,14 +256,14 @@ export const LayerRow = memo(function LayerRow_({
         ? JSON.stringify(mapPath).slice(0, 30)
         : String(mapPath);
     const mapTitle = typeof mapPath === 'string' ? mapPath : JSON.stringify(mapPath);
-    badges.push({ key: 'map', label: `⟳ ${mapLabel}`, icon: '⟳', color: '#c084fc', bg: '#2e1065', title: `Repeat over: ${mapTitle}` });
+    badges.push({ key: 'map', label: `⟳ ${mapLabel}`, icon: '⟳', color: '#c084fc', bg: 'rgba(192,132,252,0.12)', title: `Repeat over: ${mapTitle}` });
   }
 
   const nodeActions = (node as { actions?: Record<string, unknown> }).actions;
   if (nodeActions != null) {
     const eventCount = Object.keys(nodeActions).length;
     const preview = Object.keys(nodeActions).join(', ');
-    badges.push({ key: 'act', label: `⚡ ${eventCount}`, icon: '⚡', color: '#818cf8', bg: '#1e1b4b', title: `Events: ${preview}` });
+    badges.push({ key: 'act', label: `⚡ ${eventCount}`, icon: '⚡', color: 'var(--bld-badge-text)', bg: 'rgba(129,140,248,0.12)', title: `Events: ${preview}` });
   }
 
   const ds = (node as { dataSource?: unknown }).dataSource;
@@ -273,7 +273,7 @@ export const LayerRow = memo(function LayerRow_({
 
   const nodeSharedMeta = (node as unknown as Record<string, unknown>)._shared as { id: string; name: string } | undefined;
   if (nodeSharedMeta) {
-    badges.push({ key: 'shared', label: 'SC', icon: 'SC', color: '#60a5fa', bg: '#1e3a5f', title: `Shared component: ${nodeSharedMeta.name}` });
+    badges.push({ key: 'shared', label: 'SC', icon: 'SC', color: 'var(--bld-info)', bg: '#1e3a5f', title: `Shared component: ${nodeSharedMeta.name}` });
   }
 
   const responsive = (node as unknown as Record<string, unknown>).responsive as Record<string, unknown> | undefined;
@@ -282,23 +282,23 @@ export const LayerRow = memo(function LayerRow_({
     if (bps.length > 0) {
       const bpIcons: Record<string, string> = { laptop: '💻', tablet: '📱', mobile: '📲' };
       const bpLabels = bps.map(b => bpIcons[b] ?? b).join(' ');
-      badges.push({ key: 'resp', label: bpLabels, icon: '📐', color: '#f59e0b', bg: '#451a03', title: `Responsive: ${bps.join(', ')}` });
+      badges.push({ key: 'resp', label: bpLabels, icon: '📐', color: 'var(--bld-warning)', bg: '#451a03', title: `Responsive: ${bps.join(', ')}` });
     }
   }
 
   if (node.popover) {
-    badges.push({ key: 'pop', label: 'Popover', icon: '◱', color: '#a78bfa', bg: '#312e81', title: 'Has popover config' });
+    badges.push({ key: 'pop', label: 'Popover', icon: '◱', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', title: 'Has popover config' });
   }
 
   const stateTag = (node as unknown as Record<string, unknown>)._stateTag as string | undefined;
   if (stateTag === 'loading') {
-    badges.push({ key: 'state', label: 'loading', icon: '⟳', color: '#fbbf24', bg: '#451a03', title: 'State: Loading' });
+    badges.push({ key: 'state', label: 'loading', icon: '⟳', color: 'var(--bld-warning)', bg: '#451a03', title: 'State: Loading' });
   } else if (stateTag === 'empty') {
     badges.push({ key: 'state', label: 'empty', icon: '○', color: '#6ee7b7', bg: '#022c22', title: 'State: Empty' });
   } else if (stateTag === 'default') {
-    badges.push({ key: 'state', label: 'default', icon: '◉', color: 'var(--bld-text-3)', bg: '#1f2937', title: 'State: Default' });
+    badges.push({ key: 'state', label: 'default', icon: '◉', color: 'var(--bld-text-3)', bg: 'var(--bld-bg-input)', title: 'State: Default' });
   } else if (stateTag) {
-    badges.push({ key: 'state', label: stateTag, icon: '◈', color: '#c084fc', bg: '#2e1065', title: `State: ${stateTag}` });
+    badges.push({ key: 'state', label: stateTag, icon: '◈', color: '#c084fc', bg: 'rgba(192,132,252,0.12)', title: `State: ${stateTag}` });
   }
 
   const startEdit = useCallback(() => {
@@ -400,7 +400,7 @@ export const LayerRow = memo(function LayerRow_({
             onChange={e => setEditVal(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false); }}
-            style={{ background: '#111827', border: '1px solid #3b82f6', borderRadius: 2, color: 'var(--bld-text-2)', fontSize: 10, padding: '0 4px', width: '100%' }}
+            style={{ background: 'var(--bld-bg-panel)', border: '1px solid #3b82f6', borderRadius: 2, color: 'var(--bld-text-2)', fontSize: 10, padding: '0 4px', width: '100%' }}
             onClick={e => e.stopPropagation()}
           />
         ) : (
@@ -439,7 +439,7 @@ export const LayerRow = memo(function LayerRow_({
       {/* Visibility — only shown when hidden (always) or hovered */}
       {isHidden && (
         <span
-          style={{ fontSize: 9, opacity: 0.7, marginLeft: 2, cursor: 'pointer', flexShrink: 0, color: '#f87171', lineHeight: 1 }}
+          style={{ fontSize: 9, opacity: 0.7, marginLeft: 2, cursor: 'pointer', flexShrink: 0, color: 'var(--bld-error)', lineHeight: 1 }}
           onClick={e => { e.stopPropagation(); onToggleVisibility(nodeId); }}
           title="Show"
         >
@@ -449,7 +449,7 @@ export const LayerRow = memo(function LayerRow_({
       {/* Lock — only shown when locked */}
       {isLocked && (
         <span
-          style={{ fontSize: 9, opacity: 0.7, marginLeft: 1, cursor: 'pointer', flexShrink: 0, color: '#fbbf24', lineHeight: 1 }}
+          style={{ fontSize: 9, opacity: 0.7, marginLeft: 1, cursor: 'pointer', flexShrink: 0, color: 'var(--bld-warning)', lineHeight: 1 }}
           onClick={e => { e.stopPropagation(); onToggleLock(nodeId); }}
           title="Unlock"
         >

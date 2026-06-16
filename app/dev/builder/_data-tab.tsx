@@ -124,8 +124,7 @@ const SEARCH_INPUT: React.CSSProperties = {
 };
 
 const SUB_HDR: React.CSSProperties = {
-  fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'uppercase' as const,
-  letterSpacing: '0.07em', padding: '4px 12px 2px', background: 'var(--bld-bg-base)',
+  fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, padding: '4px 12px 2px', background: 'var(--bld-bg-base)',
 };
 
 // ─── BackendApisSection ───────────────────────────────────────────────────────
@@ -137,7 +136,7 @@ import { backendTables, type BackendTable } from '@/lib/platform/api-client';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
 
 const METHOD_COLOR: Record<string, string> = {
-  GET: 'var(--bld-success)', POST: 'var(--bld-info)', PUT: 'var(--bld-warning)', PATCH: 'var(--bld-ai-accent)', DELETE: 'var(--bld-error)',
+  GET: 'var(--bld-success)', POST: 'var(--bld-info)', PUT: 'var(--bld-warning)', PATCH: 'var(--bld-accent)', DELETE: 'var(--bld-error)',
 };
 const METHOD_BG: Record<string, string> = {
   GET: 'rgba(34,197,94,0.12)', POST: 'rgba(59,130,246,0.12)', PUT: 'rgba(245,158,11,0.12)',
@@ -148,7 +147,7 @@ function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onA
   const m = wf.method ?? 'GET';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px 5px 22px', fontSize: 11 }}>
-      <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0, letterSpacing: '0.03em' }}>
+      <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0 }}>
         {m}
       </span>
       <span style={{ flex: 1, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
@@ -170,12 +169,13 @@ function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onA
   );
 }
 
-function BackendApisSection({ projectId, onAdd, onAddAll }: {
+function BackendApisSection({ projectId, onAdd, onAddAll, merged = false }: {
   projectId: string;
   onAdd: (wf: BackendWorkflow, folderId?: string) => void;
   onAddAll: (wfs: BackendWorkflow[], tables: BackendTable[]) => void;
+  merged?: boolean;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [wfs, setWfs] = useState<BackendWorkflow[]>([]);
   const [tables, setTables] = useState<BackendTable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,8 +197,6 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [projectId]);
-
-  if (!loading && wfs.length === 0) return null;
 
   const tableItemIds = new Set(
     tables.flatMap(t => wfs.filter(w => w.autoGroupTableId === t.id).map(w => w.id))
@@ -222,12 +220,14 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
   };
 
   return (
-    <div style={{ borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
+    <div style={merged
+      ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: open ? 600 : 38, transition: 'max-height 0.22s ease' }
+      : { borderBottom: '0.5px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
       <div style={{ ...SECTION_HDR, cursor: 'pointer', flexShrink: 0 }} onClick={() => setOpen(o => !o)}>
         <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
           <Chevron open={open} size={10} color="var(--bld-text-disabled)" />
           Backend APIs
-          {!loading && <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>({wfs.length})</span>}
+          {!loading && wfs.length > 0 && <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>({wfs.length})</span>}
         </span>
         {!loading && wfs.length > 0 && (
           <div onClick={e => e.stopPropagation()}>
@@ -248,6 +248,8 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 4 }}>
           {loading ? (
             <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading…</div>
+          ) : wfs.length === 0 ? (
+            <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-3)' }}>No published endpoints yet. Create API workflows in the Data & API tab.</div>
           ) : (
             <>
               {tables.map(t => {
@@ -261,7 +263,7 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
                       onClick={() => toggleFolder(key)}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', cursor: 'pointer', userSelect: 'none' as const }}
                     >
-                      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}>▾</span>
+                      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                         {t.displayName}
@@ -288,9 +290,11 @@ function BackendApisSection({ projectId, onAdd, onAddAll }: {
 interface DataTabProps {
   onSetSlide: (s: DataTabSlideState) => void;
   onWidthChange?: (w: number) => void;
+  /** When true the tab renders at natural height inside a scrollable parent. */
+  merged?: boolean;
 }
 
-export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
+export function DataTab({ onSetSlide, onWidthChange, merged = false }: DataTabProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname() ?? '';
   const projectId = searchParams.get('projectId') ??
@@ -447,10 +451,14 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
   }
 
   return (
-    <div data-testid="data-tab-split" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <div data-testid="data-tab-split" style={merged
+      ? { flexShrink: 0, display: 'flex', flexDirection: 'column' }
+      : { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* ── Top: Data Sources ── */}
       <div data-testid="data-sources-column"
-        style={{ flex: dsOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
+        style={merged
+          ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: dsOpen ? 600 : 38, transition: 'max-height 0.22s ease' }
+          : { flex: dsOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '0.5px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setDsOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
             <Chevron open={dsOpen} size={10} color="var(--bld-text-disabled)" />
@@ -487,14 +495,10 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
               data-testid="add-datasource-btn"
               title="New data source"
               onClick={() => onSetSlide({ kind: 'dataSource', editingId: null })}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500, padding: '2px 4px', borderRadius: 3 }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </button>
+            >New</button>
           </div>
         </div>
         {/* Slide-down search row */}
@@ -535,57 +539,13 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
           </>
         )}
       </div>
+      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
 
-      {/* ── Backend APIs — published only, folder view, loaded on mount ── */}
-      {projectId && (
-        <BackendApisSection
-          projectId={projectId}
-          onAdd={(wf, folderId) => {
-            const id = `backend-${wf.id}`;
-            if (pageDataSources.find(d => d.id === id)) return;
-            addPageDataSource({
-              id,
-              name: wf.name,
-              type: 'rest',
-              method: (wf.method ?? 'GET') as DataSourceConfig['method'],
-              url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
-              trigger: 'action',
-              storeIn: id,
-              folderId,
-            } as DataSourceConfig);
-          }}
-          onAddAll={(wfs, tables) => {
-            // Create one ds-folder per table, then add each workflow into the right folder
-            const folderIdMap: Record<string, string> = {};
-            tables.forEach(t => {
-              const folderId = `be-folder-${t.id}`;
-              if (!dsFolders.find(f => f.id === folderId)) {
-                addDsFolder({ id: folderId, name: t.displayName, parentId: undefined });
-              }
-              folderIdMap[t.id] = folderId;
-            });
-            wfs.forEach(wf => {
-              const id = `backend-${wf.id}`;
-              if (pageDataSources.find(d => d.id === id)) return;
-              const folderId = wf.autoGroupTableId ? folderIdMap[wf.autoGroupTableId] : undefined;
-              addPageDataSource({
-                id,
-                name: wf.name,
-                type: 'rest',
-                method: (wf.method ?? 'GET') as DataSourceConfig['method'],
-                url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
-                trigger: 'action',
-                storeIn: id,
-                folderId,
-              } as DataSourceConfig);
-            });
-          }}
-        />
-      )}
-
-      {/* ── Bottom: Variables ── */}
+      {/* ── Variables ── */}
       <div data-testid="variables-column"
-        style={{ flex: varOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
+        style={merged
+          ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: varOpen ? 600 : 38, transition: 'max-height 0.22s ease' }
+          : { flex: varOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}>
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setVarOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
             <Chevron open={varOpen} size={10} color="var(--bld-text-disabled)" />
@@ -622,14 +582,10 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
               data-testid="add-variable-btn"
               title="New variable"
               onClick={() => onSetSlide({ kind: 'variable', editingName: null })}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500, padding: '2px 4px', borderRadius: 3 }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </button>
+            >New</button>
           </div>
         </div>
         {/* Slide-down search row */}
@@ -676,6 +632,55 @@ export function DataTab({ onSetSlide, onWidthChange }: DataTabProps) {
           </>
         )}
       </div>
+      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
+
+      {/* ── Backend APIs — last accordion, closed by default ── */}
+      {projectId && (
+        <BackendApisSection
+          projectId={projectId}
+          merged={merged}
+          onAdd={(wf, folderId) => {
+            const id = `backend-${wf.id}`;
+            if (pageDataSources.find(d => d.id === id)) return;
+            addPageDataSource({
+              id,
+              name: wf.name,
+              type: 'rest',
+              method: (wf.method ?? 'GET') as DataSourceConfig['method'],
+              url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
+              trigger: 'action',
+              storeIn: id,
+              folderId,
+            } as DataSourceConfig);
+          }}
+          onAddAll={(wfs, tables) => {
+            const folderIdMap: Record<string, string> = {};
+            tables.forEach(t => {
+              const folderId = `be-folder-${t.id}`;
+              if (!dsFolders.find(f => f.id === folderId)) {
+                addDsFolder({ id: folderId, name: t.displayName, parentId: undefined });
+              }
+              folderIdMap[t.id] = folderId;
+            });
+            wfs.forEach(wf => {
+              const id = `backend-${wf.id}`;
+              if (pageDataSources.find(d => d.id === id)) return;
+              const folderId = wf.autoGroupTableId ? folderIdMap[wf.autoGroupTableId] : undefined;
+              addPageDataSource({
+                id,
+                name: wf.name,
+                type: 'rest',
+                method: (wf.method ?? 'GET') as DataSourceConfig['method'],
+                url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
+                trigger: 'action',
+                storeIn: id,
+                folderId,
+              } as DataSourceConfig);
+            });
+          }}
+        />
+      )}
+      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
     </div>
   );
 }
@@ -776,7 +781,7 @@ function VarRow({
       <span style={{
         fontSize: 8, padding: '2px 5px', borderRadius: 3,
         background: `${col}1a`, color: col, border: `1px solid ${col}33`,
-        flexShrink: 0, fontWeight: 700, letterSpacing: '0.03em',
+        flexShrink: 0, fontWeight: 700,
         minWidth: typeLabel.length >= 4 ? 30 : 22, textAlign: 'center',
       }}>{typeLabel}</span>
 
@@ -828,7 +833,7 @@ function VarRow({
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IcoFolder /> Move to folder</span>
                 <Chevron open={false} size={9} color="var(--bld-text-disabled)" />
               </button>
-              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
+              <div style={{ margin: '3px 0', borderTop: 'none' }} />
               <button
                 data-testid={`var-menu-delete-${v.name}`}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
@@ -845,7 +850,7 @@ function VarRow({
                 onClick={e => { e.stopPropagation(); setShowMove(false); }}
                 style={{ ...MENU_ITEM, color: 'var(--bld-text-3)' }}
               ><Chevron open={false} size={9} color="var(--bld-text-3)" style={{ transform: 'rotate(180deg)' }} /> Back</button>
-              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
+              <div style={{ margin: '3px 0', borderTop: 'none' }} />
               <button
                 data-testid={`var-menu-move-${v.name}-none`}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
@@ -859,7 +864,7 @@ function VarRow({
                 }
                 No folder
               </button>
-              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />}
+              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: 'none' }} />}
               <div style={{ maxHeight: 160, overflowY: 'auto' }}>{folderTree(null, 0)}</div>
             </>
           )}
@@ -902,7 +907,7 @@ function DsRow({
   const isAuto = src.trigger === 'mount' || (src.trigger as string) === 'auto';
   const isConfig = !!(src as { _fromConfig?: boolean })._fromConfig;
 
-  const methodColor = isGraphQL ? 'var(--bld-ai-accent)' : (METHOD_COLOR[method] ?? 'var(--bld-text-3)');
+  const methodColor = isGraphQL ? 'var(--bld-accent)' : (METHOD_COLOR[method] ?? 'var(--bld-text-3)');
   const methodBg = isGraphQL ? 'rgba(139,92,246,0.12)' : (METHOD_BG[method] ?? 'rgba(148,163,184,0.1)');
   const methodLabel = isGraphQL ? 'GQL' : method;
 
@@ -974,7 +979,7 @@ function DsRow({
         data-testid={`ds-type-badge-${srcDisplayKey}`}
         title={isGraphQL ? 'GraphQL' : `${method} request`}
         style={{
-          flexShrink: 0, fontSize: 8, fontWeight: 700, letterSpacing: '0.03em',
+          flexShrink: 0, fontSize: 8, fontWeight: 700,
           padding: '2px 4px', borderRadius: 3,
           background: methodBg, color: methodColor,
           minWidth: isGraphQL ? 26 : method.length <= 3 ? 22 : 32,
@@ -1058,7 +1063,7 @@ function DsRow({
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IcoFolder /> Move to folder</span>
                 <Chevron open={false} size={9} color="var(--bld-text-disabled)" />
               </button>
-              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
+              <div style={{ margin: '3px 0', borderTop: 'none' }} />
               <button data-testid={`delete-datasource-${src.id}`}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
@@ -1074,7 +1079,7 @@ function DsRow({
                 onClick={e => { e.stopPropagation(); setShowMove(false); }}
                 style={{ ...MENU_ITEM, color: 'var(--bld-text-3)' }}
               ><Chevron open={false} size={9} color="var(--bld-text-3)" style={{ transform: 'rotate(180deg)' }} /> Back</button>
-              <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />
+              <div style={{ margin: '3px 0', borderTop: 'none' }} />
               <button
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
@@ -1087,7 +1092,7 @@ function DsRow({
                 }
                 No folder
               </button>
-              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: '1px solid var(--bld-border)' }} />}
+              {allFolders.length > 0 && <div style={{ margin: '3px 0', borderTop: 'none' }} />}
               <div style={{ maxHeight: 160, overflowY: 'auto' }}>{folderTree(null, 0)}</div>
             </>
           )}

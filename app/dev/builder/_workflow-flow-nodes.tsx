@@ -432,7 +432,7 @@ export function PassThroughNode({
       style={{ ...S.pillNode(isSelected, true), gap: 8 }}
       onClick={() => onSelect(stepPath)}
     >
-      <span style={{ fontSize: 12 }}>▽</span>
+      <span style={{ fontSize: 12 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
       <span>{step.name || 'Pass through condition'}</span>
       <button
         style={{ ...S.moreBtn, fontSize: 14 }}
@@ -754,7 +754,7 @@ export function TryCatchNode({
     <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Pill header with dashed border */}
       <div
-        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid var(--bld-ai-accent)' : '1.5px dashed var(--bld-border-subtle)' }}
+        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid var(--bld-accent)' : '1.5px dashed var(--bld-border-subtle)' }}
         onClick={() => onSelect(stepPath)}
       >
         <span>⚡</span>

@@ -24,11 +24,11 @@ import type { FormulaValue } from '@/lib/sdui/formula-evaluator';
 
 const SECTION_HDR: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)',
+  padding: '8px 12px', borderBottom: 'none',
 };
 const SEC_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.08em',
+  fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)',
+  textTransform: 'none',
 };
 const EMPTY: React.CSSProperties = {
   fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
@@ -106,7 +106,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
 
       {/* Info about callDataSource */}
       {dsNames.length > 0 && (
-        <div style={{ padding: '5px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-base)', borderBottom: '1px solid var(--bld-bg-input)' }}>
+        <div style={{ padding: '5px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-base)', borderBottom: 'none' }}>
           Available data sources: {dsNames.map(n => <code key={n} style={{ color: 'var(--bld-success)', marginLeft: 4 }}>{n}</code>)}
         </div>
       )}
@@ -128,7 +128,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: 'none', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
         <button onClick={onClose} style={SP_BTN_SECONDARY}>Done</button>
       </div>
     </div>
@@ -159,7 +159,7 @@ function WorkflowRow({
       data-testid={`workflow-row-${workflowId}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-input)',
+        padding: '10px 14px', borderBottom: 'none',
         cursor: 'pointer',
         background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
@@ -572,7 +572,7 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
       </div>
 
       {/* Footer */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', gap: 8, flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: 'none', display: 'flex', gap: 8, flexShrink: 0 }}>
         {!isNew && onDelete && (
           <button
             onClick={() => { onDelete(); onClose(); }}
@@ -650,7 +650,7 @@ function FormulaRow({
       data-testid={`formula-row-${formulaId}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-input)',
+        padding: '10px 14px', borderBottom: 'none',
         cursor: 'pointer',
         background: hovered ? 'rgba(255,255,255,0.04)' : 'transparent',
       }}
@@ -745,13 +745,19 @@ const SEARCH_INPUT: React.CSSProperties = {
 
 interface LogicTabProps {
   onSetSlide: (s: LogicSlideState) => void;
+  /** When true the tab renders at natural height inside a scrollable parent. */
+  merged?: boolean;
 }
 
-export function LogicTab({ onSetSlide }: LogicTabProps) {
+export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
   const [wfSearch, setWfSearch] = useState('');
   const [fmSearch, setFmSearch] = useState('');
-  const [wfOpen, setWfOpen] = useState(true);
-  const [fmOpen, setFmOpen] = useState(true);
+  const [wfOpen, setWfOpen] = useState(false);
+  const [fmOpen, setFmOpen] = useState(false);
+  const [wfSearchOpen, setWfSearchOpen] = useState(false);
+  const [fmSearchOpen, setFmSearchOpen] = useState(false);
+  const wfSearchRef = useRef<HTMLInputElement>(null);
+  const fmSearchRef = useRef<HTMLInputElement>(null);
   const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormulaFull, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
 
   // Only show truly global (project-level) workflows — NOT page-scoped ones
@@ -782,30 +788,61 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
   };
 
   return (
-    <div data-testid="logic-tab-split" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+    <div data-testid="logic-tab-split" style={merged
+      ? { flexShrink: 0, display: 'flex', flexDirection: 'column' }
+      : { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
       {/* ── Top: Workflows ── */}
       <div
         data-testid="workflows-column"
-        style={{ flex: wfOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '2px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
+        style={merged
+          ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: wfOpen ? 600 : 38, transition: 'max-height 0.22s ease' }
+          : { flex: wfOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, borderBottom: '0.5px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
       >
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setWfOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s', transform: wfOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transition: 'transform 0.15s', transform: wfOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}><polyline points="9 18 15 12 9 6" /></svg>
             Workflows
           </span>
-          <button
-            data-testid="add-workflow-btn"
-            onClick={e => { e.stopPropagation(); addWorkflow(); }}
-            style={ADD_BTN}
-          >
-            + New
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            <button
+              title="Search"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setWfSearchOpen(o => { const next = !o; if (next) { setWfOpen(true); setTimeout(() => wfSearchRef.current?.focus(), 20); } else setWfSearch(''); return next; }); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: wfSearchOpen ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { if (!wfSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+              onMouseLeave={e => { if (!wfSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            </button>
+            {filteredGlobalWorkflows.length > 0 && (
+              <button
+                title="Delete all workflows"
+                onClick={() => { if (confirm('Delete all workflows?')) filteredGlobalWorkflows.forEach(id => removeGlobalWorkflow(id)); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+              </button>
+            )}
+            <button
+              data-testid="add-workflow-btn"
+              title="New workflow"
+              onClick={() => addWorkflow()}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500, padding: '2px 4px', borderRadius: 3 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >New</button>
+          </div>
+        </div>
+        {/* Slide-down search */}
+        <div style={{ overflow: 'hidden', maxHeight: wfSearchOpen ? 40 : 0, transition: 'max-height 0.2s ease', flexShrink: 0 }}>
+          <div style={{ padding: '5px 10px' }}>
+            <SearchInput value={wfSearch} onChange={setWfSearch} placeholder="Search workflows…" inputRef={wfSearchRef} data-testid="workflow-search" onKeyDown={e => { if (e.key === 'Escape') { setWfSearch(''); setWfSearchOpen(false); } }} />
+          </div>
         </div>
         {wfOpen && (
           <>
-            <div style={{ padding: '6px 10px', flexShrink: 0 }}>
-              <SearchInput value={wfSearch} onChange={setWfSearch} placeholder="Search workflows…" data-testid="workflow-search" />
-            </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredGlobalWorkflows.length === 0 && (
                 <div style={EMPTY}>
@@ -832,30 +869,60 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
           </>
         )}
       </div>
+      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
 
       {/* ── Bottom: Formulas ── */}
       <div
         data-testid="formulas-column"
-        style={{ flex: fmOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
+        style={merged
+          ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: fmOpen ? 600 : 38, transition: 'max-height 0.22s ease' }
+          : { flex: fmOpen ? '1 1 0' : '0 0 auto', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.2s' }}
       >
         <div style={{ ...SECTION_HDR, flexShrink: 0, cursor: 'pointer' }} onClick={() => setFmOpen(o => !o)}>
           <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: 'var(--bld-text-disabled)', transition: 'transform 0.15s', transform: fmOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transition: 'transform 0.15s', transform: fmOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}><polyline points="9 18 15 12 9 6" /></svg>
             Formulas
           </span>
-          <button
-            data-testid="add-formula-btn"
-            onClick={e => { e.stopPropagation(); addFormula(); }}
-            style={ADD_BTN}
-          >
-            + New
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            <button
+              title="Search"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setFmSearchOpen(o => { const next = !o; if (next) { setFmOpen(true); setTimeout(() => fmSearchRef.current?.focus(), 20); } else setFmSearch(''); return next; }); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: fmSearchOpen ? 'var(--bld-accent)' : 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+              onMouseEnter={e => { if (!fmSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-3)'; }}
+              onMouseLeave={e => { if (!fmSearchOpen) (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            </button>
+            {filteredFormulas.length > 0 && (
+              <button
+                title="Delete all formulas"
+                onClick={() => { if (confirm('Delete all formulas?')) filteredFormulas.forEach(([id]) => removeGlobalFormula(id)); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+              </button>
+            )}
+            <button
+              data-testid="add-formula-btn"
+              title="New formula"
+              onClick={() => addFormula()}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10, fontWeight: 500, padding: '2px 4px', borderRadius: 3 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-accent)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
+            >New</button>
+          </div>
+        </div>
+        {/* Slide-down search */}
+        <div style={{ overflow: 'hidden', maxHeight: fmSearchOpen ? 40 : 0, transition: 'max-height 0.2s ease', flexShrink: 0 }}>
+          <div style={{ padding: '5px 10px' }}>
+            <SearchInput value={fmSearch} onChange={setFmSearch} placeholder="Search formulas…" inputRef={fmSearchRef} data-testid="formula-search" onKeyDown={e => { if (e.key === 'Escape') { setFmSearch(''); setFmSearchOpen(false); } }} />
+          </div>
         </div>
         {fmOpen && (
           <>
-            <div style={{ padding: '6px 10px', flexShrink: 0 }}>
-              <SearchInput value={fmSearch} onChange={setFmSearch} placeholder="Search formulas…" data-testid="formula-search" />
-            </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredFormulas.length === 0 && (
                 <div style={EMPTY}>
@@ -875,6 +942,7 @@ export function LogicTab({ onSetSlide }: LogicTabProps) {
           </>
         )}
       </div>
+      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
     </div>
   );
 }

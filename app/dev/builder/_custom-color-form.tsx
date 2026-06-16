@@ -90,7 +90,7 @@ export function CustomColorSlideContent({ initial, onSave, onClose }: CustomColo
           onChange={e => { setName(e.target.value); setNameTouched(true); }}
           onBlur={() => setNameTouched(true)}
           placeholder="brand-primary"
-          style={{ ...SP_INPUT, border: `1px solid ${nameTouched && nameError ? '#f59e0b' : '#374151'}`, fontFamily: 'monospace' }}
+          style={{ ...SP_INPUT, border: `1px solid ${nameTouched && nameError ? 'var(--bld-warning)' : 'var(--bld-border-subtle)'}`, fontFamily: 'monospace' }}
           disabled={isEditingExisting}
         />
         {nameTouched && nameError && (
@@ -101,7 +101,7 @@ export function CustomColorSlideContent({ initial, onSave, onClose }: CustomColo
         )}
         {!nameError && (
           <div style={{ marginTop: 4, fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.4 }}>
-            Used as the CSS variable (<code style={{ color: '#a78bfa' }}>--{name.trim() || 'name'}</code>) and in formulas via <code style={{ color: '#a78bfa' }}>theme.colors[&apos;{name.trim() || 'name'}&apos;]</code>.
+            Used as the CSS variable (<code style={{ color: 'var(--bld-accent)' }}>--{name.trim() || 'name'}</code>) and in formulas via <code style={{ color: '#a78bfa' }}>theme.colors[&apos;{name.trim() || 'name'}&apos;]</code>.
           </div>
         )}
       </div>

@@ -18,7 +18,7 @@ export type PreviewState = 'normal' | 'loading' | 'validation' | 'empty' | 'disa
 
 const BASE_STATES: Array<{ id: PreviewState; label: string; color: string; description: string }> = [
   { id: 'normal',     label: 'Normal',     color: 'var(--bld-text-3)', description: 'Default state' },
-  { id: 'loading',    label: 'Loading',    color: '#fbbf24', description: 'Sets _workflow.loading = true; force-shows nodes tagged _stateTag: "loading"' },
+  { id: 'loading',    label: 'Loading',    color: 'var(--bld-warning)', description: 'Sets _workflow.loading = true; force-shows nodes tagged _stateTag: "loading"' },
   { id: 'validation', label: 'Validation', color: '#fb923c', description: 'Injects per-field form validation errors without API error banner' },
   { id: 'empty',      label: 'Empty',      color: '#6ee7b7', description: 'Clears bound arrays to []; force-shows nodes tagged _stateTag: "empty"' },
   { id: 'disabled',   label: 'Disabled',   color: 'var(--bld-text-3)', description: 'Force-shows disabled overlay on nodes that have props.disabled configured' },
@@ -41,7 +41,7 @@ function CustomStateChip({ id, label, isActive, color, onClick, onRemove }: {
         title={`Preview "${label}" state`}
         style={{
           background: isActive ? color + '30' : 'transparent',
-          border: `1px solid ${isActive ? color : '#374151'}`,
+          border: `1px solid ${isActive ? color : 'var(--bld-border)'}`,
           borderRadius: '4px 0 0 4px',
           color: isActive ? color : 'var(--bld-text-3)',
           fontSize: 10,
@@ -55,7 +55,7 @@ function CustomStateChip({ id, label, isActive, color, onClick, onRemove }: {
       </button>
       <button
         onClick={onRemove}
-        style={{ background: '#1f2937', border: `1px solid #374151`, borderLeft: 'none', borderRadius: '0 4px 4px 0', color: 'var(--bld-text-disabled)', fontSize: 10, padding: '3px 5px', cursor: 'pointer' }}
+        style={{ background: 'var(--bld-bg-elevated)', border: `1px solid var(--bld-border)`, borderLeft: 'none', borderRadius: '0 4px 4px 0', color: 'var(--bld-text-disabled)', fontSize: 10, padding: '3px 5px', cursor: 'pointer' }}
       >
         ×
       </button>
@@ -110,8 +110,8 @@ export function StateBar() {
         alignItems: 'center',
         gap: 4,
         padding: '4px 12px',
-        background: 'rgba(9, 14, 26, 0.92)',
-        borderTop: '1px solid #1f2937',
+        background: 'var(--bld-bg-panel)',
+        borderTop: '1px solid var(--bld-border-subtle)',
         backdropFilter: 'blur(8px)',
         flexShrink: 0,
         overflowX: 'auto',
@@ -119,7 +119,7 @@ export function StateBar() {
       }}
     >
       {/* Label */}
-      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, marginRight: 4 }}>
+      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', flexShrink: 0, marginRight: 4 }}>
         Previewing:
       </span>
 
@@ -134,7 +134,7 @@ export function StateBar() {
               title={state.description}
               style={{
                 background: isActive ? state.color + '25' : 'transparent',
-                border: `1px solid ${isActive ? state.color : '#374151'}`,
+                border: `1px solid ${isActive ? state.color : 'var(--bld-border)'}`,
                 borderRadius: 4,
                 color: isActive ? state.color : 'var(--bld-text-disabled)',
                 fontSize: 10,
@@ -145,8 +145,8 @@ export function StateBar() {
                 flexShrink: 0,
                 transition: 'all 0.15s',
               }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = '#6b7280'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = '#374151'; }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.borderColor = 'var(--bld-text-disabled)'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = 'var(--bld-border)'; }}
             >
               {isActive && '● '}{state.label}
             </button>
@@ -176,18 +176,18 @@ export function StateBar() {
             onKeyDown={e => { if (e.key === 'Enter') addCustom(); if (e.key === 'Escape') setShowAddCustom(false); }}
             placeholder="State name…"
             autoFocus
-            style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, padding: '2px 8px', fontSize: 10, color: 'var(--bld-text-2)', outline: 'none', width: 100 }}
+            style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border)', borderRadius: 4, padding: '2px 8px', fontSize: 10, color: 'var(--bld-text-2)', outline: 'none', width: 100 }}
           />
-          <button onClick={addCustom} style={{ background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>Add</button>
+          <button onClick={addCustom} style={{ background: 'var(--bld-accent)', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, padding: '3px 8px', cursor: 'pointer' }}>Add</button>
           <button onClick={() => setShowAddCustom(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 10 }}>✕</button>
         </div>
       ) : (
         <button
           onClick={() => setShowAddCustom(true)}
           title="Add custom state"
-          style={{ background: 'none', border: '1px dashed #374151', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 10, padding: '3px 8px', cursor: 'pointer', flexShrink: 0 }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = '#6b7280')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = '#374151')}
+          style={{ background: 'none', border: '1px dashed var(--bld-border)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 10, padding: '3px 8px', cursor: 'pointer', flexShrink: 0 }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-text-disabled)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-border)')}
         >
           + Custom
         </button>
@@ -198,8 +198,8 @@ export function StateBar() {
         title="Press S to cycle states"
         onClick={cycleState}
         style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--bld-text-disabled)', cursor: 'pointer', flexShrink: 0 }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#9ca3af')}
-        onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-3)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
       >
         S to cycle
       </span>

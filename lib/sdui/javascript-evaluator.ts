@@ -52,24 +52,36 @@ export function isJsBinding(v: unknown): v is JsBinding {
  * Writes (async / wwLib): use wwLib.variables.set instead.
  */
 function makeVariablesProxy(state: Record<string, unknown>, allowWrite: boolean): Record<string, unknown> {
+  // Resolve VFS-style paths like 'store/name' or 'store/folder/name' to their
+  // name-registry UUID by trying the last path segment as a fallback.
+  const resolveUuidByPath = (prop: string): string | undefined => {
+    const direct = getVariableUuidByName(prop);
+    if (direct) return direct;
+    if (prop.includes('/')) {
+      const segment = prop.split('/').pop()!;
+      return getVariableUuidByName(segment);
+    }
+    return undefined;
+  };
+
   return new Proxy({} as Record<string, unknown>, {
     get(_t, prop: string | symbol) {
       if (typeof prop !== 'string') return undefined;
       // Direct UUID access — keep backward-compat with formula-style bracket paths.
       if (prop in state) return state[prop];
-      const uuid = getVariableUuidByName(prop);
+      const uuid = resolveUuidByPath(prop);
       if (uuid) return state[uuid];
       return undefined;
     },
     set(_t, prop: string | symbol, value: unknown) {
       if (!allowWrite || typeof prop !== 'string') return false;
-      const uuid = getVariableUuidByName(prop) ?? prop;
+      const uuid = resolveUuidByPath(prop) ?? prop;
       getGlobalVariableStore().getState().setState((prev) => ({ ...prev, [uuid]: value }));
       return true;
     },
     has(_t, prop) {
       if (typeof prop !== 'string') return false;
-      return prop in state || !!getVariableUuidByName(prop);
+      return prop in state || !!resolveUuidByPath(prop);
     },
     ownKeys() {
       return [...new Set([...Object.keys(state), ...getAllVariableNames()])];
@@ -137,18 +149,30 @@ export function makeWwLib(ctx: WwLibContext = {}) {
     return await ctx.runStep({ type, config });
   };
 
+  // Resolve by name, with VFS-path fallback ('store/name' → 'name')
+  const resolveVarUuid = (name: string): string => {
+    const direct = getVariableUuidByName(name);
+    if (direct) return direct;
+    if (name.includes('/')) {
+      const segment = name.split('/').pop()!;
+      const segUuid = getVariableUuidByName(segment);
+      if (segUuid) return segUuid;
+    }
+    return name; // fall back to treating as UUID
+  };
+
   return {
     variables: {
       get(name: string): unknown {
-        const uuid = getVariableUuidByName(name) ?? name;
+        const uuid = resolveVarUuid(name);
         return getGlobalVariableStore().getState().getFullState()[uuid];
       },
       set(name: string, value: unknown): void {
-        const uuid = getVariableUuidByName(name) ?? name;
+        const uuid = resolveVarUuid(name);
         getGlobalVariableStore().getState().setState((prev) => ({ ...prev, [uuid]: value }));
       },
       reset(name: string): void {
-        const uuid = getVariableUuidByName(name) ?? name;
+        const uuid = resolveVarUuid(name);
         getGlobalVariableStore().getState().setState((prev) => ({ ...prev, [uuid]: null }));
       },
       uuid: (name: string) => getVariableUuidByName(name),
@@ -441,11 +465,14 @@ export async function evaluateJsAsync(
  */
 function ensureReturn(code: string): string {
   const trimmed = code.trim();
+  // Array literals `[...]` and paren expressions `(...)` are single expressions
+  // even when they span multiple lines — they still need a return statement.
+  const isMultiLineExpression = trimmed.startsWith('[') || trimmed.startsWith('(');
   // Already has a return statement, statements separated by ;, multiple lines,
   // or a trailing semicolon — assume the user wrote a full function body.
   if (
     /\breturn\b/.test(trimmed) ||
-    /[\n;]/.test(trimmed) ||
+    (!isMultiLineExpression && /[\n;]/.test(trimmed)) ||
     trimmed.startsWith('{')
   ) return code;
   return `return (${trimmed});`;

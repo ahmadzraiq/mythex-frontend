@@ -71,7 +71,7 @@ function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
     return (
       <span>
         <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--bld-text-3)', fontSize: 11 }}>
-          {open ? '▾' : '▸'} Array({value.length})
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> Array({value.length})
         </button>
         {open && (
           <div style={{ paddingLeft: 14 }}>
@@ -90,12 +90,12 @@ function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
     return (
       <span>
         <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--bld-text-3)', fontSize: 11 }}>
-          {open ? '▾' : '▸'} Object({entries.length})
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg> Object({entries.length})
         </button>
         {open && (
           <div style={{ paddingLeft: 14 }}>
             {entries.slice(0, 30).map(([k, v]) => (
-              <div key={k}><span style={{ color: 'var(--bld-ai-accent)' }}>{k}: </span><JsonNode value={v} depth={depth + 1} /></div>
+              <div key={k}><span style={{ color: 'var(--bld-accent)' }}>{k}: </span><JsonNode value={v} depth={depth + 1} /></div>
             ))}
             {entries.length > 30 && <div style={{ color: 'var(--bld-text-disabled)' }}>… {entries.length - 30} more</div>}
           </div>
@@ -110,7 +110,7 @@ export function FetchResultPanel({ result }: { result: FetchState }) {
   const isSuccess = result.status === 'success';
   return (
     <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bld-bg-base)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: 'none', flexShrink: 0 }}>
         <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>Result</span>
         <span style={{
           fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
@@ -140,10 +140,10 @@ export const FORMULA_ANCHOR_LEFT = 248 + 320;
 
 export const SECTION_HDR: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-input)',
+  padding: '8px 12px', borderBottom: 'none',
 };
 export const SEC_LABEL: React.CSSProperties = {
-  fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', whiteSpace: 'nowrap', flexShrink: 0,
+  fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', whiteSpace: 'nowrap', flexShrink: 0,
 };
 export const EMPTY: React.CSSProperties = {
   fontSize: 11, color: 'var(--bld-text-3)', fontStyle: 'italic',
@@ -263,7 +263,7 @@ function highlightGql(code: string): string {
       '<span style="color:var(--bld-success)">$1</span>')
     .replace(/(&quot;[^&]*&quot;)/g, '<span style="color:var(--bld-warning)">$1</span>')
     .replace(/([{}()[\]!|])/g, '<span style="color:var(--bld-text-3)">$1</span>')
-    .replace(/(\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span style="color:var(--bld-ai-accent)">$1</span>');
+    .replace(/(\$[a-zA-Z_][a-zA-Z0-9_]*)/g, '<span style="color:var(--bld-accent)">$1</span>');
 }
 
 export function GqlEditor({ value, onChange, placeholder }: {
@@ -346,8 +346,8 @@ export function SectionRow({
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button
             onClick={onEditFormula}
-            style={{ flex: 1, padding: '3px 8px', background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)',
-              borderRadius: 5, color: 'var(--bld-ai-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+            style={{ flex: 1, padding: '3px 8px', background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               textAlign: 'left' }}
           >
             ƒ Edit formula
@@ -401,7 +401,7 @@ export function KvRow({
   const CELL: React.CSSProperties = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 };
   const CELL_LABEL: React.CSSProperties = { fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 500 };
   const FIELD_ROW: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 3 };
-  const FORMULA_BTN: React.CSSProperties = { flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '3px 6px' };
+  const FORMULA_BTN: React.CSSProperties = { flex: 1, ...SP_INPUT, background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 10, padding: '3px 6px' };
 
   return (
     <div style={{ marginBottom: 6 }}>
@@ -516,7 +516,7 @@ export function OnOffRow({
                 </div>
             )}
         {isBound && (
-          <button onClick={open} style={{ ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}>ƒ Edit formula</button>
+          <button onClick={open} style={{ ...SP_INPUT, background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)', color: 'var(--bld-accent)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}>ƒ Edit formula</button>
             )}
           </div>
       {isOpen && (
@@ -560,7 +560,7 @@ export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'i
       <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>Choose a data source type:</div>
 
       {/* ── Internal types (project backend) ──────────────────────────── */}
-      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Project Backend</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', marginBottom: 2 }}>Project Backend</div>
 
       <button data-testid="ds-pick-internal-view" onClick={() => onSelect('internal-view')}
         style={btnStyle('var(--bld-accent)')}
@@ -574,10 +574,10 @@ export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'i
       </button>
 
       <button data-testid="ds-pick-internal-table" onClick={() => onSelect('internal-table')}
-        style={btnStyle('var(--bld-ai-accent)')}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-ai-accent)')}
+        style={btnStyle('var(--bld-accent)')}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--bld-accent)')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--bld-bg-input)')}>
-        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--bld-ai-accent)', fontWeight: 700 }}>⊞</span>
+        <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--bld-accent)', fontWeight: 700 }}>⊞</span>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>Table</div>
           <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Direct access to a project table. Full CRUD with filters and sorting. Apply security at the View level.</div>
@@ -585,7 +585,7 @@ export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'i
       </button>
 
       {/* ── External types ─────────────────────────────────────────────── */}
-      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 6, marginBottom: 2 }}>External</div>
+      <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', marginTop: 6, marginBottom: 2 }}>External</div>
 
       <button data-testid="ds-pick-rest" onClick={() => onSelect('rest')}
         style={btnStyle('var(--bld-success)')}
@@ -605,7 +605,7 @@ export function TypePicker({ onSelect }: { onSelect: (t: 'rest' | 'graphql' | 'i
         <span style={{ marginTop: 2, flexShrink: 0, width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,0.15)', border: '1px solid var(--bld-warning)55', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--bld-warning)', fontWeight: 700 }}>⬡</span>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)', marginBottom: 4 }}>GraphQL</div>
-          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Write a query or mutation. Variables support <code style={{ color: 'var(--bld-ai-accent)' }}>{'{{formulas}}'}</code> for dynamic values.</div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Write a query or mutation. Variables support <code style={{ color: 'var(--bld-accent)' }}>{'{{formulas}}'}</code> for dynamic values.</div>
         </div>
       </button>
     </div>
@@ -741,7 +741,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
     } as DataSourceConfig);
   };
 
-  const DIVIDER: React.CSSProperties = { borderTop: '1px solid var(--bld-bg-input)', margin: '4px 0 12px' };
+  const DIVIDER: React.CSSProperties = { borderTop: 'none', margin: '4px 0 12px' };
 
   const hasResult = fetchState.status !== 'idle';
   const isEditing = !!initial.id;
@@ -796,7 +796,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <BindingIcon isBound={urlBound} onClick={openUrlFE} />
             {urlBound ? (
-              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
+              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
             ) : (
               <input data-testid="ds-url" value={url as string} onChange={e => setUrl(e.target.value)} placeholder="https://api-url.com/endpoint" style={{ ...SP_INPUT, flex: 1 }} />
             )}
@@ -939,7 +939,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
       </div>
 
       {/* Footer — compact: Fetch | Save */}
-      <div style={{ padding: '7px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ padding: '7px 10px', borderTop: 'none', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
         <button
           data-testid="ds-fetch"
           onClick={fetchData}
@@ -1142,7 +1142,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     });
   };
 
-  const DIVIDER: React.CSSProperties = { borderTop: '1px solid var(--bld-bg-input)', margin: '4px 0 12px' };
+  const DIVIDER: React.CSSProperties = { borderTop: 'none', margin: '4px 0 12px' };
 
   const hasResult = fetchState.status !== 'idle';
   const isEditing = !!initial.id;
@@ -1175,7 +1175,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <BindingIcon isBound={urlBound} onClick={openUrlFE} />
             {urlBound ? (
-              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'rgba(124,58,237,0.12)', border: '1px solid var(--bld-ai-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
+              <button onClick={openUrlFE} style={{ flex: 1, ...SP_INPUT, background: 'var(--bld-accent-subtle)', border: '1px solid var(--bld-accent)', color: 'var(--bld-accent)', cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontSize: 11 }}>ƒ Edit formula</button>
             ) : (
               <input data-testid="ds-url" value={url as string} onChange={e => setUrl(e.target.value)} placeholder="https://api-url.com/graphql" style={{ ...SP_INPUT, flex: 1 }} />
               )}
@@ -1274,7 +1274,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
           </div>
 
       {/* Footer — compact: Fetch | Save */}
-      <div style={{ padding: '7px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
+      <div style={{ padding: '7px 10px', borderTop: 'none', flexShrink: 0, display: 'flex', gap: 6, alignItems: 'center' }}>
         <button
           data-testid="ds-fetch"
           onClick={fetchData}
@@ -1335,7 +1335,7 @@ function InternalDataSourceForm({
   const [resourceName, setResourceName] = useState((initial as { resourceName?: string }).resourceName ?? '');
 
   const isView = type === 'internal-view';
-  const accent = isView ? 'var(--bld-info)' : 'var(--bld-ai-accent)';
+  const accent = isView ? 'var(--bld-info)' : 'var(--bld-accent)';
 
   const handleSave = () => {
     onSave({
@@ -1496,7 +1496,7 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
     fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0,
   };
   const INLINE_INPUT: React.CSSProperties = {
-    flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-ai-accent)', borderRadius: 3,
+    flex: 1, background: 'var(--bld-border-subtle)', border: '1px solid var(--bld-accent)', borderRadius: 3,
     color: 'var(--bld-text-1)', fontSize: 11, padding: '2px 6px', outline: 'none',
   };
 
@@ -1595,7 +1595,7 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
           maxHeight: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* No folder option */}
-          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700, letterSpacing: '0.05em' }}>
+          <div style={{ padding: '4px 8px 2px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 700 }}>
             NO FOLDER
           </div>
           <div
@@ -1627,10 +1627,10 @@ export function FolderPicker({ value, onChange, scope }: FolderPickerProps) {
           </div>
 
           {/* Footer — create new folder */}
-          <div style={{ borderTop: '1px solid var(--bld-bg-input)', padding: '6px 8px' }}>
+          <div style={{ borderTop: 'none', padding: '6px 8px' }}>
             <button
               onClick={() => setCreating({ parentId: null, name: '' })}
-              style={{ background: 'none', border: 'none', color: 'var(--bld-ai-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ background: 'none', border: 'none', color: 'var(--bld-accent)', fontSize: 12, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
             >+ Create new folder</button>
           </div>
         </div>,

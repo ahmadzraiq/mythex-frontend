@@ -22,7 +22,7 @@ function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: size * 0.28, flexShrink: 0,
-      background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+      background: 'linear-gradient(135deg, var(--bld-accent), var(--bld-accent))',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: size * 0.36, fontWeight: 700, color: 'white',
     }}>
@@ -75,11 +75,11 @@ function EditAppModal({
   const patchMeta = (patch: Partial<ProjectMeta>) => setMeta(prev => ({ ...prev, ...patch }));
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151',
-    background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+    width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid var(--bld-border-subtle)',
+    background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box',
   };
   const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5,
+    display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5,
   };
   const selectStyle: React.CSSProperties = { ...inputStyle };
 
@@ -115,14 +115,14 @@ function EditAppModal({
       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', padding: '16px' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ width: '100%', maxWidth: 480, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 480, background: 'var(--bld-bg-panel)', borderRadius: 14, border: '1px solid var(--bld-bg-elevated)', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f9fafb', margin: 0 }}>Edit app</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--bld-text-1)', margin: 0 }}>Edit app</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: '#6b7280', fontSize: 13 }}>Loading…</div>
+          <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--bld-text-disabled)', fontSize: 13 }}>Loading…</div>
         ) : (
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* App Name */}
@@ -172,9 +172,9 @@ function EditAppModal({
               <input
                 type="range" min={0} max={3} step={1} value={meta.animationLevel ?? 2}
                 onChange={e => patchMeta({ animationLevel: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#3b82f6' }}
+                style={{ width: '100%', accentColor: 'var(--bld-accent)' }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: '#6b7280', marginTop: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
                 <span>None</span><span>Subtle</span><span>Moderate</span><span>Rich</span>
               </div>
             </div>
@@ -185,9 +185,9 @@ function EditAppModal({
               <input
                 type="range" min={0} max={4} step={1} value={meta.layoutStructure ?? 2}
                 onChange={e => patchMeta({ layoutStructure: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#3b82f6' }}
+                style={{ width: '100%', accentColor: 'var(--bld-accent)' }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: '#6b7280', marginTop: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
                 <span>Minimal</span><span>Simple</span><span>Standard</span><span>Rich</span><span>Complex</span>
               </div>
             </div>
@@ -195,10 +195,10 @@ function EditAppModal({
             {error && <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <button type="button" onClick={onClose} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>
+              <button type="button" onClick={onClose} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 13, cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button type="submit" disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+              <button type="submit" disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
                 {saving ? 'Saving…' : 'Save changes'}
               </button>
             </div>
@@ -231,12 +231,12 @@ function ProjectCard({
 
   return (
     <div style={{
-      borderRadius: 10, border: '1px solid #1f2937', background: '#111827',
+      borderRadius: 10, border: '1px solid var(--bld-bg-elevated)', background: 'var(--bld-bg-panel)',
       transition: 'border-color 150ms, box-shadow 150ms',
       position: 'relative', opacity: deleting ? 0.6 : 1,
     }}
-      onMouseEnter={e => { if (!deleting) { (e.currentTarget as HTMLDivElement).style.borderColor = '#2563eb'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px #2563eb22'; }}}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1f2937'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}
+      onMouseEnter={e => { if (!deleting) { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--bld-accent)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 0 1px #2563eb22'; }}}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--bld-bg-elevated)'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}
     >
       {/* Deleting overlay */}
       {deleting && (
@@ -276,7 +276,7 @@ function ProjectCard({
         onClick={onOpen}
         style={{
           display: 'block', width: '100%', aspectRatio: '16/9',
-          background: 'linear-gradient(135deg, #1a2535 0%, #1e293b 100%)',
+          background: 'linear-gradient(135deg, #111113 0%, var(--bld-bg-elevated) 100%)',
           border: 'none', cursor: 'pointer', padding: 0,
           borderRadius: '10px 10px 0 0', overflow: 'hidden',
         }}
@@ -293,7 +293,7 @@ function ProjectCard({
       <div style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           onClick={onOpen}
-          style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12.5, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+          style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12.5, fontWeight: 600, color: 'var(--bld-text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
         >
           {project.name}
         </button>
@@ -303,10 +303,10 @@ function ProjectCard({
             onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
             style={{
               width: 26, height: 26, borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: 'transparent', color: '#4b5563', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', color: 'var(--bld-text-disabled)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 100ms',
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#1f2937'}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-bg-elevated)'}
             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
@@ -317,24 +317,24 @@ function ProjectCard({
               <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setMenuOpen(false)} />
               <div style={{
                 position: 'absolute', right: 0, top: 30, zIndex: 20, width: 150,
-                background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+                background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
                 boxShadow: '0 10px 25px rgba(0,0,0,0.4)', overflow: 'hidden',
               }}>
-                <button onClick={() => { setMenuOpen(false); onOpen(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#e2e8f0' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#374151'}
+                <button onClick={() => { setMenuOpen(false); onOpen(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: 'var(--bld-text-2)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-border-subtle)'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
                 >
                   Open editor
                 </button>
-                <button onClick={() => { setMenuOpen(false); onEdit(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#e2e8f0' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#374151'}
+                <button onClick={() => { setMenuOpen(false); onEdit(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: 'var(--bld-text-2)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-border-subtle)'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
                 >
                   Edit app info
                 </button>
                 {canDelete && (
                   <button onClick={() => { setMenuOpen(false); onDelete(); }} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#f87171' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#374151'}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-border-subtle)'}
                     onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'none'}
                   >
                     Delete project
@@ -438,7 +438,7 @@ function ProjectsSection({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Projects</h2>
-          <p style={{ fontSize: 12, color: '#4b5563', margin: '3px 0 0' }}>
+          <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)', margin: '3px 0 0' }}>
             {projectList.length} {projectList.length === 1 ? 'project' : 'projects'}
             {workspace.plan === 'FREE' && !isSuperAdmin && ' · Free plan: 1 project max'}
           </p>
@@ -449,7 +449,7 @@ function ProjectsSection({
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8, border: 'none',
-              background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+              background: 'linear-gradient(135deg, var(--bld-accent), var(--bld-accent))',
               color: 'white', fontSize: 12.5, fontWeight: 600,
               cursor: 'pointer',
             }}
@@ -461,11 +461,11 @@ function ProjectsSection({
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '7px 14px', borderRadius: 8, border: 'none',
-              background: '#2563eb', color: 'white', fontSize: 12.5, fontWeight: 600,
+              background: 'var(--bld-accent)', color: 'white', fontSize: 12.5, fontWeight: 600,
               cursor: 'pointer', transition: 'background 100ms',
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#1d4ed8'}
-            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#2563eb'}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-accent-hover)'}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-accent)'}
           >
             <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
             New project
@@ -476,11 +476,11 @@ function ProjectsSection({
       {/* Grid */}
       {projectList.length === 0 ? (
         <div style={{
-          border: '2px dashed #1f2937', borderRadius: 12, padding: '48px 24px',
+          border: '2px dashed var(--bld-bg-elevated)', borderRadius: 12, padding: '48px 24px',
           textAlign: 'center', fontFamily: 'system-ui, sans-serif',
         }}>
-          <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 10 }}>No projects yet</p>
-          <button onClick={() => setShowCreate(true)} style={{ fontSize: 12.5, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <p style={{ fontSize: 13, color: 'var(--bld-text-disabled)', marginBottom: 10 }}>No projects yet</p>
+          <button onClick={() => setShowCreate(true)} style={{ fontSize: 12.5, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
             Create your first project →
           </button>
         </div>
@@ -504,7 +504,7 @@ function ProjectsSection({
       {workspace.plan === 'FREE' && !isSuperAdmin && projectList.length >= 1 && (
         <div style={{
           marginTop: 20, borderRadius: 10, border: '1px solid #3b1d8a',
-          background: '#1e1040', padding: '14px 16px',
+          background: 'var(--bld-bg-panel)', padding: '14px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         }}>
           <div>
@@ -523,45 +523,45 @@ function ProjectsSection({
           style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '16px' }}
           onClick={e => { if (e.target === e.currentTarget) { setShowCreate(false); resetCreateForm(); } }}
         >
-          <div style={{ width: '100%', maxWidth: 460, background: '#111827', borderRadius: 14, border: '1px solid #1f2937', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 460, background: 'var(--bld-bg-panel)', borderRadius: 14, border: '1px solid var(--bld-bg-elevated)', boxShadow: '0 25px 50px rgba(0,0,0,0.5)', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f9fafb', margin: 0 }}>New project</h2>
-              <button onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--bld-text-1)', margin: 0 }}>New project</h2>
+              <button onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Required */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>App name <span style={{ color: '#f87171' }}>*</span></label>
+                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>App name <span style={{ color: '#f87171' }}>*</span></label>
                 <input
                   type="text" required autoFocus value={newName}
                   onChange={e => setNewName(e.target.value)} placeholder="My project"
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
               {/* Optional context */}
               <div>
-                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Business description <span style={{ color: '#4b5563', fontWeight: 400 }}>(optional)</span></label>
+                <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Business description <span style={{ color: 'var(--bld-text-disabled)', fontWeight: 400 }}>(optional)</span></label>
                 <textarea
                   value={newDescription} onChange={e => setNewDescription(e.target.value)}
                   rows={2} placeholder="Describe your business or app…"
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Category</label>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Category</label>
                   <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: newCategory ? '#f9fafb' : '#6b7280', fontSize: 13, outline: 'none' }}>
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: newCategory ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)', fontSize: 13, outline: 'none' }}>
                     <option value="">— Select —</option>
                     {BUSINESS_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Design mood</label>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Design mood</label>
                   <select value={newMood} onChange={e => setNewMood(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #374151', background: '#1f2937', color: newMood ? '#f9fafb' : '#6b7280', fontSize: 13, outline: 'none' }}>
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: newMood ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)', fontSize: 13, outline: 'none' }}>
                     <option value="">— Select —</option>
                     {DESIGN_MOODS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                   </select>
@@ -570,21 +570,21 @@ function ProjectsSection({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Animation — {newAnimationLevel}/3</label>
-                  <input type="range" min={0} max={3} step={1} value={newAnimationLevel} onChange={e => setNewAnimationLevel(Number(e.target.value))} style={{ width: '100%', accentColor: '#3b82f6' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563', marginTop: 1 }}><span>None</span><span>Rich</span></div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Animation — {newAnimationLevel}/3</label>
+                  <input type="range" min={0} max={3} step={1} value={newAnimationLevel} onChange={e => setNewAnimationLevel(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--bld-accent)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}><span>None</span><span>Rich</span></div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Structure — {newLayoutStructure}/4</label>
-                  <input type="range" min={0} max={4} step={1} value={newLayoutStructure} onChange={e => setNewLayoutStructure(Number(e.target.value))} style={{ width: '100%', accentColor: '#3b82f6' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563', marginTop: 1 }}><span>Minimal</span><span>Complex</span></div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Structure — {newLayoutStructure}/4</label>
+                  <input type="range" min={0} max={4} step={1} value={newLayoutStructure} onChange={e => setNewLayoutStructure(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--bld-accent)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}><span>Minimal</span><span>Complex</span></div>
                 </div>
               </div>
 
               {createError && <p style={{ fontSize: 12, color: '#f87171', margin: 0 }}>{createError}</p>}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 2 }}>
-                <button type="button" onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" disabled={creating} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 13, fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.7 : 1 }}>
+                <button type="button" onClick={() => { setShowCreate(false); resetCreateForm(); }} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" disabled={creating} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.7 : 1 }}>
                   {creating ? 'Creating…' : 'Create'}
                 </button>
               </div>
@@ -661,8 +661,8 @@ function ProjectDropdown({
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 12px', borderRadius: 8, border: '1px solid #374151',
-          background: '#1f2937', color: selectedIds.length ? '#f9fafb' : '#6b7280',
+          padding: '8px 12px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)',
+          background: 'var(--bld-bg-elevated)', color: selectedIds.length ? 'var(--bld-text-1)' : 'var(--bld-text-disabled)',
           fontSize: 12.5, cursor: 'pointer', textAlign: 'left',
         }}
       >
@@ -673,17 +673,17 @@ function ProjectDropdown({
               ? 'All projects'
               : selectedNames.join(', ')}
         </span>
-        <span style={{ marginLeft: 8, fontSize: 10, color: '#6b7280', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ marginLeft: 8, fontSize: 10, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-          background: '#1f2937', border: '1px solid #374151', borderRadius: 8,
+          background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 8,
           marginTop: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden',
         }}>
           {projects.length === 0 ? (
-            <div style={{ padding: '10px 14px', fontSize: 12, color: '#6b7280' }}>
+            <div style={{ padding: '10px 14px', fontSize: 12, color: 'var(--bld-text-disabled)' }}>
               No projects in this workspace yet.
             </div>
           ) : (
@@ -691,18 +691,18 @@ function ProjectDropdown({
               <label
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #374151',
-                  background: allSelected ? '#1e2d4a' : 'transparent',
+                  padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid var(--bld-border-subtle)',
+                  background: allSelected ? 'var(--bld-bg-elevated)' : 'transparent',
                 }}
                 onClick={toggleAll}
               >
                 <span style={{
-                  width: 14, height: 14, borderRadius: 3, border: `2px solid ${allSelected ? '#3b82f6' : '#4b5563'}`,
-                  background: allSelected ? '#3b82f6' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 14, height: 14, borderRadius: 3, border: `2px solid ${allSelected ? 'var(--bld-accent)' : 'var(--bld-text-disabled)'}`,
+                  background: allSelected ? 'var(--bld-accent)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {allSelected && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>All projects</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)' }}>All projects</span>
               </label>
               {projects.map(p => {
                 const checked = selectedIds.includes(p.id);
@@ -712,17 +712,17 @@ function ProjectDropdown({
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '9px 14px', cursor: 'pointer',
-                      background: checked ? '#1e2d4a' : 'transparent',
+                      background: checked ? 'var(--bld-bg-elevated)' : 'transparent',
                     }}
                     onClick={() => toggle(p.id)}
                   >
                     <span style={{
-                      width: 14, height: 14, borderRadius: 3, border: `2px solid ${checked ? '#3b82f6' : '#4b5563'}`,
-                      background: checked ? '#3b82f6' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 14, height: 14, borderRadius: 3, border: `2px solid ${checked ? 'var(--bld-accent)' : 'var(--bld-text-disabled)'}`,
+                      background: checked ? 'var(--bld-accent)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {checked && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
                     </span>
-                    <span style={{ fontSize: 12, color: checked ? '#93c5fd' : '#d1d5db' }}>{p.name}</span>
+                    <span style={{ fontSize: 12, color: checked ? '#a5b4fc' : 'var(--bld-text-2)' }}>{p.name}</span>
                   </label>
                 );
               })}
@@ -829,25 +829,25 @@ function MembersSection({
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Members</h2>
-        <p style={{ fontSize: 12, color: '#4b5563', margin: '3px 0 0' }}>
+        <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)', margin: '3px 0 0' }}>
           {members.length} {members.length === 1 ? 'member' : 'members'}
         </p>
       </div>
 
       {/* Invite form */}
       {isOwner && (
-        <form onSubmit={handleInvite} style={{ marginBottom: 20, background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 16 }}>
-          <p style={{ fontSize: 12.5, fontWeight: 600, color: '#e2e8f0', marginBottom: 12 }}>Invite a member</p>
+        <form onSubmit={handleInvite} style={{ marginBottom: 20, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10, padding: 16 }}>
+          <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 12 }}>Invite a member</p>
 
           <input
             type="email" required placeholder="colleague@example.com" value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
-            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 12.5, outline: 'none', marginBottom: 12 }}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 12.5, outline: 'none', marginBottom: 12 }}
           />
 
           {/* Project access dropdown */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#9ca3af', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 6 }}>
               Project access
             </label>
             <ProjectDropdown
@@ -860,7 +860,7 @@ function MembersSection({
 
           <button
             type="submit" disabled={inviting}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1 }}
+            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1 }}
           >
             {inviting ? 'Sending…' : 'Send invitation'}
           </button>
@@ -871,7 +871,7 @@ function MembersSection({
       )}
 
       {/* Member list */}
-      <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 10, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10, overflow: 'hidden' }}>
         {members.map((member, i) => {
           const isSelf = member.id === currentUserId;
           const isOwnerRow = member.role === 'OWNER';
@@ -881,29 +881,29 @@ function MembersSection({
           return (
             <div
               key={member.id ?? member.email ?? i}
-              style={{ borderBottom: i < members.length - 1 ? '1px solid #1f2937' : 'none' }}
+              style={{ borderBottom: i < members.length - 1 ? '1px solid var(--bld-bg-elevated)' : 'none' }}
             >
               {/* Main row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px' }}>
                 <Avatar name={member.name} size={34} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {member.name}
-                    {isSelf && <span style={{ marginLeft: 6, fontSize: 11, color: '#4b5563', fontWeight: 400 }}>(you)</span>}
+                    {isSelf && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>(you)</span>}
                   </div>
-                  <div style={{ fontSize: 11.5, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--bld-text-disabled)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.email}</div>
                 </div>
 
                 {isOwnerRow ? (
-                  <span style={{ fontSize: 10.5, fontWeight: 600, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px' }}>Owner</span>
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-elevated)', borderRadius: 4, padding: '2px 8px' }}>Owner</span>
                 ) : isOwner ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <button
                       onClick={() => handleExpandMember(member.id)}
                       style={{
-                        padding: '4px 10px', borderRadius: 6, border: '1px solid #374151',
-                        background: isExpanded ? '#1e3a5f' : 'transparent',
-                        color: isExpanded ? '#93c5fd' : '#9ca3af',
+                        padding: '4px 10px', borderRadius: 6, border: '1px solid var(--bld-border-subtle)',
+                        background: isExpanded ? 'var(--bld-bg-elevated)' : 'transparent',
+                        color: isExpanded ? '#a5b4fc' : 'var(--bld-text-3)',
                         fontSize: 11.5, cursor: 'pointer',
                       }}
                     >
@@ -921,24 +921,24 @@ function MembersSection({
                   accessProjects ? (
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 200 }}>
                       {accessProjects.length === 0
-                        ? <span style={{ fontSize: 10.5, color: '#6b7280' }}>No access</span>
+                        ? <span style={{ fontSize: 10.5, color: 'var(--bld-text-disabled)' }}>No access</span>
                         : accessProjects.map(p => (
-                          <span key={p.id} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#1e3a5f', color: '#93c5fd', border: '1px solid #1d4ed8' }}>
+                          <span key={p.id} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--bld-bg-elevated)', color: '#a5b4fc', border: '1px solid #1d4ed8' }}>
                             {p.name}
                           </span>
                         ))
                       }
                     </div>
                   ) : (
-                    <span style={{ fontSize: 10.5, color: '#6b7280', background: '#1f2937', borderRadius: 4, padding: '2px 8px' }}>Member</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-elevated)', borderRadius: 4, padding: '2px 8px' }}>Member</span>
                   )
                 )}
               </div>
 
               {/* Expanded project access panel */}
               {isExpanded && isOwner && (
-                <div style={{ padding: '12px 16px 16px', background: '#0f172a', borderTop: '1px solid #1f2937' }}>
-                  <p style={{ fontSize: 11.5, fontWeight: 600, color: '#9ca3af', marginBottom: 10 }}>
+                <div style={{ padding: '12px 16px 16px', background: 'var(--bld-bg-panel)', borderTop: '1px solid var(--bld-bg-elevated)' }}>
+                  <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>
                     Project access for {member.name}
                   </p>
                   <div style={{ marginBottom: 12 }}>
@@ -953,13 +953,13 @@ function MembersSection({
                     <button
                       onClick={() => handleSaveProjectAccess(member.id)}
                       disabled={savingProjects}
-                      style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: 'white', fontSize: 12, fontWeight: 600, cursor: savingProjects ? 'not-allowed' : 'pointer', opacity: savingProjects ? 0.7 : 1 }}
+                      style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 12, fontWeight: 600, cursor: savingProjects ? 'not-allowed' : 'pointer', opacity: savingProjects ? 0.7 : 1 }}
                     >
                       {savingProjects ? 'Saving…' : 'Save'}
                     </button>
                     <button
                       onClick={() => setExpandedMember(null)}
-                      style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 12, cursor: 'pointer' }}
+                      style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--bld-border-subtle)', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer' }}
                     >
                       Cancel
                     </button>
@@ -1010,16 +1010,16 @@ function SettingsSection({
       <h2 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0, marginBottom: 4 }}>Settings</h2>
 
       {/* Rename */}
-      <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: 20 }}>
-        <p style={{ fontSize: 12.5, fontWeight: 600, color: '#e2e8f0', marginBottom: 12 }}>Workspace name</p>
+      <div style={{ background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10, padding: 20 }}>
+        <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 12 }}>Workspace name</p>
         <form onSubmit={handleSave} style={{ display: 'flex', gap: 8 }}>
           <input
             type="text" required value={wsName} onChange={e => setWsName(e.target.value)}
-            style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #374151', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none' }}
+            style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--bld-border-subtle)', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 13, outline: 'none' }}
           />
           <button
             type="submit" disabled={saving || wsName === workspace.name}
-            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: (saving || wsName === workspace.name) ? 'not-allowed' : 'pointer', opacity: (saving || wsName === workspace.name) ? 0.5 : 1 }}
+            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--bld-accent)', color: 'white', fontSize: 12.5, fontWeight: 600, cursor: (saving || wsName === workspace.name) ? 'not-allowed' : 'pointer', opacity: (saving || wsName === workspace.name) ? 0.5 : 1 }}
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -1027,20 +1027,20 @@ function SettingsSection({
       </div>
 
       {/* Danger zone */}
-      <div style={{ background: '#111827', border: '1px solid #7f1d1d', borderRadius: 10, padding: 20 }}>
+      <div style={{ background: 'var(--bld-bg-panel)', border: '1px solid #7f1d1d', borderRadius: 10, padding: 20 }}>
         <p style={{ fontSize: 12.5, fontWeight: 600, color: '#f87171', marginBottom: 4 }}>Danger zone</p>
-        <p style={{ fontSize: 11.5, color: '#6b7280', marginBottom: 16 }}>
+        <p style={{ fontSize: 11.5, color: 'var(--bld-text-disabled)', marginBottom: 16 }}>
           Permanently delete this workspace and all its projects. This cannot be undone.
         </p>
         <div style={{ marginBottom: 8 }}>
-          <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--bld-text-3)', marginBottom: 6 }}>
             Type <span style={{ fontFamily: 'monospace', color: '#f87171' }}>{workspace.name}</span> to confirm
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="text" placeholder={workspace.name} value={deleteConfirm}
               onChange={e => setDeleteConfirm(e.target.value)}
-              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #7f1d1d', background: '#1f2937', color: '#f9fafb', fontSize: 13, outline: 'none' }}
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #7f1d1d', background: 'var(--bld-bg-elevated)', color: 'var(--bld-text-1)', fontSize: 13, outline: 'none' }}
             />
             <button
               onClick={handleDelete} disabled={deleteConfirm !== workspace.name}
@@ -1057,25 +1057,25 @@ function SettingsSection({
 
 // ── Usage Section ─────────────────────────────────────────────────────────────
 
-function UsageBar({ label, used, limit, color = '#3b82f6', unit = '' }: {
+function UsageBar({ label, used, limit, color = 'var(--bld-accent)', unit = '' }: {
   label: string;
   used: number;
   limit: number | null;
   color?: string;
   unit?: string;
 }) {
-  const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
-  const isUnlimited = !limit || limit === Infinity;
+  const pct = (limit && limit > 0) ? Math.min(100, (used / limit) * 100) : 0;
+  const isUnlimited = limit === null || limit === undefined || limit === Infinity;
   const usedStr = unit === 'MB' ? (used >= 1024 ? `${(used / 1024).toFixed(1)} GB` : `${used.toFixed(1)} MB`) : used.toLocaleString() + (unit ? ` ${unit}` : '');
   const limitStr = isUnlimited ? '∞' : (unit === 'MB' ? (limit! >= 1024 ? `${(limit! / 1024).toFixed(0)} GB` : `${limit} MB`) : limit!.toLocaleString() + (unit ? ` ${unit}` : ''));
 
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>{label}</span>
-        <span style={{ fontSize: 11.5, color: '#6b7280' }}>{usedStr} / {limitStr}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--bld-text-3)' }}>{label}</span>
+        <span style={{ fontSize: 11.5, color: 'var(--bld-text-disabled)' }}>{usedStr} / {limitStr}</span>
       </div>
-      <div style={{ height: 5, borderRadius: 99, background: '#1f2937', overflow: 'hidden' }}>
+      <div style={{ height: 5, borderRadius: 99, background: 'var(--bld-bg-elevated)', overflow: 'hidden' }}>
         {!isUnlimited && (
           <div style={{
             height: '100%', width: `${pct}%`, borderRadius: 99,
@@ -1106,7 +1106,7 @@ function UsageSection({ workspaceId }: { workspaceId: string }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
-        <div style={{ width: 20, height: 20, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 20, height: 20, border: '2px solid var(--bld-accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
@@ -1118,17 +1118,17 @@ function UsageSection({ workspaceId }: { workspaceId: string }) {
   const u = usage.usage;
 
   const sectionStyle: React.CSSProperties = {
-    background: '#111827', border: '1px solid #1f2937', borderRadius: 10, padding: '16px 18px', marginBottom: 16,
+    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10, padding: '16px 18px', marginBottom: 16,
   };
   const sectionTitle: React.CSSProperties = {
-    fontSize: 11.5, fontWeight: 600, color: '#6b7280', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 14,
+    fontSize: 11.5, fontWeight: 600, color: 'var(--bld-text-disabled)', letterSpacing: '0.06em', textTransform: 'none', marginBottom: 14,
   };
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0', margin: 0 }}>Usage — {usage.period}</h3>
-        <span style={{ fontSize: 11, color: '#4b5563' }}>Plan: {usage.plan}</span>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)', margin: 0 }}>Usage — {usage.period}</h3>
+        <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Plan: {usage.plan}</span>
       </div>
 
       <div style={sectionStyle}>
@@ -1159,6 +1159,79 @@ function UsageSection({ workspaceId }: { workspaceId: string }) {
         <UsageBar label="WebSocket minutes" used={u.wsMinutes.used} limit={u.wsMinutes.limit} unit="min" color="#a78bfa" />
       </div>
     </div>
+  );
+}
+
+// ── Leave workspace button ─────────────────────────────────────────────────────
+
+function LeaveWorkspaceButton({ workspaceId, workspaceName }: { workspaceId: string; workspaceName: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function handleLeave() {
+    setBusy(true);
+    try {
+      await workspacesApi.leaveWorkspace(workspaceId);
+      router.push('/workspaces');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not leave workspace';
+      alert(msg);
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  if (confirming) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+        background: '#1f1215', border: '1px solid #7f1d1d', borderRadius: 8,
+        padding: '8px 12px',
+      }}>
+        <span style={{ fontSize: 12, color: '#fca5a5' }}>Leave <strong>{workspaceName}</strong>?</span>
+        <button
+          onClick={handleLeave}
+          disabled={busy}
+          style={{
+            padding: '4px 10px', borderRadius: 5, border: 'none', cursor: busy ? 'not-allowed' : 'pointer',
+            background: '#dc2626', color: '#fff', fontSize: 12, fontWeight: 600, opacity: busy ? 0.7 : 1,
+          }}
+        >
+          {busy ? 'Leaving…' : 'Confirm'}
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          disabled={busy}
+          style={{ padding: '4px 10px', borderRadius: 5, border: '1px solid var(--bld-border-subtle)', cursor: 'pointer', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 12 }}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      style={{
+        flexShrink: 0, padding: '6px 12px', borderRadius: 6,
+        border: '1px solid var(--bld-border-subtle)', background: 'transparent',
+        color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer',
+        transition: 'color 120ms, border-color 120ms',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.color = '#f87171';
+        (e.currentTarget as HTMLButtonElement).style.borderColor = '#7f1d1d';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)';
+        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)';
+      }}
+    >
+      Leave workspace
+    </button>
   );
 }
 
@@ -1208,7 +1281,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-        <div style={{ width: 24, height: 24, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 24, height: 24, border: '2px solid var(--bld-accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -1232,14 +1305,14 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <Avatar name={workspace.name} size={36} />
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h1 style={{ fontSize: 17, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{workspace.name}</h1>
-            {!isSuperAdmin && (
+            {!isSuperAdmin && workspace.plan !== 'FREE' && (
               <span style={{
                 fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                color: workspace.plan === 'PRO' ? '#a78bfa' : '#6b7280',
-                background: workspace.plan === 'PRO' ? '#2e1065' : '#1f2937',
+                color: workspace.plan === 'ENTERPRISE' ? '#fbbf24' : '#a78bfa',
+                background: workspace.plan === 'ENTERPRISE' ? '#1c1408' : '#312e81',
                 letterSpacing: '0.05em',
               }}>
                 {workspace.plan}
@@ -1248,21 +1321,24 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
             {isSuperAdmin && (
               <span style={{
                 fontSize: 9.5, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                color: '#a5b4fc', background: '#1e1b4b', letterSpacing: '0.05em',
+                color: '#a5b4fc', background: '#312e81', letterSpacing: '0.05em',
               }}>
                 ADMIN
               </span>
             )}
           </div>
-          <p style={{ fontSize: 11.5, color: '#4b5563', margin: '2px 0 0' }}>
+          <p style={{ fontSize: 11.5, color: 'var(--bld-text-disabled)', margin: '2px 0 0' }}>
             {workspace.memberCount} {workspace.memberCount === 1 ? 'member' : 'members'} · {projectList.length} {projectList.length === 1 ? 'project' : 'projects'}
           </p>
         </div>
+        {!isOwner && (
+          <LeaveWorkspaceButton workspaceId={workspaceId} workspaceName={workspace.name} />
+        )}
       </div>
 
       {/* Tab bar */}
       <div style={{
-        display: 'flex', gap: 2, borderBottom: '1px solid #1f2937', marginBottom: 24,
+        display: 'flex', gap: 2, borderBottom: '1px solid var(--bld-bg-elevated)', marginBottom: 24,
       }}>
         {tabs.map(t => (
           <button
@@ -1271,12 +1347,12 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ work
             style={{
               padding: '8px 14px', border: 'none', cursor: 'pointer',
               background: 'transparent', fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-              color: tab === t.id ? '#f1f5f9' : '#6b7280',
-              borderBottom: tab === t.id ? '2px solid #3b82f6' : '2px solid transparent',
+              color: tab === t.id ? '#f1f5f9' : 'var(--bld-text-disabled)',
+              borderBottom: tab === t.id ? '2px solid var(--bld-accent)' : '2px solid transparent',
               marginBottom: -1, transition: 'color 120ms',
             }}
-            onMouseEnter={e => { if (tab !== t.id) (e.currentTarget as HTMLButtonElement).style.color = '#9ca3af'; }}
-            onMouseLeave={e => { if (tab !== t.id) (e.currentTarget as HTMLButtonElement).style.color = '#6b7280'; }}
+            onMouseEnter={e => { if (tab !== t.id) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; }}
+            onMouseLeave={e => { if (tab !== t.id) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-disabled)'; }}
           >
             {t.label}
           </button>

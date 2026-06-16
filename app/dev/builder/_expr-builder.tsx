@@ -69,9 +69,9 @@ export function ExprBuilder({
         onClick={() => setOpen(true)}
         style={{
           width: '100%', padding: '4px 8px', textAlign: 'left',
-          background: isBound ? '#2e1065' : '#1f2937',
-          border: `1px solid ${isBound ? '#7c3aed' : '#374151'}`,
-          borderRadius: 5, color: isBound ? '#a78bfa' : '#6b7280',
+          background: isBound ? 'rgba(59,130,246,0.08)' : 'var(--bld-bg-input)',
+          border: `1px solid ${isBound ? 'var(--bld-accent)' : '#374151'}`,
+          borderRadius: 5, color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
           fontSize: 11, cursor: 'pointer', fontFamily: 'monospace',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}
@@ -116,9 +116,9 @@ export function SimpleCondition({ value, onChange }: SimpleConditionProps) {
         onClick={() => setOpen(true)}
         style={{
           width: '100%', padding: '3px 8px', textAlign: 'left',
-          background: isBound ? '#2e1065' : '#1f2937',
-          border: `1px solid ${isBound ? '#7c3aed' : '#374151'}`,
-          borderRadius: 4, color: isBound ? '#a78bfa' : '#6b7280',
+          background: isBound ? 'rgba(59,130,246,0.08)' : 'var(--bld-bg-input)',
+          border: `1px solid ${isBound ? 'var(--bld-accent)' : '#374151'}`,
+          borderRadius: 4, color: isBound ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
           fontSize: 10, cursor: 'pointer', fontFamily: 'monospace',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}

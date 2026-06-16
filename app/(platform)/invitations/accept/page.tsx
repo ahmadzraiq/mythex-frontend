@@ -8,9 +8,9 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '9px 12px',
   borderRadius: 8,
-  border: '1px solid #374151',
+  border: '1px solid #3f3f46',
   background: '#1a2234',
-  color: '#f9fafb',
+  color: 'var(--bld-text-1)',
   fontSize: 13,
   outline: 'none',
   boxSizing: 'border-box',
@@ -30,6 +30,7 @@ function AcceptInvitationContent() {
     workspaceName: string;
     workspaceId: string;
     inviterName: string;
+    hasAccount: boolean;
   } | null>(null);
   const [currentUser, setCurrentUser] = useState<{ email: string } | null>(null);
   const [pageError, setPageError] = useState('');
@@ -58,6 +59,8 @@ function AcceptInvitationContent() {
         setInvitation(invite);
         setCurrentUser(me?.user ?? null);
         setLoginEmail(invite.email);
+        // Default to the form that matches the invitee's account status
+        setRegMode(invite.hasAccount ? 'login' : 'register');
         setPageState('preview');
       })
       .catch((err: Error) => {
@@ -87,9 +90,9 @@ function AcceptInvitationContent() {
     setSubmitting(true);
     try {
       await auth.register({ name: name.trim(), email: invitation.email, password });
-      await workspacesApi.acceptInvitation(token);
+      const result = await workspacesApi.acceptInvitation(token);
       setPageState('done');
-      setTimeout(() => router.push(`/workspaces`), 1200);
+      setTimeout(() => router.push(`/workspaces/${result.workspaceId}`), 1200);
     } catch (err) {
       setFormError((err as Error).message ?? 'Something went wrong.');
     } finally {
@@ -105,9 +108,9 @@ function AcceptInvitationContent() {
     setSubmitting(true);
     try {
       await auth.login({ email: loginEmail, password: loginPassword });
-      await workspacesApi.acceptInvitation(token);
+      const result = await workspacesApi.acceptInvitation(token);
       setPageState('done');
-      setTimeout(() => router.push(`/workspaces`), 1200);
+      setTimeout(() => router.push(`/workspaces/${result.workspaceId}`), 1200);
     } catch (err) {
       setFormError((err as Error).message ?? 'Login failed.');
     } finally {
@@ -128,9 +131,9 @@ function AcceptInvitationContent() {
   const card: React.CSSProperties = {
     width: '100%',
     maxWidth: 440,
-    background: '#111827',
+    background: 'var(--bld-bg-panel)',
     borderRadius: 18,
-    border: '1px solid #1f2937',
+    border: '1px solid #27272a',
     boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
     overflow: 'hidden',
   };
@@ -141,7 +144,7 @@ function AcceptInvitationContent() {
       <div style={container}>
         <div style={{ ...card, padding: 40, textAlign: 'center' }}>
           <div style={{ width: 32, height: 32, border: '3px solid #4f46e5', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Loading invitation…</p>
+          <p style={{ color: 'var(--bld-text-3)', fontSize: 14, margin: 0 }}>Loading invitation…</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -154,9 +157,9 @@ function AcceptInvitationContent() {
       <div style={container}>
         <div style={{ ...card, padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f9fafb', margin: '0 0 8px' }}>Invitation error</h2>
-          <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 24px' }}>{pageError}</p>
-          <button onClick={() => router.push('/login')} style={{ padding: '9px 20px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--bld-text-1)', margin: '0 0 8px' }}>Invitation error</h2>
+          <p style={{ color: 'var(--bld-text-3)', fontSize: 14, margin: '0 0 24px' }}>{pageError}</p>
+          <button onClick={() => router.push('/login')} style={{ padding: '9px 20px', borderRadius: 8, border: '1px solid #3f3f46', background: 'transparent', color: 'var(--bld-text-3)', fontSize: 13, cursor: 'pointer' }}>
             Go to login
           </button>
         </div>
@@ -170,8 +173,8 @@ function AcceptInvitationContent() {
       <div style={container}>
         <div style={{ ...card, padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f9fafb', margin: '0 0 8px' }}>You&apos;re in!</h2>
-          <p style={{ color: '#9ca3af', fontSize: 14, margin: 0 }}>Redirecting to your workspace…</p>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--bld-text-1)', margin: '0 0 8px' }}>You&apos;re in!</h2>
+          <p style={{ color: 'var(--bld-text-3)', fontSize: 14, margin: 0 }}>Redirecting to your workspace…</p>
         </div>
       </div>
     );
@@ -200,19 +203,19 @@ function AcceptInvitationContent() {
 
           {/* Invite detail */}
           <div style={{ padding: '22px 32px 0' }}>
-            <p style={{ margin: '0 0 16px', fontSize: 14, color: '#9ca3af', lineHeight: 1.6 }}>
-              <strong style={{ color: '#f3f4f6' }}>{invitation.inviterName}</strong> invited you to{' '}
-              <strong style={{ color: '#f3f4f6' }}>{invitation.workspaceName}</strong>
+            <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--bld-text-3)', lineHeight: 1.6 }}>
+              <strong style={{ color: 'var(--bld-text-1)' }}>{invitation.inviterName}</strong> invited you to{' '}
+              <strong style={{ color: 'var(--bld-text-1)' }}>{invitation.workspaceName}</strong>
               {invitation.role && (
                 <> with access to <span style={{ color: '#a5b4fc', fontWeight: 600 }}>{invitation.role}</span></>
               )}.
             </p>
 
             {/* Email pill */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#1a2234', borderRadius: 8, border: '1px solid #1f2937', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#1a2234', borderRadius: 8, border: '1px solid #27272a', marginBottom: 20 }}>
               <span style={{ fontSize: 14 }}>✉️</span>
-              <span style={{ fontSize: 13, color: '#6b7280' }}>Invited as</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#e2e8f0' }}>{invitation.email}</span>
+              <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>Invited as</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>{invitation.email}</span>
             </div>
 
             {/* Email mismatch warning */}
@@ -230,82 +233,104 @@ function AcceptInvitationContent() {
             )}
           </div>
 
-          {/* ── Logged-in actions ─────────────────────────────────────────── */}
-          {currentUser && (
+          {/* ── Logged-in: email matches — accept directly ────────────────── */}
+          {currentUser && !emailMismatch && (
             <div style={{ padding: '0 32px 28px', display: 'flex', gap: 8 }}>
               <button
                 onClick={() => router.push('/workspaces')}
-                style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #374151', background: 'transparent', color: '#6b7280', fontSize: 13, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #3f3f46', background: 'transparent', color: 'var(--bld-text-disabled)', fontSize: 13, cursor: 'pointer' }}
               >
                 Decline
               </button>
               <button
                 onClick={handleAccept}
-                disabled={!!emailMismatch}
-                style={{
-                  flex: 2, padding: '10px', borderRadius: 8, border: 'none',
-                  background: emailMismatch ? '#1f2937' : '#4f46e5',
-                  color: emailMismatch ? '#4b5563' : 'white',
-                  fontSize: 13, fontWeight: 600, cursor: emailMismatch ? 'not-allowed' : 'pointer',
-                }}
+                style={{ flex: 2, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--bld-accent-hover)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
                 Accept invitation
               </button>
             </div>
           )}
 
+          {/* ── Logged-in: email mismatch — inline sign-in for invited email ── */}
+          {currentUser && emailMismatch && (
+            <div style={{ borderTop: '1px solid #27272a', padding: '20px 32px 28px' }}>
+              <p style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>
+                Sign in as <span style={{ color: '#a5b4fc' }}>{invitation.email}</span> to accept
+              </p>
+              <form onSubmit={handleLoginAndAccept} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input type="hidden" value={invitation.email} readOnly />
+                <div>
+                  <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Password</label>
+                  <input
+                    type="password" required autoFocus
+                    value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                    placeholder="Your password"
+                    style={inputStyle}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent-hover)')}
+                    onBlur={e => (e.currentTarget.style.borderColor = '#3f3f46')}
+                  />
+                </div>
+                {formError && (
+                  <p style={{ margin: 0, fontSize: 12, color: '#f87171', background: '#1c0a0a', border: '1px solid #7f1d1d', borderRadius: 7, padding: '7px 11px' }}>
+                    {formError}
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/workspaces')}
+                    style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1px solid #3f3f46', background: 'transparent', color: 'var(--bld-text-disabled)', fontSize: 13, cursor: 'pointer' }}
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="submit" disabled={submitting || !loginPassword}
+                    style={{ flex: 2, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--bld-accent-hover)', color: 'white', fontSize: 13, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+                  >
+                    {submitting ? 'Signing in…' : 'Sign in & accept'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* ── Not logged in: inline register / login ────────────────────── */}
           {!currentUser && (
-            <div style={{ borderTop: '1px solid #1f2937', padding: '22px 32px 28px' }}>
+            <div style={{ borderTop: '1px solid #27272a', padding: '22px 32px 28px' }}>
 
-              {/* Tab toggle */}
-              <div style={{ display: 'flex', background: '#1a2234', borderRadius: 8, padding: 3, marginBottom: 20 }}>
-                {(['register', 'login'] as const).map(mode => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => { setRegMode(mode); setFormError(''); }}
-                    style={{
-                      flex: 1, padding: '7px', borderRadius: 6, border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-                      background: regMode === mode ? '#111827' : 'transparent',
-                      color: regMode === mode ? '#f9fafb' : '#6b7280',
-                      boxShadow: regMode === mode ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
-                      transition: 'all 150ms',
-                    }}
-                  >
-                    {mode === 'register' ? 'Create account' : 'Sign in'}
-                  </button>
-                ))}
-              </div>
+              {/* Heading — no tabs, just a label indicating which form is shown */}
+              <p style={{ margin: '0 0 16px', fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>
+                {invitation?.hasAccount ? 'Sign in to accept' : 'Create your account to join'}
+              </p>
 
-              {/* Register form */}
+              {/* Register form — only shown when invitee has no account */}
               {regMode === 'register' && (
                 <form onSubmit={handleRegisterAndAccept} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Email</label>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Email</label>
                     <input
                       value={invitation.email} readOnly
-                      style={{ ...inputStyle, color: '#6b7280', cursor: 'default' }}
+                      style={{ ...inputStyle, color: 'var(--bld-text-disabled)', cursor: 'default' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Your name</label>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Your name</label>
                     <input
                       type="text" required autoFocus value={name} onChange={e => setName(e.target.value)}
                       placeholder="Jane Doe"
                       style={inputStyle}
-                      onFocus={e => (e.currentTarget.style.borderColor = '#4f46e5')}
-                      onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+                      onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent-hover)')}
+                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Create password</label>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Create password</label>
                     <input
                       type="password" required value={password} onChange={e => setPassword(e.target.value)}
                       placeholder="Min. 8 characters"
                       style={inputStyle}
-                      onFocus={e => (e.currentTarget.style.borderColor = '#4f46e5')}
-                      onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+                      onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent-hover)')}
+                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
                     />
                   </div>
 
@@ -319,36 +344,44 @@ function AcceptInvitationContent() {
                     type="submit" disabled={submitting}
                     style={{
                       width: '100%', padding: '11px', borderRadius: 8, border: 'none',
-                      background: '#4f46e5', color: 'white', fontSize: 13, fontWeight: 600,
+                      background: 'var(--bld-accent-hover)', color: 'white', fontSize: 13, fontWeight: 600,
                       cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1,
                       marginTop: 2,
                     }}
                   >
                     {submitting ? 'Creating account…' : 'Create account & join workspace'}
                   </button>
+
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
+                    Already have an account?{' '}
+                    <button type="button" onClick={() => { setRegMode('login'); setFormError(''); }}
+                      style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
+                      Sign in instead
+                    </button>
+                  </p>
                 </form>
               )}
 
-              {/* Login form */}
+              {/* Login form — only shown when invitee already has an account */}
               {regMode === 'login' && (
                 <form onSubmit={handleLoginAndAccept} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Email</label>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Email</label>
                     <input
                       type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                       style={inputStyle}
-                      onFocus={e => (e.currentTarget.style.borderColor = '#4f46e5')}
-                      onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+                      onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent-hover)')}
+                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: '#9ca3af', marginBottom: 5 }}>Password</label>
+                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 500, color: 'var(--bld-text-3)', marginBottom: 5 }}>Password</label>
                     <input
                       type="password" required autoFocus value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
                       placeholder="Your password"
                       style={inputStyle}
-                      onFocus={e => (e.currentTarget.style.borderColor = '#4f46e5')}
-                      onBlur={e => (e.currentTarget.style.borderColor = '#374151')}
+                      onFocus={e => (e.currentTarget.style.borderColor = 'var(--bld-accent-hover)')}
+                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--bld-border-subtle)')}
                     />
                   </div>
 
@@ -362,13 +395,21 @@ function AcceptInvitationContent() {
                     type="submit" disabled={submitting}
                     style={{
                       width: '100%', padding: '11px', borderRadius: 8, border: 'none',
-                      background: '#4f46e5', color: 'white', fontSize: 13, fontWeight: 600,
+                      background: 'var(--bld-accent-hover)', color: 'white', fontSize: 13, fontWeight: 600,
                       cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1,
                       marginTop: 2,
                     }}
                   >
                     {submitting ? 'Signing in…' : 'Sign in & accept invitation'}
                   </button>
+
+                  <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
+                    Don&apos;t have an account?{' '}
+                    <button type="button" onClick={() => { setRegMode('register'); setFormError(''); }}
+                      style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: 12, padding: 0, textDecoration: 'underline' }}>
+                      Create one instead
+                    </button>
+                  </p>
                 </form>
               )}
             </div>

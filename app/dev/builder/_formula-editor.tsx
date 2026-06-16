@@ -7,7 +7,7 @@
  * ExprBuilder (visual/ifthen/template/raw/preview-JSON modes).
  *
  * Layout (matches screenshot):
- *   Header:   label | Formula ▾ | Unbind | ↗ | ×
+ *   Header:   label | Formula <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> | Unbind | ↗ | ×
  *   Input:    monospace formula textarea
  *   Preview:  Current value  |  Expected format ?
  *   Tabs:     {x} Variables  |  ≡ Data  |  Auth
@@ -244,7 +244,7 @@ function WorkflowResultGroup({
     : null;
 
   return (
-    <div style={{ borderBottom: '1px solid #1f2937' }}>
+    <div style={{ borderBottom: 'none' }}>
       <button
         onClick={() => setOpen(v => !v)}
         style={{
@@ -252,11 +252,11 @@ function WorkflowResultGroup({
           padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer',
           color: 'var(--bld-text-2)', fontSize: 11, fontWeight: 600, textAlign: 'left',
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0f1929'; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
       >
         <span style={{ color: 'var(--bld-text-disabled)' }}><FEChevron open={open} size={8} /></span>
-        <span style={{ fontSize: 10, letterSpacing: '0.05em', color: 'var(--bld-text-3)', marginRight: 2 }}>FROM ACTION</span>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-3)', marginRight: 2 }}>FROM ACTION</span>
         <span style={{ fontSize: 11 }}>{label}</span>
       </button>
 
@@ -1308,11 +1308,11 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, [onClose]);
 
   const previewColor = evalResult.error
-    ? '#f87171'
+    ? 'var(--bld-error)'
     : evalResult.value === undefined
-      ? '#6b7280'
+      ? 'var(--bld-text-disabled)'
       : typeof evalResult.value === 'boolean'
-        ? (evalResult.value ? '#86efac' : '#f87171')
+        ? (evalResult.value ? '#86efac' : 'var(--bld-error)')
         : '#86efac';
 
   const PANEL_W = 360;
@@ -1334,8 +1334,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         ...posStyle,
         width: PANEL_W,
         height: 'calc(100vh - 64px)',
-        background: '#111827',
-        border: '1px solid #1f2937',
+        background: 'var(--bld-bg-panel)',
+        border: '1px solid var(--bld-border)',
         borderRadius: 8,
         boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
         zIndex: 100020,
@@ -1346,7 +1346,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       }}
     >
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderBottom: 'none', flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         {/* Formula | JavaScript mode toggle — hidden when locked into JS mode
             (e.g. from the runJavaScript workflow step config). */}
@@ -1366,8 +1366,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               setMode(next);
             }}
             style={{
-              fontSize: 10, padding: '1px 6px', background: '#1f2937', color: 'var(--bld-text-2)',
-              border: '1px solid #374151', borderRadius: 3, cursor: 'pointer', flexShrink: 0,
+              fontSize: 10, padding: '1px 6px', background: 'var(--bld-bg-input)', color: 'var(--bld-text-2)',
+              border: '1px solid var(--bld-border-subtle)', borderRadius: 3, cursor: 'pointer', flexShrink: 0,
             }}
           >
             <option value="formula">Formula</option>
@@ -1376,7 +1376,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         )}
         {!hideUnbind && (
           <button onClick={unbind} data-testid="formula-unbind"
-            style={{ padding: '1px 6px', background: '#1f2937', border: '1px solid #374151', borderRadius: 3, color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
+            style={{ padding: '1px 6px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 3, color: 'var(--bld-text-3)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>
             Unbind
           </button>
         )}
@@ -1385,8 +1385,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Formula / JavaScript input ── */}
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
-        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <div style={{ padding: '6px 10px', borderBottom: 'none', flexShrink: 0 }}>
+        <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginBottom: 3, textTransform: 'none' }}>
           {mode === 'js' ? 'JavaScript' : 'Formula'}
         </div>
         {mode === 'js' ? (
@@ -1401,8 +1401,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           />
         ) : (
         <div style={{
-          background: '#0f172a',
-          border: `1px solid ${isFocused ? '#818cf8' : '#374151'}`,
+          background: 'var(--bld-bg-base)',
+          border: `1px solid ${isFocused ? 'var(--bld-border-focus)' : 'var(--bld-border-subtle)'}`,
           borderRadius: 5,
           minHeight: 52,
           transition: 'border-color 0.1s',
@@ -1469,17 +1469,17 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Current value + Expected format ── */}
-      <div style={{ padding: '4px 10px 6px', borderBottom: '1px solid #1f2937', flexShrink: 0, background: '#0d1420', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ padding: '4px 10px 6px', borderBottom: 'none', flexShrink: 0, background: 'var(--bld-bg-base)', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {/* Row 1 — Current value (full width) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current value</span>
+          <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>Current value</span>
           <div style={{ width: '100%' }} data-testid="formula-current-value">
           {evalResult.error ? (
-              <div style={{ fontSize: 10, color: '#f87171', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#1a0a0a', border: '1px solid #3f1515', borderRadius: 4, padding: '3px 6px' }}>
+              <div style={{ fontSize: 10, color: 'var(--bld-error)', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: 'color-mix(in srgb, #f87171 8%, var(--bld-bg-base))', border: '1px solid color-mix(in srgb, #f87171 25%, transparent)', borderRadius: 4, padding: '3px 6px' }}>
               {evalResult.error}
               </div>
           ) : evalResult.value === undefined ? (
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>—</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 4, padding: '3px 6px' }}>—</div>
           ) : (() => {
             let displayVal = evalResult.value;
             if (typeof displayVal === 'string') {
@@ -1489,13 +1489,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
               const pretty = JSON.stringify(displayVal, null, 2);
               return (
                 <pre
-                    style={{ margin: 0, width: '100%', boxSizing: 'border-box', fontSize: 9, fontFamily: '"JetBrains Mono","Fira Mono",monospace', background: '#0f172a', border: '1px solid #1e293b', padding: '3px 6px', borderRadius: 4, maxHeight: 80, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}
+                    style={{ margin: 0, width: '100%', boxSizing: 'border-box', fontSize: 9, fontFamily: '"JetBrains Mono","Fira Mono",monospace', background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', padding: '3px 6px', borderRadius: 4, maxHeight: 80, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}
                   dangerouslySetInnerHTML={{ __html: highlightJson(pretty) }}
                 />
               );
             }
             return (
-                <div style={{ fontSize: 10, color: previewColor, fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>
+                <div style={{ fontSize: 10, color: previewColor, fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.4, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 4, padding: '3px 6px' }}>
                 {String(displayVal)}
                 </div>
             );
@@ -1506,17 +1506,17 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
         {(hint || expectedType !== 'any') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expected</span>
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>Expected</span>
             <Tooltip text={hint ? `${hint}\n\nReturn type: ${expectedType}` : `Expected return type: ${expectedType}`}>
               <span style={{
-                  border: '1px solid #374151', borderRadius: '50%',
+                  border: '1px solid var(--bld-border-subtle)', borderRadius: '50%',
                   width: 11, height: 11, fontSize: 7, flexShrink: 0,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--bld-text-disabled)', cursor: 'default',
               }}>?</span>
             </Tooltip>
             </div>
-            <div style={{ fontSize: 10, color: '#fbbf24', fontFamily: 'monospace', wordBreak: 'break-all', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, padding: '3px 6px' }}>
+            <div style={{ fontSize: 10, color: 'var(--bld-warning)', fontFamily: 'monospace', wordBreak: 'break-all', background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 4, padding: '3px 6px' }}>
               {hint || expectedType}
             </div>
           </div>
@@ -1524,7 +1524,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: 'none', flexShrink: 0 }}>
         {([
           ...((showQuickTab && !serverContext) || (paramsInQuick && hasFormulaParams) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           ...(!serverContext ? [{ id: 'variables' as Tab, icon: '{x}', label: 'Variables' }] : []),
@@ -1537,8 +1537,8 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           <button key={t.id} data-testid={`formula-tab-${t.id}`} onClick={() => setTab(t.id)}
             style={{
               flex: 1, padding: '5px 4px', background: 'none', border: 'none',
-              borderBottom: tab === t.id ? '2px solid #818cf8' : '2px solid transparent',
-              color: tab === t.id ? '#818cf8' : '#6b7280',
+              borderBottom: tab === t.id ? '2px solid var(--bld-accent)' : '2px solid transparent',
+              color: tab === t.id ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
               fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
             }}>
             <span style={{ fontFamily: 'monospace', fontSize: 9 }}>{t.icon}</span>
@@ -1548,14 +1548,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Search ── */}
-      <div style={{ padding: '4px 10px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ padding: '4px 10px', borderBottom: 'none', flexShrink: 0 }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder='Search variables…'
           style={{
-            width: '100%', boxSizing: 'border-box', background: '#1f2937',
-            border: '1px solid #374151', borderRadius: 3, color: 'var(--bld-text-2)',
+            width: '100%', boxSizing: 'border-box', background: 'var(--bld-bg-input)',
+            border: '1px solid var(--bld-border-subtle)', borderRadius: 3, color: 'var(--bld-text-2)',
             fontSize: 10, padding: '3px 7px', outline: 'none',
           }}
         />
@@ -1678,7 +1678,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Operators bar ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, padding: '4px 8px', borderTop: '1px solid #1f2937', flexShrink: 0, background: '#0f172a' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, padding: '4px 8px', borderTop: 'none', flexShrink: 0, background: 'var(--bld-bg-base)' }}>
         {OPERATORS.map(op => {
           const s = OP_STYLE[op.category];
           return (
@@ -1709,13 +1709,13 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       </div>
 
       {/* ── Apply footer ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '5px 10px', borderTop: '1px solid #1f2937', flexShrink: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '5px 10px', borderTop: 'none', flexShrink: 0 }}>
         <button onClick={onClose}
-          style={{ padding: '3px 10px', background: 'transparent', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 10, cursor: 'pointer' }}>
+          style={{ padding: '3px 10px', background: 'transparent', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-disabled)', fontSize: 10, cursor: 'pointer' }}>
           Cancel
         </button>
         <button data-testid="formula-apply" onClick={apply}
-          style={{ padding: '3px 12px', background: '#7c3aed', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
+          style={{ padding: '3px 12px', background: 'var(--bld-accent)', border: 'none', borderRadius: 4, color: '#fff', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
           Apply
         </button>
       </div>

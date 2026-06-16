@@ -824,6 +824,19 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     });
   },
 
+  replacePageNodes: (pageId, nodes) => {
+    set(s => {
+      const pages = (s.pages as BuilderPage[]).map(p =>
+        p.id === pageId ? { ...p, nodes } : p
+      );
+      if (s.focusedPageId === pageId) {
+        return { pages, pageNodes: nodes, pendingFitToPage: true };
+      }
+      return { pages };
+    });
+    get()._pushHistory();
+  },
+
   // Append a child node into an existing node by ID — used for progressive AI streaming.
   // Finds the target node anywhere in the page tree and appends the child to its children array.
   appendChildToNode: (pageId, nodeId, child) => {
@@ -3488,7 +3501,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   setGlobalWorkflow: (name, actions) =>
     set(s => ({ globalWorkflows: { ...s.globalWorkflows, [name]: actions } })),
   removeGlobalWorkflow: (name) =>
-    set(s => { const { [name]: _, ...rest } = s.globalWorkflows; return { globalWorkflows: rest }; }),
+    set(s => {
+      const { [name]: _w, ...restWorkflows } = s.globalWorkflows;
+      const { [name]: _m, ...restMeta } = s.globalWorkflowMeta as Record<string, unknown>;
+      return { globalWorkflows: restWorkflows, globalWorkflowMeta: restMeta as typeof s.globalWorkflowMeta };
+    }),
   setGlobalWorkflowMeta: (id, meta) =>
     set(s => ({ globalWorkflowMeta: { ...s.globalWorkflowMeta, [id]: { ...s.globalWorkflowMeta[id], ...meta, id } } })),
   setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action', workflowId = '') => {
@@ -4169,7 +4186,25 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   removePage: (pageId) => {
     set(s => {
+      const page = (s.pages as BuilderPage[]).find(p => p.id === pageId);
+      const pageName = page?.name as string | undefined;
       const remaining = (s.pages as BuilderPage[]).filter(p => p.id !== pageId);
+
+      // Remove all page-scoped workflows/triggers belonging to this page
+      const meta = s.pageWorkflowMeta as Record<string, WorkflowMeta>;
+      const toRemove = new Set(
+        pageName
+          ? Object.entries(meta).filter(([, m]) => m.pageScope === pageName).map(([k]) => k)
+          : []
+      );
+      const pageWorkflows = toRemove.size
+        ? (Object.fromEntries(Object.entries(s.pageWorkflows as Record<string, object[]>).filter(([k]) => !toRemove.has(k))) as Record<string, object[]>)
+        : s.pageWorkflows;
+      const pageWorkflowMeta = toRemove.size
+        ? (Object.fromEntries(Object.entries(meta).filter(([k]) => !toRemove.has(k))) as Record<string, WorkflowMeta>)
+        : s.pageWorkflowMeta;
+      const workflowPatch = toRemove.size ? { pageWorkflows, pageWorkflowMeta } : {};
+
       if (remaining.length === 0) {
         return {
           pages: [],
@@ -4180,10 +4215,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           hoveredId: null,
           history: [EMPTY_SNAPSHOT],
           historyIdx: 0,
+          ...workflowPatch,
         };
       }
       if (s.focusedPageId !== pageId) {
-        return { pages: remaining };
+        return { pages: remaining, ...workflowPatch };
       }
       // Removed the focused page — focus the previous (or first remaining)
       const removedIdx = (s.pages as BuilderPage[]).findIndex(p => p.id === pageId);
@@ -4194,6 +4230,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         focusedPageId: fallback.id,
         selectedIds: [],
         hoveredId: null,
+        ...workflowPatch,
       };
     });
     get()._pushHistory();

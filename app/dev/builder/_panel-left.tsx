@@ -205,7 +205,7 @@ function _PagesTab_unused() {
       </div>
 
       {/* Add page button + route picker */}
-      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--bld-bg-input)', flexShrink: 0, position: 'relative' }} ref={menuRef}>
+      <div style={{ padding: '8px 10px', borderTop: 'none', flexShrink: 0, position: 'relative' }} ref={menuRef}>
         <button
           data-testid="add-page-btn"
           onClick={() => setShowRouteMenu(v => !v)}
@@ -248,7 +248,7 @@ function _PagesTab_unused() {
           }}>
             {/* Custom route input */}
             <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bld-border-subtle)', flexShrink: 0 }}>
-              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5, letterSpacing: '0.04em' }}>CUSTOM ROUTE</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginBottom: 5 }}>CUSTOM ROUTE</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input
                   autoFocus
@@ -294,7 +294,7 @@ function _PagesTab_unused() {
 
             {/* Predefined routes from routes.json */}
             <div style={{ overflowY: 'auto', flex: 1 }}>
-              <div style={{ padding: '6px 10px 4px', fontSize: 10, color: 'var(--bld-text-disabled)', letterSpacing: '0.04em' }}>
+              <div style={{ padding: '6px 10px 4px', fontSize: 10, color: 'var(--bld-text-disabled)' }}>
                 APP ROUTES
               </div>
               {allRoutes.map(r => {
@@ -348,13 +348,13 @@ function _PagesTab_unused() {
 // ─── App Panel (Store / Actions / Sources) ───────────────────────────────────
 
 const ACTION_TYPE_COLORS: Record<string, string> = {
-  graphql: 'var(--bld-ai-accent)',
+  graphql: 'var(--bld-accent)',
   fetch: 'var(--bld-success)',
   set: 'var(--bld-warning)',
   setVar: 'var(--bld-badge-boolean)',
   validate: 'var(--bld-error)',
   runMultiple: 'var(--bld-accent)',
-  navigate: 'var(--bld-ai-accent)',
+  navigate: 'var(--bld-accent)',
   appendToPath: 'var(--bld-success)',
   toggle: 'var(--bld-warning)',
   default: 'var(--bld-text-disabled)',
@@ -436,7 +436,7 @@ function StoreTab({ embedded = false }: { embedded?: boolean }) {
             {expanded[group] && (
               <div style={{ paddingLeft: 20 }}>
                 {Object.entries(values).map(([k, v]) => (
-                  <div key={k} data-testid={`store-entry-${group}.${k}`} style={{ display: 'flex', gap: 8, padding: '2px 12px 2px 4px', borderBottom: '1px solid var(--bld-bg-input)50' }}>
+                  <div key={k} data-testid={`store-entry-${group}.${k}`} style={{ display: 'flex', gap: 8, padding: '2px 12px 2px 4px', borderBottom: 'none' }}>
                     <span style={{ color: 'var(--bld-text-3)', fontSize: 10, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0, maxWidth: 90 }}>
                       {k === '__value__' ? group : `${group}.${k}`}
                     </span>
@@ -502,14 +502,14 @@ function ActionsTab() {
           style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 8px', boxSizing: 'border-box' }}
         />
       </div>
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--bld-bg-input)', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
+      <div style={{ padding: '6px 10px', borderBottom: 'none', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
         Use named actions in Interactions → select "namedAction" and type the action name.
-        Defined in <code style={{ color: 'var(--bld-ai-accent)' }}>config/actions/</code>.
+        Defined in <code style={{ color: 'var(--bld-accent)' }}>config/actions/</code>.
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
         {Object.entries(filtered).map(([grp, rows]) => (
           <div key={grp}>
-            <div style={{ padding: '3px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', background: 'var(--bld-bg-base)' }}>
+            <div style={{ padding: '3px 12px', fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 600, textTransform: 'none', background: 'var(--bld-bg-base)' }}>
               {grp}
             </div>
             {rows.map(([name, def]) => (
@@ -517,7 +517,7 @@ function ActionsTab() {
                 <button
                   data-testid={`action-row-${name}`}
                   onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
-                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid var(--bld-bg-input)' }}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: 'none' }}
                 >
                   <span style={{ color: 'var(--bld-text-2)', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                   <ActionTypeBadge type={def.type} />
@@ -561,13 +561,13 @@ function SourcesTab() {
 
   return (
     <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--bld-bg-input)', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
+      <div style={{ padding: '6px 10px', borderBottom: 'none', fontSize: 10, color: 'var(--bld-text-disabled)', lineHeight: 1.6, flexShrink: 0 }}>
         Select an element → Logic tab → <span style={{ color: 'var(--bld-success)' }}>Data Source</span> to trigger one of these on mount.
         Use them in Interactions to call on click/submit.
       </div>
     <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
       {sources.map(([name, def]) => (
-        <div key={name} style={{ borderBottom: '1px solid var(--bld-bg-input)' }}>
+        <div key={name} style={{ borderBottom: 'none' }}>
           <button
             data-testid={`source-row-${name}`}
             onClick={() => setExpanded(p => ({ ...p, [name]: !p[name] }))}
@@ -655,11 +655,11 @@ const PC_INPUT: React.CSSProperties = {
 };
 const PC_LABEL: React.CSSProperties = {
   fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.06em',
+  textTransform: 'none',
   display: 'block', marginBottom: 4,
 };
 const PC_SECTION: React.CSSProperties = {
-  padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)',
+  padding: '10px 12px', borderBottom: 'none',
   display: 'flex', flexDirection: 'column', gap: 8,
 };
 
@@ -698,7 +698,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Page name */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Page</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Page</div>
         <div>
           <label style={PC_LABEL}>Name</label>
           <input
@@ -719,7 +719,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
       {/* SEO / Meta */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO / Meta</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>SEO / Meta</div>
         <div>
           <label style={PC_LABEL}>Page title</label>
           <input
@@ -757,7 +757,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
       {/* Interactions */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interactions</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Interactions</div>
         <div>
           <label style={PC_LABEL}>On mount (page load)</label>
           <select
@@ -782,7 +782,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
 
       {/* Private Access */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Access</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Access</div>
 
         {/* Who can access */}
         <div>
@@ -832,7 +832,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             }}
             style={{
               width: 32, height: 16, borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: guestOnly ? 'var(--bld-ai-accent)' : 'var(--bld-border-subtle)',
+              background: guestOnly ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
               position: 'relative', flexShrink: 0, transition: 'background 150ms',
             }}
             title="When on, authenticated users are redirected away from this page (e.g. /sign-in)"
@@ -846,7 +846,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
         </div>
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ marginTop: 'auto', padding: '10px 12px', borderTop: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           title="Delete this page"
           onClick={() => { if (currentPageId) { removePage(currentPageId); onClose(); } }}
@@ -879,7 +879,7 @@ const A_INPUT: React.CSSProperties = {
 const AUTH_INPUT = A_INPUT;
 const AUTH_FIELD_LABEL: React.CSSProperties = {
   fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4,
+  textTransform: 'none', display: 'block', marginBottom: 4,
 };
 const AUTH_SELECT: React.CSSProperties = {
   ...A_INPUT, appearance: 'none', paddingRight: 24, cursor: 'pointer',
@@ -896,15 +896,15 @@ const AUTH_DIVIDER = (
 );
 const A_LABEL: React.CSSProperties = {
   fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4,
+  textTransform: 'none', display: 'block', marginBottom: 4,
 };
 const A_SECTION: React.CSSProperties = {
-  padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)',
+  padding: '10px 12px', borderBottom: 'none',
   display: 'flex', flexDirection: 'column', gap: 8,
 };
 const A_SECTION_TITLE: React.CSSProperties = {
   fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
-  textTransform: 'uppercase', letterSpacing: '0.08em',
+  textTransform: 'none',
 };
 const A_ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'center',
@@ -973,7 +973,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="basic">Auth Basic</option>
               <option value="custom">Custom</option>
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
           </div>
         </div>
         <div>
@@ -1040,7 +1040,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="">None</option>
               {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
           </div>
         </div>
         <div>
@@ -1050,7 +1050,7 @@ export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void
               <option value="">None</option>
               {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
             </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
           </div>
         </div>
       </div>
@@ -1110,11 +1110,11 @@ const RM = {
   tableHead: {
     display: 'flex', alignItems: 'center', padding: '0 10px',
     height: 28, background: 'var(--bld-bg-elevated)',
-    borderRadius: '6px 6px 0 0', borderBottom: '1px solid var(--bld-bg-input)',
+    borderRadius: '6px 6px 0 0', borderBottom: 'none',
   } as React.CSSProperties,
   thText: {
     fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
+    textTransform: 'none',
   } as React.CSSProperties,
   row: {
     display: 'flex', alignItems: 'center', padding: '0 10px',
@@ -1183,7 +1183,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
 
       {/* Header */}
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, background: 'var(--bld-bg-base)' }}>
+      <div style={{ padding: '10px 12px', borderBottom: 'none', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, background: 'var(--bld-bg-base)' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--bld-info)', cursor: 'pointer', fontSize: 13, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
@@ -1320,7 +1320,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }} onClick={() => setAddGroupPanel(null)} />
           <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '75%', background: 'var(--bld-bg-base)', borderLeft: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', zIndex: 51, boxShadow: '-12px 0 32px rgba(0,0,0,0.6)' }}>
             {/* Drawer header */}
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bld-bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bld-bg-base)' }}>
+            <div style={{ padding: '12px 14px', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bld-bg-base)' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--bld-text-1)' }}>User group</span>
               <button onClick={() => setAddGroupPanel(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0, borderRadius: 4 }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-1)')}
@@ -1369,7 +1369,7 @@ function RolesManagerView({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Drawer footer */}
-            <div style={{ padding: '12px 14px', borderTop: '1px solid var(--bld-bg-input)' }}>
+            <div style={{ padding: '12px 14px', borderTop: 'none' }}>
               <button
                 onClick={addGroup}
                 disabled={!addGroupPanel.name.trim()}
@@ -1397,6 +1397,8 @@ interface PanelLeftProps {
   onWidthChange?: (w: number) => void;
   /** Called by ThemePanel to open the right slide panel for custom color add/edit. */
   onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
+  /** When true, shows the Config Files tab (admin / dev mode only). */
+  isDevMode?: boolean;
 }
 
 export default function PanelLeft({
@@ -1408,6 +1410,7 @@ export default function PanelLeft({
   onSetLogicSlide,
   onWidthChange,
   onOpenColorSlide,
+  isDevMode = false,
 }: PanelLeftProps) {
   const tab = activeTab;
   const setTab = onTabChange;
@@ -1526,18 +1529,27 @@ export default function PanelLeft({
   }), []);
 
   return (
-    <div data-testid="panel-left" style={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bld-bg-panel)', borderRight: '1px solid var(--bld-bg-input)', overflow: 'hidden' }}>
+    <div data-testid="panel-left" style={{
+      width: 240, height: '100%', display: 'flex', flexDirection: 'column',
+      backgroundColor: 'var(--bld-bg-panel)',
+      backgroundImage: [
+        'radial-gradient(ellipse 120% 40% at 50% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)',
+        'radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px)',
+      ].join(', '),
+      backgroundSize: 'auto, 22px 22px',
+      borderRight: '1px solid var(--bld-bg-input)', overflow: 'hidden',
+    }}>
       {/* Tab bar — 4 icon-only tabs, styled to match the right panel */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-input)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: 'none', flexShrink: 0 }}>
         {([
           {
             id: 'layers' as LeftTabId,
             title: 'Layers',
             icon: (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="2" y="2.5" width="10" height="2" rx="1" fill="currentColor"/>
-                <rect x="2" y="6" width="10" height="2" rx="1" fill="currentColor" opacity="0.7"/>
-                <rect x="2" y="9.5" width="10" height="2" rx="1" fill="currentColor" opacity="0.45"/>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1.5 5.5L8 2l6.5 3.5L8 9 1.5 5.5z"/>
+                <path d="M1.5 9L8 12.5 14.5 9"/>
+                <path d="M1.5 12L8 15.5 14.5 12" opacity="0.45"/>
               </svg>
             ),
           },
@@ -1565,25 +1577,12 @@ export default function PanelLeft({
             ),
           },
           {
-            id: 'logic' as LeftTabId,
-            title: 'Logic',
+            id: 'theme' as LeftTabId,
+            title: 'Theme',
             icon: (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 3v2.5M3 8.5V11M3 5.5L7.5 7M3 8.5L7.5 7M7.5 7H11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                <circle cx="3" cy="3" r="1.3" fill="currentColor"/>
-                <circle cx="3" cy="11" r="1.3" fill="currentColor"/>
-                <circle cx="11" cy="7" r="1.3" fill="currentColor"/>
-              </svg>
-            ),
-          },
-          {
-            id: 'files' as LeftTabId,
-            title: 'Config Files',
-            icon: (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 2h5l3 3v7a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round"/>
-                <path d="M8 2v3h3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M5 7h4M5 9.5h2.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                <path d="M9.5 2C10.3 1.2 11.5 1.2 12.2 2C12.9 2.7 12.9 3.9 12.2 4.6L5.8 11C5.3 11.5 4.5 11.9 3.5 12C3.5 11 3.9 10.2 4.4 9.7Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" fill="none"/>
+                <path d="M3.2 12.2C2.8 12.6 2.5 12.5 2.2 12.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             ),
           },
@@ -1649,7 +1648,7 @@ export default function PanelLeft({
             {/* Canvas nodes (freeform nodes outside pages) */}
             {(store.canvasNodes as SDUINode[]).length > 0 && (
               <>
-                <div style={{ padding: '6px 8px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Canvas</div>
+                <div style={{ padding: '6px 8px 2px', fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>Canvas</div>
                 <LayerTree
                   nodes={store.canvasNodes as SDUINode[]}
                   store={store}
@@ -1667,9 +1666,12 @@ export default function PanelLeft({
 
       {tab === 'components' && <ComponentsTab />}
 
-      {tab === 'data' && <DataTab onSetSlide={onSetDataSlide} onWidthChange={onWidthChange} />}
-
-      {tab === 'logic' && <LogicTab onSetSlide={onSetLogicSlide} />}
+      {(tab === 'data' || tab === 'logic') && (
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          <DataTab onSetSlide={onSetDataSlide} onWidthChange={onWidthChange} merged />
+          <LogicTab onSetSlide={onSetLogicSlide} merged />
+        </div>
+      )}
 
       {tab === 'triggers' && <TriggersTab />}
 

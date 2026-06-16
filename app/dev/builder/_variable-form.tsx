@@ -26,8 +26,8 @@ import { BindingIcon } from './_formula-panel';
 import { FolderPicker, SectionRow, KvRow, OnOffRow, useFormulaField, type FormulaFieldState, type KvEntry } from './_data-source-form';
 
 export const TYPE_BADGE_COLORS: Record<string, string> = {
-  string: '#3b82f6', number: '#f59e0b', boolean: '#10b981',
-  object: '#8b5cf6', array: '#ec4899', any: '#6b7280',
+  string: '#3b82f6', number: 'var(--bld-warning)', boolean: 'var(--bld-success)',
+  object: '#8b5cf6', array: '#ec4899', any: 'var(--bld-text-disabled)',
 };
 
 // ─── B. Variables ─────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ interface VarSlidePanelProps {
 
 export function YesNoToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const base: React.CSSProperties = {
-    flex: 1, padding: '5px 0', border: '1px solid #374151', fontSize: 11,
+    flex: 1, padding: '5px 0', border: '1px solid var(--bld-border-subtle)', fontSize: 11,
     cursor: 'pointer', fontWeight: 500, transition: 'background 0.15s, color 0.15s',
   };
   return (
@@ -52,13 +52,13 @@ export function YesNoToggle({ value, onChange }: { value: boolean; onChange: (v:
         onClick={() => onChange(true)}
         style={{ ...base, borderRadius: '5px 0 0 5px', borderRight: 'none',
           background: value ? '#1d4ed8' : 'transparent',
-          color: value ? '#fff' : '#6b7280' }}
+          color: value ? '#fff' : 'var(--bld-text-disabled)' }}
       >Yes</button>
       <button
         onClick={() => onChange(false)}
         style={{ ...base, borderRadius: '0 5px 5px 0',
-          background: !value ? '#1f2937' : 'transparent',
-          color: !value ? '#f3f4f6' : '#6b7280' }}
+          background: !value ? 'var(--bld-bg-input)' : 'transparent',
+          color: !value ? '#f3f4f6' : 'var(--bld-text-disabled)' }}
       >No</button>
     </div>
   );
@@ -150,7 +150,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
           onChange={e => { setVarName(e.target.value); setNameTouched(true); }}
           onBlur={() => setNameTouched(true)}
           placeholder="Give a name"
-          style={{ ...SP_INPUT, border: `1px solid ${nameTouched && !varName.trim() ? '#f59e0b' : '#374151'}` }}
+          style={{ ...SP_INPUT, border: `1px solid ${nameTouched && !varName.trim() ? 'var(--bld-warning)' : 'var(--bld-border-subtle)'}` }}
           disabled={!initial.isNew && !!initial.name}
         />
         {nameTouched && !varName.trim() && (
@@ -194,7 +194,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
       <div>
         <label style={SP_LABEL}>Type *</label>
         <div style={{ position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#818cf8', pointerEvents: 'none', fontFamily: 'monospace' }}>{'<>'}</span>
+          <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--bld-badge-text)', pointerEvents: 'none', fontFamily: 'monospace' }}>{'<>'}</span>
           <select
             data-testid="var-type"
             value={varType}
@@ -228,7 +228,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
           />
         ) : varType === 'object' || varType === 'array' ? (
           <>
-            <div style={{ borderRadius: 4, overflow: 'hidden', border: `1px solid ${jsonErr ? '#ef4444' : '#374151'}` }}>
+            <div style={{ borderRadius: 4, overflow: 'hidden', border: `1px solid ${jsonErr ? 'var(--bld-error)' : 'var(--bld-border-subtle)'}` }}>
               <Suspense fallback={
                 <textarea
                   value={varValue}
@@ -257,7 +257,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
               </Suspense>
             </div>
             {jsonErr && (
-              <div style={{ marginTop: 6, padding: '10px 12px', background: '#1f2937', border: '1px solid #374151', borderRadius: 6 }}>
+              <div style={{ marginTop: 6, padding: '10px 12px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', margin: '0 0 4px' }}>JSON and JavaScript</p>
                 <p style={{ fontSize: 11, color: 'var(--bld-text-3)', margin: 0, lineHeight: 1.5 }}>
                   {varType === 'array' ? 'Array' : 'Object'} value should be set as JSON. If you entered valid JavaScript, try converting it to valid JSON.
@@ -281,8 +281,8 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
         <label style={SP_LABEL}>Current value</label>
         <div style={{
           ...SP_INPUT, minHeight: 32, fontFamily: 'monospace', fontSize: 12,
-          color: liveValue ? '#e5e7eb' : '#4b5563',
-          display: 'flex', alignItems: 'flex-start', background: '#111827',
+          color: liveValue ? '#e5e7eb' : 'var(--bld-text-disabled)',
+          display: 'flex', alignItems: 'flex-start', background: 'var(--bld-bg-panel)',
           whiteSpace: 'pre-wrap', wordBreak: 'break-all',
         }}>
           {liveValue || <span style={{ fontStyle: 'italic', color: 'var(--bld-text-3)' }}>{varValue || getDefaultForType(varType)}</span>}
@@ -306,7 +306,7 @@ export function VariableSlideContent({ initial, onSave, onClose, onDelete, folde
           <button
             data-testid="var-delete"
             onClick={onDelete}
-            style={{ ...SP_BTN_SECONDARY, color: '#f87171', borderColor: '#7f1d1d', marginRight: 'auto' }}
+            style={{ ...SP_BTN_SECONDARY, color: 'var(--bld-error)', borderColor: '#7f1d1d', marginRight: 'auto' }}
           >Delete</button>
         )}
         <button onClick={onClose} style={SP_BTN_SECONDARY}>Cancel</button>

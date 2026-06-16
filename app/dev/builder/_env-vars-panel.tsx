@@ -63,7 +63,7 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 16px', borderBottom: '1px solid var(--bld-border)', flexShrink: 0,
+          padding: '12px 16px', borderBottom: 'none', flexShrink: 0,
         }}>
           <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--bld-text-1)' }}>
             Environment Variables
@@ -77,7 +77,7 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
         {/* Toolbar */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-          borderBottom: '1px solid var(--bld-border)', flexShrink: 0,
+          borderBottom: 'none', flexShrink: 0,
         }}>
           {/* Env dropdown */}
           <div ref={dropdownRef} style={{ position: 'relative', flex: 1 }}>
@@ -92,11 +92,11 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{
                   width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                  background: mode === 'dev' ? '#818cf8' : '#f97316',
+                  background: mode === 'dev' ? 'var(--bld-accent)' : '#f97316',
                 }} />
                 {modeLabel}
               </span>
-              <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+              <span style={{ fontSize: 9, opacity: 0.6 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
             </button>
             {dropdownOpen && (
               <div style={{
@@ -113,12 +113,12 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
                       width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                       padding: '8px 12px', background: 'none', border: 'none',
                       cursor: 'pointer', fontSize: 11,
-                      color: mode === m ? '#818cf8' : 'var(--bld-text-1)',
+                      color: mode === m ? 'var(--bld-accent)' : 'var(--bld-text-1)',
                     }}
                   >
                     <span style={{
                       width: 8, height: 8, borderRadius: '50%',
-                      background: m === 'dev' ? '#818cf8' : '#f97316',
+                      background: m === 'dev' ? 'var(--bld-accent)' : '#f97316',
                     }} />
                     {m === 'dev' ? 'Editor environment' : 'Production environment'}
                     {mode === m && <span style={{ marginLeft: 'auto', fontSize: 10 }}>✓</span>}
@@ -133,7 +133,7 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
             onClick={() => setModal({ open: true, editing: null })}
             style={{
               display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px',
-              background: 'var(--bld-ai-accent)', border: 'none', borderRadius: 5,
+              background: 'var(--bld-accent)', border: 'none', borderRadius: 5,
               cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap',
             }}
           >
@@ -146,11 +146,11 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
           {/* Column headers */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr auto',
-            padding: '6px 12px', borderBottom: '1px solid var(--bld-border)',
+            padding: '6px 12px', borderBottom: 'none',
             position: 'sticky', top: 0, background: 'var(--bld-bg-panel)', zIndex: 1,
           }}>
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Key</span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Value</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none' }}>Key</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)', textTransform: 'none' }}>Value</span>
             <span />
           </div>
 
@@ -175,7 +175,7 @@ export default function EnvVarsPanel({ projectId, open, onClose }: Props) {
               key={v.id}
               style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr auto',
-                padding: '8px 12px', borderBottom: '1px solid var(--bld-border)',
+                padding: '8px 12px', borderBottom: 'none',
                 alignItems: 'center', gap: 8,
               }}
             >
@@ -356,7 +356,7 @@ function EnvVarModal({
             onClick={handleSave}
             disabled={saving}
             style={{
-              padding: '8px 20px', background: '#10b981', border: 'none', borderRadius: 6,
+              padding: '8px 20px', background: 'var(--bld-success)', border: 'none', borderRadius: 6,
               cursor: saving ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700,
               color: '#fff', opacity: saving ? 0.7 : 1,
             }}

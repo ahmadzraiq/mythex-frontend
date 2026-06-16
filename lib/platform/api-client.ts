@@ -9,6 +9,8 @@ export interface User {
   email: string;
   avatarUrl?: string | null;
   superAdmin?: boolean;
+  emailVerified?: boolean;
+  googleId?: string | null;
   createdAt: string;
 }
 
@@ -163,6 +165,30 @@ export const auth = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+
+  verifyEmail: (email: string, code: string) =>
+    apiFetch<{ ok: boolean }>('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    }),
+
+  resendVerification: (email: string) =>
+    apiFetch<{ ok: boolean }>('/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  forgotPassword: (email: string) =>
+    apiFetch<{ ok: boolean }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiFetch<{ ok: boolean }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
 };
 
 // ── Workspaces ────────────────────────────────────────────────────────────────
@@ -208,6 +234,9 @@ export const workspaces = {
   removeMember: (wsId: string, userId: string) =>
     apiFetch<void>(`/api/workspaces/${wsId}/members/${userId}`, { method: 'DELETE' }),
 
+  leaveWorkspace: (wsId: string) =>
+    apiFetch<{ ok: boolean }>(`/api/workspaces/${wsId}/leave`, { method: 'POST' }),
+
   // ── Invitations ────────────────────────────────────────────────────────────
 
   listInvitations: (wsId: string) =>
@@ -223,7 +252,7 @@ export const workspaces = {
     apiFetch<void>(`/api/workspaces/${wsId}/invitations/${invitationId}`, { method: 'DELETE' }),
 
   previewInvitation: (token: string) =>
-    apiFetch<{ email: string; role: string; workspaceName: string; workspaceId: string; inviterName: string; expiresAt: string }>(
+    apiFetch<{ email: string; role: string; workspaceName: string; workspaceId: string; inviterName: string; expiresAt: string; hasAccount: boolean }>(
       `/api/workspaces/invitations/preview?token=${encodeURIComponent(token)}`,
     ),
 

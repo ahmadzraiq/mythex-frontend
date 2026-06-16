@@ -34,16 +34,14 @@ export const INTERACTIVE_TYPES = new Set(['Input', 'Select', 'SelectTrigger', 'C
 export const FORM_INPUT_TYPES = BUILDER_FORM_INPUT_TYPES;
 
 export const DESIGN_INLINE_STYLE: React.CSSProperties = {
-  borderTop: '1px solid #1f2937',
+  borderTop: '1px solid var(--bld-border-subtle)',
   padding: '8px 12px',
 };
 
 const DESIGN_LABEL: React.CSSProperties = {
-  fontSize: 10,
-  color: 'var(--bld-text-disabled)',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  // marginBottom intentionally omitted here — set per usage
+  fontSize: 11,
+  color: 'var(--bld-text-3)',
+  textTransform: 'none' as const,
   display: 'block',
   marginBottom: 4,
 };
@@ -78,7 +76,7 @@ export function ToggleBind({
       {/* Bind icon before label on the left */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <BindingIcon isBound={bound} onClick={openEditor} />
-        <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
           {rowLabel}
         </span>
       </div>
@@ -90,29 +88,28 @@ export function ToggleBind({
             data-testid={`edit-formula-btn-${fieldId}`}
             onClick={openEditor}
             style={{
-              padding: '3px 10px', background: '#2e1065', border: '1px solid #7c3aed',
-              borderRadius: 5, color: '#a78bfa', fontSize: 11, cursor: 'pointer', fontWeight: 500,
+              padding: '3px 10px', background: 'color-mix(in srgb, var(--bld-accent) 10%, transparent)', border: '1px solid var(--bld-accent)',
+              borderRadius: 5, color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer', fontWeight: 500,
               whiteSpace: 'nowrap',
             }}
           >
             ƒ Edit formula
           </button>
         ) : (
-          <button
-            data-testid={`toggle-${fieldId}`}
-            onClick={onToggle}
-            style={{
-              width: 32, height: 18, borderRadius: 9,
-              background: isOn ? '#3b82f6' : '#374151',
-              border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: 2, left: isOn ? 16 : 2,
-              width: 14, height: 14, borderRadius: '50%', background: '#fff',
-              transition: 'left 0.15s',
-            }} />
-          </button>
+          <div style={{ display: 'flex', gap: 2 }}>
+            <ToggleBtn
+              data-testid={`toggle-on-${fieldId}`}
+              active={isOn}
+              onClick={() => { if (!isOn) onToggle(); }}
+              style={{ padding: '2px 8px', fontSize: 10 }}
+            >On</ToggleBtn>
+            <ToggleBtn
+              data-testid={`toggle-off-${fieldId}`}
+              active={!isOn}
+              onClick={() => { if (isOn) onToggle(); }}
+              style={{ padding: '2px 8px', fontSize: 10 }}
+            >Off</ToggleBtn>
+          </div>
         )}
         {open && (
           <FormulaEditor
@@ -133,10 +130,10 @@ export function ToggleBind({
 // ─── State tag options ───────────────────────────────────────────────────────
 
 const STATE_TAG_OPTIONS = [
-  { id: undefined,   label: 'None',    icon: '–',  color: 'var(--bld-text-disabled)', bg: 'transparent', border: '#374151' },
-  { id: 'loading',   label: 'Loading', icon: '⟳',  color: '#fbbf24', bg: '#451a03',     border: '#fbbf24' },
+  { id: undefined,   label: 'None',    icon: '–',  color: 'var(--bld-text-disabled)', bg: 'transparent', border: 'var(--bld-border)' },
+  { id: 'loading',   label: 'Loading', icon: '⟳',  color: 'var(--bld-warning)', bg: '#451a03',     border: 'var(--bld-warning)' },
   { id: 'empty',     label: 'Empty',   icon: '○',  color: '#6ee7b7', bg: '#022c22',     border: '#6ee7b7' },
-  { id: 'default',   label: 'Default', icon: '◉',  color: 'var(--bld-text-3)', bg: '#1f2937',     border: '#9ca3af' },
+  { id: 'default',   label: 'Default', icon: '◉',  color: 'var(--bld-text-3)', bg: 'var(--bld-bg-input)',     border: 'var(--bld-text-3)' },
   { id: 'custom',    label: 'Custom',  icon: '◈',  color: '#c084fc', bg: '#2e1065',     border: '#c084fc' },
 ] as const;
 
@@ -176,8 +173,8 @@ function StateTagPicker({ nodeId, node }: { nodeId: string; node: SDUINode }) {
   };
 
   return (
-    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
-      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 5 }}>
+    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--bld-border-subtle)' }}>
+      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', textTransform: 'none', display: 'block', marginBottom: 5 }}>
         State
       </span>
       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
@@ -217,8 +214,8 @@ function StateTagPicker({ nodeId, node }: { nodeId: string; node: SDUINode }) {
           placeholder="state name…"
           style={{
             marginTop: 5,
-            background: '#1f2937',
-            border: '1px solid #374151',
+            background: 'var(--bld-bg-input)',
+            border: '1px solid var(--bld-border-subtle)',
             borderRadius: 4,
             color: '#c084fc',
             fontSize: 10,
@@ -312,16 +309,12 @@ export function VisibilityInDesign({ node }: { node: SDUINode }) {
       {hasCondition && (
         <>
           <StateTagPicker nodeId={nodeId} node={node} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid #1f2937' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--bld-border-subtle)' }}>
             <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Force show in editor</span>
-            <button
-              data-testid="force-show-toggle"
-              onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)}
-              title="Override condition — always render this node on the canvas"
-              style={{ width: 32, height: 18, borderRadius: 9, background: forceShow ? '#f59e0b' : '#374151', border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0 }}
-            >
-              <span style={{ position: 'absolute', top: 2, left: forceShow ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
-            </button>
+            <div style={{ display: 'flex', gap: 2 }}>
+              <ToggleBtn active={forceShow} onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)} style={{ padding: '2px 8px', fontSize: 10 }}>On</ToggleBtn>
+              <ToggleBtn active={!forceShow} onClick={() => store.patchNodeField(nodeId, '_forceShowInEditor', forceShow ? undefined : true)} style={{ padding: '2px 8px', fontSize: 10 }}>Off</ToggleBtn>
+            </div>
           </div>
         </>
       )}
@@ -524,7 +517,7 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
         }}
       />
       {showOverlay && (
-        <div style={{ borderTop: '1px solid #1f2937', padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '6px 12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span style={{ ...DESIGN_LABEL, marginBottom: 0 }}>Overlay</span>
 
           {/* Color */}
@@ -560,7 +553,7 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
                 value={localOpacity}
                 onChange={e => patchOpacityLive(Math.min(100, Math.max(0, Number(e.target.value))))}
                 onBlur={() => commitHistory()}
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const, flexShrink: 0 }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const, flexShrink: 0 }}
               />
               <input
                 type="range" min={0} max={100} step={1}
@@ -588,7 +581,7 @@ export function DisableInDesign({ node }: { node: SDUINode }) {
                 value={localBlur}
                 onChange={e => patchBlurLive(Math.min(40, Math.max(0, Number(e.target.value))))}
                 onBlur={() => commitHistory()}
-                style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const }}
+                style={{ background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '2px 5px', width: 44, textAlign: 'center' as const }}
               />
               <input
                 type="range" min={0} max={40} step={1}
@@ -734,7 +727,7 @@ export function NodeNameInDesign({
         placeholder={`e.g. ${node.type}`}
         style={{
           width: '100%', boxSizing: 'border-box',
-          background: '#1f2937', border: '1px solid #374151', borderRadius: 4,
+          background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
           color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 7px', outline: 'none',
         }}
       />
@@ -827,7 +820,7 @@ export function PropsTab({ node }: { node: SDUINode }) {
             onChange={e => setLocalProps(prev => ({ ...prev, [key]: e.target.value }))}
             onBlur={() => commitProp(key, localProps[key])}
             onKeyDown={e => { if (e.key === 'Enter') commitProp(key, localProps[key]); }}
-            style={{ width: '100%', background: '#1f2937', border: '1px solid #374151', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 6px', boxSizing: 'border-box' }}
+            style={{ width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '4px 6px', boxSizing: 'border-box' }}
           />
         </div>
       ))}

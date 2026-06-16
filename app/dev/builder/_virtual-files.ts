@@ -25,7 +25,6 @@
  *   readVirtualFile(store, path)          → pretty JSON string
  *   applyVirtualFile(store, path, json)   → { ok, error? }
  *   pageToScreenJson(page)                → { meta, ui }
- *   assignIds(nodes, prefix, ctr)         → SDUINode[] (with stable UUIDs)
  */
 
 import type {
@@ -41,6 +40,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import {
   getSharedComponents,
   updateSharedComponent,
+  deleteSharedComponent,
 } from '@/lib/builder/shared-component-data';
 import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
 
@@ -547,14 +547,14 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
 
   // pages/<name>/page
   if (parts[0] === 'pages' && parts[2] === 'page') {
-    const page = store.pages.find(p => p.name === parts[1]);
+    const page = store.pages.find(p => p.name.toLowerCase() === parts[1].toLowerCase());
     if (!page) throw new Error(`Page "${parts[1]}" not found`);
     return pageToScreenJson(page);
   }
 
   // pages/<name>/groups/<groupName>
   if (parts[0] === 'pages' && parts[2] === 'groups') {
-    const page = store.pages.find(p => p.name === parts[1]);
+    const page = store.pages.find(p => p.name.toLowerCase() === parts[1].toLowerCase());
     if (!page) throw new Error(`Page "${parts[1]}" not found`);
     const groupName = parts[3];
     const nodes = collectGroupNodes(page.nodes, groupName);
@@ -660,6 +660,7 @@ export function applyVirtualFile(
   }
 }
 
+
 function applyParsedSlice(store: BuilderStore, path: string, value: unknown): void {
   const parts = path.split('/');
 
@@ -700,9 +701,11 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   if (parts[0] === 'store') {
     const varName = parts[parts.length - 1];
     const data = value as CustomVar;
-    const existing = (store.customVars as CustomVar[]).find(cv => cv.name === varName);
-    if (existing) store.updateCustomVar(varName, data);
-    else store.addCustomVar({ ...data, name: varName });
+    if (data.initialValue === undefined) throw new Error(`store/${varName}: "initialValue" is required (not "value")`);
+    if (!data.id || !data.name) throw new Error(`store/${varName}: JSON must include "id" and "name" fields`);
+    const existing = (store.customVars as CustomVar[]).find(cv => cv.id === data.id);
+    if (existing) store.updateCustomVar(existing.name, data);
+    else store.addCustomVar(data);
     return;
   }
 
@@ -716,14 +719,14 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   // workflows/<name>  OR  workflows/<domain>/<id> (domain subfolders in pageWorkflows)
   if (parts[0] === 'workflows') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
-    const id = data.id ?? parts[parts.length - 1];
+    if (!data.id) throw new Error(`workflows/${parts.slice(1).join('/')}: JSON must include an "id" field`);
+    const id = data.id;
+    if (!data.meta) throw new Error(`workflows/${parts.slice(1).join('/')}: "meta" object is required — include { id, name, trigger }`);
     if (parts.length === 3) {
-      // Domain subfolder path — stored in pageWorkflows
-      if (data.meta) store.setPageWorkflowMeta(id, data.meta);
+      store.setPageWorkflowMeta(id, data.meta);
       if (data.steps) store.setPageWorkflow(id, data.steps);
     } else {
-      // Global reusable workflow
-      if (data.meta) store.setGlobalWorkflowMeta(id, data.meta);
+      store.setGlobalWorkflowMeta(id, data.meta);
       if (data.steps) store.setGlobalWorkflow(id, data.steps);
     }
     return;
@@ -732,19 +735,21 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   // triggers/<name>  — app-level triggers live in pageWorkflowMeta, not globalWorkflowMeta
   if (parts[0] === 'triggers') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
-    const id = data.id ?? parts[1];
-    if (data.meta) store.setPageWorkflowMeta(id, data.meta);
+    if (!data.id) throw new Error(`triggers/${parts[1]}: JSON must include an "id" field`);
+    const id = data.id;
+    if (!data.meta) throw new Error(`triggers/${parts[1]}: "meta" object is required — include { id, name, trigger }`);
+    store.setPageWorkflowMeta(id, data.meta);
     if (data.steps) store.setPageWorkflow(id, data.steps);
     return;
   }
 
   // data/<dsId>
   if (parts[0] === 'data') {
-    const id = parts[parts.length - 1];
     const data = value as DataSourceConfig;
-    const existing = (store.pageDataSources as DataSourceConfig[]).find(d => d.id === id);
-    if (existing) store.updatePageDataSource(id, data);
-    else store.addPageDataSource({ ...data, id });
+    if (!data.id) throw new Error(`data/${parts[parts.length - 1]}: JSON must include an "id" field`);
+    const existing = (store.pageDataSources as DataSourceConfig[]).find(d => d.id === data.id);
+    if (existing) store.updatePageDataSource(data.id, data);
+    else store.addPageDataSource(data);
     return;
   }
 
@@ -761,24 +766,22 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     const pageName = parts[1];
     const page = store.pages.find(p => p.name === pageName);
     const data = value as { meta?: Record<string, unknown>; ui?: unknown };
-    if (!data?.ui) throw new Error('Screen JSON must have a "ui" field');
-    const rawNodes = Array.isArray(data.ui) ? (data.ui as SDUINode[]) : [data.ui as SDUINode];
-    const assigned = assignIds(rawNodes, pageName, { n: 0 });
+    const rawUi = data.ui;
+    if (!rawUi) throw new Error(`pages/${pageName}/page: "ui" field is required — write { "ui": [rootNode] }`);
+    if (!Array.isArray(rawUi)) throw new Error(`pages/${pageName}/page: "ui" must be an array — write { "ui": [rootNode] }`);
+    const rawNodes = rawUi as SDUINode[];
     if (page) {
-      const prev = store.focusedPageId;
-      if (prev !== page.id) store.focusPage(page.id);
-      store._setPageNodes(assigned);
-      if (prev !== page.id) store.focusPage(prev);
+      store.replacePageNodes(page.id, rawNodes);
       if (data.meta) store.setCurrentPageMeta(data.meta as Parameters<typeof store.setCurrentPageMeta>[0]);
+      // Switch canvas to show this page so the user sees the update immediately
+      store.focusPage(page.id);
     } else {
-      store.addPage(`/${pageName}`, pageName);
-      const created = store.pages.find(p => p.name === pageName);
-      if (created) {
-        const prev = store.focusedPageId;
-        store.focusPage(created.id);
-        store._setPageNodes(assigned);
-        store.focusPage(prev);
-      }
+      // Pre-generate the ID so we can call replacePageNodes without re-reading
+      // the store snapshot (store.pages is stale after addPage runs its set()).
+      const newPageId = `page-${Date.now()}`;
+      store.addPage(`/${pageName}`, pageName, newPageId);
+      store.replacePageNodes(newPageId, rawNodes);
+      store.focusPage(newPageId);
     }
     return;
   }
@@ -790,19 +793,23 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     const page = store.pages.find(p => p.name === pageName);
     if (!page) throw new Error(`Page "${pageName}" not found`);
     const incoming = Array.isArray(value) ? (value as SDUINode[]) : [value as SDUINode];
-    const newNodes = replaceGroupNodes(page.nodes, groupName, incoming);
-    const prev = store.focusedPageId;
-    if (prev !== page.id) store.focusPage(page.id);
-    store._setPageNodes(newNodes);
-    if (prev !== page.id) store.focusPage(prev);
+    let newNodes = replaceGroupNodes(page.nodes as SDUINode[], groupName, incoming);
+    // If no existing _group stub was found, append the incoming node as a new top-level node
+    if (newNodes.length === (page.nodes as SDUINode[]).length &&
+        !collectGroupNodes(newNodes, groupName).length) {
+      newNodes = [...newNodes, { ...incoming[0], _group: groupName } as SDUINode];
+    }
+    store.replacePageNodes(page.id, newNodes);
     return;
   }
 
   // pages/<name>/workflows/<name>
   if (parts[0] === 'pages' && parts[2] === 'workflows') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
-    const id = data.id ?? parts[parts.length - 1];
-    if (data.meta) store.setPageWorkflowMeta(id, data.meta);
+    if (!data.id) throw new Error(`pages/${parts[1]}/workflows/${parts[3]}: JSON must include an "id" field`);
+    const id = data.id;
+    if (!data.meta) throw new Error(`pages/${parts[1]}/workflows/${parts[3]}: "meta" object is required — include { id, name, trigger, pageScope }`);
+    store.setPageWorkflowMeta(id, data.meta);
     if (data.steps) store.setPageWorkflow(id, data.steps);
     return;
   }
@@ -810,8 +817,10 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   // pages/<name>/triggers/<triggerType>
   if (parts[0] === 'pages' && parts[2] === 'triggers') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
-    const id = data.id ?? parts[3];
-    if (data.meta) store.setPageWorkflowMeta(id, data.meta);
+    if (!data.id) throw new Error(`pages/${parts[1]}/triggers/${parts[3]}: JSON must include an "id" field`);
+    const id = data.id;
+    if (!data.meta) throw new Error(`pages/${parts[1]}/triggers/${parts[3]}: "meta" object is required — include { id, name, trigger }`);
+    store.setPageWorkflowMeta(id, data.meta);
     if (data.steps) store.setPageWorkflow(id, data.steps);
     return;
   }
@@ -899,32 +908,143 @@ export function pageToScreenJson(page: BuilderPage): Record<string, unknown> {
   };
 }
 
-// ─── assignIds ────────────────────────────────────────────────────────────────
 
-const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+// ─── serializeVirtualFiles ────────────────────────────────────────────────────
 
-function stableUUID(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
-  }
-  const hex = (Math.abs(h) + 0x100000000).toString(16).slice(1);
-  const p = hex.padStart(8, '0');
-  const s = (p + p + p + p).slice(0, 32);
-  return `${s.slice(0, 8)}-${s.slice(8, 12)}-4${s.slice(13, 16)}-8${s.slice(17, 20)}-${s.slice(20, 32)}`;
+export interface SerializedVirtualFiles {
+  tree: VirtualFolder;
+  /** path → pretty-printed JSON content */
+  files: Record<string, string>;
 }
 
-export function assignIds(nodes: SDUINode[], prefix: string, ctr: { n: number }): SDUINode[] {
-  return nodes.map(node => {
-    ctr.n += 1;
-    const n = node as unknown as Record<string, unknown>;
-    const existing = typeof n.id === 'string' ? (n.id as string) : '';
-    const id = UUID_RE.test(existing)
-      ? existing
-      : stableUUID(existing || `${prefix}-${String(n.type ?? 'node').toLowerCase()}-${ctr.n}`);
-    const children = Array.isArray(n.children)
-      ? assignIds(n.children as SDUINode[], prefix, ctr)
-      : n.children;
-    return { ...node, id, children } as SDUINode;
-  });
+/**
+ * Walk the virtual file tree and read every leaf file into a flat map.
+ * Used by the file-based AI agent to receive the full project snapshot each turn.
+ */
+export function serializeVirtualFiles(store: BuilderStore): SerializedVirtualFiles {
+  const tree = buildFileTree(store);
+  const files: Record<string, string> = {};
+
+  function walkEntry(entry: VirtualEntry): void {
+    if (entry.kind === 'file') {
+      try {
+        const content = readVirtualFile(store, entry.path);
+        files[entry.path] = content;
+      } catch {
+        // skip unreadable files (shouldn't happen, but guard anyway)
+      }
+    } else {
+      for (const child of entry.children) walkEntry(child);
+    }
+  }
+
+  for (const child of tree.children) walkEntry(child);
+  return { tree, files };
+}
+
+// ─── deleteVirtualFile ────────────────────────────────────────────────────────
+
+export interface DeleteResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Delete a virtual file from the builder store.
+ * Mirrors the path routing in applyParsedSlice but removes rather than upserts.
+ */
+export function deleteVirtualFile(store: BuilderStore, path: string): DeleteResult {
+  try {
+    deleteParsedSlice(store, path);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+function deleteParsedSlice(store: BuilderStore, path: string): void {
+  const parts = path.split('/');
+
+  // store/<varName>
+  if (parts[0] === 'store') {
+    const varName = parts[parts.length - 1];
+    store.removeCustomVar(varName);
+    return;
+  }
+
+  // utils/<formulaName>
+  if (parts[0] === 'utils') {
+    const name = parts[parts.length - 1];
+    store.removeGlobalFormula(name);
+    return;
+  }
+
+  // workflows/<domain>/<id>  (3-part) — page/domain workflow
+  // workflows/<name>         (2-part) — global reusable workflow
+  if (parts[0] === 'workflows') {
+    if (parts.length === 3) {
+      store.removePageWorkflow(parts[2]);
+    } else {
+      const name = parts[parts.length - 1];
+      const entry = Object.entries(store.globalWorkflowMeta as Record<string, WorkflowMeta>)
+        .find(([k, m]) => k === name || m.id === name || m.name === name);
+      if (entry) store.removeGlobalWorkflow(entry[0]);
+    }
+    return;
+  }
+
+  // triggers/<name>
+  if (parts[0] === 'triggers') {
+    const name = parts[1];
+    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
+      .find(([, m]) => m.isAppTrigger && (m.trigger === name || m.name === name));
+    if (entry) store.removePageWorkflow(entry[0]);
+    return;
+  }
+
+  // data/<dsId>
+  if (parts[0] === 'data') {
+    const id = parts[parts.length - 1];
+    store.removePageDataSource(id);
+    return;
+  }
+
+  // components/<folder?>/<id>/component  → delete the whole shared component
+  if (parts[0] === 'components') {
+    const knownSubs = ['component', 'store', 'utils', 'workflows', 'triggers'];
+    let scId: string | undefined;
+    for (let i = parts.length - 1; i >= 1; i--) {
+      if (knownSubs.includes(parts[i])) { scId = parts[i - 1]; break; }
+    }
+    if (!scId) scId = parts[parts.length - 2];
+    deleteSharedComponent(scId ?? '');
+    return;
+  }
+
+  // pages/<name>/page  → delete the whole page
+  if (parts[0] === 'pages' && parts[2] === 'page') {
+    const page = store.pages.find(p => p.name === parts[1]);
+    if (page) store.removePage(page.id);
+    return;
+  }
+
+  // pages/<name>/workflows/<name>
+  if (parts[0] === 'pages' && parts[2] === 'workflows') {
+    const wfName = parts[parts.length - 1];
+    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
+      .find(([k, m]) => k === wfName || m.id === wfName || m.name === wfName);
+    if (entry) store.removePageWorkflow(entry[0]);
+    return;
+  }
+
+  // pages/<name>/triggers/<trigger>
+  if (parts[0] === 'pages' && parts[2] === 'triggers') {
+    const trigger = parts[3];
+    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
+      .find(([, m]) => m.isTrigger && (m.trigger === trigger || m.name === trigger));
+    if (entry) store.removePageWorkflow(entry[0]);
+    return;
+  }
+
+  throw new Error(`Cannot delete path: ${path}`);
 }

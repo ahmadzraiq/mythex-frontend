@@ -96,13 +96,13 @@ const ACTION_LINE_COLOR: Record<string, string> = {
   setState:   '#f97316',
   set:        '#f97316',
   setVar:     '#f97316',
-  fetch:      '#22c55e',
-  graphql:    '#22c55e',
+  fetch:      'var(--bld-success)',
+  graphql:    'var(--bld-success)',
   toggle:     '#a78bfa',
   increment:  '#a78bfa',
   decrement:  '#a78bfa',
   animate:    '#fb923c',
-  default:    '#6b7280',
+  default:    'var(--bld-text-disabled)',
 };
 
 function getActionColor(actionType: string): string {
@@ -438,12 +438,12 @@ function GapFills({ nodeId, canvasEl, canvasRect }: {
       const x1 = a.right - canvasRect.left, x2 = b.left - canvasRect.left;
       const y  = Math.min(a.top, b.top) - canvasRect.top;
       const h  = Math.max(a.height, b.height);
-      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="row" style={{ position: 'absolute', left: x1, top: y, width: Math.max(0, x2 - x1), height: h, background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
+      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="row" style={{ position: 'absolute', left: x1, top: y, width: Math.max(0, x2 - x1), height: h, background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: 'var(--bld-error)', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
     } else {
       const y1 = a.bottom - canvasRect.top, y2 = b.top - canvasRect.top;
       const x  = Math.min(a.left, b.left) - canvasRect.left;
       const w  = Math.max(a.width, b.width);
-      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="col" style={{ position: 'absolute', left: x, top: y1, width: w, height: Math.max(0, y2 - y1), background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: '#f87171', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
+      fills.push(<div key={i} data-testid="gap-fill" data-gap-fill-index={i} data-gap-fill-dir="col" style={{ position: 'absolute', left: x, top: y1, width: w, height: Math.max(0, y2 - y1), background: color, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 9, color: 'var(--bld-error)', fontFamily: 'system-ui' }}>{Math.round(flex.gap)}px</span></div>);
     }
   }
   return <>{fills}</>;
@@ -459,8 +459,8 @@ function RedLine({ x1, y1, x2, y2, label }: { x1: number; y1: number; x2: number
   const midY  = (y1 + y2) / 2;
   return (
     <>
-      <div data-testid="distance-line" style={{ position: 'absolute', left: x1, top: y1, width: len, height: 1, background: '#ef4444', transformOrigin: '0 50%', transform: `rotate(${angle}deg)`, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: midX - 16, top: midY - 10, background: '#ef4444', color: '#fff', fontSize: 9, fontFamily: 'system-ui', padding: '1px 4px', borderRadius: 2, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 30 }}>{label}</div>
+      <div data-testid="distance-line" style={{ position: 'absolute', left: x1, top: y1, width: len, height: 1, background: 'var(--bld-error)', transformOrigin: '0 50%', transform: `rotate(${angle}deg)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: midX - 16, top: midY - 10, background: 'var(--bld-error)', color: '#fff', fontSize: 9, fontFamily: 'system-ui', padding: '1px 4px', borderRadius: 2, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 30 }}>{label}</div>
     </>
   );
 }

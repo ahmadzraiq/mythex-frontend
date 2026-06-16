@@ -8,25 +8,34 @@
  * document.documentElement and stored in the builder Zustand store.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import themeConfig from '@/config/theme.json';
 import { useBuilderStore, type CustomColor } from './_store';
 import { FigmaColorPicker } from './_color-picker';
-import { THEME_PRESETS, type ThemePreset } from '@/lib/builder/theme-presets';
 
 // ─── Shared styles ─────────────────────────────────────────────────────────────
 
 const SECTION: React.CSSProperties = {
-  borderBottom: '1px solid #1f2937',
-  padding: '12px 12px',
+  padding: '8px 12px',
+  borderRadius: 0,
 };
 
+const Divider = () => (
+  <div style={{ height: 1, background: 'linear-gradient(90deg, transparent 0%, var(--bld-border) 20%, var(--bld-border) 80%, transparent 100%)', flexShrink: 0, margin: '0 4px' }} />
+);
+
 const LABEL: React.CSSProperties = {
-  fontSize: 9,
-  color: 'var(--bld-text-disabled)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  marginBottom: 8,
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--bld-text-2)',
+  textTransform: 'none',
+  marginBottom: 0,
+};
+
+const SECTION_TOGGLE: React.CSSProperties = {
+  width: '100%', background: 'none', border: 'none', borderRadius: 0,
+  outline: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
+  justifyContent: 'space-between', padding: 0,
 };
 
 // ─── Font options ──────────────────────────────────────────────────────────────
@@ -68,15 +77,6 @@ export const FONT_GOOGLE_URL_MAP: Record<string, string> = Object.fromEntries(
   FONT_OPTIONS.filter(f => f.googleUrl).map(f => [f.value, f.googleUrl!])
 );
 
-const RADIUS_OPTIONS = [
-  { label: 'None',   value: '0' },
-  { label: 'SM',     value: '0.25rem' },
-  { label: 'MD',     value: '0.375rem' },
-  { label: 'LG',     value: '0.5rem' },
-  { label: 'XL',     value: '0.75rem' },
-  { label: '2XL',    value: '1rem' },
-  { label: 'Full',   value: '9999px' },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -161,8 +161,8 @@ function ColorGroupHeader({
         padding: '4px 0', marginBottom: expanded ? 6 : 0,
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? '▾' : '▸'}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'none' }}>
+        <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(0deg)":"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg></span>
         {label}
         <span style={{ color: 'var(--bld-text-disabled)', fontWeight: 400 }}>{count}</span>
       </span>
@@ -215,8 +215,8 @@ function CustomColorRow({
               title="Edit color"
               data-testid={`custom-color-edit-${color.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#a78bfa')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-accent)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
             >
               ✎
             </button>
@@ -227,8 +227,8 @@ function CustomColorRow({
               title="Delete color"
               data-testid={`custom-color-delete-${color.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '0 2px', fontSize: 12, lineHeight: 1 }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-error)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
             >
               ×
             </button>
@@ -276,8 +276,8 @@ function FontSelect({
         }}
         style={{
           width: '100%',
-          background: '#1f2937',
-          border: '1px solid #374151',
+          background: 'var(--bld-bg-input)',
+          border: '1px solid var(--bld-border-subtle)',
           borderRadius: 4,
           color: 'var(--bld-text-2)',
           fontSize: 11,
@@ -340,10 +340,37 @@ export interface ThemePanelProps {
   onOpenColorSlide?: (state: { kind: 'addColor' } | { kind: 'editColor'; id: string }) => void;
 }
 
+/** Small pill to toggle the app's dark / light mode (project appearance). */
+function AppAppearancePill() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => { setDark(document.documentElement.classList.contains('dark')); }, []);
+  const toggle = useCallback(() => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+  }, [dark]);
+  return (
+    <button
+      onClick={toggle}
+      title={dark ? 'App: dark mode — click for light' : 'App: light mode — click for dark'}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px',
+        background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)',
+        borderRadius: 6, cursor: 'pointer', fontSize: 10,
+        color: 'var(--bld-text-2)', transition: 'all 0.12s',
+      }}
+    >
+      {dark
+        ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+        : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      }
+      {dark ? 'Dark' : 'Light'}
+    </button>
+  );
+}
+
 export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
-  const resetTheme        = useBuilderStore(s => s.resetTheme);
   const patchTheme        = useBuilderStore(s => s.patchTheme);
-  const applyThemePreset  = useBuilderStore(s => s.applyThemePreset);
   const themeOverrides     = useBuilderStore(s => s.themeOverrides);
   const themeDarkOverrides = useBuilderStore(s => s.themeDarkOverrides);
   const customColors       = useBuilderStore(s => s.customColors);
@@ -352,8 +379,7 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
 
   /** 'light' | 'dark' tab inside the Theme panel */
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
-  const [openSection, setOpenSection] = useState<string | null>('presets');
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>('colors');
   /** Only one theme color picker open at a time — prevents wrong variable being patched when multiple popovers overlap */
   const [openColorPickerCssVar, setOpenColorPickerCssVar] = useState<string | null>(null);
 
@@ -382,108 +408,27 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
     if (openSection !== 'colors') setOpenColorPickerCssVar(null);
   }, [openSection]);
 
-  const currentRadius = themeOverrides['radius'] ?? LIGHT['--radius'] ?? '0.625rem';
-
-  const handleReset = () => {
-    resetTheme();
-    setActivePreset(null);
-  };
-
-  const handleApplyPreset = (preset: ThemePreset) => {
-    setActivePreset(preset.id);
-    // Inject Google Fonts if needed
-    const fontUrl = preset.fonts?.heading?.includes('Inter')         ? 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
-                  : preset.fonts?.heading?.includes('DM Sans')       ? 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap'
-                  : preset.fonts?.heading?.includes('Poppins')       ? 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap'
-                  : preset.fonts?.heading?.includes('Space Grotesk') ? 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap'
-                  : null;
-    if (fontUrl && typeof document !== 'undefined' && !document.querySelector(`link[href="${fontUrl}"]`)) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = fontUrl;
-      document.head.appendChild(link);
-    }
-    applyThemePreset(preset.light, preset.dark, preset.fonts);
-  };
 
   return (
     <div style={{ overflowY: 'auto', flex: 1, fontSize: 12, color: 'var(--bld-text-2)' }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '10px 12px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)' }}>Theme</span>
-        <button
-          onClick={handleReset}
-          title="Reset all theme overrides"
-          style={{ fontSize: 10, color: 'var(--bld-text-disabled)', background: 'none', border: '1px solid #374151', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
-        >
-          Reset
-        </button>
+        <AppAppearancePill />
       </div>
 
-      {/* ── Presets ── */}
-      <div style={SECTION}>
-        <button
-          onClick={() => toggle('presets')}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'presets' ? 10 : 0 }}
-        >
-          <span style={LABEL}>Presets</span>
-          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'presets' ? '▲' : '▼'}</span>
-        </button>
-        {openSection === 'presets' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))', gap: 6 }}>
-            {THEME_PRESETS.map(preset => (
-              <button
-                key={preset.id}
-                onClick={() => handleApplyPreset(preset)}
-                title={preset.name}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '8px 4px',
-                  background: activePreset === preset.id ? '#1d4ed8' : '#1f2937',
-                  border: `1px solid ${activePreset === preset.id ? '#3b82f6' : '#374151'}`,
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  transition: 'all 0.1s',
-                }}
-              >
-                {/* Color swatch strip */}
-                <div style={{ display: 'flex', gap: 2 }}>
-                  {preset.swatchColors.map((c, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        background: c,
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        flexShrink: 0,
-                      }}
-                    />
-                  ))}
-                </div>
-                <span style={{ fontSize: 9, color: activePreset === preset.id ? '#fff' : '#9ca3af', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-                  {preset.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <Divider />
 
       {/* ── Colors section ── */}
       <div style={SECTION}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openSection === 'colors' ? 10 : 0 }}>
           <button
             onClick={() => toggle('colors')}
-            style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0 }}
+            style={{ ...SECTION_TOGGLE, flex: 1 }}
           >
             <span style={LABEL}>Colors</span>
-            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'colors' ? '▲' : '▼'}</span>
+            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'colors' ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(180deg)"}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
           </button>
           {openSection === 'colors' && onOpenColorSlide && (
             <button
@@ -492,12 +437,12 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
               data-testid="add-custom-color"
               style={{
                 marginLeft: 8, width: 22, height: 22, borderRadius: 4,
-                background: '#1f2937', border: '1px solid #374151', color: '#a78bfa',
+                background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', color: 'var(--bld-accent)',
                 cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#374151'; e.currentTarget.style.color = '#c4b5fd'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.color = '#a78bfa'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bld-bg-input)'; e.currentTarget.style.color = 'var(--bld-ai-acce78bfa'; }}
             >
               +
             </button>
@@ -515,14 +460,13 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
                   style={{
                     flex: 1,
                     padding: '4px 0',
-                    background: colorMode === m ? '#1d4ed8' : '#1f2937',
+                    background: colorMode === m ? '#1d4ed8' : 'var(--bld-bg-input)',
                     border: `1px solid ${colorMode === m ? '#3b82f6' : '#374151'}`,
                     borderRadius: 4,
-                    color: colorMode === m ? '#fff' : '#9ca3af',
+                    color: colorMode === m ? '#fff' : 'var(--bld-text-3)',
                     fontSize: 10,
                     fontWeight: 600,
                     cursor: 'pointer',
-                    letterSpacing: '0.03em',
                   }}
                 >
                   {m === 'light' ? '☀ Light' : '🌙 Dark'}
@@ -635,15 +579,17 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
         )}
       </div>
 
+      <Divider />
+
       {/* ── Typography ── */}
       <div style={SECTION}>
         <button
           data-testid="typography-section-toggle"
           onClick={() => toggle('typography')}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'typography' ? 8 : 0 }}
+          style={{ ...SECTION_TOGGLE, marginBottom: openSection === 'typography' ? 8 : 0 }}
         >
           <span style={LABEL}>Typography</span>
-          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'typography' ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'typography' ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(180deg)"}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
         </button>
         {openSection === 'typography' && (
           <div>
@@ -653,47 +599,6 @@ export function ThemePanel({ onOpenColorSlide }: ThemePanelProps = {}) {
         )}
       </div>
 
-      {/* ── Border Radius ── */}
-      <div style={SECTION}>
-        <button
-          onClick={() => toggle('radius')}
-          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0, marginBottom: openSection === 'radius' ? 8 : 0 }}
-        >
-          <span style={LABEL}>Border Radius</span>
-          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{openSection === 'radius' ? '▲' : '▼'}</span>
-        </button>
-        {openSection === 'radius' && (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
-              {RADIUS_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => patchTheme('radius', opt.value, 'light')}
-                  style={{
-                    background: currentRadius === opt.value ? '#1d4ed8' : '#1f2937',
-                    border: `1px solid ${currentRadius === opt.value ? '#3b82f6' : '#374151'}`,
-                    borderRadius: 4,
-                    color: currentRadius === opt.value ? '#fff' : '#9ca3af',
-                    fontSize: 10,
-                    padding: '4px 4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 3,
-                  }}
-                >
-                  <div style={{ width: 20, height: 20, background: '#374151', borderRadius: opt.value === '9999px' ? '9999px' : opt.value }} />
-                  <span>{opt.label}</span>
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: 8, fontSize: 10, color: 'var(--bld-text-disabled)' }}>
-              Current: <span style={{ color: 'var(--bld-text-3)', fontFamily: 'monospace' }}>{currentRadius}</span>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ── Bottom padding ── */}
       <div style={{ height: 24 }} />
