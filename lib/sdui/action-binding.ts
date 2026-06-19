@@ -3,11 +3,12 @@
  * Uses onClick for View-based components (avoids "Unknown event handler onPress" on DOM).
  * Uses onPress for press-based components (Button, Link, MenuItem).
  *
- * Supports two action formats:
- * - Array format (preferred): `actions: [{ action: "workflowName" }, ...]`
- *   The trigger event is read from the workflow definition's `trigger` field.
- *   This removes the need to hard-code the event name on the node — the workflow owns its trigger.
- * - Object format (legacy): `actions: { click: { action: "..." }, change: { action: "..." } }`
+ * Supports three action formats:
+ * - Inline format (new, preferred): `actions: [{ trigger: "click", steps: [...] }]`
+ *   The trigger is on the action item directly — no actionsConfig lookup needed.
+ * - Ref format (legacy): `actions: [{ action: "workflowName" }, ...]`
+ *   The trigger is read from actionsConfig[workflowName].trigger.
+ * - Object format (oldest): `actions: { click: { action: "..." }, change: { action: "..." } }`
  */
 
 import type React from 'react';
@@ -162,11 +163,9 @@ export function bindActionsToProps(
       const workflowDef = workflowName
         ? (actionsConfig?.[workflowName] as Record<string, unknown> | undefined)
         : undefined;
-      // Resolve trigger: item's own trigger field > named workflow def > default 'click'
-      // The inline trigger on the action ref (set by the node in node.actions) is the most
-      // specific declaration — e.g. { action: "kanban-drag-start", trigger: "dragStart" }.
-      // The workflow definition's trigger is the fallback when no inline trigger is given,
-      // which is the normal Workflows-tab flow where node.actions = [{ action: uuid }].
+      // Resolve trigger: inline trigger > named workflow def > default 'click'
+      // New format: action has trigger directly — { trigger: 'click', steps: [...] }
+      // Legacy format: trigger lives in actionsConfig — { action: 'uuid' }
       const trigger = (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
         ?? (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
         ?? 'click';

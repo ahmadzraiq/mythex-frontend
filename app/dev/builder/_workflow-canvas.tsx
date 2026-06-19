@@ -485,12 +485,17 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
   }, [inline, JSON.stringify(target)]);
 
   // ── Global workflows list for "Project workflows" section in AddActionPopover ─
+  // Filter to UUID-format keys only — path-name alias keys (e.g. "handleNumber") are
+  // stored alongside UUID keys for backward-compat but must not appear as duplicates.
+  const UUID_RE_WF = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const globalWorkflowsList = useMemo(() => {
-    return Object.entries(store.globalWorkflowMeta ?? {}).map(([id, meta]) => ({
-      id,
-      name: (meta as { name?: string }).name ?? id,
-    }));
-  }, [store.globalWorkflowMeta]);
+    return Object.entries(store.workflows ?? {})
+      .filter(([id]) => UUID_RE_WF.test(id))
+      .map(([id, wf]) => ({
+        id,
+        name: wf.name ?? id,
+      }));
+  }, [store.workflows]);
 
   // Server FUNCTION-kind workflows for injection into Functions category
   const [serverFunctionsList, setServerFunctionsList] = useState<{ id: string; name: string }[]>([]);
@@ -575,17 +580,16 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       }
       setSteps(initialSteps);
     } else if (target.kind === 'globalWorkflow') {
-      const meta = store.globalWorkflowMeta[target.id];
-      setWorkflowMeta(meta ?? { id: target.id, name: 'Workflow' });
-      const rawGlobal = (store.globalWorkflows[target.id] ?? []) as unknown[];
-      initialSteps = deserializeStepArray(rawGlobal, store.directActionsMap);
+      const wf = store.workflows[target.id];
+      setWorkflowMeta(wf ? { id: wf.id, name: wf.name ?? 'Workflow', params: wf.params as WorkflowParam[] | undefined } : { id: target.id, name: 'Workflow' });
+      if (wf?.trigger) setTriggerValue(wf.trigger);
+      initialSteps = deserializeStepArray((wf?.steps ?? []) as unknown[], store.directActionsMap);
       setSteps(initialSteps);
     } else if (target.kind === 'pageWorkflow') {
-      const meta = store.pageWorkflowMeta?.[target.name];
-      setWorkflowMeta({ id: target.name, name: target.name, ...meta });
-      setTriggerValue(meta?.trigger ?? 'click');
-      const rawPage = (store.pageWorkflows[target.name] ?? []) as unknown[];
-      initialSteps = deserializeStepArray(rawPage, store.directActionsMap);
+      const wf = store.workflows[target.name];
+      setWorkflowMeta({ id: target.name, name: wf?.name ?? target.name, params: wf?.params as WorkflowParam[] | undefined });
+      setTriggerValue(wf?.trigger ?? 'click');
+      initialSteps = deserializeStepArray((wf?.steps ?? []) as unknown[], store.directActionsMap);
       setSteps(initialSteps);
     } else if (target.kind === 'componentWorkflow') {
       const scModel = getLinkedModel(target.modelId);
@@ -648,11 +652,23 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
         : undefined;
       store.patchNodeField(nodeId, 'actions', wrapped);
     } else if (target.kind === 'globalWorkflow') {
-      store.setGlobalWorkflow(target.id, steps as object[]);
-      store.setGlobalWorkflowMeta(target.id, workflowMeta);
+      store.setWorkflow(target.id, {
+        ...(store.workflows[target.id] ?? {}),
+        id: target.id,
+        name: workflowMeta.name ?? target.id,
+        trigger: triggerValue,
+        steps: steps as object[],
+        params: workflowMeta.params as import('@/config/types').WorkflowParam[] | undefined,
+      });
     } else if (target.kind === 'pageWorkflow') {
-      store.setPageWorkflow(target.name, steps as object[]);
-      store.setPageWorkflowMeta(target.name, { ...workflowMeta, trigger: triggerValue });
+      store.setWorkflow(target.name, {
+        ...(store.workflows[target.name] ?? {}),
+        id: target.name,
+        name: workflowMeta.name ?? target.name,
+        trigger: triggerValue,
+        steps: steps as object[],
+        params: workflowMeta.params as import('@/config/types').WorkflowParam[] | undefined,
+      });
     } else if (target.kind === 'componentWorkflow') {
       const scModel = getLinkedModel(target.modelId);
       if (scModel) {
@@ -725,7 +741,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
         ? componentTriggerLabel(triggerValue)
         : getTriggerLabel(triggerValue, targetNodeType, targetCustomTriggers);
   // Trigger workflows (from the Triggers tab) use a restricted set of trigger options
-  const isTriggerWorkflow = target.kind === 'pageWorkflow' && !!store.pageWorkflowMeta?.[target.name]?.isTrigger;
+  const isTriggerWorkflow = target.kind === 'pageWorkflow' && !!store.workflows?.[target.name]?.isTrigger;
   const triggerCategories = isComponentWorkflow
     ? [...COMPONENT_TRIGGER_CATEGORIES, ...getTriggerCategories(undefined)]
     : isTriggerWorkflow

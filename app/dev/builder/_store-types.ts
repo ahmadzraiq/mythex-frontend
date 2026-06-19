@@ -12,6 +12,9 @@
  */
 
 import type { SDUINode } from '@/lib/sdui/types/node';
+import type { WorkflowDef } from '@/config/types';
+
+export type { WorkflowDef };
 
 // ─── AI Model registry ─────────────────────────────────────────────────────────
 
@@ -819,29 +822,45 @@ export interface BuilderStore {
   }>) => void;
 
   // ── Workflows & Formulas ─────────────────────────────────────────────────────
-  /** Named workflows (per-page action sequences, keyed by workflow name) */
-  pageWorkflows: Record<string, object[]>;
-  /** Metadata (name, trigger, description) for each named workflow, keyed by name */
-  pageWorkflowMeta: Record<string, WorkflowMeta>;
-  /** Maps source config filename (without .json) to the list of workflow IDs it defines. Used by codegen to split actions into domain files. */
-  pageWorkflowGroups?: Record<string, string[]>;
+  /**
+   * Unified workflow dictionary — the single source of truth.
+   * Keyed by workflow UUID. Each entry has steps inline.
+   */
+  workflows: Record<string, WorkflowDef>;
+  /** Set (upsert) a single WorkflowDef in the unified dict. */
+  setWorkflow: (id: string, def: WorkflowDef) => void;
+  /** Remove a workflow from the unified dict. */
+  removeWorkflow: (id: string) => void;
+
   /**
    * Direct actions (graphql, fetch, navigateTo, etc.) from config/actions/*.json, keyed by UUID.
    * Used by the workflow canvas to resolve ActionRefs to their real type (e.g. graphql)
    * instead of always showing them as "Call workflow".
    */
   directActionsMap: Record<string, Record<string, unknown>>;
-  /** App-level workflows shared across all pages */
+  /** @deprecated — always {}, use workflows */
+  pageWorkflows: Record<string, object[]>;
+  /** @deprecated — always {}, use workflows */
+  pageWorkflowMeta: Record<string, WorkflowMeta>;
+  /** @deprecated — unused, kept for type compat */
+  pageWorkflowGroups?: Record<string, string[]>;
+  /** @deprecated — always {}, use workflows */
   globalWorkflows: Record<string, object[]>;
-  /** Metadata (name, folder, description, params) for each global workflow, keyed by id */
+  /** @deprecated — always {}, use workflows */
   globalWorkflowMeta: Record<string, WorkflowMeta>;
   /** Global reusable formulas callable as functions — keyed by formula id */
   globalFormulas: Record<string, GlobalFormulaDef>;
+  /** @deprecated — no-op, use setWorkflow */
   setPageWorkflow: (name: string, actions: object[]) => void;
+  /** @deprecated — delegates to removeWorkflow */
   removePageWorkflow: (name: string) => void;
+  /** @deprecated — no-op, use setWorkflow */
   setPageWorkflowMeta: (name: string, meta: Partial<WorkflowMeta>) => void;
+  /** @deprecated — no-op, use setWorkflow */
   setGlobalWorkflow: (name: string, actions: object[]) => void;
+  /** @deprecated — delegates to removeWorkflow */
   removeGlobalWorkflow: (name: string) => void;
+  /** @deprecated — no-op, use setWorkflow */
   setGlobalWorkflowMeta: (id: string, meta: Partial<WorkflowMeta>) => void;
   /** Legacy — sets a formula by id (keeps name = id for backward compat) */
   setGlobalFormula: (id: string, def: GlobalFormulaDef | null) => void;
@@ -938,6 +957,8 @@ export interface BuilderStore {
 
   // ── AI Chat ──────────────────────────────────────────────────────────────────
   aiMode: boolean;
+  /** When true, right panel shows the DSL chat (Claude Agent SDK) instead of builder chat */
+  dslMode: boolean;
   aiChatHistory: AiChatMessage[];
   aiSelectedNodeIds: string[];
   aiGenerating: boolean;
@@ -950,6 +971,7 @@ export interface BuilderStore {
   aiPendingMessage: string | null;
 
   toggleAiMode: () => void;
+  toggleDslMode: () => void;
   setAiPendingMessage: (msg: string | null) => void;
   addAiChatMessage: (msg: AiChatMessage) => void;
   updateLastAiMessage: (patch: Partial<AiChatMessage>) => void;

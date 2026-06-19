@@ -453,7 +453,10 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
       folder: folder.trim() || undefined,
       description: description.trim() || undefined,
       params,
-      formula: typeof formula === 'string' ? formula : (formula as { formula?: string })?.formula ?? '',
+      formula: typeof formula === 'string' ? formula
+        : (formula as { js?: string })?.js !== undefined
+          ? (formula as { js: string }).js
+          : (formula as { formula?: string })?.formula ?? '',
     });
     onClose();
   }, [name, folder, description, params, formula, fnName, onSave, onClose]);
@@ -558,7 +561,10 @@ export function FormulaSlideBase({ initial, isNew, onSave, onDelete, onClose, an
             title="Click to edit formula"
           >
             {formula
-              ? (typeof formula === 'string' ? formula : (formula as { formula?: string })?.formula ?? '')
+              ? (typeof formula === 'string' ? formula
+                  : (formula as { js?: string })?.js
+                    ?? (formula as { formula?: string })?.formula
+                    ?? '')
               : '(click to add formula body…)'}
           </div>
           <button
@@ -760,8 +766,12 @@ export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
   const fmSearchRef = useRef<HTMLInputElement>(null);
   const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormulaFull, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
 
-  // Only show truly global (project-level) workflows — NOT page-scoped ones
+  // Only show truly global (project-level) workflows — NOT page-scoped ones.
+  // UUID_RE filters out path-name alias keys (e.g. "handleNumber") that are stored
+  // alongside the UUID key for backward-compat; showing both would duplicate the list.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const filteredGlobalWorkflows = Object.keys(globalWorkflows).filter(id => {
+    if (!UUID_RE.test(id)) return false;
     const meta = globalWorkflowMeta[id];
     const name = meta?.name ?? id;
     return name.toLowerCase().includes(wfSearch.toLowerCase());

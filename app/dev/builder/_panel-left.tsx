@@ -1679,7 +1679,7 @@ export default function PanelLeft({
 
       {tab === 'theme' && <ThemePanel onOpenColorSlide={onOpenColorSlide} />}
 
-      {tab === 'files' && <FilesPanel />}
+      {/* 'files' tab is now handled by the FileExplorer SlidePanel in page.tsx */}
 
       {/* Context menu */}
       {contextMenu && (

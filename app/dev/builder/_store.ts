@@ -607,11 +607,12 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   activePreviewStates: ['normal'],
   showInteractionLines: false,
   activeLogicSection: null,
+  workflows: {},
   pageWorkflows: {},
   pageWorkflowMeta: {},
-  directActionsMap: {},
   globalWorkflows: {},
   globalWorkflowMeta: {},
+  directActionsMap: {},
   globalFormulas: {},
   workflowTestResults: restoreWorkflowTestResults(),
   workflowCanvasTarget: null,
@@ -1858,6 +1859,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
   // ── AI Chat ────────────────────────────────────────────────────────────────
   aiMode: false,
+  dslMode: false,
   aiChatHistory: [],
   aiSelectedNodeIds: [],
   aiGenerating: false,
@@ -1882,7 +1884,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     projectCategory:        ctx.category        ?? s.projectCategory,
   })),
 
-  toggleAiMode: () => set(s => ({ aiMode: !s.aiMode })),
+  toggleAiMode: () => set(s => ({ aiMode: !s.aiMode, dslMode: false })),
+  toggleDslMode: () => set(s => ({ dslMode: !s.dslMode, aiMode: !s.dslMode ? true : s.aiMode })),
   setAiPendingMessage: (msg) => set({ aiPendingMessage: msg }),
   addAiChatMessage: (msg) => set(s => ({ aiChatHistory: [...s.aiChatHistory, msg] })),
   updateLastAiMessage: (patch) => set(s => {
@@ -3488,26 +3491,30 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   patchEngineConventions: (patch) =>
     set(s => ({ engineConventions: { ...s.engineConventions, ...patch } })),
 
-  setPageWorkflow: (name, actions) =>
-    set(s => ({ pageWorkflows: { ...s.pageWorkflows, [name]: actions } })),
-  removePageWorkflow: (name) =>
+  setWorkflow: (id, def) =>
+    set(s => ({ workflows: { ...s.workflows, [id]: def } })),
+  removeWorkflow: (id) =>
     set(s => {
-      const { [name]: _pw, ...restWorkflows } = s.pageWorkflows;
-      const { [name]: _pm, ...restMeta } = s.pageWorkflowMeta;
-      return { pageWorkflows: restWorkflows, pageWorkflowMeta: restMeta };
+      const { [id]: _removed, ...rest } = s.workflows;
+      return { workflows: rest };
     }),
-  setPageWorkflowMeta: (name, meta) =>
-    set(s => ({ pageWorkflowMeta: { ...s.pageWorkflowMeta, [name]: { ...s.pageWorkflowMeta[name], ...meta, id: (meta as { id?: string }).id ?? name } } })),
-  setGlobalWorkflow: (name, actions) =>
-    set(s => ({ globalWorkflows: { ...s.globalWorkflows, [name]: actions } })),
-  removeGlobalWorkflow: (name) =>
+
+  setPageWorkflow: (_name, _actions) => { /* removed — use setWorkflow */ },
+  removePageWorkflow: (name) => {
     set(s => {
-      const { [name]: _w, ...restWorkflows } = s.globalWorkflows;
-      const { [name]: _m, ...restMeta } = s.globalWorkflowMeta as Record<string, unknown>;
-      return { globalWorkflows: restWorkflows, globalWorkflowMeta: restMeta as typeof s.globalWorkflowMeta };
-    }),
-  setGlobalWorkflowMeta: (id, meta) =>
-    set(s => ({ globalWorkflowMeta: { ...s.globalWorkflowMeta, [id]: { ...s.globalWorkflowMeta[id], ...meta, id } } })),
+      const { [name]: _removed, ...rest } = s.workflows;
+      return { workflows: rest };
+    });
+  },
+  setPageWorkflowMeta: (_name, _meta) => { /* removed — use setWorkflow */ },
+  setGlobalWorkflow: (_name, _actions) => { /* removed — use setWorkflow */ },
+  removeGlobalWorkflow: (name) => {
+    set(s => {
+      const { [name]: _removed, ...rest } = s.workflows;
+      return { workflows: rest };
+    });
+  },
+  setGlobalWorkflowMeta: (_id, _meta) => { /* removed — use setWorkflow */ },
   setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action', workflowId = '') => {
     const entry: import('./_store-types').WorkflowTestEntry = { result, error, actionName, stepIndex, ranAt: Date.now(), workflowId };
     persistWorkflowStepTestResult(stepId, entry);
@@ -3757,28 +3764,10 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             next.pageNodes = clone(firstPageNodes);
             next.history = [makeSnapshot(pages, pages[0].id, firstPageNodes, [])];
             next.historyIdx = 0;
-            if (saved?.pageWorkflows) next.pageWorkflows = saved.pageWorkflows as typeof s.pageWorkflows;
-            if (saved?.pageWorkflowMeta) {
-              let meta = saved.pageWorkflowMeta as typeof s.pageWorkflowMeta;
-              // One-time migration: promote old empty-pageScope triggers to isAppTrigger=true.
-              const MIGRATION_KEY = 'builder:trigger-scope-migration:v1';
-              if (typeof window !== 'undefined' && !localStorage.getItem(MIGRATION_KEY)) {
-                const migrated: typeof meta = {};
-                for (const [id, m] of Object.entries(meta)) {
-                  if (m.isTrigger && !m.isAppTrigger && (!m.pageScope || m.pageScope === '')) {
-                    const { pageScope: _removed, ...rest } = m;
-                    migrated[id] = { ...rest, isAppTrigger: true };
-                  } else {
-                    migrated[id] = m;
-                  }
-                }
-                meta = migrated;
-                localStorage.setItem(MIGRATION_KEY, '1');
-              }
-              next.pageWorkflowMeta = meta;
+            // ── Unified workflows dict ────────────────────────────────────────
+            if (saved?.workflows && typeof saved.workflows === 'object') {
+              next.workflows = saved.workflows as typeof s.workflows;
             }
-            if (saved?.globalWorkflows) next.globalWorkflows = saved.globalWorkflows as typeof s.globalWorkflows;
-            if (saved?.globalWorkflowMeta) next.globalWorkflowMeta = saved.globalWorkflowMeta as typeof s.globalWorkflowMeta;
             if (Array.isArray(saved?.customVars)) next.customVars = saved!.customVars as typeof s.customVars;
             if (Array.isArray(saved?.varFolders)) next.varFolders = saved!.varFolders as typeof s.varFolders;
             if (Array.isArray(saved?.pageDataSources)) next.pageDataSources = saved!.pageDataSources as typeof s.pageDataSources;
@@ -3788,6 +3777,11 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
             if (saved?.authConfig && typeof saved.authConfig === 'object') next.authConfig = saved.authConfig as typeof s.authConfig;
+            // Restore user-created global formulas (functions). The static config/formulas.json
+            // seeds the base formulas; saved.formulas contains any user-added ones on top.
+            if (saved?.formulas && typeof saved.formulas === 'object') {
+              next.globalFormulas = { ...s.globalFormulas, ...(saved.formulas as typeof s.globalFormulas) };
+            }
             if (saved?.projectMeta && typeof saved.projectMeta === 'object') {
               const pm = saved.projectMeta as { mood?: string; animationLevel?: number; layoutStructure?: number; description?: string; appName?: string; category?: string };
               if (pm.mood)                           next.projectMood            = pm.mood;
@@ -3847,6 +3841,13 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
               }
             }
           }
+          // Seed the formula evaluator registry so __userFns__['name'](...) resolves
+          // immediately after load (formula editor + canvas both need this).
+          try {
+            const formulas = useBuilderStore.getState().globalFormulas;
+            registerGlobalFormulas(formulas as Record<string, unknown>);
+          } catch { /* non-fatal */ }
+
           // ── Restore shared components (user-imported only) ───────────────────
           // Always start from a clean slate — the static config/shared-components.json
           // data must NOT be visible in real projects unless the user imported it.
@@ -3877,10 +3878,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             history: [EMPTY_SNAPSHOT],
             historyIdx: 0,
             loadedPageIds: new Set<string>([homeId]),
-            pageWorkflows: {},
-            pageWorkflowMeta: {},
-            globalWorkflows: {},
-            globalWorkflowMeta: {},
+            workflows: {},
             customVars: [],
             varFolders: [],
             pageDataSources: [],
@@ -4018,6 +4016,20 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           ];
         }
 
+        // ── Unified workflows dict (from config/actions/*.json) ──────────────
+        if (Array.isArray(json.workflows) && json.workflows.length > 0) {
+          const configWorkflowDefs: typeof s.workflows = {};
+          for (const w of json.workflows as Array<{ id: string; name?: string; trigger?: string; steps: object[]; params?: import('./_store-types').WorkflowParam[]; folder?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string }>) {
+            configWorkflowDefs[w.id] = { id: w.id, name: w.name ?? w.id, trigger: w.trigger, steps: w.steps, params: w.params, folder: w.folder, isTrigger: w.isTrigger, isAppTrigger: w.isAppTrigger, pageScope: w.pageScope };
+          }
+          // Merge: config defs as base, preserve user-created workflows
+          const userWorkflowIds = new Set(json.workflows.map((w: { id: string }) => w.id));
+          const existingUserWorkflows = Object.fromEntries(
+            Object.entries(s.workflows).filter(([id]) => !userWorkflowIds.has(id))
+          );
+          next.workflows = { ...configWorkflowDefs, ...existingUserWorkflows };
+        }
+
         // ── Named workflows from config/actions/*.json ────────────────────────
         if (Array.isArray(json.workflows) && json.workflows.length > 0) {
           const configWorkflowIds = new Set(json.workflows.map(w => w.id));
@@ -4047,7 +4059,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           const isUuidStr = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
           // Workflows with `params` are global workflows (Logic tab); others are page workflows
-          type RawWorkflow = { id: string; name?: string; trigger?: string; steps: unknown[]; onErrorSteps?: unknown[]; isTrigger?: boolean; pageScope?: string; params?: import('./_store-types').WorkflowParam[] };
+          type RawWorkflow = { id: string; name?: string; trigger?: string; steps: unknown[]; onErrorSteps?: unknown[]; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string; params?: import('./_store-types').WorkflowParam[] };
           const globalConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => Array.isArray(w.params) && w.params.length > 0);
           const pageConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => !Array.isArray(w.params) || w.params.length === 0);
 
@@ -4059,6 +4071,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             trigger: w.trigger,
             isSystem: isSystemWorkflow(w),
             ...(w.isTrigger ? { isTrigger: true } : {}),
+            ...(w.isAppTrigger ? { isAppTrigger: true } : {}),
             ...(w.pageScope ? { pageScope: w.pageScope } : {}),
           } as WorkflowMeta]));
           next.pageWorkflows = { ...configPageWorkflows, ...userWorkflows } as typeof s.pageWorkflows;

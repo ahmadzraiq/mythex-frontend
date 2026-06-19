@@ -38,6 +38,8 @@ export { FORMULA_FNS } from './formula-functions';
 import { resolveVar } from './formula-utils';
 import { FORMULA_FNS } from './formula-functions';
 import { evaluateJsBinding, isJsBinding } from './javascript-evaluator';
+import { bumpFormulasVersion } from './global-variable-store';
+import { isExpression } from './is-expression';
 
 // ─── Global Formula Registry ──────────────────────────────────────────────────
 
@@ -67,14 +69,21 @@ export function registerGlobalFormulas(formulas: Record<string, unknown>): void 
     const rawFormula = def.formula;
     const formulaStr = typeof rawFormula === 'string'
       ? rawFormula
-      : (rawFormula && typeof rawFormula === 'object' && 'formula' in (rawFormula as object)
-          ? String((rawFormula as { formula: unknown }).formula ?? '')
-          : '');
+      : (rawFormula && typeof rawFormula === 'object' && 'js' in (rawFormula as object)
+          ? String((rawFormula as { js: unknown }).js ?? '')
+          : (rawFormula && typeof rawFormula === 'object' && 'formula' in (rawFormula as object)
+              ? String((rawFormula as { formula: unknown }).formula ?? '')
+              : ''));
     normalised[key] = { ...(def as unknown as _GlobalFormulaDef), formula: formulaStr };
   }
   _registeredFormulas = normalised;
   if (typeof window !== 'undefined') {
     (globalThis as Record<string, unknown>).__debugRegisteredFormulas = normalised;
+    // Bump the store version so SDUI binding components re-render and pick
+    // up newly available user-defined functions (formatDisplay, etc.).
+    if (Object.keys(normalised).length > 0) {
+      bumpFormulasVersion();
+    }
   }
 }
 
@@ -111,6 +120,12 @@ export function evaluateFormula(formula: string | object, context: Record<string
 
   const formulaStr = String(formula);
   if (!formulaStr.trim()) return { value: undefined, error: null };
+
+  // Route statement bodies (non-expressions) to the JS evaluator which handles
+  // multi-statement bodies correctly. Uses compile-probe instead of keyword regex.
+  if (!isExpression(formulaStr)) {
+    return evaluateJsBinding({ js: formulaStr }, context);
+  }
 
   // Normalise natural-language operators.
   // Negative lookahead (?!\s*\() preserves `and(...)` / `or(...)` function-call
@@ -160,13 +175,24 @@ export function evaluateFormula(formula: string | object, context: Record<string
     const fnName = formulaDef?.name;
     if (!fnName) continue;
     userFns[fnName] = (...args: unknown[]) => {
+      const body = formulaDef.formula || '';
+      if (!body.trim()) return undefined;
+      const paramNames = (formulaDef.params ?? []).map(p => p.name);
       const paramCtx: Record<string, unknown> = {};
-      (formulaDef.params ?? []).forEach((p, i) => {
-        paramCtx[p.name] = args[i];
-      });
+      paramNames.forEach((p, i) => { paramCtx[p] = args[i]; });
+      // Route statement bodies to new Function directly; expression bodies go through
+      // evaluateFormula for full state access. Uses compile-probe for accuracy.
+      const hasStatements = !isExpression(body);
+      if (hasStatements) {
+        try {
+          // eslint-disable-next-line no-new-func
+          const fn = new Function('parameters', 'variables', ...paramNames, `"use strict";\n${body}`);
+          return fn(paramCtx, (context.variables ?? {}) as Record<string, unknown>, ...args);
+        } catch { return undefined; }
+      }
+      // Simple expression body: use evaluateFormula for full state access (variables, collections, etc.)
       const innerCtx = { ...context, parameters: paramCtx };
-      const result = evaluateFormula(formulaDef.formula, innerCtx, ctxGet);
-      return result.value;
+      try { return evaluateFormula(body, innerCtx, ctxGet).value; } catch { return undefined; }
     };
   }
 

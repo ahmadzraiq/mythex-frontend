@@ -31,6 +31,7 @@ import {
   getAllCollectionNames,
 } from './variable-name-registry';
 import { FORMULA_FNS } from './formula-functions';
+import { isExpression } from './is-expression';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -379,6 +380,43 @@ export function makeWwLib(ctx: WwLibContext = {}) {
  * The body is wrapped as the body of a regular function — users typically use
  * `return <expr>;`. Single-expression bodies are also supported (they auto-`return`).
  */
+/**
+ * Build user-defined function wrappers from the registered formula definitions.
+ * Uses a dynamic require to avoid a circular dependency with formula-evaluator.ts
+ * (which imports isJsBinding/evaluateJsBinding from this module).
+ */
+function buildUserFns(): Record<string, (...args: unknown[]) => unknown> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getRegisteredFormulas } = require('@/lib/sdui/formula-evaluator') as {
+      getRegisteredFormulas: () => Record<string, unknown>
+    };
+    const formulas = getRegisteredFormulas();
+    const fns: Record<string, (...args: unknown[]) => unknown> = {};
+    for (const [, rawDef] of Object.entries(formulas)) {
+      const def = rawDef as { name?: string; formula?: string; params?: Array<{ name: string }> };
+      if (!def.name || !def.formula) continue;
+      const { name, formula, params } = def;
+      fns[name] = (...args: unknown[]) => {
+        const paramNames = (params ?? []).map(p => p.name);
+        const paramCtx: Record<string, unknown> = {};
+        paramNames.forEach((p, i) => { paramCtx[p] = args[i]; });
+        try {
+          const state = getGlobalVariableStore().getState().getFullState();
+          const vars = makeVariablesProxy(state, false);
+          // eslint-disable-next-line no-new-func
+          const fn = new Function('parameters', 'variables', '__userFns__', ...paramNames,
+            `"use strict";\n${ensureReturn(formula)}`);
+          return fn(paramCtx, vars, fns, ...args);
+        } catch (e) {
+          return undefined;
+        }
+      };
+    }
+    return fns;
+  } catch { return {}; }
+}
+
 export function evaluateJsBinding(
   binding: JsBinding | string,
   context: Record<string, unknown>,
@@ -386,12 +424,21 @@ export function evaluateJsBinding(
   const code = typeof binding === 'string' ? binding : binding.js;
   if (!code || !code.trim()) return { value: undefined, error: null };
 
+  const userFns = buildUserFns();
+  // Expose each user function as a local constant so the code can call
+  // formatDisplay(...), typeColor(...), etc. directly by name.
+  const validIdRe = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+  const userFnPreamble = Object.keys(userFns)
+    .filter(k => validIdRe.test(k))
+    .map(k => `const ${k} = __userFns__[${JSON.stringify(k)}];`)
+    .join('\n');
+
   const body = ensureReturn(code);
   try {
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns',
-      `"use strict";\n${body}`,
+      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns', '__userFns__',
+      `"use strict";\n${userFnPreamble ? userFnPreamble + '\n' : ''}${body}`,
     );
     const value = fn(
       makeVariablesProxy(context, /* allowWrite */ false),
@@ -406,6 +453,7 @@ export function evaluateJsBinding(
       (context.auth ?? {}) as Record<string, unknown>,
       makeWwLib({ workflow: context.workflow as Record<string, { result: unknown; error: unknown }>, parameters: context.parameters as Record<string, unknown> }),
       FORMULA_FNS,
+      userFns,
     );
     return { value, error: null };
   } catch (e) {
@@ -431,11 +479,17 @@ export async function evaluateJsAsync(
   wwLibCtx: WwLibContext = {},
 ): Promise<JsEvalResult> {
   if (!code || !code.trim()) return { value: undefined, error: null };
+  const userFns = buildUserFns();
+  const validIdRe = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+  const userFnPreamble = Object.keys(userFns)
+    .filter(k => validIdRe.test(k))
+    .map(k => `const ${k} = __userFns__[${JSON.stringify(k)}];`)
+    .join('\n');
   const body = ensureReturn(code);
   try {
     const fn = new AsyncFunctionCtor(
-      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns',
-      `"use strict";\n${body}`,
+      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns', '__userFns__',
+      `"use strict";\n${userFnPreamble ? userFnPreamble + '\n' : ''}${body}`,
     );
     const value = await fn(
       makeVariablesProxy(context, /* allowWrite */ true),
@@ -450,6 +504,7 @@ export async function evaluateJsAsync(
       (context.auth ?? {}) as Record<string, unknown>,
       makeWwLib(wwLibCtx),
       FORMULA_FNS,
+      userFns,
     );
     return { value, error: null };
   } catch (e) {
@@ -460,20 +515,9 @@ export async function evaluateJsAsync(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Wrap a single-expression body so it returns implicitly, leave multi-statement
- * bodies (those containing `;`, `\n`, or a `return`) as-is.
+ * Wrap a single-expression body so it returns a value; leave multi-statement
+ * bodies as-is. Uses a compile-probe instead of fragile keyword regexes.
  */
 function ensureReturn(code: string): string {
-  const trimmed = code.trim();
-  // Array literals `[...]` and paren expressions `(...)` are single expressions
-  // even when they span multiple lines — they still need a return statement.
-  const isMultiLineExpression = trimmed.startsWith('[') || trimmed.startsWith('(');
-  // Already has a return statement, statements separated by ;, multiple lines,
-  // or a trailing semicolon — assume the user wrote a full function body.
-  if (
-    /\breturn\b/.test(trimmed) ||
-    (!isMultiLineExpression && /[\n;]/.test(trimmed)) ||
-    trimmed.startsWith('{')
-  ) return code;
-  return `return (${trimmed});`;
+  return isExpression(code) ? `return (${code.trim()});` : code;
 }

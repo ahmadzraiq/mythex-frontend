@@ -221,15 +221,15 @@ function WorkflowRowMenu({ uuid, onOpen, onRemove }: { uuid: string; onOpen: () 
 }
 
 export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
-  const { openWorkflowCanvas, pageWorkflowMeta, patchNodeField, setPageWorkflow, setPageWorkflowMeta, patchResponsive, removeResponsiveOverride, _pushHistory } = useBuilderStore();
+  const { openWorkflowCanvas, patchNodeField, setWorkflow, patchResponsive, removeResponsiveOverride, _pushHistory } = useBuilderStore();
   const abp = useBuilderStore(s => s.activeBreakpoint);
   // Which Shared/System Components are currently in Edit mode. SC-owned
   // workflow rows are only shown when their owning model is in this list —
   // otherwise the row is hidden as internal wiring of the instance.
   const editingSharedComponentIds = useBuilderStore(s => s.editingSharedComponentIds);
   const editingSharedComponentId = useBuilderStore(s => s.editingSharedComponentId);
+  const workflows = useBuilderStore(s => s.workflows);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [listenPickerOpen, setListenPickerOpen] = useState(false);
 
   // ── Custom triggers from the current SC instance (if any) ────────────────────
   // When the selected node is an SC instance, surface the model's custom
@@ -356,14 +356,24 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
             // workflow can be called, not the event that causes this node to fire it.
             return { uuid, trigger: (a as { trigger?: string }).trigger ?? 'click', idx, scRef };
           }
-          const trigger = pageWorkflowMeta[uuid]?.trigger ?? 'click';
+          const trigger = workflows[uuid]?.trigger ?? 'click';
           return { uuid, trigger, idx };
+        }
+        // Inline action format: { trigger: string, steps: [{ type: "executeWorkflow", config: { workflowId } }] }
+        if (typeof a.trigger === 'string' && Array.isArray(a.steps)) {
+          const steps = a.steps as Array<{ type?: string; config?: Record<string, unknown> }>;
+          const execStep = steps.find(
+            s => s.type === 'executeWorkflow' && typeof s.config?.workflowId === 'string'
+          );
+          const wfId = execStep?.config?.workflowId as string | undefined;
+          if (!wfId) return null;
+          return { uuid: wfId, trigger: a.trigger, idx };
         }
         return null;
       })
       .filter((e): e is WorkflowEntry => e !== null)
       // Hide system-managed page workflows (auto-generated onChange setters) — but keep SC-scoped rows.
-      .filter(({ uuid, scRef }) => !!scRef || !pageWorkflowMeta[uuid]?.isSystem)
+      .filter(({ uuid, scRef }) => !!scRef || !(workflows[uuid] as unknown as Record<string, unknown> | undefined)?.isSystem)
       // Strict scope isolation: SC-internal workflows are only visible in SC
       // edit mode, and page-level workflows are only visible outside SC edit
       // mode. Nothing crosses the boundary in either direction.
@@ -436,21 +446,9 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
       }
     }
 
-    // Outside SC edit mode: create a page-level workflow bound to a click event.
-    setPageWorkflow(wfId, []);
-    setPageWorkflowMeta(wfId, { id: wfId, name: 'New Workflow', trigger: 'click' });
+    // Outside SC edit mode: create a page-level workflow.
+    setWorkflow(wfId, { id: wfId, name: 'New Workflow', trigger: 'click', steps: [] });
     commitActions([...current, { action: wfId }]);
-    openWorkflowCanvas({ kind: 'pageWorkflow', name: wfId, nodeId });
-  }
-
-  function handleAddListener(triggerId: string, triggerName: string) {
-    const wfId = crypto.randomUUID();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const current: any[] = rawActionsArr ? [...rawActionsArr] : [];
-    setPageWorkflow(wfId, []);
-    setPageWorkflowMeta(wfId, { id: wfId, name: `On ${triggerName}`, trigger: triggerId });
-    commitActions([...current, { action: wfId }]);
-    setListenPickerOpen(false);
     openWorkflowCanvas({ kind: 'pageWorkflow', name: wfId, nodeId });
   }
 
@@ -500,45 +498,6 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
           </button>
         )}
 
-        {/* + Listen: only shown on SC instances with custom triggers, outside of SC edit mode */}
-        {customTriggers.length > 0 && !isEditingOwningSc && (
-          <div style={{ position: 'relative' }}>
-            <button
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '4px 10px', background: 'transparent', border: '1px solid var(--bld-border-subtle)',
-                borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-              }}
-              onClick={() => setListenPickerOpen(v => !v)}
-              title="Add a listener workflow for a component event"
-            >
-              + Listen
-            </button>
-            {listenPickerOpen && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: 4, zIndex: 200,
-                background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
-                minWidth: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.4)', overflow: 'hidden',
-              }}>
-                <div style={{ padding: '6px 12px 4px', fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' }}>
-                  Component events
-                </div>
-                {customTriggers.map(t => (
-                  <button
-                    key={t.id}
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 12, cursor: 'pointer' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#374151'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
-                    onClick={() => handleAddListener(t.id, t.name)}
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         <button
           data-testid="right-workflows-new-btn"
           style={{
@@ -573,10 +532,11 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
           </div>
         ) : (
           workflowEntries.map(({ uuid, trigger, idx, scRef }) => {
-            const meta = pageWorkflowMeta[uuid];
             const displayName = scRef
               ? `${scRef.modelName} › ${scRef.workflowName}`
-              : meta?.name ? toHumanName(meta.name) : 'Unnamed Workflow';
+              : workflows[uuid]?.name
+                ? toHumanName(workflows[uuid].name!)
+                : 'Unnamed Workflow';
             // SC-owned rows use the component-scoped trigger vocabulary
             // (execution/created/…), not DOM events. Custom triggers on an
             // instance (WeWeb-style component events) render with the model's

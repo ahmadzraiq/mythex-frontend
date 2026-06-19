@@ -30,6 +30,7 @@ import {
   buildCapabilityNote,
   buildBlockedGroupSuggestion,
 } from './component-capabilities';
+import { isExpression } from '@/lib/sdui/is-expression';
 
 export type ToolInput = Record<string, unknown>;
 
@@ -3322,9 +3323,8 @@ const handlers: Record<string, Handler> = {
         config.variableName = input.variableName;
         const rawVal = input.value as string | undefined;
         const normalized = (rawVal ?? '').trim();
-        // changeVariableValue value is always a JS expression to evaluate, never a code block.
-        // Explicitly wrap with return() so ensureReturn doesn't skip multi-line literals (arrays, objects).
-        const isCodeBlock = !normalized || /\breturn\b/.test(normalized) || /^(const|let|var)\b/m.test(normalized);
+        // Pre-wrap expressions so ensureReturn doesn't need to guess; statement blocks pass through.
+        const isCodeBlock = !normalized || !isExpression(normalized);
         config.value = { js: isCodeBlock ? normalized : `return (${normalized});` };
         break;
       }

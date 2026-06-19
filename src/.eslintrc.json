@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": ["react", "react-dom", "next", "next/navigation", "next/router", "next/link", "next/image"],
+        "patterns": ["react/*", "react-dom/*", "next/*"]
+      }
+    ],
+    "no-restricted-globals": [
+      "error",
+      "document",
+      "window",
+      "localStorage",
+      "sessionStorage",
+      "navigator",
+      "location",
+      "history"
+    ]
+  }
+}

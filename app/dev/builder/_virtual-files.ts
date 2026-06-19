@@ -27,6 +27,7 @@
  *   pageToScreenJson(page)                → { meta, ui }
  */
 
+import { useBuilderStore } from './_store';
 import type {
   BuilderStore,
   BuilderPage,
@@ -39,6 +40,7 @@ import type {
 import type { SDUINode } from '@/lib/sdui/types/node';
 import {
   getSharedComponents,
+  createSharedComponent,
   updateSharedComponent,
   deleteSharedComponent,
 } from '@/lib/builder/shared-component-data';
@@ -224,49 +226,28 @@ function domainPageName(domain: string, pages: BuilderPage[]): string | null {
 }
 
 function buildWorkflowsFolder(store: BuilderStore): VirtualFolder {
-  // Global reusable workflows (globalWorkflowMeta)
-  const meta = store.globalWorkflowMeta as Record<string, WorkflowMeta>;
-  const reusable = Object.entries(meta).filter(([, m]) => !m.isAppTrigger && !m.isTrigger && !m.isSystem);
+  const workflows = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const reusable = Object.entries(workflows).filter(
+    ([, w]) => !w.isAppTrigger && !w.isTrigger && !(w as unknown as Record<string, unknown>).isSystem,
+  );
   const children: VirtualEntry[] = groupByFolder(
     reusable,
-    ([, m]) => m.folder,
-    ([, m]) => m.name,
-    ([id, m], prefix) => `${prefix}/${m.name || id}`,
+    ([, w]) => w.folder,
+    ([, w]) => w.name,
+    ([id, w], prefix) => `${prefix}/${w.name || id}`,
     () => 'workflow',
     'workflows',
   );
-
-  // Unmatched domain subfolders — pageWorkflowGroups entries whose domain
-  // name doesn't correspond to any existing page go here as domain subfolders.
-  const groups = store.pageWorkflowGroups ?? {};
-  const claimedDomains = new Set(
-    Object.keys(groups).filter(d => domainPageName(d, store.pages) !== null),
-  );
-  const pageMeta = store.pageWorkflowMeta as Record<string, WorkflowMeta>;
-
-  for (const domain of Object.keys(groups).sort()) {
-    if (claimedDomains.has(domain)) continue;
-    const ids = groups[domain] ?? [];
-    const files: VirtualFile[] = ids.map(id =>
-      vfile(`${pageMeta[id]?.name ?? id}.json`, `workflows/${domain}/${id}`, 'workflow'),
-    );
-    if (files.length > 0) {
-      children.push(vfolder(domain, `workflows/${domain}`, files));
-    }
-  }
-
   return vfolder('workflows', 'workflows', children);
 }
 
 // ── triggers/ ─────────────────────────────────────────────────────────────────
 
 function buildTriggersFolder(store: BuilderStore): VirtualFolder {
-  // App-level triggers are stored in pageWorkflowMeta with isAppTrigger: true
-  // (NOT globalWorkflowMeta which is for reusable callable workflows).
-  const meta = store.pageWorkflowMeta as Record<string, WorkflowMeta>;
-  const appTriggers = Object.entries(meta).filter(([, m]) => m.isAppTrigger === true);
-  const children: VirtualFile[] = appTriggers.map(([id, m]) =>
-    vfile(`${m.trigger ?? m.name ?? id}.json`, `triggers/${m.trigger ?? m.name ?? id}`, 'trigger'),
+  const workflows = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const appTriggers = Object.entries(workflows).filter(([, w]) => w.isAppTrigger === true);
+  const children: VirtualFile[] = appTriggers.map(([id, w]) =>
+    vfile(`${w.trigger ?? w.name ?? id}.json`, `triggers/${w.trigger ?? w.name ?? id}`, 'trigger'),
   );
   return vfolder('triggers', 'triggers', children);
 }
@@ -402,26 +383,19 @@ function buildPageSubTree(store: BuilderStore, page: BuilderPage): VirtualFolder
     sub.push(vfolder('groups', `${base}/groups`, groupFiles));
   }
 
-  // workflows/ — page-scoped (!isTrigger) from pageScope OR from the matching
-  // config/actions/<domain>.json file (via pageWorkflowGroups).
-  const pageWfMeta = store.pageWorkflowMeta as Record<string, WorkflowMeta>;
-  const groups = store.pageWorkflowGroups ?? {};
-  const domainKey = Object.keys(groups).find(
-    d => domainPageName(d, store.pages) === page.name,
-  );
-  const domainIds = new Set<string>(domainKey ? (groups[domainKey] ?? []) : []);
-
-  const pageWfs = Object.entries(pageWfMeta).filter(
-    ([id, m]) =>
-      !m.isTrigger && !m.isSystem &&
-      ((m.pageScope === page.name || m.pageScope === page.route) || domainIds.has(id)),
+  // workflows/ — page-scoped (!isTrigger) scoped to this page
+  const allWfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const pageWfs = Object.entries(allWfs).filter(
+    ([, w]) =>
+      !w.isTrigger && !(w as unknown as Record<string, unknown>).isSystem &&
+      (w.pageScope === page.name || w.pageScope === page.route),
   );
   if (pageWfs.length > 0) {
     const wfChildren = groupByFolder(
       pageWfs,
-      ([, m]) => m.folder,
-      ([, m]) => m.name,
-      ([id, m], prefix) => `${prefix}/${m.name || id}`,
+      ([, w]) => w.folder,
+      ([, w]) => w.name,
+      ([id, w], prefix) => `${prefix}/${w.name || id}`,
       () => 'workflow',
       `${base}/workflows`,
     );
@@ -429,12 +403,12 @@ function buildPageSubTree(store: BuilderStore, page: BuilderPage): VirtualFolder
   }
 
   // triggers/ — page lifecycle triggers (isTrigger === true, scoped to this page)
-  const pageTriggers = Object.entries(pageWfMeta).filter(
-    ([, m]) => m.isTrigger === true && (m.pageScope === page.name || m.pageScope === page.route),
+  const pageTriggers = Object.entries(allWfs).filter(
+    ([, w]) => w.isTrigger === true && (w.pageScope === page.name || w.pageScope === page.route),
   );
   if (pageTriggers.length > 0) {
-    const tChildren: VirtualFile[] = pageTriggers.map(([id, m]) =>
-      vfile(`${m.trigger ?? m.name ?? id}.json`, `${base}/triggers/${m.trigger ?? id}`, 'trigger'),
+    const tChildren: VirtualFile[] = pageTriggers.map(([id, w]) =>
+      vfile(`${w.trigger ?? w.name ?? id}.json`, `${base}/triggers/${w.trigger ?? id}`, 'trigger'),
     );
     sub.push(vfolder('triggers', `${base}/triggers`, tChildren));
   }
@@ -500,32 +474,24 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
     return f;
   }
 
-  // workflows/<folder?>/<workflowName>  OR  workflows/<domain>/<id> (domain subfolders)
+  // workflows/<folder?>/<workflowName>  OR  workflows/<domain>/<id>
   if (parts[0] === 'workflows') {
     const lastName = parts[parts.length - 1];
-    // 3-part path: workflows/<domain>/<id> — look in pageWorkflowMeta/pageWorkflows
-    if (parts.length === 3) {
-      const id = lastName;
-      const m = (store.pageWorkflowMeta as Record<string, WorkflowMeta>)[id];
-      const steps = (store.pageWorkflows as Record<string, object[]>)[id];
-      if (m || steps) return { id, meta: m ?? {}, steps: steps ?? [] };
-    }
-    // Default: global workflow by name
-    const meta = Object.entries(store.globalWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.name === lastName);
-    if (!meta) throw new Error(`Workflow "${lastName}" not found`);
-    const [id, m] = meta;
-    return { id, meta: m, steps: (store.globalWorkflows as Record<string, object[]>)[id] ?? [] };
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    // Try by UUID or by name
+    const wf = wfs[lastName] ?? Object.values(wfs).find(w => w.name === lastName);
+    if (!wf) throw new Error(`Workflow "${lastName}" not found`);
+    return { id: wf.id, meta: { id: wf.id, name: wf.name, trigger: wf.trigger, folder: wf.folder, isTrigger: wf.isTrigger, pageScope: wf.pageScope, params: wf.params }, steps: wf.steps ?? [] };
   }
 
-  // triggers/<name>  — app-level triggers live in pageWorkflowMeta, not globalWorkflowMeta
+  // triggers/<name>
   if (parts[0] === 'triggers') {
     const name = parts[1];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.isAppTrigger && (m.trigger === name || m.name === name));
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([, w]) => w.isAppTrigger && (w.trigger === name || w.name === name));
     if (!entry) throw new Error(`App trigger "${name}" not found`);
-    const [id, m] = entry;
-    return { id, meta: m, steps: (store.pageWorkflows as Record<string, object[]>)[id] ?? [] };
+    const [, w] = entry;
+    return { id: w.id, meta: { id: w.id, name: w.name, trigger: w.trigger, isAppTrigger: true, params: w.params }, steps: w.steps ?? [] };
   }
 
   // data/<folder?>/<dsId>
@@ -565,21 +531,20 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
   // pages/<name>/workflows/<folder?>/<wfName>
   if (parts[0] === 'pages' && parts[2] === 'workflows') {
     const wfName = parts[parts.length - 1];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.name === wfName);
-    if (!entry) throw new Error(`Page workflow "${wfName}" not found`);
-    const [id, m] = entry;
-    return { id, meta: m, steps: (store.pageWorkflows as Record<string, object[]>)[id] ?? [] };
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const wf = wfs[wfName] ?? Object.values(wfs).find(w => w.name === wfName);
+    if (!wf) throw new Error(`Page workflow "${wfName}" not found`);
+    return { id: wf.id, meta: { id: wf.id, name: wf.name, trigger: wf.trigger, pageScope: wf.pageScope, folder: wf.folder, params: wf.params }, steps: wf.steps ?? [] };
   }
 
   // pages/<name>/triggers/<triggerType>
   if (parts[0] === 'pages' && parts[2] === 'triggers') {
     const trigger = parts[3];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.isTrigger && (m.trigger === trigger || m.name === trigger));
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([, w]) => w.isTrigger && (w.trigger === trigger || w.name === trigger));
     if (!entry) throw new Error(`Page trigger "${trigger}" not found`);
-    const [id, m] = entry;
-    return { id, meta: m, steps: (store.pageWorkflows as Record<string, object[]>)[id] ?? [] };
+    const [, w] = entry;
+    return { id: w.id, meta: { id: w.id, name: w.name, trigger: w.trigger, isTrigger: true, pageScope: w.pageScope, params: w.params }, steps: w.steps ?? [] };
   }
 
   throw new Error(`Unknown path: ${path}`);
@@ -669,8 +634,13 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     const data = value as { routes: Array<{ path: string; config: string; name?: string }> };
     if (!Array.isArray(data?.routes)) throw new Error('"routes" must be an object with a routes array');
     for (const r of data.routes) {
-      if (!r.path || !r.config) continue;
-      if (!store.pages.find(p => p.name === r.config)) {
+      if (!r.path || !r.config || r.config === '/' || r.config === '') continue;
+      // Re-read live pages — previous events (page_written) may have already added this page.
+      const livePages = useBuilderStore.getState().pages as BuilderPage[];
+      const alreadyExists = livePages.find(
+        p => p.name === r.config || p.route === r.path || p.route === r.path.toLowerCase(),
+      );
+      if (!alreadyExists) {
         store.addPage(r.path, r.config);
       }
     }
@@ -716,30 +686,42 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     return;
   }
 
-  // workflows/<name>  OR  workflows/<domain>/<id> (domain subfolders in pageWorkflows)
+  // workflows/<name>  OR  workflows/<domain>/<id>
   if (parts[0] === 'workflows') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
     if (!data.id) throw new Error(`workflows/${parts.slice(1).join('/')}: JSON must include an "id" field`);
     const id = data.id;
     if (!data.meta) throw new Error(`workflows/${parts.slice(1).join('/')}: "meta" object is required — include { id, name, trigger }`);
-    if (parts.length === 3) {
-      store.setPageWorkflowMeta(id, data.meta);
-      if (data.steps) store.setPageWorkflow(id, data.steps);
-    } else {
-      store.setGlobalWorkflowMeta(id, data.meta);
-      if (data.steps) store.setGlobalWorkflow(id, data.steps);
-    }
+    store.setWorkflow(id, {
+      id,
+      name: data.meta.name ?? id,
+      trigger: data.meta.trigger,
+      folder: data.meta.folder,
+      isTrigger: data.meta.isTrigger,
+      isAppTrigger: data.meta.isAppTrigger,
+      pageScope: data.meta.pageScope,
+      params: data.meta.params,
+      steps: data.steps ?? [],
+    });
     return;
   }
 
-  // triggers/<name>  — app-level triggers live in pageWorkflowMeta, not globalWorkflowMeta
+  // triggers/<name>
   if (parts[0] === 'triggers') {
     const data = value as { id?: string; meta?: WorkflowMeta; steps?: object[] };
     if (!data.id) throw new Error(`triggers/${parts[1]}: JSON must include an "id" field`);
     const id = data.id;
     if (!data.meta) throw new Error(`triggers/${parts[1]}: "meta" object is required — include { id, name, trigger }`);
-    store.setPageWorkflowMeta(id, data.meta);
-    if (data.steps) store.setPageWorkflow(id, data.steps);
+    store.setWorkflow(id, {
+      id,
+      name: data.meta.name ?? id,
+      trigger: data.meta.trigger,
+      isAppTrigger: data.meta.isAppTrigger ?? true,
+      isTrigger: data.meta.isTrigger,
+      pageScope: data.meta.pageScope,
+      params: data.meta.params,
+      steps: data.steps ?? [],
+    });
     return;
   }
 
@@ -757,7 +739,12 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   if (parts[0] === 'components' && path.endsWith('/component')) {
     const data = value as SharedComponentModel;
     if (!data.id) throw new Error('Component JSON must have an "id" field');
-    updateSharedComponent(data);
+    const existing = getSharedComponents()[data.id];
+    if (existing) {
+      updateSharedComponent(data);
+    } else {
+      createSharedComponent(data);
+    }
     return;
   }
 
@@ -778,8 +765,9 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     } else {
       // Pre-generate the ID so we can call replacePageNodes without re-reading
       // the store snapshot (store.pages is stale after addPage runs its set()).
+      // Use lowercase route so it matches the routes_written event (avoids duplicate page).
       const newPageId = `page-${Date.now()}`;
-      store.addPage(`/${pageName}`, pageName, newPageId);
+      store.addPage(`/${pageName.toLowerCase()}`, pageName, newPageId);
       store.replacePageNodes(newPageId, rawNodes);
       store.focusPage(newPageId);
     }
@@ -809,8 +797,17 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     if (!data.id) throw new Error(`pages/${parts[1]}/workflows/${parts[3]}: JSON must include an "id" field`);
     const id = data.id;
     if (!data.meta) throw new Error(`pages/${parts[1]}/workflows/${parts[3]}: "meta" object is required — include { id, name, trigger, pageScope }`);
-    store.setPageWorkflowMeta(id, data.meta);
-    if (data.steps) store.setPageWorkflow(id, data.steps);
+    store.setWorkflow(id, {
+      id,
+      name: data.meta.name ?? id,
+      trigger: data.meta.trigger,
+      folder: data.meta.folder,
+      isTrigger: data.meta.isTrigger,
+      isAppTrigger: data.meta.isAppTrigger,
+      pageScope: data.meta.pageScope ?? parts[1],
+      params: data.meta.params,
+      steps: data.steps ?? [],
+    });
     return;
   }
 
@@ -820,8 +817,15 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     if (!data.id) throw new Error(`pages/${parts[1]}/triggers/${parts[3]}: JSON must include an "id" field`);
     const id = data.id;
     if (!data.meta) throw new Error(`pages/${parts[1]}/triggers/${parts[3]}: "meta" object is required — include { id, name, trigger }`);
-    store.setPageWorkflowMeta(id, data.meta);
-    if (data.steps) store.setPageWorkflow(id, data.steps);
+    store.setWorkflow(id, {
+      id,
+      name: data.meta.name ?? id,
+      trigger: data.meta.trigger,
+      isTrigger: data.meta.isTrigger ?? true,
+      pageScope: data.meta.pageScope ?? parts[1],
+      params: data.meta.params,
+      steps: data.steps ?? [],
+    });
     return;
   }
 
@@ -979,26 +983,21 @@ function deleteParsedSlice(store: BuilderStore, path: string): void {
     return;
   }
 
-  // workflows/<domain>/<id>  (3-part) — page/domain workflow
-  // workflows/<name>         (2-part) — global reusable workflow
+  // workflows/<domain>/<id>  OR  workflows/<name>
   if (parts[0] === 'workflows') {
-    if (parts.length === 3) {
-      store.removePageWorkflow(parts[2]);
-    } else {
-      const name = parts[parts.length - 1];
-      const entry = Object.entries(store.globalWorkflowMeta as Record<string, WorkflowMeta>)
-        .find(([k, m]) => k === name || m.id === name || m.name === name);
-      if (entry) store.removeGlobalWorkflow(entry[0]);
-    }
+    const lastName = parts[parts.length - 1];
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([k, w]) => k === lastName || w.name === lastName);
+    if (entry) store.removeWorkflow(entry[0]);
     return;
   }
 
   // triggers/<name>
   if (parts[0] === 'triggers') {
     const name = parts[1];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.isAppTrigger && (m.trigger === name || m.name === name));
-    if (entry) store.removePageWorkflow(entry[0]);
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([, w]) => w.isAppTrigger && (w.trigger === name || w.name === name));
+    if (entry) store.removeWorkflow(entry[0]);
     return;
   }
 
@@ -1031,18 +1030,18 @@ function deleteParsedSlice(store: BuilderStore, path: string): void {
   // pages/<name>/workflows/<name>
   if (parts[0] === 'pages' && parts[2] === 'workflows') {
     const wfName = parts[parts.length - 1];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([k, m]) => k === wfName || m.id === wfName || m.name === wfName);
-    if (entry) store.removePageWorkflow(entry[0]);
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([k, w]) => k === wfName || w.name === wfName);
+    if (entry) store.removeWorkflow(entry[0]);
     return;
   }
 
   // pages/<name>/triggers/<trigger>
   if (parts[0] === 'pages' && parts[2] === 'triggers') {
     const trigger = parts[3];
-    const entry = Object.entries(store.pageWorkflowMeta as Record<string, WorkflowMeta>)
-      .find(([, m]) => m.isTrigger && (m.trigger === trigger || m.name === trigger));
-    if (entry) store.removePageWorkflow(entry[0]);
+    const wfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
+    const entry = Object.entries(wfs).find(([, w]) => w.isTrigger && (w.trigger === trigger || w.name === trigger));
+    if (entry) store.removeWorkflow(entry[0]);
     return;
   }
 

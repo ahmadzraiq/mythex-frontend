@@ -465,10 +465,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     const resolvedProps: Record<string, unknown> = {};
     for (const prop of (scModel?.properties ?? [])) {
       let val = prop.name in nodeProps ? nodeProps[prop.name] : prop.defaultValue;
-      if (val && typeof val === 'object' && 'formula' in (val as Record<string, unknown>)) {
+      if (val && typeof val === 'object' && ('formula' in (val as Record<string, unknown>) || 'js' in (val as Record<string, unknown>))) {
         const _merged = mergedStore ? mergedStore.getState().merged : (mergedState ?? {});
         const _evalState = _merged ? { ...store.getState().getFullState(), ..._merged } : store.getState().getFullState();
-        val = evaluateFormula((val as { formula: string }).formula, _evalState).value;
+        val = evaluateFormula(val as object, _evalState).value;
       }
       resolvedProps[prop.name] = val;
     }
@@ -705,12 +705,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // with JSON.stringify comparison on specific dep values, so only nodes whose deps actually
   // changed will re-render.
   //
-  // Builder additionally subscribes to patchVersion — a counter that bumps only when preview
-  // states or preview data change (rare). This forces a full re-render for those operations
-  // without causing O(N) re-renders on every normal setMerged call.
+  // Subscribe to patchVersion in all render modes (builder AND preview/production).
+  // patchVersion bumps on: preview state/data changes, and formula registration (via _formulas_v).
+  // This forces all nodes to re-evaluate bindings after formulas become available.
   useSyncExternalStore(
-    builderMode && mergedStore ? mergedStore.subscribe : NOOP_SUBSCRIBE_FN,
-    () => builderMode && mergedStore ? mergedStore.getState().patchVersion : 0,
+    mergedStore ? mergedStore.subscribe : NOOP_SUBSCRIBE_FN,
+    () => mergedStore ? mergedStore.getState().patchVersion : 0,
     () => 0,
   );
   const merged = mergedStore
@@ -943,9 +943,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     for (const item of node.actions as Array<unknown>) {
       if (!item || typeof item !== 'object') continue;
       const actionRef = item as Record<string, unknown>;
+      // New format: inline action with trigger directly on the ref
+      const inlineTrigger = typeof actionRef.trigger === 'string' ? actionRef.trigger : null;
+      // Legacy format: { action: uuid } → look up trigger in actionsConfig
       const wfName = typeof actionRef.action === 'string' ? actionRef.action : '';
       const wfDef = wfName ? actionsConfig?.[wfName] as Record<string, unknown> | undefined : undefined;
-      const trigger = typeof wfDef?.trigger === 'string' ? wfDef.trigger : null;
+      const trigger = inlineTrigger ?? (typeof wfDef?.trigger === 'string' ? wfDef.trigger : null);
       if (trigger === 'created' || trigger === 'mounted') out.push(item);
     }
     return out.length ? out : null;
@@ -979,7 +982,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
     const vs = require('@/lib/sdui/global-variable-store') as { getGlobalVariableStore: () => { getState: () => { data: Record<string, unknown>; set: (k: string, v: unknown) => void } } };
     const gStore = vs.getGlobalVariableStore().getState();
     let resolved: unknown;
-    if (_nodeInitVal != null && typeof _nodeInitVal === 'object' && 'formula' in (_nodeInitVal as object)) {
+    if (_nodeInitVal != null && typeof _nodeInitVal === 'object' && ('formula' in (_nodeInitVal as object) || 'js' in (_nodeInitVal as object))) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { evaluateFormula: ef } = require('@/lib/sdui/formula-evaluator') as { evaluateFormula: (f: object, ctx: Record<string, unknown>) => { value: unknown } };
@@ -1226,7 +1229,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   if (_initVal !== undefined && cleanProps.value == null && cleanProps.defaultValue == null) {
     // Evaluate formula bindings on _initialValue.
     const resolvedInitVal =
-      _initVal != null && typeof _initVal === 'object' && 'formula' in (_initVal as object)
+      _initVal != null && typeof _initVal === 'object' && ('formula' in (_initVal as object) || 'js' in (_initVal as object))
         ? evaluateFormula(_initVal as object, stateWithScope).value
         : _initVal;
 

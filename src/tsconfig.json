@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "jsxImportSource": "builder",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "builder": ["../lib/dsl/builder/index"],
+      "builder/jsx-runtime": ["../lib/dsl/jsx-runtime"]
+    },
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": ["./**/*"],
+  "exclude": ["node_modules"]
+}

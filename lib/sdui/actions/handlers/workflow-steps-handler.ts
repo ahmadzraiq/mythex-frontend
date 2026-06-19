@@ -1393,6 +1393,13 @@ export const workflowStepsHandler =
           // Evaluator flagged the string as an invalid formula → treat as a
           // literal string value (e.g. "World", "Hi", "Ahmad").
           if (result.error != null) return v;
+          // If evaluating the bare string just produced the exact same value
+          // back as a number or boolean (e.g. '5' → 5, 'true' → true), the
+          // string was a compile-time literal, not a runtime formula expression.
+          // Preserve the original string type so downstream string-concat
+          // expressions (display + digit) stay type-correct.
+          if (result.value !== null && result.value !== undefined &&
+              String(result.value) === v.trim()) return v;
           return result.value;
         } catch {
           return v;

@@ -56,6 +56,8 @@ export default {
   rawScreens,
   registry,
   actions: root.actions,
+  /** Unified named-workflow dictionary for runtime executeWorkflow step resolution. */
+  workflows: root.workflows,
   dataSources: root.dataSources,
   sharedComponents: root.sharedComponents,
   /** Action to run once on first app mount — used for session restore. */

@@ -57,6 +57,8 @@ import type { BuilderPage } from './_store';
 import BuilderCanvas from './_canvas';
 import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
+import { FileViewerDrawer } from './_file-viewer-drawer';
+import { FileExplorerOverlay } from './_files-panel';
 import { ExportModal } from './_export-modal';
 import { projects as projectsApi, workspaces as workspacesApi, envVariables, auth } from '@/lib/platform/api-client';
 import AiTokenMeter from '@/app/(platform)/_ai-token-meter';
@@ -855,6 +857,8 @@ function TopBar({
   workspacePlan,
   superAdmin,
   aiRefreshKey,
+  fileExplorerOpen,
+  setFileExplorerOpen,
 }: {
   onPreview: () => void | Promise<void>;
   saveStatus: SaveStatus;
@@ -869,6 +873,8 @@ function TopBar({
   workspacePlan: 'FREE' | 'PRO' | 'ENTERPRISE';
   superAdmin: boolean;
   aiRefreshKey: number;
+  fileExplorerOpen: boolean;
+  setFileExplorerOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const { undo, redo, historyIdx, history, viewport, setViewport, pages, currentPageId, aiMode, toggleAiMode } = useBuilderStore(
     useShallow(s => ({
@@ -1246,11 +1252,11 @@ function TopBar({
               </button>
               {/* Config Files — dev only */}
               {(() => {
-                const isActive = leftTab === 'files';
+                const isActive = fileExplorerOpen;
                 return (
                   <button
                     data-testid="navbar-config-btn"
-                    onClick={() => onSetLeftTab(isActive ? 'components' : 'files')}
+                    onClick={() => setFileExplorerOpen(v => !v)}
                     title="Config Files"
                     style={{
                       display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
@@ -1782,6 +1788,7 @@ function BuilderPageInner() {
   const [leftTab, setLeftTab] = useState<LeftTabId>('components');
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
   const [leftSlideWidth, setLeftSlideWidth] = useState(320);
+  const [fileExplorerOpen, setFileExplorerOpen] = useState(false);
   const [rightSlide, setRightSlide] = useState<RightSlideState>(null);
   const rightSlideWidth = 320;
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -1995,7 +2002,7 @@ function BuilderPageInner() {
    *   static config/app.ts without any auth or backend dependency.
    */
   const openPreview = useCallback(async () => {
-    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, pageWorkflows, pageWorkflowMeta, globalWorkflows, globalWorkflowMeta, customVars, customColors } = useBuilderStore.getState();
+    const { pageNodes, viewport, pages, currentPageId, themeOverrides, themeDarkOverrides, workflows, customVars, customColors, globalFormulas } = useBuilderStore.getState();
     const currentPage = pages.find(p => p.id === currentPageId);
 
     // Always save to localStorage so the standalone preview (/dev/builder/preview) still works.
@@ -2008,13 +2015,11 @@ function BuilderPageInner() {
       pageRoute: currentPage?.route ?? '/',
       themeOverrides,
       themeDarkOverrides,
-      pageWorkflows,
-      pageWorkflowMeta,
-      globalWorkflows,
-      globalWorkflowMeta,
+      workflows,
       customVars,
       customColors,
       sharedComponents: getSharedComponents(),
+      formulas: globalFormulas,
     }));
 
     if (projectId) {
@@ -2252,6 +2257,8 @@ function BuilderPageInner() {
         workspacePlan={workspacePlan}
         superAdmin={superAdmin}
         aiRefreshKey={aiRefreshKey}
+        fileExplorerOpen={fileExplorerOpen}
+        setFileExplorerOpen={setFileExplorerOpen}
       />
 
       {/* ── Data & API full-screen view ────────────────────────────────────── */}
@@ -2321,6 +2328,9 @@ function BuilderPageInner() {
           </SlidePanel>
         )}
 
+        {/* File Explorer Overlay — fixed, starts at left:0, covers the sidebar */}
+        <FileExplorerOverlay open={fileExplorerOpen} onClose={() => setFileExplorerOpen(false)} projectId={projectId ?? undefined} />
+
         <BuilderCanvas />
 
         {/* Right SlidePanel — slides in between canvas and right panel (mirrors left side) */}
@@ -2366,6 +2376,9 @@ function BuilderPageInner() {
           onClose={closeWorkflowCanvas}
         />
       )}
+
+      {/* File viewer drawer — right-side, opened from Files panel or AI chat */}
+      <FileViewerDrawer />
 
     </div>
   );

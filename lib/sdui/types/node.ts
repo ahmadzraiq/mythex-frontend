@@ -156,6 +156,11 @@ export interface SDUINode {
   _initialValue?: unknown;
   /** Overlay rendered on top of the element when props.disabled is truthy */
   _disabledOverlay?: { color?: string; opacity?: number; blur?: number };
+  /**
+   * Original `sx={{ }}` shorthand values captured at compile time.
+   * Stored so the decompiler can reconstruct `sx={{ }}` instead of `className`.
+   */
+  _sx?: Record<string, unknown>;
   /** When disabled is formula-bound, force the overlay to render in the builder canvas */
   _forceDisabledInEditor?: boolean;
   /**

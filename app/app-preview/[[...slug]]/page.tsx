@@ -28,6 +28,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import type { AuthConfig } from '@/lib/sdui/engine-types';
 import appConfig from '@/config/app';
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
+import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
 import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
@@ -88,6 +89,7 @@ interface ProjectConfig {
   authConfig?: AuthConfig;
   sharedComponents?: Record<string, unknown>;
   pageDataSources?: ProjectDataSource[];
+  formulas?: Record<string, unknown>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -235,23 +237,28 @@ function applyTheme(
   patchThemeColors(mergedDark, 'dark');
 }
 
-/** Seed UI-created custom variables into the global store so formulas resolve. */
+/** Seed UI-created custom variables and global formulas into runtime so they resolve in the preview. */
 function seedCustomVars(cfg: ProjectConfig) {
   const vars = cfg.customVars;
-  if (!Array.isArray(vars) || vars.length === 0) return;
-  const vs = getGlobalVariableStore().getState();
-  const fullState = vs.getFullState() as Record<string, unknown>;
-  const patches: Record<string, unknown> = {};
-  for (const v of vars) {
-    if (v.id) {
-      registerVariableInitialValue(v.id, v.initialValue);
-      if (!(v.id in fullState)) {
-        patches[v.id] = v.initialValue ?? null;
+  if (Array.isArray(vars) && vars.length > 0) {
+    const vs = getGlobalVariableStore().getState();
+    const fullState = vs.getFullState() as Record<string, unknown>;
+    const patches: Record<string, unknown> = {};
+    for (const v of vars) {
+      if (v.id) {
+        registerVariableInitialValue(v.id, v.initialValue);
+        if (!(v.id in fullState)) {
+          patches[v.id] = v.initialValue ?? null;
+        }
       }
     }
+    if (Object.keys(patches).length > 0) {
+      vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+    }
   }
-  if (Object.keys(patches).length > 0) {
-    vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
+  // Register global formulas so __userFns__['name'](...) resolves in JS bindings.
+  if (cfg.formulas && typeof cfg.formulas === 'object') {
+    registerGlobalFormulas(cfg.formulas);
   }
 }
 

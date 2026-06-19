@@ -87,7 +87,8 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
         };
         // Pass the wrapper object so evaluateFormula auto-routes between
         // { formula } and { js } bindings.
-        value = evaluateFormula(obj as object, evalCtx, ctx.get).value ?? null;
+        const _evalResult = evaluateFormula(obj as object, evalCtx, ctx.get);
+        value = _evalResult.value ?? null;
       } else {
         value = resolvePayload(obj, ctx.get, ctx.scope);
       }

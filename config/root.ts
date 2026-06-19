@@ -258,6 +258,23 @@ const actionsByFile = {
 
 };
 
+/** Step-based named workflows extracted from the combined actions map. */
+const workflows = Object.fromEntries(
+  Object.entries(actions as Record<string, Record<string, unknown>>)
+    .filter(([, def]) => Array.isArray(def.steps))
+    .map(([id, def]) => [id, {
+      id,
+      name: (def.name as string) ?? id,
+      trigger: (def.trigger as string) ?? 'click',
+      params: def.params as import('./types').WorkflowParam[] | undefined,
+      steps: def.steps as object[],
+      folder: def.folder as string | undefined,
+      isTrigger: def.isTrigger as boolean | undefined,
+      isAppTrigger: def.isAppTrigger as boolean | undefined,
+      pageScope: def.pageScope as string | undefined,
+    } satisfies import('./types').WorkflowDef])
+) as Record<string, import('./types').WorkflowDef>;
+
 export const root = {
   routes,
   store: {} as Record<string, never>,
@@ -266,6 +283,8 @@ export const root = {
   layouts,
   fragments,
   actions,
+  /** Unified named-workflow dictionary derived from actions (step-based entries only). */
+  workflows,
   actionsByFile,
   dataSources: dataSourcesJson as Record<string, import('./datasource-types').NamedDataSourceDef>,
   sharedComponents: sharedComponentsJson as Record<string, import('./shared-component-types').SharedComponentModel>,

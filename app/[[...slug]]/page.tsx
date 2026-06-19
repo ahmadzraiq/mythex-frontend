@@ -7,7 +7,7 @@ import { SDUIEngine, paramChangeRunActionRef, startupRunActionRef, type ActionsC
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
-import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
+import { evaluateFormula, registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -32,15 +32,13 @@ const app = appConfig as AppConfig;
 
 interface BuilderLiveConfig {
   nodes?: SDUINode[];
-  pageWorkflows?: Record<string, unknown[]>;
-  pageWorkflowMeta?: Record<string, Record<string, unknown>>;
-  globalWorkflows?: Record<string, unknown[]>;
-  globalWorkflowMeta?: Record<string, Record<string, unknown>>;
+  workflows?: Record<string, { id: string; name?: string; trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string; steps: unknown[]; params?: unknown[] }>;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
   customColors?: Array<{ name: string; light?: string; dark?: string }>;
   sharedComponents?: Record<string, unknown>;
+  formulas?: Record<string, unknown>;
 }
 
 function hexToRgbTriplet(hex: string): string {
@@ -152,14 +150,25 @@ function applyBuilderTheme(
 
 function buildLiveActionsConfig(cfg: BuilderLiveConfig): ActionsConfig {
   const result: Record<string, unknown> = {};
-  const add = (wfs?: Record<string, unknown[]>, meta?: Record<string, Record<string, unknown>>) => {
-    if (!wfs) return;
-    for (const [uuid, steps] of Object.entries(wfs)) {
-      result[uuid] = { trigger: meta?.[uuid]?.trigger ?? 'click', steps };
+
+  // New format: unified workflows dict — WorkflowDef entries keyed by id.
+  // Preserve ALL WorkflowDef fields (isTrigger, pageScope, isAppTrigger, name) so
+  // the engine's trigger detection (appLoad, pageLoad, collectionFetchError, etc.)
+  // continues to work when this config overrides the base app.actions entries.
+  if (cfg.workflows) {
+    for (const [id, wf] of Object.entries(cfg.workflows)) {
+      result[id] = {
+        trigger: wf.trigger ?? 'click',
+        steps: wf.steps,
+        params: wf.params,
+        ...(wf.name !== undefined ? { name: wf.name } : {}),
+        ...(wf.isTrigger !== undefined ? { isTrigger: wf.isTrigger } : {}),
+        ...(wf.isAppTrigger !== undefined ? { isAppTrigger: wf.isAppTrigger } : {}),
+        ...(wf.pageScope !== undefined ? { pageScope: wf.pageScope } : {}),
+      };
     }
-  };
-  add(cfg.pageWorkflows, cfg.pageWorkflowMeta);
-  add(cfg.globalWorkflows, cfg.globalWorkflowMeta);
+  }
+
   return result as ActionsConfig;
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,6 +226,10 @@ export default function DynamicRoutePage() {
         if (Object.keys(patches).length > 0) {
           vs.setState((prev: Record<string, unknown>) => ({ ...prev, ...patches }));
         }
+      }
+      // Register global formulas so __userFns__['name'](...) resolves in JS bindings.
+      if (cfg.formulas && typeof cfg.formulas === 'object') {
+        registerGlobalFormulas(cfg.formulas);
       }
     };
     window.addEventListener('message', handler);

@@ -14,10 +14,7 @@
  * Config blob shape (matches the backend's Project.config JSONB column):
  * {
  *   pages:              BuilderPage[]            — node trees per page (full blob endpoint)
- *   pageWorkflows:      Record<id, workflow>
- *   pageWorkflowMeta:   Record<id, meta>
- *   globalWorkflows:    Record<id, workflow>
- *   globalWorkflowMeta: Record<id, meta>
+ *   workflows:          Record<id, WorkflowDef>  — unified workflow dict (steps inline)
  *   customVars:         CustomVar[]
  *   varFolders:         Folder[]
  *   pageDataSources:    DataSourceConfig[]
@@ -62,10 +59,7 @@ function serializeProjectMeta(store: BuilderStore): Record<string, unknown> | un
 export function serializeBuilderState(store: BuilderStore): Record<string, unknown> {
   const result: Record<string, unknown> = {
     pages: store.pages,
-    pageWorkflows: store.pageWorkflows,
-    pageWorkflowMeta: store.pageWorkflowMeta,
-    globalWorkflows: store.globalWorkflows,
-    globalWorkflowMeta: store.globalWorkflowMeta,
+    workflows: store.workflows,
     customVars: store.customVars,
     varFolders: store.varFolders,
     pageDataSources: store.pageDataSources,
@@ -75,6 +69,7 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
     themeOverrides: store.themeOverrides,
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getUserSharedComponents(),
+    formulas: store.globalFormulas,
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
@@ -85,10 +80,7 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
 /** Serialise only the non-page metadata fields. */
 function serializeMeta(store: BuilderStore): Record<string, unknown> {
   const result: Record<string, unknown> = {
-    pageWorkflows: store.pageWorkflows,
-    pageWorkflowMeta: store.pageWorkflowMeta,
-    globalWorkflows: store.globalWorkflows,
-    globalWorkflowMeta: store.globalWorkflowMeta,
+    workflows: store.workflows,
     customVars: store.customVars,
     varFolders: store.varFolders,
     pageDataSources: store.pageDataSources,
@@ -99,6 +91,7 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
     themeDarkOverrides: store.themeDarkOverrides,
     sharedComponents: getUserSharedComponents(),
     pages: store.pages.map(({ id, name, route }) => ({ id, name, route })),
+    formulas: store.globalFormulas,
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
@@ -231,8 +224,7 @@ export function useBuilderAutosave(
   useEffect(() => {
     if (!projectId) return;
     const selectSlice = (s: BuilderStore) => [
-      s.pages, s.pageWorkflows, s.pageWorkflowMeta,
-      s.globalWorkflows, s.globalWorkflowMeta,
+      s.pages, s.workflows,
       s.customVars, s.varFolders,
       s.pageDataSources, s.dsFolders,
       s.customColors, s.colorFolders,

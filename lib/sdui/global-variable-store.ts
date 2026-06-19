@@ -78,7 +78,7 @@ function buildInitialState(): Record<string, unknown> {
 }
 
 const globalStore = createVariableStore({
-  initialState: { ...buildInitialState(), _form_reset_v: 0 },
+  initialState: { ...buildInitialState(), _form_reset_v: 0, _formulas_v: 0 },
   adapters: [],
 });
 
@@ -90,6 +90,20 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
 
 export function getGlobalVariableStore() {
   return globalStore;
+}
+
+/**
+ * Bump the `_formulas_v` counter so all SDUI binding components that
+ * subscribe to the variable store re-render and pick up the newly registered
+ * user-defined formula functions (e.g. formatDisplay, typeColor).
+ * Called by registerGlobalFormulas in formula-evaluator.ts.
+ */
+export function bumpFormulasVersion(): void {
+  if (typeof window === 'undefined') return;
+  globalStore.getState().setState((prev: Record<string, unknown>) => ({
+    ...prev,
+    _formulas_v: ((prev._formulas_v as number) || 0) + 1,
+  }));
 }
 
 // ── Per-variable localStorage persistence ─────────────────────────────────────

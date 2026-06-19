@@ -18,10 +18,17 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useSearchParams, usePathname } from 'next/navigation';
+import CodeMirror from '@uiw/react-codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { useBuilderStore } from './_store';
 import { useAiChat } from './_use-ai-chat';
+import { applyVirtualFile } from './_virtual-files';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
 import { type BuilderModelId } from './_store-types';
+import { useWebContainerDsl } from './_use-webcontainer-dsl';
+import { useFileViewerDrawer } from './_file-viewer-drawer';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -1452,411 +1459,283 @@ function ThreadMenu({
 }
 
 // ---------------------------------------------------------------------------
+// DSL types, hook and components
+// ---------------------------------------------------------------------------
+
+interface DslMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  toolEvents?: string[];
+  isStreaming?: boolean;
+}
+
+function useDslProjectId(): string | null {
+  const searchParams = useSearchParams();
+  const pathname = usePathname() ?? '';
+  const fromSearch = searchParams.get('projectId');
+  const fromPath = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
+  return fromSearch ?? fromPath;
+}
+
+function useDslStream(projectId?: string) {
+  const [messages, setMessages] = useState<AiChatMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [dslSources, setDslSources] = useState<Record<string, string>>({});
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    fetch(`/api/projects/${projectId}/config/meta`)
+      .then(r => r.json())
+      .then((data: unknown) => {
+        const sources = (data as Record<string, unknown>)?.dslSources as Record<string, string> | undefined;
+        if (sources && Object.keys(sources).length > 0) setDslSources(sources);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  const sendMessage = useCallback(async (userText: string) => {
+    if (!userText.trim() || isStreaming) return;
+    const now = new Date().toISOString();
+    const userMsg: AiChatMessage = { id: `${Date.now()}-u`, role: 'user', content: userText, createdAt: now };
+    const assistantId = `${Date.now()}-a`;
+    const assistantMsg: AiChatMessage = { id: assistantId, role: 'assistant', content: '', toolCalls: [], createdAt: now, streaming: true };
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setIsStreaming(true);
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    try {
+      const res = await fetch('/api/ai/dsl-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, projectId, dslSources }),
+        signal: abortRef.current.signal,
+      });
+      if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => `HTTP ${res.status}`);
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: `Error: ${errText}`, streaming: false } : m));
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const event = JSON.parse(line) as Record<string, unknown>;
+            if (['var_written','page_written','workflow_written','routes_written'].includes(event.type as string)) {
+              const store = useBuilderStore.getState();
+              const result = applyVirtualFile(store, event.path as string, event.content as string);
+              if (!result.ok) console.warn(`[DSL] applyVirtualFile failed:`, result.error);
+              continue;
+            }
+            if (event.type === 'dsl_sources') {
+              const sources = event.sources as Record<string, string>;
+              setDslSources(sources);
+              if (projectId) {
+                fetch(`/api/projects/${projectId}/config/meta`, {
+                  method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ dslSources: sources }),
+                }).catch(() => {});
+              }
+              continue;
+            }
+            setMessages(prev => prev.map(m => {
+              if (m.id !== assistantId) return m;
+              if (event.type === 'text') return { ...m, content: m.content + (event.content as string) };
+              if (event.type === 'tool_use') {
+                const newCall: AiToolCall = {
+                  name: event.toolName as string,
+                  input: (event.input as Record<string, unknown>) ?? {},
+                  status: 'pending',
+                  timestamp: Date.now(),
+                };
+                return { ...m, toolCalls: [...(m.toolCalls ?? []), newCall] };
+              }
+              if (event.type === 'tool_result') {
+                const toolName = event.toolName as string;
+                const updatedCalls = [...(m.toolCalls ?? [])];
+                // Update the last pending call with this name
+                for (let i = updatedCalls.length - 1; i >= 0; i--) {
+                  if (updatedCalls[i]!.name === toolName && updatedCalls[i]!.status === 'pending') {
+                    updatedCalls[i] = { ...updatedCalls[i]!, result: event.result, status: 'success' };
+                    break;
+                  }
+                }
+                return { ...m, toolCalls: updatedCalls };
+              }
+              if (event.type === 'done' || event.type === 'result') return { ...m, content: event.content && m.content === '' ? event.content as string : m.content, streaming: false };
+              if (event.type === 'error') return { ...m, content: m.content || `Error: ${event.error as string}`, streaming: false };
+              return m;
+            }));
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: `Connection error: ${(err as Error).message}`, streaming: false } : m));
+      }
+    } finally {
+      setIsStreaming(false);
+      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, streaming: false } : m));
+    }
+  }, [isStreaming, projectId, dslSources]);
+
+  const clear = useCallback(() => { abortRef.current?.abort(); setMessages([]); setIsStreaming(false); }, []);
+
+  return { messages, isStreaming, sendMessage, clear, dslSources };
+}
+
+/** Build a folder tree from flat file paths like { 'src/calc/page.tsx': '...' } */
+function buildDslTree(sources: Record<string, string>): Array<{ kind: 'dir'; name: string; children: Array<{ kind: 'file'; name: string; path: string }> } | { kind: 'file'; name: string; path: string }> {
+  const dirs = new Map<string, Array<{ kind: 'file'; name: string; path: string }>>();
+  const rootFiles: Array<{ kind: 'file'; name: string; path: string }> = [];
+
+  for (const path of Object.keys(sources)) {
+    const parts = path.split('/');
+    if (parts.length === 1) {
+      rootFiles.push({ kind: 'file', name: path, path });
+    } else {
+      const dir = parts.slice(0, -1).join('/');
+      if (!dirs.has(dir)) dirs.set(dir, []);
+      dirs.get(dir)!.push({ kind: 'file', name: parts[parts.length - 1], path });
+    }
+  }
+
+  const result: ReturnType<typeof buildDslTree> = [];
+  for (const [dir, files] of dirs.entries()) {
+    result.push({ kind: 'dir', name: dir, children: files });
+  }
+  result.push(...rootFiles);
+  return result;
+}
+
+function DslFilesView({ sources }: { sources: Record<string, string> }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
+  const tree = buildDslTree(sources);
+
+  useEffect(() => {
+    const keys = Object.keys(sources);
+    if (keys.length > 0 && (!selected || !sources[selected])) setSelected(keys[0]);
+    // Auto-open all dirs
+    const dirs = new Set<string>();
+    for (const node of tree) {
+      if (node.kind === 'dir') dirs.add(node.name);
+    }
+    setOpenDirs(dirs);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(sources).join(',')]);
+
+  const toggleDir = (dir: string) =>
+    setOpenDirs(prev => { const s = new Set(prev); s.has(dir) ? s.delete(dir) : s.add(dir); return s; });
+
+  const fileChipStyle = (active: boolean): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 5,
+    padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+    background: active ? 'rgba(124,58,237,0.15)' : 'transparent',
+    border: `1px solid ${active ? 'rgba(124,58,237,0.35)' : 'transparent'}`,
+    color: active ? '#a78bfa' : 'var(--bld-text-2)',
+    fontSize: 11, fontFamily: 'var(--font-mono, monospace)',
+    width: '100%', textAlign: 'left',
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* File tree */}
+      <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-border)', background: 'var(--bld-bg-elevated)', overflowY: 'auto', maxHeight: 180 }}>
+        {Object.keys(sources).length === 0 && (
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', padding: '8px 4px' }}>No DSL files yet. Ask the AI to create a page.</div>
+        )}
+        {tree.map(node => {
+          if (node.kind === 'dir') {
+            const open = openDirs.has(node.name);
+            return (
+              <div key={node.name}>
+                <button onClick={() => toggleDir(node.name)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                  <svg width="9" height="9" viewBox="0 0 8 8" fill="currentColor" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 1l4 3-4 3V1z"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M2 4.5A1.5 1.5 0 013.5 3h3L8 5h4.5A1.5 1.5 0 0114 6.5v6a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V4.5z"/></svg>
+                  <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{node.name}</span>
+                </button>
+                {open && node.children.map(child => (
+                  <button key={child.path} onClick={() => setSelected(child.path)} style={{ ...fileChipStyle(selected === child.path), paddingLeft: 24, marginBottom: 1 }}>
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9 2 9 6 13 6"/></svg>
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+            );
+          }
+          return (
+            <button key={node.path} onClick={() => setSelected(node.path)} style={{ ...fileChipStyle(selected === node.path), marginBottom: 1 }}>
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9 2 9 6 13 6"/></svg>
+              {node.name}
+            </button>
+          );
+        })}
+      </div>
+      {/* Editor */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {selected && sources[selected] !== undefined ? (
+          <CodeMirror
+            value={sources[selected]}
+            theme={oneDark}
+            extensions={[javascript({ jsx: true, typescript: true })]}
+            editable={false}
+            basicSetup={{ lineNumbers: true, foldGutter: false }}
+            style={{ fontSize: 11, height: '100%' }}
+          />
+        ) : (
+          <div style={{ padding: 24, color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center', paddingTop: 40 }}>Select a file to view its source</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main panel
 // ---------------------------------------------------------------------------
 
 export function AiChatPanel() {
   const store = useBuilderStore();
-  const {
-    threads, loadingThreads, hasMoreThreads, loadingMoreThreads, loadMoreThreads,
-    deletingThreadId,
-    sendMessage, getDebugInfo, startNewChat, deleteThread, selectThread, reloadThreads,
-    loadMoreMessages, hasMoreMessages, loadingMoreMessages,
-  } = useAiChat();
 
-  const messagesRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // ── DSL chat ──────────────────────────────────────────────────────────────
   const [inputValue, setInputValue] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
-  const [showThreadMenu, setShowThreadMenu] = useState(false);
-  const [rewindLabel, setRewindLabel] = useState<string | null>(null);
-  // ID of the message being edited — truncation happens at send time, NOT on click
-  const [editTargetId, setEditTargetId] = useState<string | null>(null);
-  // @-mention typeahead state.
-  const [mentionState, setMentionState] = useState<{ open: boolean; query: string; anchor: number } | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const projectId = useDslProjectId() ?? undefined;
+  const { messages, isStreaming, sendMessage, clear, dslSources } = useWebContainerDsl(projectId);
+  const openDrawer = useFileViewerDrawer(s => s.open);
 
-  const { aiChatHistory, aiGenerating, aiSelectedNodeIds, aiCurrentThreadId, aiSelectedModel, pages, currentPageId } = store;
-  const currentPageName = pages.find(p => p.id === currentPageId)?.name ?? 'Home';
-
-  // Text is buffered during streaming and revealed all at once when done —
-  // no typewriter needed. MessageBubble reads msg.content directly.
-
-  // ── Auto-scroll ───────────────────────────────────────────────────────────
-  const lastLengthRef = useRef(aiChatHistory.length);
   useEffect(() => {
-    const el = messagesRef.current;
-    if (!el) return;
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-    const newMessages = aiChatHistory.length > lastLengthRef.current;
-    lastLengthRef.current = aiChatHistory.length;
-    if (isNearBottom || newMessages) el.scrollTop = el.scrollHeight;
-  }, [aiChatHistory.length, aiGenerating]);
-
-  // ── Infinite scroll ───────────────────────────────────────────────────────
-  const loadingMoreRef = useRef(false);
-  const handleMessagesScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (el.scrollTop > 40 || !hasMoreMessages || loadingMoreRef.current) return;
-    loadingMoreRef.current = true;
-    const prevHeight = el.scrollHeight;
-    await loadMoreMessages();
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight - prevHeight;
-      loadingMoreRef.current = false;
-    });
-  }, [hasMoreMessages, loadMoreMessages]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // ── Send ──────────────────────────────────────────────────────────────────
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(() => {
     const text = inputValue.trim();
-    if (!text || aiGenerating) return;
-    // If editing, truncate history to that point NOW (just before sending)
-    if (editTargetId) {
-      store.truncateAiChatAt(editTargetId);
-      setEditTargetId(null);
-    }
+    if (!text || isStreaming) return;
     setInputValue('');
-    setRewindLabel(null);
-    await sendMessage(text, aiSelectedNodeIds);
-    store.setAiSelectedNodeIds([]);
-  }, [inputValue, aiGenerating, aiSelectedNodeIds, sendMessage, store, editTargetId]);
+    void sendMessage(text);
+  }, [inputValue, isStreaming, sendMessage]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }, [handleSend]);
 
-  const handleRemoveNode = useCallback((id: string) => {
-    store.setAiSelectedNodeIds(aiSelectedNodeIds.filter(n => n !== id));
-  }, [store, aiSelectedNodeIds]);
-
-  // ── Edit message ──────────────────────────────────────────────────────────
-  const handleEditMessage = useCallback((msg: AiChatMessage) => {
-    if (aiGenerating) return;
-    // Only prepare — do NOT touch the store yet. Truncation happens when user sends.
-    setEditTargetId(msg.id);
-    setInputValue(msg.content);
-    setRewindLabel(msg.content.slice(0, 40) + (msg.content.length > 40 ? '…' : ''));
-    setTimeout(() => textareaRef.current?.focus(), 50);
-  }, [aiGenerating]);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditTargetId(null);
-    setRewindLabel(null);
-    setInputValue('');
-  }, []);
-
-  // ── Node name resolver ────────────────────────────────────────────────────
-  const getNodeName = useCallback((id: string): string => {
-    const search = (nodes: typeof store.pageNodes, tid: string): string | null => {
-      for (const n of nodes) {
-        if ((n as { id?: string }).id === tid)
-          return (n as { name?: string; type?: string }).name ?? (n as { type?: string }).type ?? tid.slice(0, 8);
-        if (Array.isArray((n as { children?: unknown[] }).children)) {
-          const found = search((n as { children: typeof store.pageNodes }).children, tid);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    return search(store.pageNodes, id) ?? id.slice(0, 8);
-  }, [store.pageNodes]);
-
-  const currentTitle = threads.find(t => t.id === aiCurrentThreadId)?.title;
-
-  // ── Copy log (conversation turns + all phase prompts & tools) ───────────────
-  const [copyToolsLabel, setCopyToolsLabel] = useState<'idle' | 'loading' | 'copied'>('idle');
-
-  const handleCopyToolsLog = useCallback(async () => {
-    if (copyToolsLabel === 'loading') return;
-    setCopyToolsLabel('loading');
-    try {
-      const allToolCalls = aiChatHistory.flatMap(m => m.toolCalls ?? []);
-      const lastMsg = aiChatHistory[aiChatHistory.length - 1];
-      const agentInfo = lastMsg?.agentDebugInfo;
-
-      // New-arch if agents ran OR if context/planner debug data is present (covers 0-agent runs)
-      const hasNewArchData = (agentInfo && Object.keys(agentInfo).length > 0)
-        || !!(lastMsg?.debug?.planner || lastMsg?.debug?.context);
-
-      if (hasNewArchData) {
-        const agents: Record<string, unknown> = {};
-        if (agentInfo) {
-          for (const [name, a] of Object.entries(agentInfo)) {
-            agents[name] = {
-              rounds: a.rounds,
-              toolCallCount: a.toolCallCount,
-              duration: a.duration ? `${(a.duration / 1000).toFixed(1)}s` : null,
-              tools: a.tools,
-              toolCalls: a.toolCalls.map(t => ({
-                name: t.name, status: t.status, input: t.input,
-                round: t.round, aiBlind: t.aiBlind || undefined,
-              })),
-            };
-          }
-        }
-
-        const blindTotal = allToolCalls.filter(t => t.aiBlind).length;
-        const stats = {
-          totalTools: allToolCalls.length,
-          agents: agentInfo ? Object.keys(agentInfo).length : 0,
-          blindFailures: blindTotal,
-        };
-
-        const structureCtx = lastMsg?.structureContext;
-        const dbg = lastMsg?.debug;
-        const timing = {
-          ...(dbg?.context ? { context: { status: dbg.context.status, resolvedNodeCount: dbg.context.resolvedNodeCount, durationMs: dbg.context.duration } } : {}),
-          ...(dbg?.planner ? { planner: { status: dbg.planner.status, durationMs: dbg.planner.duration } } : {}),
-          ...(dbg?.structure ? { structure: { status: dbg.structure.status, durationMs: dbg.structure.duration } } : {}),
-          ...(dbg?.stats?.totalDurationMs != null ? { totalDurationMs: dbg.stats.totalDurationMs } : {}),
-        };
-        const contextSearchLog = dbg?.context?.toolCalls
-          ? dbg.context.toolCalls.map(tc => {
-              const res = tc.result as { results?: unknown[]; note?: string; error?: string } | null;
-              const isRead = tc.name === 'read';
-              return {
-                tool: tc.name,
-                input: tc.input,
-                ...(isRead
-                  ? { result: res && !res.error ? 'found' : 'not found' }
-                  : { hits: res?.results?.length ?? 0, ...(res?.note ? { note: res.note } : {}) }),
-              };
-            })
-          : undefined;
-
-        const output = {
-          stats,
-          ...(Object.keys(timing).length > 0 ? { timing } : {}),
-          ...(contextSearchLog ? { contextSearch: contextSearchLog } : {}),
-          agents,
-        };
-        await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
-        setCopyToolsLabel('copied');
-        setTimeout(() => setCopyToolsLabel('idle'), 2000);
-        return;
-      }
-
-      // Detect file-agent run (all tool calls are file-agent tools)
-      const FILE_AGENT_TOOLS = new Set([
-        'write_file', 'read_file', 'edit_file', 'delete_file', 'list_dir', 'grep', 'codebase_search',
-      ]);
-      const isFileAgent = allToolCalls.length > 0 && allToolCalls.every(t => FILE_AGENT_TOOLS.has(t.name));
-
-      if (isFileAgent) {
-        const roundMax = allToolCalls.reduce((m, t) => Math.max(m, t.round ?? 0), 0);
-        const writes = allToolCalls
-          .filter(t => t.name === 'write_file' || t.name === 'edit_file')
-          .map(t => ({ path: (t.input as Record<string, unknown>)?.path, status: t.status }));
-        const reads = allToolCalls
-          .filter(t => t.name === 'read_file' || t.name === 'list_dir' || t.name === 'grep' || t.name === 'codebase_search')
-          .map(t => ({ tool: t.name, path: (t.input as Record<string, unknown>)?.path ?? (t.input as Record<string, unknown>)?.prefix, status: t.status }));
-        const applyErrors = lastMsg?.fileApplyErrors ?? [];
-        const output = {
-          agent: 'file-agent',
-          stats: { totalTools: allToolCalls.length, rounds: roundMax },
-          writes,
-          reads,
-          ...(applyErrors.length > 0 ? { applyErrors } : {}),
-        };
-        await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
-        setCopyToolsLabel('copied');
-        setTimeout(() => setCopyToolsLabel('idle'), 2000);
-        return;
-      }
-
-      // Fallback: legacy phase-based log
-      const info = await getDebugInfo();
-      const phaseContext: Record<string, { systemPrompt: string; tools: string[] }> = {
-        planning:   { systemPrompt: info.planningPrompt ?? '', tools: [] },
-        structure:  { systemPrompt: info.phase2Prompt ?? '', tools: info.phase2Tools ?? [] },
-        media:      { systemPrompt: '', tools: ['set_src'] },
-        styling:    { systemPrompt: info.phase3Prompt ?? '', tools: info.phase3Tools ?? [] },
-        workflows:  { systemPrompt: info.phaseWPrompt ?? '', tools: info.phaseWTools ?? [] },
-        other:      { systemPrompt: info.systemPrompt ?? '', tools: info.mainTools ?? [] },
-      };
-
-      const phases: Record<string, { tools: string[]; calls: unknown[] }> = {};
-      const phaseKeys = ['planning', 'structure', 'media', 'styling', 'workflows', 'other'] as const;
-
-      for (const key of phaseKeys) {
-        const calls = allToolCalls
-          .filter(t => (t.phase ?? 'other') === key)
-          .map(t => ({
-            name: t.name, status: t.status, input: t.input,
-            round: t.round, aiBlind: t.aiBlind || undefined,
-          }));
-        if (calls.length > 0 || phaseContext[key].systemPrompt) {
-          phases[key] = { tools: phaseContext[key].tools, calls };
-        }
-      }
-
-      // Only report MISSING for phases that actually ran but had no system prompt
-      const PHASES_WITH_PROMPTS = new Set(['planning', 'structure', 'styling', 'workflows']);
-      const health: Record<string, string> = {};
-      for (const [key, ctx] of Object.entries(phaseContext)) {
-        if (!PHASES_WITH_PROMPTS.has(key)) continue;
-        const hasCalls = allToolCalls.some(t => (t.phase ?? 'other') === key);
-        if (hasCalls && !ctx.systemPrompt) {
-          health[key] = 'MISSING — prompt returned empty string';
-        } else if (ctx.systemPrompt?.startsWith('(ERROR:')) {
-          health[key] = ctx.systemPrompt;
-        }
-      }
-
-      const blindTotal = allToolCalls.filter(t => t.aiBlind).length;
-      const roundMax = allToolCalls.reduce((m, t) => Math.max(m, t.round ?? 0), 0);
-      const stats = { totalTools: allToolCalls.length, rounds: roundMax, blindFailures: blindTotal };
-
-      const output = Object.keys(health).length > 0 ? { health, stats, phases } : { stats, phases };
-
-      await navigator.clipboard.writeText(JSON.stringify(output, null, 2));
-      setCopyToolsLabel('copied');
-      setTimeout(() => setCopyToolsLabel('idle'), 2000);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      try {
-        await navigator.clipboard.writeText(`DEBUG LOG FAILED\n\n${msg}`);
-      } catch {
-        // clipboard blocked
-      }
-      setCopyToolsLabel('idle');
-    }
-  }, [copyToolsLabel, getDebugInfo, aiChatHistory]);
-
-  // ── Debug visualizer — open overlay with last turn's agent data ─────────
-  const handleOpenDebugViz = useCallback(() => {
-    // Find the last assistant message with any debug data (agentDebugInfo OR debug envelope)
-    let lastMsg = aiChatHistory[aiChatHistory.length - 1];
-    for (let i = aiChatHistory.length - 1; i >= 0; i--) {
-      const m = aiChatHistory[i];
-      if (m.agentDebugInfo || m.debug) { lastMsg = m; break; }
-    }
-
-    const agentInfo = lastMsg?.agentDebugInfo ?? {};
-    const dbg = lastMsg?.debug;
-    const agents: Record<string, import('./_agent-debug-overlay').DebugAgentData> = {};
-
-    // 1. Context agent — from debug.context (has its own tool calls like search/read)
-    if (dbg?.context) {
-      const c = dbg.context;
-      agents['context'] = agents['context'] ?? {
-        agent: 'context',
-        displayLabel: 'Context',
-        duration: c.duration,
-        status: c.status === 'done' ? 'completed' : c.status,
-        toolCallCount: c.toolCalls?.length ?? 0,
-        toolCalls: (c.toolCalls ?? []).map(tc => ({
-          name: tc.name, status: 'success', input: tc.input, result: tc.result,
-        })),
-        extra: {
-          skippedSearch: c.skippedSearch,
-          resolvedNodeCount: c.resolvedNodeCount,
-        },
-      } as import('./_agent-debug-overlay').DebugAgentData;
-    }
-
-    // 2. Planner — from debug.planner (has intent + operations manifest)
-    if (dbg?.planner) {
-      const p = dbg.planner;
-      const manifest = p.manifest;
-      agents['planner'] = agents['planner'] ?? {
-        agent: 'planner',
-        displayLabel: 'Planner',
-        duration: p.duration,
-        status: p.status === 'done' ? 'completed' : p.status,
-        toolCallCount: manifest?.operations?.length ?? 0,
-        // Encode manifest as a synthetic tool call
-        toolCalls: manifest ? [{
-          name: 'planner_complete',
-          status: 'success',
-          input: { intent: manifest.intent ?? '—' },
-          result: {
-            operations: (manifest.operations ?? []).map(op => ({
-              id: op.id,
-              pageRoute: op.pageRoute,
-              pageName: op.pageName,
-              ...(op.agents ? { agents: op.agents } : {}),
-            })),
-            ...(manifest.needsClarification ? { needsClarification: manifest.needsClarification } : {}),
-          },
-        }] : [],
-        manifest: manifest,
-      } as import('./_agent-debug-overlay').DebugAgentData;
-    }
-
-    // 3. Structure agent — from debug.structure
-    if (dbg?.structure) {
-      const s = dbg.structure;
-      if (!agents['structure']) {
-        agents['structure'] = {
-          agent: 'structure',
-          displayLabel: 'Structure',
-          duration: s.duration,
-          status: s.status === 'done' ? 'completed' : s.status,
-          toolCallCount: 0,
-          toolCalls: [{
-            name: 'generate_structure',
-            status: 'success',
-            input: {},
-            result: {
-              nodes: s.nodes ?? 0,
-              variables: s.variables ?? 0,
-              formulas: s.formulas ?? 0,
-              workflows: s.workflows ?? 0,
-              dataSources: s.dataSources ?? 0,
-            },
-          }],
-        };
-      }
-    }
-
-    // 4. All agents that ran through agent_context events (styling, animation, binding, etc.)
-    for (const [name, a] of Object.entries(agentInfo)) {
-      agents[name] = {
-        agent: name,
-        displayLabel: a.displayLabel,
-        rounds: a.rounds,
-        toolCallCount: a.toolCallCount,
-        duration: a.duration,
-        tools: a.tools,
-        systemPrompt: a.systemPrompt,
-        userMessage: a.userMessage ?? undefined,
-        status: 'completed',
-        toolCalls: (a.toolCalls ?? []).map(t => ({
-          name: t.name, status: t.status, input: t.input, result: t.result,
-          round: t.round, aiBlind: t.aiBlind || undefined,
-        })),
-      };
-    }
-
-    // 5. Fill in any agents tracked in debug.agents but missing from agentDebugInfo
-    for (const [name, info] of Object.entries(dbg?.agents ?? {})) {
-      if (!agents[name]) {
-        agents[name] = {
-          agent: name,
-          displayLabel: info.displayLabel,
-          rounds: info.rounds,
-          toolCallCount: info.toolCallCount,
-          duration: info.duration,
-          status: info.status,
-          tools: info.tools,
-          toolCalls: [],
-        };
-      }
-    }
-
-    const allToolCalls = lastMsg?.toolCalls ?? [];
-    const snapshot: DebugSnapshot = {
-      agents,
-      timing: dbg?.stats?.totalDurationMs != null ? { totalDurationMs: dbg.stats.totalDurationMs } : undefined,
-      stats: {
-        totalTools: allToolCalls.length,
-        agents: Object.keys(agents).length,
-        blindFailures: allToolCalls.filter(t => t.aiBlind).length,
-      },
-    };
-    setDebugSnapshot(snapshot);
-  }, [aiChatHistory]);
+  // ── Files count badge ─────────────────────────────────────────────────────
+  const fileCount = Object.keys(dslSources).length;
 
   return (
     <>
@@ -1885,15 +1764,13 @@ export function AiChatPanel() {
         {/* Title */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)' }}>AI Assistant</div>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {currentTitle ?? 'New Conversation'}
-          </div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>TypeScript / JSX</div>
         </div>
 
-        {/* New Chat button */}
+        {/* New chat */}
         <button
           data-testid="ai-new-thread-btn"
-          onClick={() => { startNewChat(); setRewindLabel(null); setInputValue(''); }}
+          onClick={() => { clear(); setInputValue(''); }}
           title="New conversation"
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
@@ -1909,62 +1786,25 @@ export function AiChatPanel() {
           New
         </button>
 
-        {/* Copy Log */}
+        {/* Files drawer button — opens the side-by-side file viewer */}
         <button
-          data-testid="ai-copy-tools-btn"
-          onClick={() => void handleCopyToolsLog()}
-          title="Copy conversation log to clipboard"
+          onClick={() => openDrawer('webcontainer')}
+          title="View source files"
           style={{
-            padding: '5px 7px', borderRadius: 6, display: 'flex', alignItems: 'center',
-            border: `1px solid ${copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-border-subtle)'}`,
-            background: copyToolsLabel === 'copied' ? 'rgba(52,211,153,0.1)' : 'transparent',
-            color: copyToolsLabel === 'copied' ? 'var(--bld-success)' : 'var(--bld-text-3)',
-            cursor: copyToolsLabel === 'loading' ? 'wait' : 'pointer', lineHeight: 1, transition: 'all 0.15s',
+            position: 'relative',
+            padding: '5px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4,
+            background: 'transparent',
+            border: '1px solid var(--bld-border-subtle)',
+            color: 'var(--bld-text-3)', cursor: 'pointer', lineHeight: 1, fontSize: 10, fontWeight: 500, fontFamily: 'inherit',
           }}
-          onMouseEnter={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; } }}
-          onMouseLeave={e => { if (copyToolsLabel === 'idle') { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-border-subtle)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-3)'; } }}
         >
-          {copyToolsLabel === 'copied'
-            ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l3 3 7-7"/></svg>
-            : copyToolsLabel === 'loading'
-            ? <span style={{ fontSize: 11 }}>…</span>
-            : <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="8" height="10" rx="1.2"/><path d="M3 5H2.5A1.5 1.5 0 001 6.5v7A1.5 1.5 0 002.5 15H9"/></svg>
-          }
-        </button>
-
-        {/* History menu button */}
-        <div style={{ position: 'relative' }}>
-          <button
-            data-testid="ai-thread-menu-btn"
-            onClick={() => {
-              const opening = !showThreadMenu;
-              setShowThreadMenu(opening);
-              if (opening) void reloadThreads();
-            }}
-            title="Chat history"
-            style={{
-              padding: '5px 7px', borderRadius: 6, display: 'flex', alignItems: 'center',
-              border: '1px solid var(--bld-border-subtle)', background: showThreadMenu ? 'var(--bld-bg-elevated)' : 'transparent',
-              color: 'var(--bld-text-3)', cursor: 'pointer', lineHeight: 1,
-            }}
-          >
-            <ClockIcon size={14} color={showThreadMenu ? 'var(--bld-badge-text)' : 'var(--bld-text-3)'} />
-          </button>
-          {showThreadMenu && (
-            <ThreadMenu
-              threads={threads}
-              loadingThreads={loadingThreads}
-              hasMoreThreads={hasMoreThreads}
-              loadingMoreThreads={loadingMoreThreads}
-              deletingThreadId={deletingThreadId}
-              aiCurrentThreadId={aiCurrentThreadId}
-              onSelect={id => void selectThread(id)}
-              onDelete={id => void deleteThread(id)}
-              onLoadMore={() => void loadMoreThreads()}
-              onClose={() => setShowThreadMenu(false)}
-            />
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="5 3 1 8 5 13"/><polyline points="11 3 15 8 11 13"/>
+          </svg>
+          {fileCount > 0 && (
+            <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, fontWeight: 700, background: '#7c3aed', color: '#fff', borderRadius: 10, padding: '1px 3px', lineHeight: 1.2 }}>{fileCount}</span>
           )}
-        </div>
+        </button>
 
         {/* Close */}
         <button data-testid="ai-close-btn" onClick={store.toggleAiMode}
@@ -1973,186 +1813,78 @@ export function AiChatPanel() {
       </div>
 
       {/* ── Messages ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 12 }}
-        ref={messagesRef} data-testid="ai-message-list" onScroll={handleMessagesScroll}>
-
-        {loadingMoreMessages && (
-          <div style={{ textAlign: 'center', padding: '4px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading older messages…</div>
-        )}
-        {!hasMoreMessages && aiChatHistory.length > 0 && (
-          <div style={{ textAlign: 'center', padding: '4px', fontSize: 10, color: 'var(--bld-text-3)' }}>— beginning of conversation —</div>
-        )}
-
-        {/* Empty state */}
-        {aiChatHistory.length === 0 && !aiGenerating && (
+      <div ref={messagesRef} style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 12 }}
+        data-testid="ai-message-list">
+        {messages.length === 0 && !isStreaming && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', gap: 10 }}>
             <div style={{ fontSize: 28, color: 'var(--bld-ai-accent)', filter: 'drop-shadow(0 0 14px rgba(124,58,237,0.6))' }}>✦</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-1)', textAlign: 'center' }}>What can I build for you?</div>
             <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)', lineHeight: 1.7, textAlign: 'center', maxWidth: 260 }}>
-              Describe a page, component, or change and I'll handle the rest.
+              Describe a page, component, or change and I&apos;ll write the TypeScript/JSX files directly.
             </div>
           </div>
         )}
-
-        {aiChatHistory.map((msg) => (
-          <MessageBubble key={msg.id} msg={msg}
-            onEdit={msg.role === 'user' ? () => handleEditMessage(msg) : undefined}
-            isEditing={editTargetId === msg.id}
-          />
+        {messages.map(msg => (
+          <MessageBubble key={msg.id} msg={msg} />
         ))}
+        <div ref={bottomRef} />
       </div>
 
-      {/* ── AI-style input area ── */}
+      {/* ── Input — same gradient-border design ── */}
       <div style={{ padding: '10px 12px 12px', borderTop: '1px solid var(--bld-ai-border)', flexShrink: 0 }}>
-        {/* Gradient-border wrapper — @property animated conic-gradient */}
         <div className="ai-border-wrap">
-          {/* Rotating gradient that fills the wrapper (shows as 1.5px border via padding) */}
           <div className="ai-gradient-ring" />
-
-          {/* Inner content card */}
-          <div
-            style={{
-              position: 'relative', zIndex: 1,
-              borderRadius: 14.5, background: 'var(--bld-bg-panel)', overflow: 'hidden',
-              display: 'flex', flexDirection: 'column',
-              boxShadow: inputFocused ? '0 2px 16px rgba(124,58,237,0.15)' : 'none',
-              transition: 'box-shadow 0.3s',
-            }}
-          >
-          {/* Rewind banner — inside the input container */}
-          {rewindLabel && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 14px 0',
-            }}>
-              <span style={{ fontSize: 11, color: 'var(--bld-ai-accent)', flexShrink: 0 }}>⤺</span>
-              <span style={{ fontSize: 11, color: 'var(--bld-text-3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                Editing: <em style={{ color: 'var(--bld-ai-accent)' }}>{rewindLabel}</em>
-              </span>
-              <button onClick={handleCancelEdit}
-                style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
-                title="Cancel edit">×</button>
-            </div>
-          )}
-
-          {/* Active page indicator — always visible, non-removable */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 12px 0', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Page:</span>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              fontSize: 10, padding: '2px 7px', borderRadius: 20,
-              background: 'rgba(16,185,129,0.15)', color: '#6ee7b7',
-              border: '1px solid rgba(16,185,129,0.3)',
-            }}>
-              ⬡ {currentPageName}
-            </span>
-          </div>
-
-          {/* Node chips — inside container */}
-          {aiSelectedNodeIds.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 12px 0', alignItems: 'center' }}>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>Referencing:</span>
-              {aiSelectedNodeIds.map(id => (
-                <span key={id} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 3,
-                  fontSize: 10, padding: '2px 7px', borderRadius: 20,
-                  background: 'rgba(79,70,229,0.18)', color: 'var(--bld-badge-text)',
-                  border: '1px solid rgba(79,70,229,0.3)',
-                }}>
-                  ◈ {getNodeName(id)}
-                  <button onClick={() => handleRemoveNode(id)}
-                    style={{ background: 'none', border: 'none', color: 'var(--bld-accent)', cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1, marginLeft: 2 }}>×</button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Textarea */}
-          {/* @-mention typeahead */}
-          {mentionState?.open && (
-            <MentionTypeahead
-              query={mentionState.query}
-              pages={pages.map(p => ({ id: p.id, name: p.name, route: p.route }))}
-              selectedNodeIds={aiSelectedNodeIds}
-              onPick={(label) => {
-                setInputValue(prev => {
-                  const before = prev.slice(0, mentionState.anchor);
-                  const after = prev.slice(mentionState.anchor + 1 + mentionState.query.length);
-                  return `${before}@${label} ${after}`;
-                });
-                setMentionState(null);
-                setTimeout(() => textareaRef.current?.focus(), 0);
-              }}
-              onClose={() => setMentionState(null)}
-            />
-          )}
-          <textarea
-            ref={textareaRef}
-            data-testid="ai-chat-input"
-            value={inputValue}
-            onChange={e => {
-              const v = e.target.value;
-              setInputValue(v);
-              const caret = e.target.selectionStart ?? v.length;
-              const before = v.slice(0, caret);
-              const at = before.lastIndexOf('@');
-              if (at >= 0 && (at === 0 || /\s/.test(before[at - 1]!)) && !/\s/.test(before.slice(at + 1))) {
-                setMentionState({ open: true, query: before.slice(at + 1), anchor: at });
-              } else {
-                setMentionState(null);
-              }
-            }}
-            onKeyDown={e => {
-              if (mentionState?.open && (e.key === 'Escape')) { setMentionState(null); return; }
-              handleKeyDown(e);
-            }}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            placeholder={'Ask AI anything · type @ to mention a page or node…'}
-            disabled={aiGenerating}
-            style={{
-              width: '100%', minHeight: 68, maxHeight: 160,
-              padding: '12px 14px 8px',
-              background: 'transparent', border: 'none', outline: 'none',
-              color: 'var(--bld-text-1)', fontSize: 13.5, resize: 'none',
-              fontFamily: 'inherit', lineHeight: 1.55, boxSizing: 'border-box',
-              caretColor: 'var(--bld-ai-accent)',
-            }}
-          />
-
-          {/* Bottom bar: hint + send button */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 10px' }}>
-            <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
-              Enter to send · Shift+Enter for new line
-            </span>
-            <button
-              data-testid="ai-send-btn"
-              onClick={() => void handleSend()}
-              disabled={!inputValue.trim() || aiGenerating}
+          <div style={{
+            position: 'relative', zIndex: 1,
+            borderRadius: 14.5, background: 'var(--bld-bg-panel)', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column',
+            boxShadow: inputFocused ? '0 2px 16px rgba(124,58,237,0.15)' : 'none',
+            transition: 'box-shadow 0.3s',
+          }}>
+            <textarea
+              ref={textareaRef}
+              data-testid="ai-chat-input"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              disabled={isStreaming}
+              placeholder={isStreaming ? 'Claude is working…' : 'Describe the app or change you want…'}
               style={{
-                width: 34, height: 34, borderRadius: '50%',
-                border: 'none', cursor: inputValue.trim() && !aiGenerating ? 'pointer' : 'not-allowed',
-                background: inputValue.trim() && !aiGenerating
-                  ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
-                  : 'var(--bld-bg-elevated)',
-                color: inputValue.trim() && !aiGenerating ? '#fff' : 'var(--bld-text-disabled)',
-                fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.2s', flexShrink: 0,
-                boxShadow: inputValue.trim() && !aiGenerating ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
+                width: '100%', minHeight: 68, maxHeight: 160,
+                padding: '12px 14px 8px',
+                background: 'transparent', border: 'none', outline: 'none',
+                color: 'var(--bld-text-1)', fontSize: 13.5, resize: 'none',
+                fontFamily: 'inherit', lineHeight: 1.55, boxSizing: 'border-box',
+                caretColor: 'var(--bld-ai-accent)',
               }}
-              title="Send message"
-            >
-              {aiGenerating ? <span style={{ fontSize: 12 }}>…</span> : '↑'}
-            </button>
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 10px' }}>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>Enter to send · Shift+Enter for new line</span>
+              <button
+                data-testid="ai-send-btn"
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isStreaming}
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  border: 'none', cursor: inputValue.trim() && !isStreaming ? 'pointer' : 'not-allowed',
+                  background: inputValue.trim() && !isStreaming
+                    ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
+                    : 'var(--bld-bg-elevated)',
+                  color: inputValue.trim() && !isStreaming ? '#fff' : 'var(--bld-text-disabled)',
+                  fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s', flexShrink: 0,
+                  boxShadow: inputValue.trim() && !isStreaming ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
+                }}
+                title="Send message"
+              >
+                {isStreaming ? <span style={{ fontSize: 12 }}>…</span> : '↑'}
+              </button>
+            </div>
           </div>
-          </div>{/* end inner card */}
-        </div>{/* end gradient wrapper */}
+        </div>
       </div>
-
-      {/* Close thread menu on outside click */}
-      {showThreadMenu && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowThreadMenu(false)} />
-      )}
 
       <style>{`
         @keyframes bounce {

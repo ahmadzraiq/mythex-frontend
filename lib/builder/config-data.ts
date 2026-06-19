@@ -194,6 +194,7 @@ export function getBuilderConfig() {
       steps: (def.steps as object[]) ?? [],
       onErrorSteps: (def.onErrorSteps as object[] | undefined),
       isTrigger: (def.isTrigger as boolean | undefined),
+      isAppTrigger: (def.isAppTrigger as boolean | undefined),
       pageScope: (def.pageScope as string | undefined),
       // Pass through params so global workflows (those with params) are detected by the store
       params: (def.params as Array<{ id: string; name: string; type: string; allowMultiple?: boolean; testValue?: unknown }> | undefined),

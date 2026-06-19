@@ -2,6 +2,27 @@
  * App config types - used by page and config
  */
 
+export interface WorkflowParam {
+  id: string;
+  name: string;
+  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array';
+  allowMultiple?: boolean;
+  testValue?: unknown;
+}
+
+export interface WorkflowDef {
+  id: string;
+  name?: string;
+  /** Event trigger (click, change, valueChange, created, etc.) */
+  trigger?: string;
+  params?: WorkflowParam[];
+  steps: object[];
+  folder?: string;
+  isTrigger?: boolean;
+  isAppTrigger?: boolean;
+  pageScope?: string;
+}
+
 export type PageUI = {
   redirecting?: { text?: string; wrapperClassName?: string; textClassName?: string };
   pageNotFound?: { text?: string; wrapperClassName?: string; textClassName?: string };
@@ -43,4 +64,6 @@ export type AppConfig = {
   }>;
   screens: Record<string, { meta?: object; state?: object; ui: object; dataSources?: object[] }>;
   actions: Record<string, object>;
+  /** Named/reusable workflows. Replaces the old split pageWorkflows/globalWorkflows dicts. */
+  workflows?: Record<string, WorkflowDef>;
 };

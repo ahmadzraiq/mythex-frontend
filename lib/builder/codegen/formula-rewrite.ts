@@ -17,6 +17,7 @@
  */
 
 import type { SymbolMap } from './types';
+import { isExpression } from '@/lib/sdui/is-expression';
 
 // UUID pattern (captures all 5 groups: 8-4-4-4-12 hex chars)
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -284,9 +285,8 @@ export function rewriteTextValue(
       const f = (text as { js: string }).js;
       if (typeof f === 'string') {
         const rewritten = rewriteFormula(f, symbols, inMapScope);
-        // Multi-statement JS (has `const/let/var/return`) cannot be a JSX expression —
-        // wrap in a self-invoking arrow so {(() => { ... })()} works in JSX.
-        if (/\b(const|let|var|return)\b/.test(f)) {
+        // Statement blocks cannot be JSX expressions — wrap in a self-invoking arrow.
+        if (!isExpression(f)) {
           const indented = rewritten.split('\n').map(l => `  ${l}`).join('\n');
           return `(() => {\n${indented}\n})()`;
         }
@@ -434,7 +434,7 @@ export function rewritePropValue(
     }
     if ('js' in obj && typeof obj.js === 'string') {
       const rewritten = rewriteFormula(obj.js, symbols, inMapScope);
-      if (/\b(const|let|var|return)\b/.test(obj.js)) {
+      if (!isExpression(obj.js)) {
         const indented = rewritten.split('\n').map(l => `  ${l}`).join('\n');
         return `(() => {\n${indented}\n})()`;
       }

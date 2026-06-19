@@ -382,6 +382,20 @@ export function SDUIEngine({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewState, previewStates, previewData, builderMode, configName, computeMergedState, store, mergedStore, applyBuilderPatches]);
 
+  // When registerGlobalFormulas runs (after async message delivery), _formulas_v increments.
+  // Bumping patchVersion forces all renderer nodes to re-evaluate their bindings so formula
+  // function calls (e.g. formatDisplay) resolve correctly on first render.
+  useEffect(() => {
+    let prev = store.getState().data._formulas_v as number | undefined;
+    return store.subscribe((state) => {
+      const next = (state as { data: Record<string, unknown> }).data._formulas_v as number | undefined;
+      if (next !== prev) {
+        prev = next;
+        mergedStore.getState().bumpPatchVersion();
+      }
+    });
+  }, [store, mergedStore]);
+
   const fetchDataStable = useCallback(
     async (ds: SDUIDataSource) => {
       try {

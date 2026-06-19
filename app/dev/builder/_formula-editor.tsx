@@ -54,6 +54,7 @@ import {
   isBoundValue,
   FORMULA_FNS,
 } from '@/lib/sdui/formula-evaluator';
+import { evaluateJsBinding } from '@/lib/sdui/javascript-evaluator';
 
 // Re-export for backward-compat consumers (_formula-panel, _expr-builder)
 export type { FormulaValue, EvalResult };
@@ -977,12 +978,26 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   }, [context, workflowTrigger]);
 
   const evalResult = useMemo(() => {
+    const fnParams = formulaParams ?? [];
+
+    if (fnParams.length > 0) {
+      // Use evaluateJsBinding so that the preview has access to variables, __userFns__,
+      // and parameters — matching the exact runtime scope used when the formula runs.
+      // Pass parameters: paramCtx so the formula body can reference parameters.argN.
+      const rawCode = mode === 'js' ? jsCode : (typeof formula === 'string' ? formula : '');
+      if (!rawCode.trim()) return { value: undefined, error: null } as ReturnType<typeof evaluateFormula>;
+      const paramNames = fnParams.map(p => p.name);
+      const testArgs = fnParams.map(p => p.testValue ?? undefined);
+      const paramCtx: Record<string, unknown> = {};
+      paramNames.forEach((p, i) => { paramCtx[p] = testArgs[i]; });
+      return evaluateJsBinding({ js: rawCode }, { ...contextWithEvent, parameters: paramCtx }) as ReturnType<typeof evaluateFormula>;
+    }
+
     if (mode === 'js') {
-      // Evaluate the JS body via the same evaluator pipeline ({ js } shape).
       return evaluateFormula({ js: jsCode } as object, contextWithEvent);
     }
     return evaluateFormula(formula, contextWithEvent);
-  }, [mode, jsCode, formula, contextWithEvent]);
+  }, [mode, jsCode, formula, contextWithEvent, formulaParams]);
 
   const apply = useCallback(() => {
     if (mode === 'js') {

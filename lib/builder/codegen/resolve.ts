@@ -11,6 +11,7 @@
 
 import type { SDUINode } from '@/lib/sdui/types/node';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
+import { isExpression } from '@/lib/sdui/is-expression';
 
 type AnyNode = SDUINode & {
   _shared?: { id: string };
@@ -165,15 +166,14 @@ function compileScValue(val: unknown, instanceId: string, scVarNames: Set<string
     const obj = val as Record<string, unknown>;
     if ('formula' in obj && typeof obj.formula === 'string') {
       const rewritten = substituteScVarsInFormula(obj.formula, instanceId, scVarNames, componentProps);
-      // Wrap multi-statement code in IIFE
-      if (/\b(const|let|var|return)\b/.test(obj.formula)) {
+      if (!isExpression(obj.formula)) {
         return `(() => { ${rewritten} })()`;
       }
       return rewritten;
     }
     if ('js' in obj && typeof obj.js === 'string') {
       const rewritten = substituteScVarsInFormula(obj.js, instanceId, scVarNames, componentProps);
-      if (/\b(const|let|var|return)\b/.test(obj.js)) {
+      if (!isExpression(obj.js)) {
         return `(() => { ${rewritten} })()`;
       }
       return rewritten;

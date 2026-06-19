@@ -3,6 +3,7 @@
     "name": "Triggers Test — App Load Before",
     "trigger": "appLoadBefore",
     "isTrigger": true,
+    "isAppTrigger": true,
     "steps": [
       {
         "id": "s1",
@@ -19,6 +20,7 @@
     "name": "Triggers Test — App Load",
     "trigger": "appLoad",
     "isTrigger": true,
+    "isAppTrigger": true,
     "steps": [
       {
         "id": "s1",
