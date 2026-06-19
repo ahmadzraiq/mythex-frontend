@@ -73,7 +73,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfMsgHello"
+                    "trigger": "click",
+                    "workflowId": "wfMsgHello"
                   }
                 ],
                 "children": [
@@ -94,7 +95,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfMsgBye"
+                    "trigger": "click",
+                    "workflowId": "wfMsgBye"
                   }
                 ],
                 "children": [
@@ -115,7 +117,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfMsgTest"
+                    "trigger": "click",
+                    "workflowId": "wfMsgTest"
                   }
                 ],
                 "children": [
@@ -197,7 +200,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfSetNumLow"
+                    "trigger": "click",
+                    "workflowId": "wfSetNumLow"
                   }
                 ],
                 "children": [
@@ -218,7 +222,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfSetNumHigh"
+                    "trigger": "click",
+                    "workflowId": "wfSetNumHigh"
                   }
                 ],
                 "children": [
@@ -239,7 +244,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfEvalBranch"
+                    "trigger": "click",
+                    "workflowId": "wfEvalBranch"
                   }
                 ],
                 "children": [
@@ -352,7 +358,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfRunMultiple"
+                    "trigger": "click",
+                    "workflowId": "wfRunMultiple"
                   }
                 ],
                 "children": [
@@ -501,7 +508,8 @@
                     },
                     "actions": [
                       {
-                        "action": "wfSetScore20"
+                        "trigger": "click",
+                        "workflowId": "wfSetScore20"
                       }
                     ],
                     "children": [
@@ -522,7 +530,8 @@
                     },
                     "actions": [
                       {
-                        "action": "wfSetScore45"
+                        "trigger": "click",
+                        "workflowId": "wfSetScore45"
                       }
                     ],
                     "children": [
@@ -543,7 +552,8 @@
                     },
                     "actions": [
                       {
-                        "action": "wfSetScore75"
+                        "trigger": "click",
+                        "workflowId": "wfSetScore75"
                       }
                     ],
                     "children": [
@@ -564,7 +574,8 @@
                     },
                     "actions": [
                       {
-                        "action": "wfSetScore95"
+                        "trigger": "click",
+                        "workflowId": "wfSetScore95"
                       }
                     ],
                     "children": [
@@ -602,7 +613,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfComplexAll"
+                    "trigger": "click",
+                    "workflowId": "wfComplexAll"
                   }
                 ],
                 "children": [
@@ -792,10 +804,12 @@
         },
         "actions": [
           {
-            "action": "waOnCreated"
+            "trigger": "click",
+            "workflowId": "waOnCreated"
           },
           {
-            "action": "waOnMounted"
+            "trigger": "click",
+            "workflowId": "waOnMounted"
           }
         ],
         "children": [
@@ -1027,7 +1041,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waOnClick"
+                    "trigger": "click",
+                    "workflowId": "waOnClick"
                   }
                 ],
                 "children": [
@@ -1048,7 +1063,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waOnDblClick"
+                    "trigger": "click",
+                    "workflowId": "waOnDblClick"
                   }
                 ],
                 "children": [
@@ -1069,10 +1085,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waOnMouseEnter"
+                    "trigger": "click",
+                    "workflowId": "waOnMouseEnter"
                   },
                   {
-                    "action": "waOnMouseLeave"
+                    "trigger": "click",
+                    "workflowId": "waOnMouseLeave"
                   }
                 ],
                 "children": [
@@ -1114,16 +1132,20 @@
                 "children": [],
                 "actions": [
                   {
-                    "action": "waOnChange"
+                    "trigger": "click",
+                    "workflowId": "waOnChange"
                   },
                   {
-                    "action": "waOnEnterKey"
+                    "trigger": "click",
+                    "workflowId": "waOnEnterKey"
                   },
                   {
-                    "action": "waOnFocus"
+                    "trigger": "click",
+                    "workflowId": "waOnFocus"
                   },
                   {
-                    "action": "waOnBlur"
+                    "trigger": "click",
+                    "workflowId": "waOnBlur"
                   }
                 ]
               }
@@ -1267,10 +1289,12 @@
             },
             "actions": [
               {
-                "action": "waFormSubmit"
+                "trigger": "click",
+                "workflowId": "waFormSubmit"
               },
               {
-                "action": "waFormValidationError"
+                "trigger": "click",
+                "workflowId": "waFormValidationError"
               }
             ],
             "children": [
@@ -1311,7 +1335,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waEmailInputChange"
+                            "trigger": "click",
+                            "workflowId": "waEmailInputChange"
                           }
                         ]
                       },
@@ -1342,7 +1367,8 @@
                     "children": [],
                     "actions": [
                       {
-                        "action": "waNameInputChange"
+                        "trigger": "click",
+                        "workflowId": "waNameInputChange"
                       }
                     ]
                   },
@@ -1377,7 +1403,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waPreFillForm"
+                            "trigger": "click",
+                            "workflowId": "waPreFillForm"
                           }
                         ],
                         "children": [
@@ -1398,7 +1425,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waResetForm"
+                            "trigger": "click",
+                            "workflowId": "waResetForm"
                           }
                         ],
                         "children": [
@@ -1461,7 +1489,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waNavigateHome"
+                    "trigger": "click",
+                    "workflowId": "waNavigateHome"
                   }
                 ],
                 "children": [
@@ -1482,7 +1511,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waNavigatePrev"
+                    "trigger": "click",
+                    "workflowId": "waNavigatePrev"
                   }
                 ],
                 "children": [
@@ -1618,7 +1648,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waFetchRest"
+                    "trigger": "click",
+                    "workflowId": "waFetchRest"
                   }
                 ],
                 "children": [
@@ -1639,7 +1670,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waFetchRestPost"
+                    "trigger": "click",
+                    "workflowId": "waFetchRestPost"
                   }
                 ],
                 "children": [
@@ -1660,7 +1692,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waFetchGraphql"
+                    "trigger": "click",
+                    "workflowId": "waFetchGraphql"
                   }
                 ],
                 "children": [
@@ -1819,7 +1852,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waFetchCollection"
+                    "trigger": "click",
+                    "workflowId": "waFetchCollection"
                   }
                 ],
                 "children": [
@@ -1840,7 +1874,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waFetchParallel"
+                    "trigger": "click",
+                    "workflowId": "waFetchParallel"
                   }
                 ],
                 "children": [
@@ -1861,7 +1896,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waUpdateCollection"
+                    "trigger": "click",
+                    "workflowId": "waUpdateCollection"
                   }
                 ],
                 "children": [
@@ -1882,7 +1918,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetResetCheck"
+                    "trigger": "click",
+                    "workflowId": "waSetResetCheck"
                   }
                 ],
                 "children": [
@@ -1903,7 +1940,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waResetVars"
+                    "trigger": "click",
+                    "workflowId": "waResetVars"
                   }
                 ],
                 "children": [
@@ -1962,7 +2000,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waUpdateReplaceAll"
+                    "trigger": "click",
+                    "workflowId": "waUpdateReplaceAll"
                   }
                 ],
                 "children": [
@@ -1983,7 +2022,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waUpdateInsert"
+                    "trigger": "click",
+                    "workflowId": "waUpdateInsert"
                   }
                 ],
                 "children": [
@@ -2004,7 +2044,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waUpdateItem"
+                    "trigger": "click",
+                    "workflowId": "waUpdateItem"
                   }
                 ],
                 "children": [
@@ -2025,7 +2066,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waUpdateDelete"
+                    "trigger": "click",
+                    "workflowId": "waUpdateDelete"
                   }
                 ],
                 "children": [
@@ -2271,7 +2313,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waReturnHigh"
+                    "trigger": "click",
+                    "workflowId": "waReturnHigh"
                   }
                 ],
                 "children": [
@@ -2292,7 +2335,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waReturnLow"
+                    "trigger": "click",
+                    "workflowId": "waReturnLow"
                   }
                 ],
                 "children": [
@@ -2405,7 +2449,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waExecuteComponent"
+                    "trigger": "click",
+                    "workflowId": "waExecuteComponent"
                   }
                 ],
                 "children": [
@@ -2426,7 +2471,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waRunSubWorkflow"
+                    "trigger": "click",
+                    "workflowId": "waRunSubWorkflow"
                   }
                 ],
                 "children": [
@@ -2562,7 +2608,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waLoopControl"
+                    "trigger": "click",
+                    "workflowId": "waLoopControl"
                   }
                 ],
                 "children": [
@@ -2583,7 +2630,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waPassFlagOn"
+                    "trigger": "click",
+                    "workflowId": "waPassFlagOn"
                   }
                 ],
                 "children": [
@@ -2604,7 +2652,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waPassFlagOff"
+                    "trigger": "click",
+                    "workflowId": "waPassFlagOff"
                   }
                 ],
                 "children": [
@@ -2625,7 +2674,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waPassThrough"
+                    "trigger": "click",
+                    "workflowId": "waPassThrough"
                   }
                 ],
                 "children": [
@@ -2707,7 +2757,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetModeA"
+                    "trigger": "click",
+                    "workflowId": "waSetModeA"
                   }
                 ],
                 "children": [
@@ -2728,7 +2779,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetModeB"
+                    "trigger": "click",
+                    "workflowId": "waSetModeB"
                   }
                 ],
                 "children": [
@@ -2749,7 +2801,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetModeC"
+                    "trigger": "click",
+                    "workflowId": "waSetModeC"
                   }
                 ],
                 "children": [
@@ -2770,7 +2823,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEvalMultiOption"
+                    "trigger": "click",
+                    "workflowId": "waEvalMultiOption"
                   }
                 ],
                 "children": [
@@ -2998,7 +3052,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waCopyClipboard"
+                    "trigger": "click",
+                    "workflowId": "waCopyClipboard"
                   }
                 ],
                 "children": [
@@ -3019,7 +3074,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waOuterClick"
+                    "trigger": "click",
+                    "workflowId": "waOuterClick"
                   }
                 ],
                 "children": [
@@ -3038,7 +3094,8 @@
                     },
                     "actions": [
                       {
-                        "action": "waInnerClick"
+                        "trigger": "click",
+                        "workflowId": "waInnerClick"
                       }
                     ],
                     "children": [
@@ -3061,7 +3118,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waPrintPdf"
+                    "trigger": "click",
+                    "workflowId": "waPrintPdf"
                   }
                 ],
                 "children": [
@@ -3082,7 +3140,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waDownloadFile"
+                    "trigger": "click",
+                    "workflowId": "waDownloadFile"
                   }
                 ],
                 "children": [
@@ -3103,7 +3162,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waCreateB64Url"
+                    "trigger": "click",
+                    "workflowId": "waCreateB64Url"
                   }
                 ],
                 "children": [
@@ -3124,7 +3184,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEncodeBase64"
+                    "trigger": "click",
+                    "workflowId": "waEncodeBase64"
                   }
                 ],
                 "children": [
@@ -3237,10 +3298,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetScoreHigh"
+                    "trigger": "click",
+                    "workflowId": "waSetScoreHigh"
                   },
                   {
-                    "action": "waComplexBranchLoop"
+                    "trigger": "click",
+                    "workflowId": "waComplexBranchLoop"
                   }
                 ],
                 "children": [
@@ -3261,10 +3324,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetScoreLow"
+                    "trigger": "click",
+                    "workflowId": "waSetScoreLow"
                   },
                   {
-                    "action": "waComplexBranchLoop"
+                    "trigger": "click",
+                    "workflowId": "waComplexBranchLoop"
                   }
                 ],
                 "children": [
@@ -3400,10 +3465,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetComplexModeFast"
+                    "trigger": "click",
+                    "workflowId": "waSetComplexModeFast"
                   },
                   {
-                    "action": "waComplexCombined"
+                    "trigger": "click",
+                    "workflowId": "waComplexCombined"
                   }
                 ],
                 "children": [
@@ -3424,10 +3491,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetComplexModeSlow"
+                    "trigger": "click",
+                    "workflowId": "waSetComplexModeSlow"
                   },
                   {
-                    "action": "waComplexCombined"
+                    "trigger": "click",
+                    "workflowId": "waComplexCombined"
                   }
                 ],
                 "children": [
@@ -3448,10 +3517,12 @@
                 },
                 "actions": [
                   {
-                    "action": "waSetComplexModeSkip"
+                    "trigger": "click",
+                    "workflowId": "waSetComplexModeSkip"
                   },
                   {
-                    "action": "waComplexCombined"
+                    "trigger": "click",
+                    "workflowId": "waComplexCombined"
                   }
                 ],
                 "children": [
@@ -3510,7 +3581,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfDecrCount"
+                    "trigger": "click",
+                    "workflowId": "wfDecrCount"
                   }
                 ],
                 "children": [
@@ -3547,7 +3619,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfIncrCount"
+                    "trigger": "click",
+                    "workflowId": "wfIncrCount"
                   }
                 ],
                 "children": [
@@ -3568,7 +3641,8 @@
                 },
                 "actions": [
                   {
-                    "action": "wfResetCount"
+                    "trigger": "click",
+                    "workflowId": "wfResetCount"
                   }
                 ],
                 "children": [
@@ -3618,7 +3692,8 @@
             "id": "6f32095d-4bc7-4b18-8408-14a34645265d",
             "actions": [
               {
-                "action": "waSyncFormSubmit"
+                "trigger": "click",
+                "workflowId": "waSyncFormSubmit"
               }
             ],
             "children": [
@@ -3661,7 +3736,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waSyncInput1Change"
+                            "trigger": "click",
+                            "workflowId": "waSyncInput1Change"
                           }
                         ]
                       },
@@ -3703,7 +3779,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waSyncInput2Change"
+                            "trigger": "click",
+                            "workflowId": "waSyncInput2Change"
                           }
                         ]
                       },
@@ -4140,7 +4217,8 @@
             "id": "nested-outer-fc00-0000-0000-000000000001",
             "actions": [
               {
-                "action": "waNestedOuterSubmit"
+                "trigger": "click",
+                "workflowId": "waNestedOuterSubmit"
               }
             ],
             "props": {
@@ -4276,7 +4354,8 @@
                 "id": "nested-inner-fc00-0000-0000-000000000001",
                 "actions": [
                   {
-                    "action": "waNestedInnerSubmit"
+                    "trigger": "click",
+                    "workflowId": "waNestedInnerSubmit"
                   }
                 ],
                 "props": {
@@ -4455,7 +4534,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waApiChain"
+                    "trigger": "click",
+                    "workflowId": "waApiChain"
                   }
                 ],
                 "children": [
@@ -4720,10 +4800,12 @@
             "id": "val2-form-container",
             "actions": [
               {
-                "action": "waVal2Submit"
+                "trigger": "click",
+                "workflowId": "waVal2Submit"
               },
               {
-                "action": "waVal2ValidationError"
+                "trigger": "click",
+                "workflowId": "waVal2ValidationError"
               }
             ],
             "children": [
@@ -4775,7 +4857,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2UsernameChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2UsernameChange"
                           }
                         ]
                       },
@@ -4833,7 +4916,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2EmailChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2EmailChange"
                           }
                         ]
                       },
@@ -4887,7 +4971,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2PhoneChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2PhoneChange"
                           }
                         ]
                       },
@@ -4945,7 +5030,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2AgeChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2AgeChange"
                           }
                         ]
                       },
@@ -5023,7 +5109,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2PasswordChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2PasswordChange"
                           }
                         ]
                       },
@@ -5081,7 +5168,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2ConfirmChange"
+                            "trigger": "click",
+                            "workflowId": "waVal2ConfirmChange"
                           }
                         ]
                       },
@@ -5150,7 +5238,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2PreFill"
+                            "trigger": "click",
+                            "workflowId": "waVal2PreFill"
                           }
                         ],
                         "children": [
@@ -5171,7 +5260,8 @@
                         },
                         "actions": [
                           {
-                            "action": "waVal2Reset"
+                            "trigger": "click",
+                            "workflowId": "waVal2Reset"
                           }
                         ],
                         "children": [
@@ -5360,7 +5450,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEcaDirect"
+                    "trigger": "click",
+                    "workflowId": "waEcaDirect"
                   }
                 ],
                 "children": [
@@ -5381,7 +5472,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEcaChain"
+                    "trigger": "click",
+                    "workflowId": "waEcaChain"
                   }
                 ],
                 "children": [
@@ -5402,7 +5494,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEcaLoop"
+                    "trigger": "click",
+                    "workflowId": "waEcaLoop"
                   }
                 ],
                 "children": [
@@ -5423,7 +5516,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waEcaNested"
+                    "trigger": "click",
+                    "workflowId": "waEcaNested"
                   }
                 ],
                 "children": [
@@ -5499,7 +5593,8 @@
                     "children": [],
                     "actions": [
                       {
-                        "action": "waEvtChange"
+                        "trigger": "click",
+                        "workflowId": "waEvtChange"
                       }
                     ]
                   },
@@ -5534,7 +5629,8 @@
                     },
                     "actions": [
                       {
-                        "action": "waEvtClick"
+                        "trigger": "click",
+                        "workflowId": "waEvtClick"
                       }
                     ],
                     "children": [
@@ -5582,7 +5678,8 @@
                     "children": [],
                     "actions": [
                       {
-                        "action": "waEvtEnterKey"
+                        "trigger": "click",
+                        "workflowId": "waEvtEnterKey"
                       }
                     ]
                   },
@@ -5627,7 +5724,8 @@
                         "children": [],
                         "actions": [
                           {
-                            "action": "waEvtFocus"
+                            "trigger": "click",
+                            "workflowId": "waEvtFocus"
                           }
                         ]
                       },
@@ -5666,7 +5764,8 @@
                         "children": [],
                         "actions": [
                           {
-                            "action": "waEvtBlur"
+                            "trigger": "click",
+                            "workflowId": "waEvtBlur"
                           }
                         ]
                       },
@@ -5703,7 +5802,8 @@
                     },
                     "actions": [
                       {
-                        "action": "waEvtScroll"
+                        "trigger": "click",
+                        "workflowId": "waEvtScroll"
                       }
                     ],
                     "children": [
@@ -5860,7 +5960,8 @@
                 },
                 "actions": [
                   {
-                    "action": "callGreetFormal"
+                    "trigger": "click",
+                    "workflowId": "callGreetFormal"
                   }
                 ],
                 "children": [
@@ -5881,7 +5982,8 @@
                 },
                 "actions": [
                   {
-                    "action": "callGreetCasual"
+                    "trigger": "click",
+                    "workflowId": "callGreetCasual"
                   }
                 ],
                 "children": [
@@ -6115,7 +6217,8 @@
                 },
                 "actions": [
                   {
-                    "action": "callFetchTodo"
+                    "trigger": "click",
+                    "workflowId": "callFetchTodo"
                   }
                 ],
                 "children": [

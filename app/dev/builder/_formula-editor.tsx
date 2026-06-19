@@ -308,17 +308,17 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const historyIdxRef = useRef(-1);
   const isUndoRedoRef = useRef(false);
   const historyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget: _overlayTarget, inlineWorkflowCanvasTarget, pageWorkflows, globalWorkflows, liveCanvasSteps, globalWorkflowMeta } = useBuilderStore(
+  const { globalFormulas, pageDataSources, customVars, varFolders, workflowTestResults, workflowCanvasTarget: _overlayTarget, inlineWorkflowCanvasTarget, liveCanvasSteps, workflows } = useBuilderStore(
     useShallow(s => ({
       globalFormulas: s.globalFormulas, pageDataSources: s.pageDataSources,
       customVars: s.customVars, varFolders: s.varFolders,
       workflowTestResults: s.workflowTestResults, workflowCanvasTarget: s.workflowCanvasTarget,
       inlineWorkflowCanvasTarget: s.inlineWorkflowCanvasTarget,
-      pageWorkflows: s.pageWorkflows, globalWorkflows: s.globalWorkflows,
       liveCanvasSteps: s.liveCanvasSteps,
-      globalWorkflowMeta: s.globalWorkflowMeta,
+      workflows: s.workflows,
     }))
   );
+  const allWorkflowDefs = workflows as Record<string, import('@/config/types').WorkflowDef>;
   // Inline canvases (e.g. ServerWorkflowsPanel) sync via inlineWorkflowCanvasTarget to avoid
   // triggering the fullscreen overlay. Use whichever is active.
   const workflowCanvasTarget = _overlayTarget ?? inlineWorkflowCanvasTarget;
@@ -495,9 +495,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const hasEventContext = !!(workflowTrigger && Object.keys(EVENT_SHAPES[workflowTrigger] ?? {}).length > 0);
   // Show Workflow tab for global workflows with params too (PARAMETERS section)
   const isGlobalWorkflowWithParams = workflowCanvasTarget?.kind === 'globalWorkflow' &&
-    (globalWorkflowMeta[workflowCanvasTarget.id]?.params?.length ?? 0) > 0;
+    (allWorkflowDefs[workflowCanvasTarget.id]?.params?.length ?? 0) > 0;
   const globalWorkflowParams = isGlobalWorkflowWithParams && workflowCanvasTarget?.kind === 'globalWorkflow'
-    ? (globalWorkflowMeta[workflowCanvasTarget.id]?.params ?? [])
+    ? (allWorkflowDefs[workflowCanvasTarget.id]?.params ?? [])
     : [];
   // formulaParams passed from FormulaSlideContent when editing a global formula body
   const hasFormulaParams = (formulaParams?.length ?? 0) > 0;
@@ -599,9 +599,9 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
 
     if (!rawSteps) {
       if (workflowCanvasTarget.kind === 'pageWorkflow')
-        rawSteps = pageWorkflows[workflowCanvasTarget.name] as unknown[] | undefined;
+        rawSteps = (allWorkflowDefs[workflowCanvasTarget.name]?.steps ?? allWorkflowDefs[workflowCanvasTarget.id]?.steps) as unknown[] | undefined;
       else if (workflowCanvasTarget.kind === 'globalWorkflow')
-        rawSteps = globalWorkflows[workflowCanvasTarget.id] as unknown[] | undefined;
+        rawSteps = allWorkflowDefs[workflowCanvasTarget.id]?.steps as unknown[] | undefined;
       else if (workflowCanvasTarget.kind === 'element') {
         const node = pageNodes.find(n => n.id === workflowCanvasTarget.nodeId);
         const actions = (node?.actions as Record<string, unknown> | undefined);
@@ -624,7 +624,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     };
     traverse(rawSteps);
     return map;
-  }, [workflowCanvasTarget, liveCanvasSteps, pageWorkflows, globalWorkflows, pageNodes]);
+  }, [workflowCanvasTarget, liveCanvasSteps, allWorkflowDefs, pageNodes]);
 
   const stepNameMap = useMemo(() => {
     // Build the display label for every known step:
@@ -906,7 +906,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
     // Build parameters map from global workflow test values when editing a global workflow
     const parametersCtx: Record<string, unknown> = {};
     if (workflowCanvasTarget?.kind === 'globalWorkflow') {
-      const wfParams = globalWorkflowMeta[workflowCanvasTarget.id]?.params ?? [];
+      const wfParams = allWorkflowDefs[workflowCanvasTarget.id]?.params ?? [];
       for (const p of wfParams) {
         parametersCtx[p.name] = p.testValue ?? undefined;
       }
@@ -968,7 +968,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       theme,
       env: envVarsMap,
     };
-  }, [vsData, zustandData, selectedIds, selectedMapIndex, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, globalWorkflowMeta, envVarsMap]);
+  }, [vsData, zustandData, selectedIds, selectedMapIndex, pageNodes, currentWorkflowTestResults, editingSharedComponentId, workflowCanvasTarget, allWorkflowDefs, envVarsMap]);
 
   // When a workflowTrigger is set, inject the trigger's event shape as preview context
   const contextWithEvent = useMemo(() => {

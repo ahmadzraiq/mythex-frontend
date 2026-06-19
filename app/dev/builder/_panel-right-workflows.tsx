@@ -359,12 +359,14 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
           const trigger = workflows[uuid]?.trigger ?? 'click';
           return { uuid, trigger, idx };
         }
-        // Inline action format: { trigger: string, steps: [{ type: "executeWorkflow", config: { workflowId } }] }
+        // Compact format: { trigger, workflowId }
+        if (typeof a.trigger === 'string' && typeof a.workflowId === 'string') {
+          return { uuid: a.workflowId as string, trigger: a.trigger, idx };
+        }
+        // Legacy steps format: { trigger, steps: [{ type: 'executeWorkflow', config: { workflowId } }] }
         if (typeof a.trigger === 'string' && Array.isArray(a.steps)) {
           const steps = a.steps as Array<{ type?: string; config?: Record<string, unknown> }>;
-          const execStep = steps.find(
-            s => s.type === 'executeWorkflow' && typeof s.config?.workflowId === 'string'
-          );
+          const execStep = steps.find(s => s.type === 'executeWorkflow' && typeof s.config?.workflowId === 'string');
           const wfId = execStep?.config?.workflowId as string | undefined;
           if (!wfId) return null;
           return { uuid: wfId, trigger: a.trigger, idx };
@@ -418,7 +420,7 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
       const updated = current.filter((_: unknown, i: number) => i !== idx);
       commitActions(updated.length > 0 ? updated : undefined);
     } else {
-      current[idx] = { action: newUuid };
+      current[idx] = { trigger: 'click', workflowId: newUuid };
       commitActions(current);
     }
   }
@@ -440,15 +442,17 @@ export function ElementWorkflowsTab({ node }: { node: SDUINode | null }) {
           id: editingSharedComponentId,
           workflows: { ...(scModel.workflows ?? {}), [wfId]: newWf },
         });
-        commitActions([...current, { action: wfId }]);
+        commitActions([...current, { trigger: 'execution', workflowId: wfId }]);
         openWorkflowCanvas({ kind: 'componentWorkflow', modelId: editingSharedComponentId, workflowId: wfId });
         return;
       }
     }
 
-    // Outside SC edit mode: create a page-level workflow.
-    setWorkflow(wfId, { id: wfId, name: 'New Workflow', trigger: 'click', steps: [] });
-    commitActions([...current, { action: wfId }]);
+    // Outside SC edit mode: create a page-scoped node workflow.
+    // pageScope marks it as node-level so it is hidden from the global Logic tab list.
+    const pageId = useBuilderStore.getState().focusedPageId;
+    setWorkflow(wfId, { id: wfId, name: 'New Workflow', trigger: 'click', steps: [], pageScope: pageId });
+    commitActions([...current, { trigger: 'click', workflowId: wfId }]);
     openWorkflowCanvas({ kind: 'pageWorkflow', name: wfId, nodeId });
   }
 

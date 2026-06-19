@@ -734,7 +734,7 @@ function emitNodeInner(
     // so native form submission (page reload) never fires. When there IS a submit action, the
     // binding handler already includes preventDefault (see bindings.ts).
     // Note: allWorkflowMeta is defined below, so we build our own lookup from ctx.store here.
-    const _wfMeta = { ...(ctx.store.pageWorkflowMeta ?? {}), ...(ctx.store.globalWorkflowMeta ?? {}) } as Record<string, { trigger?: string }>;
+    const _wfMeta = (ctx.store.workflows ?? {}) as Record<string, { trigger?: string }>;
     const hasSubmitAction = Array.isArray(node.actions)
       ? (node.actions as Array<{trigger?: string; action?: string}>).some(a => {
           const trigger = a.trigger ?? _wfMeta[a.action ?? '']?.trigger;
@@ -814,10 +814,7 @@ function emitNodeInner(
   }
 
   // Action props
-  const allWorkflowMeta = {
-    ...(ctx.store.pageWorkflowMeta ?? {}),
-    ...(ctx.store.globalWorkflowMeta ?? {}),
-  };
+  const allWorkflowMeta = ctx.store.workflows ?? {};
   const actionProps = buildActionProps(
     node.actions as Record<string, unknown> | unknown[],
     ctx.symbols,

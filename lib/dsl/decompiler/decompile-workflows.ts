@@ -126,18 +126,18 @@ function toSafeFilename(name: string): string {
  * Returns an empty object if there are no exportable workflows.
  */
 export function decompileWorkflows(
-  globalWorkflowMeta: Record<string, WorkflowMeta>,
-  globalWorkflows: Record<string, unknown[]>,
+  wfMeta: Record<string, WorkflowMeta>,
+  wfSteps: Record<string, unknown[]>,
   ctx: ResolveContext,
 ): Record<string, string> {
   const files: Record<string, string> = {};
 
-  const exportable = Object.entries(globalWorkflowMeta).filter(
+  const exportable = Object.entries(wfMeta).filter(
     ([, meta]) => !meta.isSystem && !meta.isTrigger && !meta.isAppTrigger,
   );
 
   for (const [id, meta] of exportable) {
-    const steps    = (globalWorkflows[id] ?? []) as StepRecord[];
+    const steps    = (wfSteps[id] ?? []) as StepRecord[];
     const filename = toSafeFilename(meta.name ?? id);
     const filePath = `src/workflows/${filename}.ts`;
     files[filePath] = serializeWorkflowFile(meta, steps, ctx);

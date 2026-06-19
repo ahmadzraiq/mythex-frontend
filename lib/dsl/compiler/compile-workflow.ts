@@ -26,6 +26,7 @@ import {
   saveDslRegistry,
   type VfsRegistry,
 } from './resolve-vfs'
+import type { WorkflowParam } from '@/config/types'
 
 export interface WorkflowStep {
   id: string
@@ -41,9 +42,25 @@ export interface WorkflowStep {
 interface WorkflowConfig {
   name: string
   trigger: string
-  params?: Record<string, { type: string; defaultValue?: unknown }>
+  params?: WorkflowParam[]
   steps: WorkflowStep[]
   _src?: string
+}
+
+// ─── Helper: extract WorkflowParam[] from a function parameter list ──────────
+
+function extractWorkflowParams(parameters: ts.NodeArray<ts.ParameterDeclaration>): WorkflowParam[] {
+  const params: WorkflowParam[] = []
+  parameters.forEach((p, i) => {
+    if (!ts.isIdentifier(p.name)) return
+    const tsType = p.type ? p.type.getText().trim() : 'string'
+    const wfType = tsType === 'number' ? 'Number'
+      : tsType === 'boolean' ? 'Boolean'
+      : tsType.startsWith('object') || tsType.startsWith('Record') ? 'Object'
+      : 'Text'
+    params.push({ id: `param-${i}`, name: p.name.text, type: wfType as WorkflowParam['type'] })
+  })
+  return params
 }
 
 // ─── Helper: expression text from source ─────────────────────────────────────
@@ -421,15 +438,48 @@ function compileBranchStep(
   }
 }
 
+// ─── Collect top-level non-DSL helper functions from a source file ────────────
+
+const DSL_DEFINE_CALLS = new Set(['defineWorkflow', 'defineVar', 'defineFunction', 'definePage', 'defineComponent'])
+
+function collectHelperDefs(sf: ts.SourceFile): Map<string, string> {
+  const helpers = new Map<string, string>()
+  for (const stmt of sf.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name)) continue
+      if (!decl.initializer) continue
+      // Skip DSL define* calls
+      if (ts.isCallExpression(decl.initializer) &&
+          ts.isIdentifier(decl.initializer.expression) &&
+          DSL_DEFINE_CALLS.has(decl.initializer.expression.text)) continue
+      // Collect arrow functions and regular function expressions
+      if (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) {
+        helpers.set(decl.name.text, stmt.getText().trim())
+      }
+    }
+  }
+  return helpers
+}
+
 // ─── Compile a block of statements to steps ───────────────────────────────────
 
-function compileBlockToSteps(node: ts.Node, pathToId: Map<string, string>, paramMap?: Map<string, string>): WorkflowStep[] {
+function compileBlockToSteps(node: ts.Node, pathToId: Map<string, string>, paramMap?: Map<string, string>, helperDefs?: Map<string, string>): WorkflowStep[] {
   const stmts: ts.Statement[] = []
 
   if (ts.isBlock(node)) {
     for (const stmt of node.statements) stmts.push(stmt)
   } else if (ts.isStatement(node)) {
     stmts.push(node as ts.Statement)
+  }
+
+  function prependHelpers(code: string): string {
+    if (!helperDefs) return code
+    const preamble: string[] = []
+    for (const [helperName, helperText] of helperDefs) {
+      if (code.includes(helperName)) preamble.push(helperText)
+    }
+    return preamble.length > 0 ? `${preamble.join('\n')}\n${code}` : code
   }
 
   // If this block declares any local variables (const/let/var), compile the
@@ -442,6 +492,7 @@ function compileBlockToSteps(node: ts.Node, pathToId: Map<string, string>, param
     code = resolveExprRefs(code, pathToId)
     code = resolveVarIdents(code, pathToId)
     if (paramMap) code = applyParamMap(code, paramMap)
+    code = prependHelpers(code)
     return [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
   }
 
@@ -455,6 +506,7 @@ function compileBlockToSteps(node: ts.Node, pathToId: Map<string, string>, param
       code = resolveExprRefs(code, pathToId)
       code = resolveVarIdents(code, pathToId)
       if (paramMap) code = applyParamMap(code, paramMap)
+      code = prependHelpers(code)
       steps.push({
         id: crypto.randomUUID(),
         type: 'runJavaScript',
@@ -537,6 +589,7 @@ export function compileWorkflowToJson(
   uuidSeed = 'dsl',
 ): CompiledWorkflow | null {
   const sf = ts.createSourceFile('dsl-workflow.tsx', sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const helperDefs = collectHelperDefs(sf)
   let result: CompiledWorkflow | null = null
 
   function visitNode(node: ts.Node) {
@@ -602,13 +655,20 @@ export function compileWorkflowToJson(
       wfFn.parameters.forEach((p, i) => {
         if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
       })
+      const params = extractWorkflowParams(wfFn.parameters)
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined)
+        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
       } else if (wfFn.body) {
         let code = resolveExprRefs(nodeText(wfFn.body), pathToId)
         code = resolveVarIdents(code, pathToId)
         if (paramMap.size > 0) code = applyParamMap(code, paramMap)
+        // Prepend any referenced top-level helper functions
+        if (helperDefs) {
+          for (const [helperName, helperText] of helperDefs) {
+            if (code.includes(helperName)) code = `${helperText}\n${code}`
+          }
+        }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
       result = {
@@ -617,7 +677,7 @@ export function compileWorkflowToJson(
         wfPath: wfPath || wfName,
         config: {
           id: uuid,
-          meta: { name: wfName, trigger: wfOptions.trigger ?? 'click' },
+          meta: { name: wfName, trigger: wfOptions.trigger ?? 'click', ...(params.length > 0 ? { params } : {}) },
           steps,
         },
       }
@@ -642,6 +702,7 @@ export function compileAllWorkflowsToJson(
   uuidSeed = 'dsl',
 ): CompiledWorkflow[] {
   const sf = ts.createSourceFile('dsl-workflow.tsx', sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const helperDefs = collectHelperDefs(sf)
   const results: CompiledWorkflow[] = []
 
   function visitNode(node: ts.Node) {
@@ -706,13 +767,19 @@ export function compileAllWorkflowsToJson(
       wfFn.parameters.forEach((p, i) => {
         if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
       })
+      const params = extractWorkflowParams(wfFn.parameters)
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined)
+        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
       } else if (wfFn.body) {
         let code = resolveExprRefs(nodeText(wfFn.body), pathToId)
         code = resolveVarIdents(code, pathToId)
         if (paramMap.size > 0) code = applyParamMap(code, paramMap)
+        if (helperDefs) {
+          for (const [helperName, helperText] of helperDefs) {
+            if (code.includes(helperName)) code = `${helperText}\n${code}`
+          }
+        }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
       results.push({
@@ -721,7 +788,7 @@ export function compileAllWorkflowsToJson(
         wfPath: wfPath || wfName,
         config: {
           id: uuid,
-          meta: { name: wfName, trigger: wfOptions.trigger ?? 'click' },
+          meta: { name: wfName, trigger: wfOptions.trigger ?? 'click', ...(params.length > 0 ? { params } : {}) },
           steps,
         },
       })
@@ -743,6 +810,7 @@ export function compileWorkflowFile(
 ): void {
   const source = fs.readFileSync(srcPath, 'utf-8')
   const sf = ts.createSourceFile(srcPath, source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const helperDefs = collectHelperDefs(sf)
 
   const configDir = path.join(process.cwd(), 'config')
   const actionsDir = path.join(configDir, 'actions')
@@ -817,19 +885,33 @@ export function compileWorkflowFile(
     if (wfName && wfFn) {
       const wfUuid = getOrCreateUuid('workflows', wfName, vfsReg, dslReg)
 
+      // Build param map for substitution in step code
+      const paramMap = new Map<string, string>()
+      wfFn.parameters.forEach((p, i) => {
+        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
+      })
+      const params = extractWorkflowParams(wfFn.parameters)
+
       // Compile function body to steps
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, vfsReg.pathToId)
+        steps = compileBlockToSteps(wfFn.body, vfsReg.pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
       } else if (wfFn.body) {
         // Concise arrow function body → wrap in runJavaScript
-        const code = resolveVarIdents(resolveExprRefs(nodeText(wfFn.body), vfsReg.pathToId), vfsReg.pathToId)
+        let code = resolveVarIdents(resolveExprRefs(nodeText(wfFn.body), vfsReg.pathToId), vfsReg.pathToId)
+        if (paramMap.size > 0) code = applyParamMap(code, paramMap)
+        if (helperDefs.size > 0) {
+          for (const [helperName, helperText] of helperDefs) {
+            if (code.includes(helperName)) code = `${helperText}\n${code}`
+          }
+        }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
 
       const wfConfig: WorkflowConfig = {
         name: wfName,
         trigger: wfOptions.trigger ?? 'click',
+        ...(params.length > 0 ? { params } : {}),
         steps,
         _src: relSrc,
       }

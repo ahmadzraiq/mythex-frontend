@@ -74,6 +74,7 @@ export const SHORTHAND_FORMULA_CSS_MAP: Record<string, { cssKey: string; wrapExp
   cursor:       { cssKey: 'cursor' },
   position:     { cssKey: 'position' },
   display:      { cssKey: 'display' },
+  flex1:        { cssKey: 'flex',                      wrapExpr: e => `(${e}) ? 1 : 0` },
   direction:    { cssKey: 'flexDirection' },
   items:        { cssKey: 'alignItems' },
   justify:      { cssKey: 'justifyContent' },

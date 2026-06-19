@@ -25,7 +25,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-nav-products"
+                    "trigger": "click",
+                    "workflowId": "admin-nav-products"
                   }
                 ],
                 "children": [
@@ -67,7 +68,8 @@
                 },
                 "actions": [
                   {
-                    "action": "ad-delete-product-btn"
+                    "trigger": "click",
+                    "workflowId": "ad-delete-product-btn"
                   }
                 ],
                 "children": [
@@ -94,7 +96,8 @@
                 },
                 "actions": [
                   {
-                    "action": "ad-reindex-btn"
+                    "trigger": "click",
+                    "workflowId": "ad-reindex-btn"
                   }
                 ],
                 "children": [
@@ -250,7 +253,8 @@
                     },
                     "actions": [
                       {
-                        "action": "ad-update-product-btn"
+                        "trigger": "click",
+                        "workflowId": "ad-update-product-btn"
                       }
                     ],
                     "children": [

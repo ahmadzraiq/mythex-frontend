@@ -67,17 +67,11 @@ async function resetBuilder(page: Page) {
     (store._setPageNodes as (n: unknown[]) => void)([]);
     if (typeof store.select === 'function') (store.select as (id: string | null) => void)(null);
     if (typeof store.setZoom === 'function') (store.setZoom as (z: number) => void)(1);
-    // Clear workflows and globals to avoid cross-test pollution
-    if (typeof store.setGlobalWorkflow === 'function') {
-      const gw = (store.globalWorkflows as Record<string, unknown>) ?? {};
-      for (const k of Object.keys(gw)) {
-        (store.removeGlobalWorkflow as (id: string) => void)(k);
-      }
-    }
-    if (typeof store.setPageWorkflow === 'function') {
-      const pw = (store.pageWorkflows as Record<string, unknown>) ?? {};
-      for (const k of Object.keys(pw)) {
-        (store.removePageWorkflow as (id: string) => void)(k);
+    // Clear workflows to avoid cross-test pollution
+    if (typeof store.removeWorkflow === 'function') {
+      const wfs = (store.workflows as Record<string, unknown>) ?? {};
+      for (const k of Object.keys(wfs)) {
+        (store.removeWorkflow as (id: string) => void)(k);
       }
     }
   });
@@ -118,12 +112,11 @@ async function openCanvasViaStore(page: Page, kind: 'globalWorkflow' | 'pageWork
     if (!store || typeof store.openWorkflowCanvas !== 'function') return;
     if (kind === 'globalWorkflow') {
       const id = opts.id ?? `test-wf-${Date.now()}`;
-      (store.setGlobalWorkflow as (id: string, steps: unknown[]) => void)(id, []);
-      (store.setGlobalWorkflowMeta as (id: string, meta: unknown) => void)(id, { id, name: opts.name ?? 'Test Workflow' });
+      (store.setWorkflow as (id: string, wf: unknown) => void)(id, { id, name: opts.name ?? 'Test Workflow', steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'globalWorkflow', id });
     } else if (kind === 'pageWorkflow') {
       const name = opts.name ?? 'Test Page Workflow';
-      (store.setPageWorkflow as (n: string, steps: unknown[]) => void)(name, []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)(name, { id: name, steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'pageWorkflow', name });
     } else if (kind === 'element') {
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'element', nodeId: opts.nodeId ?? 'test-node', event: opts.event ?? 'click' });
@@ -318,8 +311,8 @@ test.describe('Logic tab — Workflows section', () => {
     await sharedPage.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (n: string, s: unknown[]) => void)('alpha workflow', []);
-      (store.setPageWorkflow as (n: string, s: unknown[]) => void)('beta workflow', []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)('alpha workflow', { id: 'alpha workflow', name: 'alpha workflow', steps: [] });
+      (store.setWorkflow as (id: string, wf: unknown) => void)('beta workflow', { id: 'beta workflow', name: 'beta workflow', steps: [] });
     });
     await sharedPage.waitForTimeout(200);
     const searchInput = sharedPage.getByTestId('workflow-search');
@@ -334,7 +327,7 @@ test.describe('Logic tab — Workflows section', () => {
     await sharedPage.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (n: string, s: unknown[]) => void)('my test workflow', []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)('my test workflow', { id: 'my test workflow', name: 'my test workflow', steps: [] });
     });
     await sharedPage.waitForTimeout(200);
     await sharedPage.getByTestId('workflow-row-my test workflow').click();
@@ -1384,8 +1377,7 @@ test.describe('WorkflowCanvas — panel ⋮ menu', () => {
     await sharedPage.evaluate((id) => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (n: string, s: unknown[]) => void)(id, []);
-      (store.setPageWorkflowMeta as (n: string, m: unknown) => void)(id, { id, name: 'To Delete' });
+      (store.setWorkflow as (id: string, wf: unknown) => void)(id, { id, name: 'To Delete', steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'pageWorkflow', name: id });
     }, wfId);
     await sharedPage.waitForSelector('[data-testid="workflow-canvas"]', { timeout: 5_000 });
@@ -1403,8 +1395,8 @@ test.describe('WorkflowCanvas — panel ⋮ menu', () => {
     // Workflow should no longer exist in store
     const exists = await sharedPage.evaluate((id) => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-      const pw = store?.pageWorkflows as Record<string, unknown> | undefined;
-      return pw ? id in pw : false;
+      const wfs = store?.workflows as Record<string, unknown> | undefined;
+      return wfs ? id in wfs : false;
     }, wfId);
     expect(exists).toBe(false);
   });
@@ -1452,8 +1444,7 @@ async function openCanvasForNode(page: Page, nodeId: string) {
     const store = (window as unknown as Record<string, BuilderStore>).__builderStore?.getState();
     if (!store) return;
     const uuid = 'test-wf-' + Date.now();
-    (store.setPageWorkflow as (n: string, s: unknown[]) => void)(uuid, []);
-    (store.setPageWorkflowMeta as (n: string, m: unknown) => void)(uuid, { id: uuid, name: 'Test WF', trigger: 'click' });
+    (store.setWorkflow as (id: string, wf: unknown) => void)(uuid, { id: uuid, name: 'Test WF', trigger: 'click', steps: [] });
     (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'pageWorkflow', name: uuid, nodeId: nId });
   }, nodeId);
   await page.waitForSelector('[data-testid="workflow-canvas"]', { timeout: 5_000 });

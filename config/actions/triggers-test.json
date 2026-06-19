@@ -10,12 +10,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000001",
-          "value": { "formula": "Number(variables['tr000000-0000-0000-0000-000000000001']) + 1" }
+          "value": {
+            "formula": "Number(variables['tr000000-0000-0000-0000-000000000001']) + 1"
+          }
         }
       }
     ]
   },
-
   "trOnAppLoad": {
     "name": "Triggers Test — App Load",
     "trigger": "appLoad",
@@ -27,12 +28,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000002",
-          "value": { "formula": "Number(variables['tr000000-0000-0000-0000-000000000002']) + 1" }
+          "value": {
+            "formula": "Number(variables['tr000000-0000-0000-0000-000000000002']) + 1"
+          }
         }
       }
     ]
   },
-
   "trOnPageLoadBefore": {
     "name": "Triggers Test — Page Load Before",
     "trigger": "pageLoadBefore",
@@ -44,12 +46,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000003",
-          "value": { "formula": "Number(variables['tr000000-0000-0000-0000-000000000003']) + 1" }
+          "value": {
+            "formula": "Number(variables['tr000000-0000-0000-0000-000000000003']) + 1"
+          }
         }
       }
     ]
   },
-
   "trOnPageLoad": {
     "name": "Triggers Test — Page Load",
     "trigger": "pageLoad",
@@ -61,12 +64,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000004",
-          "value": { "formula": "Number(variables['tr000000-0000-0000-0000-000000000004']) + 1" }
+          "value": {
+            "formula": "Number(variables['tr000000-0000-0000-0000-000000000004']) + 1"
+          }
         }
       }
     ]
   },
-
   "trOnPageUnload": {
     "name": "Triggers Test — Page Unload",
     "trigger": "pageUnload",
@@ -78,12 +82,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000005",
-          "value": { "formula": "Number(variables['tr000000-0000-0000-0000-000000000005']) + 1" }
+          "value": {
+            "formula": "Number(variables['tr000000-0000-0000-0000-000000000005']) + 1"
+          }
         }
       }
     ]
   },
-
   "trOnScroll": {
     "name": "Triggers Test — Page Scroll",
     "trigger": "scroll",
@@ -95,12 +100,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000006",
-          "value": { "formula": "toText(floor(event?.scrollY ?? 0)) + 'px'" }
+          "value": {
+            "formula": "toText(floor(event?.scrollY ?? 0)) + 'px'"
+          }
         }
       }
     ]
   },
-
   "trOnResize": {
     "name": "Triggers Test — Page Resize",
     "trigger": "resize",
@@ -112,12 +118,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000007",
-          "value": { "formula": "toText(event?.width ?? 0) + 'px'" }
+          "value": {
+            "formula": "toText(event?.width ?? 0) + 'px'"
+          }
         }
       }
     ]
   },
-
   "trOnKeydown": {
     "name": "Triggers Test — Keydown",
     "trigger": "keydown",
@@ -129,12 +136,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000008",
-          "value": { "formula": "toText(event?.key ?? '\u2014')" }
+          "value": {
+            "formula": "toText(event?.key ?? '—')"
+          }
         }
       }
     ]
   },
-
   "trOnKeyup": {
     "name": "Triggers Test — Keyup",
     "trigger": "keyup",
@@ -146,12 +154,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000009",
-          "value": { "formula": "toText(event?.key ?? '\u2014')" }
+          "value": {
+            "formula": "toText(event?.key ?? '—')"
+          }
         }
       }
     ]
   },
-
   "trTriggerBadFetch": {
     "name": "Triggers Test — Trigger Bad Fetch",
     "trigger": "click",
@@ -165,7 +174,6 @@
       }
     ]
   },
-
   "trOnCollectionFetchError": {
     "name": "Triggers Test — Collection Fetch Error",
     "trigger": "collectionFetchError",
@@ -177,7 +185,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "tr000000-0000-0000-0000-000000000010",
-          "value": { "formula": "toText(event?.error ?? event?.['error'] ?? '\u2014')" }
+          "value": {
+            "formula": "toText(event?.error ?? event?.['error'] ?? '—')"
+          }
         }
       }
     ]

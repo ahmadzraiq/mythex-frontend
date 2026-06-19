@@ -69,7 +69,26 @@ function actionsToProps(
     if (!raw || typeof raw !== 'object') continue;
     const a = raw as Record<string, unknown>;
 
-    // New inline format: { trigger: 'click', steps: [{ type: 'executeWorkflow', config: { workflowId, params? } }] }
+    // Compact format: { trigger, workflowId }
+    if (typeof a.trigger === 'string' && typeof a.workflowId === 'string') {
+      const triggerProp = a.trigger === 'click' ? 'onClick'
+        : a.trigger === 'change' ? 'onChange'
+        : a.trigger === 'submit' ? 'onSubmit'
+        : `on${(a.trigger as string).charAt(0).toUpperCase()}${(a.trigger as string).slice(1)}`;
+      const wfName = ctx.uuidToWorkflow.get(a.workflowId as string) ?? (a.workflowId as string);
+      const params = a.params as Record<string, unknown> | undefined;
+      const hasParams = params && Object.keys(params).length > 0;
+      if (hasParams) {
+        const argsStr = Object.values(params!).map(v =>
+          typeof v === 'string' ? `'${v}'` : JSON.stringify(v)
+        ).join(', ');
+        result.push({ prop: triggerProp, expr: `{() => ${wfName}(${argsStr})}` });
+      } else {
+        result.push({ prop: triggerProp, expr: `{${wfName}}` });
+      }
+      continue;
+    }
+        // Legacy steps format: { trigger: 'click', steps: [{ type: 'executeWorkflow', config: { workflowId, params? } }] }
     if (typeof a.trigger === 'string' && Array.isArray(a.steps)) {
       const triggerProp = a.trigger === 'click' ? 'onClick'
         : a.trigger === 'change' ? 'onChange'

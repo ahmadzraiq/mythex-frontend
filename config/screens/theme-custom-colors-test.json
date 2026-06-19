@@ -30,7 +30,7 @@
             "props": {
               "className": "text-[14px] text-gray-500 dark:text-gray-400"
             },
-            "text": "When this page is the focused page, the builder auto-seeds two sample custom colors — \"brand\" (#7c3aed light / #a78bfa dark) and \"brand-2\" (#06b6d4 light / #22d3ee dark) — into Theme \u203a Colors \u203a Ungrouped. The cards below resolve via CSS variables and the theme.colors.* formula path. Edit or delete them from the Theme tab to see the cards update live; cards fall back to neutral gray when a color is missing."
+            "text": "When this page is the focused page, the builder auto-seeds two sample custom colors — \"brand\" (#7c3aed light / #a78bfa dark) and \"brand-2\" (#06b6d4 light / #22d3ee dark) — into Theme › Colors › Ungrouped. The cards below resolve via CSS variables and the theme.colors.* formula path. Edit or delete them from the Theme tab to see the cards update live; cards fall back to neutral gray when a color is missing."
           }
         ]
       },

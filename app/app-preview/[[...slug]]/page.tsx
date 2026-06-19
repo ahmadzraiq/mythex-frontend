@@ -54,12 +54,6 @@ interface BuilderPage {
   accessCondition?: string;
 }
 
-interface WorkflowMeta {
-  trigger?: string;
-  name?: string;
-  [key: string]: unknown;
-}
-
 interface ProjectDataSource {
   id: string;
   type: 'rest' | 'graphql';
@@ -78,10 +72,8 @@ interface ProjectDataSource {
 
 interface ProjectConfig {
   pages?: BuilderPage[];
-  pageWorkflows?: Record<string, unknown[]>;
-  pageWorkflowMeta?: Record<string, WorkflowMeta>;
-  globalWorkflows?: Record<string, unknown[]>;
-  globalWorkflowMeta?: Record<string, WorkflowMeta>;
+  /** Unified workflows dict (keyed by UUID) */
+  workflows?: Record<string, { trigger?: string; steps?: unknown[]; id?: string }>;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
@@ -300,22 +292,9 @@ function buildDataSources(
 
 function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-
-  const addWorkflows = (
-    workflows: Record<string, unknown[]> | undefined,
-    meta: Record<string, WorkflowMeta> | undefined,
-  ) => {
-    if (!workflows) return;
-    for (const [uuid, steps] of Object.entries(workflows)) {
-      result[uuid] = {
-        trigger: meta?.[uuid]?.trigger ?? 'click',
-        steps,
-      };
-    }
-  };
-
-  addWorkflows(config.pageWorkflows, config.pageWorkflowMeta);
-  addWorkflows(config.globalWorkflows, config.globalWorkflowMeta);
+  for (const [uuid, wf] of Object.entries(config.workflows ?? {})) {
+    result[uuid] = { trigger: wf.trigger ?? 'click', steps: wf.steps ?? [] };
+  }
   return result;
 }
 

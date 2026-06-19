@@ -55,7 +55,8 @@
                     },
                     "actions": [
                       {
-                        "action": "toggleTestModal"
+                        "trigger": "click",
+                        "workflowId": "toggleTestModal"
                       }
                     ],
                     "children": [
@@ -75,7 +76,8 @@
                     },
                     "actions": [
                       {
-                        "action": "toggleTestBottomSheet"
+                        "trigger": "click",
+                        "workflowId": "toggleTestBottomSheet"
                       }
                     ],
                     "children": [
@@ -95,7 +97,8 @@
                     },
                     "actions": [
                       {
-                        "action": "toggleTestDrawer"
+                        "trigger": "click",
+                        "workflowId": "toggleTestDrawer"
                       }
                     ],
                     "children": [
@@ -115,7 +118,8 @@
                     },
                     "actions": [
                       {
-                        "action": "toggleTestToast"
+                        "trigger": "click",
+                        "workflowId": "toggleTestToast"
                       }
                     ],
                     "children": [
@@ -165,7 +169,8 @@
                     },
                     "actions": [
                       {
-                        "action": "addDynamicModal"
+                        "trigger": "click",
+                        "workflowId": "addDynamicModal"
                       }
                     ],
                     "children": [
@@ -185,7 +190,8 @@
                     },
                     "actions": [
                       {
-                        "action": "addDynamicBottomSheet"
+                        "trigger": "click",
+                        "workflowId": "addDynamicBottomSheet"
                       }
                     ],
                     "children": [
@@ -205,7 +211,8 @@
                     },
                     "actions": [
                       {
-                        "action": "addDynamicDrawer"
+                        "trigger": "click",
+                        "workflowId": "addDynamicDrawer"
                       }
                     ],
                     "children": [
@@ -225,7 +232,8 @@
                     },
                     "actions": [
                       {
-                        "action": "addDynamicToast"
+                        "trigger": "click",
+                        "workflowId": "addDynamicToast"
                       }
                     ],
                     "children": [
@@ -439,7 +447,8 @@
             },
             "actions": [
               {
-                "action": "hideTestModal"
+                "trigger": "click",
+                "workflowId": "hideTestModal"
               }
             ]
           },
@@ -484,7 +493,8 @@
                     },
                     "actions": [
                       {
-                        "action": "hideTestModal"
+                        "trigger": "click",
+                        "workflowId": "hideTestModal"
                       }
                     ],
                     "children": [
@@ -520,7 +530,8 @@
                     },
                     "actions": [
                       {
-                        "action": "hideTestModal"
+                        "trigger": "click",
+                        "workflowId": "hideTestModal"
                       }
                     ],
                     "children": [
@@ -553,7 +564,8 @@
             },
             "actions": [
               {
-                "action": "hideTestBottomSheet"
+                "trigger": "click",
+                "workflowId": "hideTestBottomSheet"
               }
             ]
           },
@@ -623,7 +635,8 @@
                     },
                     "actions": [
                       {
-                        "action": "hideTestBottomSheet"
+                        "trigger": "click",
+                        "workflowId": "hideTestBottomSheet"
                       }
                     ],
                     "children": [
@@ -656,7 +669,8 @@
             },
             "actions": [
               {
-                "action": "hideTestDrawer"
+                "trigger": "click",
+                "workflowId": "hideTestDrawer"
               }
             ]
           },
@@ -709,7 +723,8 @@
                     },
                     "actions": [
                       {
-                        "action": "hideTestDrawer"
+                        "trigger": "click",
+                        "workflowId": "hideTestDrawer"
                       }
                     ],
                     "children": [
@@ -802,7 +817,8 @@
             },
             "actions": [
               {
-                "action": "hideTestToast"
+                "trigger": "click",
+                "workflowId": "hideTestToast"
               }
             ],
             "children": [

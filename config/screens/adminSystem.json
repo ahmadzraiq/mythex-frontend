@@ -98,7 +98,8 @@
                 },
                 "actions": [
                   {
-                    "action": "ad-reindex-btn"
+                    "trigger": "click",
+                    "workflowId": "ad-reindex-btn"
                   }
                 ],
                 "children": [

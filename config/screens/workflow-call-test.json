@@ -52,7 +52,8 @@
             },
             "actions": [
               {
-                "action": "runScenario1"
+                "trigger": "click",
+                "workflowId": "runScenario1"
               }
             ],
             "children": [
@@ -102,7 +103,8 @@
             },
             "actions": [
               {
-                "action": "runScenario2"
+                "trigger": "click",
+                "workflowId": "runScenario2"
               }
             ],
             "children": [
@@ -184,7 +186,8 @@
                     },
                     "actions": [
                       {
-                        "action": "runScWorkflowAInternal"
+                        "trigger": "click",
+                        "workflowId": "runScWorkflowAInternal"
                       }
                     ],
                     "children": [
@@ -245,7 +248,8 @@
             },
             "actions": [
               {
-                "action": "runScenario4"
+                "trigger": "click",
+                "workflowId": "runScenario4"
               }
             ],
             "children": [

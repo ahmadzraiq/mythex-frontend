@@ -1271,7 +1271,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waRespDecrement"
+                    "trigger": "click",
+                    "workflowId": "waRespDecrement"
                   }
                 ],
                 "children": [
@@ -1294,7 +1295,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waRespReset"
+                    "trigger": "click",
+                    "workflowId": "waRespReset"
                   }
                 ],
                 "children": [
@@ -1315,7 +1317,8 @@
                 },
                 "actions": [
                   {
-                    "action": "waRespIncrement"
+                    "trigger": "click",
+                    "workflowId": "waRespIncrement"
                   }
                 ],
                 "children": [
@@ -1386,7 +1389,8 @@
             },
             "actions": [
               {
-                "action": "waRespSmartToggle"
+                "trigger": "click",
+                "workflowId": "waRespSmartToggle"
               }
             ],
             "children": [
@@ -2180,7 +2184,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-stext-label",
@@ -2204,8 +2207,12 @@
             },
             "text": "Desktop text",
             "responsive": {
-              "tablet": { "text": "Tablet text" },
-              "mobile": { "text": "Mobile text" }
+              "tablet": {
+                "text": "Tablet text"
+              },
+              "mobile": {
+                "text": "Mobile text"
+              }
             }
           },
           {
@@ -2214,16 +2221,19 @@
             "props": {
               "className": "text-[13px] text-gray-500 dark:text-gray-400"
             },
-            "text": { "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint ?? 'desktop')" },
+            "text": {
+              "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint ?? 'desktop')"
+            },
             "responsive": {
               "mobile": {
-                "text": { "formula": "'Mobile formula: ' + (globalContext?.browser?.breakpoint ?? '?')" }
+                "text": {
+                  "formula": "'Mobile formula: ' + (globalContext?.browser?.breakpoint ?? '?')"
+                }
               }
             }
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-svis-label",
@@ -2247,8 +2257,12 @@
             },
             "text": "Visible on desktop only",
             "responsive": {
-              "tablet": { "condition": false },
-              "mobile": { "condition": false }
+              "tablet": {
+                "condition": false
+              },
+              "mobile": {
+                "condition": false
+              }
             }
           },
           {
@@ -2260,7 +2274,9 @@
             "text": "Visible on mobile only",
             "condition": false,
             "responsive": {
-              "mobile": { "condition": null }
+              "mobile": {
+                "condition": null
+              }
             }
           },
           {
@@ -2272,13 +2288,14 @@
             "text": "Condition via formula (hidden on tablet)",
             "responsive": {
               "tablet": {
-                "condition": { "formula": "false" }
+                "condition": {
+                  "formula": "false"
+                }
               }
             }
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-sdis-label",
@@ -2302,7 +2319,11 @@
               "placeholder": "Disabled on mobile"
             },
             "responsive": {
-              "mobile": { "props": { "disabled": true } }
+              "mobile": {
+                "props": {
+                  "disabled": true
+                }
+              }
             }
           },
           {
@@ -2315,7 +2336,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-srep-label",
@@ -2372,7 +2392,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-sanim-label",
@@ -2395,12 +2414,18 @@
               "className": "w-[160px] h-[80px] bg-[#fed7aa] dark:bg-[#7c2d12] rounded-[8px] flex items-center justify-center"
             },
             "animation": {
-              "enter": { "type": "fade", "duration": 600, "delay": 0 }
+              "enter": {
+                "type": "fade",
+                "duration": 600,
+                "delay": 0
+              }
             },
             "responsive": {
               "mobile": {
                 "animation": {
-                  "enter": { "duration": 200 }
+                  "enter": {
+                    "duration": 200
+                  }
                 }
               }
             },
@@ -2416,7 +2441,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-sact-label",
@@ -2447,12 +2471,22 @@
               "className": "px-[20px] py-[10px] bg-[#16a34a] hover:bg-[#15803d] rounded-[8px] cursor-pointer"
             },
             "actions": [
-              { "type": "log", "payload": { "msg": "desktop action" } }
+              {
+                "type": "log",
+                "payload": {
+                  "msg": "desktop action"
+                }
+              }
             ],
             "responsive": {
               "mobile": {
                 "actions": [
-                  { "type": "log", "payload": { "msg": "mobile override action" } }
+                  {
+                    "type": "log",
+                    "payload": {
+                      "msg": "mobile override action"
+                    }
+                  }
                 ]
               }
             },
@@ -2468,7 +2502,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-sset-label",
@@ -2512,7 +2545,6 @@
           }
         ]
       },
-
       {
         "type": "Text",
         "id": "resp-scss-label",
@@ -2575,7 +2607,13 @@
                   "className": "h-[60px] bg-[#dbeafe] dark:bg-[#1e3a5f] rounded-[6px] flex items-center justify-center"
                 },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[12px] text-blue-800 dark:text-blue-200" }, "text": "Col 1" }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-blue-800 dark:text-blue-200"
+                    },
+                    "text": "Col 1"
+                  }
                 ]
               },
               {
@@ -2585,7 +2623,13 @@
                   "className": "h-[60px] bg-[#dcfce7] dark:bg-[#14532d] rounded-[6px] flex items-center justify-center"
                 },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[12px] text-green-800 dark:text-green-200" }, "text": "Col 2" }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-green-800 dark:text-green-200"
+                    },
+                    "text": "Col 2"
+                  }
                 ]
               },
               {
@@ -2595,7 +2639,13 @@
                   "className": "h-[60px] bg-[#fef9c3] dark:bg-[#422006] rounded-[6px] flex items-center justify-center"
                 },
                 "children": [
-                  { "type": "Text", "props": { "className": "text-[12px] text-yellow-800 dark:text-yellow-200" }, "text": "Col 3" }
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[12px] text-yellow-800 dark:text-yellow-200"
+                    },
+                    "text": "Col 3"
+                  }
                 ]
               }
             ]

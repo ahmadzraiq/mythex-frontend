@@ -159,16 +159,8 @@ export function bindActionsToProps(
     for (const item of actions) {
       if (!item || typeof item !== 'object') continue;
       const actionRef = item as Record<string, unknown>;
-      const workflowName = typeof actionRef.action === 'string' ? actionRef.action : '';
-      const workflowDef = workflowName
-        ? (actionsConfig?.[workflowName] as Record<string, unknown> | undefined)
-        : undefined;
-      // Resolve trigger: inline trigger > named workflow def > default 'click'
-      // New format: action has trigger directly — { trigger: 'click', steps: [...] }
-      // Legacy format: trigger lives in actionsConfig — { action: 'uuid' }
-      const trigger = (typeof actionRef.trigger === 'string' ? actionRef.trigger : null)
-        ?? (typeof workflowDef?.trigger === 'string' ? workflowDef.trigger : null)
-        ?? 'click';
+      // Trigger is always inline on the action object.
+      const trigger = typeof actionRef.trigger === 'string' ? actionRef.trigger : 'click';
       // Capture handlers for this action into a temp object, then merge-chain into result
       const temp: Record<string, (...args: unknown[]) => void> = {};
       bindEventHandler(trigger, item, temp, runAction, actionsConfig, scope, componentType);

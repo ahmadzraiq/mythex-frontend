@@ -55,7 +55,8 @@
                     },
                     "actions": [
                       {
-                        "action": "calcButtonPress"
+                        "trigger": "click",
+                        "workflowId": "calcButtonPress"
                       }
                     ],
                     "children": [

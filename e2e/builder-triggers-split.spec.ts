@@ -38,8 +38,8 @@ type StoreMeta = { isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: stri
 
 async function getPageWorkflowMeta(page: Page): Promise<Record<string, StoreMeta>> {
   return page.evaluate(() => {
-    const s = (window as unknown as { __builderStore: { getState: () => { pageWorkflowMeta: Record<string, unknown> } } }).__builderStore.getState();
-    return (s.pageWorkflowMeta ?? {}) as Record<string, StoreMeta>;
+    const s = (window as unknown as { __builderStore: { getState: () => { workflows: Record<string, unknown> } } }).__builderStore.getState();
+    return (s.workflows ?? {}) as Record<string, StoreMeta>;
   });
 }
 
@@ -165,18 +165,18 @@ test.describe('BTS Group C — Page Triggers in right panel', () => {
     }
 
     const countBefore = await P.evaluate(() => {
-      const s = (window as unknown as { __builderStore: { getState: () => { pageWorkflowMeta: Record<string, StoreMeta> } } }).__builderStore.getState();
+      const s = (window as unknown as { __builderStore: { getState: () => { workflows: Record<string, StoreMeta> } } }).__builderStore.getState();
       type StoreMeta = { isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
-      return Object.values(s.pageWorkflowMeta).filter((m: StoreMeta) => m.isTrigger && !m.isAppTrigger).length;
+      return Object.values(s.workflows ?? {}).filter((m: StoreMeta) => m.isTrigger && !m.isAppTrigger).length;
     });
 
     await addBtn.click();
     await P.waitForTimeout(500);
 
     const countAfter = await P.evaluate(() => {
-      const s = (window as unknown as { __builderStore: { getState: () => { pageWorkflowMeta: Record<string, StoreMeta> } } }).__builderStore.getState();
+      const s = (window as unknown as { __builderStore: { getState: () => { workflows: Record<string, StoreMeta> } } }).__builderStore.getState();
       type StoreMeta = { isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
-      return Object.values(s.pageWorkflowMeta).filter((m: StoreMeta) => m.isTrigger && !m.isAppTrigger).length;
+      return Object.values(s.workflows ?? {}).filter((m: StoreMeta) => m.isTrigger && !m.isAppTrigger).length;
     });
 
     // A new page trigger should have been added

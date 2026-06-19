@@ -47,7 +47,7 @@ async function resetBuilder(page: Page) {
 
     const storeApi = (window as unknown as Record<string, { getState: () => Record<string, unknown>; setState: (partial: Record<string, unknown>) => void }>).__builderStore;
     if (!storeApi) return;
-    storeApi.setState({ pageDataSources: [], customVars: [], pageWorkflows: {}, globalFormulas: {}, selectedIds: [] });
+    storeApi.setState({ pageDataSources: [], customVars: [], workflows: {}, globalFormulas: {}, selectedIds: [] });
     const store = storeApi.getState();
     if (typeof store._setPageNodes === 'function') {
       (store._setPageNodes as (n: unknown[]) => void)([]);
@@ -61,7 +61,7 @@ async function resetBuilder(page: Page) {
     storeApi.setState({
       pageDataSources: [],
       customVars: [],
-      pageWorkflows: {},
+      workflows: {},
       globalFormulas: {},
       appPreviewData: {},
       activePreviewStates: ['normal'],
@@ -578,12 +578,12 @@ test.describe('BPO Group H — Right panel: Design tab Interactions section', ()
     await expect(page.locator('[data-testid="interaction-picker-click"]')).toBeVisible({ timeout: 5000 });
   });
 
-  test('BPO-39 Workflow picker lists all pageWorkflows by name', async () => {
+  test('BPO-39 Workflow picker lists all workflows by name', async () => {
     // Add a workflow first
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (name: string, steps: object[]) => void)('myTestWorkflow', []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)('myTestWorkflow', { id: 'myTestWorkflow', name: 'myTestWorkflow', steps: [] });
     });
 
     await addNodeAndSelect();
@@ -596,7 +596,7 @@ test.describe('BPO Group H — Right panel: Design tab Interactions section', ()
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (name: string, steps: object[]) => void)('clickWorkflow', []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)('clickWorkflow', { id: 'clickWorkflow', name: 'clickWorkflow', steps: [] });
     });
 
     await addNodeAndSelect();
@@ -846,12 +846,12 @@ test.describe('BPO Group M — Page Config slide', () => {
     await expect(page.locator('[data-testid="page-config-mount-workflow"]')).toBeVisible({ timeout: 5000 });
   });
 
-  test('BPO-54 Page Config mount picker lists pageWorkflows', async () => {
+  test('BPO-54 Page Config mount picker lists workflows', async () => {
     // Add a workflow first
     await page.evaluate(() => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
-      (store.setPageWorkflow as (name: string, steps: object[]) => void)('loadDashboard', []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)('loadDashboard', { id: 'loadDashboard', name: 'loadDashboard', steps: [] });
     });
 
     await page.click('[data-testid="page-config-btn"]');

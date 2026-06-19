@@ -2,31 +2,71 @@
   "scrollToFeatures": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "scrollToElement", "config": { "elementId": "section-features", "behavior": "smooth", "block": "start" } }
+      {
+        "id": "s1",
+        "type": "scrollToElement",
+        "config": {
+          "elementId": "section-features",
+          "behavior": "smooth",
+          "block": "start"
+        }
+      }
     ]
   },
   "scrollToParallax": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "scrollToElement", "config": { "elementId": "section-parallax", "behavior": "smooth", "block": "start" } }
+      {
+        "id": "s1",
+        "type": "scrollToElement",
+        "config": {
+          "elementId": "section-parallax",
+          "behavior": "smooth",
+          "block": "start"
+        }
+      }
     ]
   },
   "scrollToGallery": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "scrollToElement", "config": { "elementId": "section-gallery", "behavior": "smooth", "block": "start" } }
+      {
+        "id": "s1",
+        "type": "scrollToElement",
+        "config": {
+          "elementId": "section-gallery",
+          "behavior": "smooth",
+          "block": "start"
+        }
+      }
     ]
   },
   "scrollToStats": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "scrollToElement", "config": { "elementId": "section-stats", "behavior": "smooth", "block": "start" } }
+      {
+        "id": "s1",
+        "type": "scrollToElement",
+        "config": {
+          "elementId": "section-stats",
+          "behavior": "smooth",
+          "block": "start"
+        }
+      }
     ]
   },
   "scrollToCta": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "scrollToElement", "config": { "elementId": "section-cta", "behavior": "smooth", "block": "start" } }
+      {
+        "id": "s1",
+        "type": "scrollToElement",
+        "config": {
+          "elementId": "section-cta",
+          "behavior": "smooth",
+          "block": "start"
+        }
+      }
     ]
   }
 }

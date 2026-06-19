@@ -838,30 +838,10 @@ export interface BuilderStore {
    * instead of always showing them as "Call workflow".
    */
   directActionsMap: Record<string, Record<string, unknown>>;
-  /** @deprecated — always {}, use workflows */
-  pageWorkflows: Record<string, object[]>;
-  /** @deprecated — always {}, use workflows */
-  pageWorkflowMeta: Record<string, WorkflowMeta>;
-  /** @deprecated — unused, kept for type compat */
+  /** Workflow groups: configName → workflowId[] — used by codegen to group files */
   pageWorkflowGroups?: Record<string, string[]>;
-  /** @deprecated — always {}, use workflows */
-  globalWorkflows: Record<string, object[]>;
-  /** @deprecated — always {}, use workflows */
-  globalWorkflowMeta: Record<string, WorkflowMeta>;
   /** Global reusable formulas callable as functions — keyed by formula id */
   globalFormulas: Record<string, GlobalFormulaDef>;
-  /** @deprecated — no-op, use setWorkflow */
-  setPageWorkflow: (name: string, actions: object[]) => void;
-  /** @deprecated — delegates to removeWorkflow */
-  removePageWorkflow: (name: string) => void;
-  /** @deprecated — no-op, use setWorkflow */
-  setPageWorkflowMeta: (name: string, meta: Partial<WorkflowMeta>) => void;
-  /** @deprecated — no-op, use setWorkflow */
-  setGlobalWorkflow: (name: string, actions: object[]) => void;
-  /** @deprecated — delegates to removeWorkflow */
-  removeGlobalWorkflow: (name: string) => void;
-  /** @deprecated — no-op, use setWorkflow */
-  setGlobalWorkflowMeta: (id: string, meta: Partial<WorkflowMeta>) => void;
   /** Legacy — sets a formula by id (keeps name = id for backward compat) */
   setGlobalFormula: (id: string, def: GlobalFormulaDef | null) => void;
   /** Set a full GlobalFormulaDef by id, also syncing the evaluator registry */

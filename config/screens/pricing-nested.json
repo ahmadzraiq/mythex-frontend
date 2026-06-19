@@ -49,7 +49,8 @@
             },
             "actions": [
               {
-                "action": "toggleNestedPricingBilling"
+                "trigger": "click",
+                "workflowId": "toggleNestedPricingBilling"
               }
             ],
             "children": [

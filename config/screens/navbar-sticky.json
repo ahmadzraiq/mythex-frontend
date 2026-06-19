@@ -67,7 +67,8 @@
             },
             "actions": [
               {
-                "action": "navigateToNavbarTypes"
+                "trigger": "click",
+                "workflowId": "navigateToNavbarTypes"
               }
             ],
             "children": [
@@ -519,7 +520,8 @@
                 "text": "← Back to all types",
                 "actions": [
                   {
-                    "action": "navigateToNavbarTypes"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarTypes"
                   }
                 ]
               }

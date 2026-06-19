@@ -1265,9 +1265,9 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                         store.patchNodeField(target.nodeId, 'actions', updated.length > 0 ? updated : undefined);
                       }
                     }
-                    store.removePageWorkflow(target.name);
+                    store.removeWorkflow(target.name);
                   } else if (target.kind === 'globalWorkflow') {
-                    store.removeGlobalWorkflow(target.id);
+                    store.removeWorkflow(target.id);
                   } else if (target.kind === 'componentWorkflow') {
                     const scModel = getLinkedModel(target.modelId);
                     if (scModel?.workflows) {

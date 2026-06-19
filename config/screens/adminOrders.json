@@ -116,7 +116,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-view-order"
+                    "trigger": "click",
+                    "workflowId": "admin-view-order"
                   }
                 ],
                 "children": [
@@ -245,7 +246,8 @@
                 "condition": "(collections['ad000002-0000-0000-0000-000000000002']?.page || 1) > 1",
                 "actions": [
                   {
-                    "action": "admin-orders-page-prev"
+                    "trigger": "click",
+                    "workflowId": "admin-orders-page-prev"
                   }
                 ],
                 "children": [
@@ -273,7 +275,8 @@
                 "condition": "(collections['ad000002-0000-0000-0000-000000000002']?.page || 1) < (collections['ad000002-0000-0000-0000-000000000002']?.totalPages || 1)",
                 "actions": [
                   {
-                    "action": "admin-orders-page-next"
+                    "trigger": "click",
+                    "workflowId": "admin-orders-page-next"
                   }
                 ],
                 "children": [

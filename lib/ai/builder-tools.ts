@@ -963,7 +963,7 @@ const logicTools: BuilderTool[] = [
         scope: {
           type: 'string',
           enum: ['page', 'global', 'component'],
-          description: 'Workflow storage scope. Default "page" (writes to pageWorkflows). "global" writes to project-level workflows. "component" writes to model.workflows[uuid] — requires componentModelId.',
+          description: 'Workflow storage scope. Default "page" (page-scoped, stored in store.workflows with pageScope). "global" writes to project-level workflows. "component" writes to model.workflows[uuid] — requires componentModelId.',
         },
         componentModelId: {
           type: 'string',

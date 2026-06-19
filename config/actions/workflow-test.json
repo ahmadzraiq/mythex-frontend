@@ -476,7 +476,6 @@
       }
     ]
   },
-
   "waOnCreated": {
     "name": "On Created",
     "trigger": "created",
@@ -631,7 +630,6 @@
       }
     ]
   },
-
   "waFormSubmit": {
     "name": "Form Submit",
     "trigger": "submit",
@@ -640,13 +638,17 @@
         "id": "s1",
         "name": "Set form state: submitting",
         "type": "setFormState",
-        "config": { "isSubmitting": true }
+        "config": {
+          "isSubmitting": true
+        }
       },
       {
         "id": "s1b",
         "name": "Wait 800ms (simulated delay)",
         "type": "timeDelay",
-        "config": { "delay": 800 }
+        "config": {
+          "delay": 800
+        }
       },
       {
         "id": "s2",
@@ -672,7 +674,10 @@
         "id": "s4",
         "name": "Set form state: submitted",
         "type": "setFormState",
-        "config": { "isSubmitting": false, "isSubmitted": true }
+        "config": {
+          "isSubmitting": false,
+          "isSubmitted": true
+        }
       }
     ]
   },
@@ -745,7 +750,6 @@
       }
     ]
   },
-
   "waEmailInputChange": {
     "name": "Email Input Change",
     "trigger": "change",
@@ -756,7 +760,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000043",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -771,7 +777,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa000001-0000-0000-0000-000000000044",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -804,7 +812,6 @@
       }
     ]
   },
-
   "waFetchRest": {
     "name": "Fetch REST (GET)",
     "trigger": "click",
@@ -926,7 +933,6 @@
       }
     ]
   },
-
   "waFetchCollection": {
     "name": "Fetch Collection",
     "trigger": "click",
@@ -1066,7 +1072,6 @@
       }
     ]
   },
-
   "waSubWorkflow": {
     "name": "Sub-workflow",
     "trigger": "click",
@@ -1125,7 +1130,6 @@
       }
     ]
   },
-
   "waReturnHigh": {
     "name": "Return Value: High Score",
     "trigger": "click",
@@ -1216,7 +1220,6 @@
       }
     ]
   },
-
   "waLoopControl": {
     "name": "Loop Control (break / continue)",
     "trigger": "click",
@@ -1287,7 +1290,6 @@
       }
     ]
   },
-
   "waPassFlagOn": {
     "name": "Set Pass Flag: ON",
     "trigger": "click",
@@ -1341,7 +1343,6 @@
       }
     ]
   },
-
   "waSetModeA": {
     "name": "Set Mode: A",
     "trigger": "click",
@@ -1456,7 +1457,6 @@
       }
     ]
   },
-
   "waCopyClipboard": {
     "name": "Copy to Clipboard",
     "trigger": "click",
@@ -1592,7 +1592,6 @@
       }
     ]
   },
-
   "waSetScoreHigh": {
     "name": "Set Score: High (75)",
     "trigger": "click",
@@ -1658,7 +1657,11 @@
             "name": "For each item in [A, B, C]",
             "type": "forEach",
             "config": {
-              "list": ["A", "B", "C"]
+              "list": [
+                "A",
+                "B",
+                "C"
+              ]
             },
             "loopBody": [
               {
@@ -1716,7 +1719,6 @@
       }
     ]
   },
-
   "waSetComplexModeFast": {
     "name": "Set Complex Mode: Fast",
     "trigger": "click",
@@ -1954,7 +1956,6 @@
       }
     ]
   },
-
   "waUpdateReplaceAll": {
     "name": "Update Collection: Replace All",
     "trigger": "click",
@@ -1980,7 +1981,6 @@
       }
     ]
   },
-
   "waUpdateInsert": {
     "name": "Update Collection: Insert",
     "trigger": "click",
@@ -2007,7 +2007,6 @@
       }
     ]
   },
-
   "waUpdateItem": {
     "name": "Update Collection: Update Item",
     "trigger": "click",
@@ -2037,7 +2036,6 @@
       }
     ]
   },
-
   "waSyncInput1Change": {
     "name": "Sync: Input 1 Change",
     "trigger": "change",
@@ -2048,7 +2046,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-sync-0000-0000-0000-000000000001",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2063,7 +2063,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-sync-0000-0000-0000-000000000001",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2076,13 +2078,17 @@
         "id": "s1",
         "name": "Set isSubmitting true",
         "type": "setFormState",
-        "config": { "isSubmitting": true }
+        "config": {
+          "isSubmitting": true
+        }
       },
       {
         "id": "s2",
         "name": "Simulate delay (1.5s)",
         "type": "timeDelay",
-        "config": { "delay": 1500 }
+        "config": {
+          "delay": 1500
+        }
       },
       {
         "id": "s3",
@@ -2099,7 +2105,10 @@
         "id": "s4",
         "name": "Set isSubmitting false, isSubmitted true",
         "type": "setFormState",
-        "config": { "isSubmitting": false, "isSubmitted": true }
+        "config": {
+          "isSubmitting": false,
+          "isSubmitted": true
+        }
       }
     ]
   },
@@ -2138,19 +2147,26 @@
         "id": "s1",
         "name": "Set isSubmitting",
         "type": "setFormState",
-        "config": { "isSubmitting": true }
+        "config": {
+          "isSubmitting": true
+        }
       },
       {
         "id": "s2",
         "name": "Simulate delay (1s)",
         "type": "timeDelay",
-        "config": { "delay": 1000 }
+        "config": {
+          "delay": 1000
+        }
       },
       {
         "id": "s3",
         "name": "Set submitted",
         "type": "setFormState",
-        "config": { "isSubmitting": false, "isSubmitted": true }
+        "config": {
+          "isSubmitting": false,
+          "isSubmitted": true
+        }
       }
     ]
   },
@@ -2162,23 +2178,29 @@
         "id": "s1",
         "name": "Set isSubmitting",
         "type": "setFormState",
-        "config": { "isSubmitting": true }
+        "config": {
+          "isSubmitting": true
+        }
       },
       {
         "id": "s2",
         "name": "Simulate delay (1s)",
         "type": "timeDelay",
-        "config": { "delay": 1000 }
+        "config": {
+          "delay": 1000
+        }
       },
       {
         "id": "s3",
         "name": "Set submitted",
         "type": "setFormState",
-        "config": { "isSubmitting": false, "isSubmitted": true }
+        "config": {
+          "isSubmitting": false,
+          "isSubmitted": true
+        }
       }
     ]
   },
-
   "waApiChainSubTask": {
     "name": "API Chain: Sub-task (multiOptionBranch + forEach)",
     "trigger": "click",
@@ -2201,14 +2223,18 @@
         },
         "branches": [
           {
-            "label": "GQL OK \u2013 France confirmed",
+            "label": "GQL OK – France confirmed",
             "steps": [
               {
                 "id": "s-foreach-codes",
                 "name": "For each country code: append to result",
                 "type": "forEach",
                 "config": {
-                  "list": ["FR", "DE", "US"]
+                  "list": [
+                    "FR",
+                    "DE",
+                    "US"
+                  ]
                 },
                 "loopBody": [
                   {
@@ -2254,7 +2280,6 @@
       }
     ]
   },
-
   "waApiChain": {
     "name": "API Chain: Full Pipeline",
     "trigger": "click",
@@ -2265,62 +2290,88 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-chain-0000-0000-0000-000000000001",
-          "value": "(step 1/6: starting\u2026)"
+          "value": "(step 1/6: starting…)"
         }
       },
       {
         "id": "s-reset-002",
         "name": "Clear GQL country",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000002", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000002",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-003",
         "name": "Clear REST echo",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000003", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000003",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-004",
         "name": "Clear branch path",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000004", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000004",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-005",
         "name": "Clear pipeline result",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000005", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000005",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-006",
         "name": "Clear collection status",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000006", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000006",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-007",
         "name": "Clear while-count",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000007", "value": 0 }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000007",
+          "value": 0
+        }
       },
       {
         "id": "s-reset-008",
         "name": "Clear forEach result",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000008", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000008",
+          "value": ""
+        }
       },
       {
         "id": "s-reset-009",
         "name": "Clear multi-branch result",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000009", "value": "" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000009",
+          "value": ""
+        }
       },
       {
         "id": "s-delay-1",
         "name": "Wait 250ms (progress beat 1)",
         "type": "timeDelay",
-        "config": { "time": 250 }
+        "config": {
+          "time": 250
+        }
       },
       {
         "id": "s-gql-fr",
@@ -2366,7 +2417,7 @@
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa-chain-0000-0000-0000-000000000004",
-              "value": "GQL OK \u2013 France confirmed"
+              "value": "GQL OK – France confirmed"
             }
           }
         ],
@@ -2386,7 +2437,9 @@
         "id": "s-delay-2",
         "name": "Wait 250ms (progress beat 2)",
         "type": "timeDelay",
-        "config": { "time": 250 }
+        "config": {
+          "time": 250
+        }
       },
       {
         "id": "s-rest-get",
@@ -2433,7 +2486,9 @@
         "id": "s-delay-3",
         "name": "Wait 250ms (progress beat 3)",
         "type": "timeDelay",
-        "config": { "time": 250 }
+        "config": {
+          "time": 250
+        }
       },
       {
         "id": "s-update-col",
@@ -2485,7 +2540,10 @@
         "id": "s-status-5b",
         "name": "Set status: step 6 loops starting",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000001", "value": "(step 6/8: loops\u2026)" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 6/8: loops…)"
+        }
       },
       {
         "id": "s-while-count",
@@ -2501,7 +2559,9 @@
             "type": "changeVariableValue",
             "config": {
               "variableName": "wa-chain-0000-0000-0000-000000000007",
-              "value": { "formula": "(variables['wa-chain-0000-0000-0000-000000000007'] || 0) + 1" }
+              "value": {
+                "formula": "(variables['wa-chain-0000-0000-0000-000000000007'] || 0) + 1"
+              }
             }
           }
         ]
@@ -2510,7 +2570,13 @@
         "id": "s-foreach-main",
         "name": "forEach: build alpha|beta|gamma string",
         "type": "forEach",
-        "config": { "list": ["alpha", "beta", "gamma"] },
+        "config": {
+          "list": [
+            "alpha",
+            "beta",
+            "gamma"
+          ]
+        },
         "loopBody": [
           {
             "id": "s-foreach-append",
@@ -2534,7 +2600,7 @@
         },
         "branches": [
           {
-            "label": "GQL OK \u2013 France confirmed",
+            "label": "GQL OK – France confirmed",
             "steps": [
               {
                 "id": "s-multi-ok",
@@ -2564,13 +2630,18 @@
         "id": "s-status-6",
         "name": "Set status: step 7 loops done",
         "type": "changeVariableValue",
-        "config": { "variableName": "wa-chain-0000-0000-0000-000000000001", "value": "(step 7/8: loops done)" }
+        "config": {
+          "variableName": "wa-chain-0000-0000-0000-000000000001",
+          "value": "(step 7/8: loops done)"
+        }
       },
       {
         "id": "s-delay-4",
         "name": "Wait 250ms (progress beat 4)",
         "type": "timeDelay",
-        "config": { "time": 250 }
+        "config": {
+          "time": 250
+        }
       },
       {
         "id": "s-pass",
@@ -2582,16 +2653,15 @@
       },
       {
         "id": "s-done",
-        "name": "Set status: done \u2713",
+        "name": "Set status: done ✓",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-chain-0000-0000-0000-000000000001",
-          "value": "done \u2713"
+          "value": "done ✓"
         }
       }
     ]
   },
-
   "waVal2Submit": {
     "name": "Val2: Form Submit",
     "trigger": "submit",
@@ -2600,13 +2670,17 @@
         "id": "s1",
         "name": "Set isSubmitting true",
         "type": "setFormState",
-        "config": { "isSubmitting": true }
+        "config": {
+          "isSubmitting": true
+        }
       },
       {
         "id": "s2",
         "name": "Simulate delay (600ms)",
         "type": "timeDelay",
-        "config": { "delay": 600 }
+        "config": {
+          "delay": 600
+        }
       },
       {
         "id": "s3",
@@ -2632,7 +2706,10 @@
         "id": "s5",
         "name": "Set isSubmitting false, isSubmitted true",
         "type": "setFormState",
-        "config": { "isSubmitting": false, "isSubmitted": true }
+        "config": {
+          "isSubmitting": false,
+          "isSubmitted": true
+        }
       }
     ]
   },
@@ -2751,7 +2828,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000001",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2766,7 +2845,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000002",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2780,7 +2861,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000005",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2794,7 +2877,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000006",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2808,7 +2893,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000007",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
@@ -2822,12 +2909,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-val2-0000-0000-0000-000000000008",
-          "value": { "formula": "event?.['value']" }
+          "value": {
+            "formula": "event?.['value']"
+          }
         }
       }
     ]
   },
-
   "waEcaSubDirect": {
     "name": "ECA Sub: Direct — sets direct-result var",
     "trigger": "click",
@@ -2842,7 +2930,6 @@
       }
     ]
   },
-
   "waEcaSubChain1": {
     "name": "ECA Sub: Chain step-1 — sets chain-step1 var",
     "trigger": "click",
@@ -2857,7 +2944,6 @@
       }
     ]
   },
-
   "waEcaSubChain2": {
     "name": "ECA Sub: Chain step-2 — reads step1 var and sets final",
     "trigger": "click",
@@ -2867,12 +2953,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-eca-0000-0000-0000-000000000003",
-          "value": { "formula": "variables['wa-eca-0000-0000-0000-000000000002'] + '→step2'" }
+          "value": {
+            "formula": "variables['wa-eca-0000-0000-0000-000000000002'] + '→step2'"
+          }
         }
       }
     ]
   },
-
   "waEcaSubCounter": {
     "name": "ECA Sub: Counter — increments loop count",
     "trigger": "click",
@@ -2882,12 +2969,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-eca-0000-0000-0000-000000000004",
-          "value": { "formula": "Number(variables['wa-eca-0000-0000-0000-000000000004'] || 0) + 1" }
+          "value": {
+            "formula": "Number(variables['wa-eca-0000-0000-0000-000000000004'] || 0) + 1"
+          }
         }
       }
     ]
   },
-
   "waEcaSubNested": {
     "name": "ECA Sub: Nested — calls waEcaSubDirect then reads its output",
     "trigger": "click",
@@ -2896,91 +2984,148 @@
         "id": "s-nested-call",
         "name": "Nested ECA: call waEcaSubDirect",
         "type": "executeComponentAction",
-        "config": { "action": "waEcaSubDirect" }
+        "config": {
+          "action": "waEcaSubDirect"
+        }
       },
       {
         "id": "s-nested-read",
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-eca-0000-0000-0000-000000000005",
-          "value": { "formula": "'nested\u2190' + (variables['wa-eca-0000-0000-0000-000000000001'] || 'empty')" }
+          "value": {
+            "formula": "'nested←' + (variables['wa-eca-0000-0000-0000-000000000001'] || 'empty')"
+          }
         }
       }
     ]
   },
-
   "waEcaDirect": {
     "name": "Card C: ECA Direct",
     "trigger": "click",
     "steps": [
-      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000001", "value": "" } },
+      {
+        "id": "r1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000001",
+          "value": ""
+        }
+      },
       {
         "id": "s-eca-direct",
         "name": "executeComponentAction: call waEcaSubDirect",
         "type": "executeComponentAction",
-        "config": { "action": "waEcaSubDirect" }
+        "config": {
+          "action": "waEcaSubDirect"
+        }
       }
     ]
   },
-
   "waEcaChain": {
     "name": "Card C: ECA Chain (two sequential ECAs)",
     "trigger": "click",
     "steps": [
-      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000002", "value": "" } },
-      { "id": "r2", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000003", "value": "" } },
+      {
+        "id": "r1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000002",
+          "value": ""
+        }
+      },
+      {
+        "id": "r2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000003",
+          "value": ""
+        }
+      },
       {
         "id": "s-chain-1",
         "name": "executeComponentAction: chain step 1",
         "type": "executeComponentAction",
-        "config": { "action": "waEcaSubChain1" }
+        "config": {
+          "action": "waEcaSubChain1"
+        }
       },
       {
         "id": "s-chain-2",
         "name": "executeComponentAction: chain step 2 (reads step 1 output)",
         "type": "executeComponentAction",
-        "config": { "action": "waEcaSubChain2" }
+        "config": {
+          "action": "waEcaSubChain2"
+        }
       }
     ]
   },
-
   "waEcaLoop": {
     "name": "Card C: ECA in forEach loop",
     "trigger": "click",
     "steps": [
-      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000004", "value": 0 } },
+      {
+        "id": "r1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000004",
+          "value": 0
+        }
+      },
       {
         "id": "s-foreach",
         "name": "forEach [A,B,C] — call waEcaSubCounter each time",
         "type": "forEach",
-        "config": { "list": ["A", "B", "C"] },
+        "config": {
+          "list": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
         "loopBody": [
           {
             "id": "s-loop-eca",
             "name": "executeComponentAction: increment counter",
             "type": "executeComponentAction",
-            "config": { "action": "waEcaSubCounter" }
+            "config": {
+              "action": "waEcaSubCounter"
+            }
           }
         ]
       }
     ]
   },
-
   "waEcaNested": {
     "name": "Card C: ECA Nested (ECA calls another ECA internally)",
     "trigger": "click",
     "steps": [
-      { "id": "r1", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000001", "value": "" } },
-      { "id": "r2", "type": "changeVariableValue", "config": { "variableName": "wa-eca-0000-0000-0000-000000000005", "value": "" } },
+      {
+        "id": "r1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000001",
+          "value": ""
+        }
+      },
+      {
+        "id": "r2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "wa-eca-0000-0000-0000-000000000005",
+          "value": ""
+        }
+      },
       {
         "id": "s-nested",
         "name": "executeComponentAction: call waEcaSubNested (which itself calls waEcaSubDirect)",
         "type": "executeComponentAction",
-        "config": { "action": "waEcaSubNested" }
+        "config": {
+          "action": "waEcaSubNested"
+        }
       }
     ]
   },
-
   "waEvtChange": {
     "name": "Event: onChange — capture event.value",
     "trigger": "change",
@@ -2990,12 +3135,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000001",
-          "value": { "formula": "'value:' + String(event?.['value'] ?? '')" }
+          "value": {
+            "formula": "'value:' + String(event?.['value'] ?? '')"
+          }
         }
       }
     ]
   },
-
   "waEvtClick": {
     "name": "Event: onClick — capture event.x / event.y / event.button",
     "trigger": "click",
@@ -3005,12 +3151,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000002",
-          "value": { "formula": "'x:' + String(event?.['x'] ?? '?') + ' y:' + String(event?.['y'] ?? '?') + ' btn:' + String(event?.['button'] ?? '?')" }
+          "value": {
+            "formula": "'x:' + String(event?.['x'] ?? '?') + ' y:' + String(event?.['y'] ?? '?') + ' btn:' + String(event?.['button'] ?? '?')"
+          }
         }
       }
     ]
   },
-
   "waEvtEnterKey": {
     "name": "Event: onEnterKey — capture event.key + event.value",
     "trigger": "enterKey",
@@ -3020,12 +3167,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000003",
-          "value": { "formula": "'key:' + String(event?.['key'] ?? '') + ' val:' + String(event?.['value'] ?? '')" }
+          "value": {
+            "formula": "'key:' + String(event?.['key'] ?? '') + ' val:' + String(event?.['value'] ?? '')"
+          }
         }
       }
     ]
   },
-
   "waEvtFocus": {
     "name": "Event: onFocus — capture event.value",
     "trigger": "focus",
@@ -3035,12 +3183,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000004",
-          "value": { "formula": "'focus:' + String(event?.['value'] ?? '')" }
+          "value": {
+            "formula": "'focus:' + String(event?.['value'] ?? '')"
+          }
         }
       }
     ]
   },
-
   "waEvtBlur": {
     "name": "Event: onBlur — capture event.value",
     "trigger": "blur",
@@ -3050,12 +3199,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000005",
-          "value": { "formula": "'blur:' + String(event?.['value'] ?? '')" }
+          "value": {
+            "formula": "'blur:' + String(event?.['value'] ?? '')"
+          }
         }
       }
     ]
   },
-
   "waEvtScroll": {
     "name": "Event: onScroll — capture event.scrollTop / event.scrollLeft",
     "trigger": "scroll",
@@ -3065,12 +3215,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000006",
-          "value": { "formula": "'top:' + String(event?.['scrollTop'] ?? 0) + ' left:' + String(event?.['scrollLeft'] ?? 0)" }
+          "value": {
+            "formula": "'top:' + String(event?.['scrollTop'] ?? 0) + ' left:' + String(event?.['scrollLeft'] ?? 0)"
+          }
         }
       }
     ]
   },
-
   "waEvtValueChange": {
     "name": "Event: onValueChange (Select) — capture event.value",
     "trigger": "valueChange",
@@ -3080,12 +3231,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000007",
-          "value": { "formula": "'selected:' + String(event?.['value'] ?? '')" }
+          "value": {
+            "formula": "'selected:' + String(event?.['value'] ?? '')"
+          }
         }
       }
     ]
   },
-
   "waEvtCheckbox": {
     "name": "Event: onChange (Checkbox) — capture event.value (boolean)",
     "trigger": "change",
@@ -3095,23 +3247,70 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "wa-evt-0000-0000-0000-000000000008",
-          "value": { "formula": "'checked:' + String(event?.['value'] ?? false)" }
+          "value": {
+            "formula": "'checked:' + String(event?.['value'] ?? false)"
+          }
         }
       }
     ]
   },
-
   "greetUser": {
     "name": "Greet User (Global Workflow Demo)",
     "trigger": "execution",
     "params": [
-      { "id": "p1", "name": "username", "type": "Text", "testValue": "Ahmad" },
-      { "id": "p2", "name": "greeting", "type": "Text", "testValue": "Hello" },
-      { "id": "p3", "name": "maxResults", "type": "Number", "testValue": 5 },
-      { "id": "p4", "name": "formal", "type": "Boolean", "testValue": true },
-      { "id": "p5", "name": "tags", "type": "Text", "allowMultiple": true, "testValue": ["vip", "member"] },
-      { "id": "p6", "name": "userProfile", "type": "Object", "testValue": { "role": "admin", "level": 3 } },
-      { "id": "p7", "name": "allowedRoles", "type": "Array", "testValue": ["admin", "editor", "viewer"] }
+      {
+        "id": "p1",
+        "name": "username",
+        "type": "Text",
+        "testValue": "Ahmad"
+      },
+      {
+        "id": "p2",
+        "name": "greeting",
+        "type": "Text",
+        "testValue": "Hello"
+      },
+      {
+        "id": "p3",
+        "name": "maxResults",
+        "type": "Number",
+        "testValue": 5
+      },
+      {
+        "id": "p4",
+        "name": "formal",
+        "type": "Boolean",
+        "testValue": true
+      },
+      {
+        "id": "p5",
+        "name": "tags",
+        "type": "Text",
+        "allowMultiple": true,
+        "testValue": [
+          "vip",
+          "member"
+        ]
+      },
+      {
+        "id": "p6",
+        "name": "userProfile",
+        "type": "Object",
+        "testValue": {
+          "role": "admin",
+          "level": 3
+        }
+      },
+      {
+        "id": "p7",
+        "name": "allowedRoles",
+        "type": "Array",
+        "testValue": [
+          "admin",
+          "editor",
+          "viewer"
+        ]
+      }
     ],
     "steps": [
       {
@@ -3137,7 +3336,6 @@
       }
     ]
   },
-
   "callGreetFormal": {
     "name": "Greet: Formal",
     "trigger": "click",
@@ -3152,9 +3350,18 @@
             "greeting": "Good morning",
             "maxResults": 3,
             "formal": true,
-            "tags": ["vip", "premium"],
-            "userProfile": { "role": "manager", "level": 5 },
-            "allowedRoles": ["admin", "manager"]
+            "tags": [
+              "vip",
+              "premium"
+            ],
+            "userProfile": {
+              "role": "manager",
+              "level": 5
+            },
+            "allowedRoles": [
+              "admin",
+              "manager"
+            ]
           }
         }
       },
@@ -3171,7 +3378,6 @@
       }
     ]
   },
-
   "callGreetCasual": {
     "name": "Greet: Casual",
     "trigger": "click",
@@ -3186,9 +3392,16 @@
             "greeting": "Hey",
             "maxResults": 10,
             "formal": false,
-            "tags": ["friend"],
-            "userProfile": { "role": "guest", "level": 1 },
-            "allowedRoles": ["viewer"]
+            "tags": [
+              "friend"
+            ],
+            "userProfile": {
+              "role": "guest",
+              "level": 1
+            },
+            "allowedRoles": [
+              "viewer"
+            ]
           }
         }
       },
@@ -3205,12 +3418,16 @@
       }
     ]
   },
-
   "fetchTodo": {
     "trigger": "click",
     "global": true,
     "params": [
-      { "id": "p-todo-id", "name": "todoId", "type": "Number", "testValue": 1 }
+      {
+        "id": "p-todo-id",
+        "name": "todoId",
+        "type": "Number",
+        "testValue": 1
+      }
     ],
     "steps": [
       {
@@ -3218,13 +3435,14 @@
         "name": "Fetch todo from API",
         "type": "fetchData",
         "config": {
-          "url": { "formula": "'https://jsonplaceholder.typicode.com/todos/' + (parameters?.['todoId'] ?? 1)" },
+          "url": {
+            "formula": "'https://jsonplaceholder.typicode.com/todos/' + (parameters?.['todoId'] ?? 1)"
+          },
           "method": "GET"
         }
       }
     ]
   },
-
   "callFetchTodo": {
     "trigger": "click",
     "steps": [
@@ -3235,7 +3453,9 @@
         "config": {
           "workflowId": "fetchTodo",
           "params": {
-            "todoId": { "formula": "1" }
+            "todoId": {
+              "formula": "1"
+            }
           }
         }
       },
@@ -3252,14 +3472,23 @@
       }
     ]
   },
-
   "GlobalGreet": {
     "name": "Global: Greet",
     "trigger": "execution",
     "global": true,
     "params": [
-      { "id": "p-name",  "name": "name",  "type": "Text",   "testValue": "World" },
-      { "id": "p-times", "name": "times", "type": "Number", "testValue": 3 }
+      {
+        "id": "p-name",
+        "name": "name",
+        "type": "Text",
+        "testValue": "World"
+      },
+      {
+        "id": "p-times",
+        "name": "times",
+        "type": "Number",
+        "testValue": 3
+      }
     ],
     "steps": [
       {
@@ -3275,13 +3504,17 @@
       }
     ]
   },
-
   "GlobalFinalize": {
     "name": "Global: Finalize",
     "trigger": "execution",
     "global": true,
     "params": [
-      { "id": "p-sum", "name": "sum", "type": "Number", "testValue": 50 }
+      {
+        "id": "p-sum",
+        "name": "sum",
+        "type": "Number",
+        "testValue": 50
+      }
     ],
     "steps": [
       {
@@ -3297,13 +3530,22 @@
       }
     ]
   },
-
   "pageWorkflowA": {
     "name": "Page: Workflow A (greeting + count → result 1)",
     "trigger": "execution",
     "params": [
-      { "id": "p-greeting", "name": "greeting", "type": "Text",   "testValue": "Hi" },
-      { "id": "p-count",    "name": "count",    "type": "Number", "testValue": 2 }
+      {
+        "id": "p-greeting",
+        "name": "greeting",
+        "type": "Text",
+        "testValue": "Hi"
+      },
+      {
+        "id": "p-count",
+        "name": "count",
+        "type": "Number",
+        "testValue": 2
+      }
     ],
     "steps": [
       {
@@ -3319,7 +3561,6 @@
       }
     ]
   },
-
   "pageWorkflowB": {
     "name": "Page: Workflow B (calls GlobalGreet)",
     "trigger": "execution",
@@ -3338,7 +3579,6 @@
       }
     ]
   },
-
   "pageWorkflowExtKick": {
     "name": "Page: Ext Kick (dispatch SC workflow on specific instance)",
     "trigger": "execution",
@@ -3352,13 +3592,14 @@
           "instanceId": "wftest-sc-inst-1",
           "action": "scWorkflowB",
           "args": {
-            "multiplier": { "formula": "5" }
+            "multiplier": {
+              "formula": "5"
+            }
           }
         }
       }
     ]
   },
-
   "runScenario1": {
     "name": "Run Scenario 1 (page workflow with params)",
     "trigger": "click",
@@ -3377,7 +3618,6 @@
       }
     ]
   },
-
   "runScenario2": {
     "name": "Run Scenario 2 (page → global)",
     "trigger": "click",
@@ -3392,7 +3632,6 @@
       }
     ]
   },
-
   "runScenario4": {
     "name": "Run Scenario 4 (page → SC instance → global)",
     "trigger": "click",
@@ -3407,7 +3646,6 @@
       }
     ]
   },
-
   "runScWorkflowAInternal": {
     "name": "SC internal button — call scWorkflowA on ambient instance",
     "trigger": "click",
@@ -3419,7 +3657,9 @@
         "config": {
           "workflowId": "scWorkflowA",
           "args": {
-            "label": { "formula": "context?.component?.props?.label ?? 'inner'" }
+            "label": {
+              "formula": "context?.component?.props?.label ?? 'inner'"
+            }
           }
         }
       }

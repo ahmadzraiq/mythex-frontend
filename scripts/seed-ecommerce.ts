@@ -521,10 +521,7 @@ function buildBuilderConfig(projectId: string): Record<string, unknown> {
   return {
     pages,
     pageDataSources,
-    pageWorkflows:      {},
-    pageWorkflowMeta:   {},
-    globalWorkflows:    {},
-    globalWorkflowMeta: {},
+    workflows:          {},
     customVars:         [],
     varFolders:         [],
     dsFolders:          [],

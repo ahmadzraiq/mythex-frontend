@@ -265,7 +265,7 @@ export function ActionNode({
   const pageDataSources = useBuilderStore(s => s.pageDataSources);
   const dsActionsMap = useBuilderStore(s => s.dsActionsMap);
   const pageNodes = useBuilderStore(s => s.pageNodes);
-  const pageWorkflowMeta = useBuilderStore(s => s.pageWorkflowMeta);
+  const workflows = useBuilderStore(s => s.workflows);
   const varLabels = useMemo(() => {
     const map: Record<string, string> = {};
     // Global/custom variables
@@ -289,11 +289,11 @@ export function ActionNode({
       map[`${nodeId}-form`] = `Form Container - ${name}`;
     }
     // Workflow UUIDs → name (for executeComponentAction summary)
-    for (const [id, meta] of Object.entries(pageWorkflowMeta)) {
-      if (meta.name) map[id] = meta.name;
+    for (const [id, wf] of Object.entries(workflows as Record<string, import('@/config/types').WorkflowDef>)) {
+      if (wf.name) map[id] = wf.name;
     }
     return map;
-  }, [customVars, pageNodes, pageWorkflowMeta]);
+  }, [customVars, pageNodes, workflows]);
   const collectionNames = useMemo(() => {
     const map: Record<string, string> = {};
     for (const ds of pageDataSources) {

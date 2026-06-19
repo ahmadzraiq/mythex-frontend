@@ -175,7 +175,8 @@
                         ],
                         "actions": [
                           {
-                            "action": "10b4a7ed-330e-4827-951f-5a0535458f2e"
+                            "trigger": "click",
+                            "workflowId": "10b4a7ed-330e-4827-951f-5a0535458f2e"
                           }
                         ]
                       }
@@ -225,7 +226,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "b7236203-c516-4e10-8ff7-b4afb84ce314"
+                                        "trigger": "click",
+                                        "workflowId": "b7236203-c516-4e10-8ff7-b4afb84ce314"
                                       }
                                     ],
                                     "children": [
@@ -350,7 +352,8 @@
                             },
                             "actions": [
                               {
-                                "action": "a24be295-33bc-4961-8114-a35e5f3ede70"
+                                "trigger": "click",
+                                "workflowId": "a24be295-33bc-4961-8114-a35e5f3ede70"
                               }
                             ],
                             "children": [
@@ -379,7 +382,8 @@
                             },
                             "actions": [
                               {
-                                "action": "340aee01-272a-470c-8865-5500192ef4fa"
+                                "trigger": "click",
+                                "workflowId": "340aee01-272a-470c-8865-5500192ef4fa"
                               }
                             ],
                             "children": [
@@ -408,7 +412,8 @@
                             },
                             "actions": [
                               {
-                                "action": "608a5750-a7a9-4504-bfb2-5bd165105e98"
+                                "trigger": "click",
+                                "workflowId": "608a5750-a7a9-4504-bfb2-5bd165105e98"
                               }
                             ],
                             "children": [
@@ -437,7 +442,8 @@
                             },
                             "actions": [
                               {
-                                "action": "667e6b12-a953-4635-967b-7ef4e0779cbe"
+                                "trigger": "click",
+                                "workflowId": "667e6b12-a953-4635-967b-7ef4e0779cbe"
                               }
                             ],
                             "children": [
@@ -512,7 +518,8 @@
                         },
                         "actions": [
                           {
-                            "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                            "trigger": "click",
+                            "workflowId": "f6046c33-0164-45b5-86aa-0710fc408247"
                           }
                         ],
                         "children": [
@@ -630,7 +637,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "5f0b09fc-9aed-4a27-a60d-d44a3b5a37c9"
+                        "trigger": "click",
+                        "workflowId": "5f0b09fc-9aed-4a27-a60d-d44a3b5a37c9"
                       }
                     ]
                   },
@@ -684,7 +692,8 @@
                         ],
                         "actions": [
                           {
-                            "action": "184bea54-8bde-4fd0-a4fd-e3f6766d99b8"
+                            "trigger": "click",
+                            "workflowId": "184bea54-8bde-4fd0-a4fd-e3f6766d99b8"
                           }
                         ]
                       }
@@ -725,7 +734,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "585677d0-57d6-4868-b6f9-f1adf2d3215e"
+                        "trigger": "click",
+                        "workflowId": "585677d0-57d6-4868-b6f9-f1adf2d3215e"
                       }
                     ]
                   }

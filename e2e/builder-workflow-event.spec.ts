@@ -258,20 +258,24 @@ test("WEV-06: event?.['value'] formula round-trips as an orange chip (not plain 
 });
 
 // ─── WEV-07 ───────────────────────────────────────────────────────────────────
-// Runtime: pageWorkflows are stored in builder store and get merged into actionsConfig
+// Runtime: workflows are stored in builder store and get merged into actionsConfig
 
-test("WEV-07: pageWorkflows are stored in builder store (so previewActionsConfig can include them)", async () => {
+test("WEV-07: workflows are stored in builder store (so previewActionsConfig can include them)", async () => {
   const page = sharedPage;
 
-  // Add a test page workflow and verify it appears in pageWorkflows state
+  // Add a test workflow and verify it appears in store.workflows
   const testId = await page.evaluate(() => {
     const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
     if (!store) return null;
     const id = `test-wf-verify-${Date.now()}`;
-    (store.setPageWorkflow as (id: string, steps: unknown[]) => void)(id, [
-      { id: 'step-1', type: 'changeVariableValue', config: { variableName: 'test', value: { formula: "event?.['value']" } } },
-    ]);
-    (store.setPageWorkflowMeta as (id: string, meta: unknown) => void)(id, { trigger: 'change', name: 'Test onChange' });
+    (store.setWorkflow as (id: string, wf: unknown) => void)(id, {
+      id,
+      name: 'Test onChange',
+      trigger: 'change',
+      steps: [
+        { id: 'step-1', type: 'changeVariableValue', config: { variableName: 'test', value: { formula: "event?.['value']" } } },
+      ],
+    });
     return id;
   });
 
@@ -279,21 +283,17 @@ test("WEV-07: pageWorkflows are stored in builder store (so previewActionsConfig
 
   // Re-read the store to verify the workflow was persisted
   const workflow = await page.evaluate((id) => {
-    const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-    if (!store || !id) return null;
-    // Must re-call getState() to get fresh state after Zustand update
     const freshState = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-    const pw = freshState?.pageWorkflows as Record<string, unknown> ?? {};
-    return pw[id] ?? null;
+    const wfs = freshState?.workflows as Record<string, unknown> ?? {};
+    return wfs[id] ?? null;
   }, testId);
 
   expect(workflow).not.toBeNull();
-  expect(Array.isArray(workflow)).toBe(true);
 
   // Clean up
   await page.evaluate((id) => {
     const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
-    if (store && id) (store.removePageWorkflow as (id: string) => void)(id);
+    if (store && id) (store.removeWorkflow as (id: string) => void)(id);
   }, testId);
 });
 
@@ -499,27 +499,29 @@ test('CIS-03: full workflow chain — type in Input2 → workflow → Input1 upd
   await addNode(page, { id: input2Id, type: 'Input', name: 'Source Input', props: {} });
 
   // Step 2: wire up the workflow programmatically
-  //   - pageWorkflow steps: setVar(input1Id-value, event?.['value'])
-  //   - pageWorkflowMeta: trigger = 'change'
-  //   - node actions on input2: [{ action: workflowId }]
+  //   - workflow steps: setVar(input1Id-value, event?.['value'])
+  //   - workflow trigger = 'change'
+  //   - node actions on input2: [{ trigger: 'change', workflowId }]
   await page.evaluate(({ wfId, inp1Id, inp2Id }) => {
     type Store = {
-      setPageWorkflow: (id: string, steps: unknown[]) => void;
-      setPageWorkflowMeta: (id: string, meta: unknown) => void;
+      setWorkflow: (id: string, wf: unknown) => void;
       patchNodeField: (id: string, field: string, value: unknown) => void;
     };
     const store = (window as unknown as Record<string, { getState: () => Store }>).__builderStore?.getState();
     if (!store) return;
 
-    store.setPageWorkflow(wfId, [
-      {
-        id: 'step-cis03',
-        type: 'setVar',
-        config: { path: `${inp1Id}-value`, value: { formula: "event?.['value']" } },
-      },
-    ]);
-    store.setPageWorkflowMeta(wfId, { trigger: 'change' });
-    store.patchNodeField(inp2Id, 'actions', [{ action: wfId }]);
+    store.setWorkflow(wfId, {
+      id: wfId,
+      trigger: 'change',
+      steps: [
+        {
+          id: 'step-cis03',
+          type: 'setVar',
+          config: { path: `${inp1Id}-value`, value: { formula: "event?.['value']" } },
+        },
+      ],
+    });
+    store.patchNodeField(inp2Id, 'actions', [{ trigger: 'change', workflowId: wfId }]);
   }, { wfId: workflowId, inp1Id: input1Id, inp2Id: input2Id });
 
   // Step 3: wait for React to re-render with the new actionsConfig and workflow

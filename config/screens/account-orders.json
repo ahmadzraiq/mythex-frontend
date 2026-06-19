@@ -143,7 +143,8 @@
                             },
                             "actions": [
                               {
-                                "action": "476b28a3-7e9c-44f9-8913-a6f8c4904630"
+                                "trigger": "click",
+                                "workflowId": "476b28a3-7e9c-44f9-8913-a6f8c4904630"
                               }
                             ],
                             "children": [

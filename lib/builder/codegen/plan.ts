@@ -32,27 +32,12 @@ function buildSymbolMap(store: BuilderStore): SymbolMap {
 
   // Workflows
   const workflows = new Map<string, string>();
-  const allWorkflows = {
-    ...store.pageWorkflowMeta,
-    ...store.globalWorkflowMeta,
-  };
+  const allWorkflows = store.workflows ?? {};
   for (const [id, meta] of Object.entries(allWorkflows)) {
     if (!meta) continue;
     const ident = uniqueIdent(meta.name, id, usedIdents);
     workflows.set(id, ident);
     if (meta.name) workflows.set(meta.name, ident);
-  }
-
-  // Fallback: workflow IDs that appear in pageWorkflows/globalWorkflows but have no meta entry
-  const allWorkflowSteps = {
-    ...(store.pageWorkflows ?? {}),
-    ...(store.globalWorkflows ?? {}),
-  };
-  for (const id of Object.keys(allWorkflowSteps)) {
-    if (!workflows.has(id)) {
-      const ident = uniqueIdent(undefined, id, usedIdents);
-      workflows.set(id, ident);
-    }
   }
 
   // Routes
@@ -75,11 +60,8 @@ function detectFeatures(store: BuilderStore): FeatureFlags {
 
   // Scan all workflow steps for action types
   const allSteps: Array<Record<string, unknown>> = [];
-  for (const steps of Object.values(store.pageWorkflows ?? {})) {
-    collectSteps(steps as Record<string, unknown>[], allSteps);
-  }
-  for (const steps of Object.values(store.globalWorkflows ?? {})) {
-    collectSteps(steps as Record<string, unknown>[], allSteps);
+  for (const wf of Object.values(store.workflows ?? {})) {
+    collectSteps(((wf as { steps?: unknown[] }).steps ?? []) as Record<string, unknown>[], allSteps);
   }
   const actionTypes = new Set(allSteps.map(s => s.type as string).filter(Boolean));
 

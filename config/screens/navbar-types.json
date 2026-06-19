@@ -50,7 +50,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarFixed"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarFixed"
                   }
                 ],
                 "children": [
@@ -93,7 +94,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarSticky"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarSticky"
                   }
                 ],
                 "children": [
@@ -136,7 +138,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarTransparent"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarTransparent"
                   }
                 ],
                 "children": [
@@ -179,7 +182,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarBlur"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarBlur"
                   }
                 ],
                 "children": [
@@ -222,7 +226,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarFloating"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarFloating"
                   }
                 ],
                 "children": [
@@ -265,7 +270,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarCentered"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarCentered"
                   }
                 ],
                 "children": [
@@ -308,7 +314,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarSidebar"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarSidebar"
                   }
                 ],
                 "children": [
@@ -351,7 +358,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarBottom"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarBottom"
                   }
                 ],
                 "children": [
@@ -394,7 +402,8 @@
                 },
                 "actions": [
                   {
-                    "action": "navigateToNavbarScrollAware"
+                    "trigger": "click",
+                    "workflowId": "navigateToNavbarScrollAware"
                   }
                 ],
                 "children": [

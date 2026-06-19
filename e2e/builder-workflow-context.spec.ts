@@ -41,13 +41,9 @@ async function resetBuilder(page: Page) {
     if (!store) return;
     (store._setPageNodes as (n: unknown[]) => void)([]);
     if (typeof store.select === 'function') (store.select as (id: string | null) => void)(null);
-    const pw = (store.pageWorkflows as Record<string, unknown>) ?? {};
-    for (const k of Object.keys(pw)) {
-      (store.removePageWorkflow as (id: string) => void)(k);
-    }
-    const gw = (store.globalWorkflows as Record<string, unknown>) ?? {};
-    for (const k of Object.keys(gw)) {
-      (store.removeGlobalWorkflow as (id: string) => void)(k);
+    const wfs = (store.workflows as Record<string, unknown>) ?? {};
+    for (const k of Object.keys(wfs)) {
+      (store.removeWorkflow as (id: string) => void)(k);
     }
   });
   await page.waitForTimeout(200);
@@ -80,12 +76,11 @@ async function openCanvasViaStore(page: Page, kind: 'globalWorkflow' | 'pageWork
     if (!store || typeof store.openWorkflowCanvas !== 'function') return;
     if (kind === 'globalWorkflow') {
       const id = opts.id ?? `test-wf-${Date.now()}`;
-      (store.setGlobalWorkflow as (id: string, steps: unknown[]) => void)(id, []);
-      (store.setGlobalWorkflowMeta as (id: string, meta: unknown) => void)(id, { id, name: opts.name ?? 'Test Workflow' });
+      (store.setWorkflow as (id: string, wf: unknown) => void)(id, { id, name: opts.name ?? 'Test Workflow', steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'globalWorkflow', id });
     } else if (kind === 'pageWorkflow') {
       const name = opts.name ?? 'Test Page Workflow';
-      (store.setPageWorkflow as (n: string, steps: unknown[]) => void)(name, []);
+      (store.setWorkflow as (id: string, wf: unknown) => void)(name, { id: name, steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'pageWorkflow', name });
     } else if (kind === 'element') {
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'element', nodeId: opts.nodeId ?? 'test-node', event: opts.event ?? 'click' });
@@ -447,9 +442,8 @@ test.describe('Workflow context — named action ref shows config in props panel
       if (!store) return;
       // Create a named graphql action in directActionsMap via appPreviewData
       const fakeActionId = 'fake-gql-id-12345';
-      const steps = [{ action: fakeActionId }];
       const name = 'test-named-action-workflow';
-      (store.setPageWorkflow as (n: string, s: unknown[]) => void)(name, steps);
+      (store.setWorkflow as (id: string, wf: unknown) => void)(name, { id: name, steps: [{ action: fakeActionId }] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'pageWorkflow', name, nodeId: nId });
     }, nodeId);
     await sharedPage.waitForSelector('[data-testid="workflow-canvas"]', { timeout: 5_000 });
@@ -585,8 +579,7 @@ test.describe('Workflow context — liveCanvasSteps sync and chip label reactivi
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
       if (!store) return;
       const id = 'wf-chip-test-20';
-      (store.setGlobalWorkflow as (id: string, steps: unknown[]) => void)(id, []);
-      (store.setGlobalWorkflowMeta as (id: string, meta: unknown) => void)(id, { id, name: 'Chip Reactivity Test' });
+      (store.setWorkflow as (id: string, wf: unknown) => void)(id, { id, name: 'Chip Reactivity Test', steps: [] });
       (store.openWorkflowCanvas as (t: unknown) => void)({ kind: 'globalWorkflow', id });
     });
     await sharedPage.waitForSelector('[data-testid="workflow-canvas"]', { timeout: 5_000 });

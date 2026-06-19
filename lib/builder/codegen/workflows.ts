@@ -172,10 +172,9 @@ function emitImports(ctx: CodegenCtx): string {
 export function emitWorkflowFiles(ctx: CodegenCtx): EmittedFile[] {
   const { store, symbols } = ctx;
 
-  const allWorkflows: Record<string, object[]> = {
-    ...store.pageWorkflows,
-    ...store.globalWorkflows,
-  };
+  const allWorkflows: Record<string, object[]> = Object.fromEntries(
+    Object.entries(store.workflows ?? {}).map(([id, wf]) => [id, (wf as { steps?: object[] }).steps ?? []])
+  );
 
   if (Object.keys(allWorkflows).length === 0) return [];
 

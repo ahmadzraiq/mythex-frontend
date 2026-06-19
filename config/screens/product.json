@@ -49,7 +49,8 @@
           ],
           "actions": [
             {
-              "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
+              "trigger": "click",
+              "workflowId": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
             }
           ]
         }
@@ -179,7 +180,8 @@
                                       },
                                       "actions": [
                                         {
-                                          "action": "84c5de07-4f71-44a3-904a-020758146a5f"
+                                          "trigger": "click",
+                                          "workflowId": "84c5de07-4f71-44a3-904a-020758146a5f"
                                         }
                                       ],
                                       "children": [
@@ -208,7 +210,8 @@
                                       },
                                       "actions": [
                                         {
-                                          "action": "b5760629-bb22-4ace-a567-406e1afe14d1"
+                                          "trigger": "click",
+                                          "workflowId": "b5760629-bb22-4ace-a567-406e1afe14d1"
                                         }
                                       ],
                                       "children": [
@@ -280,7 +283,8 @@
                                   },
                                   "actions": [
                                     {
-                                      "action": "59bc7c99-d110-4e01-8563-de6371d2147e"
+                                      "trigger": "click",
+                                      "workflowId": "59bc7c99-d110-4e01-8563-de6371d2147e"
                                     }
                                   ],
                                   "children": [
@@ -393,7 +397,8 @@
                                           },
                                           "actions": [
                                             {
-                                              "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
+                                              "trigger": "click",
+                                              "workflowId": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
                                             }
                                           ],
                                           "children": [
@@ -411,7 +416,8 @@
                                           },
                                           "actions": [
                                             {
-                                              "action": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
+                                              "trigger": "click",
+                                              "workflowId": "a1b2ce90-4498-47d2-b42f-e50f0a6972a7"
                                             }
                                           ],
                                           "children": [
@@ -482,7 +488,8 @@
                               ],
                               "actions": [
                                 {
-                                  "action": "aa100001-0000-0000-0000-000000000001"
+                                  "trigger": "click",
+                                  "workflowId": "aa100001-0000-0000-0000-000000000001"
                                 }
                               ]
                             },
@@ -970,7 +977,8 @@
                               },
                               "actions": [
                                 {
-                                  "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                                  "trigger": "click",
+                                  "workflowId": "f6046c33-0164-45b5-86aa-0710fc408247"
                                 }
                               ],
                               "children": [

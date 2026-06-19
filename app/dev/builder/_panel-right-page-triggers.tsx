@@ -40,20 +40,16 @@ export function PageTriggersInRightPanel() {
   const {
     focusedPageId,
     pages,
-    pageWorkflows,
-    pageWorkflowMeta,
-    setPageWorkflow,
-    setPageWorkflowMeta,
-    removePageWorkflow,
+    workflows,
+    setWorkflow,
+    removeWorkflow,
     openWorkflowCanvas,
   } = useBuilderStore(useShallow(s => ({
     focusedPageId: s.focusedPageId,
     pages: s.pages,
-    pageWorkflows: s.pageWorkflows,
-    pageWorkflowMeta: s.pageWorkflowMeta,
-    setPageWorkflow: s.setPageWorkflow,
-    setPageWorkflowMeta: s.setPageWorkflowMeta,
-    removePageWorkflow: s.removePageWorkflow,
+    workflows: s.workflows,
+    setWorkflow: s.setWorkflow,
+    removeWorkflow: s.removeWorkflow,
     openWorkflowCanvas: s.openWorkflowCanvas,
   })));
 
@@ -67,30 +63,30 @@ export function PageTriggersInRightPanel() {
     : undefined;
   const pageName = focusedPage?.name ?? 'this page';
 
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
   // List only page-scoped triggers for this page
-  const entries = Object.entries(pageWorkflowMeta)
-    .filter(([, meta]) =>
-      meta?.isTrigger &&
-      !meta.isAppTrigger &&
-      meta.pageScope === pageConfig &&
-      PAGE_TRIGGER_VALUES.has(meta?.trigger ?? ''),
+  const entries = Object.entries(wfMap)
+    .filter(([, wf]) =>
+      wf.isTrigger &&
+      !wf.isAppTrigger &&
+      wf.pageScope === pageConfig &&
+      PAGE_TRIGGER_VALUES.has(wf.trigger ?? ''),
     )
-    .map(([id, meta]) => ({
+    .map(([id, wf]) => ({
       id,
-      trigger: meta?.trigger ?? '',
-      name: meta?.name ?? id,
-      stepCount: (pageWorkflows[id] as unknown[])?.length ?? 0,
+      trigger: wf.trigger ?? '',
+      name: wf.name ?? id,
+      stepCount: (wf.steps ?? []).length,
     }));
 
   const addNew = () => {
     const id = crypto.randomUUID();
-    setPageWorkflow(id, []);
-    setPageWorkflowMeta(id, {
+    setWorkflow(id, {
       id,
       name: 'Untitled trigger',
       trigger: 'pageLoad',
       isTrigger: true,
-      isAppTrigger: false,
+      steps: [],
       ...(pageConfig ? { pageScope: pageConfig } : {}),
     });
     openWorkflowCanvas({ kind: 'pageWorkflow', name: id, isNew: true });
@@ -139,7 +135,7 @@ export function PageTriggersInRightPanel() {
                   name={entry.name}
                   stepCount={entry.stepCount}
                   onOpen={() => openWorkflowCanvas({ kind: 'pageWorkflow', name: entry.id })}
-                  onDelete={() => removePageWorkflow(entry.id)}
+                  onDelete={() => removeWorkflow(entry.id)}
                 />
               ))
             )}

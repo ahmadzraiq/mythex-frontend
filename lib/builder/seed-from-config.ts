@@ -86,13 +86,8 @@ export function buildSeedConfig(): Record<string, unknown> {
 
   // ── Workflows from actions/*.json ─────────────────────────────────────────
   const workflows: Record<string, import('@/config/types').WorkflowDef> = {};
-  // Legacy dicts — kept so the builder UI panels continue to work
-  const pageWorkflows: Record<string, unknown[]> = {};
-  const pageWorkflowMeta: Record<string, { trigger: string; name: string }> = {};
   for (const wf of builderCfg.workflows) {
     workflows[wf.id] = { id: wf.id, name: wf.name, trigger: wf.trigger, steps: wf.steps, params: wf.params as import('@/config/types').WorkflowParam[] | undefined };
-    pageWorkflows[wf.id] = wf.steps;
-    pageWorkflowMeta[wf.id] = { trigger: wf.trigger, name: wf.name };
   }
 
   // ── Shared component workflows (so executeComponentAction's picker finds them) ─
@@ -105,12 +100,9 @@ export function buildSeedConfig(): Record<string, unknown> {
     for (const [scId, scModel] of Object.entries(sharedComponents)) {
       const scName = scModel.name ?? scId;
       for (const [wfId, wf] of Object.entries(scModel.workflows ?? {})) {
-        // Only register if not already present (avoids overwriting user-edited ids)
         if (!workflows[wfId]) {
           const wfName = `${scName} — ${wf.name ?? wfId}`;
           workflows[wfId] = { id: wfId, name: wfName, trigger: wf.trigger, steps: (wf.steps as object[]) ?? [] };
-          pageWorkflows[wfId] = wf.steps ?? [];
-          pageWorkflowMeta[wfId] = { trigger: wf.trigger, name: wfName };
         }
       }
     }
@@ -153,10 +145,6 @@ export function buildSeedConfig(): Record<string, unknown> {
   return {
     pages,
     workflows,
-    pageWorkflows,
-    pageWorkflowMeta,
-    globalWorkflows: {},
-    globalWorkflowMeta: {},
     customVars,
     varFolders,
     pageDataSources,

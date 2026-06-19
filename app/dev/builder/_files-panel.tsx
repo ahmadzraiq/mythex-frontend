@@ -787,7 +787,7 @@ export function FileExplorerOverlay({ open, onClose, projectId }: { open: boolea
   const baseSources = useMemo(
     () => decompileStore(builderStore),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [builderStore.pages, builderStore.customVars, builderStore.globalWorkflowMeta],
+    [builderStore.pages, builderStore.customVars, builderStore.workflows],
   );
 
   const handleSourcesChange = useCallback((next: Record<string, string>) => {
@@ -843,7 +843,7 @@ export function FilesPanelContent({ projectId }: { projectId?: string }) {
   const baseSources = useMemo(
     () => decompileStore(builderStore),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [builderStore.pages, builderStore.customVars, builderStore.globalWorkflowMeta],
+    [builderStore.pages, builderStore.customVars, builderStore.workflows],
   );
 
   const handleSourcesChange = useCallback((next: Record<string, string>) => {

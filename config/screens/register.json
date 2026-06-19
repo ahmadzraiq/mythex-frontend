@@ -58,7 +58,8 @@
                 },
                 "actions": [
                   {
-                    "action": "926c0ef9-beeb-41d3-924b-034b76b8b7cf"
+                    "trigger": "click",
+                    "workflowId": "926c0ef9-beeb-41d3-924b-034b76b8b7cf"
                   }
                 ],
                 "children": [
@@ -479,7 +480,8 @@
                 "type": "Box",
                 "actions": [
                   {
-                    "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
+                    "trigger": "click",
+                    "workflowId": "3517ed88-9e35-42fd-8d44-650cb590d210"
                   }
                 ],
                 "children": [

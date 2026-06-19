@@ -117,7 +117,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "ptSelectItem"
+                                    "trigger": "click",
+                                    "workflowId": "ptSelectItem"
                                   }
                                 ],
                                 "children": [
@@ -529,7 +530,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "ptSelectItem"
+                                    "trigger": "click",
+                                    "workflowId": "ptSelectItem"
                                   }
                                 ],
                                 "children": [
@@ -599,7 +601,8 @@
                         },
                         "actions": [
                           {
-                            "action": "ptOpenProgrammatic"
+                            "trigger": "click",
+                            "workflowId": "ptOpenProgrammatic"
                           }
                         ],
                         "children": [
@@ -627,7 +630,8 @@
                         },
                         "actions": [
                           {
-                            "action": "ptCloseProgrammatic"
+                            "trigger": "click",
+                            "workflowId": "ptCloseProgrammatic"
                           }
                         ],
                         "children": [
@@ -655,7 +659,8 @@
                         },
                         "actions": [
                           {
-                            "action": "ptToggleProgrammatic"
+                            "trigger": "click",
+                            "workflowId": "ptToggleProgrammatic"
                           }
                         ],
                         "children": [
@@ -761,7 +766,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "ptCloseProgrammatic"
+                                    "trigger": "click",
+                                    "workflowId": "ptCloseProgrammatic"
                                   }
                                 ],
                                 "children": [
@@ -912,7 +918,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "ptIncrementCounter"
+                                        "trigger": "click",
+                                        "workflowId": "ptIncrementCounter"
                                       }
                                     ],
                                     "children": [
@@ -940,7 +947,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "ptResetCounter"
+                                        "trigger": "click",
+                                        "workflowId": "ptResetCounter"
                                       }
                                     ],
                                     "children": [
@@ -1267,7 +1275,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acBasicType"
+                            "trigger": "click",
+                            "workflowId": "acBasicType"
                           }
                         ]
                       },
@@ -1326,7 +1335,8 @@
                                 ],
                                 "actions": [
                                   {
-                                    "action": "acBasicSelect"
+                                    "trigger": "click",
+                                    "workflowId": "acBasicSelect"
                                   }
                                 ],
                                 "condition": "!variables['ac-test-0000-0000-0000-000000000001'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000001']?.toLowerCase())"
@@ -1381,7 +1391,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acBasicClear"
+                            "trigger": "click",
+                            "workflowId": "acBasicClear"
                           }
                         ],
                         "children": [
@@ -1469,7 +1480,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "acMultiRemove"
+                                    "trigger": "click",
+                                    "workflowId": "acMultiRemove"
                                   }
                                 ],
                                 "children": [
@@ -1511,7 +1523,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acMultiType"
+                            "trigger": "click",
+                            "workflowId": "acMultiType"
                           }
                         ]
                       },
@@ -1538,7 +1551,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "acMultiToggle"
+                                    "trigger": "click",
+                                    "workflowId": "acMultiToggle"
                                   }
                                 ],
                                 "children": [
@@ -1640,7 +1654,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acGroupedType"
+                            "trigger": "click",
+                            "workflowId": "acGroupedType"
                           }
                         ]
                       },
@@ -1704,7 +1719,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "acGroupedSelect"
+                                        "trigger": "click",
+                                        "workflowId": "acGroupedSelect"
                                       }
                                     ],
                                     "condition": "context?.item?.data?.group === 'Drama' && (!variables['ac-test-0000-0000-0000-000000000006'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000006']?.toLowerCase()))"
@@ -1766,7 +1782,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "acGroupedSelect"
+                                        "trigger": "click",
+                                        "workflowId": "acGroupedSelect"
                                       }
                                     ],
                                     "condition": "context?.item?.data?.group === 'Action' && (!variables['ac-test-0000-0000-0000-000000000006'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000006']?.toLowerCase()))"
@@ -1828,7 +1845,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "acGroupedSelect"
+                                        "trigger": "click",
+                                        "workflowId": "acGroupedSelect"
                                       }
                                     ],
                                     "condition": "context?.item?.data?.group === 'Sci-Fi' && (!variables['ac-test-0000-0000-0000-000000000006'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000006']?.toLowerCase()))"
@@ -1890,7 +1908,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "acGroupedSelect"
+                                        "trigger": "click",
+                                        "workflowId": "acGroupedSelect"
                                       }
                                     ],
                                     "condition": "context?.item?.data?.group === 'Thriller' && (!variables['ac-test-0000-0000-0000-000000000006'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000006']?.toLowerCase()))"
@@ -1982,7 +2001,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "acFreeSoloRemoveTag"
+                                    "trigger": "click",
+                                    "workflowId": "acFreeSoloRemoveTag"
                                   }
                                 ],
                                 "children": [
@@ -2024,10 +2044,12 @@
                         },
                         "actions": [
                           {
-                            "action": "acFreeSoloType"
+                            "trigger": "click",
+                            "workflowId": "acFreeSoloType"
                           },
                           {
-                            "action": "acFreeSoloAdd"
+                            "trigger": "click",
+                            "workflowId": "acFreeSoloAdd"
                           }
                         ]
                       },
@@ -2046,7 +2068,8 @@
                             },
                             "actions": [
                               {
-                                "action": "acFreeSoloAdd"
+                                "trigger": "click",
+                                "workflowId": "acFreeSoloAdd"
                               }
                             ],
                             "children": [
@@ -2091,7 +2114,8 @@
                                 ],
                                 "actions": [
                                   {
-                                    "action": "acFreeSoloSelect"
+                                    "trigger": "click",
+                                    "workflowId": "acFreeSoloSelect"
                                   }
                                 ],
                                 "condition": "!variables['ac-test-0000-0000-0000-000000000009'] || context?.item?.data?.label?.toLowerCase()?.includes(variables['ac-test-0000-0000-0000-000000000009']?.toLowerCase())"
@@ -2168,7 +2192,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acAsyncType"
+                            "trigger": "click",
+                            "workflowId": "acAsyncType"
                           }
                         ]
                       },
@@ -2256,7 +2281,8 @@
                                 ],
                                 "actions": [
                                   {
-                                    "action": "acAsyncSelect"
+                                    "trigger": "click",
+                                    "workflowId": "acAsyncSelect"
                                   }
                                 ]
                               }
@@ -2332,7 +2358,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acDisabledType"
+                            "trigger": "click",
+                            "workflowId": "acDisabledType"
                           }
                         ]
                       },
@@ -2359,7 +2386,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "acDisabledSelect"
+                                    "trigger": "click",
+                                    "workflowId": "acDisabledSelect"
                                   }
                                 ],
                                 "children": [
@@ -2483,7 +2511,8 @@
                         },
                         "actions": [
                           {
-                            "action": "acCustomType"
+                            "trigger": "click",
+                            "workflowId": "acCustomType"
                           }
                         ]
                       },
@@ -2510,7 +2539,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "acCustomSelect"
+                                    "trigger": "click",
+                                    "workflowId": "acCustomSelect"
                                   }
                                 ],
                                 "children": [
@@ -2672,7 +2702,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -2700,7 +2731,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -2783,7 +2815,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -2811,7 +2844,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -2839,7 +2873,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -2873,7 +2908,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -2903,7 +2939,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -2946,7 +2983,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -2995,7 +3033,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3073,7 +3112,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3116,7 +3156,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3165,7 +3206,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3208,7 +3250,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3251,7 +3294,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3355,7 +3399,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3398,7 +3443,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3441,7 +3487,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3523,7 +3570,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3566,7 +3614,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -3670,7 +3719,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3698,7 +3748,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3726,7 +3777,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3754,7 +3806,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3782,7 +3835,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3869,7 +3923,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3912,7 +3967,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -3961,7 +4017,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "menuCloseAll"
+                                    "trigger": "click",
+                                    "workflowId": "menuCloseAll"
                                   }
                                 ],
                                 "children": [
@@ -4014,7 +4071,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -4057,7 +4115,8 @@
                         },
                         "actions": [
                           {
-                            "action": "menuCloseAll"
+                            "trigger": "click",
+                            "workflowId": "menuCloseAll"
                           }
                         ],
                         "children": [
@@ -4185,7 +4244,8 @@
                     },
                     "actions": [
                       {
-                        "action": "dp1TypeDate"
+                        "trigger": "click",
+                        "workflowId": "dp1TypeDate"
                       }
                     ]
                   },
@@ -4219,7 +4279,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "dp1PrevMonth"
+                                    "trigger": "click",
+                                    "workflowId": "dp1PrevMonth"
                                   }
                                 ],
                                 "children": [
@@ -4249,7 +4310,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "dp1NextMonth"
+                                    "trigger": "click",
+                                    "workflowId": "dp1NextMonth"
                                   }
                                 ],
                                 "children": [
@@ -4344,7 +4406,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dp1SelectDay"
+                                        "trigger": "click",
+                                        "workflowId": "dp1SelectDay"
                                       }
                                     ],
                                     "children": [
@@ -4365,7 +4428,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dp1SelectDay"
+                                        "trigger": "click",
+                                        "workflowId": "dp1SelectDay"
                                       }
                                     ],
                                     "children": [
@@ -4472,7 +4536,8 @@
                     },
                     "actions": [
                       {
-                        "action": "dp2TypeDate"
+                        "trigger": "click",
+                        "workflowId": "dp2TypeDate"
                       }
                     ]
                   },
@@ -4502,7 +4567,8 @@
                             },
                             "actions": [
                               {
-                                "action": "dp2PresetToday"
+                                "trigger": "click",
+                                "workflowId": "dp2PresetToday"
                               }
                             ],
                             "children": [
@@ -4519,7 +4585,8 @@
                             },
                             "actions": [
                               {
-                                "action": "dp2PresetYesterday"
+                                "trigger": "click",
+                                "workflowId": "dp2PresetYesterday"
                               }
                             ],
                             "children": [
@@ -4536,7 +4603,8 @@
                             },
                             "actions": [
                               {
-                                "action": "dp2PresetNextWeek"
+                                "trigger": "click",
+                                "workflowId": "dp2PresetNextWeek"
                               }
                             ],
                             "children": [
@@ -4576,7 +4644,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dp2PrevMonth"
+                                        "trigger": "click",
+                                        "workflowId": "dp2PrevMonth"
                                       }
                                     ],
                                     "children": [
@@ -4606,7 +4675,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dp2NextMonth"
+                                        "trigger": "click",
+                                        "workflowId": "dp2NextMonth"
                                       }
                                     ],
                                     "children": [
@@ -4701,7 +4771,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "dp2SelectDay"
+                                            "trigger": "click",
+                                            "workflowId": "dp2SelectDay"
                                           }
                                         ],
                                         "children": [
@@ -4722,7 +4793,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "dp2SelectDay"
+                                            "trigger": "click",
+                                            "workflowId": "dp2SelectDay"
                                           }
                                         ],
                                         "children": [
@@ -4831,7 +4903,8 @@
                     },
                     "actions": [
                       {
-                        "action": "tpTypeTime"
+                        "trigger": "click",
+                        "workflowId": "tpTypeTime"
                       }
                     ]
                   },
@@ -4893,7 +4966,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "tpSelectHour"
+                                        "trigger": "click",
+                                        "workflowId": "tpSelectHour"
                                       }
                                     ],
                                     "children": [
@@ -4949,7 +5023,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "tpSelectMinute"
+                                        "trigger": "click",
+                                        "workflowId": "tpSelectMinute"
                                       }
                                     ],
                                     "children": [
@@ -4983,7 +5058,8 @@
                             },
                             "actions": [
                               {
-                                "action": "tpConfirm"
+                                "trigger": "click",
+                                "workflowId": "tpConfirm"
                               }
                             ],
                             "children": [
@@ -5070,7 +5146,8 @@
                     },
                     "actions": [
                       {
-                        "action": "dtpTypeDateTime"
+                        "trigger": "click",
+                        "workflowId": "dtpTypeDateTime"
                       }
                     ]
                   },
@@ -5110,7 +5187,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dtpPrevMonth"
+                                        "trigger": "click",
+                                        "workflowId": "dtpPrevMonth"
                                       }
                                     ],
                                     "children": [
@@ -5140,7 +5218,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dtpNextMonth"
+                                        "trigger": "click",
+                                        "workflowId": "dtpNextMonth"
                                       }
                                     ],
                                     "children": [
@@ -5235,7 +5314,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "dtpSelectDay"
+                                            "trigger": "click",
+                                            "workflowId": "dtpSelectDay"
                                           }
                                         ],
                                         "children": [
@@ -5256,7 +5336,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "dtpSelectDay"
+                                            "trigger": "click",
+                                            "workflowId": "dtpSelectDay"
                                           }
                                         ],
                                         "children": [
@@ -5325,7 +5406,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dtpSelectHour"
+                                        "trigger": "click",
+                                        "workflowId": "dtpSelectHour"
                                       }
                                     ],
                                     "children": [
@@ -5362,7 +5444,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "dtpSelectMinute"
+                                        "trigger": "click",
+                                        "workflowId": "dtpSelectMinute"
                                       }
                                     ],
                                     "children": [
@@ -5388,7 +5471,8 @@
                             },
                             "actions": [
                               {
-                                "action": "dtpConfirm"
+                                "trigger": "click",
+                                "workflowId": "dtpConfirm"
                               }
                             ],
                             "children": [
@@ -5475,7 +5559,8 @@
                     },
                     "actions": [
                       {
-                        "action": "drTypeStart"
+                        "trigger": "click",
+                        "workflowId": "drTypeStart"
                       }
                     ]
                   },
@@ -5498,7 +5583,8 @@
                     },
                     "actions": [
                       {
-                        "action": "drTypeEnd"
+                        "trigger": "click",
+                        "workflowId": "drTypeEnd"
                       }
                     ]
                   },
@@ -5540,7 +5626,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "drPrevMonth"
+                                        "trigger": "click",
+                                        "workflowId": "drPrevMonth"
                                       }
                                     ],
                                     "children": [
@@ -5650,7 +5737,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5671,7 +5759,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5692,7 +5781,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5764,7 +5854,8 @@
                                     },
                                     "actions": [
                                       {
-                                        "action": "drNextMonth"
+                                        "trigger": "click",
+                                        "workflowId": "drNextMonth"
                                       }
                                     ],
                                     "children": [
@@ -5859,7 +5950,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5880,7 +5972,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5901,7 +5994,8 @@
                                         },
                                         "actions": [
                                           {
-                                            "action": "drSelectDate"
+                                            "trigger": "click",
+                                            "workflowId": "drSelectDate"
                                           }
                                         ],
                                         "children": [
@@ -5960,7 +6054,8 @@
                             },
                             "actions": [
                               {
-                                "action": "drClear"
+                                "trigger": "click",
+                                "workflowId": "drClear"
                               }
                             ],
                             "children": [
@@ -6038,7 +6133,8 @@
                             },
                             "actions": [
                               {
-                                "action": "sdpPrevMonth"
+                                "trigger": "click",
+                                "workflowId": "sdpPrevMonth"
                               }
                             ],
                             "children": [
@@ -6068,7 +6164,8 @@
                             },
                             "actions": [
                               {
-                                "action": "sdpNextMonth"
+                                "trigger": "click",
+                                "workflowId": "sdpNextMonth"
                               }
                             ],
                             "children": [
@@ -6163,7 +6260,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "sdpSelectDay"
+                                    "trigger": "click",
+                                    "workflowId": "sdpSelectDay"
                                   }
                                 ],
                                 "children": [
@@ -6184,7 +6282,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "sdpSelectDay"
+                                    "trigger": "click",
+                                    "workflowId": "sdpSelectDay"
                                   }
                                 ],
                                 "children": [
@@ -6237,7 +6336,8 @@
     ],
     "actions": [
       {
-        "action": "dpInitAllGrids"
+        "trigger": "click",
+        "workflowId": "dpInitAllGrids"
       }
     ]
   }

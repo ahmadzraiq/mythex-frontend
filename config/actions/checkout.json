@@ -322,7 +322,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "b0c1d2e3-f4a5-6789-bcde-890123456789",
-          "value": { "formula": "context?.event?.value" }
+          "value": {
+            "formula": "context?.event?.value"
+          }
         }
       }
     ]

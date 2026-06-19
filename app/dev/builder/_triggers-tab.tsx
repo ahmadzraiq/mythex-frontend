@@ -9,7 +9,7 @@
  * Page-scoped triggers (isTrigger: true, isAppTrigger: false, pageScope set)
  * are shown in the right panel's PageTriggersInRightPanel when no node is selected.
  *
- * Stored as pageWorkflows with { isTrigger: true, isAppTrigger: true } in pageWorkflowMeta.
+ * Stored in store.workflows with { isTrigger: true, isAppTrigger: true }.
  */
 
 import React, { useState } from 'react';
@@ -246,36 +246,29 @@ function TriggerSection({
   open: boolean;
   onToggle: () => void;
 }) {
-  const {
-    pageWorkflows,
-    pageWorkflowMeta,
-    setPageWorkflow,
-    setPageWorkflowMeta,
-    removePageWorkflow,
-    openWorkflowCanvas,
-  } = useBuilderStore();
+  const { workflows, setWorkflow, removeWorkflow, openWorkflowCanvas } = useBuilderStore();
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
 
   // Only show app-level triggers (isAppTrigger: true)
-  const entries = Object.entries(pageWorkflowMeta)
-    .filter(([, meta]) => meta?.isTrigger && meta.isAppTrigger === true && triggerSet.has(meta?.trigger ?? ''))
-    .map(([id, meta]) => ({
+  const entries = Object.entries(wfMap)
+    .filter(([, wf]) => wf.isTrigger && wf.isAppTrigger === true && triggerSet.has(wf.trigger ?? ''))
+    .map(([id, wf]) => ({
       id,
-      trigger: meta?.trigger ?? '',
-      name: meta?.name ?? id,
-      stepCount: (pageWorkflows[id] as unknown[])?.length ?? 0,
+      trigger: wf.trigger ?? '',
+      name: wf.name ?? id,
+      stepCount: (wf.steps ?? []).length,
     }));
 
   const addNew = () => {
     const id = crypto.randomUUID();
-    setPageWorkflow(id, []);
-    setPageWorkflowMeta(id, {
+    setWorkflow(id, {
       id,
       name: 'Untitled trigger',
       trigger: defaultTrigger,
       isTrigger: true,
       isAppTrigger: true,
+      steps: [],
     });
-    // Open with pageWorkflow kind — canvas shows editable trigger with restricted dropdown
     openWorkflowCanvas({ kind: 'pageWorkflow', name: id, isNew: true });
   };
 
@@ -313,7 +306,7 @@ function TriggerSection({
               name={entry.name}
               stepCount={entry.stepCount}
               onOpen={() => openWorkflowCanvas({ kind: 'pageWorkflow', name: entry.id })}
-              onDelete={() => removePageWorkflow(entry.id)}
+              onDelete={() => removeWorkflow(entry.id)}
             />
           ))}
         </div>

@@ -888,13 +888,15 @@ export function LogicPanel({ node }: LogicPanelProps) {
 // ─── Workflows section ────────────────────────────────────────────────────────
 
 function WorkflowsSection() {
-  const { pageWorkflows, pageWorkflowMeta, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const { workflows, setWorkflow, removeWorkflow } = useBuilderStore();
   const [newName, setNewName] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Filter out system workflows and trigger workflows (those belong to the Triggers tab)
-  const entries = Object.entries(pageWorkflows)
-    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem && !pageWorkflowMeta[id]?.isTrigger);
+  // Filter out trigger workflows (those belong to the Triggers tab)
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const entries = Object.entries(wfMap)
+    .filter(([, w]) => !w.isTrigger && !w.isAppTrigger)
+    .map(([id, w]) => [id, w.steps ?? []] as [string, object[]]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -913,7 +915,7 @@ function WorkflowsSection() {
             <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)' }}>{expanded === name ? (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>) : (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transform:"rotate(-90deg)"}}><polyline points="6 9 12 15 18 9"/></svg>)}</span>
             <span style={{ fontSize: 11, color: 'var(--bld-accent)', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
             <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
-            <button onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
+            <button onClick={e => { e.stopPropagation(); removeWorkflow(name); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}>×</button>
           </button>
           {expanded === name && (
@@ -923,7 +925,7 @@ function WorkflowsSection() {
                   (acc['run'] ??= []).push(a);
                   return acc;
                 }, {})}
-                onChange={v => setPageWorkflow(name, Object.values(v ?? {}).flat() as object[])}
+                onChange={v => setWorkflow(name, { ...wfMap[name], id: name, steps: Object.values(v ?? {}).flat() as object[] })}
                 availableEvents={['run']}
               />
             </div>
@@ -936,11 +938,11 @@ function WorkflowsSection() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           placeholder="workflow name…"
-          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { const id = crypto.randomUUID(); setWorkflow(id, { id, name: newName.trim(), trigger: 'click', steps: [] }); setNewName(''); } }}
           style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '4px 7px', outline: 'none' }}
         />
         <button
-          onClick={() => { if (newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+          onClick={() => { if (newName.trim()) { const id = crypto.randomUUID(); setWorkflow(id, { id, name: newName.trim(), trigger: 'click', steps: [] }); setNewName(''); } }}
           style={{ padding: '4px 12px', background: 'var(--bld-accent-hover)', border: 'none', borderRadius: 4, color: 'var(--bld-accent-fg)', fontSize: 11, cursor: 'pointer' }}
         >
           + Add

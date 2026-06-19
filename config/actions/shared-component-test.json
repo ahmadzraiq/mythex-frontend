@@ -7,7 +7,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "sct-modal-0000-0000-0000-000000000001",
-          "value": { "formula": "!variables['sct-modal-0000-0000-0000-000000000001']" }
+          "value": {
+            "formula": "!variables['sct-modal-0000-0000-0000-000000000001']"
+          }
         }
       }
     ]
@@ -20,7 +22,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "sct-bsheet-000-0000-0000-000000000002",
-          "value": { "formula": "!variables['sct-bsheet-000-0000-0000-000000000002']" }
+          "value": {
+            "formula": "!variables['sct-bsheet-000-0000-0000-000000000002']"
+          }
         }
       }
     ]
@@ -33,7 +37,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "sct-drawer-000-0000-0000-000000000003",
-          "value": { "formula": "!variables['sct-drawer-000-0000-0000-000000000003']" }
+          "value": {
+            "formula": "!variables['sct-drawer-000-0000-0000-000000000003']"
+          }
         }
       }
     ]
@@ -46,7 +52,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "sct-toast-0000-0000-0000-000000000004",
-          "value": { "formula": "!variables['sct-toast-0000-0000-0000-000000000004']" }
+          "value": {
+            "formula": "!variables['sct-toast-0000-0000-0000-000000000004']"
+          }
         }
       }
     ]

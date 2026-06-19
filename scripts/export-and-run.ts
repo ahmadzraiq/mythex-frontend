@@ -87,10 +87,7 @@ async function loadLiveState(id: string): Promise<Partial<BuilderStore>> {
     // Override pages with live nodes from backend
     pages: pages.length > 0 ? pages as BuilderStore['pages'] : staticState.pages,
     // Override workflows and vars from backend if present
-    ...(saved.pageWorkflows ? { pageWorkflows: saved.pageWorkflows as BuilderStore['pageWorkflows'] } : {}),
-    ...(saved.pageWorkflowMeta ? { pageWorkflowMeta: saved.pageWorkflowMeta as BuilderStore['pageWorkflowMeta'] } : {}),
-    ...(saved.globalWorkflows ? { globalWorkflows: saved.globalWorkflows as BuilderStore['globalWorkflows'] } : {}),
-    ...(saved.globalWorkflowMeta ? { globalWorkflowMeta: saved.globalWorkflowMeta as BuilderStore['globalWorkflowMeta'] } : {}),
+    ...(saved.workflows ? { workflows: saved.workflows as BuilderStore['workflows'] } : {}),
     ...(saved.customVars ? { customVars: saved.customVars as BuilderStore['customVars'] } : {}),
     ...(saved.customColors ? { customColors: saved.customColors as BuilderStore['customColors'] } : {}),
     ...(saved.themeOverrides ? { themeOverrides: saved.themeOverrides as BuilderStore['themeOverrides'] } : {}),

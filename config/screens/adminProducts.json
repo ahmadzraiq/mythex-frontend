@@ -18,7 +18,8 @@
         },
         "actions": [
           {
-            "action": "admin-close-all-popovers"
+            "trigger": "click",
+            "workflowId": "admin-close-all-popovers"
           }
         ]
       },
@@ -53,7 +54,8 @@
                 },
                 "actions": [
                   {
-                    "action": "ad-reindex-btn"
+                    "trigger": "click",
+                    "workflowId": "ad-reindex-btn"
                   }
                 ],
                 "children": [
@@ -154,7 +156,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-products-toggle-filter"
+                    "trigger": "click",
+                    "workflowId": "admin-products-toggle-filter"
                   }
                 ],
                 "children": [
@@ -199,8 +202,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-status-all",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-status-all"
                           }
                         ],
                         "children": [
@@ -224,8 +227,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-status-enabled",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-status-enabled"
                           }
                         ],
                         "children": [
@@ -249,8 +252,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-status-disabled",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-status-disabled"
                           }
                         ],
                         "children": [
@@ -280,12 +283,12 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-status-all",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-status-all"
                           },
                           {
-                            "action": "admin-products-close-filter",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-close-filter"
                           }
                         ],
                         "children": [
@@ -327,7 +330,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-products-toggle-saved"
+                    "trigger": "click",
+                    "workflowId": "admin-products-toggle-saved"
                   }
                 ],
                 "children": [
@@ -400,8 +404,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-close-saved",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-close-saved"
                           }
                         ],
                         "children": [
@@ -447,7 +451,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-products-toggle-columns"
+                    "trigger": "click",
+                    "workflowId": "admin-products-toggle-columns"
                   }
                 ],
                 "children": [
@@ -525,7 +530,8 @@
                                 "trigger": "dragEnd"
                               },
                               {
-                                "action": "admin-col-toggle"
+                                "trigger": "click",
+                                "workflowId": "admin-col-toggle"
                               }
                             ],
                             "children": [
@@ -597,8 +603,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-columns-reset",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-columns-reset"
                           }
                         ],
                         "children": [
@@ -624,7 +630,8 @@
             },
             "actions": [
               {
-                "action": "admin-products-refresh"
+                "trigger": "click",
+                "workflowId": "admin-products-refresh"
               }
             ],
             "children": [
@@ -658,7 +665,8 @@
             },
             "actions": [
               {
-                "action": "admin-product-menu-close"
+                "trigger": "click",
+                "workflowId": "admin-product-menu-close"
               }
             ]
           },
@@ -855,7 +863,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-view-product"
+                    "trigger": "click",
+                    "workflowId": "admin-view-product"
                   }
                 ],
                 "children": [
@@ -1018,8 +1027,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-product-menu-toggle",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-product-menu-toggle"
                           }
                         ],
                         "children": [
@@ -1047,8 +1056,8 @@
                             },
                             "actions": [
                               {
-                                "action": "admin-product-menu-close",
-                                "stopPropagation": true
+                                "trigger": "click",
+                                "workflowId": "admin-product-menu-close"
                               }
                             ],
                             "children": [
@@ -1076,8 +1085,8 @@
                             },
                             "actions": [
                               {
-                                "action": "admin-product-menu-close",
-                                "stopPropagation": true
+                                "trigger": "click",
+                                "workflowId": "admin-product-menu-close"
                               }
                             ],
                             "children": [
@@ -1105,8 +1114,8 @@
                             },
                             "actions": [
                               {
-                                "action": "admin-product-menu-close",
-                                "stopPropagation": true
+                                "trigger": "click",
+                                "workflowId": "admin-product-menu-close"
                               }
                             ],
                             "children": [
@@ -1140,8 +1149,8 @@
                             },
                             "actions": [
                               {
-                                "action": "admin-product-menu-close",
-                                "stopPropagation": true
+                                "trigger": "click",
+                                "workflowId": "admin-product-menu-close"
                               }
                             ],
                             "children": [
@@ -1243,8 +1252,8 @@
                             },
                             "actions": [
                               {
-                                "action": "admin-products-toggle-page-size",
-                                "stopPropagation": true
+                                "trigger": "click",
+                                "workflowId": "admin-products-toggle-page-size"
                               }
                             ],
                             "children": [
@@ -1286,8 +1295,8 @@
                                 },
                                 "actions": [
                                   {
-                                    "action": "admin-products-set-page-size",
-                                    "stopPropagation": true
+                                    "trigger": "click",
+                                    "workflowId": "admin-products-set-page-size"
                                   }
                                 ],
                                 "children": [
@@ -1333,8 +1342,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-goto-page",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-goto-page"
                           }
                         ],
                         "map": {
@@ -1376,8 +1385,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-prev-page",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-prev-page"
                           }
                         ],
                         "children": [
@@ -1416,8 +1425,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-next-page",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-next-page"
                           }
                         ],
                         "children": [
@@ -1456,8 +1465,8 @@
                         },
                         "actions": [
                           {
-                            "action": "admin-products-goto-page",
-                            "stopPropagation": true
+                            "trigger": "click",
+                            "workflowId": "admin-products-goto-page"
                           }
                         ],
                         "map": {

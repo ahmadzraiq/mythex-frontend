@@ -362,6 +362,42 @@ export function patchNodeById(
   return changed ? result : nodes;
 }
 
+/** Recursively collect every workflowId referenced in node actions (compact, steps, or legacy format). */
+export function collectWorkflowIds(node: SDUINode): Set<string> {
+  const ids = new Set<string>();
+  const scanActions = (actions: unknown) => {
+    if (!Array.isArray(actions)) return;
+    for (const a of actions as Array<Record<string, unknown>>) {
+      if (!a || typeof a !== 'object') continue;
+      if (typeof a.workflowId === 'string') { ids.add(a.workflowId); continue; }
+      if (Array.isArray(a.steps)) {
+        for (const s of a.steps as Array<Record<string, unknown>>) {
+          if (s?.type === 'executeWorkflow' && typeof s?.config === 'object') {
+            const wid = (s.config as Record<string, unknown>).workflowId;
+            if (typeof wid === 'string') ids.add(wid);
+          }
+        }
+        continue;
+      }
+      if (typeof a.action === 'string') ids.add(a.action);
+    }
+  };
+  scanActions(node.actions);
+  for (const child of (node.children ?? []) as SDUINode[]) {
+    for (const id of collectWorkflowIds(child)) ids.add(id);
+  }
+  return ids;
+}
+
+/** Collect all workflowIds still referenced in a node tree. */
+export function collectAllReferencedWorkflowIds(nodes: SDUINode[]): Set<string> {
+  const ids = new Set<string>();
+  for (const node of nodes) {
+    for (const id of collectWorkflowIds(node)) ids.add(id);
+  }
+  return ids;
+}
+
 export function removeNodesByIds(nodes: SDUINode[], ids: Set<string>): SDUINode[] {
   const filtered = nodes.filter(n => !ids.has(n.id ?? ''));
   const recurse = (n: SDUINode): SDUINode => {

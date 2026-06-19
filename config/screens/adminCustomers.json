@@ -247,7 +247,8 @@
                 "condition": "(collections['ad000006-0000-0000-0000-000000000006']?.page || 1) > 1",
                 "actions": [
                   {
-                    "action": "admin-customers-page-prev"
+                    "trigger": "click",
+                    "workflowId": "admin-customers-page-prev"
                   }
                 ],
                 "children": [
@@ -275,7 +276,8 @@
                 "condition": "(collections['ad000006-0000-0000-0000-000000000006']?.page || 1) < (collections['ad000006-0000-0000-0000-000000000006']?.totalPages || 1)",
                 "actions": [
                   {
-                    "action": "admin-customers-page-next"
+                    "trigger": "click",
+                    "workflowId": "admin-customers-page-next"
                   }
                 ],
                 "children": [

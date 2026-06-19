@@ -685,11 +685,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
       for (const item of actions) {
         if (!item || typeof item !== 'object') continue;
         const ref = item as unknown as Record<string, unknown>;
-        const wfName = typeof ref.action === 'string' ? ref.action : '';
+        // New format: { trigger, workflowId } — trigger is inline, workflowId identifies the workflow
+        const refTrigger = typeof ref.trigger === 'string' ? ref.trigger : null;
+        if (refTrigger !== triggerId) continue;
+        const wfName = typeof ref.workflowId === 'string' ? ref.workflowId
+          : typeof ref.action === 'string' ? ref.action : '';
         if (!wfName) continue;
-        const wfDef = cfg?.[wfName] as Record<string, unknown> | undefined;
-        const wfTrigger = typeof wfDef?.trigger === 'string' ? wfDef.trigger : null;
-        if (wfTrigger !== triggerId) continue;
         try {
           Promise.resolve(
             _runActionRef.current(item as Parameters<typeof runAction>[0], undefined, listenerScope),

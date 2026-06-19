@@ -328,7 +328,7 @@ async function seedProject(): Promise<void> {
         { id: dsCustomersId, name: 'Customers List', type: 'rest', url: `${API_BASE}/customers-list`, method: 'GET', storeIn: dsCustomersId, trigger: 'mount' },
         { id: dsOrdersId,    name: 'Orders List',    type: 'rest', url: `${API_BASE}/orders-list`,    method: 'GET', storeIn: dsOrdersId,    trigger: 'mount' },
       ],
-      pageWorkflows: {}, pageWorkflowMeta: {}, globalWorkflows: {}, globalWorkflowMeta: {},
+      workflows: {},
       customVars: [], varFolders: [], dsFolders: [], customColors: [], colorFolders: [],
       themeOverrides: {}, themeDarkOverrides: {}, sharedComponents: {},
     }),

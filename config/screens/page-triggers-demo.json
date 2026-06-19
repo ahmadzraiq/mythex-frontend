@@ -10,9 +10,16 @@
       "name": "App Trigger: On Load (all pages)",
       "isTrigger": true,
       "isAppTrigger": true,
-      "trigger": { "event": "onLoad" },
+      "trigger": {
+        "event": "onLoad"
+      },
       "actions": [
-        { "type": "log", "payload": { "msg": "App trigger fired on load" } }
+        {
+          "type": "log",
+          "payload": {
+            "msg": "App trigger fired on load"
+          }
+        }
       ]
     },
     "wf-app-trigger-2": {
@@ -20,9 +27,16 @@
       "name": "App Trigger: On Scroll (all pages)",
       "isTrigger": true,
       "isAppTrigger": true,
-      "trigger": { "event": "onScroll" },
+      "trigger": {
+        "event": "onScroll"
+      },
       "actions": [
-        { "type": "log", "payload": { "msg": "App trigger: scroll" } }
+        {
+          "type": "log",
+          "payload": {
+            "msg": "App trigger: scroll"
+          }
+        }
       ]
     },
     "wf-page-trigger-1": {
@@ -31,9 +45,16 @@
       "isTrigger": true,
       "isAppTrigger": false,
       "pageScope": "/page-triggers-demo",
-      "trigger": { "event": "onLoad" },
+      "trigger": {
+        "event": "onLoad"
+      },
       "actions": [
-        { "type": "log", "payload": { "msg": "Page trigger: fired only on /page-triggers-demo" } }
+        {
+          "type": "log",
+          "payload": {
+            "msg": "Page trigger: fired only on /page-triggers-demo"
+          }
+        }
       ]
     },
     "wf-legacy-empty-scope": {
@@ -41,9 +62,16 @@
       "name": "Legacy: empty pageScope (should migrate to isAppTrigger=true)",
       "isTrigger": true,
       "pageScope": "",
-      "trigger": { "event": "onLoad" },
+      "trigger": {
+        "event": "onLoad"
+      },
       "actions": [
-        { "type": "log", "payload": { "msg": "Legacy trigger — migrated to app scope" } }
+        {
+          "type": "log",
+          "payload": {
+            "msg": "Legacy trigger — migrated to app scope"
+          }
+        }
       ]
     }
   },

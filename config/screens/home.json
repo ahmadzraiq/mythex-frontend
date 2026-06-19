@@ -55,7 +55,8 @@
                         },
                         "actions": [
                           {
-                            "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
+                            "trigger": "click",
+                            "workflowId": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
                           }
                         ],
                         "children": [
@@ -75,7 +76,8 @@
                         },
                         "actions": [
                           {
-                            "action": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
+                            "trigger": "click",
+                            "workflowId": "2283a150-1c0a-46a8-bee0-bf9ba12033c7"
                           }
                         ],
                         "children": [
@@ -150,7 +152,8 @@
                             },
                             "actions": [
                               {
-                                "action": "f6046c33-0164-45b5-86aa-0710fc408247"
+                                "trigger": "click",
+                                "workflowId": "f6046c33-0164-45b5-86aa-0710fc408247"
                               }
                             ],
                             "children": [

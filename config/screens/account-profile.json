@@ -159,7 +159,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9"
+                        "trigger": "click",
+                        "workflowId": "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9"
                       }
                     ]
                   }
@@ -236,7 +237,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2"
+                        "trigger": "click",
+                        "workflowId": "7a8b9c0d-1e2f-3a4b-5c6d-e7f8a9b0c1d2"
                       }
                     ]
                   }
@@ -338,7 +340,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1"
+                        "trigger": "click",
+                        "workflowId": "6f7a8b9c-0d1e-2f3a-4b5c-d6e7f8a9b0c1"
                       }
                     ]
                   }

@@ -664,7 +664,7 @@ const PC_SECTION: React.CSSProperties = {
 };
 
 export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, pageWorkflows, pageWorkflowMeta, setCurrentPageAccess } = useBuilderStore();
+  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, workflows, setCurrentPageAccess } = useBuilderStore();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   const [pageName, setPageName] = useState(currentPage?.name ?? '');
@@ -676,7 +676,8 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
   const [guestOnly, setGuestOnly] = useState(currentPage?.guestOnly ?? false);
   const [accessCondition, setAccessCondition] = useState(currentPage?.accessCondition ?? '');
 
-  const workflowNames = Object.keys(pageWorkflows);
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const workflowNames = Object.keys(wfMap);
 
   const saveMeta = () => {
     const meta: PageMeta = {};
@@ -767,7 +768,7 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             style={{ ...PC_INPUT, cursor: 'pointer' }}
           >
             <option value="">— none —</option>
-            {workflowNames.map(w => <option key={w} value={w}>{pageWorkflowMeta[w]?.name ?? w}</option>)}
+            {workflowNames.map(w => <option key={w} value={w}>{wfMap[w]?.name ?? w}</option>)}
           </select>
           {mountWorkflow && (
             <button

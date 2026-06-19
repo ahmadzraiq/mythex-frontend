@@ -25,14 +25,9 @@ export function buildResolveContext(store: BuilderStore): ResolveContext {
     }
   }
 
-  // Global workflows
-  for (const [id, meta] of Object.entries(store.globalWorkflowMeta ?? {})) {
-    if (meta?.name) uuidToWorkflow.set(id, meta.name);
-  }
-
-  // Page-scoped workflows
-  for (const [id, meta] of Object.entries(store.pageWorkflowMeta ?? {})) {
-    if (meta?.name) uuidToWorkflow.set(id, meta.name);
+  // All workflows (unified store)
+  for (const [id, wf] of Object.entries(store.workflows ?? {})) {
+    if ((wf as { name?: string })?.name) uuidToWorkflow.set(id, (wf as { name: string }).name);
   }
 
   return { uuidToVar, uuidToWorkflow };

@@ -2,13 +2,27 @@
   "animHide": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": false } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-000000000001",
+          "value": false
+        }
+      }
     ]
   },
   "animShow": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "anim-0000-0000-0000-000000000001", "value": true } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "anim-0000-0000-0000-000000000001",
+          "value": true
+        }
+      }
     ]
   },
   "animLayoutAdd": {
@@ -47,7 +61,12 @@
       {
         "id": "s1",
         "type": "changeVariableValue",
-        "config": { "variableName": "anim-0000-0000-0000-000000000004", "value": { "formula": "Date.now()" } }
+        "config": {
+          "variableName": "anim-0000-0000-0000-000000000004",
+          "value": {
+            "formula": "Date.now()"
+          }
+        }
       }
     ]
   },

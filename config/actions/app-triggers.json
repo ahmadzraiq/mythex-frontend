@@ -1,6 +1,5 @@
 {
   "_comment": "Example trigger workflows. Each key is a named workflow; 'trigger' sets when it fires.",
-
   "onAppLoadBefore": {
     "trigger": "appLoadBefore",
     "steps": [
@@ -14,7 +13,6 @@
       }
     ]
   },
-
   "onAppLoad": {
     "trigger": "appLoad",
     "steps": [
@@ -27,7 +25,6 @@
       }
     ]
   },
-
   "onPageLoadBefore": {
     "trigger": "pageLoadBefore",
     "steps": [
@@ -41,7 +38,6 @@
       }
     ]
   },
-
   "onPageLoad": {
     "trigger": "pageLoad",
     "steps": [
@@ -54,7 +50,6 @@
       }
     ]
   },
-
   "onPageUnload": {
     "trigger": "pageUnload",
     "steps": [
@@ -68,7 +63,6 @@
       }
     ]
   },
-
   "onPageScroll": {
     "trigger": "scroll",
     "steps": [
@@ -77,12 +71,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "00000001-0000-0000-0000-000000000004",
-          "value": { "formula": "globalContext?.browser?.scroll?.y ?? 0" }
+          "value": {
+            "formula": "globalContext?.browser?.scroll?.y ?? 0"
+          }
         }
       }
     ]
   },
-
   "onPageResize": {
     "trigger": "resize",
     "steps": [
@@ -91,12 +86,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "00000001-0000-0000-0000-000000000005",
-          "value": { "formula": "globalContext?.browser?.viewport?.width ?? 0" }
+          "value": {
+            "formula": "globalContext?.browser?.viewport?.width ?? 0"
+          }
         }
       }
     ]
   },
-
   "onKeydown": {
     "trigger": "keydown",
     "steps": [
@@ -120,7 +116,6 @@
       }
     ]
   },
-
   "onKeyup": {
     "trigger": "keyup",
     "steps": [
@@ -129,12 +124,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "00000001-0000-0000-0000-000000000008",
-          "value": { "formula": "Date.now()" }
+          "value": {
+            "formula": "Date.now()"
+          }
         }
       }
     ]
   },
-
   "onCollectionFetchError": {
     "trigger": "collectionFetchError",
     "steps": [
@@ -143,7 +139,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "00000001-0000-0000-0000-000000000009",
-          "value": { "formula": "variables?.['_workflow']?.lastError ?? 'Unknown error'" }
+          "value": {
+            "formula": "variables?.['_workflow']?.lastError ?? 'Unknown error'"
+          }
         }
       }
     ]

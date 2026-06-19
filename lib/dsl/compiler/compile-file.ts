@@ -463,8 +463,10 @@ export function pass2Compile(
             config: pageName,
             name: compiled.title || pageName,
           })
-          // SC trigger binding workflows are now emitted as inline actions on instance nodes —
-          // no separate sc-tw-* wrapper workflow events needed.
+          // Emit inline workflows under the page path so applyVirtualFile assigns pageScope automatically
+          for (const [id, wf] of (compiled.inlineWorkflows ?? new Map())) {
+            events.push({ type: 'workflow_written', path: `pages/${pageName}/workflows/${id}`, content: JSON.stringify(wf) })
+          }
         }
       } catch {
         // fallback: register route stub

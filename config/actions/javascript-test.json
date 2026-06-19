@@ -17,12 +17,13 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "js-demo-0000-0000-0000-000000000006",
-          "value": { "formula": "context.workflow.calc.result" }
+          "value": {
+            "formula": "context.workflow.calc.result"
+          }
         }
       }
     ]
   },
-
   "jsDemoIncrementCart": {
     "name": "JS — Increment cartCount via wwLib.variables.set",
     "trigger": "click",
@@ -37,7 +38,6 @@
       }
     ]
   },
-
   "jsDemoResetCart": {
     "name": "JS — Reset cartCount to 0",
     "trigger": "click",
@@ -51,7 +51,6 @@
       }
     ]
   },
-
   "jsDemoFetchAsync": {
     "name": "JS — Async fetch (GitHub API) + branch on result",
     "trigger": "click",
@@ -69,7 +68,9 @@
         "name": "branch on fetch.ok",
         "type": "branch",
         "config": {
-          "condition": { "js": "return context.workflow.fetchRepo.result?.ok === true;" }
+          "condition": {
+            "js": "return context.workflow.fetchRepo.result?.ok === true;"
+          }
         },
         "trueBranch": [
           {
@@ -98,7 +99,6 @@
       }
     ]
   },
-
   "jsDemoSideEffect": {
     "name": "JS — Side effect: refetch + set variable + return",
     "trigger": "click",
@@ -113,7 +113,6 @@
       }
     ]
   },
-
   "jsDemoForEachUsers": {
     "name": "JS — forEach over variables.users with inner runJavaScript",
     "trigger": "click",
@@ -130,7 +129,9 @@
         "name": "forEach user (only active)",
         "type": "forEach",
         "config": {
-          "items": { "js": "return (variables.users ?? []).filter(u => u.active);" }
+          "items": {
+            "js": "return (variables.users ?? []).filter(u => u.active);"
+          }
         },
         "loopBody": [
           {
@@ -154,7 +155,6 @@
       }
     ]
   },
-
   "jsDemoOnPageMount": {
     "name": "JS — On page mount: seed userEmail",
     "trigger": "mounted",
@@ -168,7 +168,6 @@
       }
     ]
   },
-
   "jsActNavigateInternal": {
     "name": "JS — wwLib.navigate.to (internal with queryParams)",
     "trigger": "click",
@@ -182,7 +181,6 @@
       }
     ]
   },
-
   "jsActNavigateExternal": {
     "name": "JS — wwLib.navigate.to (external, new tab)",
     "trigger": "click",
@@ -196,7 +194,6 @@
       }
     ]
   },
-
   "jsActNavigatePrev": {
     "name": "JS — wwLib.navigate.prev (back)",
     "trigger": "click",
@@ -210,7 +207,6 @@
       }
     ]
   },
-
   "jsActUpdateCollection": {
     "name": "JS — wwLib.collections.update (add/update/remove)",
     "trigger": "click",
@@ -224,7 +220,6 @@
       }
     ]
   },
-
   "jsActRefetchCollection": {
     "name": "JS — wwLib.collections.refetch",
     "trigger": "click",
@@ -238,7 +233,6 @@
       }
     ]
   },
-
   "jsActComponentEmit": {
     "name": "JS — wwLib.components.emit (custom trigger)",
     "trigger": "click",
@@ -252,7 +246,6 @@
       }
     ]
   },
-
   "jsActComponentRun": {
     "name": "JS — wwLib.components.run (executeComponentAction)",
     "trigger": "click",
@@ -266,7 +259,6 @@
       }
     ]
   },
-
   "jsActSharedAdd": {
     "name": "JS — wwLib.shared.add (dynamic add)",
     "trigger": "click",
@@ -280,7 +272,6 @@
       }
     ]
   },
-
   "jsActSharedDeleteAll": {
     "name": "JS — wwLib.shared.deleteAll",
     "trigger": "click",
@@ -294,7 +285,6 @@
       }
     ]
   },
-
   "jsActPopoverOpen": {
     "name": "JS — wwLib.popovers.open",
     "trigger": "click",
@@ -308,7 +298,6 @@
       }
     ]
   },
-
   "jsActPopoverClose": {
     "name": "JS — wwLib.popovers.close",
     "trigger": "click",
@@ -322,7 +311,6 @@
       }
     ]
   },
-
   "jsActPopoverToggle": {
     "name": "JS — wwLib.popovers.toggle",
     "trigger": "click",
@@ -336,7 +324,6 @@
       }
     ]
   },
-
   "jsActFormSetState": {
     "name": "JS — wwLib.forms.setState",
     "trigger": "click",
@@ -350,7 +337,6 @@
       }
     ]
   },
-
   "jsActFormReset": {
     "name": "JS — wwLib.forms.reset",
     "trigger": "click",
@@ -364,7 +350,6 @@
       }
     ]
   },
-
   "jsActAuthAuthenticate": {
     "name": "JS — wwLib.auth.authenticate (mock)",
     "trigger": "click",
@@ -378,7 +363,6 @@
       }
     ]
   },
-
   "jsActAuthSetUser": {
     "name": "JS — wwLib.auth.setUser",
     "trigger": "click",
@@ -392,7 +376,6 @@
       }
     ]
   },
-
   "jsActAuthRestore": {
     "name": "JS — wwLib.auth.restoreSession",
     "trigger": "click",
@@ -406,7 +389,6 @@
       }
     ]
   },
-
   "jsActAuthClear": {
     "name": "JS — wwLib.auth.clearSession",
     "trigger": "click",
@@ -420,7 +402,6 @@
       }
     ]
   },
-
   "jsActClipboardCopy": {
     "name": "JS — wwLib.clipboard.copy",
     "trigger": "click",
@@ -434,7 +415,6 @@
       }
     ]
   },
-
   "jsActFileDownload": {
     "name": "JS — wwLib.files.download",
     "trigger": "click",
@@ -448,7 +428,6 @@
       }
     ]
   },
-
   "jsActFromBase64": {
     "name": "JS — wwLib.files.fromBase64",
     "trigger": "click",
@@ -462,7 +441,6 @@
       }
     ]
   },
-
   "jsActScrollTop": {
     "name": "JS — wwLib.scroll.to",
     "trigger": "click",
@@ -476,7 +454,6 @@
       }
     ]
   },
-
   "jsActPrintPdf": {
     "name": "JS — wwLib.print.pdf",
     "trigger": "click",
@@ -490,7 +467,6 @@
       }
     ]
   },
-
   "jsActDelay": {
     "name": "JS — wwLib.timing.delay",
     "trigger": "click",
@@ -504,7 +480,6 @@
       }
     ]
   },
-
   "jsActStopPropagation": {
     "name": "JS — wwLib.event.stopPropagation (inner)",
     "trigger": "click",
@@ -518,7 +493,6 @@
       }
     ]
   },
-
   "jsActOuterClick": {
     "name": "JS — outer container click counter",
     "trigger": "click",
@@ -532,7 +506,6 @@
       }
     ]
   },
-
   "jsActRunSubWorkflow": {
     "name": "JS — wwLib.workflows.run + capture return",
     "trigger": "click",
@@ -546,7 +519,6 @@
       }
     ]
   },
-
   "jsActEscapeHatch": {
     "name": "JS — wwLib.actions.run (generic escape hatch)",
     "trigger": "click",

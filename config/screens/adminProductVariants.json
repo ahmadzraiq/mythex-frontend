@@ -129,7 +129,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-view-product"
+                    "trigger": "click",
+                    "workflowId": "admin-view-product"
                   }
                 ],
                 "children": [

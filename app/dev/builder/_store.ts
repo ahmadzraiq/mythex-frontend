@@ -32,7 +32,7 @@ import {
   REQUIRED_PARENT, ALLOWED_CHILDREN, isNonDraggable,
   findNode, findParentNode, patchNodeById, insertNode,
   hasFormContainerAncestor, getNodeSubtrees,
-  clone, removeNodesByIds,
+  clone, removeNodesByIds, collectWorkflowIds, collectAllReferencedWorkflowIds,
   _applyLightOverrides, _applyDarkOverrides, hexToRgbTriplet, _getManagedStyle,
   GLUESTACK_PRIMARY_BRIDGE, injectFontsFromOverrides,
   findLinkedRoot, cloneWithFreshIdsKeepSharedKey, stampSharedKeys,
@@ -608,10 +608,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   showInteractionLines: false,
   activeLogicSection: null,
   workflows: {},
-  pageWorkflows: {},
-  pageWorkflowMeta: {},
-  globalWorkflows: {},
-  globalWorkflowMeta: {},
   directActionsMap: {},
   globalFormulas: {},
   workflowTestResults: restoreWorkflowTestResults(),
@@ -1118,12 +1114,37 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       if (!root?.id || idSet.has(root.id) || affectedSharedRoots.has(root.id)) continue;
       affectedSharedRoots.set(root.id, JSON.parse(JSON.stringify(root)) as SDUINode);
     }
+    // Collect workflow IDs referenced by the nodes about to be deleted (full subtrees).
+    const deletedWorkflowIds = new Set<string>();
+    for (const id of idSet) {
+      const node = findNode(preNodes as SDUINode[], id);
+      if (node) for (const wid of collectWorkflowIds(node as SDUINode)) deletedWorkflowIds.add(wid);
+    }
     set(s => ({
       pageNodes: removeNodesByIds(s.pageNodes, idSet),
       canvasNodes: (s.canvasNodes as CanvasNode[]).filter(n => !idSet.has(n.id)),
       selectedIds: s.selectedIds.filter(id => !idSet.has(id)),
       aiSelectedNodeIds: s.aiSelectedNodeIds.filter(id => !idSet.has(id)),
     }));
+    // After removal, garbage-collect workflows that are no longer referenced by
+    // any surviving node and are not intentionally global (isTrigger / isAppTrigger).
+    if (deletedWorkflowIds.size > 0) {
+      const { pageNodes: postNodes, workflows } = get();
+      const stillReferenced = collectAllReferencedWorkflowIds(postNodes as SDUINode[]);
+      const wfs = workflows as Record<string, import('@/config/types').WorkflowDef>;
+      const orphaned = [...deletedWorkflowIds].filter(wid => {
+        if (stillReferenced.has(wid)) return false;
+        const wf = wfs[wid];
+        if (!wf) return false;
+        if (wf.isTrigger || wf.isAppTrigger) return false;
+        return true;
+      });
+      if (orphaned.length > 0) {
+        const next = { ...wfs };
+        for (const wid of orphaned) delete next[wid];
+        set({ workflows: next });
+      }
+    }
     for (const [rootId, snap] of affectedSharedRoots) {
       get()._syncSharedInstances(rootId, { prevEditedNode: snap });
     }
@@ -3499,22 +3520,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       return { workflows: rest };
     }),
 
-  setPageWorkflow: (_name, _actions) => { /* removed — use setWorkflow */ },
-  removePageWorkflow: (name) => {
-    set(s => {
-      const { [name]: _removed, ...rest } = s.workflows;
-      return { workflows: rest };
-    });
-  },
-  setPageWorkflowMeta: (_name, _meta) => { /* removed — use setWorkflow */ },
-  setGlobalWorkflow: (_name, _actions) => { /* removed — use setWorkflow */ },
-  removeGlobalWorkflow: (name) => {
-    set(s => {
-      const { [name]: _removed, ...rest } = s.workflows;
-      return { workflows: rest };
-    });
-  },
-  setGlobalWorkflowMeta: (_id, _meta) => { /* removed — use setWorkflow */ },
   setWorkflowStepTestResult: (stepId, result, error, stepIndex, actionName = 'Action', workflowId = '') => {
     const entry: import('./_store-types').WorkflowTestEntry = { result, error, actionName, stepIndex, ranAt: Date.now(), workflowId };
     persistWorkflowStepTestResult(stepId, entry);
@@ -4030,86 +4035,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           next.workflows = { ...configWorkflowDefs, ...existingUserWorkflows };
         }
 
-        // ── Named workflows from config/actions/*.json ────────────────────────
-        if (Array.isArray(json.workflows) && json.workflows.length > 0) {
-          const configWorkflowIds = new Set(json.workflows.map(w => w.id));
-          // Keep user-added workflows that aren't from config
-          const userWorkflows = Object.fromEntries(
-            Object.entries(s.pageWorkflows).filter(([id]) => !configWorkflowIds.has(id))
-          );
-          const userMeta = Object.fromEntries(
-            Object.entries(s.pageWorkflowMeta).filter(([id]) => !configWorkflowIds.has(id))
-          );
-          // A workflow is "system" if it's a single-step onChange setter (e.g. changeVariableValue)
-          // BUT only when it has no explicit name (name equals id = auto-generated).
-          const SYSTEM_STEP_TYPES = new Set(['changeVariableValue', 'setState', 'set']);
-          const isSystemWorkflow = (w: { id?: string; name?: string; trigger?: string; steps?: unknown[] }) =>
-            w.trigger === 'change' &&
-            Array.isArray(w.steps) && w.steps.length === 1 &&
-            SYSTEM_STEP_TYPES.has((w.steps[0] as Record<string, unknown>)?.type as string) &&
-            (!w.name || w.name === w.id);
-
-          // Key by UUID id, display name comes from the "name" field in the definition.
-          // Convert raw camelCase/kebab names to human-readable text for the builder UI.
-          const toHumanName = (n: string) =>
-            n.replace(/([A-Z])/g, ' $1').replace(/[-_]/g, ' ').replace(/\s+/g, ' ')
-             .replace(/^./, s => s.toUpperCase()).trim();
-
-          // Detect UUID-shaped strings (fall-through when no name is set)
-          const isUuidStr = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-
-          // Workflows with `params` are global workflows (Logic tab); others are page workflows
-          type RawWorkflow = { id: string; name?: string; trigger?: string; steps: unknown[]; onErrorSteps?: unknown[]; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string; params?: import('./_store-types').WorkflowParam[] };
-          const globalConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => Array.isArray(w.params) && w.params.length > 0);
-          const pageConfigWorkflows = (json.workflows as RawWorkflow[]).filter(w => !Array.isArray(w.params) || w.params.length === 0);
-
-          // Page workflows
-          const configPageWorkflows = Object.fromEntries(pageConfigWorkflows.map(w => [w.id, w.steps]));
-          const configPageMeta = Object.fromEntries(pageConfigWorkflows.map(w => [w.id, {
-            id: w.id,
-            name: w.name && !isUuidStr(w.name) ? toHumanName(w.name) : 'Unnamed Workflow',
-            trigger: w.trigger,
-            isSystem: isSystemWorkflow(w),
-            ...(w.isTrigger ? { isTrigger: true } : {}),
-            ...(w.isAppTrigger ? { isAppTrigger: true } : {}),
-            ...(w.pageScope ? { pageScope: w.pageScope } : {}),
-          } as WorkflowMeta]));
-          next.pageWorkflows = { ...configPageWorkflows, ...userWorkflows } as typeof s.pageWorkflows;
-          // Promote legacy empty-pageScope triggers to isAppTrigger
-          const mergedPageMeta = { ...configPageMeta, ...userMeta };
-          const MIGRATION_KEY2 = 'builder:trigger-scope-migration:v1';
-          if (typeof window !== 'undefined' && !localStorage.getItem(MIGRATION_KEY2)) {
-            for (const [id, m] of Object.entries(mergedPageMeta)) {
-              if (m.isTrigger && !m.isAppTrigger && (!m.pageScope || m.pageScope === '')) {
-                const { pageScope: _r, ...rest } = m;
-                mergedPageMeta[id] = { ...rest, isAppTrigger: true };
-              }
-            }
-            localStorage.setItem(MIGRATION_KEY2, '1');
-          }
-          next.pageWorkflowMeta = mergedPageMeta;
-
-          // Global workflows — seeded from config (params-bearing workflows)
-          if (globalConfigWorkflows.length > 0) {
-            const globalConfigIds = new Set(globalConfigWorkflows.map(w => w.id));
-            // Keep user-created global workflows that aren't from config
-            const userGlobalWorkflows = Object.fromEntries(
-              Object.entries(s.globalWorkflows).filter(([id]) => !globalConfigIds.has(id))
-            );
-            const userGlobalMeta = Object.fromEntries(
-              Object.entries(s.globalWorkflowMeta).filter(([id]) => !globalConfigIds.has(id))
-            );
-            const configGlobalWorkflows = Object.fromEntries(globalConfigWorkflows.map(w => [w.id, w.steps]));
-            const configGlobalMeta = Object.fromEntries(globalConfigWorkflows.map(w => [w.id, {
-              id: w.id,
-              name: w.name && !isUuidStr(w.name) ? toHumanName(w.name) : 'Unnamed Workflow',
-              trigger: w.trigger ?? 'execution',
-              params: w.params,
-            } as WorkflowMeta]));
-            next.globalWorkflows = { ...configGlobalWorkflows, ...userGlobalWorkflows } as typeof s.globalWorkflows;
-            next.globalWorkflowMeta = { ...configGlobalMeta, ...userGlobalMeta };
-          }
-        }
 
         // ── Direct actions from config/actions/*.json ─────────────────────────
         if (json.directActions && typeof json.directActions === 'object') {
@@ -4204,19 +4129,15 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       const remaining = (s.pages as BuilderPage[]).filter(p => p.id !== pageId);
 
       // Remove all page-scoped workflows/triggers belonging to this page
-      const meta = s.pageWorkflowMeta as Record<string, WorkflowMeta>;
+      const wfMap = s.workflows as Record<string, import('@/config/types').WorkflowDef>;
       const toRemove = new Set(
-        pageName
-          ? Object.entries(meta).filter(([, m]) => m.pageScope === pageName).map(([k]) => k)
+        pageId
+          ? Object.entries(wfMap).filter(([, w]) => w.pageScope === pageId).map(([k]) => k)
           : []
       );
-      const pageWorkflows = toRemove.size
-        ? (Object.fromEntries(Object.entries(s.pageWorkflows as Record<string, object[]>).filter(([k]) => !toRemove.has(k))) as Record<string, object[]>)
-        : s.pageWorkflows;
-      const pageWorkflowMeta = toRemove.size
-        ? (Object.fromEntries(Object.entries(meta).filter(([k]) => !toRemove.has(k))) as Record<string, WorkflowMeta>)
-        : s.pageWorkflowMeta;
-      const workflowPatch = toRemove.size ? { pageWorkflows, pageWorkflowMeta } : {};
+      const workflowPatch = toRemove.size
+        ? { workflows: Object.fromEntries(Object.entries(wfMap).filter(([k]) => !toRemove.has(k))) }
+        : {};
 
       if (remaining.length === 0) {
         return {

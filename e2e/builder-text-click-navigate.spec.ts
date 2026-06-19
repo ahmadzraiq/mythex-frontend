@@ -33,9 +33,9 @@ async function resetBuilder(page: Page) {
     if (!store) return;
     (store._setPageNodes as (n: unknown[]) => void)([]);
     if (typeof store.select === 'function') (store.select as (id: string | null) => void)(null);
-    const pw = (store.pageWorkflows as Record<string, unknown>) ?? {};
-    for (const k of Object.keys(pw)) {
-      (store.removePageWorkflow as (id: string) => void)?.(k);
+    const wfs = (store.workflows as Record<string, unknown>) ?? {};
+    for (const k of Object.keys(wfs)) {
+      (store.removeWorkflow as (id: string) => void)?.(k);
     }
   });
   await page.waitForFunction(
@@ -297,21 +297,20 @@ test.describe('TCN-04: Add Navigate to action and save workflow on Text node', (
       const actions = node.actions as unknown[] | undefined;
       if (!Array.isArray(actions) || actions.length === 0) return { found: true, hasActions: false };
 
-      // New format: node actions are [{ action: uuid }] references into pageWorkflows.
+      // node actions are [{ trigger, workflowId }] references into store.workflows.
       const ref = actions[0] as Record<string, unknown>;
-      const workflowUuid = ref.action as string | undefined;
+      const workflowUuid = (ref.workflowId ?? ref.action) as string | undefined;
       if (!workflowUuid) return { found: true, hasActions: true, hasRef: false };
 
-      const pageWorkflows = (store?.pageWorkflows as Record<string, unknown[]>) ?? {};
-      const pageWorkflowMeta = (store?.pageWorkflowMeta as Record<string, Record<string, unknown>>) ?? {};
-      const wfSteps = pageWorkflows[workflowUuid];
-      const wfMeta = pageWorkflowMeta[workflowUuid];
+      const wfs = (store?.workflows as Record<string, Record<string, unknown>>) ?? {};
+      const wfDef = wfs[workflowUuid];
+      const wfSteps = (wfDef?.steps as unknown[]) ?? [];
       return {
         found: true,
         hasActions: true,
         hasRef: true,
-        hasSteps: Array.isArray(wfSteps) && wfSteps.length > 0,
-        trigger: wfMeta?.trigger as string | undefined,
+        hasSteps: wfSteps.length > 0,
+        trigger: (wfDef?.trigger ?? ref.trigger) as string | undefined,
       };
     }, TEXT_NODE_ID);
 
@@ -345,12 +344,12 @@ test.describe('TCN-04: Add Navigate to action and save workflow on Text node', (
       const actions = node.actions as Array<Record<string, unknown>> | undefined;
       if (!Array.isArray(actions) || actions.length === 0) return false;
 
-      // New format: [{ action: uuid }] — steps live in pageWorkflows[uuid]
+      // node actions are [{ trigger, workflowId }] — steps live in store.workflows[uuid].steps
       const ref = actions[0];
-      const workflowUuid = ref.action as string | undefined;
+      const workflowUuid = (ref.workflowId ?? ref.action) as string | undefined;
       if (!workflowUuid) return false;
-      const pageWorkflows = (store?.pageWorkflows as Record<string, Array<Record<string, unknown>>>) ?? {};
-      const steps = pageWorkflows[workflowUuid] ?? [];
+      const wfs = (store?.workflows as Record<string, { steps?: Array<Record<string, unknown>> }>) ?? {};
+      const steps = wfs[workflowUuid]?.steps ?? [];
       return steps.some((s) => (s.type as string | undefined)?.toLowerCase().includes('navigate'));
     }, TEXT_NODE_ID);
 
@@ -370,7 +369,7 @@ test.describe('TCN-05: Re-opening saved click workflow from right panel', () => 
       if (store && typeof store.closeWorkflowCanvas === 'function') (store.closeWorkflowCanvas as () => void)();
     });
     // Inject a Text node with a saved page-workflow reference (new format):
-    // node.actions = [{ action: uuid }], pageWorkflows[uuid] = steps, pageWorkflowMeta[uuid] = { trigger }
+    // node.actions = [{ trigger, workflowId }], store.workflows[uuid] = { trigger, steps, name }
     const WF_UUID = 'tcn05-wf-uuid-nav-0000000000001';
     await sharedPage.evaluate(({ nodeId, wfUuid }) => {
       const store = (window as unknown as Record<string, { getState: () => Record<string, unknown> }>).__builderStore?.getState();
@@ -380,16 +379,14 @@ test.describe('TCN-05: Re-opening saved click workflow from right panel', () => 
         type: 'Text',
         props: {},
         text: 'Go somewhere',
-        actions: [{ action: wfUuid }],
+        actions: [{ trigger: 'click', workflowId: wfUuid }],
       }]);
-      (store.setPageWorkflow as (id: string, steps: unknown[]) => void)(
-        wfUuid,
-        [{ id: 's1', type: 'navigateTo', config: { path: '/' } }],
-      );
-      (store.setPageWorkflowMeta as (id: string, meta: unknown) => void)(
-        wfUuid,
-        { id: wfUuid, name: 'Go somewhere workflow', trigger: 'click' },
-      );
+      (store.setWorkflow as (id: string, wf: unknown) => void)(wfUuid, {
+        id: wfUuid,
+        name: 'Go somewhere workflow',
+        trigger: 'click',
+        steps: [{ id: 's1', type: 'navigateTo', config: { path: '/' } }],
+      });
       if (typeof store.select === 'function') (store.select as (id: string) => void)(nodeId);
     }, { nodeId: TEXT_NODE_ID, wfUuid: WF_UUID });
     await sharedPage.waitForTimeout(200);

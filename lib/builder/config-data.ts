@@ -201,7 +201,7 @@ export function getBuilderConfig() {
     }));
 
   // ── Register shared component workflows so executeComponentAction's picker can find them.
-  // These are NOT page-scoped actions, but they need to appear in pageWorkflowMeta so the
+  // These are NOT page-scoped actions, but they need to appear in store.workflows so the
   // builder UI can display a human-readable name when a config.action references them.
   const scModels = sharedComponentsJson as Record<string, {
     name?: string;

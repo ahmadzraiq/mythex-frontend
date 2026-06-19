@@ -8,7 +8,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "cs-checkbox-0000-0000-0000-000000000001",
-          "value": { "formula": "!variables['cs-checkbox-0000-0000-0000-000000000001']" }
+          "value": {
+            "formula": "!variables['cs-checkbox-0000-0000-0000-000000000001']"
+          }
         }
       }
     ]
@@ -22,7 +24,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "cs-switch-00000-0000-0000-000000000002",
-          "value": { "formula": "!variables['cs-switch-00000-0000-0000-000000000002']" }
+          "value": {
+            "formula": "!variables['cs-switch-00000-0000-0000-000000000002']"
+          }
         }
       }
     ]
@@ -36,7 +40,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "cs-toggle-00000-0000-0000-000000000003",
-          "value": { "formula": "!variables['cs-toggle-00000-0000-0000-000000000003']" }
+          "value": {
+            "formula": "!variables['cs-toggle-00000-0000-0000-000000000003']"
+          }
         }
       }
     ]
@@ -92,7 +98,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "cs-progress-0000-0000-0000-000000000005",
-          "value": { "formula": "min(100, variables['cs-progress-0000-0000-0000-000000000005'] + 10)" }
+          "value": {
+            "formula": "min(100, variables['cs-progress-0000-0000-0000-000000000005'] + 10)"
+          }
         }
       }
     ]
@@ -106,7 +114,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "cs-progress-0000-0000-0000-000000000005",
-          "value": { "formula": "max(0, variables['cs-progress-0000-0000-0000-000000000005'] - 10)" }
+          "value": {
+            "formula": "max(0, variables['cs-progress-0000-0000-0000-000000000005'] - 10)"
+          }
         }
       }
     ]

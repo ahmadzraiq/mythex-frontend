@@ -47,25 +47,23 @@ interface WorkflowSlideContentProps {
 }
 
 function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps) {
-  const { pageWorkflows, setPageWorkflow, pageDataSources } = useBuilderStore();
+  const { workflows, setWorkflow, pageDataSources } = useBuilderStore();
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
 
-  const currentSteps = pageWorkflows[workflowId] ?? [];
-  const [name, setName] = useState(workflowId);
+  const currentSteps = wfMap[workflowId]?.steps ?? [];
+  const [name, setName] = useState(wfMap[workflowId]?.name ?? workflowId);
   const [nameEditing, setNameEditing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const eventActions = { run: currentSteps };
 
-  const { removePageWorkflow } = useBuilderStore();
-
   const handleNameBlur = useCallback(() => {
     setNameEditing(false);
     const trimmed = name.trim();
-    if (!trimmed || trimmed === workflowId) return;
-    const steps = pageWorkflows[workflowId] ?? [];
-    setPageWorkflow(trimmed, steps);
-    removePageWorkflow(workflowId);
-  }, [name, workflowId, pageWorkflows, setPageWorkflow, removePageWorkflow]);
+    if (!trimmed) return;
+    const existing = wfMap[workflowId];
+    if (existing) setWorkflow(workflowId, { ...existing, name: trimmed });
+  }, [name, workflowId, wfMap, setWorkflow]);
 
   const dsNames = pageDataSources.map(s => s.name);
 
@@ -90,7 +88,7 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
             onDoubleClick={() => { setName(workflowId); setNameEditing(true); setTimeout(() => nameRef.current?.select(), 0); }}
             title="Double-click to rename"
           >
-            {workflowId}
+            {wfMap[workflowId]?.name ?? workflowId}
           </span>
         )}
         {!nameEditing && (
@@ -118,9 +116,10 @@ function WorkflowSlideContent({ workflowId, onClose }: WorkflowSlideContentProps
         </div>
         <ActionBuilder
           value={eventActions}
-          onChange={v => {
+            onChange={v => {
             const steps = (v?.run ?? []) as object[];
-            setPageWorkflow(workflowId, steps);
+            const existing = wfMap[workflowId];
+            if (existing) setWorkflow(workflowId, { ...existing, steps });
           }}
           availableEvents={['run']}
           availableDataSources={pageDataSources}
@@ -206,19 +205,17 @@ function WorkflowRow({
 }
 
 function WorkflowsSection({ onOpenSlide }: { onOpenSlide: (id: string) => void }) {
-  const { pageWorkflows, pageWorkflowMeta, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const { workflows, setWorkflow, removeWorkflow } = useBuilderStore();
 
   const addWorkflow = () => {
-    let name = 'Untitled workflow';
-    let i = 1;
-    while (pageWorkflows[name]) { name = `Untitled workflow ${i++}`; }
-    setPageWorkflow(name, []);
-    onOpenSlide(name);
+    const id = crypto.randomUUID();
+    setWorkflow(id, { id, name: 'Untitled workflow', trigger: 'click', steps: [] });
+    onOpenSlide(id);
   };
 
-  // Filter out system workflows
-  const allWorkflows = Object.entries(pageWorkflows)
-    .filter(([id]) => !pageWorkflowMeta[id]?.isSystem);
+  // Filter: global workflows only (not page-scoped, not triggers, not system)
+  const allWorkflows = Object.entries(workflows as Record<string, import('@/config/types').WorkflowDef>)
+    .filter(([, w]) => !w.pageScope && !w.isTrigger && !w.isAppTrigger);
 
   return (
     <div>
@@ -237,13 +234,13 @@ function WorkflowsSection({ onOpenSlide }: { onOpenSlide: (id: string) => void }
         <div style={EMPTY}>No workflows yet — click + New to add one.</div>
       )}
 
-      {allWorkflows.map(([id, steps]) => (
+      {allWorkflows.map(([id, wf]) => (
         <WorkflowRow
           key={id}
           workflowId={id}
-          stepCount={(steps as object[]).length}
+          stepCount={(wf.steps ?? []).length}
           onOpen={() => onOpenSlide(id)}
-          onDelete={() => removePageWorkflow(id)}
+          onDelete={() => removeWorkflow(id)}
         />
       ))}
     </div>
@@ -764,16 +761,16 @@ export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
   const [fmSearchOpen, setFmSearchOpen] = useState(false);
   const wfSearchRef = useRef<HTMLInputElement>(null);
   const fmSearchRef = useRef<HTMLInputElement>(null);
-  const { globalWorkflows, setGlobalWorkflow, removeGlobalWorkflow, globalWorkflowMeta, setGlobalWorkflowMeta, globalFormulas, setGlobalFormulaFull, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
+  const { workflows, setWorkflow, removeWorkflow, globalFormulas, setGlobalFormulaFull, removeGlobalFormula, openWorkflowCanvas } = useBuilderStore();
 
-  // Only show truly global (project-level) workflows — NOT page-scoped ones.
-  // UUID_RE filters out path-name alias keys (e.g. "handleNumber") that are stored
-  // alongside the UUID key for backward-compat; showing both would duplicate the list.
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const filteredGlobalWorkflows = Object.keys(globalWorkflows).filter(id => {
-    if (!UUID_RE.test(id)) return false;
-    const meta = globalWorkflowMeta[id];
-    const name = meta?.name ?? id;
+  // Show global (non-page-scoped, non-trigger, non-system) workflows only.
+  const wfs = workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const filteredGlobalWorkflows = Object.values(wfs).filter(wf => {
+    if (!wf?.id) return false;
+    if (wf.isTrigger || wf.isAppTrigger) return false;
+    if ((wf as unknown as Record<string, unknown>).isSystem) return false;
+    if (wf.pageScope) return false;
+    const name = wf.name ?? wf.id;
     return name.toLowerCase().includes(wfSearch.toLowerCase());
   });
 
@@ -786,8 +783,7 @@ export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
 
   const addWorkflow = () => {
     const id = crypto.randomUUID();
-    setGlobalWorkflow(id, []);
-    setGlobalWorkflowMeta(id, { id, name: 'Untitled workflow' });
+    setWorkflow(id, { id, name: 'Untitled workflow', trigger: 'click', steps: [] });
     openWorkflowCanvas({ kind: 'globalWorkflow', id, isNew: true });
   };
 
@@ -827,7 +823,7 @@ export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
             {filteredGlobalWorkflows.length > 0 && (
               <button
                 title="Delete all workflows"
-                onClick={() => { if (confirm('Delete all workflows?')) filteredGlobalWorkflows.forEach(id => removeGlobalWorkflow(id)); }}
+                onClick={() => { if (confirm('Delete all workflows?')) filteredGlobalWorkflows.forEach(wf => removeWorkflow(wf.id)); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
@@ -859,22 +855,16 @@ export function LogicTab({ onSetSlide, merged = false }: LogicTabProps) {
                   {wfSearch ? 'No matching workflows.' : 'No global workflows yet — click + New to create one.'}
                 </div>
               )}
-              {filteredGlobalWorkflows.map(id => {
-                const meta = globalWorkflowMeta[id];
-                const displayName = toHumanName(meta?.name ?? id);
-                const trigger = meta?.trigger;
-                const steps = globalWorkflows[id] ?? [];
-                return (
-                  <WorkflowRow
-                    key={id}
-                    workflowId={displayName}
-                    stepCount={(steps as object[]).length}
-                    trigger={trigger}
-                    onOpen={() => openWorkflowCanvas({ kind: 'globalWorkflow', id })}
-                    onDelete={() => removeGlobalWorkflow(id)}
-                  />
-                );
-              })}
+              {filteredGlobalWorkflows.map(wf => (
+                <WorkflowRow
+                  key={wf.id}
+                  workflowId={toHumanName(wf.name ?? wf.id)}
+                  stepCount={(wf.steps as object[]).length}
+                  trigger={wf.trigger}
+                  onOpen={() => openWorkflowCanvas({ kind: 'globalWorkflow', id: wf.id })}
+                  onDelete={() => removeWorkflow(wf.id)}
+                />
+              ))}
             </div>
           </>
         )}

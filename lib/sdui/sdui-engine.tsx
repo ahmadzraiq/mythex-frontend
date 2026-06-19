@@ -438,7 +438,10 @@ export function SDUIEngine({
         mergedStore.getState().merged as Record<string, unknown>;
 
       const runOne = async (a: SDUIAction): Promise<unknown> => {
-        const actionName = String((a as { action: string }).action);
+        const _ref = a as unknown as Record<string, unknown>;
+        const actionName = typeof _ref.workflowId === 'string'
+          ? _ref.workflowId
+          : String(_ref.action ?? '');
         let payload = a.payload;
         if (a.params && !(payload as Record<string, unknown> | undefined)?.parameters) {
           payload = { ...(payload as Record<string, unknown> | undefined), parameters: a.params };

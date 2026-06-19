@@ -87,7 +87,8 @@
                 },
                 "actions": [
                   {
-                    "action": "onExploreNowClick"
+                    "trigger": "click",
+                    "workflowId": "onExploreNowClick"
                   }
                 ],
                 "children": [

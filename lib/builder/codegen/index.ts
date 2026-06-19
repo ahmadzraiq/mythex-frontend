@@ -102,10 +102,7 @@ export function codegenProject(
   }
 
   // ── Action functions (split into lib/actions/<domain>.ts files) ──────────────
-  const allWorkflows = {
-    ...(store.pageWorkflows ?? {}),
-    ...(store.globalWorkflows ?? {}),
-  };
+  const allWorkflows = store.workflows ?? {};
   if (Object.keys(allWorkflows).length > 0) {
     // Shared context factory (lib/action-ctx.ts) must come before action files
     files.push(emitActionCtxTs());

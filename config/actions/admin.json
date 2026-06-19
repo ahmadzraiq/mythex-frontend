@@ -460,23 +460,33 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "adm00016-0000-0000-0000-000000000016",
-          "value": { "formula": "context?.item?.data?.size" }
+          "value": {
+            "formula": "context?.item?.data?.size"
+          }
         }
       },
       {
         "id": "s2",
         "type": "changeVariableValue",
-        "config": { "variableName": "adm00017-0000-0000-0000-000000000017", "value": 1 }
+        "config": {
+          "variableName": "adm00017-0000-0000-0000-000000000017",
+          "value": 1
+        }
       },
       {
         "id": "s3",
         "type": "changeVariableValue",
-        "config": { "variableName": "adm00018-0000-0000-0000-000000000018", "value": false }
+        "config": {
+          "variableName": "adm00018-0000-0000-0000-000000000018",
+          "value": false
+        }
       },
       {
         "id": "s4",
         "type": "fetchCollection",
-        "config": { "collectionId": "ad000004-0000-0000-0000-000000000004" }
+        "config": {
+          "collectionId": "ad000004-0000-0000-0000-000000000004"
+        }
       }
     ]
   },

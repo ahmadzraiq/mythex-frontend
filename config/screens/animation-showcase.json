@@ -142,7 +142,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "scrollToFeatures"
+                        "trigger": "click",
+                        "workflowId": "scrollToFeatures"
                       }
                     ],
                     "animation": {
@@ -181,7 +182,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "scrollToParallax"
+                        "trigger": "click",
+                        "workflowId": "scrollToParallax"
                       }
                     ],
                     "animation": {
@@ -220,7 +222,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "scrollToGallery"
+                        "trigger": "click",
+                        "workflowId": "scrollToGallery"
                       }
                     ],
                     "animation": {
@@ -251,7 +254,8 @@
                 },
                 "actions": [
                   {
-                    "action": "scrollToFeatures"
+                    "trigger": "click",
+                    "workflowId": "scrollToFeatures"
                   }
                 ],
                 "children": [
@@ -1793,7 +1797,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "scrollToFeatures"
+                        "trigger": "click",
+                        "workflowId": "scrollToFeatures"
                       }
                     ],
                     "animation": {

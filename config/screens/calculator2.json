@@ -58,7 +58,8 @@
                     },
                     "actions": [
                       {
-                        "action": "calc2ButtonPress"
+                        "trigger": "click",
+                        "workflowId": "calc2ButtonPress"
                       }
                     ],
                     "children": [

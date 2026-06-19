@@ -776,18 +776,13 @@ const handlers: Record<string, Handler> = {
 
   get_workflows(_, getStore) {
     const store = getStore();
-    // Include both page-scoped and global workflows
-    const pageWfs = Object.entries(store.pageWorkflows ?? {}).map(([name]) => ({
-      name,
-      trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
-      scope: 'page',
+    const allWfs = Object.entries(store.workflows ?? {}).map(([id, wf]) => ({
+      id,
+      name: (wf as { name?: string }).name ?? id,
+      trigger: (wf as { trigger?: string }).trigger ?? 'click',
+      scope: (wf as { pageScope?: string }).pageScope ? 'page' : 'global',
     }));
-    const globalWfs = Object.entries(store.globalWorkflows ?? {}).map(([name]) => ({
-      name,
-      trigger: store.globalWorkflowMeta?.[name]?.trigger ?? 'click',
-      scope: 'global',
-    }));
-    return { success: true, data: [...pageWfs, ...globalWfs] };
+    return { success: true, data: allWfs };
   },
 
   get_data_sources(_, getStore) {
@@ -1076,10 +1071,11 @@ const handlers: Record<string, Handler> = {
     if (formulaError) return { success: false, error: formulaError };
     const prohibitedError = findProhibitedStep(steps);
     if (prohibitedError) return { success: false, error: prohibitedError };
-    if (!store.pageWorkflows?.[workflowName]) {
+    const existingWf = (store.workflows ?? {})[workflowName] as import('@/config/types').WorkflowDef | undefined;
+    if (!existingWf) {
       return { success: false, error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.` };
     }
-    store.setPageWorkflow(workflowName, steps as object[]);
+    store.setWorkflow(workflowName, { ...existingWf, steps: steps as object[] });
     return { success: true, data: { workflowName, stepCount: steps.length } };
   },
 
@@ -3109,43 +3105,39 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
     // Validate that the workflow exists — binding to a ghost workflow creates a silent no-op action
-    const wfExists = !!store.pageWorkflows?.[workflowName];
+    const wfExists = !!store.workflows?.[workflowName];
     if (!wfExists) {
       return {
         success: false,
         error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.`,
       };
     }
-    const trigger = (input.trigger as string | undefined)?.trim();
+    const trigger = ((input.trigger as string | undefined)?.trim()) ?? 'click';
     const node = findNodeInStore(store, nodeId);
-    const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string; trigger?: string }>)] : [];
-    // Phase 4c: idempotent — if this workflow+trigger is already bound, succeed silently
-    // instead of erroring. The compact tree annotates existing bindings so the AI rarely
-    // re-binds, but when it does, a no-op success is safer than a hard failure.
-    const matches = (a: { action: string; trigger?: string }) =>
-      a.action === workflowName && (a.trigger ?? null) === (trigger ?? null);
-    if (existing.some(matches)) {
+    const existing = Array.isArray(node?.actions) ? [...(node.actions as unknown as Array<Record<string, unknown>>)] : [];
+    // Idempotent: if this workflow is already bound (new compact format or legacy steps format), succeed silently.
+    const alreadyBound = existing.some(a => {
+      if (typeof (a as Record<string, unknown>).workflowId === 'string') {
+        return (a as Record<string, unknown>).workflowId === workflowName;
+      }
+      if (Array.isArray(a.steps)) {
+        return (a.steps as Array<{ type?: string; config?: { workflowId?: string } }>)
+          .some(s => s.type === 'executeWorkflow' && s.config?.workflowId === workflowName);
+      }
+      return false;
+    });
+    if (alreadyBound) {
       return {
         success: true,
-        data: {
-          message: trigger
-            ? `Workflow "${workflowName}" already bound to node on trigger "${trigger}" — no change.`
-            : `Workflow "${workflowName}" already bound to node — no change.`,
-        },
+        data: { message: `Workflow "${workflowName}" already bound to node on trigger "${trigger}" — no change.` },
       };
     }
-    const next: { action: string; trigger?: string } = trigger
-      ? { action: workflowName, trigger }
-      : { action: workflowName };
+    const next = { trigger, workflowId: workflowName };
     const updated = [...existing, next];
     store.patchActions(nodeId, updated as unknown as Record<string, unknown>);
     return {
       success: true,
-      data: {
-        message: trigger
-          ? `Bound workflow "${workflowName}" to node on trigger "${trigger}"`
-          : `Bound workflow "${workflowName}" to node`,
-      },
+      data: { message: `Bound workflow "${workflowName}" to node on trigger "${trigger}"` },
     };
   },
 
@@ -3156,8 +3148,18 @@ const handlers: Record<string, Handler> = {
     if (nodeErr) return nodeErr;
     const workflowName = input.workflowName as string;
     const node = findNodeInStore(store, nodeId);
-    const existing = Array.isArray(node?.actions) ? [...(node.actions as Array<{ action: string }>)] : [];
-    const updated = existing.filter(a => a.action !== workflowName);
+    const existing = Array.isArray(node?.actions) ? [...(node.actions as unknown as Array<Record<string, unknown>>)] : [];
+    // Remove actions that target this workflow (compact format or legacy steps format).
+    const updated = existing.filter(a => {
+      if (typeof (a as Record<string, unknown>).workflowId === 'string') {
+        return (a as Record<string, unknown>).workflowId !== workflowName;
+      }
+      if (Array.isArray(a.steps)) {
+        return !(a.steps as Array<{ type?: string; config?: { workflowId?: string } }>)
+          .some(s => s.type === 'executeWorkflow' && s.config?.workflowId === workflowName);
+      }
+      return (a.action as string | undefined) !== workflowName;
+    });
     store.patchActions(nodeId, updated as unknown as Record<string, unknown>);
     return { success: true, data: { message: `Unbound workflow "${workflowName}" from node` } };
   },
@@ -3226,22 +3228,16 @@ const handlers: Record<string, Handler> = {
       return { success: false, error: navError };
     }
 
-    store.setPageWorkflow(name, steps);
-    const meta: Record<string, unknown> = { id: name, name, trigger };
-    if (input.isTrigger || input.isAppTrigger || input.pageScope) {
-      meta.isTrigger = true;
-    }
-    if (input.isAppTrigger) {
-      meta.isAppTrigger = true;
-    } else if (input.pageScope) {
-      meta.pageScope = input.pageScope as string;
-    }
-    if (input.folder) meta.folder = input.folder as string;
-    store.setPageWorkflowMeta(name, meta as Parameters<typeof store.setPageWorkflowMeta>[1]);
+    const wfDef: import('@/config/types').WorkflowDef = { id: name, name, trigger: trigger ?? 'click', steps };
+    if (input.isTrigger || input.isAppTrigger || input.pageScope) wfDef.isTrigger = true;
+    if (input.isAppTrigger) wfDef.isAppTrigger = true;
+    if (input.pageScope) wfDef.pageScope = input.pageScope as string;
+    if (input.folder) wfDef.folder = input.folder as string;
+    store.setWorkflow(name, wfDef);
 
     if (input.bindToNodeId) {
       const nodeId = input.bindToNodeId as string;
-      // Re-fetch the store after setPageWorkflow/setPageWorkflowMeta to get the freshest
+      // Re-fetch the store after setWorkflow to get the freshest
       // pageNodes. Parallel agents (binding, styling, workflows) run concurrently and their
       // SSE tool events are interleaved on the client. A binding/styling tool call processed
       // between two create_workflow calls may have updated pageNodes to a new Zustand state
@@ -3252,7 +3248,7 @@ const handlers: Record<string, Handler> = {
       if (bindErr) return bindErr;
       const node = findNode(freshStore.pageNodes as SDUINode[], nodeId);
       const existing = Array.isArray(node?.actions) ? [...(node.actions as unknown[])] : [];
-      const newActions = [...existing, { action: name }];
+      const newActions = [...existing, { trigger: trigger ?? 'click', workflowId: name }];
       freshStore.patchActions(nodeId, newActions as unknown as Record<string, unknown>);
     }
 
@@ -3275,11 +3271,11 @@ const handlers: Record<string, Handler> = {
   delete_workflow(input, getStore) {
     const store = getStore();
     const workflowName = input.workflowName as string;
-    const exists = !!store.pageWorkflows?.[workflowName];
+    const exists = !!(store.workflows ?? {})[workflowName];
     if (!exists) {
       return { success: false, error: `Workflow "${workflowName}" was not found.` };
     }
-    store.removePageWorkflow(workflowName);
+    store.removeWorkflow(workflowName);
     return { success: true, data: { message: `Deleted workflow "${workflowName}"` } };
   },
 
@@ -3293,19 +3289,12 @@ const handlers: Record<string, Handler> = {
     if (!stepId) return { success: false, error: 'add_workflow_step requires stepId.' };
     if (!type) return { success: false, error: 'add_workflow_step requires type.' };
 
-    const pageWorkflows = (store.pageWorkflows ?? {}) as Record<string, unknown>;
-    const pageWorkflowMeta = (store.pageWorkflowMeta ?? {}) as Record<string, { id?: string }>;
+    const allWorkflows = (store.workflows ?? {}) as Record<string, import('@/config/types').WorkflowDef>;
 
-    // Resolve workflowId → actual store key (workflowName).
-    // The ROSTER shows the UUID minted by the structure agent (e.g. "wf-hero-cta-primary").
-    // The store key is the derived human-readable name (e.g. "cta_primary_onClick").
-    // Try direct key match first (handles models that pass the name), then UUID match via meta.
+    // Resolve workflowId → actual store key. Try direct UUID match in unified workflows store.
     let workflowName: string | undefined;
-    if (workflowId in pageWorkflows) {
+    if (workflowId in allWorkflows) {
       workflowName = workflowId;
-    } else {
-      const entry = Object.entries(pageWorkflowMeta).find(([, m]) => m.id === workflowId);
-      if (entry) workflowName = entry[0];
     }
     if (!workflowName) {
       return {
@@ -3499,7 +3488,7 @@ const handlers: Record<string, Handler> = {
     }
 
     // ── Locate the target array and insert the step ──────────────────────────
-    const currentSteps = (store.pageWorkflows![workflowName] ?? []) as Array<Record<string, unknown>>;
+    const currentSteps = (allWorkflows[workflowName]?.steps ?? []) as Array<Record<string, unknown>>;
     const cloned = JSON.parse(JSON.stringify(currentSteps)) as Array<Record<string, unknown>>;
 
     const rawParentId = input.parentStepId as string | undefined;
@@ -3601,7 +3590,7 @@ const handlers: Record<string, Handler> = {
     const prohibitedError = findProhibitedStep(coerced);
     if (prohibitedError) return { success: false, error: prohibitedError };
 
-    store.setPageWorkflow(workflowName, coerced as object[]);
+    store.setWorkflow(workflowName, { ...allWorkflows[workflowName], steps: coerced as object[] });
 
     const location = parentStepId
       ? `${branchKey} of step "${parentStepId}"`
@@ -4412,8 +4401,8 @@ const handlers: Record<string, Handler> = {
     const store = getStore();
     const workflowName = input.workflowName as string;
     if (!workflowName) return { success: false, error: 'set_workflow_params requires "workflowName".' };
-    const wfExists = !!store.pageWorkflows?.[workflowName];
-    if (!wfExists) {
+    const wfExisting = (store.workflows ?? {})[workflowName] as import('@/config/types').WorkflowDef | undefined;
+    if (!wfExisting) {
       return { success: false, error: `Workflow "${workflowName}" not found. Use the exact workflowName from your WORKFLOW ROSTER.` };
     }
     const params = input.params;
@@ -4440,7 +4429,7 @@ const handlers: Record<string, Handler> = {
       else if ('testValue' in obj) out.testValue = obj.testValue;
       return out;
     });
-    store.setPageWorkflowMeta(workflowName, { params: cleaned });
+    store.setWorkflow(workflowName, { ...wfExisting, params: cleaned });
     return {
       success: true,
       data: {
@@ -4877,18 +4866,14 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
       if (!wfId || typeof wfId !== 'string') continue;
       // Idempotency: only skip workflow CREATION if already registered — always bind the action to
       // this node regardless, so two nodes sharing the same workflowId both get their action bound.
-      if (!(getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) {
-        // Derive a human-readable display name (stored in meta.name, NOT as the store key).
+      if (!(getStore().workflows ?? {})[wfId]) {
         const nodeName = (n.name as string | undefined) ?? (n.type as string | undefined) ?? 'Node';
         const displayName = `${nodeName}_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
         const freshStore = getStore();
-        // Store under the UUID — add_workflow_step's first check (workflowId in pageWorkflows)
-        // succeeds immediately without any meta.id bridge. Matches the globalWorkflows convention.
-        freshStore.setPageWorkflow(wfId, []);
         const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
-        const meta: Record<string, unknown> = { id: wfId, name: displayName, trigger };
-        if (effectivePageId) meta.pageScope = effectivePageId;
-        freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
+        const wfDef: import('@/config/types').WorkflowDef = { id: wfId, name: displayName, trigger, steps: [] };
+        if (effectivePageId) wfDef.pageScope = effectivePageId;
+        freshStore.setWorkflow(wfId, wfDef);
         mintedStubs.push({ workflowId: wfId, name: displayName, trigger, attachedTo: n.id as string | undefined });
       }
       // Bind to node: push { action: wfId, trigger } — always runs, even when workflow already existed
@@ -4898,9 +4883,13 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
         const existingNodeActions = Array.isArray((findNode(latestStore.pageNodes as SDUINode[], nodeId) as unknown as Record<string, unknown> | undefined)?.['actions'])
           ? [...((findNode(latestStore.pageNodes as SDUINode[], nodeId) as unknown as Record<string, unknown>)['actions'] as unknown[])]
           : [];
-        const alreadyBound = (existingNodeActions as Array<{ action?: string }>).some(a => a.action === wfId);
+        const alreadyBound = (existingNodeActions as Array<Record<string, unknown>>).some(a =>
+          (typeof a.workflowId === 'string' && a.workflowId === wfId) ||
+          (Array.isArray(a.steps) && (a.steps as Array<{ type?: string; config?: { workflowId?: string } }>)
+            .some(s => s.type === 'executeWorkflow' && s.config?.workflowId === wfId))
+        );
         if (!alreadyBound) {
-          latestStore.patchActions(nodeId, [...existingNodeActions, { action: wfId, trigger }] as unknown as Record<string, unknown>);
+          latestStore.patchActions(nodeId, [...existingNodeActions, { trigger: trigger ?? 'click', workflowId: wfId }] as unknown as Record<string, unknown>);
         }
       }
     }
@@ -4918,14 +4907,13 @@ handlers['generate_structure'] = function generateStructure(input, getStore) {
     const trigger = pa.trigger ?? 'pageLoad';
     if (!wfId || typeof wfId !== 'string') continue;
     // Idempotency: skip if this UUID is already registered
-    if ((getStore().pageWorkflows as Record<string, unknown>)?.[wfId]) continue;
+    if ((getStore().workflows ?? {})[wfId]) continue;
     const displayPageName = `Page_on${trigger.charAt(0).toUpperCase()}${trigger.slice(1)}`;
     const freshStore = getStore();
-    freshStore.setPageWorkflow(wfId, []);
     const effectivePageId = targetPageId ?? (getStore().pages as Array<{ id: string }>)[0]?.id;
-    const meta: Record<string, unknown> = { id: wfId, name: displayPageName, trigger, isTrigger: true };
-    if (effectivePageId) meta.pageScope = effectivePageId;
-    freshStore.setPageWorkflowMeta(wfId, meta as Parameters<typeof freshStore.setPageWorkflowMeta>[1]);
+    const pageTriggerDef: import('@/config/types').WorkflowDef = { id: wfId, name: displayPageName, trigger, steps: [], isTrigger: true };
+    if (effectivePageId) pageTriggerDef.pageScope = effectivePageId;
+    freshStore.setWorkflow(wfId, pageTriggerDef);
     mintedStubs.push({ workflowId: wfId, name: displayPageName, trigger });
   }
 

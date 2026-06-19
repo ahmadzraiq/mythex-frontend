@@ -32,11 +32,13 @@ export function decompileStore(store: BuilderStore): Record<string, string> {
   Object.assign(files, varFiles);
 
   // Global workflows → src/workflows/<name>.ts (one per workflow)
-  const wfFiles = decompileWorkflows(
-    store.globalWorkflowMeta ?? {},
-    store.globalWorkflows ?? {},
-    ctx,
-  );
+  // Build legacy-shaped maps from unified store.workflows (global = no pageScope, non-trigger)
+  type WfEntry = { id: string; name?: string; trigger?: string; steps?: object[]; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
+  const globalWfEntries = Object.entries(store.workflows ?? {})
+    .filter(([, w]) => !(w as WfEntry).pageScope && !(w as WfEntry).isTrigger && !(w as WfEntry).isAppTrigger);
+  const wfMeta = Object.fromEntries(globalWfEntries.map(([id, w]) => [id, w as WfEntry]));
+  const wfSteps = Object.fromEntries(globalWfEntries.map(([id, w]) => [id, ((w as WfEntry).steps ?? []) as unknown[]]));
+  const wfFiles = decompileWorkflows(wfMeta, wfSteps, ctx);
   Object.assign(files, wfFiles);
 
   // Pages → src/pages/<name>.tsx

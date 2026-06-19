@@ -290,24 +290,22 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
   });
 
   // ── Workflows ─────────────────────────────────────────────────────────────
-  // Load ALL action files: shared layout/cart/auth/etc. files PLUS per-page
-  // files. Shared files (e.g. layout.json) hold the navbar/footer workflows
-  // referenced by every page that uses the store layout.
-  const pageWorkflows: Record<string, object[]> = {};
-  const pageWorkflowMeta: Record<string, { name: string; trigger: string }> = {};
+  // Load ALL action files: shared layout/cart/auth/etc. files PLUS per-page files.
+  const allWorkflowSteps: Record<string, object[]> = {};
+  const allWorkflowMeta: Record<string, { name: string; trigger: string }> = {};
   // Groups workflows by source config filename so codegen can split into domain files.
   const pageWorkflowGroups: Record<string, string[]> = {};
 
   // 1. Shared / non-route action files first (so per-page entries can override)
   const routeConfigs = new Set((routesDef.routes ?? []).map(r => normalizeKey(r.config ?? '')));
   for (const [normalizedName, filePath] of actionsIndex) {
-    if (routeConfigs.has(normalizedName)) continue; // handled in step 2
+    if (routeConfigs.has(normalizedName)) continue;
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
     const configName = path.basename(filePath, '.json');
     const { workflows, workflowMeta, workflowIds } = loadActions(configName);
     void raw;
-    Object.assign(pageWorkflows, workflows);
-    Object.assign(pageWorkflowMeta, workflowMeta);
+    Object.assign(allWorkflowSteps, workflows);
+    Object.assign(allWorkflowMeta, workflowMeta);
     if (workflowIds.length > 0) {
       pageWorkflowGroups[configName] = [...(pageWorkflowGroups[configName] ?? []), ...workflowIds];
     }
@@ -317,12 +315,20 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
   for (const r of routesDef.routes ?? []) {
     const cfg = r.config ?? '';
     const { workflows, workflowMeta, workflowIds } = loadActions(cfg);
-    Object.assign(pageWorkflows, workflows);
-    Object.assign(pageWorkflowMeta, workflowMeta);
+    Object.assign(allWorkflowSteps, workflows);
+    Object.assign(allWorkflowMeta, workflowMeta);
     if (workflowIds.length > 0) {
       pageWorkflowGroups[cfg] = [...(pageWorkflowGroups[cfg] ?? []), ...workflowIds];
     }
   }
+
+  // Build unified workflows dict (keyed by UUID, value is WorkflowDef shape)
+  const workflows: BuilderStore['workflows'] = Object.fromEntries(
+    Object.entries(allWorkflowSteps).map(([id, steps]) => [
+      id,
+      { id, steps, name: allWorkflowMeta[id]?.name ?? id, trigger: allWorkflowMeta[id]?.trigger ?? 'click' },
+    ])
+  );
 
   // ── Theme ──────────────────────────────────────────────────────────────────
   const themeRaw = themeJson as Record<string, unknown>;
@@ -352,11 +358,8 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     customColors,
     themeOverrides: (themeRaw.overrides as Record<string, string>) ?? {},
     themeDarkOverrides: (themeRaw.darkOverrides as Record<string, string>) ?? {},
-    pageWorkflows,
-    globalWorkflows: {},
-    pageWorkflowMeta,
+    workflows,
     pageWorkflowGroups,
-    globalWorkflowMeta: {},
     authConfig: syntheticAuthConfig,
   };
 }

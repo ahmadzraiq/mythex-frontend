@@ -62,6 +62,7 @@ interface SduiNodeConfig {
   actions?: Array<
     | { action: string; params?: Record<string, unknown>; trigger?: string }
     | { trigger: string; steps: object[] }
+    | { trigger: string; workflowId: string }
   >
   responsive?: Record<string, { className?: string; styles?: Record<string, unknown> }>
   _src?: string
@@ -97,21 +98,39 @@ let _scTriggerNames: Map<string, string> = new Map()
 // ─── Inline action builder ────────────────────────────────────────────────────
 
 /**
- * Build an inline action object `{ trigger, steps: [executeWorkflow(...)] }`.
- * This is the canonical format for node.actions in the new config API.
- * The runtime engine (sdui-engine.tsx) natively handles objects with a `steps` array.
+ * Accumulator for auto-generated node-level inline workflows.
+ * When a node calls a project workflow with arguments (e.g. `onClick={() => handle('7')}`),
+ * `buildInlineAction` creates a thin inline workflow that holds a single `runProjectWorkflow`
+ * step carrying those args — keeping the action object clean `{ trigger, workflowId }`.
+ * Reset at the start of each `compilePageToJson` call.
+ */
+let _inlineWorkflows: Map<string, Record<string, unknown>> = new Map();
+
+/**
+ * Build a node action object `{ trigger, workflowId }`.
+ * When params are present an inline (node-level) workflow is created automatically:
+ *   steps: [{ type: 'runProjectWorkflow', config: { workflowId, params } }]
+ * The action references that inline workflow's UUID — no params on the action itself.
  */
 function buildInlineAction(
   trigger: string,
   workflowId: string,
   params?: Record<string, unknown>,
-): { trigger: string; steps: object[] } {
-  const stepConfig: Record<string, unknown> = { workflowId };
-  if (params && Object.keys(params).length > 0) stepConfig.params = params;
-  return {
-    trigger,
-    steps: [{ id: crypto.randomUUID(), type: 'executeWorkflow', config: stepConfig }],
-  };
+): { trigger: string; workflowId: string } {
+  if (params && Object.keys(params).length > 0) {
+    const inlineId = crypto.randomUUID();
+    _inlineWorkflows.set(inlineId, {
+      id: inlineId,
+      meta: { name: `inline-${workflowId.slice(0, 8)}`, trigger },
+      steps: [{
+        id: crypto.randomUUID(),
+        type: 'runProjectWorkflow',
+        config: { workflowId, params },
+      }],
+    });
+    return { trigger, workflowId: inlineId };
+  }
+  return { trigger, workflowId };
 }
 
 /** Map a JSX prop name (e.g. "onClick") to its trigger name (e.g. "click"). */
@@ -730,7 +749,7 @@ function convertScReference(
   }
 
   const passedProps: Record<string, unknown> = {}
-  const triggerActions: Array<{ trigger: string; steps: object[] }> = []
+  const triggerActions: Array<{ trigger: string; workflowId: string }> = []
 
   for (const attr of opening.attributes.properties) {
     if (!ts.isJsxAttribute(attr)) continue
@@ -782,8 +801,10 @@ function convertScReference(
       continue
     }
     if (ts.isJsxExpression(init) && init.expression) {
-      const exprText = nodeText(init.expression)
-      passedProps[attrName] = resolveExprToSdui(exprText, pathToId)
+      const raw = nodeText(init.expression)
+      // Arrow functions need their body unwrapped so the renderer can evaluate them as formulas
+      const resolved = resolveExprToSdui(unwrapArrowBody(raw), pathToId)
+      passedProps[attrName] = { js: resolved }
     }
   }
 
@@ -1692,6 +1713,8 @@ export interface CompiledPage {
   title: string
   layout: string
   content: unknown   // SduiNodeConfig root
+  /** Auto-generated inline workflows (one per node-action-with-params). */
+  inlineWorkflows: Map<string, Record<string, unknown>>
 }
 
 /**
@@ -1716,6 +1739,7 @@ export function compilePageToJson(
   _runtimeScMap = runtimeScMap ?? new Map()
   _componentPropNames = componentPropNames ?? []
   _scTriggerNames = scTriggerNames ?? new Map()
+  _inlineWorkflows = new Map()  // reset per compile call
 
   function extractPageCall(call: ts.CallExpression): { pageName: string; layout: string; title: string; fnArg: ts.ArrowFunction | ts.FunctionExpression } | null {
     const firstArg = call.arguments[0]
@@ -1775,6 +1799,7 @@ export function compilePageToJson(
             title: extracted.title,
             layout: extracted.layout,
             content: Array.isArray(content) ? content[0] ?? null : content,
+            inlineWorkflows: new Map(_inlineWorkflows),
           }
         } finally {
           _currentLocalFns = new Map()
@@ -1803,6 +1828,7 @@ export function compilePageToJson(
                 title: extracted.title,
                 layout: extracted.layout,
                 content: Array.isArray(content) ? content[0] ?? null : content,
+                inlineWorkflows: new Map(_inlineWorkflows),
               }
             } finally {
               _currentLocalFns = new Map()
@@ -1820,6 +1846,7 @@ export function compilePageToJson(
   _runtimeScMap = new Map()
   _componentPropNames = []
   _scTriggerNames = new Map()
+  _inlineWorkflows = new Map()
   return result
 }
 

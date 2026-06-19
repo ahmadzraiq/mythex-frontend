@@ -60,7 +60,8 @@
             ],
             "actions": [
               {
-                "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
+                "trigger": "click",
+                "workflowId": "3517ed88-9e35-42fd-8d44-650cb590d210"
               }
             ]
           }

@@ -19,7 +19,8 @@
             },
             "actions": [
               {
-                "action": "admin-nav-orders"
+                "trigger": "click",
+                "workflowId": "admin-nav-orders"
               }
             ],
             "children": [

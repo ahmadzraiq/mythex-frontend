@@ -26,7 +26,8 @@
             "type": "Box",
             "actions": [
               {
-                "action": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
+                "trigger": "click",
+                "workflowId": "d5d15a7d-ea78-467a-a181-2e801e93ce0f"
               }
             ],
             "children": [

@@ -566,7 +566,6 @@
       }
     ]
   },
-
   "menuCloseAll": {
     "trigger": "click",
     "steps": [
@@ -596,8 +595,6 @@
       }
     ]
   },
-
-
   "dp1ComputeGrid": {
     "trigger": "click",
     "steps": [
@@ -606,7 +603,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000004",
-          "value": { "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000001'];const mo=variables['dp-test-0000-0000-0000-000000000002'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000001'];const mo=variables['dp-test-0000-0000-0000-000000000002'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       }
     ]
@@ -619,7 +618,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000001",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000002']===0 ? variables['dp-test-0000-0000-0000-000000000001']-1 : variables['dp-test-0000-0000-0000-000000000001']" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000002']===0 ? variables['dp-test-0000-0000-0000-000000000001']-1 : variables['dp-test-0000-0000-0000-000000000001']"
+          }
         }
       },
       {
@@ -627,13 +628,17 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000002",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000002']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000002']-1" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000002']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000002']-1"
+          }
         }
       },
       {
         "id": "grid",
         "type": "runProjectWorkflow",
-        "config": { "workflowId": "dp1ComputeGrid" }
+        "config": {
+          "workflowId": "dp1ComputeGrid"
+        }
       }
     ]
   },
@@ -645,7 +650,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000001",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000002']===11 ? variables['dp-test-0000-0000-0000-000000000001']+1 : variables['dp-test-0000-0000-0000-000000000001']" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000002']===11 ? variables['dp-test-0000-0000-0000-000000000001']+1 : variables['dp-test-0000-0000-0000-000000000001']"
+          }
         }
       },
       {
@@ -653,13 +660,17 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000002",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000002']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000002']+1" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000002']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000002']+1"
+          }
         }
       },
       {
         "id": "grid",
         "type": "runProjectWorkflow",
-        "config": { "workflowId": "dp1ComputeGrid" }
+        "config": {
+          "workflowId": "dp1ComputeGrid"
+        }
       }
     ]
   },
@@ -671,18 +682,21 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000003",
-          "value": { "formula": "context?.item?.data?.dateStr" }
+          "value": {
+            "formula": "context?.item?.data?.dateStr"
+          }
         }
       },
       {
         "id": "close",
         "type": "changeVariableValue",
-        "config": { "variableName": "dp-test-0000-0000-0000-000000000005", "value": false }
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000005",
+          "value": false
+        }
       }
     ]
   },
-
-
   "dp2ComputeGrid": {
     "trigger": "click",
     "steps": [
@@ -691,7 +705,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000014",
-          "value": { "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000011'];const mo=variables['dp-test-0000-0000-0000-000000000012'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000011'];const mo=variables['dp-test-0000-0000-0000-000000000012'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       }
     ]
@@ -704,7 +720,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000011",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000012']===0 ? variables['dp-test-0000-0000-0000-000000000011']-1 : variables['dp-test-0000-0000-0000-000000000011']" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000012']===0 ? variables['dp-test-0000-0000-0000-000000000011']-1 : variables['dp-test-0000-0000-0000-000000000011']"
+          }
         }
       },
       {
@@ -712,10 +730,18 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000012",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000012']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000012']-1" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000012']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000012']-1"
+          }
         }
       },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "dp2ComputeGrid" } }
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp2ComputeGrid"
+        }
+      }
     ]
   },
   "dp2NextMonth": {
@@ -726,7 +752,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000011",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000012']===11 ? variables['dp-test-0000-0000-0000-000000000011']+1 : variables['dp-test-0000-0000-0000-000000000011']" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000012']===11 ? variables['dp-test-0000-0000-0000-000000000011']+1 : variables['dp-test-0000-0000-0000-000000000011']"
+          }
         }
       },
       {
@@ -734,10 +762,18 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000012",
-          "value": { "formula": "variables['dp-test-0000-0000-0000-000000000012']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000012']+1" }
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000012']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000012']+1"
+          }
         }
       },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "dp2ComputeGrid" } }
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp2ComputeGrid"
+        }
+      }
     ]
   },
   "dp2SelectDay": {
@@ -746,56 +782,155 @@
       {
         "id": "sel",
         "type": "changeVariableValue",
-        "config": { "variableName": "dp-test-0000-0000-0000-000000000013", "value": { "formula": "context?.item?.data?.dateStr" } }
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000013",
+          "value": {
+            "formula": "context?.item?.data?.dateStr"
+          }
+        }
       },
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000015", "value": false } }
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000015",
+          "value": false
+        }
+      }
     ]
   },
   "dp2PresetToday": {
     "trigger": "click",
     "steps": [
-      { "id": "sel", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000013", "value": { "formula": "new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0')" } } },
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000015", "value": false } }
+      {
+        "id": "sel",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000013",
+          "value": {
+            "formula": "new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+String(new Date().getDate()).padStart(2,'0')"
+          }
+        }
+      },
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000015",
+          "value": false
+        }
+      }
     ]
   },
   "dp2PresetYesterday": {
     "trigger": "click",
     "steps": [
-      { "id": "sel", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000013", "value": { "js": "const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')" } } },
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000015", "value": false } }
+      {
+        "id": "sel",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000013",
+          "value": {
+            "js": "const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')"
+          }
+        }
+      },
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000015",
+          "value": false
+        }
+      }
     ]
   },
   "dp2PresetNextWeek": {
     "trigger": "click",
     "steps": [
-      { "id": "sel", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000013", "value": { "js": "const d=new Date();d.setDate(d.getDate()+7);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')" } } },
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000015", "value": false } }
+      {
+        "id": "sel",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000013",
+          "value": {
+            "js": "const d=new Date();d.setDate(d.getDate()+7);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')"
+          }
+        }
+      },
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000015",
+          "value": false
+        }
+      }
     ]
   },
-
-
   "tpSelectHour": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000021", "value": { "formula": "context?.item?.data?.value" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000026", "value": { "formula": "String(context?.item?.data?.value).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000022']).padStart(2,'0')" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000021",
+          "value": {
+            "formula": "context?.item?.data?.value"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000026",
+          "value": {
+            "formula": "String(context?.item?.data?.value).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000022']).padStart(2,'0')"
+          }
+        }
+      }
     ]
   },
   "tpSelectMinute": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000022", "value": { "formula": "context?.item?.data?.value" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000026", "value": { "formula": "String(variables['dp-test-0000-0000-0000-000000000021']).padStart(2,'0')+':'+String(context?.item?.data?.value).padStart(2,'0')" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000022",
+          "value": {
+            "formula": "context?.item?.data?.value"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000026",
+          "value": {
+            "formula": "String(variables['dp-test-0000-0000-0000-000000000021']).padStart(2,'0')+':'+String(context?.item?.data?.value).padStart(2,'0')"
+          }
+        }
+      }
     ]
   },
   "tpConfirm": {
     "trigger": "click",
     "steps": [
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000023", "value": false } }
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000023",
+          "value": false
+        }
+      }
     ]
   },
-
-
   "dtpComputeGrid": {
     "trigger": "click",
     "steps": [
@@ -804,7 +939,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000034",
-          "value": { "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000031'];const mo=variables['dp-test-0000-0000-0000-000000000032'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000031'];const mo=variables['dp-test-0000-0000-0000-000000000032'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       }
     ]
@@ -812,48 +949,155 @@
   "dtpPrevMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000031", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000032']===0 ? variables['dp-test-0000-0000-0000-000000000031']-1 : variables['dp-test-0000-0000-0000-000000000031']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000032", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000032']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000032']-1" } } },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "dtpComputeGrid" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000031",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000032']===0 ? variables['dp-test-0000-0000-0000-000000000031']-1 : variables['dp-test-0000-0000-0000-000000000031']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000032",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000032']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000032']-1"
+          }
+        }
+      },
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dtpComputeGrid"
+        }
+      }
     ]
   },
   "dtpNextMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000031", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000032']===11 ? variables['dp-test-0000-0000-0000-000000000031']+1 : variables['dp-test-0000-0000-0000-000000000031']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000032", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000032']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000032']+1" } } },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "dtpComputeGrid" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000031",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000032']===11 ? variables['dp-test-0000-0000-0000-000000000031']+1 : variables['dp-test-0000-0000-0000-000000000031']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000032",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000032']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000032']+1"
+          }
+        }
+      },
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dtpComputeGrid"
+        }
+      }
     ]
   },
   "dtpSelectDay": {
     "trigger": "click",
     "steps": [
-      { "id": "sel", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000033", "value": { "formula": "context?.item?.data?.dateStr" } } },
-      { "id": "disp", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000038", "value": { "formula": "(context?.item?.data?.dateStr||'')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')" } } }
+      {
+        "id": "sel",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000033",
+          "value": {
+            "formula": "context?.item?.data?.dateStr"
+          }
+        }
+      },
+      {
+        "id": "disp",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000038",
+          "value": {
+            "formula": "(context?.item?.data?.dateStr||'')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
+          }
+        }
+      }
     ]
   },
   "dtpSelectHour": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000035", "value": { "formula": "(variables['dp-test-0000-0000-0000-000000000035']+1)%24" } } },
-      { "id": "disp", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000038", "value": { "formula": "(variables['dp-test-0000-0000-0000-000000000033']||'')+' '+String((variables['dp-test-0000-0000-0000-000000000035']+1)%24).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000035",
+          "value": {
+            "formula": "(variables['dp-test-0000-0000-0000-000000000035']+1)%24"
+          }
+        }
+      },
+      {
+        "id": "disp",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000038",
+          "value": {
+            "formula": "(variables['dp-test-0000-0000-0000-000000000033']||'')+' '+String((variables['dp-test-0000-0000-0000-000000000035']+1)%24).padStart(2,'0')+':'+String(variables['dp-test-0000-0000-0000-000000000036']).padStart(2,'0')"
+          }
+        }
+      }
     ]
   },
   "dtpSelectMinute": {
     "trigger": "click",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000036", "value": { "formula": "(variables['dp-test-0000-0000-0000-000000000036']+5)%60" } } },
-      { "id": "disp", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000038", "value": { "formula": "(variables['dp-test-0000-0000-0000-000000000033']||'')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String((variables['dp-test-0000-0000-0000-000000000036']+5)%60).padStart(2,'0')" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000036",
+          "value": {
+            "formula": "(variables['dp-test-0000-0000-0000-000000000036']+5)%60"
+          }
+        }
+      },
+      {
+        "id": "disp",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000038",
+          "value": {
+            "formula": "(variables['dp-test-0000-0000-0000-000000000033']||'')+' '+String(variables['dp-test-0000-0000-0000-000000000035']).padStart(2,'0')+':'+String((variables['dp-test-0000-0000-0000-000000000036']+5)%60).padStart(2,'0')"
+          }
+        }
+      }
     ]
   },
   "dtpConfirm": {
     "trigger": "click",
     "steps": [
-      { "id": "close", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000037", "value": false } }
+      {
+        "id": "close",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000037",
+          "value": false
+        }
+      }
     ]
   },
-
-
   "drComputeGrids": {
     "trigger": "click",
     "steps": [
@@ -862,7 +1106,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000045",
-          "value": { "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000041'];const mo=variables['dp-test-0000-0000-0000-000000000042'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000041'];const mo=variables['dp-test-0000-0000-0000-000000000042'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       },
       {
@@ -870,7 +1116,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000046",
-          "value": { "js": "const byr=variables['dp-test-0000-0000-0000-000000000041'];const bmo=variables['dp-test-0000-0000-0000-000000000042'];const nmo=bmo===11?0:bmo+1;const nyr=bmo===11?byr+1:byr;return Array.from({length:42},(_,i)=>{const fd=new Date(nyr,nmo,1).getDay();const dim=new Date(nyr,nmo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(nyr,nmo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?nyr+'-'+String(nmo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "js": "const byr=variables['dp-test-0000-0000-0000-000000000041'];const bmo=variables['dp-test-0000-0000-0000-000000000042'];const nmo=bmo===11?0:bmo+1;const nyr=bmo===11?byr+1:byr;return Array.from({length:42},(_,i)=>{const fd=new Date(nyr,nmo,1).getDay();const dim=new Date(nyr,nmo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(nyr,nmo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?nyr+'-'+String(nmo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       }
     ]
@@ -878,17 +1126,65 @@
   "drPrevMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000041", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000042']===0 ? variables['dp-test-0000-0000-0000-000000000041']-1 : variables['dp-test-0000-0000-0000-000000000041']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000042", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000042']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000042']-1" } } },
-      { "id": "grids", "type": "runProjectWorkflow", "config": { "workflowId": "drComputeGrids" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000041",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000042']===0 ? variables['dp-test-0000-0000-0000-000000000041']-1 : variables['dp-test-0000-0000-0000-000000000041']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000042",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000042']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000042']-1"
+          }
+        }
+      },
+      {
+        "id": "grids",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "drComputeGrids"
+        }
+      }
     ]
   },
   "drNextMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000041", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000042']===11 ? variables['dp-test-0000-0000-0000-000000000041']+1 : variables['dp-test-0000-0000-0000-000000000041']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000042", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000042']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000042']+1" } } },
-      { "id": "grids", "type": "runProjectWorkflow", "config": { "workflowId": "drComputeGrids" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000041",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000042']===11 ? variables['dp-test-0000-0000-0000-000000000041']+1 : variables['dp-test-0000-0000-0000-000000000041']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000042",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000042']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000042']+1"
+          }
+        }
+      },
+      {
+        "id": "grids",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "drComputeGrids"
+        }
+      }
     ]
   },
   "drSelectDate": {
@@ -899,7 +1195,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000043",
-          "value": { "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(!s||e)?ds:s" }
+          "value": {
+            "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(!s||e)?ds:s"
+          }
         }
       },
       {
@@ -907,7 +1205,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000044",
-          "value": { "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(!s||e)?'':(ds>=s?ds:s)" }
+          "value": {
+            "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(!s||e)?'':(ds>=s?ds:s)"
+          }
         }
       },
       {
@@ -915,7 +1215,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000043",
-          "value": { "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(s&&!e&&ds<s)?ds:variables['dp-test-0000-0000-0000-000000000043']" }
+          "value": {
+            "js": "const ds=context?.item?.data?.dateStr||'';const s=variables['dp-test-0000-0000-0000-000000000043'];const e=variables['dp-test-0000-0000-0000-000000000044'];return(s&&!e&&ds<s)?ds:variables['dp-test-0000-0000-0000-000000000043']"
+          }
         }
       }
     ]
@@ -923,12 +1225,24 @@
   "drClear": {
     "trigger": "click",
     "steps": [
-      { "id": "s", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000043", "value": "" } },
-      { "id": "e", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000044", "value": "" } }
+      {
+        "id": "s",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000043",
+          "value": ""
+        }
+      },
+      {
+        "id": "e",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000044",
+          "value": ""
+        }
+      }
     ]
   },
-
-
   "sdpComputeGrid": {
     "trigger": "click",
     "steps": [
@@ -937,7 +1251,9 @@
         "type": "changeVariableValue",
         "config": {
           "variableName": "dp-test-0000-0000-0000-000000000054",
-          "value": { "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000051'];const mo=variables['dp-test-0000-0000-0000-000000000052'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})" }
+          "value": {
+            "formula": "Array.from({length:42},(_,i)=>{const yr=variables['dp-test-0000-0000-0000-000000000051'];const mo=variables['dp-test-0000-0000-0000-000000000052'];const fd=new Date(yr,mo,1).getDay();const dim=new Date(yr,mo+1,0).getDate();const dn=i-fd+1;const inM=dn>=1&&dn<=dim;const d=dn<1?new Date(yr,mo,0).getDate()+dn:(dn>dim?dn-dim:dn);const ds=inM?yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';return{day:d,inMonth:inM,dateStr:ds,idx:i}})"
+          }
         }
       }
     ]
@@ -945,94 +1261,368 @@
   "sdpPrevMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000051", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000052']===0 ? variables['dp-test-0000-0000-0000-000000000051']-1 : variables['dp-test-0000-0000-0000-000000000051']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000052", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000052']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000052']-1" } } },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "sdpComputeGrid" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000051",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000052']===0 ? variables['dp-test-0000-0000-0000-000000000051']-1 : variables['dp-test-0000-0000-0000-000000000051']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000052",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000052']===0 ? 11 : variables['dp-test-0000-0000-0000-000000000052']-1"
+          }
+        }
+      },
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "sdpComputeGrid"
+        }
+      }
     ]
   },
   "sdpNextMonth": {
     "trigger": "click",
     "steps": [
-      { "id": "yr", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000051", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000052']===11 ? variables['dp-test-0000-0000-0000-000000000051']+1 : variables['dp-test-0000-0000-0000-000000000051']" } } },
-      { "id": "mo", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000052", "value": { "formula": "variables['dp-test-0000-0000-0000-000000000052']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000052']+1" } } },
-      { "id": "grid", "type": "runProjectWorkflow", "config": { "workflowId": "sdpComputeGrid" } }
+      {
+        "id": "yr",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000051",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000052']===11 ? variables['dp-test-0000-0000-0000-000000000051']+1 : variables['dp-test-0000-0000-0000-000000000051']"
+          }
+        }
+      },
+      {
+        "id": "mo",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000052",
+          "value": {
+            "formula": "variables['dp-test-0000-0000-0000-000000000052']===11 ? 0 : variables['dp-test-0000-0000-0000-000000000052']+1"
+          }
+        }
+      },
+      {
+        "id": "grid",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "sdpComputeGrid"
+        }
+      }
     ]
   },
   "sdpSelectDay": {
     "trigger": "click",
     "steps": [
-      { "id": "sel", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000053", "value": { "formula": "context?.item?.data?.dateStr" } } }
+      {
+        "id": "sel",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000053",
+          "value": {
+            "formula": "context?.item?.data?.dateStr"
+          }
+        }
+      }
     ]
   },
-
-
   "dpInitAllGrids": {
     "trigger": "created",
     "steps": [
-      { "id": "g1", "type": "runProjectWorkflow", "config": { "workflowId": "dp1ComputeGrid" } },
-      { "id": "g2", "type": "runProjectWorkflow", "config": { "workflowId": "dp2ComputeGrid" } },
-      { "id": "g3", "type": "runProjectWorkflow", "config": { "workflowId": "dtpComputeGrid" } },
-      { "id": "g4", "type": "runProjectWorkflow", "config": { "workflowId": "drComputeGrids" } },
-      { "id": "g5", "type": "runProjectWorkflow", "config": { "workflowId": "sdpComputeGrid" } }
+      {
+        "id": "g1",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp1ComputeGrid"
+        }
+      },
+      {
+        "id": "g2",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp2ComputeGrid"
+        }
+      },
+      {
+        "id": "g3",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dtpComputeGrid"
+        }
+      },
+      {
+        "id": "g4",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "drComputeGrids"
+        }
+      },
+      {
+        "id": "g5",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "sdpComputeGrid"
+        }
+      }
     ]
   },
-
   "dp1TypeDate": {
     "trigger": "change",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000003", "value": { "formula": "event?.value || ''" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000001", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000001']:d.getFullYear()" } } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000002", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000002']:d.getMonth()" } } },
-      { "id": "s4", "type": "runProjectWorkflow", "config": { "workflowId": "dp1ComputeGrid" } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000003",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000001",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000001']:d.getFullYear()"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000002",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000002']:d.getMonth()"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp1ComputeGrid"
+        }
+      }
     ]
   },
-
   "dp2TypeDate": {
     "trigger": "change",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000013", "value": { "formula": "event?.value || ''" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000011", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000011']:d.getFullYear()" } } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000012", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000012']:d.getMonth()" } } },
-      { "id": "s4", "type": "runProjectWorkflow", "config": { "workflowId": "dp2ComputeGrid" } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000013",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000011",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000011']:d.getFullYear()"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000012",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000012']:d.getMonth()"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dp2ComputeGrid"
+        }
+      }
     ]
   },
-
   "tpTypeTime": {
     "trigger": "change",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000026", "value": { "formula": "event?.value || ''" } } },
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000021", "value": { "js": "const m=(event?.value||'').match(/^(\\d{1,2}):(\\d{2})$/);return m?Math.min(23,Math.max(0,Number(m[1]))):variables['dp-test-0000-0000-0000-000000000021']" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000022", "value": { "js": "const m=(event?.value||'').match(/^(\\d{1,2}):(\\d{2})$/);return m?Math.min(59,Math.max(0,Number(m[2]))):variables['dp-test-0000-0000-0000-000000000022']" } } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000026",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      },
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000021",
+          "value": {
+            "js": "const m=(event?.value||'').match(/^(\\d{1,2}):(\\d{2})$/);return m?Math.min(23,Math.max(0,Number(m[1]))):variables['dp-test-0000-0000-0000-000000000021']"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000022",
+          "value": {
+            "js": "const m=(event?.value||'').match(/^(\\d{1,2}):(\\d{2})$/);return m?Math.min(59,Math.max(0,Number(m[2]))):variables['dp-test-0000-0000-0000-000000000022']"
+          }
+        }
+      }
     ]
   },
-
   "dtpTypeDateTime": {
     "trigger": "change",
     "steps": [
-      { "id": "s0", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000038", "value": { "formula": "event?.value || ''" } } },
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000033", "value": { "js": "const p=(event?.value||'').split(' ');const d=new Date(p[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000033']:p[0]" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000035", "value": { "js": "const t=((event?.value||'').split(' ')[1]||'').match(/^(\\d{1,2}):(\\d{2})$/);return t?Math.min(23,Math.max(0,Number(t[1]))):variables['dp-test-0000-0000-0000-000000000035']" } } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000036", "value": { "js": "const t=((event?.value||'').split(' ')[1]||'').match(/^(\\d{1,2}):(\\d{2})$/);return t?Math.min(59,Math.max(0,Number(t[2]))):variables['dp-test-0000-0000-0000-000000000036']" } } },
-      { "id": "s4", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000031", "value": { "js": "const d=new Date((event?.value||'').split(' ')[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000031']:d.getFullYear()" } } },
-      { "id": "s5", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000032", "value": { "js": "const d=new Date((event?.value||'').split(' ')[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000032']:d.getMonth()" } } },
-      { "id": "s6", "type": "runProjectWorkflow", "config": { "workflowId": "dtpComputeGrid" } }
+      {
+        "id": "s0",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000038",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      },
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000033",
+          "value": {
+            "js": "const p=(event?.value||'').split(' ');const d=new Date(p[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000033']:p[0]"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000035",
+          "value": {
+            "js": "const t=((event?.value||'').split(' ')[1]||'').match(/^(\\d{1,2}):(\\d{2})$/);return t?Math.min(23,Math.max(0,Number(t[1]))):variables['dp-test-0000-0000-0000-000000000035']"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000036",
+          "value": {
+            "js": "const t=((event?.value||'').split(' ')[1]||'').match(/^(\\d{1,2}):(\\d{2})$/);return t?Math.min(59,Math.max(0,Number(t[2]))):variables['dp-test-0000-0000-0000-000000000036']"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000031",
+          "value": {
+            "js": "const d=new Date((event?.value||'').split(' ')[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000031']:d.getFullYear()"
+          }
+        }
+      },
+      {
+        "id": "s5",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000032",
+          "value": {
+            "js": "const d=new Date((event?.value||'').split(' ')[0]);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000032']:d.getMonth()"
+          }
+        }
+      },
+      {
+        "id": "s6",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "dtpComputeGrid"
+        }
+      }
     ]
   },
-
   "drTypeStart": {
     "trigger": "change",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000043", "value": { "formula": "event?.value || ''" } } },
-      { "id": "s2", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000041", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000041']:d.getFullYear()" } } },
-      { "id": "s3", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000042", "value": { "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000042']:d.getMonth()" } } },
-      { "id": "s4", "type": "runProjectWorkflow", "config": { "workflowId": "drComputeGrids" } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000043",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      },
+      {
+        "id": "s2",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000041",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000041']:d.getFullYear()"
+          }
+        }
+      },
+      {
+        "id": "s3",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000042",
+          "value": {
+            "js": "const d=new Date(event?.value);return isNaN(d.getTime())?variables['dp-test-0000-0000-0000-000000000042']:d.getMonth()"
+          }
+        }
+      },
+      {
+        "id": "s4",
+        "type": "runProjectWorkflow",
+        "config": {
+          "workflowId": "drComputeGrids"
+        }
+      }
     ]
   },
-
   "drTypeEnd": {
     "trigger": "change",
     "steps": [
-      { "id": "s1", "type": "changeVariableValue", "config": { "variableName": "dp-test-0000-0000-0000-000000000044", "value": { "formula": "event?.value || ''" } } }
+      {
+        "id": "s1",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "dp-test-0000-0000-0000-000000000044",
+          "value": {
+            "formula": "event?.value || ''"
+          }
+        }
+      }
     ]
   }
 }

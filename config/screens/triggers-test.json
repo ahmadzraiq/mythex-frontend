@@ -2607,7 +2607,8 @@
                         },
                         "actions": [
                           {
-                            "action": "trTriggerBadFetch"
+                            "trigger": "click",
+                            "workflowId": "trTriggerBadFetch"
                           }
                         ],
                         "children": [

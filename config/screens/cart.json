@@ -53,7 +53,8 @@
             ],
             "actions": [
               {
-                "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
+                "trigger": "click",
+                "workflowId": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
               }
             ]
           }
@@ -98,7 +99,8 @@
                         },
                         "actions": [
                           {
-                            "action": "85a454be-bb92-4878-a266-b54e35d2d4d5"
+                            "trigger": "click",
+                            "workflowId": "85a454be-bb92-4878-a266-b54e35d2d4d5"
                           }
                         ],
                         "children": [
@@ -127,7 +129,8 @@
                             },
                             "actions": [
                               {
-                                "action": "85a454be-bb92-4878-a266-b54e35d2d4d5"
+                                "trigger": "click",
+                                "workflowId": "85a454be-bb92-4878-a266-b54e35d2d4d5"
                               }
                             ],
                             "children": [
@@ -181,7 +184,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "aa100004-0000-0000-0000-000000000004"
+                                        "trigger": "click",
+                                        "workflowId": "aa100004-0000-0000-0000-000000000004"
                                       }
                                     ]
                                   },
@@ -202,7 +206,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "aa100003-0000-0000-0000-000000000003"
+                                        "trigger": "click",
+                                        "workflowId": "aa100003-0000-0000-0000-000000000003"
                                       }
                                     ]
                                   },
@@ -229,7 +234,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "aa100005-0000-0000-0000-000000000005"
+                                        "trigger": "click",
+                                        "workflowId": "aa100005-0000-0000-0000-000000000005"
                                       }
                                     ]
                                   },
@@ -249,7 +255,8 @@
                                     ],
                                     "actions": [
                                       {
-                                        "action": "aa100003-0000-0000-0000-000000000003"
+                                        "trigger": "click",
+                                        "workflowId": "aa100003-0000-0000-0000-000000000003"
                                       }
                                     ]
                                   }
@@ -457,7 +464,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "13a93f84-964f-4116-84da-d2af7cc3bc81"
+                        "trigger": "click",
+                        "workflowId": "13a93f84-964f-4116-84da-d2af7cc3bc81"
                       }
                     ]
                   },
@@ -477,7 +485,8 @@
                     ],
                     "actions": [
                       {
-                        "action": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
+                        "trigger": "click",
+                        "workflowId": "9e33ef0a-706f-4555-b2ee-60fd95ebf416"
                       }
                     ]
                   }
@@ -579,7 +588,8 @@
                                 ],
                                 "actions": [
                                   {
-                                    "action": "aa100007-0000-0000-0000-000000000007"
+                                    "trigger": "click",
+                                    "workflowId": "aa100007-0000-0000-0000-000000000007"
                                   }
                                 ]
                               }
@@ -624,7 +634,8 @@
                         ],
                         "actions": [
                           {
-                            "action": "aa100006-0000-0000-0000-000000000006"
+                            "trigger": "click",
+                            "workflowId": "aa100006-0000-0000-0000-000000000006"
                           }
                         ]
                       }

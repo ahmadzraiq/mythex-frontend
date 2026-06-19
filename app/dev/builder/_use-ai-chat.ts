@@ -633,28 +633,17 @@ export function useAiChat() {
           description: store.projectDescription,
           category: store.projectCategory,
           variables: (store.customVars ?? []).map((v) => ({ id: v.id ?? v.name, name: v.name, label: v.label, type: v.type, initialValue: v.initialValue })),
-          workflows: [
-            ...Object.entries(store.pageWorkflows ?? {}).map(([name, steps]) => ({
-              name,
-              trigger: store.pageWorkflowMeta?.[name]?.trigger ?? 'click',
-              stepTypes: (steps as { type?: string }[]).map(s => s.type).filter(Boolean),
-              steps,
-              scope: 'page' as const,
-            })),
-            ...Object.entries(
-              (store as unknown as { globalWorkflowMeta?: Record<string, { name: string; trigger?: string }> }).globalWorkflowMeta ?? {}
-            ).map(([id, meta]) => {
-              const globalSteps = (store as unknown as { globalWorkflows?: Record<string, { type?: string }[]> }).globalWorkflows?.[id] ?? [];
-              return {
-                id,
-                name: meta.name,
-                trigger: meta.trigger,
-                stepTypes: globalSteps.map((s) => s.type).filter(Boolean),
-                steps: globalSteps,
-                scope: 'global' as const,
-              };
-            }),
-          ],
+          workflows: Object.entries(store.workflows ?? {}).map(([id, wf]) => {
+            const w = wf as { name?: string; trigger?: string; steps?: { type?: string }[]; pageScope?: string; isTrigger?: boolean; isAppTrigger?: boolean };
+            return {
+              id,
+              name: w.name ?? id,
+              trigger: w.trigger ?? 'click',
+              stepTypes: (w.steps ?? []).map(s => (s as { type?: string }).type).filter(Boolean),
+              steps: w.steps ?? [],
+              scope: w.pageScope ? 'page' : 'global',
+            };
+          }),
           dataSources: (store.pageDataSources ?? []).map((ds) => ({
             id: ds.id,
             label: ds._label ?? ds.name ?? ds.id,
@@ -768,7 +757,7 @@ export function useAiChat() {
                     execStatus = result.success ? 'success' : 'error';
 
                     // Belt-and-suspenders: after generate_structure succeeds, ensure every
-                    // minted workflow UUID is stored as a direct key in pageWorkflows.
+                    // minted workflow UUID is stored as a direct key in store.workflows.
                     // Old client bundles key by human name — this patch adds the UUID key so
                     // add_workflow_step's direct lookup always finds it without needing the
                     // meta.id scan, eliminating the HMR race condition.
@@ -778,14 +767,10 @@ export function useAiChat() {
                         const patchStore = useBuilderStore.getState();
                         const pageId = (ev.input as { _pageId?: string })?._pageId;
                         for (const { workflowId, name, trigger } of minted) {
-                          if (!(patchStore.pageWorkflows as Record<string, unknown>)?.[workflowId]) {
-                            patchStore.setPageWorkflow(workflowId, []);
-                            const meta: Record<string, unknown> = { id: workflowId, name, trigger };
-                            if (pageId) meta.pageScope = pageId;
-                            patchStore.setPageWorkflowMeta(
-                              workflowId,
-                              meta as Parameters<typeof patchStore.setPageWorkflowMeta>[1],
-                            );
+                          if (!(patchStore.workflows as Record<string, unknown>)?.[workflowId]) {
+                            const wfDef: import('@/config/types').WorkflowDef = { id: workflowId, name, trigger, steps: [] };
+                            if (pageId) wfDef.pageScope = pageId;
+                            patchStore.setWorkflow(workflowId, wfDef);
                           }
                         }
                       }

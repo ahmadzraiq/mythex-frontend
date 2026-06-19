@@ -69,7 +69,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-submit-login"
+                    "trigger": "click",
+                    "workflowId": "admin-submit-login"
                   }
                 ],
                 "children": [

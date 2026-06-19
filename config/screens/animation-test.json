@@ -1548,7 +1548,8 @@
                 },
                 "actions": [
                   {
-                    "action": "animHide"
+                    "trigger": "click",
+                    "workflowId": "animHide"
                   }
                 ],
                 "children": [
@@ -1569,7 +1570,8 @@
                 },
                 "actions": [
                   {
-                    "action": "animShow"
+                    "trigger": "click",
+                    "workflowId": "animShow"
                   }
                 ],
                 "children": [
@@ -2213,7 +2215,8 @@
                 },
                 "actions": [
                   {
-                    "action": "animLayoutAdd"
+                    "trigger": "click",
+                    "workflowId": "animLayoutAdd"
                   }
                 ],
                 "children": [
@@ -2234,7 +2237,8 @@
                 },
                 "actions": [
                   {
-                    "action": "animLayoutRemove"
+                    "trigger": "click",
+                    "workflowId": "animLayoutRemove"
                   }
                 ],
                 "children": [
@@ -2342,7 +2346,8 @@
             },
             "actions": [
               {
-                "action": "animTriggerShake"
+                "trigger": "click",
+                "workflowId": "animTriggerShake"
               }
             ],
             "children": [
@@ -3073,7 +3078,8 @@
                 },
                 "actions": [
                   {
-                    "action": "cycleP11State"
+                    "trigger": "click",
+                    "workflowId": "cycleP11State"
                   }
                 ],
                 "children": [
@@ -3703,7 +3709,8 @@
                     },
                     "actions": [
                       {
-                        "action": "carouselPrev"
+                        "trigger": "click",
+                        "workflowId": "carouselPrev"
                       }
                     ],
                     "children": [
@@ -3834,7 +3841,8 @@
                     },
                     "actions": [
                       {
-                        "action": "carouselNext"
+                        "trigger": "click",
+                        "workflowId": "carouselNext"
                       }
                     ],
                     "children": [

@@ -97,27 +97,29 @@ interface WorkflowBindButtonProps {
 }
 
 export function WorkflowBindButton({ value, onChange, globalOnly = false }: WorkflowBindButtonProps) {
-  const { pageWorkflowMeta, globalWorkflowMeta } = useBuilderStore();
+  const { workflows } = useBuilderStore();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
-  // Look up name in both page and global workflows
-  const resolvedMeta = pageWorkflowMeta[value] ?? globalWorkflowMeta[value];
+  // Look up name in unified workflows store
+  const resolvedMeta = value ? (workflows as Record<string, import('@/config/types').WorkflowDef>)[value] : undefined;
   const rawDisplayName = value && resolvedMeta?.name ? resolvedMeta.name : value || '';
   const displayName = rawDisplayName ? toHumanName(rawDisplayName) : (globalOnly ? 'Select global workflow' : 'Bind workflow');
   const isBound = Boolean(value);
-  const isGlobal = Boolean(value && globalWorkflowMeta[value]);
+  const isGlobal = Boolean(value && resolvedMeta && !resolvedMeta.pageScope);
 
-  const pageWorkflows = Object.values(pageWorkflowMeta)
-    .filter(w => !w.isSystem)
-    .map(w => ({ ...w, _scope: 'page' as const }))
-    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
-  const globalWorkflows = Object.values(globalWorkflowMeta)
-    .filter(w => !w.isSystem)
+  const allWfs = Object.values(workflows as Record<string, import('@/config/types').WorkflowDef>)
+    .filter(w => !w.isTrigger && !w.isAppTrigger);
+  const projectWfs = allWfs
+    .filter(w => !w.pageScope)
     .map(w => ({ ...w, _scope: 'global' as const }))
     .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
-  const allWorkflows = globalOnly ? globalWorkflows : [...globalWorkflows, ...pageWorkflows];
+  const pageWfs = allWfs
+    .filter(w => Boolean(w.pageScope))
+    .map(w => ({ ...w, _scope: 'page' as const }))
+    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  const allWorkflows = globalOnly ? projectWfs : [...projectWfs, ...pageWfs];
   const filtered = search
     ? allWorkflows.filter(w => (w.name ?? w.id).toLowerCase().includes(search.toLowerCase()))
     : allWorkflows;
@@ -4150,7 +4152,7 @@ function GlobalWorkflowPicker({
   value: string;
   onChange: (id: string) => void;
 }) {
-  const { globalWorkflowMeta } = useBuilderStore();
+  const { workflows } = useBuilderStore();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -4169,14 +4171,14 @@ function GlobalWorkflowPicker({
     return () => window.removeEventListener('mousedown', handler, true);
   }, [open]);
 
-  const all = Object.values(globalWorkflowMeta)
-    .filter(w => !w.isSystem)
+  const all = Object.values(workflows as Record<string, import('@/config/types').WorkflowDef>)
+    .filter(w => !w.isTrigger && !w.isAppTrigger && !w.pageScope)
     .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
   const filtered = search
     ? all.filter(w => (w.name ?? w.id).toLowerCase().includes(search.toLowerCase()))
     : all;
 
-  const selected = value ? globalWorkflowMeta[value] : undefined;
+  const selected = value ? (workflows as Record<string, import('@/config/types').WorkflowDef>)[value] : undefined;
   const label = selected ? toHumanName(selected.name ?? value) : 'Choose a global workflow';
 
   return (
@@ -4246,8 +4248,8 @@ function GlobalWorkflowPicker({
 // ─── RunProjectWorkflowConfig ─────────────────────────────────────────────────
 // Config section for runProjectWorkflow steps — shows the workflow picker
 // and dynamic param input fields when the selected workflow has params.
-// Resolves the bound workflow from BOTH pageWorkflowMeta and globalWorkflowMeta
-// because any named workflow (page or global) can be called via runProjectWorkflow
+// Resolves the bound workflow from store.workflows
+// (any named workflow — page or global — can be called via runProjectWorkflow)
 // at runtime (the engine merges both into a single action map).
 
 function RunProjectWorkflowConfig({
@@ -4259,10 +4261,10 @@ function RunProjectWorkflowConfig({
   onUpdate: (patch: Partial<ActionStep>) => void;
   workflowTrigger?: string;
 }) {
-  const { globalWorkflowMeta, pageWorkflowMeta } = useBuilderStore();
+  const { workflows } = useBuilderStore();
   const workflowId = (step.config?.workflowId as string) ?? step.action ?? '';
   const selectedMeta = workflowId
-    ? (globalWorkflowMeta[workflowId] ?? pageWorkflowMeta[workflowId])
+    ? (workflows as Record<string, import('@/config/types').WorkflowDef>)[workflowId]
     : undefined;
   const params: WorkflowParam[] = selectedMeta?.params ?? [];
   const savedParams = (step.config?.params as Record<string, unknown>) ?? {};

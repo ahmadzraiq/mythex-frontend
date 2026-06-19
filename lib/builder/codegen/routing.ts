@@ -157,10 +157,7 @@ function emitPage(
   const resolvedNodes = resolvePageNodes(page.nodes ?? [] as SDUINode[]);
   const scVarsInits = collectScVarsInits(resolvedNodes);
   const allUseEffects: string[] = [];
-  const allWorkflowMeta = {
-    ...(ctx.store.pageWorkflowMeta ?? {}),
-    ...(ctx.store.globalWorkflowMeta ?? {}),
-  };
+  const allWorkflowMeta = ctx.store.workflows ?? {};
 
   // Find workflows used by this page to import
   const usedWorkflows = new Set<string>();

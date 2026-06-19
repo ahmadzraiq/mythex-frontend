@@ -1022,7 +1022,7 @@ export function getStepSummary(
     case 'executeComponentAction': {
       const wfId = cfg.action as string | undefined;
       if (!wfId) return null;
-      // varLabels also carries workflow names keyed by UUID (built from pageWorkflowMeta in ActionNode)
+      // varLabels also carries workflow names keyed by UUID (built from store.workflows in ActionNode)
       return varLabels?.[wfId] ?? null;
     }
     case 'navigateTo':

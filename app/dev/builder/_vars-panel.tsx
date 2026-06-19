@@ -132,10 +132,11 @@ export function CustomVarsSection() {
 }
 
 export function VarsWorkflowsSection() {
-  const { pageWorkflows, setPageWorkflow, removePageWorkflow } = useBuilderStore();
+  const { workflows, setWorkflow, removeWorkflow } = useBuilderStore();
   const [newName, setNewName] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
-  const entries = Object.entries(pageWorkflows);
+  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
+  const entries = Object.entries(wfMap).map(([id, w]) => [id, w.steps ?? []] as [string, object[]]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -157,7 +158,7 @@ export function VarsWorkflowsSection() {
               <span style={{ fontSize: 11, color: '#c084fc', fontWeight: 600, flex: 1, textAlign: 'left' }}>{name}</span>
               <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{actions.length} step{actions.length !== 1 ? 's' : ''}</span>
               <button
-                onClick={e => { e.stopPropagation(); removePageWorkflow(name); }}
+                onClick={e => { e.stopPropagation(); removeWorkflow(name); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-error)', fontSize: 12, padding: '0 2px' }}
               >×</button>
             </button>
@@ -165,7 +166,7 @@ export function VarsWorkflowsSection() {
               <div style={{ borderTop: '1px solid var(--bld-border-subtle)', padding: '8px' }}>
                 <ActionBuilder
                   value={actions.reduce<Record<string, unknown[]>>((acc, a) => { (acc['run'] ??= []).push(a); return acc; }, {})}
-                  onChange={v => setPageWorkflow(name, Object.values(v ?? {}).flat() as object[])}
+                  onChange={v => { const existing = wfMap[name]; if (existing) setWorkflow(name, { ...existing, steps: Object.values(v ?? {}).flat() as object[] }); }}
                   availableEvents={['run']}
                 />
               </div>
@@ -177,11 +178,11 @@ export function VarsWorkflowsSection() {
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder="workflow name…"
-            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+            onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { const id = crypto.randomUUID(); setWorkflow(id, { id, name: newName.trim(), trigger: 'click', steps: [] }); setNewName(''); } }}
             style={{ flex: 1, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, color: 'var(--bld-text-2)', fontSize: 11, padding: '3px 6px', outline: 'none' }}
           />
           <button
-            onClick={() => { if (newName.trim()) { setPageWorkflow(newName.trim(), []); setNewName(''); } }}
+            onClick={() => { if (newName.trim()) { const id = crypto.randomUUID(); setWorkflow(id, { id, name: newName.trim(), trigger: 'click', steps: [] }); setNewName(''); } }}
             style={{ padding: '3px 10px', background: '#1d4ed8', border: 'none', borderRadius: 4, color: '#fff', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
           >+ Add</button>
         </div>

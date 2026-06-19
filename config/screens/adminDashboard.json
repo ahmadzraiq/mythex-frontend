@@ -614,7 +614,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-nav-orders"
+                    "trigger": "click",
+                    "workflowId": "admin-nav-orders"
                   }
                 ],
                 "children": [
@@ -688,7 +689,8 @@
                 },
                 "actions": [
                   {
-                    "action": "admin-view-order"
+                    "trigger": "click",
+                    "workflowId": "admin-view-order"
                   }
                 ],
                 "children": [
