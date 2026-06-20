@@ -46,137 +46,128 @@ function getVfs(projectId?: string): Map<string, string> {
   return PROJECT_VFS.get(projectId)!
 }
 
-// ─── Tool definitions ─────────────────────────────────────────────────────────
+// ─── SDK-native tools (Anthropic owns the schemas) ───────────────────────────
 
-const DSL_TOOLS: Anthropic.Tool[] = [
-  {
-    name: 'write_file',
-    description: 'Create or overwrite a DSL source file. Use relative paths like src/calculator/page.tsx',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path:    { type: 'string', description: 'Relative file path, e.g. src/calculator/page.tsx' },
-        content: { type: 'string', description: 'Full file contents' },
-      },
-      required: ['path', 'content'],
-    },
-  },
-  {
-    name: 'read_file',
-    description: 'Read the contents of a DSL source file',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path: { type: 'string', description: 'Relative file path' },
-      },
-      required: ['path'],
-    },
-  },
-  {
-    name: 'edit_file',
-    description: 'Make a precise find-and-replace edit to an existing file. The old_string must match exactly.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path:       { type: 'string', description: 'Relative file path' },
-        old_string: { type: 'string', description: 'Exact string to find and replace' },
-        new_string: { type: 'string', description: 'Replacement string' },
-      },
-      required: ['path', 'old_string', 'new_string'],
-    },
-  },
-  {
-    name: 'list_files',
-    description: 'List all files in the project VFS',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        dir: { type: 'string', description: 'Optional directory prefix to filter by, e.g. src/calculator' },
-      },
-    },
-  },
-  {
-    name: 'search_files',
-    description: 'Search for a text pattern across all source files',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        pattern: { type: 'string', description: 'Text or regex pattern to search for' },
-      },
-      required: ['pattern'],
-    },
-  },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DSL_TOOLS: any[] = [
+  { type: 'text_editor_20250728', name: 'str_replace_based_edit_tool' },
+  { type: 'bash_20250124',        name: 'bash' },
 ]
+
+const READONLY_FILES = new Set(['builder.ts'])
 
 // ─── Tool executor ────────────────────────────────────────────────────────────
 
 function executeTool(
   name: string,
-  input: Record<string, string>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  input: Record<string, any>,
   vfs: Map<string, string>,
   writtenFiles: Set<string>,
 ): string {
-  switch (name) {
-    case 'write_file': {
-      const p = (input.path ?? '').replace(/^\/+/, '')
-      vfs.set(p, input.content ?? '')
-      writtenFiles.add(p)
-      return `File ${p} written successfully.`
+  // ── text_editor: view / create / str_replace / insert ──────────────────────
+  if (name === 'str_replace_based_edit_tool') {
+    const cmd = (input.command ?? '') as string
+    const p   = ((input.path ?? '') as string).replace(/^\/+/, '')
+
+    if (READONLY_FILES.has(p) && cmd !== 'view') {
+      return `Error: "${p}" is read-only. You may only view it.`
     }
 
-    case 'read_file': {
-      const p = (input.path ?? '').replace(/^\/+/, '')
-      const content = vfs.get(p)
-      if (content === undefined) return `Error: file not found: ${p}`
-      return content
-    }
-
-    case 'edit_file': {
-      const p = (input.path ?? '').replace(/^\/+/, '')
-      const current = vfs.get(p)
-      if (current === undefined) return `Error: file not found: ${p}. Read it first.`
-      if (!current.includes(input.old_string)) {
-        return `Error: old_string not found in ${p}. The string must match exactly (including whitespace).`
+    switch (cmd) {
+      case 'view': {
+        if (!p || p === '.' || p === '/') {
+          const keys = [...vfs.keys()]
+          return keys.length > 0 ? keys.join('\n') : '(empty)'
+        }
+        const content = vfs.get(p)
+        if (content === undefined) return `Error: file not found: ${p}`
+        if (input.view_range) {
+          const [start, end] = input.view_range as [number, number]
+          const lines = content.split('\n')
+          return lines.slice(start - 1, end === -1 ? undefined : end).join('\n')
+        }
+        return content
       }
-      const updated = current.replace(input.old_string, input.new_string)
-      vfs.set(p, updated)
-      writtenFiles.add(p)
-      return `File ${p} updated successfully.`
-    }
 
-    case 'list_files': {
-      const dir = (input.dir ?? '').replace(/^\/+/, '')
-      const files = [...vfs.keys()].filter(k => !dir || k.startsWith(dir))
-      return files.length > 0 ? files.join('\n') : '(no files)'
-    }
+      case 'create': {
+        vfs.set(p, (input.file_text ?? '') as string)
+        writtenFiles.add(p)
+        return `Created ${p}`
+      }
 
-    case 'search_files': {
-      const pattern = input.pattern ?? ''
+      case 'str_replace': {
+        const current = vfs.get(p)
+        if (current === undefined) return `Error: file not found: ${p}. View it first.`
+        const oldStr = (input.old_str ?? '') as string
+        if (!current.includes(oldStr)) {
+          return `Error: old_str not found in ${p}. Must match exactly (including whitespace).`
+        }
+        const newStr = (input.new_str ?? '') as string
+        vfs.set(p, current.replace(oldStr, newStr))
+        writtenFiles.add(p)
+        return `Updated ${p}`
+      }
+
+      case 'insert': {
+        const current = vfs.get(p) ?? ''
+        const lines = current.split('\n')
+        const insertLine = Number(input.insert_line ?? 0)
+        lines.splice(insertLine, 0, (input.new_str ?? '') as string)
+        vfs.set(p, lines.join('\n'))
+        writtenFiles.add(p)
+        return `Inserted into ${p} at line ${insertLine}`
+      }
+
+      default:
+        return `Error: unknown command "${cmd}". Supported: view, create, str_replace, insert`
+    }
+  }
+
+  // ── bash: grep / ls / find / cat against VFS ───────────────────────────────
+  if (name === 'bash') {
+    const cmd = ((input.command ?? '') as string).trim()
+
+    // grep [-flags] pattern [path]
+    const grepM = cmd.match(/^grep\s+(?:-[a-zA-Z]+\s+)*["']?([^"'\s]+)["']?/)
+    if (grepM) {
       const results: string[] = []
       try {
-        const re = new RegExp(pattern, 'gm')
-        for (const [filePath, content] of vfs.entries()) {
-          const lines = content.split('\n')
-          lines.forEach((line, i) => {
-            if (re.test(line)) results.push(`${filePath}:${i + 1}: ${line.trim()}`)
+        const re = new RegExp(grepM[1], 'gi')
+        for (const [fp, content] of vfs.entries()) {
+          content.split('\n').forEach((line, i) => {
             re.lastIndex = 0
+            if (re.test(line)) results.push(`${fp}:${i + 1}: ${line.trim()}`)
           })
         }
       } catch {
-        // Fallback to plain text search
-        for (const [filePath, content] of vfs.entries()) {
-          const lines = content.split('\n')
-          lines.forEach((line, i) => {
-            if (line.includes(pattern)) results.push(`${filePath}:${i + 1}: ${line.trim()}`)
+        for (const [fp, content] of vfs.entries()) {
+          content.split('\n').forEach((line, i) => {
+            if (line.includes(grepM[1])) results.push(`${fp}:${i + 1}: ${line.trim()}`)
           })
         }
       }
       return results.length > 0 ? results.join('\n') : '(no matches)'
     }
 
-    default:
-      return `Error: unknown tool ${name}`
+    // ls / find
+    if (/^(ls|find)/.test(cmd)) {
+      const keys = [...vfs.keys()]
+      return keys.length > 0 ? keys.join('\n') : '(empty)'
+    }
+
+    // cat <path>
+    const catM = cmd.match(/^cat\s+(.+)/)
+    if (catM) {
+      const p = catM[1].trim().replace(/^\/+/, '')
+      const content = vfs.get(p)
+      return content !== undefined ? content : `Error: file not found: ${p}`
+    }
+
+    return `Error: only grep, ls, find, and cat are supported in bash`
   }
+
+  return `Error: unknown tool "${name}"`
 }
 
 // ─── Encoding ─────────────────────────────────────────────────────────────────

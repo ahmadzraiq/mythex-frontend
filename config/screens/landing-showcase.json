@@ -15,7 +15,7 @@
         "type": "Box",
         "props": {
           "style": {},
-          "className": "w-full h-screen relative overflow-hidden"
+          "className": "w-full h-screen relative overflow-hidden flex-col"
         },
         "id": "hero-section",
         "name": "Full-Screen Video Hero",
@@ -27,7 +27,7 @@
               "muted": true,
               "loop": true,
               "autoPlay": true,
-              "className": "w-full h-full absolute top-[0px] left-[0px]",
+              "className": "w-full h-full absolute top-[0px] left-[0px] flex-col",
               "objectFit": "cover",
               "style": {},
               "src": "https://videos.pexels.com/video-files/35044924/14845173_360_640_30fps.mp4",
@@ -40,15 +40,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "position": "absolute",
-                "width": "100%",
-                "height": "100%",
-                "backgroundColor": "rgba(0,0,0,0.5)",
-                "zIndex": 10,
-                "pointerEvents": "none"
-              },
-              "className": "w-full h-full absolute z-[10] top-[0px] left-[0px]"
+              "className": "w-full h-full absolute z-[10] top-[0px] left-[0px] absolute w-full h-full bg-[rgba(0,0,0,0.5)] z-[10] pointer-events-none flex-col"
             },
             "id": "hero-overlay",
             "name": "Dark Overlay",
@@ -57,11 +49,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "translateX": "-50%",
-                "translateY": "-50%"
-              },
-              "className": "flex flex-col items-center pl-[40px] pr-[40px] w-full max-w-[900px] absolute z-[20] top-[50%] left-[50%]"
+              "className": "flex flex-col items-center pl-[40px] pr-[40px] w-full max-w-[900px] absolute z-[20] top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
             },
             "id": "hero-content",
             "name": "Hero Content",
@@ -69,10 +57,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "backgroundColor": "rgba(123, 57, 237, 0.2)"
-                  },
-                  "className": "self-center pl-[16px] pr-[16px] pt-[8px] pb-[8px] mb-[24px] border-[1px] border-solid border-[rgba(123,57,237,0.4)] rounded-[20px]"
+                  "className": "self-center pl-[16px] pr-[16px] pt-[8px] pb-[8px] mb-[24px] border-[1px] border-solid border-[rgba(123,57,237,0.4)] rounded-[20px] bg-[rgba(123,_57,_237,_0.2)] flex-col"
                 },
                 "id": "hero-badge",
                 "name": "Badge",
@@ -81,7 +66,7 @@
                     "type": "Text",
                     "text": "New Release",
                     "props": {
-                      "className": "text-[13px] font-semibold tracking-wide !text-[#ffffff]",
+                      "className": "text-[13px] font-semibold tracking-wide !text-[#ffffff] flex-col",
                       "style": {}
                     },
                     "id": "hero-badge-text",
@@ -105,7 +90,7 @@
                 "type": "Text",
                 "text": "The Future Is Now",
                 "props": {
-                  "className": "mb-[20px] text-[64px] font-bold text-center leading-tight !text-[#ffffff]",
+                  "className": "mb-[20px] text-[64px] font-bold text-center leading-tight !text-[#ffffff] flex-col",
                   "style": {}
                 },
                 "id": "hero-headline",
@@ -124,7 +109,7 @@
                 "type": "Text",
                 "text": "Experience the next generation of innovation and transformation. Discover what's possible with cutting-edge technology.",
                 "props": {
-                  "className": "mb-[32px] max-w-[600px] text-[20px] text-center leading-relaxed !text-[rgba(255,255,255,0.85)]",
+                  "className": "mb-[32px] max-w-[600px] text-[20px] text-center leading-relaxed !text-[rgba(255,255,255,0.85)] flex-col",
                   "style": {}
                 },
                 "id": "hero-sub",
@@ -151,18 +136,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "boxShadow": "0px 4px 12px 0px rgba(123, 57, 237, 0.4)",
-                        "shadowColor": "rgb(123,57,237)",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 4
-                        },
-                        "shadowRadius": 12,
-                        "shadowOpacity": 0.4,
-                        "elevation": 6
-                      },
-                      "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer bg-[#7b39ed] rounded-[8px]"
+                      "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer bg-[#7b39ed] rounded-[8px] shadow-[0px_4px_12px_0px_rgba(123,_57,_237,_0.4)] flex-col"
                     },
                     "id": "hero-btn-primary",
                     "name": "Primary CTA Button",
@@ -171,7 +145,7 @@
                         "type": "Text",
                         "text": "Get Started",
                         "props": {
-                          "className": "text-[16px] font-semibold !text-[#ffffff]",
+                          "className": "text-[16px] font-semibold !text-[#ffffff] flex-col",
                           "style": {}
                         },
                         "id": "hero-btn-primary-text",
@@ -193,7 +167,7 @@
                     "type": "Box",
                     "props": {
                       "style": {},
-                      "className": "pl-[32px] pr-[32px] pt-[12px] pb-[12px] cursor-pointer bg-transparent border-[2px] border-solid border-[rgba(255,255,255,0.5)] rounded-[8px]"
+                      "className": "pl-[32px] pr-[32px] pt-[12px] pb-[12px] cursor-pointer bg-transparent border-[2px] border-solid border-[rgba(255,255,255,0.5)] rounded-[8px] flex-col"
                     },
                     "id": "hero-btn-ghost",
                     "name": "Ghost CTA Button",
@@ -202,7 +176,7 @@
                         "type": "Text",
                         "text": "Learn More",
                         "props": {
-                          "className": "text-[16px] font-semibold !text-[#ffffff]",
+                          "className": "text-[16px] font-semibold !text-[#ffffff] flex-col",
                           "style": {}
                         },
                         "id": "hero-btn-ghost-text",
@@ -262,7 +236,7 @@
             "type": "Text",
             "text": "Everything You Need",
             "props": {
-              "className": "mb-[16px] text-[40px] font-bold text-center !text-[#3b0764]",
+              "className": "mb-[16px] text-[40px] font-bold text-center !text-[#3b0764] flex-col",
               "style": {}
             },
             "id": "features-title",
@@ -281,7 +255,7 @@
             "type": "Text",
             "text": "Built for teams who move fast. Powerful features that scale with your ambitions.",
             "props": {
-              "className": "mb-[56px] max-w-[560px] text-[18px] text-center leading-relaxed !text-[#6d28d9]",
+              "className": "mb-[56px] max-w-[560px] text-[18px] text-center leading-relaxed !text-[#6d28d9] flex-col",
               "style": {}
             },
             "id": "features-sub",
@@ -309,18 +283,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-1",
                 "name": "Feature Card 1",
@@ -339,7 +302,7 @@
                     "type": "Text",
                     "text": "Lightning Fast",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-1-title",
@@ -349,7 +312,7 @@
                     "type": "Text",
                     "text": "Experience blazing-fast performance with optimized infrastructure and cutting-edge technology.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-1-desc",
@@ -380,18 +343,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-2",
                 "name": "Feature Card 2",
@@ -410,7 +362,7 @@
                     "type": "Text",
                     "text": "Secure & Safe",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-2-title",
@@ -420,7 +372,7 @@
                     "type": "Text",
                     "text": "Industry-leading security measures protect your data with enterprise-grade encryption.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-2-desc",
@@ -453,18 +405,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-3",
                 "name": "Feature Card 3",
@@ -483,7 +424,7 @@
                     "type": "Text",
                     "text": "Team Collaboration",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-3-title",
@@ -493,7 +434,7 @@
                     "type": "Text",
                     "text": "Work seamlessly with your team in real-time with powerful collaboration tools.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-3-desc",
@@ -526,18 +467,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-4",
                 "name": "Feature Card 4",
@@ -556,7 +486,7 @@
                     "type": "Text",
                     "text": "Advanced Analytics",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-4-title",
@@ -566,7 +496,7 @@
                     "type": "Text",
                     "text": "Gain deep insights with comprehensive analytics and customizable reporting dashboards.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-4-desc",
@@ -599,18 +529,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-5",
                 "name": "Feature Card 5",
@@ -629,7 +548,7 @@
                     "type": "Text",
                     "text": "Easy Integration",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-5-title",
@@ -639,7 +558,7 @@
                     "type": "Text",
                     "text": "Integrate with your favorite tools and platforms with simple API and webhooks.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-5-desc",
@@ -672,18 +591,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(0,0,0,0.06)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.06,
-                    "elevation": 4
-                  },
-                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px]"
+                  "className": "flex flex-col pl-[28px] pr-[28px] pt-[32px] pb-[32px] cursor-pointer w-[calc(33.333%_-_22px)] min-w-[300px] bg-[#ffffff] border-[1px] border-solid border-[#ddd6fe] rounded-[12px] shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]"
                 },
                 "id": "card-6",
                 "name": "Feature Card 6",
@@ -702,7 +610,7 @@
                     "type": "Text",
                     "text": "24/7 Support",
                     "props": {
-                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764]",
+                      "className": "mt-[16px] mb-[10px] text-[18px] font-semibold !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "card-6-title",
@@ -712,7 +620,7 @@
                     "type": "Text",
                     "text": "Get help when you need it with our dedicated support team available around the clock.",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "card-6-desc",
@@ -759,7 +667,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "flex-1 max-w-[500px]"
+              "className": "flex-1 max-w-[500px] flex-col"
             },
             "id": "split-text-col",
             "name": "Content Column",
@@ -768,7 +676,7 @@
                 "type": "Text",
                 "text": "Discover Amazing Visuals",
                 "props": {
-                  "className": "mb-[20px] text-[48px] font-bold leading-tight !text-[#3b0764]",
+                  "className": "mb-[20px] text-[48px] font-bold leading-tight !text-[#3b0764] flex-col",
                   "style": {}
                 },
                 "id": "split-headline",
@@ -779,7 +687,7 @@
                 "type": "Text",
                 "text": "Experience a curated collection of stunning imagery layered with depth and dimension. Each photo tells a story through carefully arranged composition and dynamic angles.",
                 "props": {
-                  "className": "mb-[32px] text-[18px] leading-relaxed !text-[#6d28d9]",
+                  "className": "mb-[32px] text-[18px] leading-relaxed !text-[#6d28d9] flex-col",
                   "style": {}
                 },
                 "id": "split-body",
@@ -789,18 +697,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(123, 57, 237, 0.3)",
-                    "shadowColor": "rgb(123,57,237)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 4
-                    },
-                    "shadowRadius": 12,
-                    "shadowOpacity": 0.3,
-                    "elevation": 6
-                  },
-                  "className": "self-start pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer w-fit bg-[#7b39ed] rounded-[8px]"
+                  "className": "self-start pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer w-fit bg-[#7b39ed] rounded-[8px] shadow-[0px_4px_12px_0px_rgba(123,_57,_237,_0.3)] flex-col"
                 },
                 "id": "split-cta",
                 "name": "CTA Button",
@@ -809,7 +706,7 @@
                     "type": "Text",
                     "text": "Explore Gallery",
                     "props": {
-                      "className": "text-[16px] font-semibold !text-[#ffffff]",
+                      "className": "text-[16px] font-semibold !text-[#ffffff] flex-col",
                       "style": {}
                     },
                     "id": "split-cta-text",
@@ -847,7 +744,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "flex-1 max-w-[560px] min-w-[320px] h-[420px] rounded-[16px] overflow-hidden"
+              "className": "flex-1 max-w-[560px] min-w-[320px] h-[420px] rounded-[16px] overflow-hidden flex-col"
             },
             "id": "split-image-col",
             "name": "Image Column",
@@ -856,7 +753,7 @@
                 "type": "Image",
                 "props": {
                   "src": "https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-                  "className": "w-full h-full",
+                  "className": "w-full h-full flex-col",
                   "objectFit": "cover",
                   "style": {}
                 },
@@ -886,7 +783,7 @@
         "type": "Box",
         "props": {
           "style": {},
-          "className": "items-center justify-center pl-[40px] pr-[40px] pt-[80px] pb-[80px] w-full min-h-[480px] relative overflow-hidden"
+          "className": "items-center justify-center pl-[40px] pr-[40px] pt-[80px] pb-[80px] w-full min-h-[480px] relative overflow-hidden flex-col"
         },
         "id": "cta-banner",
         "name": "Gradient CTA Banner",
@@ -895,14 +792,9 @@
             "type": "Box",
             "props": {
               "style": {
-                "position": "absolute",
-                "width": "100%",
-                "height": "100%",
-                "backgroundImage": "linear-gradient(135deg, #7b39ed 0%, #6d28d9 50%, #5b21b6 100%)",
-                "zIndex": 1,
-                "pointerEvents": "none"
+                "backgroundImage": "linear-gradient(135deg, #7b39ed 0%, #6d28d9 50%, #5b21b6 100%)"
               },
-              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px]"
+              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px] absolute w-full h-full z-[1] pointer-events-none flex-col"
             },
             "id": "cta-gradient",
             "name": "Gradient Background",
@@ -921,7 +813,7 @@
                 "type": "Text",
                 "text": "Ready to start?",
                 "props": {
-                  "className": "w-full max-w-[600px] mb-[16px] text-[48px] font-bold text-center leading-tight !text-[#ffffff]",
+                  "className": "w-full max-w-[600px] mb-[16px] text-[48px] font-bold text-center leading-tight !text-[#ffffff] flex-col",
                   "style": {}
                 },
                 "id": "cta-headline",
@@ -940,7 +832,7 @@
                 "type": "Text",
                 "text": "Join thousands of teams already building the future.",
                 "props": {
-                  "className": "mb-[40px] text-[18px] text-center !text-[rgba(255,255,255,0.85)]",
+                  "className": "mb-[40px] text-[18px] text-center !text-[rgba(255,255,255,0.85)] flex-col",
                   "style": {}
                 },
                 "id": "cta-sub",
@@ -959,18 +851,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 16px 0px rgba(0,0,0,0.2)",
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 4
-                    },
-                    "shadowRadius": 16,
-                    "shadowOpacity": 0.2,
-                    "elevation": 6
-                  },
-                  "className": "pl-[40px] pr-[40px] pt-[16px] pb-[16px] cursor-pointer w-fit bg-[#ffffff] rounded-[8px]"
+                  "className": "pl-[40px] pr-[40px] pt-[16px] pb-[16px] cursor-pointer w-fit bg-[#ffffff] rounded-[8px] shadow-[0px_4px_16px_0px_rgba(0,0,0,0.2)] flex-col"
                 },
                 "id": "cta-btn",
                 "name": "CTA Button",
@@ -979,7 +860,7 @@
                     "type": "Text",
                     "text": "Get Started Free",
                     "props": {
-                      "className": "text-[16px] font-semibold !text-[#7b39ed]",
+                      "className": "text-[16px] font-semibold !text-[#7b39ed] flex-col",
                       "style": {}
                     },
                     "id": "cta-btn-text",

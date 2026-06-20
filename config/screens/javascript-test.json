@@ -24,14 +24,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
             },
             "text": "JavaScript Mode Showcase"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500 dark:text-gray-400"
+              "className": "text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Every binding on this page uses { js: \"...\" } and every workflow uses runJavaScript. Open the right panel on any element to see the WeWeb-style identifiers — variables.cartCount, collections.products.data, context.item.field — that JS mode emits."
           }
@@ -52,14 +52,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 1 — { js } bindings (read-only)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Text, style and conditional bindings powered by multi-line JavaScript expressions."
               }
@@ -74,7 +74,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "Text via reduce"
               },
@@ -82,7 +82,7 @@
                 "type": "Text",
                 "props": {
                   "data-testid": "js-binding-total",
-                  "className": "text-[18px] font-medium text-gray-900 dark:text-gray-100"
+                  "className": "text-[18px] font-medium text-gray-900 dark:text-gray-100 flex-col"
                 },
                 "text": {
                   "js": "const items = variables.productItems ?? [];\nconst total = items.reduce((s, p) => s + (p.price ?? 0), 0);\nreturn `Total: $${total.toFixed(2)} across ${items.length} item(s)`;"
@@ -91,7 +91,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 dark:text-gray-400 font-mono"
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400 font-mono flex-col"
                 },
                 "text": "{ js: \"const items = variables.productItems ?? []; const total = items.reduce((s, p) => s + (p.price ?? 0), 0); return `Total: $${total.toFixed(2)} ...`;\" }"
               }
@@ -106,7 +106,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "Style via JS object return"
               },
@@ -114,7 +114,7 @@
                 "type": "Box",
                 "props": {
                   "data-testid": "js-binding-style-pill",
-                  "className": "px-[16px] py-[8px] rounded-[9999px] inline-flex items-center justify-center self-start",
+                  "className": "px-[16px] py-[8px] rounded-[9999px] inline-flex items-center justify-center self-start flex-col",
                   "style": {
                     "js": "return { backgroundColor: variables.cartCount > 0 ? '#10b981' : '#6b7280', color: '#ffffff' };"
                   }
@@ -123,7 +123,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-medium text-white"
+                      "className": "text-[14px] font-medium text-white flex-col"
                     },
                     "text": {
                       "js": "const c = variables.cartCount ?? 0;\nreturn c > 0 ? `${c} item(s) in cart` : 'Cart is empty';"
@@ -154,7 +154,7 @@
                         "type": "Text",
                         "text": "+1 to cartCount",
                         "props": {
-                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -176,7 +176,7 @@
                         "type": "Text",
                         "text": "Reset cartCount",
                         "props": {
-                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -194,7 +194,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "Boolean via regex (live email validation)"
               },
@@ -208,7 +208,7 @@
                   "placeholder": "you@example.com",
                   "value": "{{variables['js-demo-0000-0000-0000-000000000002']}}",
                   "data-testid": "js-email-input",
-                  "className": "!text-gray-900 dark:!text-gray-100"
+                  "className": "!text-gray-900 dark:!text-gray-100 flex-col"
                 },
                 "children": [],
                 "actions": [
@@ -233,7 +233,7 @@
                 "type": "Text",
                 "props": {
                   "data-testid": "js-email-hint",
-                  "className": "text-[12px] font-medium",
+                  "className": "text-[12px] font-medium flex-col",
                   "style": {
                     "js": "const ok = !!variables.userEmail && /^.+@.+\\..+$/.test(variables.userEmail);\nreturn { color: ok ? '#10b981' : '#ef4444' };"
                   }
@@ -253,7 +253,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "Repeater — JS using context.item"
               },
@@ -262,7 +262,7 @@
                 "map": "variables['js-demo-0000-0000-0000-000000000010']",
                 "key": "context.item.data.id",
                 "props": {
-                  "className": "contents"
+                  "className": "contents flex-col"
                 },
                 "children": [
                   {
@@ -274,7 +274,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-gray-900 dark:text-gray-100"
+                          "className": "text-[14px] text-gray-900 dark:text-gray-100 flex-col"
                         },
                         "text": {
                           "js": "return `${context.item.data.name} ($${context.item.data.price.toFixed(2)})`;"
@@ -283,7 +283,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-mono text-gray-400"
+                          "className": "text-[11px] font-mono text-gray-400 flex-col"
                         },
                         "text": {
                           "js": "return `index #${context.item.index ?? '?'}`;"
@@ -312,14 +312,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 2 — runJavaScript workflow steps"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Each button runs a workflow whose first step is a runJavaScript action. Results land at context.workflow[stepId].result and feed downstream steps."
               }
@@ -354,7 +354,7 @@
                         "type": "Text",
                         "text": "Run: read variable + math",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -363,7 +363,7 @@
                     "type": "Text",
                     "props": {
                       "data-testid": "js-out-math",
-                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200 flex-col"
                     },
                     "text": "{{variables['js-demo-0000-0000-0000-000000000006']}}"
                   }
@@ -392,7 +392,7 @@
                         "type": "Text",
                         "text": "Run: async fetch + branch",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -401,7 +401,7 @@
                     "type": "Text",
                     "props": {
                       "data-testid": "js-out-fetch",
-                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200 flex-col"
                     },
                     "text": "{{variables['js-demo-0000-0000-0000-000000000007']}}"
                   }
@@ -430,7 +430,7 @@
                         "type": "Text",
                         "text": "Run: refetch + wwLib.variables.set",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -439,7 +439,7 @@
                     "type": "Text",
                     "props": {
                       "data-testid": "js-out-sync",
-                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200 flex-col"
                     },
                     "text": {
                       "js": "return `lastSyncAt = ${variables.lastSyncAt}\\nstatus = ${variables.jsSyncStatus}`;"
@@ -470,7 +470,7 @@
                         "type": "Text",
                         "text": "Run: forEach + nested runJavaScript",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -479,7 +479,7 @@
                     "type": "Text",
                     "props": {
                       "data-testid": "js-out-foreach",
-                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200"
+                      "className": "text-[14px] font-mono text-gray-700 dark:text-gray-200 flex-col"
                     },
                     "text": "{{variables['js-demo-0000-0000-0000-000000000009']}}"
                   }
@@ -496,14 +496,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "Live state (read via { js })"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre"
+                  "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre flex-col"
                 },
                 "text": {
                   "js": "const lines = [\n  `cartCount      = ${variables.cartCount}`,\n  `userEmail      = ${variables.userEmail || '(empty)'}`,\n  `processedCount = ${variables.processedCount}`,\n  `lastSyncAt     = ${variables.lastSyncAt}`,\n  `users.length   = ${(variables.users ?? []).length}`,\n];\nreturn lines.join('\\n');"
@@ -517,7 +517,7 @@
         "type": "Box",
         "id": "jsTopAnchor",
         "props": {
-          "className": "h-[1px] w-full"
+          "className": "h-[1px] w-full flex-col"
         },
         "children": []
       },
@@ -536,14 +536,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 3 — Navigation (wwLib.navigate)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.navigate.to({ path, queryParams }), wwLib.navigate.to({ linkType:'external', externalUrl, newTab }), wwLib.navigate.prev(defaultPath)."
               }
@@ -572,7 +572,7 @@
                     "type": "Text",
                     "text": "navigate.to('/home', { from: 'js' })",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -594,7 +594,7 @@
                     "type": "Text",
                     "text": "navigate.to(external, newTab)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -616,7 +616,7 @@
                     "type": "Text",
                     "text": "navigate.prev('/javascript-test')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -627,7 +627,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-nav",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": "{{variables['js-demo-0000-0000-0000-000000000011']}}"
           }
@@ -648,14 +648,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 4 — Data / Collections"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.collections.update(name, mode, item, key) and wwLib.collections.refetch(name)."
               }
@@ -684,7 +684,7 @@
                     "type": "Text",
                     "text": "collections.update('add')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -706,7 +706,7 @@
                     "type": "Text",
                     "text": "collections.refetch('Featured Products')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -717,7 +717,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-col-count",
-              "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": {
               "js": "return `productItems rows = ${(variables.productItems ?? []).length}`;"
@@ -740,14 +740,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 5 — Component actions / triggers"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.components.run(instanceId, workflowId, parameters?) and wwLib.components.emit(instanceId, triggerName, payload?)."
               }
@@ -776,7 +776,7 @@
                     "type": "Text",
                     "text": "components.run(instanceId, workflowId)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -798,7 +798,7 @@
                     "type": "Text",
                     "text": "components.emit(instanceId, 'demoTrigger')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -809,7 +809,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-comp",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": "{{variables['js-demo-0000-0000-0000-000000000013']}}"
           }
@@ -830,14 +830,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 6 — Popovers"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.popovers.open(id), .close(id), .toggle(id)."
               }
@@ -866,7 +866,7 @@
                     "type": "Text",
                     "text": "popovers.open('demo')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -888,7 +888,7 @@
                     "type": "Text",
                     "text": "popovers.close('demo')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -910,7 +910,7 @@
                     "type": "Text",
                     "text": "popovers.toggle('demo')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -921,7 +921,7 @@
             "type": "Box",
             "props": {
               "data-testid": "js-popover-mock",
-              "className": "rounded-[8px] border-[1px] border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-[16px] py-[12px]",
+              "className": "rounded-[8px] border-[1px] border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-[16px] py-[12px] flex-col",
               "style": {
                 "js": "return { display: variables.jsPopoverState === 'open' ? 'block' : 'none' };"
               }
@@ -930,7 +930,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-amber-900 dark:text-amber-200 font-medium"
+                  "className": "text-[12px] text-amber-900 dark:text-amber-200 font-medium flex-col"
                 },
                 "text": "Popover content (visible when jsPopoverState === 'open')."
               }
@@ -940,7 +940,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-popover",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": {
               "js": "return `state = ${variables.jsPopoverState}`;"
@@ -963,14 +963,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 7 — Shared components dynamic CRUD"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.shared.add(typeId, props), .delete(instanceId), .deleteAll(typeId?)."
               }
@@ -999,7 +999,7 @@
                     "type": "Text",
                     "text": "shared.add('toast', {...})",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1021,7 +1021,7 @@
                     "type": "Text",
                     "text": "shared.deleteAll()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1032,19 +1032,19 @@
             "type": "Box",
             "map": "variables['js-demo-0000-0000-0000-000000000015']",
             "props": {
-              "className": "contents"
+              "className": "contents flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-[6px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[12px] py-[6px] mb-[4px]"
+                  "className": "rounded-[6px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[12px] py-[6px] mb-[4px] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+                      "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
                     },
                     "text": {
                       "js": "return `instance #${(context.item.index ?? 0) + 1}: ${context.item.data}`;"
@@ -1071,14 +1071,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 8 — Forms"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.forms.setState(formId, state) and wwLib.forms.reset(formId)."
               }
@@ -1094,7 +1094,7 @@
               "placeholder": "Type a name…",
               "value": "{{variables['js-demo-0000-0000-0000-000000000017']}}",
               "data-testid": "js-form-name",
-              "className": "!text-gray-900 dark:!text-gray-100"
+              "className": "!text-gray-900 dark:!text-gray-100 flex-col"
             },
             "children": [],
             "actions": [
@@ -1138,7 +1138,7 @@
                     "type": "Text",
                     "text": "forms.setState({ valid:true, name })",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1160,7 +1160,7 @@
                     "type": "Text",
                     "text": "forms.reset()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1171,7 +1171,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-form",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": "{{variables['js-demo-0000-0000-0000-000000000016']}}"
           }
@@ -1192,14 +1192,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 9 — Auth"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.auth.authenticate, .setUser, .restoreSession, .clearSession."
               }
@@ -1228,7 +1228,7 @@
                     "type": "Text",
                     "text": "auth.authenticate()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1250,7 +1250,7 @@
                     "type": "Text",
                     "text": "auth.setUser({ id, email })",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1272,7 +1272,7 @@
                     "type": "Text",
                     "text": "auth.restoreSession()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1294,7 +1294,7 @@
                     "type": "Text",
                     "text": "auth.clearSession()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1305,7 +1305,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-auth",
-              "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300"
+              "className": "text-[14px] font-mono text-gray-700 dark:text-gray-300 flex-col"
             },
             "text": {
               "js": "return `auth.email = ${variables.jsAuthEmail ?? 'guest'}`;"
@@ -1328,14 +1328,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 10 — Files / browser"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "clipboard.copy, files.download, files.fromBase64, scroll.to, print.pdf, timing.delay, event.stopPropagation."
               }
@@ -1364,7 +1364,7 @@
                     "type": "Text",
                     "text": "clipboard.copy",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1386,7 +1386,7 @@
                     "type": "Text",
                     "text": "files.download(...)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1408,7 +1408,7 @@
                     "type": "Text",
                     "text": "files.fromBase64(...)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1430,7 +1430,7 @@
                     "type": "Text",
                     "text": "scroll.to('jsTopAnchor')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1452,7 +1452,7 @@
                     "type": "Text",
                     "text": "print.pdf()",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1474,7 +1474,7 @@
                     "type": "Text",
                     "text": "timing.delay(800)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1497,7 +1497,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-blue-900 dark:text-blue-200"
+                  "className": "text-[12px] text-blue-900 dark:text-blue-200 flex-col"
                 },
                 "text": "Outer container — clicking anywhere here increments outer count. The button below calls wwLib.event.stopPropagation() so only inner increments."
               },
@@ -1505,7 +1505,7 @@
                 "type": "Box",
                 "props": {
                   "data-testid": "js-btn-stop-prop",
-                  "className": "self-start cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px]"
+                  "className": "self-start cursor-pointer bg-[var(--theme-foreground)] hover:opacity-90 px-[12px] py-[6px] rounded-[6px] flex-col"
                 },
                 "actions": [
                   {
@@ -1518,7 +1518,7 @@
                     "type": "Text",
                     "text": "inner button (stopPropagation)",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1527,7 +1527,7 @@
                 "type": "Text",
                 "props": {
                   "data-testid": "js-out-stop-prop",
-                  "className": "text-[12px] font-mono text-blue-900 dark:text-blue-200"
+                  "className": "text-[12px] font-mono text-blue-900 dark:text-blue-200 flex-col"
                 },
                 "text": {
                   "js": "return `outer=${variables.jsOuterClickCount ?? 0} inner=${variables.jsInnerClickCount ?? 0}`;"
@@ -1545,7 +1545,7 @@
                 "type": "Text",
                 "props": {
                   "data-testid": "js-out-browser",
-                  "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300"
+                  "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 flex-col"
                 },
                 "text": {
                   "js": "return `status   = ${variables.jsBrowserStatus}\\ndelay    = ${variables.jsDelayStatus}`;"
@@ -1555,7 +1555,7 @@
                 "type": "Text",
                 "props": {
                   "data-testid": "js-out-b64-url",
-                  "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 break-all"
+                  "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 break-all flex-col"
                 },
                 "text": {
                   "js": "const url = variables.jsB64Url ?? '';\nreturn url ? `b64 url: ${url.slice(0, 80)}${url.length > 80 ? '…' : ''}` : '(no data url yet)';"
@@ -1580,14 +1580,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 11 — Project workflows (sub-routine)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "await wwLib.workflows.run('jsDemoIncrementCart') — runs a real existing workflow and observes its return value."
               }
@@ -1616,7 +1616,7 @@
                     "type": "Text",
                     "text": "workflows.run('jsDemoIncrementCart')",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1627,7 +1627,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-sub-workflow",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre flex-col"
             },
             "text": "{{variables['js-demo-0000-0000-0000-000000000020']}}"
           }
@@ -1648,14 +1648,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100"
+                  "className": "text-[20px] font-bold text-foreground text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 12 — Generic escape hatch"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "wwLib.actions.run({ type, config }) dispatches any ActionStepType — ideal for actions that don't have a typed wrapper."
               }
@@ -1671,7 +1671,7 @@
               "placeholder": "{ \"type\": \"copyToClipboard\", \"config\": { \"text\": \"hi\" } }",
               "value": "{{variables['js-demo-0000-0000-0000-000000000021']}}",
               "data-testid": "js-escape-input",
-              "className": "!text-gray-900 dark:!text-gray-100 font-mono"
+              "className": "!text-gray-900 dark:!text-gray-100 font-mono flex-col"
             },
             "children": [],
             "actions": [
@@ -1715,7 +1715,7 @@
                     "type": "Text",
                     "text": "actions.run(JSON.parse(input))",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[12px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1726,7 +1726,7 @@
             "type": "Text",
             "props": {
               "data-testid": "js-out-escape",
-              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre"
+              "className": "text-[12px] font-mono text-gray-700 dark:text-gray-300 whitespace-pre flex-col"
             },
             "text": "{{variables['js-demo-0000-0000-0000-000000000022']}}"
           }

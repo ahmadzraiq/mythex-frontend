@@ -12,21 +12,21 @@
       {
         "type": "Text",
         "props": {
-          "className": "text-[30px] font-bold mb-[24px]"
+          "className": "text-[30px] font-bold mb-[24px] flex-col"
         },
         "text": "My Orders"
       },
       {
         "type": "Box",
         "props": {
-          "className": "text-center py-[48px]"
+          "className": "text-center py-[48px] flex-col"
         },
         "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.activeCustomer?.orders?.items?.length || 0) === 0",
         "children": [
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)]"
+              "className": "text-[var(--theme-muted-foreground)] flex-col"
             },
             "text": "You haven't placed any orders yet."
           }
@@ -36,7 +36,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "border-[1px] rounded-[8px] overflow-hidden"
+          "className": "border-[1px] rounded-[8px] overflow-hidden flex-col"
         },
         "condition": "(collections['c5d6e7f8-a9b0-1234-cdef-345678901234']?.activeCustomer?.orders?.items?.length || 0) > 0",
         "children": [
@@ -46,7 +46,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-muted)]"
+                  "className": "bg-[var(--theme-muted)] flex-col"
                 },
                 "children": [
                   {
@@ -61,7 +61,7 @@
                           }
                         ],
                         "props": {
-                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1"
+                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1 flex-col"
                         }
                       },
                       {
@@ -73,7 +73,7 @@
                           }
                         ],
                         "props": {
-                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1"
+                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1 flex-col"
                         }
                       },
                       {
@@ -85,7 +85,7 @@
                           }
                         ],
                         "props": {
-                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1"
+                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1 flex-col"
                         }
                       },
                       {
@@ -97,13 +97,13 @@
                           }
                         ],
                         "props": {
-                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1"
+                          "className": "font-medium text-[14px] px-[12px] py-[8px] flex-1 flex-col"
                         }
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "text-right font-medium text-[14px] px-[12px] py-[8px] flex-1"
+                          "className": "text-right font-medium text-[14px] px-[12px] py-[8px] flex-1 flex-col"
                         },
                         "children": [
                           {
@@ -133,13 +133,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "font-medium text-[14px] px-[12px] py-[12px] flex-1"
+                          "className": "font-medium text-[14px] px-[12px] py-[12px] flex-1 flex-col"
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "className": "inline-flex items-center gap-[4px] px-[12px] py-[6px] border-[1px] border-[var(--theme-border)] rounded-[6px] text-[14px] hover:bg-[var(--theme-muted)]"
+                              "className": "inline-flex items-center gap-[4px] px-[12px] py-[6px] border-[1px] border-[var(--theme-border)] rounded-[6px] text-[14px] hover:bg-[var(--theme-muted)] flex-col"
                             },
                             "actions": [
                               {
@@ -156,7 +156,7 @@
                                 "type": "Icon",
                                 "props": {
                                   "icon": "lucide:share",
-                                  "className": "h-[12px] w-[12px]"
+                                  "className": "h-[12px] w-[12px] flex-col"
                                 }
                               }
                             ]
@@ -172,7 +172,7 @@
                           }
                         ],
                         "props": {
-                          "className": "text-[14px] px-[12px] py-[12px] flex-1"
+                          "className": "text-[14px] px-[12px] py-[12px] flex-1 flex-col"
                         }
                       },
                       {
@@ -181,7 +181,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "text-[12px] font-medium"
+                              "className": "text-[12px] font-medium flex-col"
                             },
                             "children": [
                               {
@@ -192,7 +192,7 @@
                           }
                         ],
                         "props": {
-                          "className": "text-[14px] px-[12px] py-[12px] flex-1"
+                          "className": "text-[14px] px-[12px] py-[12px] flex-1 flex-col"
                         }
                       },
                       {
@@ -204,19 +204,19 @@
                           }
                         ],
                         "props": {
-                          "className": "text-[14px] px-[12px] py-[12px] flex-1"
+                          "className": "text-[14px] px-[12px] py-[12px] flex-1 flex-col"
                         }
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "text-right text-[14px] px-[12px] py-[12px] flex-1"
+                          "className": "text-right text-[14px] px-[12px] py-[12px] flex-1 flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "font-medium"
+                              "className": "font-medium flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(context?.item?.data?.totalWithTax / 100, context?.item?.data?.currencyCode)"
@@ -230,7 +230,7 @@
               }
             ],
             "props": {
-              "className": ""
+              "className": "flex-col"
             }
           }
         ],

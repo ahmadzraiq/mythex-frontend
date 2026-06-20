@@ -24,7 +24,7 @@
             "type": "Text",
             "text": "Layered Visual Depth",
             "props": {
-              "className": "text-[56px] font-bold leading-tight tracking-tight !text-[var(--theme-foreground)]",
+              "className": "text-[56px] font-bold leading-tight tracking-tight !text-[var(--theme-foreground)] flex-col",
               "style": {}
             },
             "id": "b19d50d8-d1a4-41ff-b952-c80c8bd17f2f",
@@ -42,7 +42,7 @@
             "type": "Text",
             "text": "Modern asymmetrical design with overlapping imagery and clear visual hierarchy",
             "props": {
-              "className": "mt-[8px] max-w-[480px] text-[18px] font-normal leading-relaxed !text-[var(--theme-foreground)] opacity-60",
+              "className": "mt-[8px] max-w-[480px] text-[18px] font-normal leading-relaxed !text-[var(--theme-foreground)] opacity-60 flex-col",
               "style": {}
             },
             "id": "2bb35e72-aae7-45dc-8912-ca33950b5153",
@@ -69,18 +69,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.25)",
-                    "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 4
-                    },
-                    "shadowRadius": 12,
-                    "shadowOpacity": 0.25,
-                    "elevation": 6
-                  },
-                  "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                  "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer overflow-hidden !bg-[var(--theme-primary)] rounded-[8px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.25)] flex-col"
                 },
                 "id": "b043ba43-3d61-4bdc-92aa-a9a1ca28899a",
                 "name": "PrimaryButton",
@@ -89,7 +78,7 @@
                     "type": "Text",
                     "text": "Explore Design",
                     "props": {
-                      "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]",
+                      "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)] flex-col",
                       "style": {}
                     },
                     "id": "c31d61c1-63f2-4325-9d05-3dc543b89cb5",
@@ -111,7 +100,7 @@
                 "type": "Box",
                 "props": {
                   "style": {},
-                  "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer overflow-hidden !bg-[var(--theme-card)] border-[2px] border-solid border-[var(--theme-border)] rounded-[8px]"
+                  "className": "pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer overflow-hidden !bg-[var(--theme-card)] border-[2px] border-solid border-[var(--theme-border)] rounded-[8px] flex-col"
                 },
                 "id": "ecf503a2-f4b2-4fef-91a7-87a6efe79c02",
                 "name": "SecondaryButton",
@@ -120,7 +109,7 @@
                     "type": "Text",
                     "text": "Learn More",
                     "props": {
-                      "className": "text-[16px] font-semibold !text-[var(--theme-foreground)]",
+                      "className": "text-[16px] font-semibold !text-[var(--theme-foreground)] flex-col",
                       "style": {}
                     },
                     "id": "55be1b10-e4b4-49c2-919b-5c6e4694d7fa",
@@ -162,18 +151,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "boxShadow": "8px 12px 32px 0px rgba(60, 7, 100, 0.18)",
-                "shadowColor": "rgb(60,7,100)",
-                "shadowOffset": {
-                  "width": 8,
-                  "height": 12
-                },
-                "shadowRadius": 32,
-                "shadowOpacity": 0.18,
-                "elevation": 16
-              },
-              "className": "w-[480px] h-[420px] absolute z-[2] top-[0px] right-[0px] overflow-hidden rounded-[12px]"
+              "className": "w-[480px] h-[420px] absolute z-[2] top-[0px] right-[0px] overflow-hidden rounded-[12px] shadow-[8px_12px_32px_0px_rgba(60,_7,_100,_0.18)] flex-col"
             },
             "id": "d1e2497a-00ee-4606-a5bf-00daf368e7fe",
             "name": "PrimaryImageContainer",
@@ -184,7 +162,7 @@
                   "alt": "a person sitting on the floor using a laptop",
                   "objectFit": "cover",
                   "style": {},
-                  "className": "w-full h-full"
+                  "className": "w-full h-full flex-col"
                 },
                 "src": "https://images.unsplash.com/photo-1642132652860-603f4e3c19b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwaW50ZXJmYWNlJTIwc2NyZWVuc2hvdCUyMHdpdGglMjB2aWJyYW50JTIwY29sb3JzfGVufDB8fHx8MTc3NTMzNTk4OXww&ixlib=rb-4.1.0&q=80&w=1080",
                 "id": "3f132c1d-2a2b-4f9b-9df0-58659eaf75f9",
@@ -203,18 +181,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "boxShadow": "-4px 8px 24px 0px rgba(60, 7, 100, 0.12)",
-                "shadowColor": "rgb(60,7,100)",
-                "shadowOffset": {
-                  "width": -4,
-                  "height": 8
-                },
-                "shadowRadius": 24,
-                "shadowOpacity": 0.12,
-                "elevation": 12
-              },
-              "className": "w-[380px] h-[320px] absolute z-[1] bottom-[20px] left-[0px] overflow-hidden border-[3px] border-solid border-[var(--theme-card)] rounded-[12px]"
+              "className": "w-[380px] h-[320px] absolute z-[1] bottom-[20px] left-[0px] overflow-hidden border-[3px] border-solid border-[var(--theme-card)] rounded-[12px] shadow-[-4px_8px_24px_0px_rgba(60,_7,_100,_0.12)] flex-col"
             },
             "id": "dd69bf46-6503-4d0a-91c6-1a20e7f2b60f",
             "name": "AccentImageContainer",
@@ -225,7 +192,7 @@
                   "alt": "a computer screen with the words the easy way to build marketplaces",
                   "objectFit": "cover",
                   "style": {},
-                  "className": "w-full h-full"
+                  "className": "w-full h-full flex-col"
                 },
                 "src": "https://images.unsplash.com/photo-1642132652866-6fa262d3161f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwaW50ZXJmYWNlJTIwc2NyZWVuc2hvdCUyMHdpdGglMjB2aWJyYW50JTIwY29sb3JzfGVufDB8fHx8MTc3NTMzNTk4OXww&ixlib=rb-4.1.0&q=80&w=1080",
                 "id": "ba18b181-3450-48a5-af42-9ebb2b0db119",

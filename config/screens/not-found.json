@@ -12,33 +12,33 @@
       {
         "type": "Box",
         "props": {
-          "className": "flex-1 flex items-center justify-center px-[16px] py-[64px]"
+          "className": "flex-1 flex items-center justify-center px-[16px] py-[64px] flex-col"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "text-center space-y-[24px] max-w-[448px]"
+              "className": "text-center space-y-[24px] max-w-[448px] flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[96px] font-bold text-[var(--theme-muted-foreground)]"
+                  "className": "text-[96px] font-bold text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "text": "404"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[30px] font-bold"
+                  "className": "text-[30px] font-bold flex-col"
                 },
                 "text": "Page Not Found"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-[18px]"
+                  "className": "text-[var(--theme-muted-foreground)] text-[18px] flex-col"
                 },
                 "text": "Sorry, we couldn't find the page you're looking for."
               },
@@ -51,7 +51,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white"
+                      "className": "text-white flex-col"
                     },
                     "text": "Back to Home"
                   }

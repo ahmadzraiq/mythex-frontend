@@ -22,6 +22,12 @@ export const STYLE_TO_CLASS_KEYS = new Set([
   'zIndex',
   'borderWidth',
   'fontSize',
+  // Transform-related (rotation + translation)
+  'transform', 'translateX', 'translateY',
+  // Drop shadow
+  'boxShadow',
+  // Background image / size / position / repeat
+  'backgroundImage', 'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
 ]);
 
 // ─── Token tables (JIT-scannable) ────────────────────────────────────────────
@@ -437,12 +443,64 @@ export function styleToClassName(
     }
   }
 
-  // ── Transform (rotation) ─────────────────────────────────────────────────────
-  // Rotation is stored exclusively in props.style.transform — never synced back
-  // to className. Remove any stale rotate-[...] token if style.transform is set.
+  // ── Transform (rotation) → rotate-[Ndeg] ─────────────────────────────────────
   if (style.transform !== undefined) {
     cls = removeTwToken(cls, 'rotate-');
     cls = removeTwToken(cls, '-rotate-');
+    const rm = String(style.transform || '').match(/rotate\((.+)\)/);
+    if (rm) cls = `${cls} rotate-[${rm[1]}]`.trim();
+  }
+
+  // ── TranslateX / TranslateY → translate-x-[...] / translate-y-[...] ─────────
+  if (style.translateX !== undefined) {
+    cls = removeTwToken(cls, 'translate-x-');
+    if (style.translateX) cls = `${cls} translate-x-[${style.translateX}]`.trim();
+  }
+  if (style.translateY !== undefined) {
+    cls = removeTwToken(cls, 'translate-y-');
+    if (style.translateY) cls = `${cls} translate-y-[${style.translateY}]`.trim();
+  }
+
+  // ── Box shadow → shadow-[...] (spaces → underscores per Tailwind convention) ──
+  if (style.boxShadow !== undefined) {
+    cls = removeTwToken(cls, 'shadow-[');
+    if (style.boxShadow) cls = `${cls} shadow-[${String(style.boxShadow).replace(/ /g, '_')}]`.trim();
+  }
+
+  // ── Background image (URL mode) → produces bg-[url(https://...)] class ─────────
+  // Gradient strings stay in animation.outerStyle — only image URLs go into className.
+  if (style.backgroundImage !== undefined) {
+    cls = removeTwToken(cls, 'bg-[url(');
+    if (style.backgroundImage && (style.backgroundImage as string).startsWith('url(')) {
+      cls = `${cls} bg-[${style.backgroundImage}]`.trim();
+    }
+  }
+
+  // ── Background size → bg-cover / bg-contain / bg-auto / bg-[length:...] ──────
+  if (style.backgroundSize !== undefined) {
+    cls = removeTwToken(cls, 'bg-cover');
+    cls = removeTwToken(cls, 'bg-contain');
+    cls = removeTwToken(cls, 'bg-auto');
+    cls = removeTwToken(cls, 'bg-[length:');
+    if (style.backgroundSize === 'cover')        cls = `${cls} bg-cover`.trim();
+    else if (style.backgroundSize === 'contain') cls = `${cls} bg-contain`.trim();
+    else if (style.backgroundSize === 'auto')    cls = `${cls} bg-auto`.trim();
+    else if (style.backgroundSize)               cls = `${cls} bg-[length:${style.backgroundSize}]`.trim();
+  }
+
+  // ── Background position → bg-center / bg-top / … / bg-[position:...] ─────────
+  if (style.backgroundPosition !== undefined) {
+    for (const t of ['bg-center', 'bg-top', 'bg-bottom', 'bg-left', 'bg-right']) cls = removeTwToken(cls, t);
+    cls = removeTwToken(cls, 'bg-[position:');
+    const POS_MAP: Record<string, string> = { center: 'bg-center', top: 'bg-top', bottom: 'bg-bottom', left: 'bg-left', right: 'bg-right' };
+    if (style.backgroundPosition) cls = `${cls} ${POS_MAP[style.backgroundPosition] ?? `bg-[position:${style.backgroundPosition}]`}`.trim();
+  }
+
+  // ── Background repeat → bg-no-repeat / bg-repeat / bg-repeat-x / bg-repeat-y ─
+  if (style.backgroundRepeat !== undefined) {
+    for (const t of ['bg-no-repeat', 'bg-repeat-x', 'bg-repeat-y', 'bg-repeat']) cls = removeTwToken(cls, t);
+    const REP_MAP: Record<string, string> = { 'no-repeat': 'bg-no-repeat', repeat: 'bg-repeat', 'repeat-x': 'bg-repeat-x', 'repeat-y': 'bg-repeat-y' };
+    if (style.backgroundRepeat) cls = `${cls} ${REP_MAP[style.backgroundRepeat] ?? `bg-[${style.backgroundRepeat}]`}`.trim();
   }
 
   // ── Inset (top / right / bottom / left) ──────────────────────────────────────
@@ -515,6 +573,16 @@ export function styleToClassName(
   }
 
   return cls.replace(/\s+/g, ' ').trim();
+}
+
+// ─── Box shadow parser ────────────────────────────────────────────────────────
+
+/** Parse a CSS box-shadow string ("0px 5px 21px 1px #000") into its components. */
+export function parseBoxShadow(s: string): { x: number; y: number; blur: number; spread: number; color: string } | null {
+  if (!s) return null;
+  const m = s.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
+  if (!m) return null;
+  return { x: parseFloat(m[1]), y: parseFloat(m[2]), blur: parseFloat(m[3]), spread: parseFloat(m[4]), color: m[5].trim() };
 }
 
 // ─── Four-sided spacing helpers ───────────────────────────────────────────────

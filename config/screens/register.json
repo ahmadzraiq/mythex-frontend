@@ -6,7 +6,7 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "flex flex-1 w-full items-center justify-center px-[16px]"
+      "className": "flex flex-1 w-full items-center justify-center px-[16px] flex-col"
     },
     "children": [
       {
@@ -18,20 +18,20 @@
           {
             "type": "Box",
             "props": {
-              "className": "space-y-[8px] text-center"
+              "className": "space-y-[8px] text-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[30px] font-bold text-center"
+                  "className": "text-[30px] font-bold text-center flex-col"
                 },
                 "text": "Create Account"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-center"
+                  "className": "text-[var(--theme-muted-foreground)] text-center flex-col"
                 },
                 "text": "Sign up to start shopping with us"
               }
@@ -40,7 +40,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm"
+              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm flex-col"
             },
             "children": [
               {
@@ -54,7 +54,7 @@
                     "password": "",
                     "confirmPassword": ""
                   },
-                  "className": "px-[24px] space-y-[16px]"
+                  "className": "px-[24px] space-y-[16px] flex-col"
                 },
                 "actions": [
                   {
@@ -66,13 +66,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none flex-col"
                         },
                         "text": "Email Address"
                       },
@@ -82,7 +82,7 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "type": "email",
                           "placeholder": "you@example.com",
                           "placeholderTextColor": "#9ca3af",
@@ -107,14 +107,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.emailAddress.isValid}}"
                           }
@@ -131,13 +131,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-[4px]"
+                          "className": "space-y-[4px] flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-medium leading-none"
+                              "className": "text-[14px] font-medium leading-none flex-col"
                             },
                             "text": "First name"
                           },
@@ -147,7 +147,7 @@
                             "props": {
                               "variant": "outline",
                               "size": "sm",
-                              "className": "!text-[var(--theme-foreground)]",
+                              "className": "!text-[var(--theme-foreground)] flex-col",
                               "placeholder": "John",
                               "placeholderTextColor": "#9ca3af",
                               "autoComplete": "given-name",
@@ -172,14 +172,14 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "min-h-[18px]"
+                              "className": "min-h-[18px] flex-col"
                             },
                             "condition": "local?.data?.form?.fields?.firstName?.isValid",
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-red-500 dark:text-red-400"
+                                  "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                                 },
                                 "text": "{{local.data.form.fields.firstName.isValid}}"
                               }
@@ -190,13 +190,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-[4px]"
+                          "className": "space-y-[4px] flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-medium leading-none"
+                              "className": "text-[14px] font-medium leading-none flex-col"
                             },
                             "text": "Last name"
                           },
@@ -206,7 +206,7 @@
                             "props": {
                               "variant": "outline",
                               "size": "sm",
-                              "className": "!text-[var(--theme-foreground)]",
+                              "className": "!text-[var(--theme-foreground)] flex-col",
                               "placeholder": "Doe",
                               "placeholderTextColor": "#9ca3af",
                               "autoComplete": "family-name",
@@ -231,14 +231,14 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "min-h-[18px]"
+                              "className": "min-h-[18px] flex-col"
                             },
                             "condition": "local?.data?.form?.fields?.lastName?.isValid",
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-red-500 dark:text-red-400"
+                                  "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                                 },
                                 "text": "{{local.data.form.fields.lastName.isValid}}"
                               }
@@ -251,13 +251,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none flex-col"
                         },
                         "text": "Phone Number"
                       },
@@ -267,7 +267,7 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "type": "tel",
                           "placeholder": "+1 234 567 8900",
                           "placeholderTextColor": "#9ca3af",
@@ -292,14 +292,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.phoneNumber?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.phoneNumber.isValid}}"
                           }
@@ -310,13 +310,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none flex-col"
                         },
                         "text": "Password"
                       },
@@ -326,7 +326,7 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "placeholder": "••••••••",
                           "placeholderTextColor": "#9ca3af",
                           "autoComplete": "new-password",
@@ -352,14 +352,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.password?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.password.isValid}}"
                           }
@@ -370,13 +370,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none flex-col"
                         },
                         "text": "Confirm Password"
                       },
@@ -386,7 +386,7 @@
                         "props": {
                           "variant": "outline",
                           "size": "sm",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "placeholder": "••••••••",
                           "placeholderTextColor": "#9ca3af",
                           "autoComplete": "new-password",
@@ -414,14 +414,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.confirmPassword?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.confirmPassword.isValid}}"
                           }
@@ -432,7 +432,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "text-[14px] text-red-500"
+                      "className": "text-[14px] text-red-500 flex-col"
                     },
                     "condition": "_workflow?.lastAction === 'registerMutation' && _workflow?.lastError",
                     "children": [
@@ -453,7 +453,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "!text-white flex-col"
                         },
                         "text": "Create Account"
                       }
@@ -472,7 +472,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center"
+                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center flex-col"
                 },
                 "text": "Already have an account? "
               },
@@ -488,7 +488,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center"
+                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center flex-col"
                     },
                     "text": "Sign in"
                   }

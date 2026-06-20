@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import type { AiChatMessage } from './_store-types';
-import { executeTool, CLIENT_SIDE_TOOLS } from '@/lib/ai/tool-executor';
 import { serializeVirtualFiles, applyVirtualFile, deleteVirtualFile } from './_virtual-files';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import { projects as projectsApi } from '@/lib/platform/api-client';
@@ -739,65 +738,6 @@ export function useAiChat() {
             } else if (ev.type === 'text_delta') {
               fullContent += ev.content;
               store.updateLastAiMessage({ content: fullContent, isThinking: false, streaming: true });
-            } else if (ev.type === 'tool_executed') {
-              {
-                store.setAiCurrentTool(ev.name);
-                let execResult: unknown = ev.result;
-                let execStatus: 'success' | 'error' = ev.error ? 'error' : 'success';
-
-                // Execute client-side mutation tools against the Zustand store
-                if (CLIENT_SIDE_TOOLS.has(ev.name)) {
-                  try {
-                    const result = await executeTool(
-                      ev.name,
-                      ev.input,
-                      () => useBuilderStore.getState(),
-                    );
-                    execResult = result.success ? result.data : { error: result.error };
-                    execStatus = result.success ? 'success' : 'error';
-
-                    // Belt-and-suspenders: after generate_structure succeeds, ensure every
-                    // minted workflow UUID is stored as a direct key in store.workflows.
-                    // Old client bundles key by human name — this patch adds the UUID key so
-                    // add_workflow_step's direct lookup always finds it without needing the
-                    // meta.id scan, eliminating the HMR race condition.
-                    if (ev.name === 'generate_structure' && execStatus === 'success') {
-                      const minted = (execResult as { mintedWorkflows?: Array<{ workflowId: string; name: string; trigger: string }> })?.mintedWorkflows;
-                      if (Array.isArray(minted)) {
-                        const patchStore = useBuilderStore.getState();
-                        const pageId = (ev.input as { _pageId?: string })?._pageId;
-                        for (const { workflowId, name, trigger } of minted) {
-                          if (!(patchStore.workflows as Record<string, unknown>)?.[workflowId]) {
-                            const wfDef: import('@/config/types').WorkflowDef = { id: workflowId, name, trigger, steps: [] };
-                            if (pageId) wfDef.pageScope = pageId;
-                            patchStore.setWorkflow(workflowId, wfDef);
-                          }
-                        }
-                      }
-                    }
-                  } catch (e) {
-                    execResult = { error: String(e) };
-                    execStatus = 'error';
-                  }
-                }
-
-                const tc = {
-                  name: ev.name,
-                  input: ev.input,
-                  result: execResult,
-                  status: execStatus,
-                  phase: ev.phase,
-                  timestamp: Date.now(),
-                  round: accRoundCount || 1,
-                  aiBlind: CLIENT_SIDE_TOOLS.has(ev.name) && execStatus === 'error',
-                };
-                allToolCalls.push(tc);
-                // Group tool call into its agent's debug info
-                if (ev.phase && accAgentDebugInfo[ev.phase]) {
-                  accAgentDebugInfo[ev.phase].toolCalls.push(tc);
-                }
-                store.updateLastAiMessage({ toolCalls: [...allToolCalls], agentDebugInfo: { ...accAgentDebugInfo }, isThinking: false, streaming: true });
-              }
             } else if (ev.type === 'image_results') {
               store.updateLastAiMessage({
                 imageResults: ev.images.map(img => ({
@@ -930,7 +870,7 @@ export function useAiChat() {
                 manifest: {
                   intent: ev.manifest.intent,
                   needsClarification: ev.manifest.needsClarification,
-                  operations: ev.manifest.operations?.map(op => ({
+                  operations: (ev.manifest.operations as Array<{ id: string; pageRoute?: string; pageName?: string; agents?: Record<string, Record<string, unknown>> }> | undefined)?.map(op => ({
                     id: op.id,
                     pageRoute: op.pageRoute,
                     pageName: op.pageName,

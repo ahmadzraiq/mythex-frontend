@@ -301,12 +301,23 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
       case 'translate-x': if (isNumeric) { style.translateX = value; } break;
       case 'translate-y': if (isNumeric) { style.translateY = value; } break;
 
+      // ── Rotation — rotate-[45deg] → transform: rotate(45deg) ─────────────────
+      case 'rotate':
+        (style as Record<string, string>).transform = `rotate(${value})`;
+        break;
+
+      // ── Drop shadow — shadow-[0px_5px_21px_1px_#000] ─────────────────────────
+      // Underscores are already converted to spaces by line 210 above.
+      case 'shadow':
+        (style as Record<string, string>).boxShadow = value;
+        break;
+
       // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
-      // bg-[#hex], bg-[rgb(...)], bg-[var(--theme-...)]
+      // bg-[#hex], bg-[rgb(...)], bg-[var(--token)], bg-[url(https://...)]
       case 'bg':
         if (isHexColor || isCssFn) {
-          // Gradients belong on backgroundImage, not backgroundColor
-          if (value.startsWith('linear-gradient(') || value.startsWith('radial-gradient(')) {
+          // Gradients and image URLs belong on backgroundImage, not backgroundColor
+          if (value.startsWith('linear-gradient(') || value.startsWith('radial-gradient(') || value.startsWith('url(')) {
             (style as Record<string, string>).backgroundImage = value;
           } else {
             style.backgroundColor = value;
@@ -1338,10 +1349,12 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // The outer Animated.View wrapper path bypasses NativeWind on the wrapper itself, so
   // static transforms (both pixel and percentage) apply correctly in all modes.
   const _rawNodeStyle = (node.props as Record<string, unknown> | undefined)?.style as Record<string, unknown> | undefined;
+  const _nodeClassName = (node.props as Record<string, unknown> | undefined)?.className as string | undefined ?? '';
   const _hasStaticStyleTransform = !!(
     _rawNodeStyle?.translateX !== undefined ||
     _rawNodeStyle?.translateY !== undefined ||
-    (typeof _rawNodeStyle?.transform === 'string' && (_rawNodeStyle.transform as string).trim().length > 0)
+    (typeof _rawNodeStyle?.transform === 'string' && (_rawNodeStyle.transform as string).trim().length > 0) ||
+    /(?:^|(?<=\s))(?:translate-[xy]-\[|rotate-\[|-rotate-\[)/.test(_nodeClassName)
   );
   const useSingleElementPath = !!(animCfgObj && !hasOverlayFeature && !builderMode && node.type !== 'Image' && node.type !== 'Icon' && !_hasStaticStyleTransform && !(animCfgObj as { gesture?: { dragFeedback?: boolean } }).gesture?.dragFeedback);
   // In builder mode, wrapped animated nodes own their own data-builder-id (set on the
@@ -1447,6 +1460,22 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const consumedTokens = arbStylesRaw._consumed;
   delete arbStylesRaw._consumed;
   const arbStyles = arbStylesRaw as Record<string, string>;
+
+  // Derive React Native shadow fields from box-shadow class token so RN renderers
+  // work without storing redundant fields in props.style.
+  if (arbStyles.boxShadow) {
+    const _bs = arbStyles.boxShadow;
+    const _bsm = _bs.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
+    if (_bsm) {
+      const _blur = parseFloat(_bsm[3]);
+      const _arbS = arbStyles as Record<string, unknown>;
+      _arbS.shadowColor   = _bsm[5].trim();
+      _arbS.shadowOffset  = { width: parseFloat(_bsm[1]), height: parseFloat(_bsm[2]) };
+      _arbS.shadowRadius  = _blur;
+      _arbS.shadowOpacity = 1;
+      _arbS.elevation     = Math.max(0, Math.round(_blur / 2));
+    }
+  }
   if (consumedTokens && consumedTokens.size > 0 && typeof cleanProps.className === 'string') {
     cleanProps.className = tokenizeClassName(cleanProps.className).filter(t => !consumedTokens.has(t)).join(' ');
   }

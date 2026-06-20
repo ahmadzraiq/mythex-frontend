@@ -12,39 +12,39 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "flex min-h-screen items-center justify-center px-[16px]"
+      "className": "flex min-h-screen items-center justify-center px-[16px] flex-col"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-[448px] text-center space-y-[24px]"
+          "className": "w-full max-w-[448px] text-center space-y-[24px] flex-col"
         },
         "children": [
           {
             "type": "Text",
             "props": {
-              "className": "text-[30px] font-bold"
+              "className": "text-[30px] font-bold flex-col"
             },
             "text": "Verifying Email..."
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)]"
+              "className": "text-[var(--theme-muted-foreground)] flex-col"
             },
             "text": "Please wait while we verify your email address."
           },
           {
             "type": "Box",
             "props": {
-              "className": "flex justify-center"
+              "className": "flex justify-center flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex items-center justify-center h-[32px] w-[32px] text-[#7c3aed]",
+                  "className": "flex items-center justify-center h-[32px] w-[32px] text-[#7c3aed] flex-col",
                   "animation": {
                     "loop": {
                       "type": "spin",

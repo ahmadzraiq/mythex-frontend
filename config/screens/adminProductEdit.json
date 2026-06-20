@@ -40,7 +40,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px]"
+                      "className": "text-[13px] flex-col"
                     },
                     "text": "Back"
                   }
@@ -49,7 +49,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[22px] font-bold text-white"
+                  "className": "text-[22px] font-bold text-white flex-col"
                 },
                 "text": "{{collections['ad000005-0000-0000-0000-000000000005']?.product?.name || 'Product'}}"
               }
@@ -83,7 +83,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-medium"
+                      "className": "text-[13px] font-medium flex-col"
                     },
                     "text": "Delete Product"
                   }
@@ -111,7 +111,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-medium"
+                      "className": "text-[13px] font-medium flex-col"
                     },
                     "text": "Reindex"
                   }
@@ -143,7 +143,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[15px] font-semibold text-white"
+                      "className": "text-[15px] font-semibold text-white flex-col"
                     },
                     "text": "Product Details"
                   },
@@ -156,21 +156,21 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px]"
+                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px] flex-col"
                         },
                         "text": "Name"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-full h-[40px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] rounded-[8px] px-[12px] flex items-center"
+                          "className": "w-full h-[40px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] rounded-[8px] px-[12px] flex items-center flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "id": "form-name",
                             "props": {
-                              "className": "text-[14px] text-white w-full",
+                              "className": "text-[14px] text-white w-full flex-col",
                               "editable": true,
                               "editPath": "local.data.form.formData.name",
                               "placeholder": "Product name"
@@ -190,20 +190,20 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px]"
+                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px] flex-col"
                         },
                         "text": "Slug"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-full h-[40px] bg-[var(--theme-admin-sidebar)]/50 border border-[var(--theme-admin-border)] rounded-[8px] px-[12px] flex items-center"
+                          "className": "w-full h-[40px] bg-[var(--theme-admin-sidebar)]/50 border border-[var(--theme-admin-border)] rounded-[8px] px-[12px] flex items-center flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-label)] font-mono"
+                              "className": "text-[13px] text-[var(--theme-admin-label)] font-mono flex-col"
                             },
                             "text": "{{collections['ad000005-0000-0000-0000-000000000005']?.product?.slug || ''}}"
                           }
@@ -220,21 +220,21 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px]"
+                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] mb-[6px] flex-col"
                         },
                         "text": "Description"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-full min-h-[100px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] rounded-[8px] p-[12px]"
+                          "className": "w-full min-h-[100px] bg-[var(--theme-admin-sidebar)] border border-[var(--theme-admin-border)] rounded-[8px] p-[12px] flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "id": "form-desc",
                             "props": {
-                              "className": "text-[13px] text-white w-full",
+                              "className": "text-[13px] text-white w-full flex-col",
                               "editable": true,
                               "multiline": true,
                               "editPath": "local.data.form.formData.description",
@@ -263,13 +263,13 @@
                         "props": {
                           "icon": "lucide:save",
                           "size": 15,
-                          "className": "text-white"
+                          "className": "text-white flex-col"
                         }
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-white"
+                          "className": "text-[14px] font-medium text-white flex-col"
                         },
                         "text": "Save Changes"
                       }
@@ -280,19 +280,19 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "px-[20px] py-[14px] border-b border-[var(--theme-admin-border)]"
+                      "className": "px-[20px] py-[14px] border-b border-[var(--theme-admin-border)] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-white"
+                          "className": "text-[15px] font-semibold text-white flex-col"
                         },
                         "text": "Variants"
                       }
@@ -310,35 +310,35 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Name"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "SKU"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Price (¢)"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Stock"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                          "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Available"
                       }
@@ -364,21 +364,21 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                              "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                             },
                             "text": "{{context.item.data.name}}"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-[var(--theme-admin-label)] font-mono"
+                              "className": "text-[12px] text-[var(--theme-admin-label)] font-mono flex-col"
                             },
                             "text": "{{context.item.data.sku}}"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                              "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency((context.item.data.price || 0) / 100, 'USD')"
@@ -396,7 +396,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-label)]"
+                              "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                             },
                             "text": "{{context.item.data.stock_available || 0}}"
                           }
@@ -417,7 +417,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
                 },
                 "children": [
                   {
@@ -427,7 +427,7 @@
                       "alt": "{{collections['ad000005-0000-0000-0000-000000000005']?.product?.name}}",
                       "width": 400,
                       "height": 300,
-                      "className": "w-full h-[200px] object-cover"
+                      "className": "w-full h-[200px] object-cover flex-col"
                     }
                   }
                 ]
@@ -441,7 +441,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-semibold text-white"
+                      "className": "text-[13px] font-semibold text-white flex-col"
                     },
                     "text": "Visibility"
                   },
@@ -467,7 +467,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-label)]"
+                      "className": "text-[12px] text-[var(--theme-admin-label)] flex-col"
                     },
                     "text": "Editing the product name/description and saving will update the enabled state based on the form data."
                   }

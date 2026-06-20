@@ -21,7 +21,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Catalog"
               },
@@ -36,7 +36,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Product Variants"
               }
@@ -45,14 +45,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)] flex-col"
             },
             "text": "Product Variants"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-[var(--theme-admin-label)]"
+              "className": "text-[14px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": "All product variants across your catalog."
           }
@@ -62,7 +62,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -77,35 +77,35 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Product / Variant"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "SKU / Slug"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Price"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Variants"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Status"
               }
@@ -147,13 +147,13 @@
                           "alt": "{{context.item.data.name}}",
                           "width": 36,
                           "height": 36,
-                          "className": "w-[36px] h-[36px] rounded-[6px] object-cover border border-[var(--theme-admin-border)] flex-shrink-0"
+                          "className": "w-[36px] h-[36px] rounded-[6px] object-cover border border-[var(--theme-admin-border)] flex-shrink-0 flex-col"
                         }
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate flex-col"
                         },
                         "text": "{{context.item.data.name}}"
                       }
@@ -162,14 +162,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono truncate"
+                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono truncate flex-col"
                     },
                     "text": "{{context.item.data.slug}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                     },
                     "text": {
                       "formula": "formatCurrency((context.item.data.price || 0) / 100, 'USD')"
@@ -178,13 +178,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "inline-flex items-center justify-center w-[28px] h-[20px] rounded-full bg-[var(--theme-admin-accent)]/20 text-[var(--theme-admin-accent)] text-[11px] font-semibold"
+                      "className": "inline-flex items-center justify-center w-[28px] h-[20px] rounded-full bg-[var(--theme-admin-accent)]/20 text-[var(--theme-admin-accent)] text-[11px] font-semibold flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] font-semibold"
+                          "className": "text-[11px] font-semibold flex-col"
                         },
                         "text": "{{context.item.data.variant_count || 1}}"
                       }
@@ -223,7 +223,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No variants found"
               }

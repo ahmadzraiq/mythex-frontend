@@ -34,7 +34,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px]"
+                  "className": "text-[13px] flex-col"
                 },
                 "text": "Back to Orders"
               }
@@ -43,7 +43,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[22px] font-bold text-white"
+              "className": "text-[22px] font-bold text-white flex-col"
             },
             "text": {
               "formula": "concat('Order ', collections['ad000003-0000-0000-0000-000000000003']?.order?.code || '')"
@@ -67,19 +67,19 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+                  "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "px-[20px] py-[14px] border-b border-[var(--theme-admin-border)]"
+                      "className": "px-[20px] py-[14px] border-b border-[var(--theme-admin-border)] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-white"
+                          "className": "text-[15px] font-semibold text-white flex-col"
                         },
                         "text": "Order Lines"
                       }
@@ -106,26 +106,26 @@
                               "alt": "{{context.item.data.product_name}}",
                               "width": 56,
                               "height": 56,
-                              "className": "w-[56px] h-[56px] rounded-[8px] object-cover border border-[var(--theme-admin-border)] flex-shrink-0"
+                              "className": "w-[56px] h-[56px] rounded-[8px] object-cover border border-[var(--theme-admin-border)] flex-shrink-0 flex-col"
                             }
                           },
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex-1 min-w-0"
+                              "className": "flex-1 min-w-0 flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium text-white truncate"
+                                  "className": "text-[14px] font-medium text-white truncate flex-col"
                                 },
                                 "text": "{{context.item.data.product_name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-[var(--theme-admin-label)] mt-[2px]"
+                                  "className": "text-[12px] text-[var(--theme-admin-label)] mt-[2px] flex-col"
                                 },
                                 "text": {
                                   "formula": "concat(context.item.data.variant_name || '', ' · SKU: ', context.item.data.sku || '')"
@@ -134,7 +134,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-[var(--theme-admin-muted)] mt-[4px]"
+                                  "className": "text-[12px] text-[var(--theme-admin-muted)] mt-[4px] flex-col"
                                 },
                                 "text": {
                                   "formula": "concat(formatCurrency(context.item.data.unit_price || 0, 'USD'), ' × ', String(context.item.data.quantity || 0))"
@@ -145,7 +145,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-semibold text-white flex-shrink-0"
+                              "className": "text-[14px] font-semibold text-white flex-shrink-0 flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(context.item.data.line_total || 0, 'USD')"
@@ -165,7 +165,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-admin-label)]"
+                          "className": "text-[14px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "No order lines"
                       }
@@ -190,7 +190,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[15px] font-semibold text-white"
+                      "className": "text-[15px] font-semibold text-white flex-col"
                     },
                     "text": "Order Summary"
                   },
@@ -209,14 +209,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                              "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                             },
                             "text": "Subtotal"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-white"
+                              "className": "text-[13px] text-white flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(collections['ad000003-0000-0000-0000-000000000003']?.order?.sub_total || 0, 'USD')"
@@ -233,14 +233,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                              "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                             },
                             "text": "Shipping"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-white"
+                              "className": "text-[13px] text-white flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(collections['ad000003-0000-0000-0000-000000000003']?.order?.shipping || 0, 'USD')"
@@ -251,7 +251,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "h-[1px] bg-[var(--theme-admin-surface-hover)]"
+                          "className": "h-[1px] bg-[var(--theme-admin-surface-hover)] flex-col"
                         }
                       },
                       {
@@ -263,14 +263,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-semibold text-white"
+                              "className": "text-[14px] font-semibold text-white flex-col"
                             },
                             "text": "Total"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-semibold text-white"
+                              "className": "text-[14px] font-semibold text-white flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(collections['ad000003-0000-0000-0000-000000000003']?.order?.total || 0, 'USD')"
@@ -289,7 +289,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider"
+                          "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] uppercase tracking-wider flex-col"
                         },
                         "text": "Current Status"
                       },
@@ -315,7 +315,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[15px] font-semibold text-white"
+                      "className": "text-[15px] font-semibold text-white flex-col"
                     },
                     "text": "Customer"
                   },
@@ -328,7 +328,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-muted)]"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": {
                           "formula": "concat(collections['ad000003-0000-0000-0000-000000000003']?.order?.first_name || '', ' ', collections['ad000003-0000-0000-0000-000000000003']?.order?.last_name || '').trim() || 'Guest'"
@@ -337,7 +337,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.email_address || '—'}}"
                       }
@@ -355,7 +355,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[15px] font-semibold text-white"
+                      "className": "text-[15px] font-semibold text-white flex-col"
                     },
                     "text": "Shipping Address"
                   },
@@ -368,21 +368,21 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.shipping_full_name || ''}}"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.street_line1 || ''}}"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "condition": "collections['ad000003-0000-0000-0000-000000000003']?.order?.street_line2",
                         "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.street_line2}}"
@@ -390,7 +390,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": {
                           "formula": "concat(collections['ad000003-0000-0000-0000-000000000003']?.order?.city || '', ', ', collections['ad000003-0000-0000-0000-000000000003']?.order?.province || '', ' ', collections['ad000003-0000-0000-0000-000000000003']?.order?.postal_code || '')"
@@ -399,7 +399,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)] uppercase"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] uppercase flex-col"
                         },
                         "text": "{{collections['ad000003-0000-0000-0000-000000000003']?.order?.country_code || ''}}"
                       }

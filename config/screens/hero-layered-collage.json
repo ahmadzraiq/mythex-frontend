@@ -8,11 +8,9 @@
     "type": "Box",
     "props": {
       "style": {
-        "backgroundImage": "linear-gradient(to bottom right, #faf5ff, #f3e8ff)",
-        "backgroundRepeat": "no-repeat",
-        "backgroundPosition": "center"
+        "backgroundImage": "linear-gradient(to bottom right, #faf5ff, #f3e8ff)"
       },
-      "className": "flex flex-row items-center w-full min-h-screen pl-[40px] pr-[40px] pt-[60px] pb-[60px] gap-[60px] relative"
+      "className": "flex flex-row items-center w-full min-h-screen pl-[40px] pr-[40px] pt-[60px] pb-[60px] gap-[60px] relative bg-no-repeat bg-[center]"
     },
     "children": [
       {
@@ -29,7 +27,7 @@
             "text": "Discover Depth in Design",
             "type": "Text",
             "props": {
-              "className": "!text-[#3b0764] text-[48px] font-bold leading-tight tracking-tight"
+              "className": "!text-[#3b0764] text-[48px] font-bold leading-tight tracking-tight flex-col"
             },
             "children": [],
             "animation": {
@@ -45,7 +43,7 @@
             "text": "Layered visuals create compelling visual hierarchy and modern aesthetic",
             "type": "Text",
             "props": {
-              "className": "!text-[#6d28d9] mt-[8px] text-[18px] font-normal leading-relaxed"
+              "className": "!text-[#6d28d9] mt-[8px] text-[18px] font-normal leading-relaxed flex-col"
             },
             "children": [],
             "animation": {
@@ -61,18 +59,7 @@
             "name": "cta-button",
             "type": "Box",
             "props": {
-              "style": {
-                "boxShadow": "0px 12px 24px -8px rgba(124, 58, 237, 0.3)",
-                "elevation": 12,
-                "shadowColor": "rgb(124,58,237)",
-                "shadowOffset": {
-                  "width": 0,
-                  "height": 12
-                },
-                "shadowRadius": 24,
-                "shadowOpacity": 0.3
-              },
-              "className": "bg-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[16px] pb-[16px] mt-[24px] cursor-pointer w-fit"
+              "className": "bg-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[16px] pb-[16px] mt-[24px] cursor-pointer w-fit shadow-[0px_12px_24px_-8px_rgba(124,_58,_237,_0.3)] flex-col"
             },
             "children": [
               {
@@ -80,7 +67,7 @@
                 "text": "Explore Now",
                 "type": "Text",
                 "props": {
-                  "className": "!text-[#ffffff] text-[16px] font-semibold"
+                  "className": "!text-[#ffffff] text-[16px] font-semibold flex-col"
                 },
                 "children": []
               }
@@ -104,18 +91,7 @@
         "name": "primary-image-container",
         "type": "Box",
         "props": {
-          "style": {
-            "boxShadow": "0px 20px 40px -10px rgba(123, 58, 237, 0.25)",
-            "elevation": 20,
-            "shadowColor": "rgb(123,58,237)",
-            "shadowOffset": {
-              "width": 0,
-              "height": 20
-            },
-            "shadowRadius": 40,
-            "shadowOpacity": 0.25
-          },
-          "className": "flex-1 h-[450px] min-w-[300px] rounded-[12px] relative z-[5]"
+          "className": "flex-1 h-[450px] min-w-[300px] rounded-[12px] relative z-[5] shadow-[0px_20px_40px_-10px_rgba(123,_58,_237,_0.25)] flex-col"
         },
         "children": [
           {
@@ -124,7 +100,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "border-[1px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative"
+              "className": "border-[1px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative flex-col"
             },
             "children": [
               {
@@ -133,7 +109,7 @@
                 "type": "Image",
                 "props": {
                   "alt": "a black and white photo of a building",
-                  "className": "w-full h-full",
+                  "className": "w-full h-full flex-col",
                   "objectFit": "cover"
                 },
                 "children": []
@@ -154,18 +130,7 @@
         "name": "accent-image-container",
         "type": "Box",
         "props": {
-          "style": {
-            "boxShadow": "0px 16px 32px -8px rgba(123, 58, 237, 0.2)",
-            "elevation": 16,
-            "shadowColor": "rgb(123,58,237)",
-            "shadowOffset": {
-              "width": 0,
-              "height": 16
-            },
-            "shadowRadius": 32,
-            "shadowOpacity": 0.2
-          },
-          "className": "w-[280px] h-[340px] rounded-[12px] absolute z-[3] bottom-[-40px] left-[-60px]"
+          "className": "w-[280px] h-[340px] rounded-[12px] absolute z-[3] bottom-[-40px] left-[-60px] shadow-[0px_16px_32px_-8px_rgba(123,_58,_237,_0.2)] flex-col"
         },
         "children": [
           {
@@ -174,7 +139,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "border-[2px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative"
+              "className": "border-[2px] border-[#ddd6fe] rounded-[12px] overflow-hidden w-full h-full relative flex-col"
             },
             "children": [
               {
@@ -183,7 +148,7 @@
                 "type": "Image",
                 "props": {
                   "alt": "an airplane flying over a building with a blue sky in the background",
-                  "className": "w-full h-full",
+                  "className": "w-full h-full flex-col",
                   "objectFit": "cover"
                 },
                 "children": []
@@ -205,7 +170,7 @@
         "type": "Box",
         "props": {
           "style": {},
-          "className": "w-[380px] h-[380px] absolute z-[1] top-[20px] right-[-80px]"
+          "className": "w-[380px] h-[380px] absolute z-[1] top-[20px] right-[-80px] flex-col"
         },
         "children": [
           {
@@ -214,7 +179,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "bg-[#7c3aed] bg-opacity-[8%] w-full h-full"
+              "className": "bg-[#7c3aed] bg-opacity-[8%] w-full h-full flex-col"
             },
             "children": [],
             "animation": {

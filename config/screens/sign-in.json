@@ -9,7 +9,7 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "flex flex-1 w-full items-center justify-center px-[16px]"
+      "className": "flex flex-1 w-full items-center justify-center px-[16px] flex-col"
     },
     "children": [
       {
@@ -21,20 +21,20 @@
           {
             "type": "Box",
             "props": {
-              "className": "space-y-[8px] text-center"
+              "className": "space-y-[8px] text-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[30px] font-bold text-center"
+                  "className": "text-[30px] font-bold text-center flex-col"
                 },
                 "text": "Sign In"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-center"
+                  "className": "text-[var(--theme-muted-foreground)] text-center flex-col"
                 },
                 "text": "Enter your credentials to access your account"
               }
@@ -43,7 +43,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm"
+              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm flex-col"
             },
             "children": [
               {
@@ -54,7 +54,7 @@
                     "username": "",
                     "password": ""
                   },
-                  "className": "px-[24px] space-y-[16px]"
+                  "className": "px-[24px] space-y-[16px] flex-col"
                 },
                 "actions": [
                   {
@@ -66,13 +66,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium leading-none"
+                          "className": "text-[14px] font-medium leading-none flex-col"
                         },
                         "text": "Email"
                       },
@@ -83,7 +83,7 @@
                           "variant": "outline",
                           "size": "sm",
                           "name": "username",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "type": "email",
                           "placeholder": "you@example.com",
                           "placeholderTextColor": "#9ca3af",
@@ -107,14 +107,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.username?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.username.isValid}}"
                           }
@@ -125,7 +125,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[4px]"
+                      "className": "space-y-[4px] flex-col"
                     },
                     "children": [
                       {
@@ -137,7 +137,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-medium leading-none"
+                              "className": "text-[14px] font-medium leading-none flex-col"
                             },
                             "text": "Password"
                           },
@@ -153,7 +153,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] text-[14px]"
+                                  "className": "text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] text-[14px] flex-col"
                                 },
                                 "text": "Forgot password?"
                               }
@@ -168,7 +168,7 @@
                           "variant": "outline",
                           "size": "sm",
                           "name": "password",
-                          "className": "!text-[var(--theme-foreground)]",
+                          "className": "!text-[var(--theme-foreground)] flex-col",
                           "secureTextEntry": true,
                           "placeholder": "••••••••",
                           "placeholderTextColor": "#9ca3af",
@@ -188,14 +188,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[18px]"
+                          "className": "min-h-[18px] flex-col"
                         },
                         "condition": "local?.data?.form?.fields?.password?.isValid",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400"
+                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{local.data.form.fields.password.isValid}}"
                           }
@@ -206,14 +206,14 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "min-h-[20px]"
+                      "className": "min-h-[20px] flex-col"
                     },
                     "condition": "variables['f2a3b4c5-d6e7-8901-fabc-012345678901']",
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-red-500 dark:text-red-400"
+                          "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                         },
                         "text": "{{variables['f2a3b4c5-d6e7-8901-fabc-012345678901']}}"
                       }
@@ -230,7 +230,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "!text-white"
+                          "className": "!text-white flex-col"
                         },
                         "text": "Sign In"
                       }
@@ -249,7 +249,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center"
+                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center flex-col"
                 },
                 "text": "Don't have an account? "
               },
@@ -265,7 +265,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center"
+                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center flex-col"
                     },
                     "text": "Register"
                   }

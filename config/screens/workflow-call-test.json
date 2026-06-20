@@ -13,14 +13,14 @@
       {
         "type": "Text",
         "props": {
-          "className": "text-3xl font-bold text-center text-[var(--theme-foreground)]"
+          "className": "text-3xl font-bold text-center text-[var(--theme-foreground)] flex-col"
         },
         "text": "Workflow Call-Chain Test"
       },
       {
         "type": "Text",
         "props": {
-          "className": "text-sm text-center max-w-[720px] text-gray-600 dark:text-gray-400"
+          "className": "text-sm text-center max-w-[720px] text-gray-600 dark:text-gray-400 flex-col"
         },
         "text": "Four scenarios exercise parameter passing across every workflow kind: element, pageTrigger, pageWorkflow, globalWorkflow, and componentWorkflow. Each button below triggers a chain; the result variable is displayed beneath."
       },
@@ -33,14 +33,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
             },
             "text": "Scenario 1 — page workflow with params"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Button → pageWorkflowA(greeting=\"Hi\", count=2) → sets wftest-result-1."
           },
@@ -60,7 +60,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-semibold text-white"
+                  "className": "text-sm font-semibold text-white flex-col"
                 },
                 "text": "Run Scenario 1"
               }
@@ -69,7 +69,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200"
+              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
             },
             "text": "result1: {{variables['wftest-result-1-0000-0000-0000-000000000001']}}"
           }
@@ -84,14 +84,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
             },
             "text": "Scenario 2 — page workflow calls global workflow with params"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Button → pageWorkflowB → runProjectWorkflow GlobalGreet(name=\"World\", times=3) → sets wftest-result-2."
           },
@@ -111,7 +111,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-semibold text-white"
+                  "className": "text-sm font-semibold text-white flex-col"
                 },
                 "text": "Run Scenario 2"
               }
@@ -120,7 +120,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200"
+              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
             },
             "text": "result2: {{variables['wftest-result-2-0000-0000-0000-000000000002']}}"
           }
@@ -135,14 +135,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
             },
             "text": "Scenario 3 — SC internal button calls SC workflow with params"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "SC instance's own button → executeComponentAction scWorkflowA(label=props.label) → sets per-instance scResult + mirrors to wftest-result-3."
           },
@@ -167,14 +167,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300"
+                      "className": "text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300 flex-col"
                     },
                     "text": "{{context.component.props.label}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] text-purple-900 dark:text-purple-200"
+                      "className": "text-[11px] text-purple-900 dark:text-purple-200 flex-col"
                     },
                     "text": "instanceId: {{context.component.instanceId}}"
                   },
@@ -194,7 +194,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-white"
+                          "className": "text-sm font-semibold text-white flex-col"
                         },
                         "text": "Run scWorkflowA (internal)"
                       }
@@ -203,7 +203,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs text-purple-800 dark:text-purple-200"
+                      "className": "text-xs text-purple-800 dark:text-purple-200 flex-col"
                     },
                     "text": "scResult: {{context.component.variables['sc-caller-scresult-0000-0000-0000-000000000010']}}"
                   }
@@ -214,7 +214,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200"
+              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
             },
             "text": "result3 (external mirror): {{variables['wftest-result-3-0000-0000-0000-000000000003']}}"
           }
@@ -229,14 +229,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
             },
             "text": "Scenario 4 — nested chain (page → SC instance → global)"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400"
+              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Button → pageWorkflowExtKick → executeComponentAction scWorkflowB(multiplier=5) on the SC instance above → runProjectWorkflow GlobalFinalize(sum=50) → sets wftest-result-4."
           },
@@ -256,7 +256,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-semibold text-white"
+                  "className": "text-sm font-semibold text-white flex-col"
                 },
                 "text": "Run Scenario 4"
               }
@@ -265,7 +265,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200"
+              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
             },
             "text": "result4: {{variables['wftest-result-4-0000-0000-0000-000000000004']}}"
           }

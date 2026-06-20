@@ -21,7 +21,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Catalog"
               },
@@ -36,7 +36,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Facets"
               }
@@ -45,14 +45,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)] flex-col"
             },
             "text": "Facets"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-[var(--theme-admin-label)]"
+              "className": "text-[14px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": "Facets are used to categorize and filter products."
           }
@@ -62,7 +62,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -77,21 +77,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Name"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Code"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Values"
               }
@@ -123,7 +123,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-[28px] h-[28px] rounded-[6px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0"
+                          "className": "w-[28px] h-[28px] rounded-[6px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -139,7 +139,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)]"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "{{context.item.data.name}}"
                       }
@@ -148,7 +148,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono"
+                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono flex-col"
                     },
                     "text": "{{context.item.data.code}}"
                   },
@@ -163,7 +163,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[var(--theme-admin-border)]/60 text-[var(--theme-admin-muted)]"
+                          "className": "inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[var(--theme-admin-border)]/60 text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": "{{context.item.data.name}}"
                       }
@@ -191,7 +191,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No facets found"
               }

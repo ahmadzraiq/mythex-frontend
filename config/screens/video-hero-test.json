@@ -12,12 +12,7 @@
       {
         "type": "Box",
         "props": {
-          "style": {
-            "backgroundImage": "url(https://images.unsplash.com/photo-1741795990628-7ec99d7d2044?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxmdXR1cmlzdGljJTIwdGVjaG5vbG9neSUyMGRpZ2l0YWwlMjBsYW5kc2NhcGUlMjBtb3Rpb258ZW58MHx8fHwxNzc1OTA1Nzk2fDA&ixlib=rb-4.1.0&q=80&w=1080)",
-            "backgroundSize": "cover",
-            "backgroundPosition": "center"
-          },
-          "className": "flex flex-col items-center justify-center w-full h-[100vh] relative overflow-hidden"
+          "className": "flex flex-col items-center justify-center w-full h-[100vh] relative overflow-hidden bg-[url(https://images.unsplash.com/photo-1741795990628-7ec99d7d2044?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxmdXR1cmlzdGljJTIwdGVjaG5vbG9neSUyMGRpZ2l0YWwlMjBsYW5kc2NhcGUlMjBtb3Rpb258ZW58MHx8fHwxNzc1OTA1Nzk2fDA&ixlib=rb-4.1.0&q=80&w=1080)] bg-[cover] bg-[center]"
         },
         "id": "61249738-93e4-4f34-828d-4d6f554fe64a",
         "name": "VideoHeroSection",
@@ -26,7 +21,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "absolute top-[0px] left-[0px] w-full h-full z-[1] bg-[rgba(59,7,100,0.5)]"
+              "className": "absolute top-[0px] left-[0px] w-full h-full z-[1] bg-[rgba(59,7,100,0.5)] flex-col"
             },
             "id": "c313902c-49f3-4b62-8c03-278ee96882f1",
             "name": "DarkOverlay",
@@ -54,7 +49,7 @@
                     "type": "Text",
                     "text": "New Release",
                     "props": {
-                      "className": "text-[12px] font-semibold text-center !text-[#7c3aed]",
+                      "className": "text-[12px] font-semibold text-center !text-[#7c3aed] flex-col",
                       "style": {}
                     },
                     "id": "97134217-863c-42dd-bb02-81fd0f479665",
@@ -80,7 +75,7 @@
                 "type": "Text",
                 "text": "The Future Is Now",
                 "props": {
-                  "className": "text-[72px] font-bold text-center leading-tight !text-[#ffffff] max-w-[800px]",
+                  "className": "text-[72px] font-bold text-center leading-tight !text-[#ffffff] max-w-[800px] flex-col",
                   "style": {}
                 },
                 "id": "188bb45f-a72d-47e9-9c88-68ceb8bbca5f",
@@ -108,7 +103,7 @@
                     "type": "Text",
                     "text": "Discover the next generation of innovation",
                     "props": {
-                      "className": "text-[20px] text-center !text-[#ffffff]",
+                      "className": "text-[20px] text-center !text-[#ffffff] flex-col",
                       "style": {}
                     },
                     "id": "377a707b-7f58-46cd-b31b-66a06c2a4080",
@@ -119,7 +114,7 @@
                     "type": "Text",
                     "text": "Experience technology that transforms your world",
                     "props": {
-                      "className": "text-[20px] text-center !text-[#ffffff]",
+                      "className": "text-[20px] text-center !text-[#ffffff] flex-col",
                       "style": {}
                     },
                     "id": "1f34d573-ee72-46ab-a007-b38ff2934e9e",
@@ -148,18 +143,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "boxShadow": "0px 8px 24px 0px rgba(255, 255, 255, 0.2)",
-                        "shadowColor": "rgb(255,255,255)",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 8
-                        },
-                        "shadowRadius": 24,
-                        "shadowOpacity": 0.2,
-                        "elevation": 8
-                      },
-                      "className": "flex flex-row items-center justify-center bg-[#ffffff] pl-[32px] pr-[32px] pt-[14px] pb-[14px] rounded-[8px] cursor-pointer"
+                      "className": "flex flex-row items-center justify-center bg-[#ffffff] pl-[32px] pr-[32px] pt-[14px] pb-[14px] rounded-[8px] cursor-pointer shadow-[0px_8px_24px_0px_rgba(255,_255,_255,_0.2)]"
                     },
                     "id": "9f3e194f-540b-4b9a-9925-4cf3e032ddfa",
                     "name": "PrimaryCTAButton",
@@ -168,7 +152,7 @@
                         "type": "Text",
                         "text": "Watch Now",
                         "props": {
-                          "className": "text-[16px] font-semibold text-center !text-[#7c3aed]",
+                          "className": "text-[16px] font-semibold text-center !text-[#7c3aed] flex-col",
                           "style": {}
                         },
                         "id": "d5624a44-5865-4c34-8e74-549b2ab7fe18",
@@ -196,7 +180,7 @@
                         "type": "Text",
                         "text": "Learn More",
                         "props": {
-                          "className": "text-[16px] font-semibold text-center !text-[#ffffff]",
+                          "className": "text-[16px] font-semibold text-center !text-[#ffffff] flex-col",
                           "style": {}
                         },
                         "id": "7f04dbf5-da76-4f2c-88f6-372f691a92c9",
@@ -253,7 +237,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "gap-[24px] w-[50%] max-w-[450px]"
+              "className": "gap-[24px] w-[50%] max-w-[450px] flex-col"
             },
             "id": "4e23f86e-ebb4-4884-9fa0-2928c2c7cca5",
             "name": "LeftColumn",
@@ -262,7 +246,7 @@
                 "type": "Text",
                 "text": "Discover Layered Visual Storytelling",
                 "props": {
-                  "className": "text-[48px] font-bold text-left leading-tight !text-[#3b0764]",
+                  "className": "text-[48px] font-bold text-left leading-tight !text-[#3b0764] flex-col",
                   "text": "Discover Layered Visual Storytelling",
                   "style": {}
                 },
@@ -274,7 +258,7 @@
                 "type": "Text",
                 "text": "Experience the depth and dimension of professionally composed imagery. Each element is carefully positioned and styled to create visual impact and guide your journey through the content.",
                 "props": {
-                  "className": "text-[16px] text-left leading-relaxed !text-[#6d28d9]",
+                  "className": "text-[16px] text-left leading-relaxed !text-[#6d28d9] flex-col",
                   "text": "Experience the depth and dimension of professionally composed imagery. Each element is carefully positioned and styled to create visual impact and guide your journey through the content.",
                   "style": {}
                 },
@@ -295,7 +279,7 @@
                     "type": "Text",
                     "text": "Explore Now",
                     "props": {
-                      "className": "text-[16px] font-semibold text-center !text-[#ffffff]",
+                      "className": "text-[16px] font-semibold text-center !text-[#ffffff] flex-col",
                       "text": "Explore Now",
                       "style": {}
                     },
@@ -324,7 +308,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "w-[50%] h-[500px] flex items-center justify-center"
+              "className": "w-[50%] h-[500px] flex items-center justify-center flex-col"
             },
             "id": "fde0d89b-3321-46de-b627-26938fcb0d63",
             "name": "RightColumnContainer",
@@ -333,7 +317,7 @@
                 "type": "Box",
                 "props": {
                   "style": {},
-                  "className": "w-[440px] h-[480px] relative overflow-visible"
+                  "className": "w-[440px] h-[480px] relative overflow-visible flex-col"
                 },
                 "id": "collage-inner-wrapper",
                 "name": "CollageInnerWrapper",
@@ -341,21 +325,9 @@
                   {
                     "type": "Image",
                     "props": {
-                      "className": "w-[280px] h-[380px] absolute z-[3] top-[0px] left-[0px] rounded-[12px]",
+                      "className": "w-[280px] h-[380px] absolute z-[3] top-[0px] left-[0px] rounded-[12px] shadow-[-8px_12px_24px_0px_rgba(124,_58,_237,_0.15)] rotate-[-8deg] flex-col",
                       "alt": "Colorful, 3D shapes arranged in a fun design.",
-                      "objectFit": "cover",
-                      "style": {
-                        "boxShadow": "-8px 12px 24px 0px rgba(124, 58, 237, 0.15)",
-                        "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": {
-                          "width": -8,
-                          "height": 12
-                        },
-                        "shadowRadius": 24,
-                        "shadowOpacity": 0.15,
-                        "elevation": 12,
-                        "transform": "rotate(-8deg)"
-                      }
+                      "objectFit": "cover"
                     },
                     "src": "https://images.unsplash.com/photo-1751644332113-2004a1b143f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBhYnN0cmFjdCUyMGdlb21ldHJpYyUyMGNvbG9yZnVsJTIwY29tcG9zaXRpb258ZW58MHx8fHwxNzc1OTA1Nzk1fDA&ixlib=rb-4.1.0&q=80&w=1080",
                     "id": "ccde9fb7-6786-4ea5-b3b7-76093639e35d",
@@ -365,21 +337,9 @@
                   {
                     "type": "Image",
                     "props": {
-                      "className": "w-[280px] h-[380px] absolute z-[2] top-[60px] left-[160px] rounded-[12px]",
+                      "className": "w-[280px] h-[380px] absolute z-[2] top-[60px] left-[160px] rounded-[12px] shadow-[8px_16px_32px_0px_rgba(124,_58,_237,_0.2)] rotate-[6deg] flex-col",
                       "alt": "Concentric circles of pink, blue, and teal abstract pattern",
-                      "objectFit": "cover",
-                      "style": {
-                        "boxShadow": "8px 16px 32px 0px rgba(124, 58, 237, 0.2)",
-                        "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": {
-                          "width": 8,
-                          "height": 16
-                        },
-                        "shadowRadius": 32,
-                        "shadowOpacity": 0.2,
-                        "elevation": 16,
-                        "transform": "rotate(6deg)"
-                      }
+                      "objectFit": "cover"
                     },
                     "src": "https://images.unsplash.com/photo-1764960661322-59c126ae3cbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHx2aWJyYW50JTIwYXJ0aXN0aWMlMjBicnVzaHN0cm9rZSUyMHBhaW50JTIwdGV4dHVyZXxlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
                     "id": "87701be4-3f3a-4035-8789-0de7a7ffca93",
@@ -389,20 +349,9 @@
                   {
                     "type": "Image",
                     "props": {
-                      "className": "w-[280px] h-[380px] absolute z-[1] top-[40px] left-[100px] rounded-[12px]",
+                      "className": "w-[280px] h-[380px] absolute z-[1] top-[40px] left-[100px] rounded-[12px] shadow-[0px_20px_40px_0px_rgba(124,_58,_237,_0.25)] flex-col",
                       "alt": "a group of white pillars",
-                      "objectFit": "cover",
-                      "style": {
-                        "boxShadow": "0px 20px 40px 0px rgba(124, 58, 237, 0.25)",
-                        "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 20
-                        },
-                        "shadowRadius": 40,
-                        "shadowOpacity": 0.25,
-                        "elevation": 20
-                      }
+                      "objectFit": "cover"
                     },
                     "src": "https://images.unsplash.com/photo-1656862535211-b12ebf76766f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxkeW5hbWljJTIwbWluaW1hbGlzdCUyMGFyY2hpdGVjdHVyYWwlMjBmb3Jtc3xlbnwwfHx8fDE3NzU5MDU3OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
                     "id": "2279f59d-a98b-435c-9674-17352e6bd36b",
@@ -435,7 +384,7 @@
         "type": "Box",
         "props": {
           "style": {},
-          "className": "w-full bg-[#faf5ff] pt-[100px] pb-[100px] pl-[80px] pr-[80px]"
+          "className": "w-full bg-[#faf5ff] pt-[100px] pb-[100px] pl-[80px] pr-[80px] flex-col"
         },
         "id": "efa419f2-c67c-41ec-847a-699d444c2d10",
         "name": "FeaturesGridSection",
@@ -452,10 +401,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc01a000-0000-4000-8000-000000000001",
                 "name": "FeatureCard1",
@@ -464,12 +410,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:zap",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi01a000-0000-4000-8000-000000000001",
                     "children": []
@@ -478,7 +419,7 @@
                     "type": "Text",
                     "text": "Fast Performance",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft01a000-0000-4000-8000-000000000001",
@@ -488,7 +429,7 @@
                     "type": "Text",
                     "text": "Lightning-quick load times and seamless interactions",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd01a000-0000-4000-8000-000000000001",
@@ -505,10 +446,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc02a000-0000-4000-8000-000000000002",
                 "name": "FeatureCard2",
@@ -517,12 +455,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:shield",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi02a000-0000-4000-8000-000000000002",
                     "children": []
@@ -531,7 +464,7 @@
                     "type": "Text",
                     "text": "Secure & Safe",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft02a000-0000-4000-8000-000000000002",
@@ -541,7 +474,7 @@
                     "type": "Text",
                     "text": "Enterprise-grade security with end-to-end encryption",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd02a000-0000-4000-8000-000000000002",
@@ -558,10 +491,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc03a000-0000-4000-8000-000000000003",
                 "name": "FeatureCard3",
@@ -570,12 +500,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:users",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi03a000-0000-4000-8000-000000000003",
                     "children": []
@@ -584,7 +509,7 @@
                     "type": "Text",
                     "text": "Team Collaboration",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft03a000-0000-4000-8000-000000000003",
@@ -594,7 +519,7 @@
                     "type": "Text",
                     "text": "Seamlessly work together with real-time updates",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd03a000-0000-4000-8000-000000000003",
@@ -611,10 +536,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc04a000-0000-4000-8000-000000000004",
                 "name": "FeatureCard4",
@@ -623,12 +545,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:trending-up",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi04a000-0000-4000-8000-000000000004",
                     "children": []
@@ -637,7 +554,7 @@
                     "type": "Text",
                     "text": "Analytics Powered",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft04a000-0000-4000-8000-000000000004",
@@ -647,7 +564,7 @@
                     "type": "Text",
                     "text": "Detailed insights to drive smarter decisions",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd04a000-0000-4000-8000-000000000004",
@@ -664,10 +581,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc05a000-0000-4000-8000-000000000005",
                 "name": "FeatureCard5",
@@ -676,12 +590,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:code",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi05a000-0000-4000-8000-000000000005",
                     "children": []
@@ -690,7 +599,7 @@
                     "type": "Text",
                     "text": "Developer Friendly",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft05a000-0000-4000-8000-000000000005",
@@ -700,7 +609,7 @@
                     "type": "Text",
                     "text": "Clean APIs and comprehensive documentation",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd05a000-0000-4000-8000-000000000005",
@@ -717,10 +626,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  },
-                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px]"
+                  "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] cursor-pointer gap-[16px] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "id": "fc06a000-0000-4000-8000-000000000006",
                 "name": "FeatureCard6",
@@ -729,12 +635,7 @@
                     "type": "Icon",
                     "props": {
                       "icon": "lucide:heart",
-                      "className": "mb-[8px]",
-                      "style": {
-                        "color": "#7c3aed",
-                        "width": 48,
-                        "height": 48
-                      }
+                      "className": "mb-[8px] text-[#7c3aed] w-[48] h-[48] flex-col"
                     },
                     "id": "fi06a000-0000-4000-8000-000000000006",
                     "children": []
@@ -743,7 +644,7 @@
                     "type": "Text",
                     "text": "Customer First",
                     "props": {
-                      "className": "text-[18px] font-semibold text-center !text-[#3b0764]",
+                      "className": "text-[18px] font-semibold text-center !text-[#3b0764] flex-col",
                       "style": {}
                     },
                     "id": "ft06a000-0000-4000-8000-000000000006",
@@ -753,7 +654,7 @@
                     "type": "Text",
                     "text": "24/7 support and dedicated success team",
                     "props": {
-                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9]",
+                      "className": "text-[14px] text-center leading-relaxed !text-[#6d28d9] flex-col",
                       "style": {}
                     },
                     "id": "fd06a000-0000-4000-8000-000000000006",
@@ -801,7 +702,7 @@
             "type": "Text",
             "text": "Ready to start?",
             "props": {
-              "className": "text-[48px] font-bold text-center !text-[#ffffff] max-w-[600px]",
+              "className": "text-[48px] font-bold text-center !text-[#ffffff] max-w-[600px] flex-col",
               "style": {}
             },
             "id": "5cd1408b-fc18-4e48-aa68-fcdc3b148202",
@@ -818,18 +719,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "boxShadow": "0px 8px 24px 0px rgba(0, 0, 0, 0.15)",
-                "shadowColor": "rgb(0,0,0)",
-                "shadowOffset": {
-                  "width": 0,
-                  "height": 8
-                },
-                "shadowRadius": 24,
-                "shadowOpacity": 0.15,
-                "elevation": 8
-              },
-              "className": "flex flex-row items-center justify-center bg-[#ffffff] pl-[32px] pr-[32px] pt-[14px] pb-[14px] rounded-[8px] cursor-pointer w-fit"
+              "className": "flex flex-row items-center justify-center bg-[#ffffff] pl-[32px] pr-[32px] pt-[14px] pb-[14px] rounded-[8px] cursor-pointer w-fit shadow-[0px_8px_24px_0px_rgba(0,_0,_0,_0.15)]"
             },
             "id": "59ee88bf-00bc-4fc7-911a-85fc2781369d",
             "name": "CTAButton",
@@ -838,7 +728,7 @@
                 "type": "Text",
                 "text": "Get Started",
                 "props": {
-                  "className": "text-[16px] font-semibold text-center !text-[#7c3aed]",
+                  "className": "text-[16px] font-semibold text-center !text-[#7c3aed] flex-col",
                   "style": {}
                 },
                 "id": "0bd50834-5bef-4089-8152-6a1ee2ca0af2",
@@ -881,11 +771,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "width": "calc(33.333% - 22px)",
-                "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-              },
-              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px]"
+              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px] w-[calc(33.333%_-_22px)] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
             },
             "id": "tc01a000-0000-4000-8000-000000000001",
             "name": "TestimonialCard1",
@@ -893,7 +779,7 @@
               {
                 "type": "Image",
                 "props": {
-                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px]",
+                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px] flex-col",
                   "alt": "Sarah Johnson",
                   "objectFit": "cover",
                   "style": {}
@@ -906,7 +792,7 @@
                 "type": "Text",
                 "text": "This product completely transformed how we manage our workflow. Highly recommended!",
                 "props": {
-                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px]",
+                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px] flex-col",
                   "style": {}
                 },
                 "id": "tq01a000-0000-4000-8000-000000000001",
@@ -916,7 +802,7 @@
                 "type": "Text",
                 "text": "Sarah Johnson",
                 "props": {
-                  "className": "text-[16px] font-semibold text-center !text-[#3b0764]",
+                  "className": "text-[16px] font-semibold text-center !text-[#3b0764] flex-col",
                   "style": {}
                 },
                 "id": "tn01a000-0000-4000-8000-000000000001",
@@ -926,7 +812,7 @@
                 "type": "Text",
                 "text": "Product Manager",
                 "props": {
-                  "className": "text-[14px] text-center !text-[#6d28d9]",
+                  "className": "text-[14px] text-center !text-[#6d28d9] flex-col",
                   "style": {}
                 },
                 "id": "tr01a000-0000-4000-8000-000000000001",
@@ -948,11 +834,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "width": "calc(33.333% - 22px)",
-                "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-              },
-              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px]"
+              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px] w-[calc(33.333%_-_22px)] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
             },
             "id": "tc02a000-0000-4000-8000-000000000002",
             "name": "TestimonialCard2",
@@ -960,7 +842,7 @@
               {
                 "type": "Image",
                 "props": {
-                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px]",
+                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px] flex-col",
                   "alt": "Michael Chen",
                   "objectFit": "cover",
                   "style": {}
@@ -973,7 +855,7 @@
                 "type": "Text",
                 "text": "The best investment we made for our team this year. Results speak for themselves.",
                 "props": {
-                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px]",
+                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px] flex-col",
                   "style": {}
                 },
                 "id": "tq02a000-0000-4000-8000-000000000002",
@@ -983,7 +865,7 @@
                 "type": "Text",
                 "text": "Michael Chen",
                 "props": {
-                  "className": "text-[16px] font-semibold text-center !text-[#3b0764]",
+                  "className": "text-[16px] font-semibold text-center !text-[#3b0764] flex-col",
                   "style": {}
                 },
                 "id": "tn02a000-0000-4000-8000-000000000002",
@@ -993,7 +875,7 @@
                 "type": "Text",
                 "text": "CEO",
                 "props": {
-                  "className": "text-[14px] text-center !text-[#6d28d9]",
+                  "className": "text-[14px] text-center !text-[#6d28d9] flex-col",
                   "style": {}
                 },
                 "id": "tr02a000-0000-4000-8000-000000000002",
@@ -1016,11 +898,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "width": "calc(33.333% - 22px)",
-                "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-              },
-              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px]"
+              "className": "flex flex-col items-center justify-start bg-[#ffffff] p-[32px] rounded-[12px] border-[1px] border-solid border-[#ddd6fe] gap-[20px] min-w-[280px] w-[calc(33.333%_-_22px)] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
             },
             "id": "tc03a000-0000-4000-8000-000000000003",
             "name": "TestimonialCard3",
@@ -1028,7 +906,7 @@
               {
                 "type": "Image",
                 "props": {
-                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px]",
+                  "className": "w-[64px] h-[64px] rounded-[32px] overflow-clip mb-[8px] flex-col",
                   "alt": "Emma Rodriguez",
                   "objectFit": "cover",
                   "style": {}
@@ -1041,7 +919,7 @@
                 "type": "Text",
                 "text": "Outstanding support and seamless integration with our existing systems.",
                 "props": {
-                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px]",
+                  "className": "text-[16px] text-center leading-relaxed italic !text-[#3b0764] mb-[12px] flex-col",
                   "style": {}
                 },
                 "id": "tq03a000-0000-4000-8000-000000000003",
@@ -1051,7 +929,7 @@
                 "type": "Text",
                 "text": "Emma Rodriguez",
                 "props": {
-                  "className": "text-[16px] font-semibold text-center !text-[#3b0764]",
+                  "className": "text-[16px] font-semibold text-center !text-[#3b0764] flex-col",
                   "style": {}
                 },
                 "id": "tn03a000-0000-4000-8000-000000000003",
@@ -1061,7 +939,7 @@
                 "type": "Text",
                 "text": "Technical Lead",
                 "props": {
-                  "className": "text-[14px] text-center !text-[#6d28d9]",
+                  "className": "text-[14px] text-center !text-[#6d28d9] flex-col",
                   "style": {}
                 },
                 "id": "tr03a000-0000-4000-8000-000000000003",

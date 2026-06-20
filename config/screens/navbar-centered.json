@@ -6,7 +6,7 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950 flex-col"
     },
     "children": [
       {
@@ -46,21 +46,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300 flex-col"
                 },
                 "text": "Shop"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300 flex-col"
                 },
                 "text": "Collections"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300 flex-col"
                 },
                 "text": "Journal"
               }
@@ -69,13 +69,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex items-center justify-center"
+              "className": "flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "font-serif text-2xl font-bold text-gray-900 dark:text-white tracking-widest"
+                  "className": "font-serif text-2xl font-bold text-gray-900 dark:text-white tracking-widest flex-col"
                 },
                 "text": "MAISON"
               }
@@ -90,14 +90,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300 flex-col"
                 },
                 "text": "About"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300"
+                  "className": "text-sm font-medium text-gray-600 dark:text-gray-300 flex-col"
                 },
                 "text": "Contact"
               },
@@ -124,7 +124,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full pt-[64px]"
+          "className": "w-full pt-[64px] flex-col"
         },
         "children": [
           {
@@ -136,13 +136,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-teal-100 dark:bg-teal-900/30 rounded-full px-4 py-1 mb-6"
+                  "className": "bg-teal-100 dark:bg-teal-900/30 rounded-full px-4 py-1 mb-6 flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium text-teal-700 dark:text-teal-300"
+                      "className": "text-sm font-medium text-teal-700 dark:text-teal-300 flex-col"
                     },
                     "text": "Centered Logo"
                   }
@@ -151,21 +151,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center flex-col"
                 },
                 "text": "Symmetrical Elegance"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4 flex-col"
                 },
                 "text": "The logo sits at the exact horizontal center with navigation links split evenly on both sides. A fashion and editorial classic."
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-400 mt-8"
+                  "className": "text-sm text-gray-400 mt-8 flex-col"
                 },
                 "text": "Common in fashion, editorial, and luxury brands"
               }
@@ -174,13 +174,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-6xl mx-auto px-6 py-20"
+              "className": "w-full max-w-6xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Features"
               },
@@ -199,7 +199,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -215,14 +215,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Perfect Symmetry"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "Three-column layout ensures the logo is always perfectly centered."
                       }
@@ -237,7 +237,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -253,14 +253,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Brand Focus"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "The centered logo draws the eye first, reinforcing brand identity."
                       }
@@ -275,7 +275,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -291,14 +291,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Luxury Feel"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "A pattern associated with premium fashion and luxury brands."
                       }
@@ -311,13 +311,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Testimonials"
               },
@@ -330,27 +330,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"The centered logo navbar elevates our brand perception significantly.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Claire Dupont"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "Brand Director"
                       }
@@ -359,27 +359,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"Customers associate this layout with premium quality. It works.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Marco Rossi"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "E-commerce Lead"
                       }
@@ -388,27 +388,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"The three-column grid makes implementing this pattern straightforward.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Yuki Tanaka"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "Developer"
                       }
@@ -421,7 +421,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+              "className": "w-full max-w-5xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
@@ -439,14 +439,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-teal-500"
+                          "className": "text-4xl font-bold text-teal-500 flex-col"
                         },
                         "text": "3"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Column Grid"
                       }
@@ -461,14 +461,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-teal-500"
+                          "className": "text-4xl font-bold text-teal-500 flex-col"
                         },
                         "text": "50%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Logo Position"
                       }
@@ -483,14 +483,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-teal-500"
+                          "className": "text-4xl font-bold text-teal-500 flex-col"
                         },
                         "text": "1:1"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Link Balance"
                       }
@@ -505,14 +505,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-teal-500"
+                          "className": "text-4xl font-bold text-teal-500 flex-col"
                         },
                         "text": "100%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Brand Focus"
                       }
@@ -525,7 +525,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6 flex-col"
             },
             "children": [
               {
@@ -537,14 +537,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-400"
+                      "className": "text-sm text-gray-400 flex-col"
                     },
                     "text": "NavbarDemo © 2026"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 cursor-pointer"
+                      "className": "text-sm text-gray-500 cursor-pointer flex-col"
                     },
                     "text": "← Back to all types",
                     "actions": [

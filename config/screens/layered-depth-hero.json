@@ -33,7 +33,7 @@
                 "type": "Text",
                 "text": "Transform Your Digital Experience",
                 "props": {
-                  "className": "!text-[#3b0764] text-[56px] font-bold leading-tight tracking-tight",
+                  "className": "!text-[#3b0764] text-[56px] font-bold leading-tight tracking-tight flex-col",
                   "style": {}
                 },
                 "id": "eda77202-99b9-468e-a103-2edab0404425",
@@ -51,7 +51,7 @@
                 "type": "Text",
                 "text": "Build stunning products with depth, precision, and modern design principles that captivate your audience.",
                 "props": {
-                  "className": "!text-[#6d28d9] mt-[8px] w-[90%] text-[18px] font-normal leading-relaxed",
+                  "className": "!text-[#6d28d9] mt-[8px] w-[90%] text-[18px] font-normal leading-relaxed flex-col",
                   "style": {}
                 },
                 "id": "e911cbd3-fa3b-4fb8-bca1-f02e5ccbf90b",
@@ -77,18 +77,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.2)",
-                        "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 4
-                        },
-                        "shadowRadius": 12,
-                        "shadowOpacity": 0.2,
-                        "elevation": 6
-                      },
-                      "className": "bg-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer"
+                      "className": "bg-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.2)] flex-col"
                     },
                     "id": "1cbcc723-b7f0-4398-a4c0-a514312dded1",
                     "name": "PrimaryButton",
@@ -97,7 +86,7 @@
                         "type": "Text",
                         "text": "Get Started",
                         "props": {
-                          "className": "!text-[#ffffff] text-[16px] font-semibold",
+                          "className": "!text-[#ffffff] text-[16px] font-semibold flex-col",
                           "style": {}
                         },
                         "id": "f8af036c-177c-48ec-86a4-6fccdfb53a64",
@@ -114,18 +103,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "boxShadow": "0px 2px 8px 0px rgba(124, 58, 237, 0.1)",
-                        "shadowColor": "rgb(124,58,237)",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 2
-                        },
-                        "shadowRadius": 8,
-                        "shadowOpacity": 0.1,
-                        "elevation": 4
-                      },
-                      "className": "bg-[#ffffff] border-[2px] border-solid border-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer"
+                      "className": "bg-[#ffffff] border-[2px] border-solid border-[#7c3aed] rounded-[8px] pl-[32px] pr-[32px] pt-[14px] pb-[14px] cursor-pointer shadow-[0px_2px_8px_0px_rgba(124,_58,_237,_0.1)] flex-col"
                     },
                     "id": "fc66586d-3f96-41d8-b942-d7cee20be4f2",
                     "name": "SecondaryButton",
@@ -134,7 +112,7 @@
                         "type": "Text",
                         "text": "Learn More",
                         "props": {
-                          "className": "!text-[#7c3aed] text-[16px] font-semibold",
+                          "className": "!text-[#7c3aed] text-[16px] font-semibold flex-col",
                           "style": {}
                         },
                         "id": "71726b99-c256-4bcc-a263-6130898d315d",
@@ -172,18 +150,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 12px 32px 0px rgba(59, 7, 100, 0.15)",
-                    "shadowColor": "rgb(59,7,100)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 12
-                    },
-                    "shadowRadius": 32,
-                    "shadowOpacity": 0.15,
-                    "elevation": 16
-                  },
-                  "className": "rounded-[12px] w-full h-[380px] absolute z-[10] top-[0px] left-[0px] overflow-hidden"
+                  "className": "rounded-[12px] w-full h-[380px] absolute z-[10] top-[0px] left-[0px] overflow-hidden shadow-[0px_12px_32px_0px_rgba(59,_7,_100,_0.15)] flex-col"
                 },
                 "id": "85f7986b-5f63-40f5-b458-eff74a576f07",
                 "name": "PrimaryImageWrapper",
@@ -194,7 +161,7 @@
                       "alt": "graphs of performance analytics on a laptop screen",
                       "objectFit": "cover",
                       "style": {},
-                      "className": "w-full h-full"
+                      "className": "w-full h-full flex-col"
                     },
                     "src": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwaW50ZXJmYWNlJTIwd2l0aCUyMGFuYWx5dGljcyUyMGNoYXJ0cyUyMGFuZCUyMGRhdGElMjB2aXN1YWxpemF0aW9ufGVufDB8fHx8MTc3NTMxNTMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
                     "id": "cbd52491-1917-4518-8293-08fb26bc6429",
@@ -213,18 +180,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 8px 20px 0px rgba(109, 40, 217, 0.12)",
-                    "shadowColor": "rgb(109,40,217)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 8
-                    },
-                    "shadowRadius": 20,
-                    "shadowOpacity": 0.12,
-                    "elevation": 10
-                  },
-                  "className": "absolute z-[5] right-[-30px] bottom-[20px] w-[280px] h-[220px] rounded-[12px] overflow-hidden border-[1px] border-solid border-[#ddd6fe]"
+                  "className": "absolute z-[5] right-[-30px] bottom-[20px] w-[280px] h-[220px] rounded-[12px] overflow-hidden border-[1px] border-solid border-[#ddd6fe] shadow-[0px_8px_20px_0px_rgba(109,_40,_217,_0.12)] flex-col"
                 },
                 "id": "a1d3028e-4264-4fe4-9048-d99309724e84",
                 "name": "AccentImageCard",
@@ -235,7 +191,7 @@
                       "alt": "a computer screen with a bunch of data on it",
                       "objectFit": "cover",
                       "style": {},
-                      "className": "w-full h-full"
+                      "className": "w-full h-full flex-col"
                     },
                     "src": "https://images.unsplash.com/photo-1625296276703-3fbc924f07b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBTYWFTJTIwZGFzaGJvYXJkJTIwaW50ZXJmYWNlJTIwd2l0aCUyMGFuYWx5dGljcyUyMGNoYXJ0cyUyMGFuZCUyMGRhdGElMjB2aXN1YWxpemF0aW9ufGVufDB8fHx8MTc3NTMxNTMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
                     "id": "adbab4e5-5ec1-4020-af32-feb4f5296aad",

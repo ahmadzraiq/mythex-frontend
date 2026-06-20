@@ -13,7 +13,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-[360px] bg-black rounded-[24px] overflow-hidden"
+          "className": "w-full max-w-[360px] bg-black rounded-[24px] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -25,7 +25,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[48px] font-light text-white text-right"
+                  "className": "text-[48px] font-light text-white text-right flex-col"
                 },
                 "text": "{{variables['ca1c0001-0000-0000-0000-000000000001']}}"
               }
@@ -42,16 +42,13 @@
                 "map": "variables['ca1c0005-0000-0000-0000-000000000005']",
                 "key": "context.item.data.label",
                 "props": {
-                  "className": "contents"
+                  "className": "contents flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-col items-center justify-center cursor-pointer rounded-[9999px] h-[64px] hover:opacity-80 active:opacity-70",
-                      "style": {
-                        "backgroundColor": "{{context.item.data.bg}}"
-                      }
+                      "className": "flex flex-col items-center justify-center cursor-pointer rounded-[9999px] h-[64px] hover:opacity-80 active:opacity-70 bg-[{{context.item.data.bg}}]"
                     },
                     "actions": [
                       {
@@ -63,10 +60,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[20px] font-medium text-center",
-                          "style": {
-                            "color": "{{context.item.data.color}}"
-                          }
+                          "className": "text-[20px] font-medium text-center text-[{{context.item.data.color}}] flex-col"
                         },
                         "text": "{{context.item.data.label}}"
                       }

@@ -111,6 +111,7 @@ import {
   getAlignCellIndex,
   pxToTw,
   parseRoundedNamedTokenPx,
+  parseBoxShadow,
 } from './_tw-utils';
 
 // ─── Module-level constants ───────────────────────────────────────────────────
@@ -299,18 +300,11 @@ const SECTION_CSS_PROPS: Record<string, readonly string[]> = {
 // class rewriter), but they are read by the renderer from props.style and must
 // cascade through responsive[bp].styles at non-desktop breakpoints.
 const INLINE_STYLE_RESPONSIVE_KEYS = new Set<string>([
-  'transform',           // rotation (e.g. "rotate(45deg)")
-  'translateX',          // custom key the renderer combines into CSS `translate`
-  'translateY',
-  'backgroundImage',     // image URL or gradient string
-  'backgroundSize',      // cover | contain | auto
-  'backgroundPosition',  // center | top | bottom | left | right
-  'backgroundRepeat',    // repeat | no-repeat
   // Per-side border (not class-encoded, but read by renderer from props.style)
   'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
   'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
-  // Drop shadow — CSS string applied via inline style on web
-  'boxShadow',
+  // NOTE: transform, translateX, translateY, boxShadow, backgroundImage/Size/Position/Repeat
+  // moved to STYLE_TO_CLASS_KEYS — they now live in className as Tailwind arbitrary tokens.
 ]);
 
 
@@ -433,12 +427,7 @@ const TW_PROP_PREFIXES: Record<string, string> = {
 // ─── Effects Section (Shadow, Blur, Backdrop Blur) ────────────────────────────
 
 /** Parse "Xpx Ypx Bpx Spx #color" → components, returns null when no shadow. */
-function parseBoxShadow(s: string): { x: number; y: number; blur: number; spread: number; color: string } | null {
-  if (!s) return null;
-  const m = s.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(-?[\d.]+)px\s+(.+)$/);
-  if (!m) return null;
-  return { x: parseFloat(m[1]), y: parseFloat(m[2]), blur: parseFloat(m[3]), spread: parseFloat(m[4]), color: m[5].trim() };
-}
+// parseBoxShadow is imported from ./_tw-utils
 
 // ─── Gradient direction options ──────────────────────────────────────────────
 const GRADIENT_DIRS = [
@@ -1160,13 +1149,21 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
   }, [nodeId, node.responsive, store, commitHistory]);
 
   // ── Shadow state ─────────────────────────────────────────────────────────────
-  // Base value (desktop / formula) lives on props.style.boxShadow.
+  // Base value lives in className as a shadow-[...] Tailwind token.
   // Responsive overrides live on responsive[bp].styles.boxShadow and are
   // resolved into respBoxShadow above (cascade-aware).
-  const boxShadowRaw = nodeStyle.boxShadow;
+  // Also check classFormulas.boxShadow for formula bindings.
+  const cls = (node.props as { className?: unknown })?.className;
+  const clsStr = typeof cls === 'string' ? cls : '';
+  const classFormulas = (node.props as { classFormulas?: Record<string, unknown> })?.classFormulas;
+  const boxShadowFormulaObj = classFormulas?.boxShadow;
+  const shadowTokenMatch = clsStr.match(/(?:^|(?<=\s))shadow-\[([^\]]+)\]/);
+  const shadowFromCls = shadowTokenMatch ? shadowTokenMatch[1].replace(/_/g, ' ') : '';
+  // Fall back to props.style.boxShadow for nodes created before this migration
+  const shadowFromStyle = nodeStyle.boxShadow;
+  const boxShadowRaw = boxShadowFormulaObj ?? (shadowFromCls || shadowFromStyle);
   const isShadowFormula = isBoundValue(boxShadowRaw as FormulaValue);
-  // At non-desktop breakpoints, the responsive override (if any) wins for
-  // display and "has shadow" detection.
+  // At non-desktop breakpoints, the responsive override (if any) wins.
   const effectiveShadowStr = (typeof respBoxShadow === 'string' && respBoxShadow)
     ? respBoxShadow
     : (typeof boxShadowRaw === 'string' ? boxShadowRaw : '');
@@ -1230,20 +1227,16 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
   const applyShadow = React.useCallback((color: string, blur: number, spread: number, x: number, y: number) => {
     const boxShadow = `${x}px ${y}px ${blur}px ${spread}px ${color}`;
     if (abp === 'desktop') {
-      // Base write — keep RN-only fields (shadowColor / shadowOffset / etc.)
-      // alongside the CSS string so React Native renderers also work.
-      store.patchProp(nodeId, 'props.style', {
-        ...(node.props as { style?: Record<string, unknown> })?.style,
-        boxShadow,
-        shadowColor: color,
-        shadowOffset: { width: x, height: y },
-        shadowRadius: blur,
-        shadowOpacity: 1,
-        elevation: Math.max(0, Math.round(blur / 2)),
-      });
+      const existingCls = (node.props as { className?: string })?.className ?? '';
+      store.patchProp(nodeId, 'props.className', styleToClassName({ boxShadow }, existingCls));
+      // Clean up old props.style shadow fields from before this migration
+      const oldStyle = { ...(node.props as { style?: Record<string, unknown> })?.style ?? {} };
+      if ('boxShadow' in oldStyle || 'shadowColor' in oldStyle) {
+        delete oldStyle.boxShadow; delete oldStyle.shadowColor; delete oldStyle.shadowOffset;
+        delete oldStyle.shadowRadius; delete oldStyle.shadowOpacity; delete oldStyle.elevation;
+        store.patchProp(nodeId, 'props.style', oldStyle);
+      }
     } else {
-      // Responsive write — only the CSS string. Web reads boxShadow; the
-      // RN-only fields stay on the base (desktop) style by design.
       store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow', boxShadow);
     }
     commitHistory();
@@ -1251,28 +1244,30 @@ function EffectsSection({ nodeId, node, store, commitHistory, abp, getOverridden
 
   const removeShadow = React.useCallback(() => {
     if (abp === 'desktop') {
-      const s = { ...(node.props as { style?: Record<string, unknown> })?.style };
-      delete s.boxShadow; delete s.shadowColor; delete s.shadowOffset;
-      delete s.shadowRadius; delete s.shadowOpacity; delete s.elevation;
-      store.patchProp(nodeId, 'props.style', s);
+      const existingCls = (node.props as { className?: string })?.className ?? '';
+      store.patchProp(nodeId, 'props.className', styleToClassName({ boxShadow: '' }, existingCls));
+      // Clean up old props.style shadow fields from before this migration
+      const oldStyle = { ...(node.props as { style?: Record<string, unknown> })?.style ?? {} };
+      if ('boxShadow' in oldStyle || 'shadowColor' in oldStyle) {
+        delete oldStyle.boxShadow; delete oldStyle.shadowColor; delete oldStyle.shadowOffset;
+        delete oldStyle.shadowRadius; delete oldStyle.shadowOpacity; delete oldStyle.elevation;
+        store.patchProp(nodeId, 'props.style', oldStyle);
+      }
     } else {
-      // Write 'none' explicitly so the desktop shadow doesn't cascade through.
-      // Simply removing the override would let the base boxShadow inherit again.
       store.patchResponsive(nodeId, abp as 'laptop' | 'tablet' | 'mobile', 'styles.boxShadow', 'none');
     }
     commitHistory();
   }, [nodeId, node, store, commitHistory, abp]);
 
   const onShadowBinding = React.useCallback((v: FormulaValue) => {
-    // Formulas always live at base (desktop) — same convention as other
-    // bindings in the panel (translate X/Y formulas, etc.).
     if (typeof v === 'object' && v !== null) {
-      store.patchProp(nodeId, 'props.style.boxShadow', v);
+      // Store formula in classFormulas; formula must produce a full shadow-[...] class string
+      store.patchProp(nodeId, 'props.classFormulas.boxShadow', v);
       commitHistory();
     } else {
-      const existing = (node.props as { style?: Record<string, unknown> })?.style ?? {};
-      const { boxShadow: _old, ...rest } = existing;
-      store.patchProp(nodeId, 'props.style', rest);
+      // Remove shadow token from className
+      const existingCls = (node.props as { className?: string })?.className ?? '';
+      store.patchProp(nodeId, 'props.className', styleToClassName({ boxShadow: '' }, existingCls));
       commitHistory();
     }
   }, [nodeId, node, store, commitHistory]);
@@ -1847,8 +1842,9 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
    */
   const bindOrPatch = useCallback((cssKey: string, v: FormulaValue, extraOnLiteral?: Record<string, string>) => {
     if (typeof v === 'object' && v !== null) {
-      // Store formula object in Zustand (keeps isBoundValue happy)
-      store.patchProp(nodeId, `props.style.${cssKey}`, v);
+      // Store formula in classFormulas — formula must produce a full Tailwind class string
+      // e.g. cssKey='opacity' → formula should produce "'opacity-[' + value + ']'"
+      store.patchProp(nodeId, `props.classFormulas.${cssKey}`, v);
 
       // Evaluate formula immediately → apply result to DOM for canvas preview
       const formulaStr = (v as { formula?: string }).formula;
@@ -2504,17 +2500,10 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
     }
     commitHistory();
   };
-  // Route a pure-inline style write (transform / translateX / translateY) to
-  // either props.style (desktop = base) or responsive.<bp>.styles (non-desktop)
-  // so these inputs behave like every other design control across breakpoints.
+  // Route a transform-related style write (transform / translateX / translateY) through
+  // patchStyle so it is encoded as a Tailwind token in className.
   const writeInlineStyle = (cssProp: string, val: string | null) => {
-    if (abp === 'desktop') {
-      store.patchProp(nodeId, `props.style.${cssProp}`, val ?? '');
-      return;
-    }
-    const rbp = abp as 'laptop' | 'tablet' | 'mobile';
-    if (val === null || val === '') store.removeResponsiveOverride(nodeId, rbp, `styles.${cssProp}`);
-    else                             store.patchResponsive(nodeId, rbp, `styles.${cssProp}`, val);
+    patchStyle({ [cssProp]: val ?? '' });
   };
   const gapToken    = parseTwToken(cls, 'gap-') ?? 'gap-0';
   const baseGapPx   = parseTwArbitrary(cls, 'gap-') ?? (parseInt(gapToken.replace('gap-', '') || '0') * 4);
@@ -2547,40 +2536,52 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
   const CSS_TO_TW_BORDER_STYLE: Record<string, string> = { solid: 'border-solid', dashed: 'border-dashed', dotted: 'border-dotted', double: 'border-double', none: 'border-none' };
   const baseBorderStyle = BORDER_STYLE_TOKENS.find(t => cls.includes(t)) ?? 'border-solid';
   const borderStyle   = rOvr('borderStyle') ? (CSS_TO_TW_BORDER_STYLE[rOvr('borderStyle')!] ?? baseBorderStyle) : baseBorderStyle;
-  // Rotation stays in props.style.transform (rotation only — no translate mixed in).
-  // Responsive-aware: on non-desktop breakpoints the cascaded override wins over
-  // the base inline style so the input mirrors what's on the canvas.
-  // Guard against formula objects: only treat it as a string for parsing.
-  const styleTransform = (() => {
-    const rT = rOvr('transform');
-    if (typeof rT === 'string' && rT) return rT;
-    const t = (node.props as { style?: Record<string, unknown> })?.style?.transform;
-    return typeof t === 'string' ? t : '';
-  })();
-  // Raw stored value — preserves formula/js objects so FieldWithBinding can detect bindings.
+  // Rotation — stored as rotate-[Ndeg] Tailwind token in className.
+  // Responsive-aware: prefer the cascaded override at non-desktop breakpoints.
+  // Raw value preserves formula objects so FieldWithBinding can detect bindings.
   const rawTransform = rOvr('transform') ?? (node.props as { style?: Record<string, unknown> })?.style?.transform ?? '';
   const rotateDeg = (() => {
-    // Try inline style first: "rotate(16deg)" → 16
-    const styleMatch = styleTransform.match(/rotate\(([-\d.]+)deg\)/);
-    if (styleMatch) return parseFloat(styleMatch[1]);
-    // Fall back to className token for backwards compat: rotate-[16deg] → 16
+    // 1. Check responsive override (non-desktop only)
+    const rT = rOvr('transform');
+    if (typeof rT === 'string' && rT) {
+      const m = rT.match(/rotate\(([-\d.]+)deg\)/);
+      if (m) return parseFloat(m[1]);
+    }
+    // 2. Read from className rotate-[...deg] token (new storage)
     const clsToken = parseTwToken(cls, 'rotate-') ?? parseTwToken(cls, '-rotate-') ?? '';
-    return parseInt(clsToken.replace(/-?rotate-\[?/, '').replace('deg]', '') || '0');
+    if (clsToken) return parseInt(clsToken.replace(/-?rotate-\[?/, '').replace('deg]', '') || '0');
+    // 3. Fall back to props.style.transform for nodes created before this migration
+    const st = (node.props as { style?: Record<string, unknown> })?.style?.transform;
+    if (typeof st === 'string' && st) {
+      const m = st.match(/rotate\(([-\d.]+)deg\)/);
+      if (m) return parseFloat(m[1]);
+    }
+    return 0;
   })();
-  // Translate X/Y live in separate props.style.translateX / .translateY keys (not mixed into transform).
+  // Translate X/Y — stored as translate-x-[...px] / translate-y-[...px] Tailwind tokens.
   // Responsive-aware: prefer the cascaded override at non-desktop breakpoints.
   const translateXPx = (() => {
     const rTx = rOvr('translateX');
-    const t = (typeof rTx === 'string' && rTx) ? rTx : nodeStyle.translateX;
-    if (typeof t !== 'string' || !t) return 0;
-    const m = t.match(/^([-\d.]+)/);
+    if (typeof rTx === 'string' && rTx) { const m = rTx.match(/^([-\d.]+)/); return m ? parseFloat(m[1]) : 0; }
+    // Read from className token first (new storage)
+    const clsVal = parseTwArbitrary(cls, 'translate-x-');
+    if (clsVal !== null) return clsVal;
+    // Fall back to props.style.translateX for old nodes
+    const st = nodeStyle.translateX;
+    if (typeof st !== 'string' || !st) return 0;
+    const m = st.match(/^([-\d.]+)/);
     return m ? parseFloat(m[1]) : 0;
   })();
   const translateYPx = (() => {
     const rTy = rOvr('translateY');
-    const t = (typeof rTy === 'string' && rTy) ? rTy : nodeStyle.translateY;
-    if (typeof t !== 'string' || !t) return 0;
-    const m = t.match(/^([-\d.]+)/);
+    if (typeof rTy === 'string' && rTy) { const m = rTy.match(/^([-\d.]+)/); return m ? parseFloat(m[1]) : 0; }
+    // Read from className token first (new storage)
+    const clsVal = parseTwArbitrary(cls, 'translate-y-');
+    if (clsVal !== null) return clsVal;
+    // Fall back to props.style.translateY for old nodes
+    const st = nodeStyle.translateY;
+    if (typeof st !== 'string' || !st) return 0;
+    const m = st.match(/^([-\d.]+)/);
     return m ? parseFloat(m[1]) : 0;
   })();
   const isFlipH     = Math.abs(rotateDeg) === 180;

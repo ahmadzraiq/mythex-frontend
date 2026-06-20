@@ -12,6 +12,19 @@ export type ResponsiveStyles = Partial<Record<BreakpointKey, Record<string, stri
 
 export const RESPONSIVE_BPS: BreakpointKey[] = ['laptop', 'tablet', 'mobile']
 
+/**
+ * Maps DSL-facing breakpoint names (Tailwind-style) to internal engine keys.
+ * The AI writes md/lg/xl; the compiler maps to the desktop-first internal format.
+ *   xl → laptop  (≤ 1280px)
+ *   lg → tablet  (≤ 1024px)
+ *   md → mobile  (≤  768px)
+ * Legacy mobile/tablet/laptop names are also accepted for backward compat.
+ */
+export const DSL_BP_TO_INTERNAL: Record<string, BreakpointKey> = {
+  md: 'mobile', lg: 'tablet', xl: 'laptop',
+  mobile: 'mobile', tablet: 'tablet', laptop: 'laptop',
+}
+
 export const SHORTHAND_KEYS = new Set([
   'display','direction','items','justify','self','wrap','flex1','flex',
   'gridCols','gridRows','gridFlow','colSpan','colSpanFull','rowSpan',
@@ -162,10 +175,11 @@ export function styleKeyToCssProps(key: string, val: unknown): Record<string, st
 export function unwrapResponsive(val: unknown): { base: unknown; bpOverrides: Partial<Record<BreakpointKey, unknown>> } {
   if (val && typeof val === 'object' && !Array.isArray(val)) {
     const obj = val as Record<string, unknown>
-    if (RESPONSIVE_BPS.some(k => k in obj) || 'default' in obj) {
+    const dslKeys = Object.keys(DSL_BP_TO_INTERNAL)
+    if (dslKeys.some(k => k in obj) || 'default' in obj) {
       const overrides: Partial<Record<BreakpointKey, unknown>> = {}
-      for (const bp of RESPONSIVE_BPS) {
-        if (bp in obj) overrides[bp] = obj[bp]
+      for (const [dslKey, internalKey] of Object.entries(DSL_BP_TO_INTERNAL)) {
+        if (dslKey in obj) overrides[internalKey] = obj[dslKey]
       }
       return { base: 'default' in obj ? obj.default : undefined, bpOverrides: overrides }
     }

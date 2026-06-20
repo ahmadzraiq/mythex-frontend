@@ -6,15 +6,14 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950 flex-col"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full h-[64px] flex flex-row items-center px-6 border-b border-white/20 fixed top-[0px] left-[0px] right-[0px] z-[50]",
+          "className": "w-full h-[64px] flex flex-row items-center px-6 border-b border-white/20 fixed top-[0px] left-[0px] right-[0px] z-[50] bg-[rgba(255,255,255,0.6)]",
           "style": {
-            "backgroundColor": "rgba(255,255,255,0.6)",
             "backdropFilter": "blur(14px)",
             "WebkitBackdropFilter": "blur(14px)"
           }
@@ -43,7 +42,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "font-bold text-lg text-gray-900"
+                  "className": "font-bold text-lg text-gray-900 flex-col"
                 },
                 "text": "NavbarDemo"
               }
@@ -58,28 +57,28 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-700"
+                  "className": "text-sm font-medium text-gray-700 flex-col"
                 },
                 "text": "Home"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-700"
+                  "className": "text-sm font-medium text-gray-700 flex-col"
                 },
                 "text": "Features"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-700"
+                  "className": "text-sm font-medium text-gray-700 flex-col"
                 },
                 "text": "About"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-gray-700"
+                  "className": "text-sm font-medium text-gray-700 flex-col"
                 },
                 "text": "Contact"
               }
@@ -88,13 +87,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "bg-pink-500 rounded-lg px-4 py-2 cursor-pointer"
+              "className": "bg-pink-500 rounded-lg px-4 py-2 cursor-pointer flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-medium text-white"
+                  "className": "text-sm font-medium text-white flex-col"
                 },
                 "text": "Get Started"
               }
@@ -105,7 +104,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "w-full pt-[64px]"
+          "className": "w-full pt-[64px] flex-col"
         },
         "children": [
           {
@@ -117,13 +116,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-pink-200/50 dark:bg-pink-800/30 rounded-full px-4 py-1 mb-6"
+                  "className": "bg-pink-200/50 dark:bg-pink-800/30 rounded-full px-4 py-1 mb-6 flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium text-pink-700 dark:text-pink-300"
+                      "className": "text-sm font-medium text-pink-700 dark:text-pink-300 flex-col"
                     },
                     "text": "Frosted Glass"
                   }
@@ -132,21 +131,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center flex-col"
                 },
                 "text": "Blurred Beauty"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4 flex-col"
                 },
                 "text": "A semi-transparent navbar with backdrop blur creates a beautiful frosted glass effect. Content scrolls behind and shows through the blur."
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-400 dark:text-gray-500 mt-8"
+                  "className": "text-sm text-gray-400 dark:text-gray-500 mt-8 flex-col"
                 },
                 "text": "Scroll to see content blur behind the navbar"
               }
@@ -155,13 +154,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-6xl mx-auto px-6 py-20"
+              "className": "w-full max-w-6xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Features"
               },
@@ -180,7 +179,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -196,14 +195,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Modern Aesthetic"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "The frosted glass look adds depth and sophistication to any design."
                       }
@@ -218,7 +217,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -234,14 +233,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Depth Perception"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "Content visible behind the blur creates a sense of layered depth."
                       }
@@ -256,7 +255,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -272,14 +271,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Platform Native"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "Matches macOS and iOS design language for a native feel."
                       }
@@ -292,13 +291,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Testimonials"
               },
@@ -311,27 +310,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"The frosted glass navbar makes our app feel premium and modern.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Jess Yang"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "iOS Developer"
                       }
@@ -340,27 +339,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"Backdrop blur is the perfect balance between transparency and readability.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Tom Harris"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "UI Engineer"
                       }
@@ -369,27 +368,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"Users consistently rate our glass-style UI as more premium than solid navbars.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Aisha Patel"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "Product Lead"
                       }
@@ -402,7 +401,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+              "className": "w-full max-w-5xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
@@ -420,14 +419,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-pink-500"
+                          "className": "text-4xl font-bold text-pink-500 flex-col"
                         },
                         "text": "14px"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Blur Radius"
                       }
@@ -442,14 +441,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-pink-500"
+                          "className": "text-4xl font-bold text-pink-500 flex-col"
                         },
                         "text": "60%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Opacity"
                       }
@@ -464,14 +463,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-pink-500"
+                          "className": "text-4xl font-bold text-pink-500 flex-col"
                         },
                         "text": "95%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Browser Support"
                       }
@@ -486,14 +485,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-pink-500"
+                          "className": "text-4xl font-bold text-pink-500 flex-col"
                         },
                         "text": "GPU"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Accelerated"
                       }
@@ -506,7 +505,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6 flex-col"
             },
             "children": [
               {
@@ -518,14 +517,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-400"
+                      "className": "text-sm text-gray-400 flex-col"
                     },
                     "text": "NavbarDemo © 2026"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 cursor-pointer"
+                      "className": "text-sm text-gray-500 cursor-pointer flex-col"
                     },
                     "text": "← Back to all types",
                     "actions": [

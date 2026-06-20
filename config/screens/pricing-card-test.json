@@ -12,19 +12,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "flex flex-col gap-y-[24px] items-stretch justify-between border-[2px] border-[var(--theme-primary)] rounded-[12px] relative pt-[32px] pr-[32px] pb-[32px] pl-[32px] w-[340px]",
-          "style": {
-            "boxShadow": "0px 12px 24px -4px #7c3aed40",
-            "shadowColor": "#7c3aed40",
-            "shadowOffset": {
-              "width": 0,
-              "height": 12
-            },
-            "shadowRadius": 24,
-            "shadowOpacity": 1,
-            "elevation": 12,
-            "backgroundColor": "var(--theme-card)"
-          }
+          "className": "flex flex-col gap-y-[24px] items-stretch justify-between border-[2px] border-[var(--theme-primary)] rounded-[12px] relative pt-[32px] pr-[32px] pb-[32px] pl-[32px] w-[340px] shadow-[0px_12px_24px_-4px_#7c3aed40] bg-[var(--theme-card)]"
         },
         "id": "fd81cc4c-c147-442f-8ba7-c1eed5b9c135",
         "name": "Professional Plan (Featured)",
@@ -71,7 +59,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-bold uppercase !text-[var(--theme-primary-foreground)]"
+                      "className": "text-[12px] font-bold uppercase !text-[var(--theme-primary-foreground)] flex-col"
                     },
                     "text": "Most Popular",
                     "id": "c99ea77a-d7a8-4233-8bd1-26b01bb5cc87",
@@ -92,7 +80,7 @@
                 "type": "Text",
                 "text": "Professional",
                 "props": {
-                  "className": "text-[24px] font-bold !text-[var(--theme-foreground)]"
+                  "className": "text-[24px] font-bold !text-[var(--theme-foreground)] flex-col"
                 },
                 "id": "e740fcae-15ce-4fb9-ab5f-dd664a506344",
                 "children": []
@@ -101,7 +89,7 @@
                 "type": "Text",
                 "text": "For growing teams",
                 "props": {
-                  "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "id": "395aa903-8fad-4e9c-91d9-fb4b0cc62d6f",
                 "children": []
@@ -117,7 +105,7 @@
                     "type": "Text",
                     "text": "$79",
                     "props": {
-                      "className": "text-[36px] font-bold !text-[var(--theme-primary)]"
+                      "className": "text-[36px] font-bold !text-[var(--theme-primary)] flex-col"
                     },
                     "id": "62b4d930-62f9-4bea-ba9c-f587f99ec1de",
                     "children": []
@@ -126,7 +114,7 @@
                     "type": "Text",
                     "text": "/month",
                     "props": {
-                      "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                     },
                     "id": "6fe28dc7-039b-455c-bf87-cce437c128f6",
                     "children": []
@@ -162,7 +150,7 @@
                         "type": "Text",
                         "text": "Unlimited projects",
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)] flex-col"
                         },
                         "id": "56fe13cb-ca78-4666-acd2-a2162d7ee3a8",
                         "children": []
@@ -190,7 +178,7 @@
                         "type": "Text",
                         "text": "Advanced analytics",
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)] flex-col"
                         },
                         "id": "c58c9b91-4138-4e6d-ab8b-2b3e9cb9bd89",
                         "children": []
@@ -218,7 +206,7 @@
                         "type": "Text",
                         "text": "Priority support",
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)] flex-col"
                         },
                         "id": "97b7dc05-5a06-4d86-96bd-104fbf61fac8",
                         "children": []
@@ -246,7 +234,7 @@
                         "type": "Text",
                         "text": "Team collaboration",
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)] flex-col"
                         },
                         "id": "9728e22c-0462-4623-b5a1-cd35d6f6b570",
                         "children": []
@@ -274,7 +262,7 @@
                         "type": "Text",
                         "text": "Custom integrations",
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-card-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-card-foreground)] flex-col"
                         },
                         "id": "e7e44939-bce8-41ef-9d1d-9456fab0bb21",
                         "children": []
@@ -303,7 +291,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                      "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                     },
                     "text": "Start Free Trial",
                     "id": "9523b40a-55ce-46e1-b833-3c4cfc46329e",

@@ -28,9 +28,12 @@
  * <Box bg={() => isActive ? '#007AFF' : '#ccc'}>
  * <Text color={() => score > 80 ? '#34C759' : '#ff3b30'}>
  *
- * RESPONSIVE BREAKPOINTS
- * ──────────────────────
- * <Box p={20} mobile={{ p: 12 }} tablet={{ p: 16 }} laptop={{ maxW: 1200 }}>
+ * RESPONSIVE BREAKPOINTS (desktop-first)
+ * ────────────────────────────────────────
+ * Base value = all screens. xl/lg/md add overrides for smaller screens.
+ *   xl ≤ 1280px   lg ≤ 1024px   md ≤ 768px
+ * Element-level:  <Box p={32} lg={{ p: 20 }} md={{ p: 12 }}>
+ * Per-property:   <Box p={{ default: 32, lg: 20, md: 12 }} w={{ default: 1200, md: 'full' }}>
  */
 
 // ─── Formula shorthand ────────────────────────────────────────────────────────
@@ -161,16 +164,18 @@ export type AnimationProps = {
 
 export type ResponsiveProps = SxProps
 
+/** Responsive wrapper: use { default: desktopVal, xl: val, lg: val, md: val } on any style prop. */
+export type Responsive<T> = T | { default?: T; xl?: T; lg?: T; md?: T }
+
 // ─── Base props all elements accept ───────────────────────────────────────────
 // Flat props: every SxProps key works directly on Box/Text/etc.
 // Layout shorthands: flex col row grid center flex1 absolute relative fixed sticky
 // Text shorthands: size color align uppercase lowercase
 
 export type BaseProps = SxProps & {
-  sx?:        SxProps
-  laptop?:    SxProps
-  tablet?:    SxProps
-  mobile?:    SxProps
+  xl?:        SxProps
+  lg?:        SxProps
+  md?:        SxProps
   animation?: AnimationProps
   condition?: unknown
   key?:       string | number

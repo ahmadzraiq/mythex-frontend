@@ -20,7 +20,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-foreground",
+              "className": "text-[24px] font-bold text-foreground flex-col",
               "data-testid": "tcc-title"
             },
             "text": "Theme Custom Colors Test"
@@ -28,7 +28,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-gray-500 dark:text-gray-400"
+              "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "When this page is the focused page, the builder auto-seeds two sample custom colors — \"brand\" (#7c3aed light / #a78bfa dark) and \"brand-2\" (#06b6d4 light / #22d3ee dark) — into Theme › Colors › Ungrouped. The cards below resolve via CSS variables and the theme.colors.* formula path. Edit or delete them from the Theme tab to see the cards update live; cards fall back to neutral gray when a color is missing."
           }
@@ -44,7 +44,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[16px] font-semibold text-foreground"
+              "className": "text-[16px] font-semibold text-foreground flex-col"
             },
             "text": "1. CSS variable bindings"
           },
@@ -58,17 +58,14 @@
                 "type": "Box",
                 "id": "tcc-css-brand",
                 "props": {
-                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] flex items-center justify-center",
-                  "style": {
-                    "backgroundColor": "var(--theme-brand, #d1d5db)"
-                  },
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] flex items-center justify-center bg-[var(--theme-brand,_#d1d5db)] flex-col",
                   "data-testid": "tcc-css-brand"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-semibold !text-white"
+                      "className": "text-[14px] font-semibold !text-white flex-col"
                     },
                     "text": "var(--theme-brand)"
                   }
@@ -78,17 +75,14 @@
                 "type": "Box",
                 "id": "tcc-css-brand-2",
                 "props": {
-                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] flex items-center justify-center",
-                  "style": {
-                    "backgroundColor": "var(--theme-brand-2, #d1d5db)"
-                  },
+                  "className": "flex-1 min-w-[200px] h-[120px] rounded-[12px] flex items-center justify-center bg-[var(--theme-brand-2,_#d1d5db)] flex-col",
                   "data-testid": "tcc-css-brand-2"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-semibold !text-white"
+                      "className": "text-[14px] font-semibold !text-white flex-col"
                     },
                     "text": "var(--theme-brand-2)"
                   }
@@ -108,7 +102,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[16px] font-semibold text-foreground"
+              "className": "text-[16px] font-semibold text-foreground flex-col"
             },
             "text": "2. Formula bindings (theme.colors.*)"
           },
@@ -134,14 +128,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono !text-white/80"
+                      "className": "text-[12px] font-mono !text-white/80 flex-col"
                     },
                     "text": "theme.colors.brand"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-semibold !text-white",
+                      "className": "text-[14px] font-semibold !text-white flex-col",
                       "data-testid": "tcc-formula-brand-value"
                     },
                     "text": {
@@ -166,14 +160,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono !text-white/80"
+                      "className": "text-[12px] font-mono !text-white/80 flex-col"
                     },
                     "text": "theme.colors['brand-2']"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-semibold !text-white",
+                      "className": "text-[14px] font-semibold !text-white flex-col",
                       "data-testid": "tcc-formula-brand-2-value"
                     },
                     "text": {

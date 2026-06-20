@@ -15,7 +15,7 @@
         "type": "Text",
         "id": "resp-title",
         "props": {
-          "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
+          "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
         },
         "text": "Responsive System Test"
       },
@@ -23,7 +23,7 @@
         "type": "Text",
         "id": "resp-desc",
         "props": {
-          "className": "text-gray-500 dark:text-gray-400 text-[14px]"
+          "className": "text-gray-500 dark:text-gray-400 text-[14px] flex-col"
         },
         "text": "Tests responsive breakpoint overrides. Each section demonstrates a different responsive feature."
       },
@@ -31,7 +31,7 @@
         "type": "Text",
         "id": "resp-s1-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S1 — Flex Direction (row on desktop, column on tablet)"
       },
@@ -61,7 +61,7 @@
                 "type": "Text",
                 "id": "resp-s1-t1",
                 "props": {
-                  "className": "text-[13px] text-[#1e40af] font-medium"
+                  "className": "text-[13px] text-[#1e40af] font-medium flex-col"
                 },
                 "text": "Card A"
               }
@@ -78,7 +78,7 @@
                 "type": "Text",
                 "id": "resp-s1-t2",
                 "props": {
-                  "className": "text-[13px] text-[#166534] font-medium"
+                  "className": "text-[13px] text-[#166534] font-medium flex-col"
                 },
                 "text": "Card B"
               }
@@ -95,7 +95,7 @@
                 "type": "Text",
                 "id": "resp-s1-t3",
                 "props": {
-                  "className": "text-[13px] text-[#92400e] font-medium"
+                  "className": "text-[13px] text-[#92400e] font-medium flex-col"
                 },
                 "text": "Card C"
               }
@@ -107,7 +107,7 @@
         "type": "Text",
         "id": "resp-s2-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S2 — Width Override (full width on desktop, 50% on laptop, 100% on mobile)"
       },
@@ -115,7 +115,7 @@
         "type": "Box",
         "id": "resp-s2-box",
         "props": {
-          "className": "bg-[#e0e7ff] rounded-[8px] p-[20px] w-full"
+          "className": "bg-[#e0e7ff] rounded-[8px] p-[20px] w-full flex-col"
         },
         "responsive": {
           "laptop": {
@@ -134,7 +134,7 @@
             "type": "Text",
             "id": "resp-s2-t1",
             "props": {
-              "className": "text-[13px] text-[#3730a3] font-medium text-center"
+              "className": "text-[13px] text-[#3730a3] font-medium text-center flex-col"
             },
             "text": "Width changes per breakpoint"
           }
@@ -144,7 +144,7 @@
         "type": "Text",
         "id": "resp-s3-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S3 — Visibility (hidden on mobile)"
       },
@@ -152,7 +152,7 @@
         "type": "Box",
         "id": "resp-s3-box",
         "props": {
-          "className": "bg-[#fce7f3] rounded-[8px] p-[20px]"
+          "className": "bg-[#fce7f3] rounded-[8px] p-[20px] flex-col"
         },
         "responsive": {
           "mobile": {
@@ -164,7 +164,7 @@
             "type": "Text",
             "id": "resp-s3-t1",
             "props": {
-              "className": "text-[13px] text-[#9d174d] font-medium"
+              "className": "text-[13px] text-[#9d174d] font-medium flex-col"
             },
             "text": "This box is hidden on mobile"
           }
@@ -174,7 +174,7 @@
         "type": "Text",
         "id": "resp-s4-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S4 — Text Override (different text on tablet)"
       },
@@ -182,14 +182,14 @@
         "type": "Box",
         "id": "resp-s4-box",
         "props": {
-          "className": "bg-[#fef3c7] rounded-[8px] p-[20px]"
+          "className": "bg-[#fef3c7] rounded-[8px] p-[20px] flex-col"
         },
         "children": [
           {
             "type": "Text",
             "id": "resp-s4-text",
             "props": {
-              "className": "text-[15px] text-[#92400e] font-medium"
+              "className": "text-[15px] text-[#92400e] font-medium flex-col"
             },
             "text": "Desktop: Full detailed description of the product",
             "responsive": {
@@ -207,7 +207,7 @@
         "type": "Text",
         "id": "resp-s5-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S5 — Font Size & Padding (smaller on mobile)"
       },
@@ -215,7 +215,7 @@
         "type": "Box",
         "id": "resp-s5-box",
         "props": {
-          "className": "bg-[#f0fdf4] rounded-[12px] p-[32px]"
+          "className": "bg-[#f0fdf4] rounded-[12px] p-[32px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -242,7 +242,7 @@
             "type": "Text",
             "id": "resp-s5-t1",
             "props": {
-              "className": "text-[24px] text-[#166534] font-bold"
+              "className": "text-[24px] text-[#166534] font-bold flex-col"
             },
             "responsive": {
               "tablet": {
@@ -262,7 +262,7 @@
             "type": "Text",
             "id": "resp-s5-t2",
             "props": {
-              "className": "text-[14px] text-[#16a34a] mt-[8px]"
+              "className": "text-[14px] text-[#16a34a] mt-[8px] flex-col"
             },
             "text": "Padding and font size shrink on smaller screens"
           }
@@ -272,7 +272,7 @@
         "type": "Text",
         "id": "resp-s6-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S6 — Desktop-First Cascade (laptop sets gap, tablet inherits it)"
       },
@@ -294,14 +294,14 @@
             "type": "Box",
             "id": "resp-s6-c1",
             "props": {
-              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center"
+              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s6-t1",
                 "props": {
-                  "className": "text-[11px] text-[#4338ca]"
+                  "className": "text-[11px] text-[#4338ca] flex-col"
                 },
                 "text": "A"
               }
@@ -311,14 +311,14 @@
             "type": "Box",
             "id": "resp-s6-c2",
             "props": {
-              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center"
+              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s6-t2",
                 "props": {
-                  "className": "text-[11px] text-[#4338ca]"
+                  "className": "text-[11px] text-[#4338ca] flex-col"
                 },
                 "text": "B"
               }
@@ -328,14 +328,14 @@
             "type": "Box",
             "id": "resp-s6-c3",
             "props": {
-              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center"
+              "className": "w-[100px] h-[60px] bg-[#c7d2fe] rounded-[6px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s6-t3",
                 "props": {
-                  "className": "text-[11px] text-[#4338ca]"
+                  "className": "text-[11px] text-[#4338ca] flex-col"
                 },
                 "text": "C"
               }
@@ -347,7 +347,7 @@
         "type": "Text",
         "id": "resp-s7-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S7 — Background Color Override (blue desktop, green tablet, orange mobile)"
       },
@@ -355,7 +355,7 @@
         "type": "Box",
         "id": "resp-s7-box",
         "props": {
-          "className": "bg-[#3b82f6] rounded-[8px] p-[20px]"
+          "className": "bg-[#3b82f6] rounded-[8px] p-[20px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -374,7 +374,7 @@
             "type": "Text",
             "id": "resp-s7-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium text-center"
+              "className": "text-white text-[14px] font-medium text-center flex-col"
             },
             "text": "Background changes per breakpoint"
           }
@@ -384,7 +384,7 @@
         "type": "Text",
         "id": "resp-s8-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S8 — Position Override (static on desktop, absolute on tablet)"
       },
@@ -392,14 +392,14 @@
         "type": "Box",
         "id": "resp-s8-wrapper",
         "props": {
-          "className": "relative bg-[#f1f5f9] rounded-[8px] p-[20px] h-[120px]"
+          "className": "relative bg-[#f1f5f9] rounded-[8px] p-[20px] h-[120px] flex-col"
         },
         "children": [
           {
             "type": "Box",
             "id": "resp-s8-inner",
             "props": {
-              "className": "bg-[#f97316] rounded-[6px] p-[12px] w-[120px]"
+              "className": "bg-[#f97316] rounded-[6px] p-[12px] w-[120px] flex-col"
             },
             "responsive": {
               "tablet": {
@@ -415,7 +415,7 @@
                 "type": "Text",
                 "id": "resp-s8-t1",
                 "props": {
-                  "className": "text-white text-[12px] font-medium text-center"
+                  "className": "text-white text-[12px] font-medium text-center flex-col"
                 },
                 "text": "Moves to corner"
               }
@@ -427,7 +427,7 @@
         "type": "Text",
         "id": "resp-s9-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S9 — Display Override (visible on desktop, hidden on tablet)"
       },
@@ -442,14 +442,14 @@
             "type": "Box",
             "id": "resp-s9-always",
             "props": {
-              "className": "bg-[#ef4444] rounded-[6px] p-[12px] flex-1"
+              "className": "bg-[#ef4444] rounded-[6px] p-[12px] flex-1 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s9-t1",
                 "props": {
-                  "className": "text-white text-[12px] font-medium text-center"
+                  "className": "text-white text-[12px] font-medium text-center flex-col"
                 },
                 "text": "Always visible"
               }
@@ -459,7 +459,7 @@
             "type": "Box",
             "id": "resp-s9-hide-tablet",
             "props": {
-              "className": "bg-[#b91c1c] rounded-[6px] p-[12px] flex-1"
+              "className": "bg-[#b91c1c] rounded-[6px] p-[12px] flex-1 flex-col"
             },
             "responsive": {
               "tablet": {
@@ -473,7 +473,7 @@
                 "type": "Text",
                 "id": "resp-s9-t2",
                 "props": {
-                  "className": "text-white text-[12px] font-medium text-center"
+                  "className": "text-white text-[12px] font-medium text-center flex-col"
                 },
                 "text": "Hidden on tablet+"
               }
@@ -485,7 +485,7 @@
         "type": "Text",
         "id": "resp-s10-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S10 — Multi-Breakpoint Cascade (laptop gap, tablet direction, mobile all)"
       },
@@ -520,14 +520,14 @@
             "type": "Box",
             "id": "resp-s10-c1",
             "props": {
-              "className": "flex-1 bg-[#8b5cf6] rounded-[6px] p-[12px] flex items-center justify-center"
+              "className": "flex-1 bg-[#8b5cf6] rounded-[6px] p-[12px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s10-t1",
                 "props": {
-                  "className": "text-white text-[12px]"
+                  "className": "text-white text-[12px] flex-col"
                 },
                 "text": "1"
               }
@@ -537,14 +537,14 @@
             "type": "Box",
             "id": "resp-s10-c2",
             "props": {
-              "className": "flex-1 bg-[#7c3aed] rounded-[6px] p-[12px] flex items-center justify-center"
+              "className": "flex-1 bg-[#7c3aed] rounded-[6px] p-[12px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s10-t2",
                 "props": {
-                  "className": "text-white text-[12px]"
+                  "className": "text-white text-[12px] flex-col"
                 },
                 "text": "2"
               }
@@ -554,14 +554,14 @@
             "type": "Box",
             "id": "resp-s10-c3",
             "props": {
-              "className": "flex-1 bg-[#6d28d9] rounded-[6px] p-[12px] flex items-center justify-center"
+              "className": "flex-1 bg-[#6d28d9] rounded-[6px] p-[12px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s10-t3",
                 "props": {
-                  "className": "text-white text-[12px]"
+                  "className": "text-white text-[12px] flex-col"
                 },
                 "text": "3"
               }
@@ -573,7 +573,7 @@
         "type": "Text",
         "id": "resp-s11-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S11 — Border Radius (24px desktop, 8px tablet, 0 mobile)"
       },
@@ -581,10 +581,7 @@
         "type": "Box",
         "id": "resp-s11-box",
         "props": {
-          "className": "bg-[#6366f1] rounded-[24px] p-[24px]",
-          "style": {
-            "borderRadius": "24px"
-          }
+          "className": "bg-[#6366f1] rounded-[24px] p-[24px] rounded-[24px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -603,7 +600,7 @@
             "type": "Text",
             "id": "resp-s11-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium text-center"
+              "className": "text-white text-[14px] font-medium text-center flex-col"
             },
             "text": "Border radius changes: 24px -> 8px -> 0px"
           }
@@ -613,7 +610,7 @@
         "type": "Text",
         "id": "resp-s12-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S12 — Per-Corner Border Radius (desktop: pill TL/TR, tablet: uniform 12px, mobile: square)"
       },
@@ -621,13 +618,7 @@
         "type": "Box",
         "id": "resp-s12-box",
         "props": {
-          "className": "bg-[#ec4899] p-[20px]",
-          "style": {
-            "borderTopLeftRadius": "32px",
-            "borderTopRightRadius": "32px",
-            "borderBottomRightRadius": "4px",
-            "borderBottomLeftRadius": "4px"
-          }
+          "className": "bg-[#ec4899] p-[20px] rounded-tl-[32px] rounded-tr-[32px] rounded-br-[4px] rounded-bl-[4px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -652,7 +643,7 @@
             "type": "Text",
             "id": "resp-s12-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium text-center"
+              "className": "text-white text-[14px] font-medium text-center flex-col"
             },
             "text": "Per-corner radius overrides"
           }
@@ -662,7 +653,7 @@
         "type": "Text",
         "id": "resp-s13-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S13 — Border Width, Color, Style (desktop: 2px solid blue, tablet: 4px dashed green, mobile: 1px dotted red)"
       },
@@ -670,12 +661,7 @@
         "type": "Box",
         "id": "resp-s13-box",
         "props": {
-          "className": "rounded-[8px] p-[20px] bg-white dark:bg-gray-800",
-          "style": {
-            "borderWidth": "2px",
-            "borderColor": "#3b82f6",
-            "borderStyle": "solid"
-          }
+          "className": "rounded-[8px] p-[20px] bg-white dark:bg-gray-800 border-[2px] border-[#3b82f6] border-solid flex-col"
         },
         "responsive": {
           "tablet": {
@@ -698,7 +684,7 @@
             "type": "Text",
             "id": "resp-s13-t1",
             "props": {
-              "className": "text-[13px] text-gray-700 dark:text-gray-300 font-medium text-center"
+              "className": "text-[13px] text-gray-700 dark:text-gray-300 font-medium text-center flex-col"
             },
             "text": "Border width, color, and style change per breakpoint"
           }
@@ -708,7 +694,7 @@
         "type": "Text",
         "id": "resp-s14-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S14 — Opacity (100% desktop, 60% tablet, 30% mobile)"
       },
@@ -716,7 +702,7 @@
         "type": "Box",
         "id": "resp-s14-box",
         "props": {
-          "className": "bg-[#0ea5e9] rounded-[8px] p-[20px]"
+          "className": "bg-[#0ea5e9] rounded-[8px] p-[20px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -735,7 +721,7 @@
             "type": "Text",
             "id": "resp-s14-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium text-center"
+              "className": "text-white text-[14px] font-medium text-center flex-col"
             },
             "text": "Opacity fades on smaller screens"
           }
@@ -745,7 +731,7 @@
         "type": "Text",
         "id": "resp-s15-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S15 — Typography: Weight, Align, Decoration, Transform"
       },
@@ -753,14 +739,14 @@
         "type": "Box",
         "id": "resp-s15-box",
         "props": {
-          "className": "bg-[#faf5ff] dark:bg-[#2e1065] rounded-[8px] p-[24px]"
+          "className": "bg-[#faf5ff] dark:bg-[#2e1065] rounded-[8px] p-[24px] flex-col"
         },
         "children": [
           {
             "type": "Text",
             "id": "resp-s15-t1",
             "props": {
-              "className": "text-[20px] text-[#7c3aed] dark:text-[#c4b5fd] font-bold text-left"
+              "className": "text-[20px] text-[#7c3aed] dark:text-[#c4b5fd] font-bold text-left flex-col"
             },
             "text": "Bold, left-aligned, no decoration",
             "responsive": {
@@ -787,7 +773,7 @@
         "type": "Text",
         "id": "resp-s16-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S16 — Self Alignment (start on desktop, center on tablet, end on mobile)"
       },
@@ -802,7 +788,7 @@
             "type": "Box",
             "id": "resp-s16-child",
             "props": {
-              "className": "self-start bg-[#22c55e] rounded-[6px] p-[12px] w-[200px]"
+              "className": "self-start bg-[#22c55e] rounded-[6px] p-[12px] w-[200px] flex-col"
             },
             "responsive": {
               "tablet": {
@@ -821,7 +807,7 @@
                 "type": "Text",
                 "id": "resp-s16-t1",
                 "props": {
-                  "className": "text-white text-[12px] font-medium text-center"
+                  "className": "text-white text-[12px] font-medium text-center flex-col"
                 },
                 "text": "Self alignment shifts"
               }
@@ -833,7 +819,7 @@
         "type": "Text",
         "id": "resp-s17-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S17 — Transform: Rotate (0° desktop, 5° tablet, -5° mobile)"
       },
@@ -841,17 +827,14 @@
         "type": "Box",
         "id": "resp-s17-wrapper",
         "props": {
-          "className": "flex items-center justify-center py-[24px]"
+          "className": "flex items-center justify-center py-[24px] flex-col"
         },
         "children": [
           {
             "type": "Box",
             "id": "resp-s17-box",
             "props": {
-              "className": "bg-[#f59e0b] rounded-[12px] p-[20px] w-[200px]",
-              "style": {
-                "transform": "rotate(0deg)"
-              }
+              "className": "bg-[#f59e0b] rounded-[12px] p-[20px] w-[200px] rotate-[0deg] flex-col"
             },
             "responsive": {
               "tablet": {
@@ -870,7 +853,7 @@
                 "type": "Text",
                 "id": "resp-s17-t1",
                 "props": {
-                  "className": "text-white text-[14px] font-bold text-center"
+                  "className": "text-white text-[14px] font-bold text-center flex-col"
                 },
                 "text": "Rotates!"
               }
@@ -882,7 +865,7 @@
         "type": "Text",
         "id": "resp-s18-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S18 — Overflow (visible desktop, hidden tablet, scroll mobile)"
       },
@@ -890,11 +873,7 @@
         "type": "Box",
         "id": "resp-s18-box",
         "props": {
-          "className": "bg-[#fef3c7] rounded-[8px] p-[12px]",
-          "style": {
-            "height": "80px",
-            "overflow": "visible"
-          }
+          "className": "bg-[#fef3c7] rounded-[8px] p-[12px] h-[80px] overflow-visible flex-col"
         },
         "responsive": {
           "tablet": {
@@ -913,7 +892,7 @@
             "type": "Text",
             "id": "resp-s18-t1",
             "props": {
-              "className": "text-[13px] text-[#92400e]"
+              "className": "text-[13px] text-[#92400e] flex-col"
             },
             "text": "This box has a fixed height of 80px. On desktop the content overflows visibly. On tablet it is clipped. On mobile it scrolls. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec id elit non mi porta gravida at eget metus."
           }
@@ -923,7 +902,7 @@
         "type": "Text",
         "id": "resp-s19-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S19 — Grid Layout (4 cols desktop, 2 cols tablet, 1 col mobile)"
       },
@@ -950,14 +929,14 @@
             "type": "Box",
             "id": "resp-s19-g1",
             "props": {
-              "className": "bg-[#a78bfa] rounded-[8px] p-[16px] flex items-center justify-center"
+              "className": "bg-[#a78bfa] rounded-[8px] p-[16px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s19-gt1",
                 "props": {
-                  "className": "text-white text-[13px] font-medium"
+                  "className": "text-white text-[13px] font-medium flex-col"
                 },
                 "text": "Grid 1"
               }
@@ -967,14 +946,14 @@
             "type": "Box",
             "id": "resp-s19-g2",
             "props": {
-              "className": "bg-[#818cf8] rounded-[8px] p-[16px] flex items-center justify-center"
+              "className": "bg-[#818cf8] rounded-[8px] p-[16px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s19-gt2",
                 "props": {
-                  "className": "text-white text-[13px] font-medium"
+                  "className": "text-white text-[13px] font-medium flex-col"
                 },
                 "text": "Grid 2"
               }
@@ -984,14 +963,14 @@
             "type": "Box",
             "id": "resp-s19-g3",
             "props": {
-              "className": "bg-[#6366f1] rounded-[8px] p-[16px] flex items-center justify-center"
+              "className": "bg-[#6366f1] rounded-[8px] p-[16px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s19-gt3",
                 "props": {
-                  "className": "text-white text-[13px] font-medium"
+                  "className": "text-white text-[13px] font-medium flex-col"
                 },
                 "text": "Grid 3"
               }
@@ -1001,14 +980,14 @@
             "type": "Box",
             "id": "resp-s19-g4",
             "props": {
-              "className": "bg-[#4f46e5] rounded-[8px] p-[16px] flex items-center justify-center"
+              "className": "bg-[#4f46e5] rounded-[8px] p-[16px] flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "id": "resp-s19-gt4",
                 "props": {
-                  "className": "text-white text-[13px] font-medium"
+                  "className": "text-white text-[13px] font-medium flex-col"
                 },
                 "text": "Grid 4"
               }
@@ -1020,7 +999,7 @@
         "type": "Text",
         "id": "resp-s20-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S20 — Min/Max Width & Height (desktop: max-w 600px, tablet: max-w 400px, mobile: max-w 100%)"
       },
@@ -1028,10 +1007,7 @@
         "type": "Box",
         "id": "resp-s20-box",
         "props": {
-          "className": "bg-[#14b8a6] rounded-[8px] p-[20px]",
-          "style": {
-            "maxWidth": "600px"
-          }
+          "className": "bg-[#14b8a6] rounded-[8px] p-[20px] max-w-[600px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -1050,7 +1026,7 @@
             "type": "Text",
             "id": "resp-s20-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium"
+              "className": "text-white text-[14px] font-medium flex-col"
             },
             "text": "Max-width changes: 600px -> 400px -> 100%"
           }
@@ -1060,7 +1036,7 @@
         "type": "Text",
         "id": "resp-s21-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S21 — Per-Side Margin (desktop: 0, tablet: 20px left, mobile: 40px left + 20px top)"
       },
@@ -1068,11 +1044,7 @@
         "type": "Box",
         "id": "resp-s21-box",
         "props": {
-          "className": "bg-[#e11d48] rounded-[8px] p-[16px]",
-          "style": {
-            "marginTop": "0px",
-            "marginLeft": "0px"
-          }
+          "className": "bg-[#e11d48] rounded-[8px] p-[16px] mt-[0px] ml-[0px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -1092,7 +1064,7 @@
             "type": "Text",
             "id": "resp-s21-t1",
             "props": {
-              "className": "text-white text-[13px] font-medium"
+              "className": "text-white text-[13px] font-medium flex-col"
             },
             "text": "Margin shifts per breakpoint"
           }
@@ -1102,7 +1074,7 @@
         "type": "Text",
         "id": "resp-s22-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S22 — Z-Index & Cursor (desktop: z-10 pointer, tablet: z-50 default, mobile: z-1 not-allowed)"
       },
@@ -1110,10 +1082,7 @@
         "type": "Box",
         "id": "resp-s22-box",
         "props": {
-          "className": "bg-[#7c3aed] rounded-[8px] p-[20px] cursor-pointer",
-          "style": {
-            "zIndex": "10"
-          }
+          "className": "bg-[#7c3aed] rounded-[8px] p-[20px] cursor-pointer z-[10] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -1134,7 +1103,7 @@
             "type": "Text",
             "id": "resp-s22-t1",
             "props": {
-              "className": "text-white text-[13px] font-medium text-center"
+              "className": "text-white text-[13px] font-medium text-center flex-col"
             },
             "text": "Z-index and cursor change per breakpoint"
           }
@@ -1144,7 +1113,7 @@
         "type": "Text",
         "id": "resp-s23-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S23 — Text Color (blue desktop, green tablet, red mobile)"
       },
@@ -1152,17 +1121,14 @@
         "type": "Box",
         "id": "resp-s23-box",
         "props": {
-          "className": "bg-gray-100 dark:bg-gray-800 rounded-[8px] p-[20px]"
+          "className": "bg-gray-100 dark:bg-gray-800 rounded-[8px] p-[20px] flex-col"
         },
         "children": [
           {
             "type": "Text",
             "id": "resp-s23-t1",
             "props": {
-              "className": "text-[18px] font-bold",
-              "style": {
-                "color": "#3b82f6"
-              }
+              "className": "text-[18px] font-bold text-[#3b82f6] flex-col"
             },
             "text": "Text color changes per breakpoint",
             "responsive": {
@@ -1184,7 +1150,7 @@
         "type": "Text",
         "id": "resp-s24w-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S24 — Workflow: Breakpoint-Dependent +/- Counter"
       },
@@ -1220,7 +1186,7 @@
             "type": "Text",
             "id": "resp-s24w-info",
             "props": {
-              "className": "text-gray-400 text-[12px] text-center"
+              "className": "text-gray-400 text-[12px] text-center flex-col"
             },
             "text": {
               "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint || 'desktop') + ' — Step size: ' + (globalContext?.browser?.breakpoint === 'mobile' ? '±1' : globalContext?.browser?.breakpoint === 'tablet' ? '±3' : globalContext?.browser?.breakpoint === 'laptop' ? '±5' : '±10')"
@@ -1230,7 +1196,7 @@
             "type": "Text",
             "id": "resp-s24w-counter",
             "props": {
-              "className": "text-white text-[64px] font-bold",
+              "className": "text-white text-[64px] font-bold flex-col",
               "style": {
                 "fontVariantNumeric": "tabular-nums"
               }
@@ -1279,7 +1245,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white"
+                      "className": "text-white flex-col"
                     },
                     "text": {
                       "formula": "'- ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')"
@@ -1303,7 +1269,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white"
+                      "className": "text-white flex-col"
                     },
                     "text": "Reset"
                   }
@@ -1325,7 +1291,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white"
+                      "className": "text-white flex-col"
                     },
                     "text": {
                       "formula": "'+ ' + (globalContext?.browser?.breakpoint === 'mobile' ? '1' : globalContext?.browser?.breakpoint === 'tablet' ? '3' : globalContext?.browser?.breakpoint === 'laptop' ? '5' : '10')"
@@ -1339,7 +1305,7 @@
             "type": "Text",
             "id": "resp-s24w-hint",
             "props": {
-              "className": "text-gray-500 text-[11px] text-center"
+              "className": "text-gray-500 text-[11px] text-center flex-col"
             },
             "text": "Switch breakpoints to change the step size — the same workflow formula adapts per device"
           }
@@ -1349,7 +1315,7 @@
         "type": "Text",
         "id": "resp-s24s-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S24b — Single Button: +1 on Desktop/Laptop, -1 on Tablet/Mobile"
       },
@@ -1364,7 +1330,7 @@
             "type": "Text",
             "id": "resp-s24s-counter",
             "props": {
-              "className": "text-white text-[48px] font-bold",
+              "className": "text-white text-[48px] font-bold flex-col",
               "style": {
                 "fontVariantNumeric": "tabular-nums"
               }
@@ -1375,10 +1341,7 @@
             "type": "Box",
             "id": "resp-s24s-btn",
             "props": {
-              "className": "bg-[#6366f1] rounded-[10px] px-[28px] py-[14px] cursor-pointer",
-              "style": {
-                "userSelect": "none"
-              }
+              "className": "bg-[#6366f1] rounded-[10px] px-[28px] py-[14px] cursor-pointer select-none flex-col"
             },
             "responsive": {
               "tablet": {
@@ -1398,7 +1361,7 @@
                 "type": "Text",
                 "id": "resp-s24s-btn-text",
                 "props": {
-                  "className": "text-white text-[15px] font-semibold text-center"
+                  "className": "text-white text-[15px] font-semibold text-center flex-col"
                 },
                 "text": {
                   "formula": "(globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'Tap to Subtract (−1)' : 'Click to Add (+1)'"
@@ -1410,7 +1373,7 @@
             "type": "Text",
             "id": "resp-s24s-mode",
             "props": {
-              "className": "text-[12px] text-center"
+              "className": "text-[12px] text-center flex-col"
             },
             "text": {
               "formula": "'Mode: ' + ((globalContext?.browser?.breakpoint === 'mobile' || globalContext?.browser?.breakpoint === 'tablet') ? 'DECREMENT ▼' : 'INCREMENT ▲') + '  (' + (globalContext?.browser?.breakpoint || 'desktop') + ')'"
@@ -1427,7 +1390,7 @@
             "type": "Text",
             "id": "resp-s24s-hint",
             "props": {
-              "className": "text-gray-500 text-[11px] text-center"
+              "className": "text-gray-500 text-[11px] text-center flex-col"
             },
             "text": "Same button, same workflow — behavior flips based on breakpoint"
           }
@@ -1437,7 +1400,7 @@
         "type": "Text",
         "id": "resp-s25-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S25 — Background Color & Gradient"
       },
@@ -1445,7 +1408,7 @@
         "type": "Box",
         "id": "resp-s25-box",
         "props": {
-          "className": "rounded-[12px] p-[24px]",
+          "className": "rounded-[12px] p-[24px] flex-col",
           "style": {
             "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
           }
@@ -1467,7 +1430,7 @@
             "type": "Text",
             "id": "resp-s25-t1",
             "props": {
-              "className": "text-white text-[16px] font-bold text-center"
+              "className": "text-white text-[16px] font-bold text-center flex-col"
             },
             "text": "Gradient shifts per breakpoint"
           },
@@ -1475,7 +1438,7 @@
             "type": "Text",
             "id": "resp-s25-t2",
             "props": {
-              "className": "text-white/80 text-[12px] text-center mt-[4px]"
+              "className": "text-white/80 text-[12px] text-center mt-[4px] flex-col"
             },
             "text": "Desktop: purple-blue | Tablet: pink-red | Mobile: blue-cyan"
           }
@@ -1485,7 +1448,7 @@
         "type": "Text",
         "id": "resp-s25-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S26 — Solid BG Color Override (teal desktop, amber tablet, rose mobile)"
       },
@@ -1493,7 +1456,7 @@
         "type": "Box",
         "id": "resp-s26-solid-box",
         "props": {
-          "className": "bg-[#0d9488] rounded-[8px] p-[20px]"
+          "className": "bg-[#0d9488] rounded-[8px] p-[20px] flex-col"
         },
         "responsive": {
           "tablet": {
@@ -1512,7 +1475,7 @@
             "type": "Text",
             "id": "resp-s26-solid-t1",
             "props": {
-              "className": "text-white text-[14px] font-medium text-center"
+              "className": "text-white text-[14px] font-medium text-center flex-col"
             },
             "text": "Solid background color swap"
           }
@@ -1522,7 +1485,7 @@
         "type": "Text",
         "id": "resp-s26-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S27 — Formula Condition: Show/Hide by Breakpoint (globalContext.browser.breakpoint)"
       },
@@ -1537,7 +1500,7 @@
             "type": "Box",
             "id": "resp-s26-desktop-only",
             "props": {
-              "className": "bg-[#3b82f6] rounded-[8px] p-[16px]"
+              "className": "bg-[#3b82f6] rounded-[8px] p-[16px] flex-col"
             },
             "condition": "globalContext?.browser?.breakpoint === 'desktop'",
             "children": [
@@ -1545,7 +1508,7 @@
                 "type": "Text",
                 "id": "resp-s26-t1",
                 "props": {
-                  "className": "text-white text-[13px] font-medium text-center"
+                  "className": "text-white text-[13px] font-medium text-center flex-col"
                 },
                 "text": "Desktop ONLY (formula condition)"
               }
@@ -1555,7 +1518,7 @@
             "type": "Box",
             "id": "resp-s26-tablet-only",
             "props": {
-              "className": "bg-[#16a34a] rounded-[8px] p-[16px]"
+              "className": "bg-[#16a34a] rounded-[8px] p-[16px] flex-col"
             },
             "condition": "globalContext?.browser?.breakpoint === 'tablet'",
             "children": [
@@ -1563,7 +1526,7 @@
                 "type": "Text",
                 "id": "resp-s26-t2",
                 "props": {
-                  "className": "text-white text-[13px] font-medium text-center"
+                  "className": "text-white text-[13px] font-medium text-center flex-col"
                 },
                 "text": "Tablet ONLY (formula condition)"
               }
@@ -1573,7 +1536,7 @@
             "type": "Box",
             "id": "resp-s26-mobile-only",
             "props": {
-              "className": "bg-[#ef4444] rounded-[8px] p-[16px]"
+              "className": "bg-[#ef4444] rounded-[8px] p-[16px] flex-col"
             },
             "condition": "globalContext?.browser?.breakpoint === 'mobile'",
             "children": [
@@ -1581,7 +1544,7 @@
                 "type": "Text",
                 "id": "resp-s26-t3",
                 "props": {
-                  "className": "text-white text-[13px] font-medium text-center"
+                  "className": "text-white text-[13px] font-medium text-center flex-col"
                 },
                 "text": "Mobile ONLY (formula condition)"
               }
@@ -1591,7 +1554,7 @@
             "type": "Box",
             "id": "resp-s26-not-mobile",
             "props": {
-              "className": "bg-[#7c3aed] rounded-[8px] p-[16px]"
+              "className": "bg-[#7c3aed] rounded-[8px] p-[16px] flex-col"
             },
             "condition": "globalContext?.browser?.breakpoint !== 'mobile'",
             "children": [
@@ -1599,7 +1562,7 @@
                 "type": "Text",
                 "id": "resp-s26-t4",
                 "props": {
-                  "className": "text-white text-[13px] font-medium text-center"
+                  "className": "text-white text-[13px] font-medium text-center flex-col"
                 },
                 "text": "NOT mobile (hidden on mobile via formula)"
               }
@@ -1609,7 +1572,7 @@
             "type": "Text",
             "id": "resp-s26-current",
             "props": {
-              "className": "text-[12px] text-gray-500 dark:text-gray-400 italic text-center"
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 italic text-center flex-col"
             },
             "text": "Current breakpoint: {{globalContext.browser.breakpoint}}"
           }
@@ -1619,7 +1582,7 @@
         "type": "Text",
         "id": "resp-s27-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S28 — Formula Text: Dynamic Content by Breakpoint"
       },
@@ -1627,14 +1590,14 @@
         "type": "Box",
         "id": "resp-s27-box",
         "props": {
-          "className": "bg-[#1e293b] rounded-[12px] p-[24px]"
+          "className": "bg-[#1e293b] rounded-[12px] p-[24px] flex-col"
         },
         "children": [
           {
             "type": "Text",
             "id": "resp-s27-t1",
             "props": {
-              "className": "text-[20px] font-bold text-center text-white"
+              "className": "text-[20px] font-bold text-center text-white flex-col"
             },
             "text": {
               "formula": "globalContext?.browser?.breakpoint === 'mobile' ? 'Mobile View' : globalContext?.browser?.breakpoint === 'tablet' ? 'Tablet View' : globalContext?.browser?.breakpoint === 'laptop' ? 'Laptop View' : 'Desktop View'"
@@ -1644,7 +1607,7 @@
             "type": "Text",
             "id": "resp-s27-t2",
             "props": {
-              "className": "text-[13px] text-gray-400 text-center mt-[8px]"
+              "className": "text-[13px] text-gray-400 text-center mt-[8px] flex-col"
             },
             "text": {
               "formula": "globalContext?.browser?.breakpoint === 'mobile' ? 'Showing compact layout for phones' : globalContext?.browser?.breakpoint === 'tablet' ? 'Optimized for tablets and iPads' : 'Full experience on wide screens'"
@@ -1656,7 +1619,7 @@
         "type": "Text",
         "id": "resp-s28-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S29 — Repeated Items Grid (map) with Responsive Layout"
       },
@@ -1686,30 +1649,27 @@
             "map": "variables['resp0001-0000-0000-0000-000000000001']",
             "key": "context.item.data.id",
             "props": {
-              "className": "contents"
+              "className": "contents flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "id": "resp-s28-card",
                 "props": {
-                  "className": "rounded-[10px] p-[16px] flex flex-col gap-[6px]",
-                  "style": {
-                    "backgroundColor": "{{context.item.data.color}}"
-                  }
+                  "className": "rounded-[10px] p-[16px] flex flex-col gap-[6px] bg-[{{context.item.data.color}}]"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-[15px] font-bold"
+                      "className": "text-white text-[15px] font-bold flex-col"
                     },
                     "text": "{{context.item.data.title}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white/70 text-[12px]"
+                      "className": "text-white/70 text-[12px] flex-col"
                     },
                     "text": "{{context.item.data.desc}}",
                     "responsive": {
@@ -1728,7 +1688,7 @@
         "type": "Text",
         "id": "resp-s29-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S30 — Conditional Map Count by Breakpoint (formula slicing)"
       },
@@ -1743,7 +1703,7 @@
             "type": "Text",
             "id": "resp-s29-info",
             "props": {
-              "className": "text-[12px] text-gray-500 dark:text-gray-400 italic"
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 italic flex-col"
             },
             "text": {
               "formula": "'Showing ' + (globalContext?.browser?.breakpoint === 'mobile' ? '2' : globalContext?.browser?.breakpoint === 'tablet' ? '4' : '6') + ' items on ' + (globalContext?.browser?.breakpoint || 'desktop')"
@@ -1775,19 +1735,19 @@
                 },
                 "key": "context.item.data.id",
                 "props": {
-                  "className": "contents"
+                  "className": "contents flex-col"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-gray-200 dark:bg-gray-700 rounded-[8px] p-[12px] flex items-center justify-center"
+                      "className": "bg-gray-200 dark:bg-gray-700 rounded-[8px] p-[12px] flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-gray-700 dark:text-gray-200"
+                          "className": "text-[13px] font-medium text-gray-700 dark:text-gray-200 flex-col"
                         },
                         "text": "{{context.item.data.title}}"
                       }
@@ -1803,7 +1763,7 @@
         "type": "Text",
         "id": "resp-s30-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S31 — Sidebar Layout (formula: shown on desktop, hidden on mobile)"
       },
@@ -1832,35 +1792,35 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] font-bold text-gray-800 dark:text-gray-100"
+                  "className": "text-[14px] font-bold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Sidebar"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Hidden on mobile via formula"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Navigation Link 1"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Navigation Link 2"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Navigation Link 3"
               }
@@ -1883,14 +1843,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[16px] font-bold text-gray-800 dark:text-gray-100"
+                  "className": "text-[16px] font-bold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Main Content"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[13px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "This area fills the remaining space. On mobile the sidebar hides and this becomes full width."
               }
@@ -1902,7 +1862,7 @@
         "type": "Text",
         "id": "resp-s31-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S32 — Breakpoint-Aware Text + Condition Combined"
       },
@@ -1917,7 +1877,7 @@
             "type": "Text",
             "id": "resp-s31-headline",
             "props": {
-              "className": "text-[22px] font-bold text-[#92400e] dark:text-[#fef3c7]"
+              "className": "text-[22px] font-bold text-[#92400e] dark:text-[#fef3c7] flex-col"
             },
             "text": "Welcome to the Platform",
             "responsive": {
@@ -1933,7 +1893,7 @@
             "type": "Text",
             "id": "resp-s31-subtitle",
             "props": {
-              "className": "text-[14px] text-[#b45309] dark:text-[#fde68a]"
+              "className": "text-[14px] text-[#b45309] dark:text-[#fde68a] flex-col"
             },
             "text": "Explore our features and discover what makes us different from the competition.",
             "responsive": {
@@ -1949,7 +1909,7 @@
             "type": "Box",
             "id": "resp-s31-detail",
             "props": {
-              "className": "bg-[#fde68a] dark:bg-[#92400e] rounded-[8px] p-[12px]"
+              "className": "bg-[#fde68a] dark:bg-[#92400e] rounded-[8px] p-[12px] flex-col"
             },
             "responsive": {
               "mobile": {
@@ -1960,7 +1920,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-[#78350f] dark:text-[#fef3c7]"
+                  "className": "text-[12px] text-[#78350f] dark:text-[#fef3c7] flex-col"
                 },
                 "text": "This detail box is only visible on desktop and tablet (hidden on mobile via responsive condition)."
               }
@@ -1972,7 +1932,7 @@
         "type": "Text",
         "id": "resp-s32-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S33 — Box Shadow + Gradient BG Override"
       },
@@ -1980,10 +1940,9 @@
         "type": "Box",
         "id": "resp-s32-box",
         "props": {
-          "className": "rounded-[16px] p-[32px]",
+          "className": "rounded-[16px] p-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] flex-col",
           "style": {
-            "background": "linear-gradient(to right, #0f172a, #1e293b)",
-            "boxShadow": "0 20px 60px rgba(0,0,0,0.3)"
+            "background": "linear-gradient(to right, #0f172a, #1e293b)"
           }
         },
         "responsive": {
@@ -2015,7 +1974,7 @@
             "type": "Text",
             "id": "resp-s32-t1",
             "props": {
-              "className": "text-white text-[18px] font-bold text-center"
+              "className": "text-white text-[18px] font-bold text-center flex-col"
             },
             "text": "Shadow + Gradient"
           },
@@ -2023,7 +1982,7 @@
             "type": "Text",
             "id": "resp-s32-t2",
             "props": {
-              "className": "text-gray-400 text-[12px] text-center mt-[4px]"
+              "className": "text-gray-400 text-[12px] text-center mt-[4px] flex-col"
             },
             "text": "Desktop: horizontal gradient with deep shadow | Tablet: vertical gradient | Mobile: flat solid"
           }
@@ -2033,7 +1992,7 @@
         "type": "Text",
         "id": "resp-s33-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S34 — Formula-Driven Repeated Items with Breakpoint-Dependent Columns"
       },
@@ -2055,16 +2014,13 @@
                 "type": "Box",
                 "id": "resp-s33-bp-badge",
                 "props": {
-                  "className": "rounded-full px-[12px] py-[4px]",
-                  "style": {
-                    "backgroundColor": "#6366f1"
-                  }
+                  "className": "rounded-full px-[12px] py-[4px] bg-[#6366f1] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-[11px] font-medium"
+                      "className": "text-white text-[11px] font-medium flex-col"
                     },
                     "text": "Breakpoint: {{globalContext.browser.breakpoint}}"
                   }
@@ -2074,16 +2030,13 @@
                 "type": "Box",
                 "id": "resp-s33-size-badge",
                 "props": {
-                  "className": "rounded-full px-[12px] py-[4px]",
-                  "style": {
-                    "backgroundColor": "#0ea5e9"
-                  }
+                  "className": "rounded-full px-[12px] py-[4px] bg-[#0ea5e9] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white text-[11px] font-medium"
+                      "className": "text-white text-[11px] font-medium flex-col"
                     },
                     "text": "Screen: {{globalContext.screen.width}}x{{globalContext.screen.height}}"
                   }
@@ -2115,7 +2068,7 @@
                 "map": "variables['resp0001-0000-0000-0000-000000000001']",
                 "key": "context.item.data.id",
                 "props": {
-                  "className": "contents"
+                  "className": "contents flex-col"
                 },
                 "children": [
                   {
@@ -2144,16 +2097,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-[8px] h-[8px] rounded-full",
-                              "style": {
-                                "backgroundColor": "{{context.item.data.color}}"
-                              }
+                              "className": "w-[8px] h-[8px] rounded-full bg-[{{context.item.data.color}}] flex-col"
                             }
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-100"
+                              "className": "text-[14px] font-semibold text-gray-800 dark:text-gray-100 flex-col"
                             },
                             "text": "{{context.item.data.title}}"
                           }
@@ -2162,7 +2112,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-500 dark:text-gray-400"
+                          "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
                         },
                         "text": "{{context.item.data.desc}}",
                         "condition": "globalContext?.browser?.breakpoint !== 'mobile'"
@@ -2170,7 +2120,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                          "className": "text-[11px] text-gray-400 dark:text-gray-500 flex-col"
                         },
                         "text": {
                           "formula": "'ID: ' + context?.item?.data?.id"
@@ -2188,7 +2138,7 @@
         "type": "Text",
         "id": "resp-stext-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_text — Responsive Text Content"
       },
@@ -2203,7 +2153,7 @@
             "type": "Text",
             "id": "resp-stext-node",
             "props": {
-              "className": "text-[16px] font-semibold text-gray-800 dark:text-gray-100"
+              "className": "text-[16px] font-semibold text-gray-800 dark:text-gray-100 flex-col"
             },
             "text": "Desktop text",
             "responsive": {
@@ -2219,7 +2169,7 @@
             "type": "Text",
             "id": "resp-stext-formula",
             "props": {
-              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+              "className": "text-[13px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": {
               "formula": "'Breakpoint: ' + (globalContext?.browser?.breakpoint ?? 'desktop')"
@@ -2238,7 +2188,7 @@
         "type": "Text",
         "id": "resp-svis-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_visibility — Responsive Visibility (condition)"
       },
@@ -2253,7 +2203,7 @@
             "type": "Text",
             "id": "resp-svis-desktop-only",
             "props": {
-              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200"
+              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200 flex-col"
             },
             "text": "Visible on desktop only",
             "responsive": {
@@ -2269,7 +2219,7 @@
             "type": "Text",
             "id": "resp-svis-mobile-only",
             "props": {
-              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200"
+              "className": "text-[14px] font-medium text-yellow-800 dark:text-yellow-200 flex-col"
             },
             "text": "Visible on mobile only",
             "condition": false,
@@ -2283,7 +2233,7 @@
             "type": "Text",
             "id": "resp-svis-formula",
             "props": {
-              "className": "text-[12px] text-gray-500 dark:text-gray-400"
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Condition via formula (hidden on tablet)",
             "responsive": {
@@ -2300,7 +2250,7 @@
         "type": "Text",
         "id": "resp-sdis-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_disabled — Responsive Disabled Prop"
       },
@@ -2308,14 +2258,14 @@
         "type": "Box",
         "id": "resp-sdis-box",
         "props": {
-          "className": "flex gap-[16px] p-[16px] bg-[#eff6ff] dark:bg-[#172554] rounded-[8px] flex-wrap"
+          "className": "flex gap-[16px] p-[16px] bg-[#eff6ff] dark:bg-[#172554] rounded-[8px] flex-wrap flex-col"
         },
         "children": [
           {
             "type": "Input",
             "id": "resp-sdis-input",
             "props": {
-              "className": "border border-gray-300 rounded-[6px] px-[10px] py-[6px] text-[14px] w-[200px]",
+              "className": "border border-gray-300 rounded-[6px] px-[10px] py-[6px] text-[14px] w-[200px] flex-col",
               "placeholder": "Disabled on mobile"
             },
             "responsive": {
@@ -2330,7 +2280,7 @@
             "type": "Text",
             "id": "resp-sdis-hint",
             "props": {
-              "className": "text-[12px] text-gray-500 dark:text-gray-400 self-center"
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 self-center flex-col"
             },
             "text": "Input is disabled at mobile breakpoint"
           }
@@ -2340,7 +2290,7 @@
         "type": "Text",
         "id": "resp-srep-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_repeat — Responsive Map/Repeat"
       },
@@ -2355,7 +2305,7 @@
             "type": "Text",
             "id": "resp-srep-note",
             "props": {
-              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+              "className": "text-[13px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Row below uses responsive map: desktop = full list, mobile = shorter list"
           },
@@ -2376,13 +2326,13 @@
                 "type": "Box",
                 "id": "resp-srep-item",
                 "props": {
-                  "className": "px-[12px] py-[6px] bg-[#e9d5ff] dark:bg-[#4c1d95] rounded-[6px] text-[12px] font-semibold text-purple-900 dark:text-purple-100"
+                  "className": "px-[12px] py-[6px] bg-[#e9d5ff] dark:bg-[#4c1d95] rounded-[6px] text-[12px] font-semibold text-purple-900 dark:text-purple-100 flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px]"
+                      "className": "text-[12px] flex-col"
                     },
                     "text": "{{context.item.label}}"
                   }
@@ -2396,7 +2346,7 @@
         "type": "Text",
         "id": "resp-sanim-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_animation — Responsive Animation Override"
       },
@@ -2411,7 +2361,7 @@
             "type": "Box",
             "id": "resp-sanim-card",
             "props": {
-              "className": "w-[160px] h-[80px] bg-[#fed7aa] dark:bg-[#7c2d12] rounded-[8px] flex items-center justify-center"
+              "className": "w-[160px] h-[80px] bg-[#fed7aa] dark:bg-[#7c2d12] rounded-[8px] flex items-center justify-center flex-col"
             },
             "animation": {
               "enter": {
@@ -2433,7 +2383,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-orange-900 dark:text-orange-100"
+                  "className": "text-[12px] font-semibold text-orange-900 dark:text-orange-100 flex-col"
                 },
                 "text": "Fade 600ms (200ms mobile)"
               }
@@ -2445,7 +2395,7 @@
         "type": "Text",
         "id": "resp-sact-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_actions — Responsive Actions Override"
       },
@@ -2460,7 +2410,7 @@
             "type": "Text",
             "id": "resp-sact-note",
             "props": {
-              "className": "text-[13px] text-gray-500 dark:text-gray-400"
+              "className": "text-[13px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Button has a base action. At mobile it overrides with a different action array."
           },
@@ -2468,7 +2418,7 @@
             "type": "Box",
             "id": "resp-sact-btn",
             "props": {
-              "className": "px-[20px] py-[10px] bg-[#16a34a] hover:bg-[#15803d] rounded-[8px] cursor-pointer"
+              "className": "px-[20px] py-[10px] bg-[#16a34a] hover:bg-[#15803d] rounded-[8px] cursor-pointer flex-col"
             },
             "actions": [
               {
@@ -2494,7 +2444,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] font-semibold text-white"
+                  "className": "text-[13px] font-semibold text-white flex-col"
                 },
                 "text": "Click me"
               }
@@ -2506,7 +2456,7 @@
         "type": "Text",
         "id": "resp-sset-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_settings_props — Responsive Component Props"
       },
@@ -2521,7 +2471,7 @@
             "type": "Image",
             "id": "resp-sset-img",
             "props": {
-              "className": "w-[120px] h-[80px] rounded-[6px]",
+              "className": "w-[120px] h-[80px] rounded-[6px] flex-col",
               "src": "https://picsum.photos/seed/resp/200/100",
               "objectFit": "cover",
               "alt": "Responsive image"
@@ -2539,7 +2489,7 @@
             "type": "Text",
             "id": "resp-sset-hint",
             "props": {
-              "className": "text-[12px] text-gray-500 dark:text-gray-400"
+              "className": "text-[12px] text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Image: objectFit=cover on desktop, contain on mobile"
           }
@@ -2549,7 +2499,7 @@
         "type": "Text",
         "id": "resp-scss-label",
         "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px]"
+          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
         },
         "text": "S_css_gaps — Responsive CSS Typography & Grid Gaps"
       },
@@ -2564,7 +2514,7 @@
             "type": "Text",
             "id": "resp-scss-typo",
             "props": {
-              "className": "text-[15px] text-gray-800 dark:text-gray-100"
+              "className": "text-[15px] text-gray-800 dark:text-gray-100 flex-col"
             },
             "text": "Typography: lineHeight=1.8 on desktop, 1.4 on mobile. letterSpacing=0.05em on desktop, 0 on mobile.",
             "responsive": {
@@ -2604,13 +2554,13 @@
                 "type": "Box",
                 "id": "resp-scss-g1",
                 "props": {
-                  "className": "h-[60px] bg-[#dbeafe] dark:bg-[#1e3a5f] rounded-[6px] flex items-center justify-center"
+                  "className": "h-[60px] bg-[#dbeafe] dark:bg-[#1e3a5f] rounded-[6px] flex items-center justify-center flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-blue-800 dark:text-blue-200"
+                      "className": "text-[12px] text-blue-800 dark:text-blue-200 flex-col"
                     },
                     "text": "Col 1"
                   }
@@ -2620,13 +2570,13 @@
                 "type": "Box",
                 "id": "resp-scss-g2",
                 "props": {
-                  "className": "h-[60px] bg-[#dcfce7] dark:bg-[#14532d] rounded-[6px] flex items-center justify-center"
+                  "className": "h-[60px] bg-[#dcfce7] dark:bg-[#14532d] rounded-[6px] flex items-center justify-center flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-green-800 dark:text-green-200"
+                      "className": "text-[12px] text-green-800 dark:text-green-200 flex-col"
                     },
                     "text": "Col 2"
                   }
@@ -2636,13 +2586,13 @@
                 "type": "Box",
                 "id": "resp-scss-g3",
                 "props": {
-                  "className": "h-[60px] bg-[#fef9c3] dark:bg-[#422006] rounded-[6px] flex items-center justify-center"
+                  "className": "h-[60px] bg-[#fef9c3] dark:bg-[#422006] rounded-[6px] flex items-center justify-center flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-yellow-800 dark:text-yellow-200"
+                      "className": "text-[12px] text-yellow-800 dark:text-yellow-200 flex-col"
                     },
                     "text": "Col 3"
                   }
@@ -2669,21 +2619,21 @@
                 "type": "Box",
                 "id": "resp-scss-align-a",
                 "props": {
-                  "className": "w-[40px] h-[40px] bg-[#6366f1] rounded-[4px]"
+                  "className": "w-[40px] h-[40px] bg-[#6366f1] rounded-[4px] flex-col"
                 }
               },
               {
                 "type": "Box",
                 "id": "resp-scss-align-b",
                 "props": {
-                  "className": "w-[40px] h-[60px] bg-[#8b5cf6] rounded-[4px]"
+                  "className": "w-[40px] h-[60px] bg-[#8b5cf6] rounded-[4px] flex-col"
                 }
               },
               {
                 "type": "Box",
                 "id": "resp-scss-align-c",
                 "props": {
-                  "className": "w-[40px] h-[30px] bg-[#a78bfa] rounded-[4px]"
+                  "className": "w-[40px] h-[30px] bg-[#a78bfa] rounded-[4px] flex-col"
                 }
               }
             ]

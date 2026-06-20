@@ -67,17 +67,17 @@ pages/<name>/triggers/<type>              — page-scoped lifecycle trigger
 
 ## Responsive styling
 
-**Breakpoints (desktop-first):** desktop ≥ 1280px | laptop < 1280px | tablet < 1024px | mobile < 768px
+**Breakpoints (desktop-first):** desktop ≥ 1280px | xl < 1280px | lg < 1024px | md < 768px
 
 Any \`style\` property can be a responsive object:
 
 \`\`\`json
-{ "style": { "text": { "default": 48, "tablet": 32, "mobile": 24 }, "p": { "default": 40, "tablet": 24, "mobile": 16 } } }
+{ "style": { "text": { "default": 48, "lg": 32, "md": 24 }, "p": { "default": 40, "lg": 24, "md": 16 } } }
 \`\`\`
 
 - \`default\` = desktop base. Omit a breakpoint key when it clones the nearest wider tier.
 - The engine expands these automatically — do NOT write the \`responsive\` field for \`style\` changes.
-- Use the node-level \`responsive\` field ONLY for non-style overrides: \`condition\`, \`text\`, \`animation\`, \`map\`, \`actions\`.
+- Use the node-level \`responsive\` field (keys: laptop/tablet/mobile) ONLY for non-style overrides: \`condition\`, \`text\`, \`animation\`, \`map\`, \`actions\`.
 
 ---
 

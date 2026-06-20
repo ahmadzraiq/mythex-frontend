@@ -6,7 +6,7 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950"
+      "className": "w-full min-h-screen bg-gray-50 dark:bg-gray-950 flex-col"
     },
     "children": [
       {
@@ -24,14 +24,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white flex-col"
                 },
                 "text": "Navbar Types Showcase"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-lg text-gray-500 dark:text-gray-400"
+                  "className": "text-lg text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Explore 9 different navigation patterns. Each page has enough scrollable content to demonstrate the navbar behavior."
               }
@@ -58,7 +58,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -74,14 +74,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Fixed Navbar"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Always visible, anchored to the viewport top. Classic pattern for most websites."
                   }
@@ -102,7 +102,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -118,14 +118,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Sticky Navbar"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Flows with the page until it hits the top, then sticks. Pure CSS, no JavaScript."
                   }
@@ -146,7 +146,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -162,14 +162,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Transparent → Solid"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Starts fully transparent over a hero image, background fades in as you scroll."
                   }
@@ -190,7 +190,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -206,14 +206,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Frosted Glass"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Semi-transparent with backdrop blur. Classic macOS/iOS style."
                   }
@@ -234,7 +234,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -250,14 +250,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Floating Pill"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Detached, pill-shaped bar hovering above the page content."
                   }
@@ -278,7 +278,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-teal-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -294,14 +294,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Centered Logo"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Logo in the exact center, nav links split left and right. Fashion/editorial style."
                   }
@@ -322,7 +322,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -338,14 +338,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Vertical Sidebar"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Full-height left sidebar replaces the top bar. Common in dashboards."
                   }
@@ -366,7 +366,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -382,14 +382,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Bottom Tab Bar"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Mobile-native bottom navigation. No top bar at all."
                   }
@@ -410,7 +410,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center"
+                      "className": "w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center flex-col"
                     },
                     "children": [
                       {
@@ -426,14 +426,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-gray-900 dark:text-white"
+                      "className": "font-semibold text-gray-900 dark:text-white flex-col"
                     },
                     "text": "Scroll-Aware (Auto-hide)"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 dark:text-gray-400"
+                      "className": "text-sm text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "Hides on scroll down, reappears on scroll up. Uses live scroll tracking engine."
                   }

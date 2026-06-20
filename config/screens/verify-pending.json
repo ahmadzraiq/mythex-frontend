@@ -6,26 +6,26 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "flex min-h-screen items-center justify-center px-[16px]"
+      "className": "flex min-h-screen items-center justify-center px-[16px] flex-col"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-[448px] text-center space-y-[24px]"
+          "className": "w-full max-w-[448px] text-center space-y-[24px] flex-col"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "w-[64px] h-[64px] mx-auto rounded-[9999px] bg-[var(--theme-primary)]/10 flex items-center justify-center"
+              "className": "w-[64px] h-[64px] mx-auto rounded-[9999px] bg-[var(--theme-primary)]/10 flex items-center justify-center flex-col"
             },
             "children": [
               {
                 "type": "Icon",
                 "props": {
                   "icon": "lucide:globe",
-                  "className": "h-[32px] w-[32px] text-[#7c3aed]"
+                  "className": "h-[32px] w-[32px] text-[#7c3aed] flex-col"
                 }
               }
             ]
@@ -33,14 +33,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[30px] font-bold"
+              "className": "text-[30px] font-bold flex-col"
             },
             "text": "Check Your Email"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)] text-[18px]"
+              "className": "text-[var(--theme-muted-foreground)] text-[18px] flex-col"
             },
             "text": "We've sent a verification link to your email address. Please click the link to verify your account."
           },
@@ -53,7 +53,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-white"
+                  "className": "text-white flex-col"
                 },
                 "text": "Back to Sign In"
               }

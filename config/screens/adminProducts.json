@@ -10,11 +10,7 @@
         "type": "Box",
         "condition": "variables['adm00007-0000-0000-0000-000000000007'] || variables['adm00009-0000-0000-0000-000000000009'] || variables['adm00010-0000-0000-0000-000000000010'] || variables['adm00011-0000-0000-0000-000000000011'] || variables['adm00018-0000-0000-0000-000000000018']",
         "props": {
-          "className": "fixed inset-0 z-[45]",
-          "style": {
-            "background": "transparent",
-            "cursor": "default"
-          }
+          "className": "fixed inset-0 z-[45] bg-transparent cursor-default flex-col"
         },
         "actions": [
           {
@@ -35,7 +31,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[28px] font-bold text-[var(--theme-admin-text)] leading-tight"
+                  "className": "text-[28px] font-bold text-[var(--theme-admin-text)] leading-tight flex-col"
                 },
                 "text": "Products"
               }
@@ -70,7 +66,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-text)]"
+                      "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                     },
                     "text": "Rebuild search index"
                   }
@@ -93,7 +89,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-semibold text-white"
+                      "className": "text-[13px] font-semibold text-white flex-col"
                     },
                     "text": "New Product"
                   }
@@ -129,7 +125,7 @@
                 "id": "admin-products-filter-input",
                 "props": {
                   "placeholder": "Filter by name...",
-                  "className": "w-[220px] !bg-transparent !border-0 !shadow-none !ring-0 !outline-none h-[28px] text-[13px] text-[var(--theme-admin-text)]",
+                  "className": "w-[220px] !bg-transparent !border-0 !shadow-none !ring-0 !outline-none h-[28px] text-[13px] text-[var(--theme-admin-text)] flex-col",
                   "placeholderTextColor": "var(--theme-admin-label)"
                 },
                 "actions": [
@@ -144,7 +140,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "relative z-[50]"
+              "className": "relative z-[50] flex-col"
             },
             "children": [
               {
@@ -177,13 +173,13 @@
                 "type": "Box",
                 "condition": "variables['adm00010-0000-0000-0000-000000000010']",
                 "props": {
-                  "className": "absolute left-0 top-[36px] w-[260px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]"
+                  "className": "absolute left-0 top-[36px] w-[260px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]"
+                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px] flex-col"
                     },
                     "text": "Filter by status"
                   },
@@ -273,7 +269,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "border-t border-[#2a2627] mt-[12px] pt-[10px]"
+                      "className": "border-t border-[#2a2627] mt-[12px] pt-[10px] flex-col"
                     },
                     "children": [
                       {
@@ -303,7 +299,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-[var(--theme-admin-muted)]"
+                              "className": "text-[12px] text-[var(--theme-admin-muted)] flex-col"
                             },
                             "text": "Clear filters"
                           }
@@ -318,7 +314,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "relative z-[50]"
+              "className": "relative z-[50] flex-col"
             },
             "children": [
               {
@@ -351,13 +347,13 @@
                 "type": "Box",
                 "condition": "variables['adm00011-0000-0000-0000-000000000011']",
                 "props": {
-                  "className": "absolute left-0 top-[36px] w-[240px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px]"
+                  "className": "absolute left-0 top-[36px] w-[240px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-[14px] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px]"
+                      "className": "text-[11px] font-semibold text-[var(--theme-admin-muted)] uppercase tracking-wider mb-[10px] flex-col"
                     },
                     "text": "Saved filters"
                   },
@@ -378,14 +374,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-muted)] text-center"
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] text-center flex-col"
                         },
                         "text": "No saved filters yet"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] text-[var(--theme-admin-label)] text-center"
+                          "className": "text-[11px] text-[var(--theme-admin-label)] text-center flex-col"
                         },
                         "text": "Apply filters, then save them here for quick access"
                       }
@@ -394,7 +390,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "border-t border-[#2a2627] pt-[10px]"
+                      "className": "border-t border-[#2a2627] pt-[10px] flex-col"
                     },
                     "children": [
                       {
@@ -420,7 +416,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-[var(--theme-admin-label)]"
+                              "className": "text-[12px] text-[var(--theme-admin-label)] flex-col"
                             },
                             "text": "Save current filters"
                           }
@@ -435,19 +431,19 @@
           {
             "type": "Box",
             "props": {
-              "className": "flex-1"
+              "className": "flex-1 flex-col"
             }
           },
           {
             "type": "Box",
             "props": {
-              "className": "relative z-[50]"
+              "className": "relative z-[50] flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors"
+                  "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-col"
                 },
                 "actions": [
                   {
@@ -470,7 +466,7 @@
                 "type": "Box",
                 "condition": "variables['adm00009-0000-0000-0000-000000000009']",
                 "props": {
-                  "className": "absolute right-0 top-[36px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50"
+                  "className": "absolute right-0 top-[36px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 flex-col"
                 },
                 "children": [
                   {
@@ -487,7 +483,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "transition-transform duration-[150ms]",
+                          "className": "transition-transform duration-[150ms] flex-col",
                           "style": {
                             "transform": {
                               "js": "const drag=variables['adm00014-0000-0000-0000-000000000014']; const myId=context?.item?.data?.id; const myIdx=context?.item?.data?.index; if(!drag?.cardId) return 'translateY(0px)'; const si=drag.sourceIndex; const ti=drag.targetIndex; const sh=36; if(myId===drag.cardId) return 'translateY(0px)'; if(myIdx>si&&myIdx<=ti) return 'translateY(-'+sh+'px)'; if(myIdx<si&&myIdx>=ti) return 'translateY('+sh+'px)'; return 'translateY(0px)';"
@@ -542,9 +538,7 @@
                                   "size": 14,
                                   "color": "var(--theme-admin-border)",
                                   "draggable": false,
-                                  "style": {
-                                    "pointerEvents": "none"
-                                  }
+                                  "className": "pointer-events-none flex-col"
                                 }
                               },
                               {
@@ -554,19 +548,14 @@
                                   "icon": "lucide:check",
                                   "size": 13,
                                   "color": "var(--theme-admin-accent)",
-                                  "style": {
-                                    "pointerEvents": "none"
-                                  }
+                                  "className": "pointer-events-none flex-col"
                                 }
                               },
                               {
                                 "type": "Box",
                                 "condition": "context.item.data.visible !== true",
                                 "props": {
-                                  "className": "w-[13px]",
-                                  "style": {
-                                    "pointerEvents": "none"
-                                  }
+                                  "className": "w-[13px] pointer-events-none flex-col"
                                 }
                               },
                               {
@@ -587,13 +576,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "border-t border-[#2a2627]"
+                      "className": "border-t border-[#2a2627] flex-col"
                     }
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "px-[12px] py-[10px]"
+                      "className": "px-[12px] py-[10px] flex-col"
                     },
                     "children": [
                       {
@@ -611,7 +600,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[13px] text-[var(--theme-admin-text)]"
+                              "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                             },
                             "text": "Reset"
                           }
@@ -626,7 +615,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors"
+              "className": "w-[32px] h-[32px] flex items-center justify-center rounded-[6px] border border-[#2a2627] bg-[var(--theme-admin-surface)] hover:bg-[var(--theme-admin-surface-hover)] cursor-pointer transition-colors flex-col"
             },
             "actions": [
               {
@@ -651,17 +640,14 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-background)] rounded-[8px] border border-[#2a2627] relative z-[46]"
+          "className": "bg-[var(--theme-admin-background)] rounded-[8px] border border-[#2a2627] relative z-[46] flex-col"
         },
         "children": [
           {
             "type": "Box",
             "condition": "variables['adm00007-0000-0000-0000-000000000007'] !== ''",
             "props": {
-              "className": "absolute inset-0 z-[5]",
-              "style": {
-                "background": "transparent"
-              }
+              "className": "absolute inset-0 z-[5] bg-transparent flex-col"
             },
             "actions": [
               {
@@ -685,17 +671,14 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)]",
-                  "style": {
-                    "order": 0
-                  }
+                  "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)] order-[0] flex-col"
                 }
               },
               {
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='featured_asset')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='featured_asset')+1;"
@@ -719,7 +702,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]"
+                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] flex-col"
                     },
                     "text": "Name"
                   },
@@ -748,7 +731,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]"
+                      "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] flex-col"
                     },
                     "text": "Slug"
                   },
@@ -766,7 +749,7 @@
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='description')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='description')+1;"
@@ -779,7 +762,7 @@
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='enabled')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='enabled')+1;"
@@ -792,7 +775,7 @@
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='id')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)]",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='id')+1;"
@@ -805,7 +788,7 @@
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='created_at')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='created_at')+1;"
@@ -818,7 +801,7 @@
                 "type": "Text",
                 "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='updated_at')?.visible===true",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] whitespace-nowrap flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='updated_at')+1;"
@@ -830,7 +813,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] text-center w-full",
+                  "className": "text-[12px] font-medium text-[var(--theme-admin-muted)] text-center w-full flex-col",
                   "style": {
                     "order": {
                       "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.length+1;"
@@ -871,10 +854,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)] mt-[1px]",
-                      "style": {
-                        "order": 0
-                      }
+                      "className": "w-[16px] h-[16px] rounded-[3px] border border-[var(--theme-admin-border)] mt-[1px] order-[0] flex-col"
                     }
                   },
                   {
@@ -885,7 +865,7 @@
                       "alt": "{{context.item.data.name}}",
                       "width": 36,
                       "height": 36,
-                      "className": "w-[36px] h-[36px] rounded-[4px] object-cover border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] flex-shrink-0",
+                      "className": "w-[36px] h-[36px] rounded-[4px] object-cover border border-[var(--theme-admin-border)] bg-[var(--theme-admin-sidebar)] flex-shrink-0 flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='featured_asset')+1;"
@@ -908,7 +888,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate flex-col"
                         },
                         "text": "{{context.item.data.name}}"
                       },
@@ -918,7 +898,7 @@
                           "icon": "lucide:chevron-right",
                           "size": 12,
                           "color": "var(--theme-admin-muted)",
-                          "className": "flex-shrink-0"
+                          "className": "flex-shrink-0 flex-col"
                         }
                       }
                     ]
@@ -927,7 +907,7 @@
                     "type": "Text",
                     "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='slug')?.visible===true",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate",
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='slug')+1;"
@@ -940,7 +920,7 @@
                     "type": "Text",
                     "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='description')?.visible===true",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate",
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] truncate flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='description')+1;"
@@ -970,7 +950,7 @@
                     "type": "Text",
                     "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='id')?.visible===true",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-muted)] truncate font-mono",
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] truncate font-mono flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='id')+1;"
@@ -983,7 +963,7 @@
                     "type": "Text",
                     "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='created_at')?.visible===true",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap",
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='created_at')+1;"
@@ -998,7 +978,7 @@
                     "type": "Text",
                     "condition": "(variables['adm00013-0000-0000-0000-000000000013']??[]).find(c=>c.id==='updated_at')?.visible===true",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap",
+                      "className": "text-[12px] text-[var(--theme-admin-muted)] whitespace-nowrap flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.findIndex(v=>v.id==='updated_at')+1;"
@@ -1012,7 +992,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex items-center justify-center relative",
+                      "className": "flex items-center justify-center relative flex-col",
                       "style": {
                         "order": {
                           "js": "const c=(variables['adm00013-0000-0000-0000-000000000013']??[]).filter(v=>v.visible===true); return c.length+1;"
@@ -1023,7 +1003,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-[28px] h-[28px] rounded-[4px] flex items-center justify-center hover:bg-[var(--theme-admin-surface-hover)] transition-colors cursor-pointer"
+                          "className": "w-[28px] h-[28px] rounded-[4px] flex items-center justify-center hover:bg-[var(--theme-admin-surface-hover)] transition-colors cursor-pointer flex-col"
                         },
                         "actions": [
                           {
@@ -1046,7 +1026,7 @@
                         "type": "Box",
                         "condition": "variables['adm00007-0000-0000-0000-000000000007'] === context.item.data.id",
                         "props": {
-                          "className": "absolute right-0 top-[34px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-[4px] overflow-hidden"
+                          "className": "absolute right-0 top-[34px] w-[220px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 py-[4px] overflow-hidden flex-col"
                         },
                         "children": [
                           {
@@ -1072,7 +1052,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                  "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                                 },
                                 "text": "Remove from current channel"
                               }
@@ -1101,7 +1081,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                  "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                                 },
                                 "text": "Edit facet values"
                               }
@@ -1130,7 +1110,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                  "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                                 },
                                 "text": "Duplicate"
                               }
@@ -1139,7 +1119,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "border-t border-[#2a2627] mx-[0px] my-[4px]"
+                              "className": "border-t border-[#2a2627] mx-[0px] my-[4px] flex-col"
                             }
                           },
                           {
@@ -1165,7 +1145,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-admin-danger)]"
+                                  "className": "text-[13px] text-[var(--theme-admin-danger)] flex-col"
                                 },
                                 "text": "Delete"
                               }
@@ -1197,7 +1177,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No products found"
               }
@@ -1212,7 +1192,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-label)]"
+                  "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": {
                   "formula": "(() => { const total = collections['ad000004-0000-0000-0000-000000000004']?.total || 0; const page = variables['adm00017-0000-0000-0000-000000000017'] || 1; const size = variables['adm00016-0000-0000-0000-000000000016'] || 10; const from = Math.min((page - 1) * size + 1, total); const to = Math.min(page * size, total); return total === 0 ? '0 results' : from + '–' + to + ' of ' + total + ' results'; })()"
@@ -1233,14 +1213,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Rows per page"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "relative z-[50]"
+                          "className": "relative z-[50] flex-col"
                         },
                         "children": [
                           {
@@ -1260,7 +1240,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[13px] text-[var(--theme-admin-text)]"
+                                  "className": "text-[13px] text-[var(--theme-admin-text)] flex-col"
                                 },
                                 "text": {
                                   "formula": "String(variables['adm00016-0000-0000-0000-000000000016'] || 10)"
@@ -1280,7 +1260,7 @@
                             "type": "Box",
                             "condition": "variables['adm00018-0000-0000-0000-000000000018']",
                             "props": {
-                              "className": "absolute bottom-[34px] left-0 w-[80px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.5)] z-50 py-[4px]"
+                              "className": "absolute bottom-[34px] left-0 w-[80px] bg-[var(--theme-admin-surface)] border border-[#2a2627] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.5)] z-50 py-[4px] flex-col"
                             },
                             "children": [
                               {
@@ -1303,9 +1283,7 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "style": {
-                                        "pointerEvents": "none"
-                                      }
+                                      "className": "pointer-events-none flex-col"
                                     },
                                     "text": {
                                       "formula": "String(context?.item?.data?.size)"
@@ -1322,7 +1300,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                      "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                     },
                     "text": {
                       "formula": "concat('Page ', String(variables['adm00017-0000-0000-0000-000000000017'] || 1), ' of ', String(collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1))"
@@ -1338,7 +1316,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) > 1",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-col"
                         },
                         "actions": [
                           {
@@ -1364,7 +1342,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) <= 1",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed flex-col"
                         },
                         "children": [
                           {
@@ -1381,7 +1359,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) > 1",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-col"
                         },
                         "actions": [
                           {
@@ -1404,7 +1382,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) <= 1",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed flex-col"
                         },
                         "children": [
                           {
@@ -1421,7 +1399,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) < (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-col"
                         },
                         "actions": [
                           {
@@ -1444,7 +1422,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) >= (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed flex-col"
                         },
                         "children": [
                           {
@@ -1461,7 +1439,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) < (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] bg-[var(--theme-admin-surface)] cursor-pointer hover:bg-[var(--theme-admin-surface-hover)] transition-colors flex-col"
                         },
                         "actions": [
                           {
@@ -1487,7 +1465,7 @@
                         "type": "Box",
                         "condition": "(variables['adm00017-0000-0000-0000-000000000017'] || 1) >= (collections['ad000004-0000-0000-0000-000000000004']?.totalPages || 1)",
                         "props": {
-                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed"
+                          "className": "w-[28px] h-[28px] flex items-center justify-center rounded-[4px] border border-[#2a2627] opacity-30 cursor-not-allowed flex-col"
                         },
                         "children": [
                           {

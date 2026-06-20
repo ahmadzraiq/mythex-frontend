@@ -42,7 +42,7 @@
                 "type": "Text",
                 "props": {
                   "style": {},
-                  "className": "text-[44px] font-bold leading-tight !text-[var(--theme-foreground)]"
+                  "className": "text-[44px] font-bold leading-tight !text-[var(--theme-foreground)] flex-col"
                 },
                 "children": []
               },
@@ -53,7 +53,7 @@
                 "type": "Text",
                 "props": {
                   "style": {},
-                  "className": "text-[16px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[16px] leading-relaxed !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "children": []
               },
@@ -62,18 +62,7 @@
                 "name": "CTAButton",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 2px 8px 0px rgba(124, 58, 237, 0.2)",
-                    "elevation": 4,
-                    "shadowColor": "rgb(124,58,237)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 2
-                    },
-                    "shadowRadius": 8,
-                    "shadowOpacity": 0.2
-                  },
-                  "className": "items-center pl-[28px] pr-[28px] pt-[12px] pb-[12px] cursor-pointer w-fit !bg-[var(--theme-primary)] rounded-[6px]"
+                  "className": "items-center pl-[28px] pr-[28px] pt-[12px] pb-[12px] cursor-pointer w-fit !bg-[var(--theme-primary)] rounded-[6px] shadow-[0px_2px_8px_0px_rgba(124,_58,_237,_0.2)] flex-col"
                 },
                 "animation": {
                   "hover": {
@@ -99,7 +88,7 @@
                     "type": "Text",
                     "props": {
                       "style": {},
-                      "className": "text-[14px] font-semibold !text-[var(--theme-primary-foreground)]"
+                      "className": "text-[14px] font-semibold !text-[var(--theme-primary-foreground)] flex-col"
                     },
                     "children": []
                   }
@@ -113,7 +102,7 @@
             "type": "Box",
             "props": {
               "style": {},
-              "className": "flex-1 h-[500px] relative"
+              "className": "flex-1 h-[500px] relative flex-col"
             },
             "animation": {
               "scroll": {
@@ -133,19 +122,7 @@
                   "src": "https://images.unsplash.com/photo-1760129774345-4b7ab4511d8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHx2aWJyYW50JTIwc3Vuc2V0JTIwbW91bnRhaW4lMjBsYW5kc2NhcGUlMjBwaG90b2dyYXBoeXxlbnwwfHx8fDE3NzU5Mjc3NDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
                   "alt": "Pink and purple sky over rolling hills at dusk",
                   "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "-8px 12px 24px 0px rgba(59, 7, 100, 0.15)",
-                    "elevation": 12,
-                    "transform": "rotate(-8deg)",
-                    "shadowColor": "rgb(59,7,100)",
-                    "shadowOffset": {
-                      "width": -8,
-                      "height": 12
-                    },
-                    "shadowRadius": 24,
-                    "shadowOpacity": 0.15
-                  },
-                  "className": "w-[280px] h-[320px] absolute z-[1] top-[20px] left-[0px] rounded-[12px]"
+                  "className": "w-[280px] h-[320px] absolute z-[1] top-[20px] left-[0px] rounded-[12px] shadow-[-8px_12px_24px_0px_rgba(59,_7,_100,_0.15)] rotate-[-8deg] flex-col"
                 },
                 "children": []
               },
@@ -157,19 +134,7 @@
                   "src": "https://images.unsplash.com/photo-1644251788315-b6d673cc219c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxtb2Rlcm4lMjB1cmJhbiUyMGFyY2hpdGVjdHVyZSUyMGdsYXNzJTIwYnVpbGRpbmd8ZW58MHx8fHwxNzc1OTI3NzQzfDA&ixlib=rb-4.1.0&q=80&w=1080",
                   "alt": "a tall building with a clock on the side of it",
                   "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "0px 16px 32px 0px rgba(59, 7, 100, 0.2)",
-                    "elevation": 16,
-                    "transform": "rotate(4deg)",
-                    "shadowColor": "rgb(59,7,100)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 16
-                    },
-                    "shadowRadius": 32,
-                    "shadowOpacity": 0.2
-                  },
-                  "className": "w-[300px] h-[340px] absolute z-[2] top-[80px] left-[150px] rounded-[12px]"
+                  "className": "w-[300px] h-[340px] absolute z-[2] top-[80px] left-[150px] rounded-[12px] shadow-[0px_16px_32px_0px_rgba(59,_7,_100,_0.2)] rotate-[4deg] flex-col"
                 },
                 "children": []
               },
@@ -181,19 +146,7 @@
                   "src": "https://images.unsplash.com/photo-1759483607793-d262128100ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHwyfHxzZXJlbmUlMjBmb3Jlc3QlMjB3YXRlcmZhbGwlMjBuYXR1cmUlMjBzY2VuZXxlbnwwfHx8fDE3NzU5Mjc3NDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
                   "alt": "A lush waterfall cascades through a dense tropical forest",
                   "objectFit": "cover",
-                  "style": {
-                    "boxShadow": "8px 12px 28px 0px rgba(59, 7, 100, 0.15)",
-                    "elevation": 14,
-                    "transform": "rotate(-6deg)",
-                    "shadowColor": "rgb(59,7,100)",
-                    "shadowOffset": {
-                      "width": 8,
-                      "height": 12
-                    },
-                    "shadowRadius": 28,
-                    "shadowOpacity": 0.15
-                  },
-                  "className": "w-[260px] h-[300px] absolute z-[1] top-[140px] right-[20px] rounded-[12px]"
+                  "className": "w-[260px] h-[300px] absolute z-[1] top-[140px] right-[20px] rounded-[12px] shadow-[8px_12px_28px_0px_rgba(59,_7,_100,_0.15)] rotate-[-6deg] flex-col"
                 },
                 "children": []
               }

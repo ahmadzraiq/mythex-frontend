@@ -15,7 +15,7 @@
         "name": "Full-Screen Video Hero",
         "type": "Box",
         "props": {
-          "className": "w-full h-screen relative overflow-hidden"
+          "className": "w-full h-screen relative overflow-hidden flex-col"
         },
         "children": [
           {
@@ -29,7 +29,7 @@
               "poster": "https://images.pexels.com/videos/18526851/3d-arcadian-cgi-digital-18526851.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=630&w=1200",
               "autoPlay": true,
               "controls": false,
-              "className": "w-full h-full absolute top-[0px] left-[0px]",
+              "className": "w-full h-full absolute top-[0px] left-[0px] flex-col",
               "objectFit": "cover"
             },
             "children": []
@@ -39,11 +39,7 @@
             "name": "Dark Overlay",
             "type": "Box",
             "props": {
-              "style": {
-                "backgroundColor": "rgba(0,0,0,0.55)",
-                "pointerEvents": "none"
-              },
-              "className": "absolute inset-0 z-[10] pointer-events-none"
+              "className": "absolute inset-0 z-[10] pointer-events-none bg-[rgba(0,0,0,0.55)] pointer-events-none flex-col"
             },
             "children": []
           },
@@ -52,11 +48,7 @@
             "name": "Hero Content Container",
             "type": "Box",
             "props": {
-              "style": {
-                "translateX": "-50%",
-                "translateY": "-50%"
-              },
-              "className": "items-center pl-[32px] pr-[32px] w-full max-w-[900px] absolute z-[20] top-[50%] left-[50%]"
+              "className": "items-center pl-[32px] pr-[32px] w-full max-w-[900px] absolute z-[20] top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] flex-col"
             },
             "children": [
               {
@@ -64,10 +56,7 @@
                 "name": "Badge Chip",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "backgroundColor": "rgba(255,255,255,0.2)"
-                  },
-                  "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] mb-[24px] border-[1px] border-solid border-[rgba(255,255,255,0.4)] rounded-[20px]"
+                  "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] mb-[24px] border-[1px] border-solid border-[rgba(255,255,255,0.4)] rounded-[20px] bg-[rgba(255,255,255,0.2)] flex-col"
                 },
                 "children": [
                   {
@@ -75,7 +64,7 @@
                     "text": "New Release",
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold tracking-wide uppercase !text-[#ffffff]"
+                      "className": "text-[12px] font-semibold tracking-wide uppercase !text-[#ffffff] flex-col"
                     },
                     "children": []
                   }
@@ -98,7 +87,7 @@
                 "text": "The Future Is Now",
                 "type": "Text",
                 "props": {
-                  "className": "mb-[16px] text-[72px] font-bold leading-tight text-center !text-[#ffffff]"
+                  "className": "mb-[16px] text-[72px] font-bold leading-tight text-center !text-[#ffffff] flex-col"
                 },
                 "children": [],
                 "animation": {
@@ -115,7 +104,7 @@
                 "text": "Experience the next generation of innovation.\nTransform your vision into reality.",
                 "type": "Text",
                 "props": {
-                  "className": "mb-[40px] max-w-[600px] text-[20px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)]"
+                  "className": "mb-[40px] max-w-[600px] text-[20px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)] flex-col"
                 },
                 "children": [],
                 "animation": {
@@ -139,7 +128,7 @@
                     "name": "Primary CTA Button",
                     "type": "Box",
                     "props": {
-                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary)] rounded-[8px]"
+                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary)] rounded-[8px] flex-col"
                     },
                     "children": [
                       {
@@ -147,7 +136,7 @@
                         "text": "Get Started",
                         "type": "Text",
                         "props": {
-                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]"
+                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)] flex-col"
                         },
                         "children": []
                       }
@@ -168,10 +157,7 @@
                     "name": "Ghost CTA Button",
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "backgroundColor": "rgba(255,255,255,0.15)"
-                      },
-                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer border-[2px] border-solid border-[rgba(255,255,255,0.4)] rounded-[8px]"
+                      "className": "pl-[32px] pr-[32px] pt-[16px] pb-[16px] cursor-pointer border-[2px] border-solid border-[rgba(255,255,255,0.4)] rounded-[8px] bg-[rgba(255,255,255,0.15)] flex-col"
                     },
                     "children": [
                       {
@@ -179,7 +165,7 @@
                         "text": "Learn More",
                         "type": "Text",
                         "props": {
-                          "className": "text-[16px] font-semibold !text-[#ffffff]"
+                          "className": "text-[16px] font-semibold !text-[#ffffff] flex-col"
                         },
                         "children": []
                       }
@@ -250,7 +236,7 @@
                 "type": "Text",
                 "text": "Our Work",
                 "props": {
-                  "className": "text-[13px] font-semibold tracking-widest uppercase !text-[var(--theme-primary)]"
+                  "className": "text-[13px] font-semibold tracking-widest uppercase !text-[var(--theme-primary)] flex-col"
                 },
                 "animation": {
                   "enter": {
@@ -266,7 +252,7 @@
                 "type": "Text",
                 "text": "Crafted with precision and purpose",
                 "props": {
-                  "className": "text-[42px] font-bold leading-tight !text-[var(--theme-foreground)]"
+                  "className": "text-[42px] font-bold leading-tight !text-[var(--theme-foreground)] flex-col"
                 },
                 "animation": {
                   "enter": {
@@ -282,7 +268,7 @@
                 "type": "Text",
                 "text": "Every project starts with a vision. We turn that vision into stunning reality through thoughtful design and meticulous execution.",
                 "props": {
-                  "className": "text-[17px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[17px] leading-relaxed !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "animation": {
                   "enter": {
@@ -306,7 +292,7 @@
                     "type": "Text",
                     "text": "View all projects",
                     "props": {
-                      "className": "text-[15px] font-semibold !text-[var(--theme-primary)]"
+                      "className": "text-[15px] font-semibold !text-[var(--theme-primary)] flex-col"
                     }
                   },
                   {
@@ -339,7 +325,7 @@
             "name": "Images Gallery Container",
             "type": "Box",
             "props": {
-              "className": "w-[560px] h-[500px] relative"
+              "className": "w-[560px] h-[500px] relative flex-col"
             },
             "children": [
               {
@@ -347,11 +333,7 @@
                 "name": "Image Layer 1 Wrapper",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 20px 40px 0px rgba(0,0,0,0.15)",
-                    "transform": "rotate(-8deg)"
-                  },
-                  "className": "w-[300px] h-[300px] absolute z-[1] top-[20px] left-[0px] overflow-hidden rounded-[12px]"
+                  "className": "w-[300px] h-[300px] absolute z-[1] top-[20px] left-[0px] overflow-hidden rounded-[12px] shadow-[0px_20px_40px_0px_rgba(0,0,0,0.15)] rotate-[-8deg] flex-col"
                 },
                 "children": [
                   {
@@ -359,7 +341,7 @@
                     "type": "Image",
                     "props": {
                       "alt": "Modern building architecture with geometric patterns",
-                      "className": "w-full h-full",
+                      "className": "w-full h-full flex-col",
                       "objectFit": "cover",
                       "src": "https://images.unsplash.com/photo-1768223886132-24ac6c85ef3d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw1fHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmUlMjBnZW9tZXRyaWMlMjBidWlsZGluZyUyMGRldGFpbCUyMHN1bmxpZ2h0fGVufDB8fHx8MTc3NTQwODUzMnww&ixlib=rb-4.1.0&q=80&w=1080"
                     },
@@ -379,11 +361,7 @@
                 "name": "Image Layer 2 Wrapper",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 30px 50px 0px rgba(0,0,0,0.2)",
-                    "transform": "rotate(6deg)"
-                  },
-                  "className": "w-[280px] h-[320px] absolute z-[3] top-[100px] right-[40px] overflow-hidden rounded-[12px]"
+                  "className": "w-[280px] h-[320px] absolute z-[3] top-[100px] right-[40px] overflow-hidden rounded-[12px] shadow-[0px_30px_50px_0px_rgba(0,0,0,0.2)] rotate-[6deg] flex-col"
                 },
                 "children": [
                   {
@@ -391,7 +369,7 @@
                     "type": "Image",
                     "props": {
                       "alt": "Palm frond in lush, green garden.",
-                      "className": "w-full h-full",
+                      "className": "w-full h-full flex-col",
                       "objectFit": "cover",
                       "src": "https://images.unsplash.com/photo-1745488792461-7a32632ab220?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHxsdXNoJTIwZ3JlZW4lMjB0cm9waWNhbCUyMHBsYW50cyUyMGxlYWYlMjBjbG9zZS11cHxlbnwwfHx8fDE3NzU0MDg1MzN8MA&ixlib=rb-4.1.0&q=80&w=1080"
                     },
@@ -411,11 +389,7 @@
                 "name": "Image Layer 3 Wrapper",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 25px 35px 0px rgba(0,0,0,0.12)",
-                    "transform": "rotate(-5deg)"
-                  },
-                  "className": "w-[290px] h-[290px] absolute z-[2] bottom-[30px] left-[80px] overflow-hidden rounded-[12px]"
+                  "className": "w-[290px] h-[290px] absolute z-[2] bottom-[30px] left-[80px] overflow-hidden rounded-[12px] shadow-[0px_25px_35px_0px_rgba(0,0,0,0.12)] rotate-[-5deg] flex-col"
                 },
                 "children": [
                   {
@@ -423,7 +397,7 @@
                     "type": "Image",
                     "props": {
                       "alt": "Vibrant orange clouds over the ocean at dusk",
-                      "className": "w-full h-full",
+                      "className": "w-full h-full flex-col",
                       "objectFit": "cover",
                       "src": "https://images.unsplash.com/photo-1774440575258-6a7dda9419c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w5MDYwMzJ8MHwxfHNlYXJjaHw4fHx2aWJyYW50JTIwc3Vuc2V0JTIwb2NlYW4lMjB3YXRlciUyMHJlZmxlY3Rpb24lMjBnb2xkZW4lMjBob3VyfGVufDB8fHx8MTc3NTQwODUzNHww&ixlib=rb-4.1.0&q=80&w=1080"
                     },
@@ -465,7 +439,7 @@
             "type": "Text",
             "text": "Why Choose Us",
             "props": {
-              "className": "text-[13px] font-semibold tracking-widest uppercase text-center mb-[12px] !text-[var(--theme-primary)]"
+              "className": "text-[13px] font-semibold tracking-widest uppercase text-center mb-[12px] !text-[var(--theme-primary)] flex-col"
             },
             "animation": {
               "enter": {
@@ -480,7 +454,7 @@
             "type": "Text",
             "text": "Everything you need to succeed",
             "props": {
-              "className": "text-[40px] font-bold text-center mb-[48px] !text-[var(--theme-foreground)]"
+              "className": "text-[40px] font-bold text-center mb-[48px] !text-[var(--theme-foreground)] flex-col"
             },
             "animation": {
               "enter": {
@@ -505,18 +479,7 @@
                 "name": "Feature Card",
                 "type": "Box",
                 "props": {
-                  "style": {
-                    "boxShadow": "0px 4px 12px 0px rgba(0,0,0,0.05)",
-                    "elevation": 6,
-                    "shadowColor": "rgb(0,0,0)",
-                    "shadowOffset": {
-                      "width": 0,
-                      "height": 4
-                    },
-                    "shadowRadius": 12,
-                    "shadowOpacity": 0.05
-                  },
-                  "className": "p-[32px] cursor-pointer !bg-[var(--theme-card)] border-[1px] border-solid border-[var(--theme-border)] rounded-[12px]"
+                  "className": "p-[32px] cursor-pointer !bg-[var(--theme-card)] border-[1px] border-solid border-[var(--theme-border)] rounded-[12px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex-col"
                 },
                 "children": [
                   {
@@ -536,7 +499,7 @@
                     },
                     "type": "Text",
                     "props": {
-                      "className": "mt-[16px] mb-[8px] text-[18px] font-semibold !text-[var(--theme-foreground)]"
+                      "className": "mt-[16px] mb-[8px] text-[18px] font-semibold !text-[var(--theme-foreground)] flex-col"
                     },
                     "children": []
                   },
@@ -547,7 +510,7 @@
                     },
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                      "className": "text-[14px] leading-relaxed !text-[var(--theme-muted-foreground)] flex-col"
                     },
                     "children": []
                   }
@@ -577,7 +540,7 @@
         "name": "Gradient CTA Banner",
         "type": "Box",
         "props": {
-          "className": "pl-[48px] pr-[48px] pt-[80px] pb-[80px] w-full relative overflow-hidden"
+          "className": "pl-[48px] pr-[48px] pt-[80px] pb-[80px] w-full relative overflow-hidden flex-col"
         },
         "children": [
           {
@@ -588,7 +551,7 @@
               "style": {
                 "backgroundImage": "linear-gradient(135deg, #7c3aed 0%, #ede9fe 100%)"
               },
-              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px]"
+              "className": "w-full h-full absolute z-[1] top-[0px] left-[0px] flex-col"
             },
             "children": []
           },
@@ -606,7 +569,7 @@
                 "text": "Ready to start?",
                 "type": "Text",
                 "props": {
-                  "className": "mb-[16px] text-[48px] font-bold text-center !text-[#ffffff]"
+                  "className": "mb-[16px] text-[48px] font-bold text-center !text-[#ffffff] flex-col"
                 },
                 "children": []
               },
@@ -615,7 +578,7 @@
                 "type": "Text",
                 "text": "Join thousands of teams building faster with our platform.",
                 "props": {
-                  "className": "mb-[32px] text-[18px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)]"
+                  "className": "mb-[32px] text-[18px] leading-relaxed text-center !text-[rgba(255,255,255,0.85)] flex-col"
                 },
                 "children": []
               },
@@ -624,7 +587,7 @@
                 "name": "CTA Button",
                 "type": "Box",
                 "props": {
-                  "className": "pl-[40px] pr-[40px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary-foreground)] rounded-[8px]"
+                  "className": "pl-[40px] pr-[40px] pt-[16px] pb-[16px] cursor-pointer !bg-[var(--theme-primary-foreground)] rounded-[8px] flex-col"
                 },
                 "children": [
                   {
@@ -632,7 +595,7 @@
                     "text": "Get Started",
                     "type": "Text",
                     "props": {
-                      "className": "text-[16px] font-semibold !text-[var(--theme-primary)]"
+                      "className": "text-[16px] font-semibold !text-[var(--theme-primary)] flex-col"
                     },
                     "children": []
                   }

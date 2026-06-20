@@ -14,11 +14,7 @@
         "name": "bg-glow-1",
         "type": "Box",
         "props": {
-          "className": "absolute top-[-100px] left-[-100px] w-[500px] h-[500px] rounded-[9999px] bg-[#7c3aed]",
-          "style": {
-            "opacity": 0.07,
-            "boxShadow": "0px 0px 120px 60px #7c3aed"
-          }
+          "className": "absolute top-[-100px] left-[-100px] w-[500px] h-[500px] rounded-[9999px] bg-[#7c3aed] opacity-[0.07] shadow-[0px_0px_120px_60px_#7c3aed] flex-col"
         },
         "children": []
       },
@@ -47,7 +43,7 @@
                 "type": "Text",
                 "props": {
                   "style": {},
-                  "className": "text-[56px] font-bold !text-[var(--theme-foreground)]"
+                  "className": "text-[56px] font-bold !text-[var(--theme-foreground)] flex-col"
                 },
                 "children": [],
                 "animation": {
@@ -65,7 +61,7 @@
                 "type": "Text",
                 "props": {
                   "style": {},
-                  "className": "text-[20px] font-semibold !text-[var(--theme-primary)]"
+                  "className": "text-[20px] font-semibold !text-[var(--theme-primary)] flex-col"
                 },
                 "children": [],
                 "animation": {
@@ -83,7 +79,7 @@
                 "type": "Text",
                 "props": {
                   "style": {},
-                  "className": "text-[16px] leading-relaxed !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[16px] leading-relaxed !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "children": [],
                 "animation": {
@@ -117,7 +113,7 @@
                         "text": "Explore Now",
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                          "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                         },
                         "children": []
                       }
@@ -147,7 +143,7 @@
                         "text": "Learn More",
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-[var(--theme-foreground)]"
+                          "className": "text-[14px] font-medium text-[var(--theme-foreground)] flex-col"
                         },
                         "children": []
                       }
@@ -208,7 +204,7 @@
                         "type": "Text",
                         "props": {
                           "style": {},
-                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium"
+                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium flex-col"
                         },
                         "children": []
                       }
@@ -241,7 +237,7 @@
                         "type": "Text",
                         "props": {
                           "style": {},
-                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium"
+                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium flex-col"
                         },
                         "children": []
                       }
@@ -274,7 +270,7 @@
                         "type": "Text",
                         "props": {
                           "style": {},
-                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium"
+                          "className": "!text-[var(--theme-foreground)] text-[14px] font-medium flex-col"
                         },
                         "children": []
                       }
@@ -305,7 +301,7 @@
                 "name": "hero-cards-stack",
                 "type": "Box",
                 "props": {
-                  "className": "relative w-[500px] max-w-full shrink-0 overflow-visible pb-[80px] pr-[100px]"
+                  "className": "relative w-[500px] max-w-full shrink-0 overflow-visible pb-[80px] pr-[100px] flex-col"
                 },
                 "children": [
                   {
@@ -313,19 +309,7 @@
                     "name": "glow-highlight-2",
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "opacity": 0.12,
-                        "boxShadow": "0px 4px 60px 15px #7c3aed",
-                        "shadowColor": "#7c3aed",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 4
-                        },
-                        "shadowRadius": 60,
-                        "shadowOpacity": 1,
-                        "elevation": 30
-                      },
-                      "className": "absolute w-[350px] h-[350px] bg-[#7c3aed] bottom-[100px] left-[30px] rounded-[9999px] pointer-events-none z-[0]"
+                      "className": "absolute w-[350px] h-[350px] bg-[#7c3aed] bottom-[100px] left-[30px] rounded-[9999px] pointer-events-none z-[0] opacity-[0.12] shadow-[0px_4px_60px_15px_#7c3aed] flex-col"
                     },
                     "children": []
                   },
@@ -334,18 +318,7 @@
                     "name": "glassmorphism-card-main",
                     "type": "Box",
                     "props": {
-                      "style": {
-                        "boxShadow": "0px 4px 40px 0px #7c3aed",
-                        "elevation": 20,
-                        "shadowColor": "#7c3aed",
-                        "shadowOffset": {
-                          "width": 0,
-                          "height": 4
-                        },
-                        "shadowRadius": 40,
-                        "shadowOpacity": 1
-                      },
-                      "className": "w-[500px] h-[600px] bg-white/10 border-[1px] border-white/20 rounded-[24px] overflow-hidden"
+                      "className": "w-[500px] h-[600px] bg-white/10 border-[1px] border-white/20 rounded-[24px] overflow-hidden shadow-[0px_4px_40px_0px_#7c3aed] flex-col"
                     },
                     "animation": {
                       "enter": {
@@ -373,7 +346,7 @@
                         "props": {
                           "alt": "A purple and blue abstract background with circles, balls, and shapes",
                           "style": {},
-                          "className": "w-full flex-1",
+                          "className": "w-full flex-1 flex-col",
                           "objectFit": "cover"
                         },
                         "children": []
@@ -385,7 +358,7 @@
                     "name": "floating-secondary-container",
                     "type": "Box",
                     "props": {
-                      "className": "absolute z-[20]",
+                      "className": "absolute z-[20] flex-col",
                       "style": {
                         "right": -60,
                         "bottom": -40
@@ -397,18 +370,7 @@
                         "name": "glassmorphism-card-secondary",
                         "type": "Box",
                         "props": {
-                          "style": {
-                            "boxShadow": "0px 4px 30px 0px #7c3aed",
-                            "elevation": 15,
-                            "shadowColor": "#7c3aed",
-                            "shadowOffset": {
-                              "width": 0,
-                              "height": 4
-                            },
-                            "shadowRadius": 30,
-                            "shadowOpacity": 1
-                          },
-                          "className": "w-[300px] h-[360px] bg-white/8 border-[1px] border-white/15 rounded-[20px] overflow-hidden"
+                          "className": "w-[300px] h-[360px] bg-white/8 border-[1px] border-white/15 rounded-[20px] overflow-hidden shadow-[0px_4px_30px_0px_#7c3aed] flex-col"
                         },
                         "animation": {
                           "enter": {
@@ -442,7 +404,7 @@
                             "props": {
                               "alt": "a pink background with a green plant and a blue vase",
                               "style": {},
-                              "className": "w-full flex-1",
+                              "className": "w-full flex-1 flex-col",
                               "objectFit": "cover"
                             },
                             "children": []

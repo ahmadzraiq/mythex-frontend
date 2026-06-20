@@ -26,13 +26,13 @@
   "content": {
     "type": "Box",
     "props": {
-      "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[32px]"
+      "className": "w-full max-w-screen-xl mx-auto px-[16px] py-[32px] flex-col"
     },
     "children": [
       {
         "type": "Text",
         "props": {
-          "className": "text-[30px] font-bold mb-[32px]"
+          "className": "text-[30px] font-bold mb-[32px] flex-col"
         },
         "text": "Checkout"
       },
@@ -49,13 +49,13 @@
               "description": "Contact, shipping, and payment steps"
             },
             "props": {
-              "className": "lg:col-span-2 space-y-[16px]"
+              "className": "lg:col-span-2 space-y-[16px] flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
                 },
                 "condition": "auth?.user === null",
                 "children": [
@@ -80,7 +80,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                               "style": {
                                 "backgroundColor": {
                                   "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
@@ -96,14 +96,14 @@
                                 "props": {
                                   "icon": "lucide:check",
                                   "size": 16,
-                                  "className": "!text-white"
+                                  "className": "!text-white flex-col"
                                 },
                                 "condition": "auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-white"
+                                  "className": "font-semibold text-[14px] !text-white flex-col"
                                 },
                                 "text": "1",
                                 "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
@@ -111,7 +111,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "1",
                                 "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
@@ -121,7 +121,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[18px] font-semibold"
+                              "className": "text-[18px] font-semibold flex-col"
                             },
                             "text": "Contact Information"
                           }
@@ -130,7 +130,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "ml-auto shrink-0"
+                          "className": "ml-auto shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -138,7 +138,7 @@
                             "props": {
                               "icon": "lucide:chevron-up",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
                           },
@@ -147,7 +147,7 @@
                             "props": {
                               "icon": "lucide:chevron-down",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
                           }
@@ -158,7 +158,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pb-[24px]"
+                      "className": "pb-[24px] flex-col"
                     },
                     "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'",
                     "children": [
@@ -177,7 +177,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[var(--theme-muted-foreground)]"
+                                  "className": "text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "Already have an account? "
                               },
@@ -185,7 +185,7 @@
                                 "type": "Box",
                                 "props": {
                                   "href": "/sign-in",
-                                  "className": "text-blue-600 hover:underline font-medium"
+                                  "className": "text-blue-600 hover:underline font-medium flex-col"
                                 },
                                 "children": [
                                   {
@@ -199,13 +199,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Email Address *"
                               },
@@ -228,14 +228,14 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "min-h-[20px]"
+                                  "className": "min-h-[20px] flex-col"
                                 },
                                 "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] text-red-500 dark:text-red-400"
+                                      "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                                     },
                                     "text": "{{local.data.form.fields.emailAddress.isValid}}"
                                   }
@@ -252,13 +252,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "First Name *"
                                   },
@@ -280,14 +280,14 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "min-h-[20px]"
+                                      "className": "min-h-[20px] flex-col"
                                     },
                                     "condition": "local?.data?.form?.fields?.firstName?.isValid",
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-[14px] text-red-500 dark:text-red-400"
+                                          "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                                         },
                                         "text": "{{local.data.form.fields.firstName.isValid}}"
                                       }
@@ -298,13 +298,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "Last Name *"
                                   },
@@ -326,14 +326,14 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "min-h-[20px]"
+                                      "className": "min-h-[20px] flex-col"
                                     },
                                     "condition": "local?.data?.form?.fields?.lastName?.isValid",
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-[14px] text-red-500 dark:text-red-400"
+                                          "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                                         },
                                         "text": "{{local.data.form.fields.lastName.isValid}}"
                                       }
@@ -352,7 +352,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-white"
+                                  "className": "text-white flex-col"
                                 },
                                 "text": "Continue"
                               }
@@ -377,7 +377,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
                 },
                 "children": [
                   {
@@ -412,7 +412,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                               "style": {
                                 "backgroundColor": {
                                   "formula": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
@@ -428,14 +428,14 @@
                                 "props": {
                                   "icon": "lucide:check",
                                   "size": 16,
-                                  "className": "!text-white"
+                                  "className": "!text-white flex-col"
                                 },
                                 "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-white"
+                                  "className": "font-semibold text-[14px] !text-white flex-col"
                                 },
                                 "text": "2",
                                 "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
@@ -443,7 +443,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "2",
                                 "condition": "!collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
@@ -453,7 +453,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[18px] font-semibold"
+                              "className": "text-[18px] font-semibold flex-col"
                             },
                             "text": "Shipping Address"
                           }
@@ -462,7 +462,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "ml-auto shrink-0"
+                          "className": "ml-auto shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -470,7 +470,7 @@
                             "props": {
                               "icon": "lucide:chevron-up",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'"
                           },
@@ -479,7 +479,7 @@
                             "props": {
                               "icon": "lucide:chevron-down",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'shipping'"
                           }
@@ -490,7 +490,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pb-[24px]"
+                      "className": "pb-[24px] flex-col"
                     },
                     "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'shipping'",
                     "children": [
@@ -503,13 +503,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Full name"
                               },
@@ -527,13 +527,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Company"
                               },
@@ -551,13 +551,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Street address *"
                               },
@@ -579,14 +579,14 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "min-h-[20px]"
+                                  "className": "min-h-[20px] flex-col"
                                 },
                                 "condition": "local?.data?.form?.fields?.streetLine1?.isValid",
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] text-red-500 dark:text-red-400"
+                                      "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                                     },
                                     "text": "{{local.data.form.fields.streetLine1.isValid}}"
                                   }
@@ -597,13 +597,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Apartment, suite, etc."
                               },
@@ -627,13 +627,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "City"
                                   },
@@ -651,13 +651,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "State/Province"
                                   },
@@ -675,13 +675,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "Postal code"
                                   },
@@ -699,13 +699,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "space-y-[8px]"
+                                  "className": "space-y-[8px] flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[14px] font-medium"
+                                      "className": "text-[14px] font-medium flex-col"
                                     },
                                     "text": "Country *"
                                   },
@@ -718,7 +718,7 @@
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-[14px] text-muted-foreground"
+                                          "className": "text-[14px] text-muted-foreground flex-col"
                                         },
                                         "text": "Select placeholder"
                                       },
@@ -735,14 +735,14 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "min-h-[20px]"
+                                      "className": "min-h-[20px] flex-col"
                                     },
                                     "condition": "local?.data?.form?.fields?.countryCode?.isValid",
                                     "children": [
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-[14px] text-red-500 dark:text-red-400"
+                                          "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                                         },
                                         "text": "{{local.data.form.fields.countryCode.isValid}}"
                                       }
@@ -755,13 +755,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[8px]"
+                              "className": "space-y-[8px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-medium"
+                                  "className": "text-[14px] font-medium flex-col"
                                 },
                                 "text": "Phone number"
                               },
@@ -792,13 +792,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center {{checkout.useSameForBilling ? 'bg-[var(--theme-primary)] border-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}}"
+                                  "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center {{checkout.useSameForBilling ? 'bg-[var(--theme-primary)] border-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}} flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-white text-[12px] font-bold"
+                                      "className": "text-white text-[12px] font-bold flex-col"
                                     },
                                     "condition": "variables['f1a2b3c4-d5e6-7890-fabc-901234567890']",
                                     "text": "✓"
@@ -808,7 +808,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px]"
+                                  "className": "text-[14px] flex-col"
                                 },
                                 "text": "Use same address for billing"
                               }
@@ -823,7 +823,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-white"
+                                  "className": "text-white flex-col"
                                 },
                                 "text": "Continue"
                               }
@@ -848,7 +848,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
                 },
                 "children": [
                   {
@@ -883,7 +883,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                               "style": {
                                 "backgroundColor": {
                                   "formula": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0 ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
@@ -899,14 +899,14 @@
                                 "props": {
                                   "icon": "lucide:check",
                                   "size": 16,
-                                  "className": "!text-white"
+                                  "className": "!text-white flex-col"
                                 },
                                 "condition": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-white"
+                                  "className": "font-semibold text-[14px] !text-white flex-col"
                                 },
                                 "text": "3",
                                 "condition": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) <= 0 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery'"
@@ -914,7 +914,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "3",
                                 "condition": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) <= 0 && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'delivery'"
@@ -924,7 +924,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[18px] font-semibold"
+                              "className": "text-[18px] font-semibold flex-col"
                             },
                             "text": "Delivery Method"
                           }
@@ -933,7 +933,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "ml-auto shrink-0"
+                          "className": "ml-auto shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -941,7 +941,7 @@
                             "props": {
                               "icon": "lucide:chevron-up",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery'"
                           },
@@ -950,7 +950,7 @@
                             "props": {
                               "icon": "lucide:chevron-down",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'delivery'"
                           }
@@ -961,14 +961,14 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pb-[24px] space-y-[12px]"
+                      "className": "pb-[24px] space-y-[12px] flex-col"
                     },
                     "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'delivery'",
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                          "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
                         },
                         "text": "Select shipping method"
                       },
@@ -981,7 +981,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "contents"
+                              "className": "contents flex-col"
                             },
                             "map": "collections.c9d0e1f2-a3b4-5678-cdef-789012345678.eligibleShippingMethods",
                             "key": "shippingOpt",
@@ -1009,7 +1009,7 @@
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0",
+                                      "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0 flex-col",
                                       "style": {
                                         "borderColor": {
                                           "formula": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id ? 'var(--theme-primary)' : 'var(--theme-border)'"
@@ -1023,7 +1023,7 @@
                                       {
                                         "type": "Box",
                                         "props": {
-                                          "className": "w-[8px] h-[8px] rounded-[9999px] bg-white pointer-events-none"
+                                          "className": "w-[8px] h-[8px] rounded-[9999px] bg-white pointer-events-none flex-col"
                                         },
                                         "condition": "variables['a2b3c4d5-e6f7-8901-abcd-012345678901'] === context?.item?.data?.id"
                                       }
@@ -1034,7 +1034,7 @@
                                     "props": {
                                       "icon": "lucide:truck",
                                       "size": 20,
-                                      "className": "!text-[var(--theme-muted-foreground)] shrink-0"
+                                      "className": "!text-[var(--theme-muted-foreground)] shrink-0 flex-col"
                                     }
                                   },
                                   {
@@ -1046,14 +1046,14 @@
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "font-medium text-[14px] text-[var(--theme-foreground)]"
+                                          "className": "font-medium text-[14px] text-[var(--theme-foreground)] flex-col"
                                         },
                                         "text": "{{context.item.data.name}}"
                                       },
                                       {
                                         "type": "Text",
                                         "props": {
-                                          "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                          "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
                                         },
                                         "text": "{{context.item.data.description}}"
                                       }
@@ -1062,7 +1062,7 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "font-semibold text-[14px] text-[var(--theme-foreground)] shrink-0"
+                                      "className": "font-semibold text-[14px] text-[var(--theme-foreground)] shrink-0 flex-col"
                                     },
                                     "text": {
                                       "formula": "formatCurrency(context?.item?.data?.priceWithTax / 100, 'USD')"
@@ -1077,14 +1077,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[20px]"
+                          "className": "min-h-[20px] flex-col"
                         },
                         "condition": "variables['b4c5d6e7-f8a9-0123-bcde-234567890123']",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] text-red-500 dark:text-red-400"
+                              "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{errors.checkout.selectedShippingMethodId}}"
                           }
@@ -1110,7 +1110,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white"
+                              "className": "text-white flex-col"
                             },
                             "text": "Continue to payment"
                           }
@@ -1129,7 +1129,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
                 },
                 "children": [
                   {
@@ -1158,7 +1158,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                               "style": {
                                 "backgroundColor": {
                                   "formula": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
@@ -1174,14 +1174,14 @@
                                 "props": {
                                   "icon": "lucide:check",
                                   "size": 16,
-                                  "className": "!text-white"
+                                  "className": "!text-white flex-col"
                                 },
                                 "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012']"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-white"
+                                  "className": "font-semibold text-[14px] !text-white flex-col"
                                 },
                                 "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
                                 "text": "4"
@@ -1189,7 +1189,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "condition": "!variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'",
                                 "text": "4"
@@ -1199,7 +1199,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[18px] font-semibold"
+                              "className": "text-[18px] font-semibold flex-col"
                             },
                             "text": "Payment Method"
                           }
@@ -1208,7 +1208,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "ml-auto shrink-0"
+                          "className": "ml-auto shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -1216,7 +1216,7 @@
                             "props": {
                               "icon": "lucide:chevron-up",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'"
                           },
@@ -1225,7 +1225,7 @@
                             "props": {
                               "icon": "lucide:chevron-down",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'payment'"
                           }
@@ -1242,14 +1242,14 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pb-[24px] space-y-[12px]"
+                      "className": "pb-[24px] space-y-[12px] flex-col"
                     },
                     "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'payment'",
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                          "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
                         },
                         "text": "Select payment method"
                       },
@@ -1270,13 +1270,13 @@
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0 {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}}"
+                                  "className": "w-[20px] h-[20px] min-w-[20px] min-h-[20px] rounded-[9999px] border-[2px] flex items-center justify-center shrink-0 {{checkout.selectedPaymentMethodCode === $item.code ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]' : 'border-[var(--theme-border)]'}} flex-col"
                                 },
                                 "children": [
                                   {
                                     "type": "Box",
                                     "props": {
-                                      "className": "w-[8px] h-[8px] rounded-[9999px] bg-white pointer-events-none"
+                                      "className": "w-[8px] h-[8px] rounded-[9999px] bg-white pointer-events-none flex-col"
                                     },
                                     "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] === context?.item?.data?.code"
                                   }
@@ -1287,7 +1287,7 @@
                                 "props": {
                                   "icon": "lucide:circle-dollar-sign",
                                   "size": 20,
-                                  "className": "!text-[var(--theme-muted-foreground)] shrink-0"
+                                  "className": "!text-[var(--theme-muted-foreground)] shrink-0 flex-col"
                                 }
                               },
                               {
@@ -1299,14 +1299,14 @@
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "font-medium text-[14px] text-[var(--theme-foreground)]"
+                                      "className": "font-medium text-[14px] text-[var(--theme-foreground)] flex-col"
                                     },
                                     "text": "{{context.item.data.name}}"
                                   },
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                      "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
                                     },
                                     "text": "{{context.item.data.description}}"
                                   }
@@ -1331,7 +1331,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white"
+                              "className": "text-white flex-col"
                             },
                             "text": "Continue to review"
                           }
@@ -1354,7 +1354,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)]"
+                  "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
                 },
                 "children": [
                   {
@@ -1389,7 +1389,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0",
+                              "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                               "style": {
                                 "backgroundColor": {
                                   "formula": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review' ? 'var(--theme-primary)' : 'var(--theme-muted)'"
@@ -1403,7 +1403,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-white"
+                                  "className": "font-semibold text-[14px] !text-white flex-col"
                                 },
                                 "text": "5",
                                 "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review'"
@@ -1411,7 +1411,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)]"
+                                  "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "5",
                                 "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'review'"
@@ -1421,7 +1421,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[18px] font-semibold"
+                              "className": "text-[18px] font-semibold flex-col"
                             },
                             "text": "Review & Place Order"
                           }
@@ -1430,7 +1430,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "ml-auto shrink-0"
+                          "className": "ml-auto shrink-0 flex-col"
                         },
                         "children": [
                           {
@@ -1438,7 +1438,7 @@
                             "props": {
                               "icon": "lucide:chevron-up",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review'"
                           },
@@ -1447,7 +1447,7 @@
                             "props": {
                               "icon": "lucide:chevron-down",
                               "size": 16,
-                              "className": "!text-[var(--theme-muted-foreground)]"
+                              "className": "!text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'review'"
                           }
@@ -1458,14 +1458,14 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pb-[24px] space-y-[24px]"
+                      "className": "pb-[24px] space-y-[24px] flex-col"
                     },
                     "condition": "variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'review'",
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-[18px]"
+                          "className": "font-semibold text-[18px] flex-col"
                         },
                         "text": "Review your order"
                       },
@@ -1478,21 +1478,21 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[12px]"
+                              "className": "space-y-[12px] flex-col"
                             },
                             "condition": "auth?.user === null",
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-medium"
+                                  "className": "font-medium flex-col"
                                 },
                                 "text": "Contact"
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px]"
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px] flex-col"
                                 },
                                 "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress",
                                 "children": [
@@ -1530,20 +1530,20 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[12px]"
+                              "className": "space-y-[12px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-medium"
+                                  "className": "font-medium flex-col"
                                 },
                                 "text": "Shipping Address"
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px]"
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px] flex-col"
                                 },
                                 "condition": "collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingAddress?.streetLine1",
                                 "children": [
@@ -1589,20 +1589,20 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[12px]"
+                              "className": "space-y-[12px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-medium"
+                                  "className": "font-medium flex-col"
                                 },
                                 "text": "Delivery"
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-[14px] text-[var(--theme-muted-foreground)]"
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "condition": "(collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.shippingLines?.length || 0) > 0",
                                 "children": [
@@ -1642,27 +1642,27 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "space-y-[12px]"
+                              "className": "space-y-[12px] flex-col"
                             },
                             "children": [
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-medium"
+                                  "className": "font-medium flex-col"
                                 },
                                 "text": "Payment Method"
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px]"
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] space-y-[4px] flex-col"
                                 },
                                 "condition": "variables['b3c4d5e6-f7a8-9012-bcde-123456789012']",
                                 "children": [
                                   {
                                     "type": "Text",
                                     "props": {
-                                      "className": "font-medium text-[var(--theme-foreground)]"
+                                      "className": "font-medium text-[var(--theme-foreground)] flex-col"
                                     },
                                     "text": {
                                       "formula": "lookupInArray(collections['d0e1f2a3-b4c5-6789-defa-890123456789']?.eligiblePaymentMethods || [], 'code', variables['b3c4d5e6-f7a8-9012-bcde-123456789012'] || '', 'name')"
@@ -1696,14 +1696,14 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "min-h-[20px]"
+                          "className": "min-h-[20px] flex-col"
                         },
                         "condition": "variables['c5d6e7f8-a9b0-1234-cdef-345678901234']",
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] text-red-500 dark:text-red-400"
+                              "className": "text-[14px] text-red-500 dark:text-red-400 flex-col"
                             },
                             "text": "{{errors.checkout.selectedPaymentMethodCode}}"
                           }
@@ -1729,7 +1729,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-white"
+                              "className": "text-white flex-col"
                             },
                             "text": "Place Order"
                           }
@@ -1750,19 +1750,19 @@
           {
             "type": "Box",
             "props": {
-              "className": "lg:col-span-1"
+              "className": "lg:col-span-1 flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "border-[1px] border-[var(--theme-border)] rounded-[8px] p-[24px] bg-[var(--theme-card)] sticky top-[80px] space-y-[12px]"
+                  "className": "border-[1px] border-[var(--theme-border)] rounded-[8px] p-[24px] bg-[var(--theme-card)] sticky top-[80px] space-y-[12px] flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[18px] font-bold"
+                      "className": "text-[18px] font-bold flex-col"
                     },
                     "text": "Order Summary"
                   },
@@ -1783,7 +1783,7 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "flex-shrink-0 w-[64px] h-[64px] rounded-[4px] overflow-hidden bg-[var(--theme-muted)]"
+                              "className": "flex-shrink-0 w-[64px] h-[64px] rounded-[4px] overflow-hidden bg-[var(--theme-muted)] flex-col"
                             },
                             "condition": "context?.item?.data?.productVariant?.product?.featuredAsset?.preview",
                             "children": [
@@ -1794,7 +1794,7 @@
                                   "alt": "{{context.item.data.productVariant.product.name}}",
                                   "width": 64,
                                   "height": 64,
-                                  "className": "w-[64px] h-[64px] object-cover"
+                                  "className": "w-[64px] h-[64px] object-cover flex-col"
                                 }
                               }
                             ]
@@ -1808,14 +1808,14 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "font-medium line-clamp-2"
+                                  "className": "font-medium line-clamp-2 flex-col"
                                 },
                                 "text": "{{context.item.data.productVariant.product.name}}"
                               },
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                  "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "condition": "context?.item?.data?.productVariant?.name !== context?.item?.data?.productVariant?.product?.name",
                                 "text": "{{context.item.data.productVariant.name}}"
@@ -1823,7 +1823,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[12px] text-[var(--theme-muted-foreground)]"
+                                  "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
                                 },
                                 "text": "Qty: {{context.item.data.quantity}}"
                               }
@@ -1832,7 +1832,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "font-medium flex-shrink-0"
+                              "className": "font-medium flex-shrink-0 flex-col"
                             },
                             "text": {
                               "formula": "formatCurrency(context?.item?.data?.linePriceWithTax / 100, collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.currencyCode || 'USD')"
@@ -1845,7 +1845,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "border-t"
+                      "className": "border-t flex-col"
                     }
                   },
                   {
@@ -1863,7 +1863,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[var(--theme-muted-foreground)]"
+                              "className": "text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "text": "Subtotal"
                           },
@@ -1878,7 +1878,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "contents"
+                          "className": "contents flex-col"
                         },
                         "map": "collections.b8c9d0e1-f2a3-4567-bcde-678901234567.activeOrder.discounts",
                         "key": "discount",
@@ -1913,7 +1913,7 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[var(--theme-muted-foreground)]"
+                              "className": "text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "text": "Shipping"
                           },
@@ -1928,7 +1928,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "border-t"
+                          "className": "border-t flex-col"
                         }
                       },
                       {

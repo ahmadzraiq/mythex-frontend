@@ -18,14 +18,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[28px] font-bold text-foreground"
+              "className": "text-[28px] font-bold text-foreground flex-col"
             },
             "text": "Expr CSS Test"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-gray-500"
+              "className": "text-[14px] text-gray-500 flex-col"
             },
             "text": "Tests for formula-based style bindings: calc() CSS fallback and dynamic variable formulas."
           }
@@ -40,21 +40,21 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[16px] font-semibold text-foreground"
+              "className": "text-[16px] font-semibold text-foreground flex-col"
             },
             "text": "1. calc() CSS box"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-gray-500"
+              "className": "text-[13px] text-gray-500 flex-col"
             },
             "text": "Width = calc(100% - 80px). Should fill container minus 80px padding."
           },
           {
             "type": "Box",
             "props": {
-              "className": "bg-blue-500 rounded-[8px] flex items-center justify-center",
+              "className": "bg-blue-500 rounded-[8px] flex items-center justify-center flex-col",
               "style": {
                 "width": {
                   "formula": "calc(100% - 80px)"
@@ -69,7 +69,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-white text-[13px] font-mono"
+                  "className": "text-white text-[13px] font-mono flex-col"
                 },
                 "text": "calc(100% - 80px)"
               }
@@ -86,21 +86,21 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[16px] font-semibold text-foreground"
+              "className": "text-[16px] font-semibold text-foreground flex-col"
             },
             "text": "2. Formula box (drag slider to resize)"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-gray-500"
+              "className": "text-[13px] text-gray-500 flex-col"
             },
             "text": "Width = variable (default 200). Drag the slider below to change it live."
           },
           {
             "type": "Box",
             "props": {
-              "className": "bg-green-500 rounded-[8px] flex items-center justify-center",
+              "className": "bg-green-500 rounded-[8px] flex items-center justify-center flex-col",
               "style": {
                 "width": {
                   "formula": "variables['ex-width-00000-0000-0000-000000000001'] + 'px'"
@@ -115,7 +115,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-white text-[13px] font-mono"
+                  "className": "text-white text-[13px] font-mono flex-col"
                 },
                 "text": "{{variables['ex-width-00000-0000-0000-000000000001']}}px"
               }
@@ -130,14 +130,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-400"
+                  "className": "text-[12px] text-gray-400 flex-col"
                 },
                 "text": "Width: {{variables['ex-width-00000-0000-0000-000000000001']}}px (50–600)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500 italic"
+                  "className": "text-[12px] text-gray-500 italic flex-col"
                 },
                 "text": "Use the variable store (via E2E helpers or workflows) to change the width and observe formula reactivity."
               }
@@ -154,21 +154,21 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[16px] font-semibold text-foreground"
+              "className": "text-[16px] font-semibold text-foreground flex-col"
             },
             "text": "3. Mixed formula + calc()"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-gray-500"
+              "className": "text-[13px] text-gray-500 flex-col"
             },
             "text": "Width = calc(variable + 'px' - 20px via JS string concat). Tests combining variable access with CSS calc."
           },
           {
             "type": "Box",
             "props": {
-              "className": "bg-purple-500 rounded-[8px] flex items-center justify-center",
+              "className": "bg-purple-500 rounded-[8px] flex items-center justify-center flex-col",
               "style": {
                 "width": {
                   "formula": "'calc(' + variables['ex-width-00000-0000-0000-000000000001'] + 'px - 20px)'"
@@ -183,7 +183,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-white text-[13px] font-mono"
+                  "className": "text-white text-[13px] font-mono flex-col"
                 },
                 "text": "calc({{variables['ex-width-00000-0000-0000-000000000001']}}px - 20px)"
               }

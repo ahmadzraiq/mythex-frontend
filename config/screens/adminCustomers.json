@@ -18,14 +18,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-white"
+                  "className": "text-[24px] font-bold text-white flex-col"
                 },
                 "text": "Customers"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px]"
+                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px] flex-col"
                 },
                 "text": {
                   "formula": "concat(String((collections['ad000006-0000-0000-0000-000000000006']?.data ?? collections['ad000006-0000-0000-0000-000000000006'] ?? []).length), ' registered customers')"
@@ -39,7 +39,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -55,35 +55,35 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Name"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Email"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Joined"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Orders"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Total Spend"
               }
@@ -117,13 +117,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-[32px] h-[32px] rounded-full bg-[var(--theme-admin-accent)]/20 border border-[var(--theme-admin-accent)]/30 flex items-center justify-center flex-shrink-0"
+                          "className": "w-[32px] h-[32px] rounded-full bg-[var(--theme-admin-accent)]/20 border border-[var(--theme-admin-accent)]/30 flex items-center justify-center flex-shrink-0 flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-semibold text-[var(--theme-admin-accent)]"
+                              "className": "text-[12px] font-semibold text-[var(--theme-admin-accent)] flex-col"
                             },
                             "text": {
                               "formula": "((context.item.data.first_name || '?')[0] + (context.item.data.last_name || '?')[0]).toUpperCase()"
@@ -134,7 +134,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] truncate"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-muted)] truncate flex-col"
                         },
                         "text": {
                           "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || '—'"
@@ -145,14 +145,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-label)] truncate"
+                      "className": "text-[13px] text-[var(--theme-admin-label)] truncate flex-col"
                     },
                     "text": "{{context.item.data.email_address}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                      "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                     },
                     "text": {
                       "formula": "context.item.data.created_at ? new Date(context.item.data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'"
@@ -208,7 +208,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No customers yet"
               }
@@ -227,7 +227,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-[var(--theme-admin-label)]"
+              "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": {
               "formula": "concat('Page ', String(collections['ad000006-0000-0000-0000-000000000006']?.page || 1), ' of ', String(collections['ad000006-0000-0000-0000-000000000006']?.totalPages || 1))"
@@ -262,7 +262,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px]"
+                      "className": "text-[13px] flex-col"
                     },
                     "text": "Previous"
                   }
@@ -284,7 +284,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px]"
+                      "className": "text-[13px] flex-col"
                     },
                     "text": "Next"
                   },

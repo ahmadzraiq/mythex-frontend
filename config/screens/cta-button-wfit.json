@@ -11,14 +11,14 @@
       {
         "type": "Text",
         "props": {
-          "className": "!text-[#3b0764] text-[28px] font-bold mb-[8px] text-center"
+          "className": "!text-[#3b0764] text-[28px] font-bold mb-[8px] text-center flex-col"
         },
         "text": "CTA Button — w-fit + enter/hover animation"
       },
       {
         "type": "Text",
         "props": {
-          "className": "!text-[#6d28d9] text-[14px] text-center mb-[4px]"
+          "className": "!text-[#6d28d9] text-[14px] text-center mb-[4px] flex-col"
         },
         "text": "Button must hug its content width (not stretch to fill parent)"
       },
@@ -27,18 +27,7 @@
         "name": "Call-to-Action Button",
         "type": "Box",
         "props": {
-          "style": {
-            "boxShadow": "0px 8px 20px -2px rgba(123, 58, 237, 0.35)",
-            "elevation": 10,
-            "shadowColor": "rgb(123,58,237)",
-            "shadowOffset": {
-              "width": 0,
-              "height": 8
-            },
-            "shadowRadius": 20,
-            "shadowOpacity": 0.35
-          },
-          "className": "flex flex-row !bg-[var(--theme-primary)] rounded-[8px] items-center justify-center pl-[24px] pr-[24px] pt-[12px] pb-[12px] mt-[24px] gap-[8px] cursor-pointer w-fit"
+          "className": "flex flex-row !bg-[var(--theme-primary)] rounded-[8px] items-center justify-center pl-[24px] pr-[24px] pt-[12px] pb-[12px] mt-[24px] gap-[8px] cursor-pointer w-fit shadow-[0px_8px_20px_-2px_rgba(123,_58,_237,_0.35)]"
         },
         "children": [
           {
@@ -47,7 +36,7 @@
             "text": "Explore Design",
             "type": "Text",
             "props": {
-              "className": "!text-[var(--theme-primary-foreground)] text-[14px] font-semibold text-center tracking-wide"
+              "className": "!text-[var(--theme-primary-foreground)] text-[14px] font-semibold text-center tracking-wide flex-col"
             },
             "children": []
           },

@@ -6,13 +6,13 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "w-full min-h-screen bg-white dark:bg-gray-950"
+      "className": "w-full min-h-screen bg-white dark:bg-gray-950 flex-col"
     },
     "children": [
       {
         "type": "Box",
         "props": {
-          "className": "w-full pb-[64px]"
+          "className": "w-full pb-[64px] flex-col"
         },
         "children": [
           {
@@ -44,7 +44,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500"
+                      "className": "text-sm text-gray-500 flex-col"
                     },
                     "text": "Back to all types"
                   }
@@ -53,13 +53,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "bg-rose-100 dark:bg-rose-900/30 rounded-full px-4 py-1 mb-6"
+                  "className": "bg-rose-100 dark:bg-rose-900/30 rounded-full px-4 py-1 mb-6 flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm font-medium text-rose-700 dark:text-rose-300"
+                      "className": "text-sm font-medium text-rose-700 dark:text-rose-300 flex-col"
                     },
                     "text": "Bottom Tab Bar"
                   }
@@ -68,21 +68,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center flex-col"
                 },
                 "text": "Mobile-First Navigation"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4"
+                  "className": "text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mt-4 flex-col"
                 },
                 "text": "A bottom tab bar replaces the top navbar entirely. The most natural navigation pattern for mobile and touch-first interfaces."
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm text-gray-400 mt-8"
+                  "className": "text-sm text-gray-400 mt-8 flex-col"
                 },
                 "text": "Look down — the navigation bar is at the bottom"
               }
@@ -91,13 +91,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-6xl mx-auto px-6 py-20"
+              "className": "w-full max-w-6xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Features"
               },
@@ -116,7 +116,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -132,14 +132,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Thumb Friendly"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "Bottom placement is within easy thumb reach on mobile devices."
                       }
@@ -154,7 +154,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -170,14 +170,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Icon + Label"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "Each tab combines an icon and label for maximum clarity."
                       }
@@ -192,7 +192,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"
+                          "className": "w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-col"
                         },
                         "children": [
                           {
@@ -208,14 +208,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-gray-900 dark:text-white text-center"
+                          "className": "font-semibold text-gray-900 dark:text-white text-center flex-col"
                         },
                         "text": "Max Content"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 text-center flex-col"
                         },
                         "text": "No top bar means full viewport height for content display."
                       }
@@ -228,13 +228,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6"
+              "className": "w-full bg-gray-50 dark:bg-gray-900 py-20 px-6 flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-white text-center mb-12 flex-col"
                 },
                 "text": "Testimonials"
               },
@@ -247,27 +247,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"Bottom tabs feel natural on mobile. Our app engagement increased 40%.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Chris Park"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "Mobile Lead"
                       }
@@ -276,27 +276,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"Every major social media app uses bottom tabs. Users expect it.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Maria Silva"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "UX Researcher"
                       }
@@ -305,27 +305,27 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      "className": "p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-gray-600 dark:text-gray-300 text-sm italic"
+                          "className": "text-gray-600 dark:text-gray-300 text-sm italic flex-col"
                         },
                         "text": "\"The active tab indicator provides instant orientation. Users never feel lost.\""
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4"
+                          "className": "text-sm font-semibold text-gray-900 dark:text-white mt-4 flex-col"
                         },
                         "text": "Andy Chen"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-xs text-gray-400"
+                          "className": "text-xs text-gray-400 flex-col"
                         },
                         "text": "App Developer"
                       }
@@ -338,7 +338,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full max-w-5xl mx-auto px-6 py-20"
+              "className": "w-full max-w-5xl mx-auto px-6 py-20 flex-col"
             },
             "children": [
               {
@@ -356,14 +356,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-rose-500"
+                          "className": "text-4xl font-bold text-rose-500 flex-col"
                         },
                         "text": "5"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Tab Limit"
                       }
@@ -378,14 +378,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-rose-500"
+                          "className": "text-4xl font-bold text-rose-500 flex-col"
                         },
                         "text": "64px"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Bar Height"
                       }
@@ -400,14 +400,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-rose-500"
+                          "className": "text-4xl font-bold text-rose-500 flex-col"
                         },
                         "text": "90%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "Mobile Apps"
                       }
@@ -422,14 +422,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-4xl font-bold text-rose-500"
+                          "className": "text-4xl font-bold text-rose-500 flex-col"
                         },
                         "text": "40%"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                          "className": "text-sm text-gray-500 dark:text-gray-400 mt-1 flex-col"
                         },
                         "text": "More Engagement"
                       }
@@ -442,7 +442,7 @@
           {
             "type": "Box",
             "props": {
-              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6"
+              "className": "w-full bg-gray-900 dark:bg-gray-950 py-10 px-6 flex-col"
             },
             "children": [
               {
@@ -454,14 +454,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-400"
+                      "className": "text-sm text-gray-400 flex-col"
                     },
                     "text": "NavbarDemo © 2026"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-sm text-gray-500 cursor-pointer"
+                      "className": "text-sm text-gray-500 cursor-pointer flex-col"
                     },
                     "text": "← Back to all types",
                     "actions": [
@@ -500,7 +500,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[10px] font-medium text-rose-500"
+                  "className": "text-[10px] font-medium text-rose-500 flex-col"
                 },
                 "text": "Home"
               }
@@ -523,7 +523,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[10px] text-gray-500"
+                  "className": "text-[10px] text-gray-500 flex-col"
                 },
                 "text": "Search"
               }
@@ -546,7 +546,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[10px] text-gray-500"
+                  "className": "text-[10px] text-gray-500 flex-col"
                 },
                 "text": "Create"
               }
@@ -569,7 +569,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[10px] text-gray-500"
+                  "className": "text-[10px] text-gray-500 flex-col"
                 },
                 "text": "Alerts"
               }
@@ -592,7 +592,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[10px] text-gray-500"
+                  "className": "text-[10px] text-gray-500 flex-col"
                 },
                 "text": "Profile"
               }

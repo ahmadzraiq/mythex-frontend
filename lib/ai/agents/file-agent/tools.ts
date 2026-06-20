@@ -104,7 +104,7 @@ export const FILE_AGENT_TOOLS: FileTool[] = [
       $defs: {
         StyleParams: {
           type: 'object',
-          description: 'Style shorthand keys. Converted to inline styles on save. Unknown keys are passed through as raw CSS.\n\nRESPONSIVE: Any property marked with (*) can be a responsive object instead of a primitive: { "default": <desktop>, "laptop": <val>, "tablet": <val>, "mobile": <val> }. Use "default" for the desktop base; omit breakpoints that match desktop. Do NOT use the node-level responsive field for style property changes — use this inline format instead.',
+          description: 'Style shorthand keys. Converted to inline styles on save. Unknown keys are passed through as raw CSS.\n\nRESPONSIVE: Any property marked with (*) can be a responsive object instead of a primitive: { "default": <desktop>, "xl": <val>, "lg": <val>, "md": <val> }. Use "default" for the desktop base (xl≤1280px lg≤1024px md≤768px). Omit breakpoints that match desktop. Do NOT use the node-level responsive field for style property changes — use this inline format instead.',
           properties: {
             display:    { description: '(*) flex | grid | block | inline-block | inline | inline-flex | hidden. Responsive.' },
             direction:  { description: '(*) flex-direction: row | col | row-reverse | col-reverse. Responsive.' },
@@ -229,7 +229,7 @@ export const FILE_AGENT_TOOLS: FileTool[] = [
             _validation:{ type: 'object', description: 'Form field validation. Only on Input/Textarea inside FormContainer. Shape: { "trigger": "submit"|"change", "rules": [{ "type": "required"|"email"|"minLength"|"maxLength"|"phone"|"pattern"|"equalsField", "message": "...", "value"?: "..." }] }. Custom formula rule: { "type": "formula", "formula": { "js": "booleanExpr" }, "message": "..." }' },
             responsive: {
               type: 'object',
-              description: 'Breakpoint overrides (desktop-first). Breakpoints: laptop(1024–1279px), tablet(768–1023px), mobile(<768px). Desktop base goes directly in props — no responsive key needed for desktop.\n\nEach breakpoint key is an object with optional fields:\n• styles — camelCase CSS property names with CSS-formatted values (fontSize, flexDirection, padding). NOT style shorthand keys (p, text, flex1, w) — they are ignored here.\n• style — inline style merge\n• props — partial props override\n• condition — show/hide override\n• text — text content override\n• map — plain string expression override. NOT the {js:"..."} object format.\n• actions — replaces actions array\n• animation — animation override',
+              description: 'Breakpoint overrides (desktop-first). Keys: laptop(≤1280px), tablet(≤1024px), mobile(≤768px). Desktop base goes directly in props — no responsive key needed for desktop.\n\nEach breakpoint key is an object with optional fields:\n• styles — camelCase CSS property names with CSS-formatted values (fontSize, flexDirection, padding). NOT style shorthand keys (p, text, flex1, w) — they are ignored here.\n• style — inline style merge\n• props — partial props override\n• condition — show/hide override\n• text — text content override\n• map — plain string expression override. NOT the {js:"..."} object format.\n• actions — replaces actions array\n• animation — animation override',
               additionalProperties: {
                 type: 'object',
                 properties: {
@@ -572,7 +572,7 @@ export const FILE_AGENT_TOOLS: FileTool[] = [
             children:    { type: 'array', items: { type: 'object' } },
             _shared:     { type: 'object', description: '{ "id": "<sc-id>", "name": "<display name>" } — SC instance.' },
             _validation: { type: 'object', description: 'Form field validation. Only on Input/Textarea inside FormContainer. { "trigger": "submit"|"change", "rules": [...] }' },
-            responsive:  { type: 'object', description: 'Breakpoint overrides. Keys: laptop, tablet, mobile. Each: { styles(camelCase CSS props), style, props, condition, text, map(plain string — NOT {js:...}), actions, animation }. styles uses CSS property names — NOT style shorthand keys.' },
+            responsive:  { type: 'object', description: 'Breakpoint overrides. Keys: laptop(≤1280px), tablet(≤1024px), mobile(≤768px). Each: { styles(camelCase CSS props), style, props, condition, text, map(plain string — NOT {js:...}), actions, animation }. styles uses CSS property names — NOT style shorthand keys.' },
           },
         },
         SCWorkflowStep: {
@@ -768,7 +768,7 @@ export const FILE_AGENT_TOOLS: FileTool[] = [
               },
             },
             children:    { type: 'array', items: { type: 'object' } },
-            responsive:  { type: 'object', description: 'Breakpoint overrides. Keys: laptop, tablet, mobile. Each: { styles(camelCase CSS props), style, props, condition, text, map(plain string — NOT {js:...}), actions, animation }. styles uses CSS property names — NOT style shorthand keys.' },
+            responsive:  { type: 'object', description: 'Breakpoint overrides. Keys: laptop(≤1280px), tablet(≤1024px), mobile(≤768px). Each: { styles(camelCase CSS props), style, props, condition, text, map(plain string — NOT {js:...}), actions, animation }. styles uses CSS property names — NOT style shorthand keys.' },
             _group:      { type: 'string' },
             _shared:     { type: 'object', description: '{ "id": "<sc-id>", "name": "<display name>" }' },
             _validation: { type: 'object', description: 'Form field validation. Only on Input/Textarea inside FormContainer.' },

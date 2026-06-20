@@ -15,14 +15,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)] flex-col"
             },
             "text": "System"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-[var(--theme-admin-label)]"
+              "className": "text-[14px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": "System management and maintenance tools."
           }
@@ -50,7 +50,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0"
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-accent)]/15 flex items-center justify-center flex-shrink-0 flex-col"
                     },
                     "children": [
                       {
@@ -69,14 +69,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]"
+                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "Search Index"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Rebuild the product search index"
                       }
@@ -87,7 +87,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed flex-col"
                 },
                 "text": "If products are not appearing in search results, rebuilding the search index will re-index all products and their variants."
               },
@@ -108,13 +108,13 @@
                     "props": {
                       "icon": "lucide:refresh-cw",
                       "size": 14,
-                      "className": "text-white"
+                      "className": "text-white flex-col"
                     }
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-medium text-white"
+                      "className": "text-[13px] font-medium text-white flex-col"
                     },
                     "text": "Reindex Now"
                   }
@@ -137,7 +137,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-info)]/15 flex items-center justify-center flex-shrink-0"
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-info)]/15 flex items-center justify-center flex-shrink-0 flex-col"
                     },
                     "children": [
                       {
@@ -156,14 +156,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]"
+                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "Database"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "PostgreSQL connection status"
                       }
@@ -180,13 +180,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[8px] h-[8px] rounded-full bg-[var(--theme-admin-success)] flex-shrink-0"
+                      "className": "w-[8px] h-[8px] rounded-full bg-[var(--theme-admin-success)] flex-shrink-0 flex-col"
                     }
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                     },
                     "text": "Connected — localhost:5432"
                   }
@@ -195,7 +195,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-label)] leading-relaxed"
+                  "className": "text-[13px] text-[var(--theme-admin-label)] leading-relaxed flex-col"
                 },
                 "text": "Database schema management is handled by the backend server. Use the server CLI for migrations."
               }
@@ -216,7 +216,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-success)]/15 flex items-center justify-center flex-shrink-0"
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-success)]/15 flex items-center justify-center flex-shrink-0 flex-col"
                     },
                     "children": [
                       {
@@ -235,14 +235,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]"
+                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "Health Check"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "API server status"
                       }
@@ -265,7 +265,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": "REST API"
                       },
@@ -278,13 +278,13 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-[6px] h-[6px] rounded-full bg-[var(--theme-admin-success)]"
+                              "className": "w-[6px] h-[6px] rounded-full bg-[var(--theme-admin-success)] flex-col"
                             }
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] text-[var(--theme-admin-success)]"
+                              "className": "text-[12px] text-[var(--theme-admin-success)] flex-col"
                             },
                             "text": "Online"
                           }
@@ -301,14 +301,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": "localhost:4000"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-[var(--theme-admin-label)]"
+                          "className": "text-[12px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Port 4000"
                       }
@@ -333,7 +333,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-warning)]/15 flex items-center justify-center flex-shrink-0"
+                      "className": "w-[40px] h-[40px] rounded-[8px] bg-[var(--theme-admin-warning)]/15 flex items-center justify-center flex-shrink-0 flex-col"
                     },
                     "children": [
                       {
@@ -352,14 +352,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)]"
+                          "className": "text-[15px] font-semibold text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "Job Queue"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-label)]"
+                          "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                         },
                         "text": "Background job processing"
                       }
@@ -370,7 +370,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] leading-relaxed flex-col"
                 },
                 "text": "Job queue monitoring and management is coming soon. Background jobs such as email sending and product indexing are processed automatically."
               }

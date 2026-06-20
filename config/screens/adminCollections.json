@@ -21,7 +21,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Catalog"
               },
@@ -36,7 +36,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                  "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                 },
                 "text": "Collections"
               }
@@ -45,14 +45,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold text-[var(--theme-admin-text)]"
+              "className": "text-[24px] font-bold text-[var(--theme-admin-text)] flex-col"
             },
             "text": "Collections"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] text-[var(--theme-admin-label)]"
+              "className": "text-[14px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": "Collections are used to group products for navigation and filtering."
           }
@@ -62,7 +62,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -77,21 +77,21 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Name"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Slug"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Visibility"
               }
@@ -123,7 +123,7 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "w-[36px] h-[36px] rounded-[6px] overflow-hidden flex-shrink-0 bg-[var(--theme-admin-border)]/50"
+                          "className": "w-[36px] h-[36px] rounded-[6px] overflow-hidden flex-shrink-0 bg-[var(--theme-admin-border)]/50 flex-col"
                         },
                         "children": [
                           {
@@ -133,7 +133,7 @@
                               "alt": "{{context.item.data.name}}",
                               "width": 36,
                               "height": 36,
-                              "className": "w-full h-full object-cover"
+                              "className": "w-full h-full object-cover flex-col"
                             },
                             "condition": "!!context.item.data.featuredAsset?.preview"
                           },
@@ -143,7 +143,7 @@
                               "icon": "lucide:folder",
                               "size": 16,
                               "color": "var(--theme-admin-label)",
-                              "className": "m-auto mt-[10px]"
+                              "className": "m-auto mt-[10px] flex-col"
                             },
                             "condition": "!context.item.data.featuredAsset?.preview"
                           }
@@ -152,7 +152,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)]"
+                          "className": "text-[13px] font-medium text-[var(--theme-admin-text)] flex-col"
                         },
                         "text": "{{context.item.data.name}}"
                       }
@@ -161,14 +161,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono truncate"
+                      "className": "text-[12px] text-[var(--theme-admin-label)] font-mono truncate flex-col"
                     },
                     "text": "{{context.item.data.slug}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)]"
+                      "className": "inline-flex items-center px-[8px] py-[2px] rounded-full text-[11px] font-medium bg-[var(--theme-admin-success)]/20 text-[var(--theme-admin-success)] flex-col"
                     },
                     "text": "Public"
                   }
@@ -194,7 +194,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No collections found"
               }

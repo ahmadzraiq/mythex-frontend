@@ -18,14 +18,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-white"
+                  "className": "text-[24px] font-bold text-white flex-col"
                 },
                 "text": "Orders"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px]"
+                  "className": "text-[14px] text-[var(--theme-admin-label)] mt-[2px] flex-col"
                 },
                 "text": {
                   "formula": "concat(String((collections['ad000002-0000-0000-0000-000000000002']?.data ?? collections['ad000002-0000-0000-0000-000000000002'] ?? []).length), ' total orders')"
@@ -39,7 +39,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden"
+          "className": "bg-[var(--theme-admin-surface)] rounded-[12px] border border-[var(--theme-admin-border)] overflow-hidden flex-col"
         },
         "children": [
           {
@@ -55,42 +55,42 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Order #"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Customer"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Date"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Items"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Total"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)]"
+                  "className": "text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "Status"
               }
@@ -124,7 +124,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-medium text-[var(--theme-admin-accent)]"
+                      "className": "text-[13px] font-medium text-[var(--theme-admin-accent)] flex-col"
                     },
                     "text": "{{context.item.data.code}}"
                   },
@@ -134,7 +134,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                          "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                         },
                         "text": {
                           "formula": "concat(context.item.data.first_name || '', ' ', context.item.data.last_name || '').trim() || context.item.data.email_address || 'Guest'"
@@ -143,7 +143,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[11px] text-[var(--theme-admin-label)] mt-[1px]"
+                          "className": "text-[11px] text-[var(--theme-admin-label)] mt-[1px] flex-col"
                         },
                         "text": "{{context.item.data.email_address}}"
                       }
@@ -152,7 +152,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-label)]"
+                      "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
                     },
                     "text": {
                       "formula": "context.item.data.order_placed_at ? new Date(context.item.data.order_placed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'"
@@ -161,7 +161,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] text-[var(--theme-admin-muted)]"
+                      "className": "text-[13px] text-[var(--theme-admin-muted)] flex-col"
                     },
                     "text": {
                       "formula": "concat(String(context.item.data.line_count || 0), ' items')"
@@ -170,7 +170,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-medium text-white"
+                      "className": "text-[13px] font-medium text-white flex-col"
                     },
                     "text": {
                       "formula": "formatCurrency((context.item.data.total || 0) / 100, 'USD')"
@@ -207,7 +207,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[15px] text-[var(--theme-admin-label)]"
+                  "className": "text-[15px] text-[var(--theme-admin-label)] flex-col"
                 },
                 "text": "No orders found"
               }
@@ -226,7 +226,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-[var(--theme-admin-label)]"
+              "className": "text-[13px] text-[var(--theme-admin-label)] flex-col"
             },
             "text": {
               "formula": "concat('Page ', String(collections['ad000002-0000-0000-0000-000000000002']?.page || 1), ' of ', String(collections['ad000002-0000-0000-0000-000000000002']?.totalPages || 1))"
@@ -261,7 +261,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px]"
+                      "className": "text-[13px] flex-col"
                     },
                     "text": "Previous"
                   }
@@ -283,7 +283,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px]"
+                      "className": "text-[13px] flex-col"
                     },
                     "text": "Next"
                   },

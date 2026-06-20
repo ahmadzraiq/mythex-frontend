@@ -13,14 +13,14 @@
       {
         "type": "Text",
         "props": {
-          "className": "text-[36px] font-bold text-center !text-[#3b0764] mb-[8px]"
+          "className": "text-[36px] font-bold text-center !text-[#3b0764] mb-[8px] flex-col"
         },
         "text": "Choose Your Plan"
       },
       {
         "type": "Text",
         "props": {
-          "className": "text-[16px] font-normal text-center !text-[#6d28d9] mb-[40px]"
+          "className": "text-[16px] font-normal text-center !text-[#6d28d9] mb-[40px] flex-col"
         },
         "text": "Nested repeat demo — inner map filters a separate flat variable by planId"
       },
@@ -33,14 +33,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] font-medium !text-[#6d28d9]"
+              "className": "text-[14px] font-medium !text-[#6d28d9] flex-col"
             },
             "text": "Monthly"
           },
           {
             "type": "Box",
             "props": {
-              "className": "w-[48px] h-[26px] rounded-[13px] cursor-pointer relative",
+              "className": "w-[48px] h-[26px] rounded-[13px] cursor-pointer relative flex-col",
               "style": {
                 "backgroundColor": {
                   "formula": "variables['pr1c0003-0000-0000-0000-000000000003'] ? '#7c3aed' : '#d1d5db'"
@@ -57,7 +57,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-[22px] h-[22px] rounded-[11px] bg-[#ffffff] absolute top-[2px]",
+                  "className": "w-[22px] h-[22px] rounded-[11px] bg-[#ffffff] absolute top-[2px] flex-col",
                   "style": {
                     "left": {
                       "formula": "variables['pr1c0003-0000-0000-0000-000000000003'] ? '24px' : '2px'"
@@ -70,7 +70,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] font-medium !text-[#6d28d9]"
+              "className": "text-[14px] font-medium !text-[#6d28d9] flex-col"
             },
             "text": "Yearly"
           }
@@ -87,33 +87,26 @@
             "map": "variables['pr1c0001-0000-0000-0000-000000000001']",
             "key": "id",
             "props": {
-              "className": "contents"
+              "className": "contents flex-col"
             },
             "children": [
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-col p-[32px] w-[340px] overflow-hidden border-[1px] border-[#ddd6fe] rounded-[16px]",
-                  "style": {
-                    "backgroundColor": "#ffffff",
-                    "boxShadow": "0px 4px 12px 0px rgba(124, 58, 237, 0.08)"
-                  }
+                  "className": "flex flex-col p-[32px] w-[340px] overflow-hidden border-[1px] border-[#ddd6fe] rounded-[16px] bg-[#ffffff] shadow-[0px_4px_12px_0px_rgba(124,_58,_237,_0.08)]"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "condition": "context?.item?.data?.isFeatured",
                     "props": {
-                      "className": "mb-[20px] w-full overflow-hidden rounded-[6px]",
-                      "style": {
-                        "backgroundColor": "#7c3aed"
-                      }
+                      "className": "mb-[20px] w-full overflow-hidden rounded-[6px] bg-[#7c3aed] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "py-[8px] text-[12px] font-bold text-center tracking-wide !text-[#ffffff]"
+                          "className": "py-[8px] text-[12px] font-bold text-center tracking-wide !text-[#ffffff] flex-col"
                         },
                         "text": "MOST POPULAR"
                       }
@@ -122,7 +115,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "mb-[20px] text-[24px] font-bold text-left !text-[#3b0764]"
+                      "className": "mb-[20px] text-[24px] font-bold text-left !text-[#3b0764] flex-col"
                     },
                     "text": {
                       "formula": "context?.item?.data?.name"
@@ -131,7 +124,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "items-start justify-center p-[20px] mb-[24px] w-full overflow-hidden rounded-[12px]",
+                      "className": "items-start justify-center p-[20px] mb-[24px] w-full overflow-hidden rounded-[12px] flex-col",
                       "style": {
                         "backgroundColor": {
                           "formula": "context?.item?.data?.isFeatured ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : '#ede9fe'"
@@ -142,7 +135,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[44px] font-bold text-left",
+                          "className": "text-[44px] font-bold text-left flex-col",
                           "style": {
                             "color": {
                               "formula": "context?.item?.data?.isFeatured ? '#ffffff' : '#3b0764'"
@@ -156,7 +149,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "mt-[4px] text-[14px] font-normal text-left",
+                          "className": "mt-[4px] text-[14px] font-normal text-left flex-col",
                           "style": {
                             "color": {
                               "formula": "context?.item?.data?.isFeatured ? 'rgba(255, 255, 255, 0.8)' : '#6d28d9'"
@@ -172,7 +165,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "mb-[28px] text-[14px] font-normal text-left leading-relaxed !text-[#6d28d9]"
+                      "className": "mb-[28px] text-[14px] font-normal text-left leading-relaxed !text-[#6d28d9] flex-col"
                     },
                     "text": {
                       "formula": "context?.item?.data?.description"
@@ -191,7 +184,7 @@
                         },
                         "key": "id",
                         "props": {
-                          "className": "contents"
+                          "className": "contents flex-col"
                         },
                         "children": [
                           {
@@ -211,7 +204,7 @@
                               {
                                 "type": "Text",
                                 "props": {
-                                  "className": "text-[14px] font-normal text-left !text-[#3b0764]"
+                                  "className": "text-[14px] font-normal text-left !text-[#3b0764] flex-col"
                                 },
                                 "text": "{{context.item.data.text}}"
                               }
@@ -224,7 +217,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "items-center justify-center p-[14px] mb-[16px] cursor-pointer w-full overflow-hidden border-[1px] rounded-[10px]",
+                      "className": "items-center justify-center p-[14px] mb-[16px] cursor-pointer w-full overflow-hidden border-[1px] rounded-[10px] flex-col",
                       "style": {
                         "borderColor": {
                           "formula": "context?.item?.data?.isFeatured ? '#7c3aed' : '#ddd6fe'"
@@ -238,7 +231,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[15px] font-semibold text-center",
+                          "className": "text-[15px] font-semibold text-center flex-col",
                           "style": {
                             "color": {
                               "formula": "context?.item?.data?.isFeatured ? '#ffffff' : '#3b0764'"
@@ -268,7 +261,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-normal text-center !text-[#6d28d9]"
+                          "className": "text-[12px] font-normal text-center !text-[#6d28d9] flex-col"
                         },
                         "text": {
                           "formula": "context?.item?.data?.trustText"

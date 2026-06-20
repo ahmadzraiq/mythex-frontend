@@ -26,14 +26,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[30px] font-bold"
+              "className": "text-[30px] font-bold flex-col"
             },
             "text": "Profile"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[var(--theme-muted-foreground)] mt-[8px]"
+              "className": "text-[var(--theme-muted-foreground)] mt-[8px] flex-col"
             },
             "text": "Manage your account information"
           }
@@ -46,13 +46,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-[24px]"
+              "className": "p-[24px] flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[18px] font-semibold mb-[16px]"
+                  "className": "text-[18px] font-semibold mb-[16px] flex-col"
                 },
                 "text": "Personal Information"
               },
@@ -71,13 +71,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-[8px]"
+                          "className": "space-y-[8px] flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-medium"
+                              "className": "text-[14px] font-medium flex-col"
                             },
                             "text": "First name"
                           },
@@ -95,13 +95,13 @@
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-[8px]"
+                          "className": "space-y-[8px] flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] font-medium"
+                              "className": "text-[14px] font-medium flex-col"
                             },
                             "text": "Last name"
                           },
@@ -121,13 +121,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[8px]"
+                      "className": "space-y-[8px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium"
+                          "className": "text-[14px] font-medium flex-col"
                         },
                         "text": "Phone number"
                       },
@@ -152,7 +152,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white"
+                          "className": "text-white flex-col"
                         },
                         "text": "Save Changes"
                       }
@@ -170,7 +170,7 @@
           }
         ],
         "props": {
-          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm flex-col"
         },
         "_group": "Personal Information"
       },
@@ -180,13 +180,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-[24px]"
+              "className": "p-[24px] flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[18px] font-semibold mb-[16px]"
+                  "className": "text-[18px] font-semibold mb-[16px] flex-col"
                 },
                 "text": "Email Address"
               },
@@ -199,13 +199,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[8px]"
+                      "className": "space-y-[8px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium"
+                          "className": "text-[14px] font-medium flex-col"
                         },
                         "text": "Email"
                       },
@@ -230,7 +230,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white"
+                          "className": "text-white flex-col"
                         },
                         "text": "Update Email"
                       }
@@ -248,7 +248,7 @@
           }
         ],
         "props": {
-          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm flex-col"
         },
         "_group": "Email"
       },
@@ -258,13 +258,13 @@
           {
             "type": "Box",
             "props": {
-              "className": "p-[24px]"
+              "className": "p-[24px] flex-col"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[18px] font-semibold mb-[16px]"
+                  "className": "text-[18px] font-semibold mb-[16px] flex-col"
                 },
                 "text": "Change Password"
               },
@@ -277,13 +277,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[8px]"
+                      "className": "space-y-[8px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium"
+                          "className": "text-[14px] font-medium flex-col"
                         },
                         "text": "Current password"
                       },
@@ -302,13 +302,13 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "space-y-[8px]"
+                      "className": "space-y-[8px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium"
+                          "className": "text-[14px] font-medium flex-col"
                         },
                         "text": "New password"
                       },
@@ -333,7 +333,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-white"
+                          "className": "text-white flex-col"
                         },
                         "text": "Change Password"
                       }
@@ -351,7 +351,7 @@
           }
         ],
         "props": {
-          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm"
+          "className": "border-[1px] rounded-[12px] bg-[var(--theme-card)] shadow-sm flex-col"
         },
         "_group": "Change Password"
       }

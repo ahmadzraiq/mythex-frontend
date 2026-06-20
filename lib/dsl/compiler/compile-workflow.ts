@@ -132,27 +132,6 @@ function applyParamMap(code: string, paramMap: Map<string, string>): string {
   return result
 }
 
-// ─── Single-JS compilation (blocks with local variable declarations) ─────────
-
-/**
- * Returns true if the node (recursively, but NOT descending into nested
- * function/arrow bodies) contains any const/let/var declaration.
- * Used to detect workflows that must be compiled as a single runJavaScript
- * step to preserve variable scope across what would otherwise be split steps.
- */
-function blockHasDeclarations(node: ts.Node): boolean {
-  let found = false
-  function walk(n: ts.Node) {
-    if (found) return
-    // Don't descend into closures — their declarations are isolated anyway
-    if (ts.isFunctionExpression(n) || ts.isArrowFunction(n)) return
-    if (ts.isVariableStatement(n)) { found = true; return }
-    ts.forEachChild(n, walk)
-  }
-  walk(node)
-  return found
-}
-
 /**
  * Convert a setVar() call to an inline `variables['uuid'] = val` JS statement.
  * The uuid is resolved directly from pathToId — no resolver pass needed for the
@@ -316,128 +295,6 @@ function classifyStatement(stmt: ts.Statement): StepCandidate {
   return { kind: 'js', node: stmt }
 }
 
-// ─── Compile individual steps ─────────────────────────────────────────────────
-
-function compileSetVarStep(stmt: ts.Statement, pathToId: Map<string, string>, paramMap?: Map<string, string>): WorkflowStep {
-  const id = crypto.randomUUID()
-  let variableName = ''
-  let value: unknown = null
-
-  if (ts.isExpressionStatement(stmt)) {
-    const expr = stmt.expression
-
-    // setVar('store/x', val)
-    if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression) && expr.expression.text === 'setVar') {
-      const pathArg = expr.arguments[0]
-      const valArg  = expr.arguments[1]
-
-      const vfsPath = ts.isStringLiteral(pathArg) ? pathArg.text : nodeText(pathArg)
-      variableName = pathToId.get(vfsPath) ?? pathToId.get(`store/${vfsPath}`) ?? vfsPath
-
-      if (valArg) {
-        if (ts.isStringLiteral(valArg)) {
-          value = valArg.text
-        } else if (ts.isNumericLiteral(valArg)) {
-          value = Number(valArg.text)
-        } else if (valArg.kind === ts.SyntaxKind.TrueKeyword) {
-          value = true
-        } else if (valArg.kind === ts.SyntaxKind.FalseKeyword) {
-          value = false
-        } else {
-          let resolved = resolveExprRefs(nodeText(valArg), pathToId)
-          resolved = resolveVarIdents(resolved, pathToId)
-          if (paramMap) resolved = applyParamMap(resolved, paramMap)
-          value = { js: resolved }
-        }
-      }
-    }
-
-    // vars['store/x'] = val
-    if (
-      ts.isBinaryExpression(expr) &&
-      expr.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      ts.isElementAccessExpression(expr.left)
-    ) {
-      const keyNode = expr.left.argumentExpression
-      const vfsPath = ts.isStringLiteral(keyNode) ? keyNode.text : nodeText(keyNode)
-      variableName = pathToId.get(vfsPath) ?? pathToId.get(`store/${vfsPath.replace(/^['"]|['"]$/g, '')}`) ?? vfsPath
-
-      const rhs = expr.right
-      if (ts.isStringLiteral(rhs)) {
-        value = rhs.text
-      } else if (ts.isNumericLiteral(rhs)) {
-        value = Number(rhs.text)
-      } else if (rhs.kind === ts.SyntaxKind.TrueKeyword) {
-        value = true
-      } else if (rhs.kind === ts.SyntaxKind.FalseKeyword) {
-        value = false
-      } else {
-        let resolved = resolveExprRefs(nodeText(rhs), pathToId)
-        resolved = resolveVarIdents(resolved, pathToId)
-        if (paramMap) resolved = applyParamMap(resolved, paramMap)
-        value = { js: resolved }
-      }
-    }
-  }
-
-  return {
-    id,
-    type: 'changeVariableValue',
-    config: { variableName, value },
-  }
-}
-
-function compileNavigateStep(stmt: ts.ExpressionStatement, pathToId: Map<string, string>): WorkflowStep {
-  const call = stmt.expression as ts.CallExpression
-  const pathArg = call.arguments[0]
-  const paramsArg = call.arguments[1]
-
-  const navPath = ts.isStringLiteral(pathArg) ? pathArg.text : resolveExprRefs(nodeText(pathArg), pathToId)
-
-  const config: Record<string, unknown> = { path: navPath }
-  if (paramsArg) {
-    config.query = { js: resolveExprRefs(nodeText(paramsArg), pathToId) }
-  }
-
-  return { id: crypto.randomUUID(), type: 'navigateTo', config }
-}
-
-function compileFetchStep(stmt: ts.ExpressionStatement, pathToId: Map<string, string>): WorkflowStep {
-  const call = stmt.expression as ts.CallExpression
-  const dsArg = call.arguments[0]
-  const dsPath = ts.isStringLiteral(dsArg) ? dsArg.text : nodeText(dsArg)
-  const collectionName = pathToId.get(dsPath) ?? pathToId.get(`data/${dsPath}`) ?? dsPath
-
-  return {
-    id: crypto.randomUUID(),
-    type: 'fetchCollection',
-    config: { collectionName },
-  }
-}
-
-function compileBranchStep(
-  stmt: ts.IfStatement,
-  pathToId: Map<string, string>,
-  paramMap?: Map<string, string>,
-): WorkflowStep {
-  let condition = resolveExprRefs(nodeText(stmt.expression), pathToId)
-  condition = resolveVarIdents(condition, pathToId)
-  if (paramMap) condition = applyParamMap(condition, paramMap)
-
-  const trueBranch = compileBlockToSteps(stmt.thenStatement, pathToId, paramMap)
-  const falseBranch = stmt.elseStatement
-    ? compileBlockToSteps(stmt.elseStatement, pathToId, paramMap)
-    : []
-
-  return {
-    id: crypto.randomUUID(),
-    type: 'branch',
-    config: { condition },
-    trueBranch,
-    falseBranch,
-  }
-}
-
 // ─── Collect top-level non-DSL helper functions from a source file ────────────
 
 const DSL_DEFINE_CALLS = new Set(['defineWorkflow', 'defineVar', 'defineFunction', 'definePage', 'defineComponent'])
@@ -449,11 +306,27 @@ function collectHelperDefs(sf: ts.SourceFile): Map<string, string> {
     for (const decl of stmt.declarationList.declarations) {
       if (!ts.isIdentifier(decl.name)) continue
       if (!decl.initializer) continue
-      // Skip DSL define* calls
+
+      // Capture defineWorkflow bodies as inlineable helpers so one workflow
+      // can call another and have it inlined in the same runJavaScript step.
+      if (ts.isCallExpression(decl.initializer) &&
+          ts.isIdentifier(decl.initializer.expression) &&
+          decl.initializer.expression.text === 'defineWorkflow') {
+        const innerFn = decl.initializer.arguments[0]
+        if (innerFn && (ts.isArrowFunction(innerFn) || ts.isFunctionExpression(innerFn))) {
+          const fn = innerFn as ts.ArrowFunction | ts.FunctionExpression
+          const params = fn.parameters.map(p => p.getText()).join(', ')
+          const bodyText = fn.body.getText()
+          helpers.set(decl.name.text, `const ${decl.name.text} = (${params}) => ${bodyText}`)
+        }
+        continue
+      }
+
+      // Skip other DSL define* calls
       if (ts.isCallExpression(decl.initializer) &&
           ts.isIdentifier(decl.initializer.expression) &&
           DSL_DEFINE_CALLS.has(decl.initializer.expression.text)) continue
-      // Collect arrow functions and regular function expressions
+      // Collect plain arrow functions and regular function expressions
       if (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) {
         helpers.set(decl.name.text, stmt.getText().trim())
       }
@@ -462,89 +335,55 @@ function collectHelperDefs(sf: ts.SourceFile): Map<string, string> {
   return helpers
 }
 
-// ─── Compile a block of statements to steps ───────────────────────────────────
-
-function compileBlockToSteps(node: ts.Node, pathToId: Map<string, string>, paramMap?: Map<string, string>, helperDefs?: Map<string, string>): WorkflowStep[] {
-  const stmts: ts.Statement[] = []
-
-  if (ts.isBlock(node)) {
-    for (const stmt of node.statements) stmts.push(stmt)
-  } else if (ts.isStatement(node)) {
-    stmts.push(node as ts.Statement)
+/**
+ * Prepend any referenced helper definitions to the given code block.
+ * For helpers extracted from defineWorkflow bodies, variable references are
+ * resolved to UUIDs before prepending so they work inside runJavaScript steps.
+ */
+function prependHelpers(
+  code: string,
+  helperDefs: Map<string, string>,
+  pathToId: Map<string, string>,
+  paramMap?: Map<string, string>,
+): string {
+  const preamble: string[] = []
+  for (const [helperName, helperText] of helperDefs) {
+    if (!code.includes(helperName)) continue
+    let resolved = resolveExprRefs(helperText, pathToId)
+    resolved = resolveVarIdents(resolved, pathToId)
+    if (paramMap) resolved = applyParamMap(resolved, paramMap)
+    preamble.push(resolved)
   }
+  return preamble.length > 0 ? `${preamble.join('\n')}\n${code}` : code
+}
 
-  function prependHelpers(code: string): string {
-    if (!helperDefs) return code
-    const preamble: string[] = []
-    for (const [helperName, helperText] of helperDefs) {
-      if (code.includes(helperName)) preamble.push(helperText)
-    }
-    return preamble.length > 0 ? `${preamble.join('\n')}\n${code}` : code
-  }
+// ─── Compile a block of statements to a single runJavaScript step ─────────────
 
-  // If this block declares any local variables (const/let/var), compile the
-  // entire block as ONE runJavaScript step. Splitting into multiple steps
-  // would create isolated function scopes, making those declarations invisible
-  // to subsequent steps (setVar values, branch conditions, etc.).
-  if (ts.isBlock(node) && blockHasDeclarations(node)) {
-    let code = stmts.map(s => stmtToInlineJs(s, pathToId, paramMap)).join('\n').trim()
-    if (!code) return []
-    code = resolveExprRefs(code, pathToId)
-    code = resolveVarIdents(code, pathToId)
-    if (paramMap) code = applyParamMap(code, paramMap)
-    code = prependHelpers(code)
-    return [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
-  }
+/**
+ * Compiles the entire workflow body into exactly ONE runJavaScript step.
+ * Every statement type (setVar, if/else, for-of, etc.) is converted to its
+ * inline JavaScript equivalent via stmtToInlineJs, then the whole block is
+ * resolved (variable names → UUIDs) and emitted as a single step.
+ * Referenced helper functions (plain helpers and inlined defineWorkflow bodies)
+ * are prepended to the step code.
+ */
+function compileBlockToSteps(
+  node: ts.Node,
+  pathToId: Map<string, string>,
+  paramMap?: Map<string, string>,
+  helperDefs?: Map<string, string>,
+): WorkflowStep[] {
+  const stmts: ts.Statement[] = ts.isBlock(node)
+    ? [...node.statements]
+    : ts.isStatement(node) ? [node as ts.Statement] : []
 
-  const steps: WorkflowStep[] = []
-  let jsBuffer: string[] = []
-
-  function flushJs() {
-    if (jsBuffer.length === 0) return
-    let code = jsBuffer.join('\n').trim()
-    if (code) {
-      code = resolveExprRefs(code, pathToId)
-      code = resolveVarIdents(code, pathToId)
-      if (paramMap) code = applyParamMap(code, paramMap)
-      code = prependHelpers(code)
-      steps.push({
-        id: crypto.randomUUID(),
-        type: 'runJavaScript',
-        config: { code },
-      })
-    }
-    jsBuffer = []
-  }
-
-  for (const stmt of stmts) {
-    const candidate = classifyStatement(stmt)
-    if (candidate.kind !== 'js') flushJs()
-
-    switch (candidate.kind) {
-      case 'setVar':
-        steps.push(compileSetVarStep(stmt, pathToId, paramMap))
-        break
-      case 'navigate':
-        steps.push(compileNavigateStep(stmt as ts.ExpressionStatement, pathToId))
-        break
-      case 'fetch':
-        steps.push(compileFetchStep(stmt as ts.ExpressionStatement, pathToId))
-        break
-      case 'branch':
-        steps.push(compileBranchStep(stmt as ts.IfStatement, pathToId, paramMap))
-        break
-      case 'forEach':
-        // Compile forEach body as runJavaScript (complex iteration often needs context)
-        jsBuffer.push(nodeText(stmt))
-        break
-      case 'js':
-        jsBuffer.push(nodeText(stmt))
-        break
-    }
-  }
-
-  flushJs()
-  return steps
+  let code = stmts.map(s => stmtToInlineJs(s, pathToId, paramMap)).join('\n').trim()
+  if (!code) return []
+  code = resolveExprRefs(code, pathToId)
+  code = resolveVarIdents(code, pathToId)
+  if (paramMap) code = applyParamMap(code, paramMap)
+  if (helperDefs) code = prependHelpers(code, helperDefs, pathToId, paramMap)
+  return [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
 }
 
 // ─── Deterministic UUID ───────────────────────────────────────────────────────

@@ -18,14 +18,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
+              "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
             },
             "text": "Workflow Engine Showcase"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-gray-500 dark:text-gray-400"
+              "className": "text-gray-500 dark:text-gray-400 flex-col"
             },
             "text": "Each card tests a different workflow engine feature. Open DevTools to observe state changes."
           }
@@ -46,14 +46,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 1 — setVar + Variable Binding"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Click a button to write a value to demo.message via setVar. The output text is bound to that variable."
               }
@@ -82,7 +82,7 @@
                     "type": "Text",
                     "text": "Hello",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -104,7 +104,7 @@
                     "type": "Text",
                     "text": "Goodbye",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -126,7 +126,7 @@
                     "type": "Text",
                     "text": "Testing",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -142,14 +142,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "demo.message →"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "font-medium text-gray-900 dark:text-gray-100",
+                  "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                   "data-testid": "out-message"
                 },
                 "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111101']}}"
@@ -173,14 +173,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 2 — Branch (if/else)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Set demo.number to 3 (< 10) or 15 (>= 10), then click Evaluate Branch to see which path executes."
               }
@@ -209,7 +209,7 @@
                     "type": "Text",
                     "text": "Set number = 3",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -231,7 +231,7 @@
                     "type": "Text",
                     "text": "Set number = 15",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -253,7 +253,7 @@
                     "type": "Text",
                     "text": "Evaluate Branch",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -275,14 +275,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                     },
                     "text": "demo.number →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-number"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111102']}}"
@@ -298,14 +298,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider"
+                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider flex-col"
                     },
                     "text": "result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-branch"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111104']}}"
@@ -331,14 +331,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 3 — runMultiple"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "One button triggers three sequential setVar actions via runMultiple. All three outputs should update at once."
               }
@@ -367,7 +367,7 @@
                     "type": "Text",
                     "text": "Run All 3 Steps",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -389,14 +389,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px]"
+                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px] flex-col"
                     },
                     "text": "step 1 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-step1"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111111']}}"
@@ -412,14 +412,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px]"
+                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px] flex-col"
                     },
                     "text": "step 2 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-step2"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111112']}}"
@@ -435,14 +435,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px]"
+                      "className": "text-[12px] font-mono text-gray-400 uppercase tracking-wider w-[64px] flex-col"
                     },
                     "text": "step 3 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-step3"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111113']}}"
@@ -468,14 +468,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-indigo-700 dark:text-indigo-300"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-indigo-700 dark:text-indigo-300 flex-col"
                 },
                 "text": "Card 5 — The Complete Pipeline"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "All structural types in one workflow: nested branch → forEach → whileLoop + timeDelay. Set a score, then click Run."
               }
@@ -490,7 +490,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "① Set score (demo.number)"
               },
@@ -517,7 +517,7 @@
                         "type": "Text",
                         "text": "Score = 20",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -539,7 +539,7 @@
                         "type": "Text",
                         "text": "Score = 45",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -561,7 +561,7 @@
                         "type": "Text",
                         "text": "Score = 75",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -583,7 +583,7 @@
                         "type": "Text",
                         "text": "Score = 95",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -601,7 +601,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex-col"
                 },
                 "text": "② Run the workflow"
               },
@@ -622,7 +622,7 @@
                     "type": "Text",
                     "text": "Run Full Pipeline",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -638,7 +638,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-[4px]"
+                  "className": "text-[12px] font-semibold text-gray-400 uppercase tracking-wider mb-[4px] flex-col"
                 },
                 "text": "Output"
               },
@@ -651,14 +651,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0"
+                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0 flex-col"
                     },
                     "text": "score (number) →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-indigo-600 dark:text-indigo-300",
+                      "className": "font-bold text-indigo-600 dark:text-indigo-300 flex-col",
                       "data-testid": "out-pipeline-number"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111102']}}"
@@ -674,14 +674,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0"
+                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0 flex-col"
                     },
                     "text": "branch → grade →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-grade"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111105']}}"
@@ -697,14 +697,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0"
+                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0 flex-col"
                     },
                     "text": "forEach iters →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-loop-count"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111106']}}"
@@ -712,7 +712,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-gray-400 italic"
+                      "className": "text-[12px] text-gray-400 italic flex-col"
                     },
                     "text": "(expect 3 — items: A, B, C)"
                   }
@@ -727,14 +727,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0"
+                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0 flex-col"
                     },
                     "text": "whileLoop iters →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-retry-count"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111107']}}"
@@ -742,7 +742,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-gray-400 italic"
+                      "className": "text-[12px] text-gray-400 italic flex-col"
                     },
                     "text": "(expect 3 — stops at ≥ 3)"
                   }
@@ -757,14 +757,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0"
+                      "className": "text-[12px] font-mono text-gray-400 w-[144px] pt-[2px] shrink-0 flex-col"
                     },
                     "text": "status →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-green-600 dark:text-green-400",
+                      "className": "font-semibold text-green-600 dark:text-green-400 flex-col",
                       "data-testid": "out-complex-done"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111110']}}"
@@ -782,14 +782,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wider"
+                  "className": "text-[12px] font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wider flex-col"
                 },
                 "text": "What this workflow exercises"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-indigo-700 dark:text-indigo-400 leading-relaxed"
+                  "className": "text-[12px] text-indigo-700 dark:text-indigo-400 leading-relaxed flex-col"
                 },
                 "text": "① Reset (6× changeVariableValue)  →  ② timeDelay 300ms  →  ③ branch: score ≥ 60?  →  ④ nested branch: ≥ 90 / ≥ 30  →  ⑤ forEach over 3 items (loopBody: increment)  →  ⑥ whileLoop (stop when retryCount ≥ 3)  →  ⑦ final changeVariableValue"
               }
@@ -822,14 +822,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 6 — Trigger Sampler"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests created, mounted, click, doubleClick, mouseEnter/Leave, change, enterKey, focus, blur triggers."
               }
@@ -850,14 +850,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "created →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-created"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000001']}}"
@@ -873,14 +873,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "mounted →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-mounted"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000002']}}"
@@ -896,14 +896,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "click →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-click"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000003']}}"
@@ -919,14 +919,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "dblclick count →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-dblclick"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000004']}}"
@@ -942,14 +942,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "hover →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-hover"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000005']}}"
@@ -965,14 +965,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "focus →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-focus-state"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000008']}}"
@@ -988,14 +988,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "change →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-change"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000006']}}"
@@ -1011,14 +1011,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "enterKey →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-enter"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000007']}}"
@@ -1050,7 +1050,7 @@
                     "type": "Text",
                     "text": "Click me",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1072,7 +1072,7 @@
                     "type": "Text",
                     "text": "Double-click me",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1080,7 +1080,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-[8px] border-[1px] border-dashed border-indigo-400 px-[16px] py-[8px] cursor-default",
+                  "className": "rounded-[8px] border-[1px] border-dashed border-indigo-400 px-[16px] py-[8px] cursor-default flex-col",
                   "data-testid": "hover-zone"
                 },
                 "actions": [
@@ -1097,7 +1097,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-indigo-600 dark:text-indigo-300"
+                      "className": "text-[12px] text-indigo-600 dark:text-indigo-300 flex-col"
                     },
                     "text": "Hover zone"
                   }
@@ -1114,7 +1114,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-500"
+                  "className": "text-[12px] text-gray-500 flex-col"
                 },
                 "text": "Type in the input (triggers onChange, onFocus, onBlur, onEnterKey):"
               },
@@ -1127,7 +1127,7 @@
                   "data-testid": "wa-trigger-input",
                   "placeholder": "Type here…",
                   "placeholderTextColor": "#9ca3af",
-                  "className": "!text-gray-900 dark:!text-gray-100"
+                  "className": "!text-gray-900 dark:!text-gray-100 flex-col"
                 },
                 "children": [],
                 "actions": [
@@ -1168,14 +1168,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 7 — Form Triggers + setFormState + resetForm"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests submit, submitValidationError triggers, plus setFormState and resetForm actions."
               }
@@ -1196,14 +1196,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "submit result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-form-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000009']}}"
@@ -1219,14 +1219,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "validation error →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-red-600 dark:text-red-400",
+                      "className": "font-medium text-red-600 dark:text-red-400 flex-col",
                       "data-testid": "out-form-validation-error"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000010']}}"
@@ -1242,14 +1242,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "isSubmitted →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-form-is-submitted"
                     },
                     "text": "{{local.data.form.isSubmitted}}"
@@ -1265,14 +1265,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "isSubmitting →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-form-is-submitting"
                     },
                     "text": "{{local.data.form.isSubmitting}}"
@@ -1320,7 +1320,7 @@
                           "value": "{{variables['wa000001-0000-0000-0000-000000000043']}}",
                           "placeholder": "Email (required)",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "data-testid": "wa-form-email"
                         },
                         "children": [],
@@ -1344,7 +1344,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['wa-email']?.isValid",
                         "props": {
-                          "className": "text-[14px] text-red-500 dark:text-red-400",
+                          "className": "text-[14px] text-red-500 dark:text-red-400 flex-col",
                           "data-testid": "wa-email-error"
                         },
                         "text": "{{local.data.form.fields['wa-email'].isValid}}"
@@ -1361,7 +1361,7 @@
                       "value": "{{variables['wa000001-0000-0000-0000-000000000044']}}",
                       "placeholder": "Name",
                       "placeholderTextColor": "#9ca3af",
-                      "className": "!text-gray-900 dark:!text-gray-100",
+                      "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                       "data-testid": "wa-form-name"
                     },
                     "children": [],
@@ -1390,7 +1390,7 @@
                             "type": "Text",
                             "text": "Submit",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                             }
                           }
                         ]
@@ -1412,7 +1412,7 @@
                             "type": "Text",
                             "text": "Pre-fill",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                             }
                           }
                         ]
@@ -1434,7 +1434,7 @@
                             "type": "Text",
                             "text": "Reset",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                             }
                           }
                         ]
@@ -1462,14 +1462,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 8 — navigateTo + navigatePrev"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests navigateTo (go to /) and navigatePrev (go back with default redirect). Note: clicking these will leave the page."
               }
@@ -1498,7 +1498,7 @@
                     "type": "Text",
                     "text": "Go to Home (/)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1520,7 +1520,7 @@
                     "type": "Text",
                     "text": "Navigate Prev (back or /)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1544,14 +1544,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 9 — REST API + GraphQL"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests fetchData (GET and POST) and graphql action types using public endpoints."
               }
@@ -1572,14 +1572,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "REST result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-rest-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000011']}}"
@@ -1595,14 +1595,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "REST status →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-rest-status"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000013']}}"
@@ -1618,14 +1618,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "GraphQL result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-gql-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000012']}}"
@@ -1657,7 +1657,7 @@
                     "type": "Text",
                     "text": "REST GET",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1679,7 +1679,7 @@
                     "type": "Text",
                     "text": "REST POST",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1701,7 +1701,7 @@
                     "type": "Text",
                     "text": "GraphQL Query",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1725,14 +1725,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 10 — fetchCollection + parallel + updateCollection + resetVariableValue"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests collection fetch actions and variable reset."
               }
@@ -1753,14 +1753,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "fetch-1 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-fetch-count"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000014']}}"
@@ -1776,14 +1776,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "parallel-1 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-parallel-1"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000015']}}"
@@ -1799,14 +1799,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "parallel-2 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-parallel-2"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000016']}}"
@@ -1822,14 +1822,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "reset-check →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-reset-check"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000017']}}"
@@ -1861,7 +1861,7 @@
                     "type": "Text",
                     "text": "Fetch Collection",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1883,7 +1883,7 @@
                     "type": "Text",
                     "text": "Fetch Parallel",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1905,7 +1905,7 @@
                     "type": "Text",
                     "text": "Update Collection",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1927,7 +1927,7 @@
                     "type": "Text",
                     "text": "Modify var",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1949,7 +1949,7 @@
                     "type": "Text",
                     "text": "Reset Var",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -1973,14 +1973,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card — Update Collection (all 4 types)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Replace all (refetch), Insert at position 0, Update by id (merge), Delete by id."
               }
@@ -2009,7 +2009,7 @@
                     "type": "Text",
                     "text": "Seed (Replace All)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2031,7 +2031,7 @@
                     "type": "Text",
                     "text": "Insert",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2053,7 +2053,7 @@
                     "type": "Text",
                     "text": "Update (by id)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2075,7 +2075,7 @@
                     "type": "Text",
                     "text": "Delete (by id)",
                     "props": {
-                      "className": "text-[14px] text-white font-medium"
+                      "className": "text-[14px] text-white font-medium flex-col"
                     }
                   }
                 ]
@@ -2097,14 +2097,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "seed →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-update-replace-all"
                     },
                     "text": "{{variables['wa-upd-0000-0000-0000-000000000001']}}"
@@ -2120,14 +2120,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "insert →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-update-insert"
                     },
                     "text": "{{variables['wa-upd-0000-0000-0000-000000000002']}}"
@@ -2143,14 +2143,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "update →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-update-item"
                     },
                     "text": "{{variables['wa-upd-0000-0000-0000-000000000003']}}"
@@ -2166,14 +2166,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "delete →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-update-delete"
                     },
                     "text": "{{variables['wa-upd-0000-0000-0000-000000000004']}}"
@@ -2197,14 +2197,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "items in collection:"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono font-bold text-blue-500",
+                      "className": "text-[12px] font-mono font-bold text-blue-500 flex-col",
                       "data-testid": "out-update-count"
                     },
                     "text": "{{collections.c3d4e5f6-a7b8-9012-cdef-123456789012.length}}"
@@ -2222,14 +2222,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400 w-[80px]"
+                      "className": "text-[12px] font-mono text-gray-400 w-[80px] flex-col"
                     },
                     "text": "{{context.item.data.id}}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[14px] font-medium text-gray-900 dark:text-gray-100",
+                      "className": "text-[14px] font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-item-name"
                     },
                     "text": "{{context.item.data.name}}"
@@ -2239,7 +2239,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-400 italic"
+                  "className": "text-[12px] text-gray-400 italic flex-col"
                 },
                 "condition": "!collections?.['c3d4e5f6-a7b8-9012-cdef-123456789012']?.data?.length",
                 "text": "No items — click Seed first"
@@ -2263,14 +2263,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 11 — returnValue (via branch)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Score ≥ 60 → PASS via returnValue in trueBranch. Score < 60 → FAIL."
               }
@@ -2285,14 +2285,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400"
+                  "className": "text-[12px] font-mono text-gray-400 flex-col"
                 },
                 "text": "return result →"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                  "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                   "data-testid": "out-return-result"
                 },
                 "text": "{{variables['wa000001-0000-0000-0000-000000000018']}}"
@@ -2322,7 +2322,7 @@
                     "type": "Text",
                     "text": "Score 80 → PASS",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2344,7 +2344,7 @@
                     "type": "Text",
                     "text": "Score 30 → FAIL",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2368,14 +2368,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 12 — executeComponentAction + runProjectWorkflow"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "executeComponentAction calls a named action directly; runProjectWorkflow calls a sub-workflow."
               }
@@ -2396,14 +2396,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "exec result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-exec-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000020']}}"
@@ -2419,14 +2419,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "sub-workflow result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-sub-wf-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000019']}}"
@@ -2458,7 +2458,7 @@
                     "type": "Text",
                     "text": "Execute Component Action",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2480,7 +2480,7 @@
                     "type": "Text",
                     "text": "Run Sub-Workflow",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2504,14 +2504,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 13 — breakLoop + continueLoop + passThroughCondition"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "forEach [1..5]: continueLoop on even, breakLoop when sum ≥ 4. Result: 1+3 = 4. passThroughCondition blocks workflow unless flag is true."
               }
@@ -2532,14 +2532,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "loop sum →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-loop-sum"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000021']}}"
@@ -2555,14 +2555,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "flag →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-pass-flag"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000022']}}"
@@ -2578,14 +2578,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "pass result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-pass-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000023']}}"
@@ -2617,7 +2617,7 @@
                     "type": "Text",
                     "text": "Run Loop (continue+break)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2639,7 +2639,7 @@
                     "type": "Text",
                     "text": "Flag ON",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2661,7 +2661,7 @@
                     "type": "Text",
                     "text": "Flag OFF",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2683,7 +2683,7 @@
                     "type": "Text",
                     "text": "Run passThroughCondition",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2707,14 +2707,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 14 — multiOptionBranch"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Set mode to A, B, or C — Evaluate routes to matching branch and sets a distinct output string."
               }
@@ -2729,14 +2729,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-gray-400"
+                  "className": "text-[12px] font-mono text-gray-400 flex-col"
                 },
                 "text": "multi result →"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "font-bold text-gray-900 dark:text-gray-100",
+                  "className": "font-bold text-gray-900 dark:text-gray-100 flex-col",
                   "data-testid": "out-multi-result"
                 },
                 "text": "{{variables['wa000001-0000-0000-0000-000000000025']}}"
@@ -2766,7 +2766,7 @@
                     "type": "Text",
                     "text": "Set Mode A",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2788,7 +2788,7 @@
                     "type": "Text",
                     "text": "Set Mode B",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2810,7 +2810,7 @@
                     "type": "Text",
                     "text": "Set Mode C",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2832,7 +2832,7 @@
                     "type": "Text",
                     "text": "Evaluate",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -2856,14 +2856,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 15 — Advanced Actions"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "copyToClipboard, stopPropagation, printPdf, downloadFileFromUrl, createUrlFromBase64, encodeFileAsBase64."
               }
@@ -2884,14 +2884,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "clipboard →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-clipboard"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000026']}}"
@@ -2907,14 +2907,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "outer click →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-outer-click"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000027']}}"
@@ -2930,14 +2930,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "inner click →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-inner-click"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000028']}}"
@@ -2953,14 +2953,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "pdf fired →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-pdf-fired"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000029']}}"
@@ -2976,14 +2976,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "download fired →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-download-fired"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000030']}}"
@@ -2999,14 +2999,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "b64 url →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-b64-url"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000031']}}"
@@ -3022,14 +3022,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "encode b64 →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100 break-all text-[12px]",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 break-all text-[12px] flex-col",
                       "data-testid": "out-encode-b64"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000032']}}"
@@ -3061,7 +3061,7 @@
                     "type": "Text",
                     "text": "Copy to Clipboard",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3069,7 +3069,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "relative border-[1px] border-dashed border-orange-400 rounded-[8px] p-[8px] cursor-default",
+                  "className": "relative border-[1px] border-dashed border-orange-400 rounded-[8px] p-[8px] cursor-default flex-col",
                   "data-testid": "outer-click-zone"
                 },
                 "actions": [
@@ -3082,7 +3082,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] text-orange-500 mb-[4px]"
+                      "className": "text-[12px] text-orange-500 mb-[4px] flex-col"
                     },
                     "text": "Outer (click me)"
                   },
@@ -3103,7 +3103,7 @@
                         "type": "Text",
                         "text": "Inner (stops propagation)",
                         "props": {
-                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[12px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -3127,7 +3127,7 @@
                     "type": "Text",
                     "text": "Print PDF",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3149,7 +3149,7 @@
                     "type": "Text",
                     "text": "Download File",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3171,7 +3171,7 @@
                     "type": "Text",
                     "text": "Create URL from B64",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3193,7 +3193,7 @@
                     "type": "Text",
                     "text": "Encode Base64",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3217,14 +3217,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 16 — Branch inside Loop inside Branch"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "score ≥ 50 → forEach [A,B,C]: branch(item=B) → breakLoop else increment. Status = done-true. score < 50 → done-false."
               }
@@ -3245,14 +3245,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "loop count →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-complex-loop-count"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000034']}}"
@@ -3268,14 +3268,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "status →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-green-600 dark:text-green-400",
+                      "className": "font-semibold text-green-600 dark:text-green-400 flex-col",
                       "data-testid": "out-complex-status"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000035']}}"
@@ -3311,7 +3311,7 @@
                     "type": "Text",
                     "text": "Score 75 (true branch)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3337,7 +3337,7 @@
                     "type": "Text",
                     "text": "Score 30 (false branch)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3361,14 +3361,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 17 — multiOptionBranch + whileLoop + forEach + continueLoop + passThroughCondition"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "fast: whileLoop until count ≥ 3. slow: forEach [1..5] skip evens → odd sum = 9. skip: passThroughCondition if flag=true → skipped."
               }
@@ -3389,14 +3389,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "fast count →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-fast-count"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000037']}}"
@@ -3412,14 +3412,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "slow sum →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-slow-sum"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000038']}}"
@@ -3435,14 +3435,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "complex result →"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-semibold text-green-600 dark:text-green-400",
+                      "className": "font-semibold text-green-600 dark:text-green-400 flex-col",
                       "data-testid": "out-complex-result"
                     },
                     "text": "{{variables['wa000001-0000-0000-0000-000000000039']}}"
@@ -3478,7 +3478,7 @@
                     "type": "Text",
                     "text": "Mode: fast (whileLoop → 3)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3504,7 +3504,7 @@
                     "type": "Text",
                     "text": "Mode: slow (odd sum = 9)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3530,7 +3530,7 @@
                     "type": "Text",
                     "text": "Mode: skip (passThroughCondition)",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3554,14 +3554,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card 4 — increment / decrement"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Counter starts at 0. Decrement is clamped at 0 (min: 0). Reset sets it back to 0 via setVar."
               }
@@ -3590,7 +3590,7 @@
                     "type": "Text",
                     "text": "- 1",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3598,13 +3598,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "rounded-[12px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[24px] py-[8px] items-center justify-center flex"
+                  "className": "rounded-[12px] bg-gray-50 dark:bg-gray-800 border-[1px] border-gray-200 dark:border-gray-700 px-[24px] py-[8px] items-center justify-center flex flex-col"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[24px] font-bold text-gray-900 dark:text-gray-100 text-center",
+                      "className": "text-[24px] font-bold text-gray-900 dark:text-gray-100 text-center flex-col",
                       "data-testid": "out-count"
                     },
                     "text": "{{variables['d1e2f3a4-b5c6-7890-defa-111111111103']}}"
@@ -3628,7 +3628,7 @@
                     "type": "Text",
                     "text": "+ 1",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3650,7 +3650,7 @@
                     "type": "Text",
                     "text": "Reset",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                     }
                   }
                 ]
@@ -3674,14 +3674,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card — Input Sync + FormContainer"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Typing in Input 2 mirrors its value into Input 1 via onChange. The bound text below updates live."
               }
@@ -3718,7 +3718,7 @@
                           "name": "input1",
                           "placeholder": "Input 1 — enter a valid email",
                           "value": "{{variables['wa-sync-0000-0000-0000-000000000001']}}",
-                          "className": "!text-gray-900 dark:!text-gray-100"
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col"
                         },
                         "children": [],
                         "_validation": {
@@ -3745,7 +3745,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.input1?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500"
+                          "className": "text-[12px] text-red-500 flex-col"
                         },
                         "text": "{{local.data.form.fields.input1.isValid}}"
                       }
@@ -3765,7 +3765,7 @@
                           "size": "md",
                           "name": "input2",
                           "placeholder": "Input 2 — type here to update Input 1",
-                          "className": "!text-gray-900 dark:!text-gray-100"
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col"
                         },
                         "children": [],
                         "_validation": {
@@ -3788,7 +3788,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.input2?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500"
+                          "className": "text-[12px] text-red-500 flex-col"
                         },
                         "text": "{{local.data.form.fields.input2.isValid}}"
                       }
@@ -3806,7 +3806,7 @@
                         "condition": "!local?.data?.form?.isSubmitting",
                         "text": "Submit",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       },
                       {
@@ -3814,7 +3814,7 @@
                         "condition": "local?.data?.form?.isSubmitting",
                         "text": "Submitting...",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -3828,7 +3828,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-semibold text-indigo-400 uppercase tracking-wide mb-[4px]"
+                          "className": "text-[12px] font-semibold text-indigo-400 uppercase tracking-wide mb-[4px] flex-col"
                         },
                         "text": "local.data.form (inside FormContainer)"
                       },
@@ -3841,14 +3841,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "formData.input1"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.formData.input1}}"
                           }
@@ -3863,14 +3863,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "fields.input1.value"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.fields.input1.value}}"
                           }
@@ -3885,14 +3885,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "fields.input1.isValid"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.fields.input1.isValid}}"
                           }
@@ -3907,14 +3907,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "isSubmitting"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.isSubmitting}}"
                           }
@@ -3929,14 +3929,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "isSubmitted"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.isSubmitted}}"
                           }
@@ -3951,14 +3951,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-400 w-[160px]"
+                              "className": "text-[12px] font-mono text-indigo-400 w-[160px] flex-col"
                             },
                             "text": "isValid"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                              "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                             },
                             "text": "{{local.data.form.isValid}}"
                           }
@@ -3979,28 +3979,28 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-400 dark:text-gray-500"
+                  "className": "text-[12px] text-gray-400 dark:text-gray-500 flex-col"
                 },
                 "text": "Bound value (Input 1):"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[16px] font-medium text-gray-800 dark:text-gray-100"
+                  "className": "text-[16px] font-medium text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "{{variables['wa-sync-0000-0000-0000-000000000001']}}"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] text-gray-400 dark:text-gray-500 mt-[8px]"
+                  "className": "text-[12px] text-gray-400 dark:text-gray-500 mt-[8px] flex-col"
                 },
                 "text": "Submit result:"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] font-mono text-indigo-500 dark:text-indigo-400"
+                  "className": "text-[14px] font-mono text-indigo-500 dark:text-indigo-400 flex-col"
                 },
                 "text": "{{variables['wa-sync-0000-0000-0000-000000000003']}}"
               },
@@ -4013,7 +4013,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wide mb-[4px]"
+                      "className": "text-[12px] font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wide mb-[4px] flex-col"
                     },
                     "text": "variables['...form'] (outside)"
                   },
@@ -4026,14 +4026,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "formData.input1"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].formData.input1}}"
                       }
@@ -4048,14 +4048,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "fields.input1.value"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].fields.input1.value}}"
                       }
@@ -4070,14 +4070,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "fields.input1.isValid"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].fields.input1.isValid}}"
                       }
@@ -4092,14 +4092,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "isSubmitting"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isSubmitting}}"
                       }
@@ -4114,14 +4114,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "isSubmitted"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isSubmitted}}"
                       }
@@ -4136,14 +4136,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-400 w-[160px]"
+                          "className": "text-[12px] font-mono text-amber-400 w-[160px] flex-col"
                         },
                         "text": "isValid"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300"
+                          "className": "text-[12px] font-mono text-amber-700 dark:text-amber-300 flex-col"
                         },
                         "text": "{{variables['6f32095d-4bc7-4b18-8408-14a34645265d-form'].isValid}}"
                       }
@@ -4162,7 +4162,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-semibold text-violet-400 uppercase tracking-wide mb-[4px]"
+                  "className": "text-[12px] font-semibold text-violet-400 uppercase tracking-wide mb-[4px] flex-col"
                 },
                 "text": "global variable store (direct)"
               },
@@ -4175,14 +4175,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-violet-400 w-[224px]"
+                      "className": "text-[12px] font-mono text-violet-400 w-[224px] flex-col"
                     },
                     "text": "variables['wa-sync-...001']"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-violet-700 dark:text-violet-300"
+                      "className": "text-[12px] font-mono text-violet-700 dark:text-violet-300 flex-col"
                     },
                     "text": "{{variables['wa-sync-0000-0000-0000-000000000001']}}"
                   }
@@ -4201,14 +4201,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] font-semibold text-gray-700 dark:text-gray-200"
+              "className": "text-[14px] font-semibold text-gray-700 dark:text-gray-200 flex-col"
             },
             "text": "Card — Nested FormContainers"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[12px] text-gray-400 dark:text-gray-500"
+              "className": "text-[12px] text-gray-400 dark:text-gray-500 flex-col"
             },
             "text": "local.data.form is scoped to the nearest enclosing FormContainer — typing or submitting the inner form does NOT affect the outer form's display, and vice versa."
           },
@@ -4228,7 +4228,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-bold text-indigo-500 uppercase tracking-wide"
+                  "className": "text-[12px] font-bold text-indigo-500 uppercase tracking-wide flex-col"
                 },
                 "text": "Outer FormContainer"
               },
@@ -4252,7 +4252,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-indigo-400 mb-[4px]"
+                      "className": "text-[12px] font-semibold text-indigo-400 mb-[4px] flex-col"
                     },
                     "text": "local.data.form (outer scope)"
                   },
@@ -4265,14 +4265,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-400 w-[144px]"
+                          "className": "text-[12px] font-mono text-indigo-400 w-[144px] flex-col"
                         },
                         "text": "formData.outerField"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                         },
                         "text": "{{local.data.form.formData.outerField}}"
                       }
@@ -4287,14 +4287,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-400 w-[144px]"
+                          "className": "text-[12px] font-mono text-indigo-400 w-[144px] flex-col"
                         },
                         "text": "isSubmitting"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                         },
                         "text": "{{local.data.form.isSubmitting}}"
                       }
@@ -4309,14 +4309,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-400 w-[144px]"
+                          "className": "text-[12px] font-mono text-indigo-400 w-[144px] flex-col"
                         },
                         "text": "isSubmitted"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300"
+                          "className": "text-[12px] font-mono text-indigo-700 dark:text-indigo-300 flex-col"
                         },
                         "text": "{{local.data.form.isSubmitted}}"
                       }
@@ -4336,7 +4336,7 @@
                     "condition": "!local?.data?.form?.isSubmitting",
                     "text": "Submit Outer",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   },
                   {
@@ -4344,7 +4344,7 @@
                     "condition": "local?.data?.form?.isSubmitting",
                     "text": "Submitting...",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -4365,7 +4365,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide flex-col"
                     },
                     "text": "Inner FormContainer (nested inside outer)"
                   },
@@ -4389,7 +4389,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 mb-[4px]"
+                          "className": "text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 mb-[4px] flex-col"
                         },
                         "text": "local.data.form (inner scope)"
                       },
@@ -4402,14 +4402,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px]"
+                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px] flex-col"
                             },
                             "text": "formData.innerField"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300"
+                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300 flex-col"
                             },
                             "text": "{{local.data.form.formData.innerField}}"
                           }
@@ -4424,14 +4424,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px]"
+                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px] flex-col"
                             },
                             "text": "isSubmitting"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300"
+                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300 flex-col"
                             },
                             "text": "{{local.data.form.isSubmitting}}"
                           }
@@ -4446,14 +4446,14 @@
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px]"
+                              "className": "text-[12px] font-mono text-emerald-600 dark:text-emerald-500 w-[144px] flex-col"
                             },
                             "text": "isSubmitted"
                           },
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300"
+                              "className": "text-[12px] font-mono text-emerald-700 dark:text-emerald-300 flex-col"
                             },
                             "text": "{{local.data.form.isSubmitted}}"
                           }
@@ -4473,7 +4473,7 @@
                         "condition": "!local?.data?.form?.isSubmitting",
                         "text": "Submit Inner",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       },
                       {
@@ -4481,7 +4481,7 @@
                         "condition": "local?.data?.form?.isSubmitting",
                         "text": "Submitting...",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                         }
                       }
                     ]
@@ -4507,14 +4507,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card A — Full Pipeline: API Chain + Response Reading"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Runs graphql → branch → REST GET → REST POST (body from GQL result) → updateCollection → executeComponentAction → whileLoop → forEach → multiOptionBranch → passThroughCondition. Every branch and loop type is covered."
               }
@@ -4543,7 +4543,7 @@
                     "type": "Text",
                     "text": "Run Pipeline",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -4565,14 +4565,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "status"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono font-semibold text-indigo-600 dark:text-indigo-400",
+                      "className": "text-[12px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 flex-col",
                       "data-testid": "out-chain-status"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000001']}}"
@@ -4588,14 +4588,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "GQL country"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-gql"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000002']}}"
@@ -4611,14 +4611,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "REST echo"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-rest"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000003']}}"
@@ -4634,14 +4634,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "branch path"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-branch"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000004']}}"
@@ -4657,14 +4657,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "collection"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-collection"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000006']}}"
@@ -4680,14 +4680,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "pipeline result"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono font-semibold text-green-700 dark:text-green-400",
+                      "className": "text-[12px] font-mono font-semibold text-green-700 dark:text-green-400 flex-col",
                       "data-testid": "out-chain-result"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000005']}}"
@@ -4703,14 +4703,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "while count"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-while"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000007']}}"
@@ -4726,14 +4726,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "forEach items"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-foreach"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000008']}}"
@@ -4749,14 +4749,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px]"
+                      "className": "text-[12px] font-mono text-gray-500 dark:text-gray-400 w-[160px] flex-col"
                     },
                     "text": "multi-branch"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200",
+                      "className": "text-[12px] font-mono text-gray-800 dark:text-gray-200 flex-col",
                       "data-testid": "out-chain-multi"
                     },
                     "text": "{{variables['wa-chain-0000-0000-0000-000000000009']}}"
@@ -4782,14 +4782,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card B — Complex Form Validation"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Six fields covering every _validation rule type: required, minLength, pattern, equalsField, and a custom formula rule. Per-field inline error messages. Pre-fill and Reset buttons."
               }
@@ -4824,7 +4824,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Username *"
                       },
@@ -4837,7 +4837,7 @@
                           "name": "v2username",
                           "placeholder": "Min 3 characters",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000001']}}"
                         },
                         "children": [],
@@ -4866,7 +4866,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2username']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-username"
                         },
                         "text": "{{local.data.form.fields['v2username'].isValid}}"
@@ -4882,7 +4882,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Email *"
                       },
@@ -4895,7 +4895,7 @@
                           "name": "v2email",
                           "placeholder": "valid@email.com",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "keyboardType": "email-address",
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000002']}}"
                         },
@@ -4925,7 +4925,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2email']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-email"
                         },
                         "text": "{{local.data.form.fields['v2email'].isValid}}"
@@ -4941,7 +4941,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Phone (optional — must match +digits if filled)"
                       },
@@ -4954,7 +4954,7 @@
                           "name": "v2phone",
                           "placeholder": "+12345678",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "keyboardType": "phone-pad",
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000005']}}"
                         },
@@ -4980,7 +4980,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2phone']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-phone"
                         },
                         "text": "{{local.data.form.fields['v2phone'].isValid}}"
@@ -4996,7 +4996,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Age * (must be 18 or older)"
                       },
@@ -5009,7 +5009,7 @@
                           "name": "v2age",
                           "placeholder": "18",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "keyboardType": "numeric",
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000006']}}"
                         },
@@ -5039,7 +5039,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2age']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-age"
                         },
                         "text": "{{local.data.form.fields['v2age'].isValid}}"
@@ -5055,7 +5055,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Password * (8+ chars, upper, lower, digit, special)"
                       },
@@ -5068,7 +5068,7 @@
                           "name": "v2password",
                           "placeholder": "e.g. SecureP@ss1",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "secureTextEntry": true,
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000007']}}"
                         },
@@ -5118,7 +5118,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2password']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-password"
                         },
                         "text": "{{local.data.form.fields['v2password'].isValid}}"
@@ -5134,7 +5134,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300"
+                          "className": "text-[14px] font-medium text-gray-700 dark:text-gray-300 flex-col"
                         },
                         "text": "Confirm Password *"
                       },
@@ -5147,7 +5147,7 @@
                           "name": "v2confirm",
                           "placeholder": "Repeat password",
                           "placeholderTextColor": "#9ca3af",
-                          "className": "!text-gray-900 dark:!text-gray-100",
+                          "className": "!text-gray-900 dark:!text-gray-100 flex-col",
                           "secureTextEntry": true,
                           "value": "{{variables['wa-val2-0000-0000-0000-000000000008']}}"
                         },
@@ -5177,7 +5177,7 @@
                         "type": "Text",
                         "condition": "local?.data?.form?.fields?.['v2confirm']?.isValid",
                         "props": {
-                          "className": "text-[12px] text-red-500",
+                          "className": "text-[12px] text-red-500 flex-col",
                           "data-testid": "err-val2-confirm"
                         },
                         "text": "{{local.data.form.fields['v2confirm'].isValid}}"
@@ -5188,7 +5188,7 @@
                     "type": "Text",
                     "condition": "variables['wa-val2-0000-0000-0000-000000000004']",
                     "props": {
-                      "className": "text-[14px] font-medium text-red-600 dark:text-red-400 p-[8px] rounded-[6px] bg-red-50 dark:bg-red-900/20",
+                      "className": "text-[14px] font-medium text-red-600 dark:text-red-400 p-[8px] rounded-[6px] bg-red-50 dark:bg-red-900/20 flex-col",
                       "data-testid": "out-val2-validation-error"
                     },
                     "text": "{{variables['wa-val2-0000-0000-0000-000000000004']}}"
@@ -5202,14 +5202,14 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-semibold text-blue-600 dark:text-blue-400 mb-[4px]"
+                          "className": "text-[12px] font-semibold text-blue-600 dark:text-blue-400 mb-[4px] flex-col"
                         },
                         "text": "Submit result"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-blue-800 dark:text-blue-300",
+                          "className": "text-[12px] font-mono text-blue-800 dark:text-blue-300 flex-col",
                           "data-testid": "out-val2-result"
                         },
                         "text": "{{variables['wa-val2-0000-0000-0000-000000000003']}}"
@@ -5217,7 +5217,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-blue-600 dark:text-blue-400 mt-[4px]",
+                          "className": "text-[12px] text-blue-600 dark:text-blue-400 mt-[4px] flex-col",
                           "data-testid": "out-val2-form-state"
                         },
                         "text": "isSubmitting: {{local.data.form.isSubmitting}} | isSubmitted: {{local.data.form.isSubmitted}}"
@@ -5247,7 +5247,7 @@
                             "type": "Text",
                             "text": "Pre-fill",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                             }
                           }
                         ]
@@ -5269,7 +5269,7 @@
                             "type": "Text",
                             "text": "Reset",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                             }
                           }
                         ]
@@ -5287,7 +5287,7 @@
                             "condition": "!local?.data?.form?.isSubmitting",
                             "text": "Submit",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                             }
                           },
                           {
@@ -5295,7 +5295,7 @@
                             "condition": "local?.data?.form?.isSubmitting",
                             "text": "Submitting...",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                              "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                             }
                           }
                         ]
@@ -5323,14 +5323,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card C — executeComponentAction: All Patterns"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Tests 4 ECA patterns: (1) direct call, (2) chain — two ECAs sequentially where step-2 reads step-1 output, (3) ECA inside forEach loop, (4) nested ECA — sub-workflow internally calls another ECA."
               }
@@ -5351,14 +5351,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "direct result"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-eca-direct"
                     },
                     "text": "{{variables['wa-eca-0000-0000-0000-000000000001']}}"
@@ -5374,14 +5374,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "chain step1 / final"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-eca-chain-step1"
                     },
                     "text": "{{variables['wa-eca-0000-0000-0000-000000000002']}} / {{variables['wa-eca-0000-0000-0000-000000000003']}}"
@@ -5397,14 +5397,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "loop count (expect 3)"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100",
+                      "className": "font-bold text-[18px] text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-eca-loop"
                     },
                     "text": "{{variables['wa-eca-0000-0000-0000-000000000004']}}"
@@ -5420,14 +5420,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-gray-400"
+                      "className": "text-[12px] font-mono text-gray-400 flex-col"
                     },
                     "text": "nested result"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "font-medium text-gray-900 dark:text-gray-100",
+                      "className": "font-medium text-gray-900 dark:text-gray-100 flex-col",
                       "data-testid": "out-eca-nested"
                     },
                     "text": "{{variables['wa-eca-0000-0000-0000-000000000005']}}"
@@ -5459,7 +5459,7 @@
                     "type": "Text",
                     "text": "1. Direct",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -5481,7 +5481,7 @@
                     "type": "Text",
                     "text": "2. Chain",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -5503,7 +5503,7 @@
                     "type": "Text",
                     "text": "3. forEach Loop",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -5525,7 +5525,7 @@
                     "type": "Text",
                     "text": "4. Nested",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-background)] font-medium"
+                      "className": "text-[14px] text-[var(--theme-background)] font-medium flex-col"
                     }
                   }
                 ]
@@ -5549,14 +5549,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-100 flex-col"
                 },
                 "text": "Card D — Event Object by Trigger Type"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] text-gray-500 dark:text-gray-400"
+                  "className": "text-[14px] text-gray-500 dark:text-gray-400 flex-col"
                 },
                 "text": "Each trigger produces a different event shape. Interact with each element to see what event fields are captured: change→{value}, click→{x,y,button}, enterKey→{key,value}, focus/blur→{value}, scroll→{scrollTop,scrollLeft}, valueChange→{value}, checkbox change→{value:boolean}."
               }
@@ -5577,7 +5577,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                     },
                     "text": "onChange (Input)"
                   },
@@ -5601,7 +5601,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                       "data-testid": "out-evt-change"
                     },
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000001']}}"
@@ -5617,7 +5617,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                     },
                     "text": "onClick (Button / Pressable)"
                   },
@@ -5638,7 +5638,7 @@
                         "type": "Text",
                         "text": "Click me (captures x / y / button)",
                         "props": {
-                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium"
+                          "className": "text-[14px] text-[var(--theme-foreground)] font-medium flex-col"
                         }
                       }
                     ]
@@ -5646,7 +5646,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                       "data-testid": "out-evt-click"
                     },
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000002']}}"
@@ -5662,7 +5662,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                     },
                     "text": "onEnterKey (Input — press Enter)"
                   },
@@ -5686,7 +5686,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                       "data-testid": "out-evt-enterkey"
                     },
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000003']}}"
@@ -5708,7 +5708,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                          "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                         },
                         "text": "onFocus"
                       },
@@ -5732,7 +5732,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                          "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                           "data-testid": "out-evt-focus"
                         },
                         "text": "{{variables['wa-evt-0000-0000-0000-000000000004']}}"
@@ -5748,7 +5748,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                          "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                         },
                         "text": "onBlur"
                       },
@@ -5772,7 +5772,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                          "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                           "data-testid": "out-evt-blur"
                         },
                         "text": "{{variables['wa-evt-0000-0000-0000-000000000005']}}"
@@ -5790,14 +5790,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                     },
                     "text": "onScroll (scrollable Box — scroll inside it)"
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "h-[96px] overflow-y-auto rounded-[6px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[12px]",
+                      "className": "h-[96px] overflow-y-auto rounded-[6px] border-[1px] border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-[12px] flex-col",
                       "data-testid": "evt-scroll-box"
                     },
                     "actions": [
@@ -5810,49 +5810,49 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-400"
+                          "className": "text-[12px] text-gray-400 flex-col"
                         },
                         "text": "Scroll me ↓"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 2"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 3"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 4"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 5"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 6"
                       },
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[12px] text-gray-300 mt-[8px]"
+                          "className": "text-[12px] text-gray-300 mt-[8px] flex-col"
                         },
                         "text": "Line 7 (end)"
                       }
@@ -5861,7 +5861,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                       "data-testid": "out-evt-scroll"
                     },
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000006']}}"
@@ -5877,7 +5877,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                      "className": "text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-col"
                     },
                     "text": "onValueChange (Select)"
                   },
@@ -5890,7 +5890,7 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[14px] text-muted-foreground"
+                          "className": "text-[14px] text-muted-foreground flex-col"
                         },
                         "text": "Select placeholder"
                       },
@@ -5907,7 +5907,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400",
+                      "className": "text-[12px] font-mono text-blue-600 dark:text-blue-400 flex-col",
                       "data-testid": "out-evt-valuechange"
                     },
                     "text": "{{variables['wa-evt-0000-0000-0000-000000000007']}}"
@@ -5933,14 +5933,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
                 },
                 "text": "Global Workflow Parameters"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-gray-500 dark:text-gray-400 text-[13px]"
+                  "className": "text-gray-500 dark:text-gray-400 text-[13px] flex-col"
                 },
                 "text": "Each button calls the global 'greetUser' workflow with a different set of parameters (Text, Number, Boolean, Text[], Object, Array). The formula uses all 7 params to build the result."
               }
@@ -5968,7 +5968,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-[14px]"
+                      "className": "text-white font-semibold text-[14px] flex-col"
                     },
                     "text": "Formal Greeting"
                   }
@@ -5990,7 +5990,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-white font-semibold text-[14px]"
+                      "className": "text-white font-semibold text-[14px] flex-col"
                     },
                     "text": "Casual Greeting"
                   }
@@ -6013,42 +6013,42 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[10px] font-semibold text-blue-500 uppercase tracking-wide"
+                      "className": "text-[10px] font-semibold text-blue-500 uppercase tracking-wide flex-col"
                     },
                     "text": "Formal params"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "greeting: \"Good morning\""
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "formal: true | max: 3"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "tags: [\"vip\", \"premium\"]"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "userProfile: {role:\"manager\",level:5}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "allowedRoles: [\"admin\",\"manager\"]"
                   }
@@ -6063,42 +6063,42 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[10px] font-semibold text-indigo-500 uppercase tracking-wide"
+                      "className": "text-[10px] font-semibold text-indigo-500 uppercase tracking-wide flex-col"
                     },
                     "text": "Casual params"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "greeting: \"Hey\""
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "formal: false | max: 10"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "tags: [\"friend\"]"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "userProfile: {role:\"guest\",level:1}"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400"
+                      "className": "text-[11px] font-mono text-gray-500 dark:text-gray-400 flex-col"
                     },
                     "text": "allowedRoles: [\"viewer\"]"
                   }
@@ -6115,14 +6115,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide"
+                  "className": "text-[11px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide flex-col"
                 },
                 "text": "Result (all 7 params used)"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] font-mono text-green-800 dark:text-green-300 break-all",
+                  "className": "text-[13px] font-mono text-green-800 dark:text-green-300 break-all flex-col",
                   "data-testid": "out-greet-result"
                 },
                 "text": "{{variables['wf-param-0000-0000-0000-000000000001']}}"
@@ -6144,14 +6144,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px]"
+                      "className": "text-[12px] flex-col"
                     },
                     "text": "↩"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide"
+                      "className": "text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex-col"
                     },
                     "text": "Return Value (step s2 → returnValue)"
                   }
@@ -6160,7 +6160,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] font-mono text-amber-800 dark:text-amber-300 break-all",
+                  "className": "text-[13px] font-mono text-amber-800 dark:text-amber-300 break-all flex-col",
                   "data-testid": "out-greet-return"
                 },
                 "text": "{{variables['wf-return-0000-0000-0000-000000000002']}}"
@@ -6184,14 +6184,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[16px]"
+                  "className": "text-[16px] flex-col"
                 },
                 "text": "🌐"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] font-bold text-sky-700 dark:text-sky-300"
+                  "className": "text-[14px] font-bold text-sky-700 dark:text-sky-300 flex-col"
                 },
                 "text": "API Global Workflow — fetchTodo"
               }
@@ -6200,7 +6200,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[12px] text-sky-600 dark:text-sky-400"
+              "className": "text-[12px] text-sky-600 dark:text-sky-400 flex-col"
             },
             "text": "Calls https://jsonplaceholder.typicode.com/todos/1, returns the JSON, and stores it below."
           },
@@ -6213,7 +6213,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "px-[14px] py-[8px] rounded-[8px] bg-sky-600 hover:bg-sky-700 cursor-pointer"
+                  "className": "px-[14px] py-[8px] rounded-[8px] bg-sky-600 hover:bg-sky-700 cursor-pointer flex-col"
                 },
                 "actions": [
                   {
@@ -6225,7 +6225,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[13px] font-semibold text-white"
+                      "className": "text-[13px] font-semibold text-white flex-col"
                     },
                     "text": "Fetch Todo #1"
                   }
@@ -6248,14 +6248,14 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[12px]"
+                      "className": "text-[12px] flex-col"
                     },
                     "text": "↩"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide"
+                      "className": "text-[11px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide flex-col"
                     },
                     "text": "Return Value (context.workflow['s1'].result)"
                   }
@@ -6264,7 +6264,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-mono text-sky-800 dark:text-sky-200 break-all",
+                  "className": "text-[12px] font-mono text-sky-800 dark:text-sky-200 break-all flex-col",
                   "data-testid": "out-todo-result"
                 },
                 "text": "{{variables['wf-todo-result-0000-0000-0000-000000000002']}}"

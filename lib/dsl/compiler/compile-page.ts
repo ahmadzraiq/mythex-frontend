@@ -35,6 +35,7 @@ import {
   SHORTHAND_FORMULA_CSS_MAP,
   styleKeyToCssProps,
   RESPONSIVE_BPS,
+  DSL_BP_TO_INTERNAL,
   type BreakpointKey,
 } from './resolve-style'
 import sharedComponentsJson from '@/config/shared-components.json'
@@ -508,10 +509,7 @@ function parseSxProp(
 
     // () => expr — zero-arg arrow function → formula → camelCase CSS in props.style
     if (ts.isArrowFunction(v) && v.parameters.length === 0) {
-      const body = v.body
-      const exprText = ts.isBlock(body)
-        ? nodeText(body).replace(/^\{|\}$/g, '').trim()
-        : nodeText(body)
+      const exprText = arrowToIife(v)
       const resolved = resolveExprToSdui(exprText, pathToId)
       const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
       if (mapping) {
@@ -586,10 +584,7 @@ function parseBreakpointSx(
 
     // () => expr → formula in camelCase CSS
     if (ts.isArrowFunction(v) && v.parameters.length === 0) {
-      const body = v.body
-      const exprText = ts.isBlock(body)
-        ? nodeText(body).replace(/^\{|\}$/g, '').trim()
-        : nodeText(body)
+      const exprText = arrowToIife(v)
       const resolved = resolveExprToSdui(exprText, pathToId)
       const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
       if (mapping) {
@@ -1000,9 +995,9 @@ function convertJsxElement(
         continue
       }
 
-      // Responsive breakpoint props: laptop/tablet/mobile={{ ... }} → responsive[bp].styles (camelCase CSS)
-      if ((attrName === 'laptop' || attrName === 'tablet' || attrName === 'mobile') && ts.isObjectLiteralExpression(expr)) {
-        const bp = attrName as BreakpointKey
+      // Responsive breakpoint props: md/lg/xl or legacy laptop/tablet/mobile={{ ... }} → responsive[bp].styles
+      if (attrName in DSL_BP_TO_INTERNAL && ts.isObjectLiteralExpression(expr)) {
+        const bp = DSL_BP_TO_INTERNAL[attrName]
         result.responsive = result.responsive ?? {}
         const bpStyles = parseBreakpointSx(expr, pathToId)
         const existing = (result.responsive[bp]?.styles ?? {}) as Record<string, unknown>
@@ -1033,10 +1028,7 @@ function convertJsxElement(
       const flatAlias = FLAT_STRING_ALIASES[attrName]
       if (flatAlias) {
         if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
-          const body = expr.body
-          const bodyText = ts.isBlock(body)
-            ? nodeText(body).replace(/^\{|\}$/g, '').trim()
-            : nodeText(body)
+          const bodyText = arrowToIife(expr)
           const mapping = SHORTHAND_FORMULA_CSS_MAP[flatAlias]
           if (mapping) {
             const resolved = resolveExprToSdui(bodyText, pathToId)
@@ -1066,10 +1058,7 @@ function convertJsxElement(
       // Direct sx key as flat numeric prop (e.g. gap={12}, p={16}, radius={8})
       if (SHORTHAND_KEYS.has(attrName)) {
         if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
-          const body = expr.body
-          const bodyText = ts.isBlock(body)
-            ? nodeText(body).replace(/^\{|\}$/g, '').trim()
-            : nodeText(body)
+          const bodyText = arrowToIife(expr)
           const mapping = SHORTHAND_FORMULA_CSS_MAP[attrName]
           if (mapping) {
             const resolved = resolveExprToSdui(bodyText, pathToId)

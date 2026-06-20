@@ -13,33 +13,27 @@
       {
         "type": "Text",
         "props": {
-          "className": "text-[28px] font-bold text-center text-[var(--theme-foreground)]"
+          "className": "text-[28px] font-bold text-center text-[var(--theme-foreground)] flex-col"
         },
         "text": "Counter"
       },
       {
         "type": "Text",
         "props": {
-          "className": "text-[13px] text-center mt-[6px] mb-[48px]",
-          "style": {
-            "color": "#6b7280"
-          }
+          "className": "text-[13px] text-center mt-[6px] mb-[48px] text-[#6b7280] flex-col"
         },
         "text": "Increment, decrement, or reset. Value is saved to localStorage."
       },
       {
         "type": "Box",
         "props": {
-          "className": "w-full max-w-[360px] rounded-[20px] flex flex-col items-center gap-[32px] py-[48px] px-[32px]",
-          "style": {
-            "background": "#111827"
-          }
+          "className": "w-full max-w-[360px] rounded-[20px] flex flex-col items-center gap-[32px] py-[48px] px-[32px] bg-[#111827]"
         },
         "children": [
           {
             "type": "Text",
             "props": {
-              "className": "text-[96px] font-bold text-white leading-none tabular-nums"
+              "className": "text-[96px] font-bold text-white leading-none tabular-nums flex-col"
             },
             "text": "{{variables['c71a0001-0000-0000-0000-000000000001']}}"
           },
@@ -52,10 +46,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60",
-                  "style": {
-                    "background": "#374151"
-                  }
+                  "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60 bg-[#374151] flex-col"
                 },
                 "actions": [
                   {
@@ -67,7 +58,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[36px] font-light text-white leading-none"
+                      "className": "text-[36px] font-light text-white leading-none flex-col"
                     },
                     "text": "-"
                   }
@@ -76,10 +67,7 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60",
-                  "style": {
-                    "background": "#3b82f6"
-                  }
+                  "className": "w-[64px] h-[64px] rounded-[9999px] flex items-center justify-center cursor-pointer hover:opacity-80 active:opacity-60 bg-[#3b82f6] flex-col"
                 },
                 "actions": [
                   {
@@ -91,7 +79,7 @@
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[36px] font-light text-white leading-none"
+                      "className": "text-[36px] font-light text-white leading-none flex-col"
                     },
                     "text": "+"
                   }
@@ -114,10 +102,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[12px] font-medium hover:opacity-80",
-                  "style": {
-                    "color": "#6b7280"
-                  }
+                  "className": "text-[12px] font-medium hover:opacity-80 text-[#6b7280] flex-col"
                 },
                 "text": "Reset to 0"
               }
@@ -128,9 +113,8 @@
       {
         "type": "Box",
         "props": {
-          "className": "mt-[32px] w-full max-w-[360px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px]",
+          "className": "mt-[32px] w-full max-w-[360px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px] bg-[#0f172a]",
           "style": {
-            "background": "#0f172a",
             "border": "1px solid #1e293b"
           }
         },
@@ -138,20 +122,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[11px] font-semibold",
-              "style": {
-                "color": "#3b82f6"
-              }
+              "className": "text-[11px] font-semibold text-[#3b82f6] flex-col"
             },
             "text": "localStorage active"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[11px]",
-              "style": {
-                "color": "#4b5563"
-              }
+              "className": "text-[11px] text-[#4b5563] flex-col"
             },
             "text": "This counter uses saveInLocalStorage: true. Change the value, refresh the page — it restores automatically. Reverts to 0 (default) only clears the stored key."
           }
@@ -166,17 +144,14 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[22px] font-bold text-center text-[var(--theme-foreground)]"
+              "className": "text-[22px] font-bold text-center text-[var(--theme-foreground)] flex-col"
             },
             "text": "WeWeb-Style Component Demo"
           },
           {
             "type": "Text",
             "props": {
-              "className": "text-[13px] text-center max-w-[480px]",
-              "style": {
-                "color": "#6b7280"
-              }
+              "className": "text-[13px] text-center max-w-[480px] text-[#6b7280] flex-col"
             },
             "text": "Each CounterCard below is an instance of the same shared component. They share the same UI definition but each has an independent counter — demonstrating per-instance variable isolation."
           },
@@ -208,20 +183,20 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide uppercase"
+                          "className": "text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide uppercase flex-col"
                         },
                         "text": "{{context.component.props.title}}"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900"
+                          "className": "flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900 flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-4xl font-bold tabular-nums text-indigo-600 dark:text-indigo-400"
+                              "className": "text-4xl font-bold tabular-nums text-indigo-600 dark:text-indigo-400 flex-col"
                             },
                             "text": "{{context.component.variables['cc-count-uuid']}}"
                           }
@@ -250,7 +225,7 @@
                                 "type": "Text",
                                 "text": "+ Add",
                                 "props": {
-                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                                 }
                               }
                             ]
@@ -272,7 +247,7 @@
                                 "type": "Text",
                                 "text": "Reset",
                                 "props": {
-                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                                 }
                               }
                             ]
@@ -305,20 +280,20 @@
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide uppercase"
+                          "className": "text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide uppercase flex-col"
                         },
                         "text": "{{context.component.props.title}}"
                       },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "flex items-center justify-center w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-900"
+                          "className": "flex items-center justify-center w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-900 flex-col"
                         },
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-4xl font-bold tabular-nums text-pink-600 dark:text-pink-400"
+                              "className": "text-4xl font-bold tabular-nums text-pink-600 dark:text-pink-400 flex-col"
                             },
                             "text": "{{context.component.variables['cc-count-uuid']}}"
                           }
@@ -347,7 +322,7 @@
                                 "type": "Text",
                                 "text": "+ Add",
                                 "props": {
-                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                                 }
                               }
                             ]
@@ -369,7 +344,7 @@
                                 "type": "Text",
                                 "text": "Reset",
                                 "props": {
-                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)]"
+                                  "className": "text-[14px] font-medium text-[var(--theme-primary-foreground)] flex-col"
                                 }
                               }
                             ]
@@ -385,9 +360,8 @@
           {
             "type": "Box",
             "props": {
-              "className": "mt-4 w-full max-w-[540px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px]",
+              "className": "mt-4 w-full max-w-[540px] rounded-[10px] px-[16px] py-[12px] flex flex-col gap-[4px] bg-[#0f172a]",
               "style": {
-                "background": "#0f172a",
                 "border": "1px solid #1e293b"
               }
             },
@@ -395,20 +369,14 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] font-semibold",
-                  "style": {
-                    "color": "#a78bfa"
-                  }
+                  "className": "text-[11px] font-semibold text-[#a78bfa] flex-col"
                 },
                 "text": "Instance isolation"
               },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px]",
-                  "style": {
-                    "color": "#4b5563"
-                  }
+                  "className": "text-[11px] text-[#4b5563] flex-col"
                 },
                 "text": "Counter A and Counter B share the same component definition (sc-counter-card) but each maintains its own count via per-instance variable slots. Clicking Add on one card does not affect the other."
               }

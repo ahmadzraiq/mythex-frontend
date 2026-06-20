@@ -19,7 +19,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[24px] font-bold !text-[var(--theme-foreground)]"
+              "className": "text-[24px] font-bold !text-[var(--theme-foreground)] flex-col"
             },
             "text": "Height Fill Test",
             "id": "hft-heading",
@@ -28,7 +28,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+              "className": "text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
             },
             "text": "Select the button below in the builder and click Fill for Height. It should stretch vertically (self-stretch) and keep its pixel width.",
             "id": "hft-desc",
@@ -46,7 +46,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[12px] font-semibold !text-[var(--theme-muted-foreground)]"
+              "className": "text-[12px] font-semibold !text-[var(--theme-muted-foreground)] flex-col"
             },
             "text": "SCENARIO — flex-row parent with pixel-width child",
             "id": "hft-scenario-label",
@@ -73,7 +73,7 @@
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[14px] font-medium !text-[var(--theme-primary-foreground)]"
+                  "className": "text-[14px] font-medium !text-[var(--theme-primary-foreground)] flex-col"
                 },
                 "text": "Button",
                 "id": "hft-child-text",
@@ -93,7 +93,7 @@
           {
             "type": "Text",
             "props": {
-              "className": "text-[12px] !text-[var(--theme-muted-foreground)]"
+              "className": "text-[12px] !text-[var(--theme-muted-foreground)] flex-col"
             },
             "text": "Expected after Fill height: className contains self-stretch (NOT flex-1), w-[254px] is preserved.",
             "id": "hft-expected-text",

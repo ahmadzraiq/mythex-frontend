@@ -5,7 +5,7 @@
   "ui": {
     "type": "Box",
     "props": {
-      "className": "items-center px-[48px] py-[80px] gap-[60px] w-full relative !bg-[var(--theme-background)]"
+      "className": "items-center px-[48px] py-[80px] gap-[60px] w-full relative !bg-[var(--theme-background)] flex-col"
     },
     "id": "c9d950c0-1d8c-4ddb-b254-502243be868e",
     "name": "Premium Pricing Section",
@@ -13,7 +13,7 @@
       {
         "type": "Box",
         "props": {
-          "className": "items-center gap-[20px] w-full max-w-[600px]"
+          "className": "items-center gap-[20px] w-full max-w-[600px] flex-col"
         },
         "id": "20bfcb59-8c55-41c0-b999-0d95ff6a18b7",
         "name": "Header Container",
@@ -22,7 +22,7 @@
             "type": "Text",
             "text": "Simple, Transparent Pricing",
             "props": {
-              "className": "text-[48px] font-bold text-center tracking-tight !text-[var(--theme-foreground)]"
+              "className": "text-[48px] font-bold text-center tracking-tight !text-[var(--theme-foreground)] flex-col"
             },
             "id": "982e34d2-725c-4758-a324-2737b00a95dc",
             "animation": {
@@ -38,7 +38,7 @@
             "type": "Text",
             "text": "Choose the perfect plan for your needs",
             "props": {
-              "className": "text-[20px] font-normal text-center !text-[var(--theme-muted-foreground)]"
+              "className": "text-[20px] font-normal text-center !text-[var(--theme-muted-foreground)] flex-col"
             },
             "id": "2fdbb2e5-988a-45d0-9fde-74d90f7fbbad",
             "animation": {
@@ -62,7 +62,7 @@
                 "type": "Text",
                 "text": "Monthly",
                 "props": {
-                  "className": "text-[14px] font-medium !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[14px] font-medium !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "id": "66892f8b-d278-4516-84be-f32e4d76bae3"
               },
@@ -70,14 +70,14 @@
                 "type": "Text",
                 "text": "Yearly",
                 "props": {
-                  "className": "text-[14px] font-medium !text-[var(--theme-muted-foreground)]"
+                  "className": "text-[14px] font-medium !text-[var(--theme-muted-foreground)] flex-col"
                 },
                 "id": "c3f2da3d-009b-4c21-a13d-43fba555df29"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "pl-[10px] pr-[10px] pt-[3px] pb-[3px] mt-[-6px] !bg-[var(--theme-primary)] rounded-[20px]"
+                  "className": "pl-[10px] pr-[10px] pt-[3px] pb-[3px] mt-[-6px] !bg-[var(--theme-primary)] rounded-[20px] flex-col"
                 },
                 "id": "ec7506a5-5eb2-4bd8-beff-c20f21769322",
                 "name": "Save Badge",
@@ -86,7 +86,7 @@
                     "type": "Text",
                     "text": "Save 20%",
                     "props": {
-                      "className": "text-[11px] font-bold text-center !text-[var(--theme-primary-foreground)]"
+                      "className": "text-[11px] font-bold text-center !text-[var(--theme-primary-foreground)] flex-col"
                     },
                     "id": "e1017006-aa0f-4476-9188-d099b2ed5a7c"
                   }
@@ -141,10 +141,7 @@
           {
             "type": "Box",
             "props": {
-              "style": {
-                "backgroundPosition": "center"
-              },
-              "className": "flex-1 max-w-[380px] relative"
+              "className": "flex-1 max-w-[380px] relative bg-[center] flex-col"
             },
             "id": "476a13a9-6a48-42fc-b9a3-34c127d7a82f",
             "name": "Pricing Card",
@@ -155,7 +152,7 @@
                   "style": {
                     "backgroundImage": "linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(147, 51, 234, 0.1) 100%)"
                   },
-                  "className": "w-full h-full absolute z-[1] top-[-2px] left-[-2px] overflow-hidden pointer-events-none rounded-[16px]"
+                  "className": "w-full h-full absolute z-[1] top-[-2px] left-[-2px] overflow-hidden pointer-events-none rounded-[16px] flex-col"
                 },
                 "id": "b8db1b59-31a0-400c-97de-fe7749059544",
                 "name": "Card Glow Effect",
@@ -183,7 +180,7 @@
                       "formula": "context?.item?.data?.featured ? '0px 20px 40px 0px rgba(124, 58, 237, 0.15)' : '0px 8px 24px 0px rgba(0, 0, 0, 0.08)'"
                     }
                   },
-                  "className": "p-[40px] gap-[24px] relative z-[2] overflow-hidden !bg-[var(--theme-card)] rounded-[16px]"
+                  "className": "p-[40px] gap-[24px] relative z-[2] overflow-hidden !bg-[var(--theme-card)] rounded-[16px] flex-col"
                 },
                 "id": "79e2635b-ff75-450a-a9c5-bd148d2810ba",
                 "name": "Card Content",
@@ -191,7 +188,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                      "className": "pl-[16px] pr-[16px] pt-[8px] pb-[8px] overflow-hidden !bg-[var(--theme-primary)] rounded-[8px] flex-col"
                     },
                     "id": "5e3575f0-35e5-4551-ad15-b9214d98cbd7",
                     "name": "Featured Badge",
@@ -200,7 +197,7 @@
                         "type": "Text",
                         "text": "Most Popular",
                         "props": {
-                          "className": "text-[12px] font-bold tracking-wide uppercase !text-[var(--theme-primary-foreground)]"
+                          "className": "text-[12px] font-bold tracking-wide uppercase !text-[var(--theme-primary-foreground)] flex-col"
                         },
                         "id": "885407e7-83aa-4dd4-a833-196ed4da1e1c",
                         "children": []
@@ -214,7 +211,7 @@
                       "formula": "context?.item?.data?.name"
                     },
                     "props": {
-                      "className": "text-[28px] font-bold !text-[var(--theme-foreground)]"
+                      "className": "text-[28px] font-bold !text-[var(--theme-foreground)] flex-col"
                     },
                     "id": "cdb2cdc4-04e0-4430-9f84-6f93f0fe8825",
                     "name": "Plan Name",
@@ -226,7 +223,7 @@
                       "formula": "context?.item?.data?.description"
                     },
                     "props": {
-                      "className": "h-fit text-[14px] !text-[var(--theme-muted-foreground)]"
+                      "className": "h-fit text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                     },
                     "id": "eec1c138-8d4a-48d3-855a-53ae3464b796",
                     "name": "Plan Description",
@@ -246,7 +243,7 @@
                           "formula": "context?.item?.data?.price"
                         },
                         "props": {
-                          "className": "text-[48px] font-bold !text-[var(--theme-primary)]"
+                          "className": "text-[48px] font-bold !text-[var(--theme-primary)] flex-col"
                         },
                         "id": "218934a4-30be-4b25-a6d7-84f764884b94",
                         "name": "Price",
@@ -258,7 +255,7 @@
                           "formula": "context?.item?.data?.billingPeriod"
                         },
                         "props": {
-                          "className": "text-[14px] !text-[var(--theme-muted-foreground)]"
+                          "className": "text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                         },
                         "id": "3c16ec34-c02b-46fb-b099-229bfa2956d2",
                         "name": "Billing Period",
@@ -269,7 +266,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "items-center justify-center pl-[24px] pr-[24px] pt-[14px] pb-[14px] cursor-pointer w-full overflow-hidden !bg-[var(--theme-primary)] rounded-[8px]"
+                      "className": "items-center justify-center pl-[24px] pr-[24px] pt-[14px] pb-[14px] cursor-pointer w-full overflow-hidden !bg-[var(--theme-primary)] rounded-[8px] flex-col"
                     },
                     "id": "41626f66-437b-4ed7-800f-c9db4e2254ce",
                     "name": "CTA Button",
@@ -280,7 +277,7 @@
                           "formula": "context?.item?.data?.ctaText"
                         },
                         "props": {
-                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)]"
+                          "className": "text-[16px] font-semibold !text-[var(--theme-primary-foreground)] flex-col"
                         },
                         "id": "35c87cb2-f21b-49e0-8f51-f830b97361d5",
                         "children": []
@@ -300,7 +297,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "pt-[8px] pb-[8px] gap-[12px] w-full"
+                      "className": "pt-[8px] pb-[8px] gap-[12px] w-full flex-col"
                     },
                     "id": "e8c0dac7-e58e-4282-9076-dba4575157a2",
                     "name": "Features List",
@@ -329,7 +326,7 @@
                               "formula": "context?.item?.data?.name"
                             },
                             "props": {
-                              "className": "text-[14px] font-medium !text-[var(--theme-foreground)]"
+                              "className": "text-[14px] font-medium !text-[var(--theme-foreground)] flex-col"
                             },
                             "id": "e383b408-807e-418d-a5ff-562b8406d149",
                             "children": []
@@ -378,7 +375,7 @@
                           "formula": "context?.item?.data?.trustIndicator"
                         },
                         "props": {
-                          "className": "text-[13px] !text-[var(--theme-muted-foreground)]"
+                          "className": "text-[13px] !text-[var(--theme-muted-foreground)] flex-col"
                         },
                         "id": "e500c44c-34ce-4784-a726-15df878c7c05",
                         "children": []

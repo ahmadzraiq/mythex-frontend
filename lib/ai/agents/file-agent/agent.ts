@@ -201,6 +201,12 @@ type ResponsiveStyles = Partial<Record<BreakpointKey, Record<string, string>>>;
 
 const RESPONSIVE_BPS: BreakpointKey[] = ['laptop', 'tablet', 'mobile'];
 
+/** Maps DSL-facing Tailwind-style names (md/lg/xl) to internal engine keys. */
+const DSL_BP_TO_INTERNAL: Record<string, BreakpointKey> = {
+  md: 'mobile', lg: 'tablet', xl: 'laptop',
+  mobile: 'mobile', tablet: 'tablet', laptop: 'laptop',
+};
+
 /** All shorthand keys handled by resolveStyleParams. Any key in props.style that
  *  matches one of these is passed through resolveStyleParams → className.
  *  Any key that is NOT in this set is treated as a raw CSS property and kept in props.style. */
@@ -290,17 +296,18 @@ function styleKeyToCssProps(key: string, val: unknown): Record<string, string> {
 }
 
 /**
- * If a _style value is a responsive object { default?, laptop?, tablet?, mobile? },
- * returns the base value (for className) and per-breakpoint overrides.
+ * If a _style value is a responsive object { default?, md?, lg?, xl?, mobile?, tablet?, laptop? },
+ * returns the base value (for className) and per-breakpoint overrides (internal keys).
  * Plain primitives pass through unchanged.
  */
 function unwrapResponsive(val: unknown): { base: unknown; bpOverrides: Partial<Record<BreakpointKey, unknown>> } {
   if (val && typeof val === 'object' && !Array.isArray(val)) {
     const obj = val as Record<string, unknown>;
-    if (RESPONSIVE_BPS.some(k => k in obj) || 'default' in obj) {
+    const dslKeys = Object.keys(DSL_BP_TO_INTERNAL);
+    if (dslKeys.some(k => k in obj) || 'default' in obj) {
       const overrides: Partial<Record<BreakpointKey, unknown>> = {};
-      for (const bp of RESPONSIVE_BPS) {
-        if (bp in obj) overrides[bp] = obj[bp];
+      for (const [dslKey, internalKey] of Object.entries(DSL_BP_TO_INTERNAL)) {
+        if (dslKey in obj) overrides[internalKey] = obj[dslKey];
       }
       return { base: 'default' in obj ? obj.default : undefined, bpOverrides: overrides };
     }
