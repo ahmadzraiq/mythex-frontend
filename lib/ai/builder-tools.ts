@@ -1754,20 +1754,6 @@ const appConfigTools: BuilderTool[] = [
     },
   },
   {
-    name: 'set_auth_config',
-    description: TOOL_DESCRIPTIONS['set_auth_config'],
-    input_schema: {
-      type: 'object',
-      properties: {
-        patch: {
-          type: 'object',
-          description: 'Partial AuthConfig — merged into existing authConfig.',
-        },
-      },
-      required: ['patch'],
-    },
-  },
-  {
     name: 'create_folder',
     description: TOOL_DESCRIPTIONS['create_folder'],
     input_schema: {

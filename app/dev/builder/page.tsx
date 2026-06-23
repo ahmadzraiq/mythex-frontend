@@ -55,9 +55,8 @@ import { useBuilderStore, restorePreviewData, VIEWPORT_WIDTHS, type ViewportSize
 import { useSduiStore } from '@/store/sdui-store';
 import type { BuilderPage } from './_store';
 import BuilderCanvas from './_canvas';
-import PanelLeft, { PageConfigSlidePanelContent, AuthSettingsSlidePanelContent } from './_panel-left';
+import PanelLeft, { PageConfigSlidePanelContent } from './_panel-left';
 import PanelRight from './_panel-right';
-import { FileViewerDrawer } from './_file-viewer-drawer';
 import { FileExplorerOverlay } from './_files-panel';
 import { ExportModal } from './_export-modal';
 import { projects as projectsApi, workspaces as workspacesApi, envVariables, auth } from '@/lib/platform/api-client';
@@ -851,7 +850,6 @@ function TopBar({
   onMainModeChange,
   leftTab,
   onSetLeftTab,
-  onOpenAuthConfig,
   onOpenPageConfig,
   workspaceId,
   workspacePlan,
@@ -867,7 +865,6 @@ function TopBar({
   onMainModeChange: (mode: 'interface' | 'data-api') => void;
   leftTab: LeftTabId;
   onSetLeftTab: (t: LeftTabId) => void;
-  onOpenAuthConfig: () => void;
   onOpenPageConfig: () => void;
   workspaceId: string | null;
   workspacePlan: 'FREE' | 'PRO' | 'ENTERPRISE';
@@ -1218,22 +1215,6 @@ function TopBar({
                   </button>
                 );
               })}
-              <button
-                data-testid="navbar-auth-btn"
-                onClick={onOpenAuthConfig}
-                title="Auth Settings"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
-                  background: 'transparent', border: '1px solid transparent',
-                  borderRadius: 7, color: 'var(--bld-text-disabled)',
-                  cursor: 'pointer', fontSize: 11, fontWeight: 400, transition: 'all 0.12s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; }}
-              >
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>
-                Auth
-              </button>
               <button
                 data-testid="navbar-env-btn"
                 onClick={() => setEnvVarsOpen(true)}
@@ -1746,7 +1727,6 @@ type LeftSlideState =
   | { kind: 'data'; subState: DataTabSlideState }
   | { kind: 'logic'; subState: LogicSlideState }
   | { kind: 'pageConfig' }
-  | { kind: 'authConfig' }
   | null;
 
 function leftSlideTitle(state: LeftSlideState): string {
@@ -1754,7 +1734,6 @@ function leftSlideTitle(state: LeftSlideState): string {
   if (state.kind === 'data') return getDataSlideTitle(state.subState);
   if (state.kind === 'logic') return getLogicSlideTitle(state.subState);
   if (state.kind === 'pageConfig') return 'Page Settings';
-  if (state.kind === 'authConfig') return 'Auth Settings';
   return '';
 }
 
@@ -2251,7 +2230,6 @@ function BuilderPageInner() {
         onMainModeChange={(m) => { setMainMode(m); sessionStorage.setItem('bld:mainMode', m); }}
         leftTab={leftTab}
         onSetLeftTab={setLeftTab}
-        onOpenAuthConfig={() => { setLeftSlideWidth(360); setLeftSlide({ kind: 'authConfig' }); }}
         onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
         workspaceId={workspaceId}
         workspacePlan={workspacePlan}
@@ -2322,9 +2300,6 @@ function BuilderPageInner() {
             {leftSlide.kind === 'pageConfig' && (
               <PageConfigSlidePanelContent onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }} />
             )}
-            {leftSlide.kind === 'authConfig' && (
-              <AuthSettingsSlidePanelContent onClose={() => { setLeftSlide(null); setLeftSlideWidth(320); }} />
-            )}
           </SlidePanel>
         )}
 
@@ -2376,9 +2351,6 @@ function BuilderPageInner() {
           onClose={closeWorkflowCanvas}
         />
       )}
-
-      {/* File viewer drawer — right-side, opened from Files panel or AI chat */}
-      <FileViewerDrawer />
 
     </div>
   );

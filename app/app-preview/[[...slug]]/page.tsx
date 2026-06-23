@@ -20,12 +20,11 @@
  * carries the projectId forward.
  */
 
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import type { AuthConfig } from '@/lib/sdui/engine-types';
 import appConfig from '@/config/app';
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
@@ -49,9 +48,8 @@ interface BuilderPage {
   name: string;
   route?: string;
   nodes: SDUINode[];
-  access?: 'everyone' | 'authenticated';
-  guestOnly?: boolean;
-  accessCondition?: string;
+  protectionCondition?: string;
+  protectionRedirect?: string;
 }
 
 interface ProjectDataSource {
@@ -78,7 +76,6 @@ interface ProjectConfig {
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
   customColors?: Array<{ name: string; light?: string; dark?: string }>;
-  authConfig?: AuthConfig;
   sharedComponents?: Record<string, unknown>;
   pageDataSources?: ProjectDataSource[];
   formulas?: Record<string, unknown>;
@@ -309,13 +306,6 @@ export default function AppPreviewPage() {
   const [projectConfig, setProjectConfig] = useState<ProjectConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const startupFiredRef = useRef(false);
-
-  // Auth state from the Zustand store
-  const sessionRestored = useSduiStore(s => s.sessionRestored);
-  const setSessionRestored = useSduiStore(s => s.setSessionRestored);
-  const zustandData = useSduiStore(s => s.data);
-  const isAuthenticated = !!(zustandData?.['auth.user']);
 
   const fetchConfig = useCallback(async (projectId: string, bustCache = false) => {
     try {
@@ -457,62 +447,7 @@ export default function AppPreviewPage() {
     return pages.find(p => p.route === '/' || !p.route) ?? pages[0];
   }, [projectConfig, appPath]);
 
-  // Fire the startup action once (to restore session) after the engine has mounted.
-  // The engine is rendered unconditionally so it mounts before this fires.
-  useEffect(() => {
-    if (loading || startupFiredRef.current) return;
-    startupFiredRef.current = true;
-    const startupAction = (appConfig as { startupAction?: string }).startupAction;
-    if (!startupAction) {
-      setSessionRestored(true);
-      return;
-    }
-    // Poll for engine readiness (it mounts in the same render cycle as loading→false)
-    let attempts = 0;
-    const tryFire = () => {
-      const engine = (window as { __sduiEngine?: { runAction?: (name: string) => void } }).__sduiEngine;
-      if (engine?.runAction) {
-        engine.runAction(startupAction);
-      } else if (attempts++ < 10) {
-        setTimeout(tryFire, 50);
-      } else {
-        // Engine never exposed runAction — just unblock the guard
-        setSessionRestored(true);
-      }
-    };
-    setTimeout(tryFire, 50);
-  }, [loading, setSessionRestored]);
-
-  // Route guard — runs when session is restored and page changes
-  useEffect(() => {
-    if (!sessionRestored || !currentPage || !projectConfig) return;
-
-    const authConfig = projectConfig.authConfig ?? (appConfig as { authConfig?: AuthConfig }).authConfig;
-    const unauthRedirect = authConfig?.unauthenticatedRedirect ?? '/sign-in';
-    const unAuthzRedirect = authConfig?.unauthorizedRedirect ?? '/';
-    const authRedirect = authConfig?.authenticatedRedirect ?? '/';
-
-    // guestOnly — authenticated users should not see this page
-    if (currentPage.guestOnly && isAuthenticated) {
-      router.replace(authRedirect);
-      return;
-    }
-
-    // auth-required page — guests should not see this page
-    if (currentPage.access === 'authenticated' && !isAuthenticated) {
-      router.replace(unauthRedirect);
-      return;
-    }
-
-    // accessCondition — evaluate additional condition
-    if (currentPage.access === 'authenticated' && isAuthenticated && currentPage.accessCondition) {
-      const mergedState = { ...(zustandData ?? {}), auth: zustandData?.['auth'] };
-      const result = evaluateFormula(currentPage.accessCondition, mergedState);
-      if (!result.value) {
-        router.replace(unAuthzRedirect);
-      }
-    }
-  }, [sessionRestored, currentPage, projectConfig, isAuthenticated, router, zustandData]);
+  // Protection guard is evaluated synchronously in the render path below.
 
   const sdui = useMemo<SDUIConfig>(() => ({
     state: {},
@@ -584,10 +519,20 @@ export default function AppPreviewPage() {
     );
   }
 
-  const authConfig = projectConfig?.authConfig ?? (appConfig as { authConfig?: AuthConfig }).authConfig;
+  // Protection guard — synchronous check before SDUIEngine mounts so no
+  // datasource fetches fire on a page the user isn't allowed to see.
+  if (currentPage.protectionCondition) {
+    const mergedState = {
+      ...useSduiStore.getState().data,
+      ...getGlobalVariableStore().getState().getFullState(),
+    };
+    const allowed = evaluateFormula(currentPage.protectionCondition, mergedState).value;
+    if (!allowed) {
+      router.replace(currentPage.protectionRedirect ?? '/');
+      return null;
+    }
+  }
 
-  // Always render the engine so it mounts and can run the restoreSession startup action.
-  // The route guard (above) fires after sessionRestored=true, preventing premature redirects.
   return (
     <SDUIEngine
       config={sdui}
@@ -595,7 +540,6 @@ export default function AppPreviewPage() {
       actionsConfig={actionsConfig}
       routes={app.routes ?? []}
       dataSources={dataSources}
-      authConfig={authConfig}
     />
   );
 }

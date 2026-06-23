@@ -13,7 +13,7 @@ export interface WorkflowParam {
 export interface WorkflowDef {
   id: string;
   name?: string;
-  /** Event trigger (click, change, valueChange, created, etc.) */
+  /** Event trigger (click, change, valueChange, created, appLoad, etc.) */
   trigger?: string;
   params?: WorkflowParam[];
   steps: object[];
@@ -29,34 +29,17 @@ export type PageUI = {
   layoutClasses?: Record<string, string>;
 };
 
-export type AuthConfig = {
-  tokenStorageKey?: string;
-  tokenType?: 'bearer' | 'basic' | 'custom';
-  userQuery?: string;
-  userQueryEndpoint?: string;
-  userQueryHeaders?: Record<string, string>;
-  userEndpoint?: string;
-  refreshEndpoint?: string;
-  unauthenticatedRedirect?: string;
-  unauthorizedRedirect?: string;
-  authenticatedRedirect?: string;
-};
-
 export type AppConfig = {
-  defaultRedirect: string;
+  defaultRedirect?: string;
   ui?: PageUI;
-  /** Action to run once on first app mount — used for session restore. */
-  startupAction?: string;
-  /** Global authentication configuration. */
-  authConfig?: AuthConfig;
   routes: Array<{
     path: string;
     config?: string;
     redirect?: string;
-    auth?: boolean;
-    authRedirect?: string;
-    accessCondition?: string;
-    guestOnly?: boolean;
+    /** JS formula evaluated at render time. Falsy → redirect to protectionRedirect. Leave empty for public access. */
+    protectionCondition?: string;
+    /** Path to redirect to when protectionCondition is falsy. Defaults to '/'. */
+    protectionRedirect?: string;
     layout?: string;
     dynamic?: boolean;
     paramChangeAction?: string;

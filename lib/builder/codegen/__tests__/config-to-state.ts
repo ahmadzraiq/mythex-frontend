@@ -58,10 +58,10 @@ type RoutesDef = {
   routes?: Array<{
     path: string;
     config?: string;
-    auth?: boolean;
     layout?: string;
     paramChangeAction?: string;
-    guestOnly?: boolean;
+    protectionCondition?: string;
+    protectionRedirect?: string;
   }>;
 };
 
@@ -282,10 +282,8 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
       name: cfg || r.path,
       route: r.path,
       nodes,
-      meta: {
-        isProtected: r.auth === true,
-        guestOnly: r.guestOnly === true,
-      },
+      ...(r.protectionCondition ? { protectionCondition: r.protectionCondition } : {}),
+      ...(r.protectionRedirect ? { protectionRedirect: r.protectionRedirect } : {}),
     };
   });
 
@@ -345,12 +343,6 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     dark: c.dark ?? '#000000',
   }));
 
-  // ── Auth config (synthesized from routes.json if protected routes exist) ───
-  const protectedRoutes = (routesDef.routes ?? []).filter(r => r.auth === true);
-  const syntheticAuthConfig = protectedRoutes.length > 0 ? {
-    unauthenticatedRedirect: routesDef.defaultRedirect ?? '/sign-in',
-  } : undefined;
-
   return {
     pages,
     customVars,
@@ -360,6 +352,5 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
     themeDarkOverrides: (themeRaw.darkOverrides as Record<string, string>) ?? {},
     workflows,
     pageWorkflowGroups,
-    authConfig: syntheticAuthConfig,
   };
 }

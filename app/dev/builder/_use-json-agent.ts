@@ -3,79 +3,331 @@
 /**
  * useJsonAgent
  *
- * Browser-side hook for the JSON agent (replaces useWebContainerDsl).
+ * Browser-side hook for the JSON agent.
  *
  * Architecture:
  *  - AI runs server-side via @anthropic-ai/claude-agent-sdk (POST /api/ai/json-agent)
  *  - Claude uses native Read/Write/Edit/Glob/Grep tools against /tmp/json-agent-{id}/
  *  - On each validated Write/Edit, the server emits { type: 'file', path, content }
  *  - This hook applies those events via applyVirtualFile → live canvas updates
- *  - The current VFS snapshot is sent with every request so the agent sees the
- *    full project state without needing a server-side config restore.
+ *  - Each conversation thread maps to its own SDK session_id (persisted per-thread
+ *    in project meta so resume survives server restarts).
+ *  - Messages are persisted in the backend threads API, not in project meta blobs.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import { applyVirtualFile, serializeVirtualFiles } from './_virtual-files';
+import { projects as projectsApi } from '@/lib/platform/api-client';
 import type { AiChatMessage, AiToolCall } from './_store-types';
 
-// ── No-op compile helper (kept for _files-panel.tsx compatibility) ────────────
-// The JSON agent writes entity files directly — no compilation needed.
-export async function compileAllAndApply(
-  _allSources: Record<string, string>,
-  _projectId: string | undefined,
-): Promise<void> {
-  // No-op: compilation is gone. Files are applied directly via applyVirtualFile.
+// ── Thread type (mirrors backend schema) ──────────────────────────────────────
+
+export interface ChatThread {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
 }
 
-// ── Token stats ───────────────────────────────────────────────────────────────
+// ── Token stats ────────────────────────────────────────────────────────────────
 
 export interface JsonAgentTokenStats {
-  input: number;
-  output: number;
+  input:         number;
+  output:        number;
+  cacheRead:     number;
+  cacheCreation: number;
+  totalCostUsd:  number;
+}
+
+// ── Module-level workspaceId cache (projectId → workspaceId) ──────────────────
+
+const workspaceIdCache = new Map<string, string>();
+
+async function resolveWorkspaceId(projectId: string): Promise<string | null> {
+  if (workspaceIdCache.has(projectId)) return workspaceIdCache.get(projectId)!;
+  try {
+    const { project } = await projectsApi.get(projectId);
+    const wsId = project.workspaceId as string;
+    workspaceIdCache.set(projectId, wsId);
+    return wsId;
+  } catch {
+    return null;
+  }
+}
+
+// ── Debounced event dispatcher ────────────────────────────────────────────────
+
+function makeDebounced(fn: () => void, delayMs: number): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(fn, delayMs);
+  };
 }
 
 // ── Main hook ─────────────────────────────────────────────────────────────────
 
-export function useJsonAgent(projectId?: string, workspaceId?: string) {
+const THREADS_PAGE = 10;
+
+export function useJsonAgent(projectId?: string) {
   const [messages,    setMessages]    = useState<AiChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [tokenStats,  setTokenStats]  = useState<JsonAgentTokenStats>({ input: 0, output: 0 });
+  const [tokenStats,  setTokenStats]  = useState<JsonAgentTokenStats>({
+    input: 0, output: 0, cacheRead: 0, cacheCreation: 0, totalCostUsd: 0,
+  });
 
-  // Track count of entity files written this session (used for the badge)
-  const [writtenFileCount, setWrittenFileCount] = useState(0);
+  // ── Thread state ──────────────────────────────────────────────────────────
+  const [threads,             setThreads]           = useState<ChatThread[]>([]);
+  const [currentThreadId,     setCurrentThreadId]   = useState<string | null>(null);
+  const [loadingThreads,      setLoadingThreads]    = useState(false);
+  const [hasMoreThreads,      setHasMoreThreads]    = useState(false);
+  const [loadingMoreThreads,  setLoadingMoreThreads] = useState(false);
+  const [deletingThreadId,    setDeletingThreadId]  = useState<string | null>(null);
 
-  const abortRef          = useRef<AbortController | null>(null);
-  const messagesRef       = useRef<AiChatMessage[]>([]);
-  const sessionTokensRef  = useRef<JsonAgentTokenStats>({ input: 0, output: 0 });
+  // threadId → SDK session_id (loaded from + persisted to project meta)
+  const [threadSessions, setThreadSessions] = useState<Record<string, string>>({});
+  const threadSessionsRef = useRef<Record<string, string>>({});
+
+  const abortRef        = useRef<AbortController | null>(null);
+  const messagesRef     = useRef<AiChatMessage[]>([]);
+  const sessionStatsRef = useRef<JsonAgentTokenStats>({
+    input: 0, output: 0, cacheRead: 0, cacheCreation: 0, totalCostUsd: 0,
+  });
 
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { threadSessionsRef.current = threadSessions; }, [threadSessions]);
 
-  // ── Restore chat messages on mount / project switch ──────────────────────────
+  // Debounced event to bump AiTokenMeter mid-build (fires at most once / 4s)
+  const dispatchTurnDoneRef = useRef(
+    makeDebounced(() => window.dispatchEvent(new Event('builder:ai-turn-done')), 4000),
+  );
+
+  // ── Load threads ──────────────────────────────────────────────────────────
+
+  const loadThreads = useCallback(async () => {
+    if (!projectId) return;
+    setLoadingThreads(true);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}`,
+        { credentials: 'include' },
+      );
+      if (res.ok) {
+        const body = await res.json() as { threads: ChatThread[]; total: number; offset: number };
+        setThreads(body.threads ?? []);
+        setHasMoreThreads((body.offset ?? 0) + (body.threads ?? []).length < (body.total ?? 0));
+      }
+    } catch { /* silently ignore */ } finally {
+      setLoadingThreads(false);
+    }
+  }, [projectId]);
+
+  const loadMoreThreads = useCallback(async () => {
+    if (!projectId || loadingMoreThreads || !hasMoreThreads) return;
+    setLoadingMoreThreads(true);
+    try {
+      const offset = threads.length;
+      const res = await fetch(
+        `/api/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}&offset=${offset}`,
+        { credentials: 'include' },
+      );
+      if (res.ok) {
+        const body = await res.json() as { threads: ChatThread[]; total: number; offset: number };
+        const data = body.threads ?? [];
+        setThreads(prev => {
+          const ids = new Set(prev.map(t => t.id));
+          return [...prev, ...data.filter(t => !ids.has(t.id))];
+        });
+        setHasMoreThreads((body.offset ?? 0) + data.length < (body.total ?? 0));
+      } else {
+        setHasMoreThreads(false);
+      }
+    } catch {
+      setHasMoreThreads(false);
+    } finally {
+      setLoadingMoreThreads(false);
+    }
+  }, [projectId, threads.length, loadingMoreThreads, hasMoreThreads]);
+
+  // ── On mount / project switch ─────────────────────────────────────────────
+
   useEffect(() => {
     if (!projectId) return;
     setMessages([]);
     messagesRef.current = [];
+    setCurrentThreadId(null);
+    sessionStatsRef.current = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, totalCostUsd: 0 };
+    setTokenStats(sessionStatsRef.current);
 
+    // Load threads + persisted session map
+    void loadThreads();
     fetch(`/api/projects/${projectId}/config/meta`)
       .then(r => r.json())
       .then((data: unknown) => {
         const meta = data as Record<string, unknown> | undefined;
-        const savedMessages = meta?.dslChatMessages as AiChatMessage[] | undefined;
-        if (savedMessages?.length) {
-          setMessages(savedMessages);
-          messagesRef.current = savedMessages;
+        const sessions = meta?.threadSessions as Record<string, string> | undefined;
+        if (sessions && typeof sessions === 'object') {
+          setThreadSessions(sessions);
+          threadSessionsRef.current = sessions;
         }
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  // ── Send ─────────────────────────────────────────────────────────────────────
+  // ── Select thread — load messages from backend ────────────────────────────
+
+  const selectThread = useCallback(async (threadId: string) => {
+    if (!projectId) return;
+    setMessages([]);
+    messagesRef.current = [];
+    setCurrentThreadId(threadId);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/chat/threads/${threadId}/messages?limit=50`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) return;
+      const body = await res.json() as {
+        messages: Array<{
+          id: string; role: string; content: string;
+          toolCalls?: unknown; metadata?: Record<string, unknown>; createdAt: string;
+        }>;
+      };
+      const mapped: AiChatMessage[] = (body.messages ?? []).map(m => ({
+        id: m.id,
+        role: m.role as AiChatMessage['role'],
+        content: m.content,
+        toolCalls: Array.isArray(m.toolCalls)
+          ? (m.toolCalls as AiToolCall[]).map(tc => ({ ...tc, status: tc.status ?? ('success' as const) }))
+          : undefined,
+        selectedNodeIds: m.metadata?.selectedNodeIds as string[] | undefined,
+        createdAt: m.createdAt,
+      }));
+      setMessages(mapped);
+      messagesRef.current = mapped;
+    } catch { /* silently ignore */ }
+  }, [projectId]);
+
+  // ── Create thread ──────────────────────────────────────────────────────────
+
+  const createThread = useCallback(async (title?: string): Promise<string | null> => {
+    if (!projectId) {
+      // Offline / dev mode — local-only thread
+      const localId = crypto.randomUUID();
+      const newThread: ChatThread = {
+        id: localId, title: title ?? 'New Chat',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messageCount: 0,
+      };
+      setThreads(prev => [newThread, ...prev]);
+      setCurrentThreadId(localId);
+      return localId;
+    }
+    try {
+      const res = await fetch(`/api/projects/${projectId}/chat/threads`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title ?? 'New Chat' }),
+      });
+      if (!res.ok) return null;
+      const { thread } = await res.json() as { thread: { id: string; title: string; createdAt: string; updatedAt: string } };
+      const newThread: ChatThread = { ...thread, messageCount: 0 };
+      setThreads(prev => [newThread, ...prev]);
+      setCurrentThreadId(thread.id);
+      return thread.id;
+    } catch {
+      return null;
+    }
+  }, [projectId]);
+
+  // ── Delete thread ──────────────────────────────────────────────────────────
+
+  const deleteThread = useCallback(async (threadId: string) => {
+    setDeletingThreadId(threadId);
+    try {
+      if (projectId) {
+        await fetch(`/api/projects/${projectId}/chat/threads/${threadId}`, {
+          method: 'DELETE', credentials: 'include',
+        });
+      }
+      setThreads(prev => prev.filter(t => t.id !== threadId));
+      if (currentThreadId === threadId) {
+        setCurrentThreadId(null);
+        setMessages([]);
+        messagesRef.current = [];
+      }
+    } catch { /* silently ignore */ } finally {
+      setDeletingThreadId(null);
+    }
+  }, [projectId, currentThreadId]);
+
+  // ── Auto-rename thread from first user message ────────────────────────────
+
+  const autoRenameThread = useCallback(async (threadId: string, firstMessage: string) => {
+    const title = firstMessage.slice(0, 60).trim();
+    if (!title) return;
+    setThreads(prev => prev.map(t => t.id === threadId ? { ...t, title } : t));
+    if (!projectId) return;
+    fetch(`/api/projects/${projectId}/chat/threads/${threadId}`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    }).catch(() => {});
+  }, [projectId]);
+
+  // ── Persist message to backend ────────────────────────────────────────────
+
+  const persistMessage = useCallback(async (
+    threadId: string,
+    msg: Pick<AiChatMessage, 'role' | 'content' | 'toolCalls' | 'selectedNodeIds'>,
+  ) => {
+    if (!projectId) return;
+    fetch(`/api/projects/${projectId}/chat/threads/${threadId}/messages`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role:      msg.role,
+        content:   msg.content,
+        toolCalls: msg.toolCalls,
+        metadata:  msg.selectedNodeIds ? { selectedNodeIds: msg.selectedNodeIds } : undefined,
+      }),
+    }).catch(() => {});
+  }, [projectId]);
+
+  // ── Start new chat (reset without creating a thread yet) ──────────────────
+
+  const startNewChat = useCallback(() => {
+    abortRef.current?.abort();
+    setMessages([]);
+    messagesRef.current = [];
+    setCurrentThreadId(null);
+    setIsStreaming(false);
+    sessionStatsRef.current = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, totalCostUsd: 0 };
+    setTokenStats(sessionStatsRef.current);
+  }, []);
+
+  // ── Send ──────────────────────────────────────────────────────────────────
+
   const sendMessage = useCallback(async (userText: string) => {
     if (!userText.trim() || isStreaming) return;
 
     const now = new Date().toISOString();
+
+    // Resolve workspace for token recording
+    const wsId = projectId ? await resolveWorkspaceId(projectId) : null;
+
+    // Lazily create thread if needed
+    let threadId = currentThreadId;
+    if (!threadId) {
+      threadId = await createThread(userText.slice(0, 60).trim() || 'New Chat');
+      if (!threadId) {
+        // Couldn't create thread — fallback to threadless send
+        threadId = null;
+      }
+    }
+
     const userMsg: AiChatMessage = {
       id: `${Date.now()}-u`, role: 'user', content: userText, createdAt: now,
     };
@@ -90,21 +342,31 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
 
+    // Persist user message to thread
+    if (threadId) {
+      void persistMessage(threadId, userMsg);
+      // Auto-rename if this is the first message
+      const isFirstMsg = messagesRef.current.filter(m => m.role === 'user').length === 0;
+      if (isFirstMsg) void autoRenameThread(threadId, userText);
+    }
+
     const updateAssistant = (updater: (m: AiChatMessage) => AiChatMessage) =>
       setMessages(prev => prev.map(m => m.id === assistantId ? updater(m) : m));
 
     try {
-      // Serialize the current VFS snapshot to send as context for the agent
       const vfsSnapshot = serializeVirtualFiles(useBuilderStore.getState());
+      const resumeSessionId = threadId ? threadSessionsRef.current[threadId] : undefined;
 
       const res = await fetch('/api/ai/json-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: userText,
+          prompt:          userText,
           projectId,
-          workspaceId,
-          vfsFiles: vfsSnapshot.files,
+          workspaceId:     wsId ?? undefined,
+          threadId:        threadId ?? undefined,
+          resumeSessionId: resumeSessionId ?? undefined,
+          vfsFiles:        vfsSnapshot.files,
         }),
         signal,
       });
@@ -115,11 +377,13 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
         return;
       }
 
-      // ── Read SSE stream ────────────────────────────────────────────────────
       const reader  = res.body!.getReader();
       const decoder = new TextDecoder();
       let buf = '';
       let filesApplied = 0;
+      // Accumulate assistant text for persisting to thread at the end
+      let assistantContent = '';
+      const assistantToolCalls: AiToolCall[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -138,32 +402,29 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
 
           const type = msg.type as string;
 
-          // ── Partial token delta ──────────────────────────────────────────────
           if (type === 'text_delta') {
             const text = msg.text as string | undefined;
-            if (text) updateAssistant(m => ({ ...m, content: m.content + text }));
-          }
-
-          // ── Assistant text (fallback) ──────────────────────────────────────
-          else if (type === 'assistant_text') {
+            if (text) {
+              assistantContent += text;
+              updateAssistant(m => ({ ...m, content: m.content + text }));
+            }
+          } else if (type === 'assistant_text') {
             const text = msg.text as string | undefined;
-            if (text) updateAssistant(m => ({ ...m, content: m.content + text }));
-          }
-
-          // ── Tool call ─────────────────────────────────────────────────────
-          else if (type === 'tool_call') {
+            if (text) {
+              assistantContent += text;
+              updateAssistant(m => ({ ...m, content: m.content + text }));
+            }
+          } else if (type === 'tool_call') {
             const call: AiToolCall = {
-              id: msg.id as string | undefined,
-              name: (msg.name as string) ?? 'unknown',
-              input: (msg.input ?? {}) as Record<string, unknown>,
-              status: 'pending',
+              id:        msg.id as string | undefined,
+              name:      (msg.name as string) ?? 'unknown',
+              input:     (msg.input ?? {}) as Record<string, unknown>,
+              status:    'pending',
               timestamp: Date.now(),
             };
+            assistantToolCalls.push(call);
             updateAssistant(m => ({ ...m, toolCalls: [...(m.toolCalls ?? []), call] }));
-          }
-
-          // ── Tool result ───────────────────────────────────────────────────
-          else if (type === 'tool_result') {
+          } else if (type === 'tool_result') {
             const id = msg.id as string | undefined;
             const endTime = (msg.endTime as number | undefined) ?? Date.now();
             updateAssistant(m => {
@@ -177,13 +438,26 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
               if (idx !== -1) {
                 const duration = calls[idx]!.timestamp != null ? endTime - calls[idx]!.timestamp! : undefined;
                 calls[idx] = { ...calls[idx]!, status: 'success', duration };
+                if (idx < assistantToolCalls.length) assistantToolCalls[idx] = calls[idx]!;
               }
               return { ...m, toolCalls: calls };
             });
-          }
-
-          // ── Entity file written — apply to canvas ─────────────────────────
-          else if (type === 'file') {
+          } else if (type === 'usage') {
+            // Per-round usage — update live stats
+            const round = msg.round as { input?: number; output?: number; cacheRead?: number; cacheCreation?: number } | undefined;
+            if (round) {
+              sessionStatsRef.current = {
+                input:         sessionStatsRef.current.input         + (round.input        ?? 0),
+                output:        sessionStatsRef.current.output        + (round.output       ?? 0),
+                cacheRead:     sessionStatsRef.current.cacheRead     + (round.cacheRead    ?? 0),
+                cacheCreation: sessionStatsRef.current.cacheCreation + (round.cacheCreation ?? 0),
+                totalCostUsd:  sessionStatsRef.current.totalCostUsd,
+              };
+              setTokenStats({ ...sessionStatsRef.current });
+              // Dispatch mid-build so AiTokenMeter re-fetches (debounced)
+              dispatchTurnDoneRef.current();
+            }
+          } else if (type === 'file') {
             const filePath = msg.path as string | undefined;
             const content  = msg.content as string | undefined;
             if (filePath && content !== undefined) {
@@ -193,38 +467,50 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
                 console.warn('[json-agent] applyVirtualFile failed:', filePath, result.error);
               } else {
                 filesApplied++;
-                setWrittenFileCount(c => c + 1);
                 console.log(`[json-agent] applied ${filePath}`);
               }
             }
-          }
-
-          // ── Persisted confirmation ────────────────────────────────────────
-          else if (type === 'persisted') {
+          } else if (type === 'persisted') {
             console.log(`[json-agent] ${msg.count} files persisted to project DB`);
-          }
-
-          // ── Final result (usage) ──────────────────────────────────────────
-          else if (type === 'result') {
-            const usage = msg.usage as { input_tokens?: number; output_tokens?: number } | undefined;
-            const inputTok  = (usage?.input_tokens  as number | undefined) ?? 0;
-            const outputTok = (usage?.output_tokens as number | undefined) ?? 0;
-            sessionTokensRef.current = {
-              input:  sessionTokensRef.current.input  + inputTok,
-              output: sessionTokensRef.current.output + outputTok,
+          } else if (type === 'result') {
+            const usage = msg.usage as {
+              input_tokens?: number; output_tokens?: number;
+              cache_read_input_tokens?: number; cache_creation_input_tokens?: number;
+            } | undefined;
+            // Reconcile to authoritative cumulative totals from the result
+            sessionStatsRef.current = {
+              input:         usage?.input_tokens                  ?? sessionStatsRef.current.input,
+              output:        usage?.output_tokens                 ?? sessionStatsRef.current.output,
+              cacheRead:     usage?.cache_read_input_tokens       ?? sessionStatsRef.current.cacheRead,
+              cacheCreation: usage?.cache_creation_input_tokens   ?? sessionStatsRef.current.cacheCreation,
+              totalCostUsd:  (msg.total_cost_usd as number | undefined) ?? sessionStatsRef.current.totalCostUsd,
             };
-            setTokenStats({ ...sessionTokensRef.current });
-            if (msg.session_id) console.log('[json-agent] session_id:', msg.session_id);
+            setTokenStats({ ...sessionStatsRef.current });
+
+            // Store session_id for this thread so next turn can resume
+            const sessionId = msg.session_id as string | undefined;
+            if (sessionId && threadId) {
+              const updated = { ...threadSessionsRef.current, [threadId]: sessionId };
+              setThreadSessions(updated);
+              threadSessionsRef.current = updated;
+              if (projectId) {
+                fetch(`/api/projects/${projectId}/config/meta`, {
+                  method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ threadSessions: updated }),
+                }).catch(() => {});
+              }
+            }
+
+            // Final dispatch so meter re-fetches after turn
+            window.dispatchEvent(new Event('builder:ai-turn-done'));
+
             updateAssistant(m => ({
               ...m,
               toolCalls: (m.toolCalls ?? []).map(c =>
                 c.status === 'pending' ? { ...c, status: 'success' as const } : c
               ),
             }));
-          }
-
-          // ── Error ─────────────────────────────────────────────────────────
-          else if (type === 'error') {
+          } else if (type === 'error') {
             const errorText = msg.error as string | undefined;
             if (errorText) {
               updateAssistant(m => ({
@@ -240,22 +526,20 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
         console.log(`[json-agent] total ${filesApplied} files applied to canvas`);
       }
 
-      // Persist display messages
-      if (projectId) {
-        const displayMessages = messagesRef.current.slice(-50).map(m => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          createdAt: m.createdAt,
-          toolCalls: m.toolCalls?.map(tc => ({ name: tc.name, status: tc.status })),
-        }));
-        if (displayMessages.length > 0) {
-          fetch(`/api/projects/${projectId}/config/meta`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dslChatMessages: displayMessages }),
-          }).catch(() => {});
-        }
+      // Persist assistant message to thread
+      if (threadId) {
+        const finalMsg = messagesRef.current.find(m => m.id === assistantId);
+        void persistMessage(threadId, {
+          role:      'assistant',
+          content:   finalMsg?.content ?? assistantContent,
+          toolCalls: finalMsg?.toolCalls ?? assistantToolCalls,
+        });
+        // Bump thread's updatedAt / messageCount in local state
+        setThreads(prev => prev.map(t =>
+          t.id === threadId
+            ? { ...t, messageCount: t.messageCount + 2, updatedAt: new Date().toISOString() }
+            : t
+        ));
       }
 
     } catch (err) {
@@ -270,31 +554,48 @@ export function useJsonAgent(projectId?: string, workspaceId?: string) {
       setIsStreaming(false);
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, streaming: false } : m));
     }
-  }, [isStreaming, projectId, workspaceId]);
+  }, [isStreaming, projectId, currentThreadId, createThread, persistMessage, autoRenameThread]);
 
-  // ── Clear ─────────────────────────────────────────────────────────────────────
+  // ── Stop streaming ────────────────────────────────────────────────────────
+
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort();
+    setIsStreaming(false);
+    setMessages(prev => prev.map(m => m.streaming ? { ...m, streaming: false } : m));
+  }, []);
+
+  // ── Clear ─────────────────────────────────────────────────────────────────
+
   const clear = useCallback(() => {
     abortRef.current?.abort();
     setMessages([]);
     messagesRef.current = [];
+    setCurrentThreadId(null);
     setIsStreaming(false);
-    setWrittenFileCount(0);
-    sessionTokensRef.current = { input: 0, output: 0 };
-    setTokenStats({ input: 0, output: 0 });
+    sessionStatsRef.current = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, totalCostUsd: 0 };
+    setTokenStats(sessionStatsRef.current);
   }, []);
 
   return {
+    // Chat
     messages,
     isStreaming,
     sendMessage,
+    stopStreaming,
     clear,
     tokenStats,
-    /** Number of entity files written this session (used for the files badge). */
-    writtenFileCount,
-    /** Backward-compat alias — always empty, no DSL source files anymore. */
-    dslSources: {} as Record<string, string>,
+    // Threads
+    threads,
+    currentThreadId,
+    loadingThreads,
+    hasMoreThreads,
+    loadingMoreThreads,
+    deletingThreadId,
+    loadThreads,
+    loadMoreThreads,
+    selectThread,
+    createThread,
+    deleteThread,
+    startNewChat,
   };
 }
-
-// ── Named alias used by _ai-chat-panel.tsx ────────────────────────────────────
-export const useWebContainerDsl = useJsonAgent;

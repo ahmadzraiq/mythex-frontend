@@ -63,10 +63,6 @@ function buildPaths(inMapContext = false): PathEntry[] {
   paths.push({ path: 'globalContext.browser.domain', label: 'globalContext.browser.domain', type: 'string', group: 'route' });
   paths.push({ path: 'globalContext.browser.query', label: 'globalContext.browser.query', type: 'object', group: 'route' });
 
-  // auth.*
-  paths.push({ path: 'auth.user', label: 'auth.user', type: 'object', group: 'store' });
-  paths.push({ path: 'auth.token', label: 'auth.token', type: 'string', group: 'store' });
-
   // local form state
   paths.push({ path: 'local.data.form.formData', label: 'local.data.form.formData', type: 'object', group: 'store' });
   paths.push({ path: 'local.data.form.isSubmitted', label: 'local.data.form.isSubmitted', type: 'boolean', group: 'store' });

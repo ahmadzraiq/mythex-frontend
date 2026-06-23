@@ -19,16 +19,12 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useSearchParams, usePathname } from 'next/navigation';
-import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { useBuilderStore } from './_store';
-import { useAiChat } from './_use-ai-chat';
 import { applyVirtualFile } from './_virtual-files';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
 import { type BuilderModelId } from './_store-types';
-import { useWebContainerDsl } from './_use-webcontainer-dsl';
-import { useFileViewerDrawer } from './_file-viewer-drawer';
+import { useJsonAgent } from './_use-json-agent';
+import type { ChatThread } from './_use-json-agent';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -1356,41 +1352,45 @@ function ClockIcon({ size = 14, color = 'currentColor' }: { size?: number; color
 }
 
 // ---------------------------------------------------------------------------
-// Thread History dropdown
+// Project ID hook
+// ---------------------------------------------------------------------------
+
+function useDslProjectId(): string | null {
+  const searchParams = useSearchParams();
+  const pathname = usePathname() ?? '';
+  const fromSearch = searchParams.get('projectId');
+  const fromPath = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
+  return fromSearch ?? fromPath;
+}
+
+// ---------------------------------------------------------------------------
+// ThreadMenu dropdown
 // ---------------------------------------------------------------------------
 
 function ThreadMenu({
-  threads, loadingThreads, hasMoreThreads, loadingMoreThreads,
-  deletingThreadId, aiCurrentThreadId,
-  onSelect, onDelete, onLoadMore, onClose,
+  threads, currentThreadId, loadingThreads, hasMoreThreads, loadingMoreThreads,
+  deletingThreadId, onSelect, onDelete, onLoadMore, onClose,
 }: {
-  threads: import('./_use-ai-chat').ChatThread[];
+  threads: ChatThread[];
+  currentThreadId: string | null;
   loadingThreads: boolean;
   hasMoreThreads: boolean;
   loadingMoreThreads: boolean;
   deletingThreadId: string | null;
-  aiCurrentThreadId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onLoadMore: () => void;
   onClose: () => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
-  // Tracks the thread count at the time of the last triggered load.
-  // A new load only fires when threads.length has grown past this value,
-  // which makes it structurally impossible to double-trigger for the same page.
   const lastLoadedOffsetRef = useRef(-1);
 
   const handleScroll = useCallback(() => {
     const el = listRef.current;
     if (!el || loadingMoreThreads || !hasMoreThreads) return;
-
     const distToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (distToBottom >= 80) return;
-
-    // Already fired a load for this exact thread count — wait for new data to arrive
     if (lastLoadedOffsetRef.current >= threads.length) return;
-
     lastLoadedOffsetRef.current = threads.length;
     onLoadMore();
   }, [hasMoreThreads, loadingMoreThreads, threads.length, onLoadMore]);
@@ -1408,27 +1408,20 @@ function ThreadMenu({
       }}
       onClick={e => e.stopPropagation()}
     >
-      {/* Header */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-ai-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <ClockIcon size={13} color="var(--bld-text-disabled)" />
-          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, textTransform: 'none' }}>
-            Chat History
-          </span>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600 }}>Chat History</span>
         </div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1 }}>×</button>
       </div>
 
-      {/* Thread list — exactly 10 per page, scroll-to-load-more */}
-      <div ref={listRef} onScroll={handleScroll}
-        style={{ overflowY: 'auto', maxHeight: 340 }}
-      >
+      <div ref={listRef} onScroll={handleScroll} style={{ overflowY: 'auto', maxHeight: 340 }}>
         {loadingThreads && (
           <div style={{ padding: '14px', color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center' }}>Loading…</div>
         )}
         {!loadingThreads && threads.length === 0 && (
           <div style={{ padding: '20px 14px', color: 'var(--bld-text-disabled)', fontSize: 12, textAlign: 'center' }}>
-            <div style={{ fontSize: 24, marginBottom: 6 }}>💬</div>
             No conversations yet
           </div>
         )}
@@ -1436,15 +1429,15 @@ function ThreadMenu({
           <div key={t.id} data-testid="ai-thread-item"
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px',
-              background: t.id === aiCurrentThreadId ? 'var(--bld-bg-active)' : 'transparent',
+              background: t.id === currentThreadId ? 'var(--bld-bg-active)' : 'transparent',
               borderBottom: '1px solid var(--bld-ai-border)', cursor: 'pointer', transition: 'background 0.1s',
             }}
             onClick={() => { onSelect(t.id); onClose(); }}
-            onMouseEnter={e => { if (t.id !== aiCurrentThreadId) (e.currentTarget as HTMLDivElement).style.background = 'var(--bld-bg-hover)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = t.id === aiCurrentThreadId ? 'var(--bld-bg-active)' : 'transparent'; }}
+            onMouseEnter={e => { if (t.id !== currentThreadId) (e.currentTarget as HTMLDivElement).style.background = 'var(--bld-bg-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = t.id === currentThreadId ? 'var(--bld-bg-active)' : 'transparent'; }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: t.id === aiCurrentThreadId ? 'var(--bld-ai-accent)' : 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: t.id === aiCurrentThreadId ? 600 : 400 }}>
+              <div style={{ fontSize: 12, color: t.id === currentThreadId ? 'var(--bld-ai-accent)' : 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: t.id === currentThreadId ? 600 : 400 }}>
                 {t.title}
               </div>
               <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
@@ -1468,256 +1461,11 @@ function ThreadMenu({
             </button>
           </div>
         ))}
-        {/* Loading more spinner */}
         {loadingMoreThreads && (
           <div style={{ padding: '8px 14px', textAlign: 'center', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading more…</div>
         )}
-        {/* End of list */}
         {!hasMoreThreads && threads.length > 0 && !loadingThreads && (
           <div style={{ padding: '6px 14px', textAlign: 'center', fontSize: 10, color: 'var(--bld-text-3)' }}>— end —</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DSL types, hook and components
-// ---------------------------------------------------------------------------
-
-interface DslMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  toolEvents?: string[];
-  isStreaming?: boolean;
-}
-
-function useDslProjectId(): string | null {
-  const searchParams = useSearchParams();
-  const pathname = usePathname() ?? '';
-  const fromSearch = searchParams.get('projectId');
-  const fromPath = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
-  return fromSearch ?? fromPath;
-}
-
-function useDslStream(projectId?: string) {
-  const [messages, setMessages] = useState<AiChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [dslSources, setDslSources] = useState<Record<string, string>>({});
-  const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    fetch(`/api/projects/${projectId}/config/meta`)
-      .then(r => r.json())
-      .then((data: unknown) => {
-        const sources = (data as Record<string, unknown>)?.dslSources as Record<string, string> | undefined;
-        if (sources && Object.keys(sources).length > 0) setDslSources(sources);
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
-
-  const sendMessage = useCallback(async (userText: string) => {
-    if (!userText.trim() || isStreaming) return;
-    const now = new Date().toISOString();
-    const userMsg: AiChatMessage = { id: `${Date.now()}-u`, role: 'user', content: userText, createdAt: now };
-    const assistantId = `${Date.now()}-a`;
-    const assistantMsg: AiChatMessage = { id: assistantId, role: 'assistant', content: '', toolCalls: [], createdAt: now, streaming: true };
-    setMessages(prev => [...prev, userMsg, assistantMsg]);
-    setIsStreaming(true);
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
-    try {
-      const res = await fetch('/api/ai/dsl-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, projectId, dslSources }),
-        signal: abortRef.current.signal,
-      });
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => `HTTP ${res.status}`);
-        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: `Error: ${errText}`, streaming: false } : m));
-        return;
-      }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const event = JSON.parse(line) as Record<string, unknown>;
-            if (['var_written','page_written','workflow_written','routes_written'].includes(event.type as string)) {
-              const store = useBuilderStore.getState();
-              const result = applyVirtualFile(store, event.path as string, event.content as string);
-              if (!result.ok) console.warn(`[DSL] applyVirtualFile failed:`, result.error);
-              continue;
-            }
-            if (event.type === 'dsl_sources') {
-              const sources = event.sources as Record<string, string>;
-              setDslSources(sources);
-              if (projectId) {
-                fetch(`/api/projects/${projectId}/config/meta`, {
-                  method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ dslSources: sources }),
-                }).catch(() => {});
-              }
-              continue;
-            }
-            setMessages(prev => prev.map(m => {
-              if (m.id !== assistantId) return m;
-              if (event.type === 'text') return { ...m, content: m.content + (event.content as string) };
-              if (event.type === 'tool_use') {
-                const newCall: AiToolCall = {
-                  name: event.toolName as string,
-                  input: (event.input as Record<string, unknown>) ?? {},
-                  status: 'pending',
-                  timestamp: Date.now(),
-                };
-                return { ...m, toolCalls: [...(m.toolCalls ?? []), newCall] };
-              }
-              if (event.type === 'tool_result') {
-                const toolName = event.toolName as string;
-                const updatedCalls = [...(m.toolCalls ?? [])];
-                // Update the last pending call with this name
-                for (let i = updatedCalls.length - 1; i >= 0; i--) {
-                  if (updatedCalls[i]!.name === toolName && updatedCalls[i]!.status === 'pending') {
-                    updatedCalls[i] = { ...updatedCalls[i]!, result: event.result, status: 'success' };
-                    break;
-                  }
-                }
-                return { ...m, toolCalls: updatedCalls };
-              }
-              if (event.type === 'done' || event.type === 'result') return { ...m, content: event.content && m.content === '' ? event.content as string : m.content, streaming: false };
-              if (event.type === 'error') return { ...m, content: m.content || `Error: ${event.error as string}`, streaming: false };
-              return m;
-            }));
-          } catch { /* skip malformed */ }
-        }
-      }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: `Connection error: ${(err as Error).message}`, streaming: false } : m));
-      }
-    } finally {
-      setIsStreaming(false);
-      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, streaming: false } : m));
-    }
-  }, [isStreaming, projectId, dslSources]);
-
-  const clear = useCallback(() => { abortRef.current?.abort(); setMessages([]); setIsStreaming(false); }, []);
-
-  return { messages, isStreaming, sendMessage, clear, dslSources };
-}
-
-/** Build a folder tree from flat file paths like { 'src/calc/page.tsx': '...' } */
-function buildDslTree(sources: Record<string, string>): Array<{ kind: 'dir'; name: string; children: Array<{ kind: 'file'; name: string; path: string }> } | { kind: 'file'; name: string; path: string }> {
-  const dirs = new Map<string, Array<{ kind: 'file'; name: string; path: string }>>();
-  const rootFiles: Array<{ kind: 'file'; name: string; path: string }> = [];
-
-  for (const path of Object.keys(sources)) {
-    const parts = path.split('/');
-    if (parts.length === 1) {
-      rootFiles.push({ kind: 'file', name: path, path });
-    } else {
-      const dir = parts.slice(0, -1).join('/');
-      if (!dirs.has(dir)) dirs.set(dir, []);
-      dirs.get(dir)!.push({ kind: 'file', name: parts[parts.length - 1], path });
-    }
-  }
-
-  const result: ReturnType<typeof buildDslTree> = [];
-  for (const [dir, files] of dirs.entries()) {
-    result.push({ kind: 'dir', name: dir, children: files });
-  }
-  result.push(...rootFiles);
-  return result;
-}
-
-function DslFilesView({ sources }: { sources: Record<string, string> }) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
-  const tree = buildDslTree(sources);
-
-  useEffect(() => {
-    const keys = Object.keys(sources);
-    if (keys.length > 0 && (!selected || !sources[selected])) setSelected(keys[0]);
-    // Auto-open all dirs
-    const dirs = new Set<string>();
-    for (const node of tree) {
-      if (node.kind === 'dir') dirs.add(node.name);
-    }
-    setOpenDirs(dirs);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [Object.keys(sources).join(',')]);
-
-  const toggleDir = (dir: string) =>
-    setOpenDirs(prev => { const s = new Set(prev); s.has(dir) ? s.delete(dir) : s.add(dir); return s; });
-
-  const fileChipStyle = (active: boolean): React.CSSProperties => ({
-    display: 'flex', alignItems: 'center', gap: 5,
-    padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-    background: active ? 'rgba(124,58,237,0.15)' : 'transparent',
-    border: `1px solid ${active ? 'rgba(124,58,237,0.35)' : 'transparent'}`,
-    color: active ? '#a78bfa' : 'var(--bld-text-2)',
-    fontSize: 11, fontFamily: 'var(--font-mono, monospace)',
-    width: '100%', textAlign: 'left',
-  });
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* File tree */}
-      <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--bld-border)', background: 'var(--bld-bg-elevated)', overflowY: 'auto', maxHeight: 180 }}>
-        {Object.keys(sources).length === 0 && (
-          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', padding: '8px 4px' }}>No DSL files yet. Ask the AI to create a page.</div>
-        )}
-        {tree.map(node => {
-          if (node.kind === 'dir') {
-            const open = openDirs.has(node.name);
-            return (
-              <div key={node.name}>
-                <button onClick={() => toggleDir(node.name)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-3)', fontSize: 11, width: '100%', textAlign: 'left' }}>
-                  <svg width="9" height="9" viewBox="0 0 8 8" fill="currentColor" style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}><path d="M2 1l4 3-4 3V1z"/></svg>
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M2 4.5A1.5 1.5 0 013.5 3h3L8 5h4.5A1.5 1.5 0 0114 6.5v6a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V4.5z"/></svg>
-                  <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{node.name}</span>
-                </button>
-                {open && node.children.map(child => (
-                  <button key={child.path} onClick={() => setSelected(child.path)} style={{ ...fileChipStyle(selected === child.path), paddingLeft: 24, marginBottom: 1 }}>
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9 2 9 6 13 6"/></svg>
-                    {child.name}
-                  </button>
-                ))}
-              </div>
-            );
-          }
-          return (
-            <button key={node.path} onClick={() => setSelected(node.path)} style={{ ...fileChipStyle(selected === node.path), marginBottom: 1 }}>
-              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><polyline points="9 2 9 6 13 6"/></svg>
-              {node.name}
-            </button>
-          );
-        })}
-      </div>
-      {/* Editor */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {selected && sources[selected] !== undefined ? (
-          <CodeMirror
-            value={sources[selected]}
-            theme={oneDark}
-            extensions={[javascript({ jsx: true, typescript: true })]}
-            editable={false}
-            basicSetup={{ lineNumbers: true, foldGutter: false }}
-            style={{ fontSize: 11, height: '100%' }}
-          />
-        ) : (
-          <div style={{ padding: 24, color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center', paddingTop: 40 }}>Select a file to view its source</div>
         )}
       </div>
     </div>
@@ -1734,12 +1482,27 @@ export function AiChatPanel() {
   // ── DSL chat ──────────────────────────────────────────────────────────────
   const [inputValue, setInputValue] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const projectId = useDslProjectId() ?? undefined;
-  const { messages, isStreaming, sendMessage, clear, dslSources } = useWebContainerDsl(projectId);
-  const openDrawer = useFileViewerDrawer(s => s.open);
+  const {
+    messages, isStreaming, sendMessage, stopStreaming, tokenStats,
+    threads, currentThreadId, loadingThreads, hasMoreThreads, loadingMoreThreads,
+    deletingThreadId, loadMoreThreads, selectThread, deleteThread, startNewChat,
+  } = useJsonAgent(projectId);
+
+  // Close history menu when clicking outside
+  useEffect(() => {
+    if (!historyOpen) return;
+    const handler = (e: MouseEvent) => {
+      const menu = document.querySelector('[data-testid="ai-thread-menu"]');
+      if (menu && !menu.contains(e.target as Node)) setHistoryOpen(false);
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [historyOpen]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1757,8 +1520,16 @@ export function AiChatPanel() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }, [handleSend]);
 
-  // ── Files count badge ─────────────────────────────────────────────────────
-  const fileCount = Object.keys(dslSources).length;
+  const handleNewChat = useCallback(() => {
+    startNewChat();
+    setInputValue('');
+    setHistoryOpen(false);
+  }, [startNewChat]);
+
+  const handleSelectThread = useCallback((id: string) => {
+    void selectThread(id);
+    setInputValue('');
+  }, [selectThread]);
 
   return (
     <>
@@ -1784,16 +1555,47 @@ export function AiChatPanel() {
         {/* Logo */}
         <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✦</div>
 
-        {/* Title */}
+        {/* Title + cache hit indicator */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)' }}>AI Assistant</div>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>JSON / SDUI</div>
+          {tokenStats.cacheRead > 0 ? (
+            <div style={{ fontSize: 10, color: '#34d399', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={`${tokenStats.cacheRead.toLocaleString()} cached tokens read`}>
+              ⚡ {Math.round(tokenStats.cacheRead / 1000)}K cached
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>JSON / SDUI</div>
+          )}
         </div>
+
+        {/* History button */}
+        <button
+          data-testid="ai-history-btn"
+          onClick={() => setHistoryOpen(v => !v)}
+          title="Chat history"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 30, height: 30, borderRadius: 7,
+            border: `1px solid ${historyOpen ? 'var(--bld-ai-accent)' : 'var(--bld-ai-border)'}`,
+            background: historyOpen ? 'rgba(99,102,241,0.15)' : 'var(--bld-bg-elevated)',
+            color: historyOpen ? 'var(--bld-ai-accent)' : 'var(--bld-text-2)',
+            cursor: 'pointer', transition: 'all 0.15s', position: 'relative',
+          }}
+          onMouseEnter={e => { if (!historyOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; } }}
+          onMouseLeave={e => { if (!historyOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bld-ai-border)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-2)'; } }}
+        >
+          <ClockIcon size={13} />
+          {threads.length > 0 && (
+            <span style={{ position: 'absolute', top: -3, right: -3, fontSize: 8, fontWeight: 700, background: 'var(--bld-ai-accent)', color: '#fff', borderRadius: 10, padding: '1px 3px', lineHeight: 1.2, minWidth: 12, textAlign: 'center' }}>
+              {threads.length > 9 ? '9+' : threads.length}
+            </span>
+          )}
+        </button>
 
         {/* New chat */}
         <button
           data-testid="ai-new-thread-btn"
-          onClick={() => { clear(); setInputValue(''); }}
+          onClick={handleNewChat}
           title="New conversation"
           style={{
             display: 'flex', alignItems: 'center', gap: 5,
@@ -1809,31 +1611,27 @@ export function AiChatPanel() {
           New
         </button>
 
-        {/* Files drawer button — opens the side-by-side file viewer */}
-        <button
-          onClick={() => openDrawer('webcontainer')}
-          title="View source files"
-          style={{
-            position: 'relative',
-            padding: '5px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 4,
-            background: 'transparent',
-            border: '1px solid var(--bld-border-subtle)',
-            color: 'var(--bld-text-3)', cursor: 'pointer', lineHeight: 1, fontSize: 10, fontWeight: 500, fontFamily: 'inherit',
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="5 3 1 8 5 13"/><polyline points="11 3 15 8 11 13"/>
-          </svg>
-          {fileCount > 0 && (
-            <span style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, fontWeight: 700, background: '#7c3aed', color: '#fff', borderRadius: 10, padding: '1px 3px', lineHeight: 1.2 }}>{fileCount}</span>
-          )}
-        </button>
-
         {/* Close */}
         <button data-testid="ai-close-btn" onClick={store.toggleAiMode}
           style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, padding: '2px 4px', lineHeight: 1 }}
           title="Close AI panel">×</button>
       </div>
+
+      {/* ── Thread history dropdown ── */}
+      {historyOpen && (
+        <ThreadMenu
+          threads={threads}
+          currentThreadId={currentThreadId}
+          loadingThreads={loadingThreads}
+          hasMoreThreads={hasMoreThreads}
+          loadingMoreThreads={loadingMoreThreads}
+          deletingThreadId={deletingThreadId}
+          onSelect={handleSelectThread}
+          onDelete={id => void deleteThread(id)}
+          onLoadMore={loadMoreThreads}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
 
       {/* ── Messages ── */}
       <div ref={messagesRef} style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 12 }}
@@ -1884,26 +1682,56 @@ export function AiChatPanel() {
               }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 10px' }}>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>Enter to send · Shift+Enter for new line</span>
-              <button
-                data-testid="ai-send-btn"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isStreaming}
-                style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  border: 'none', cursor: inputValue.trim() && !isStreaming ? 'pointer' : 'not-allowed',
-                  background: inputValue.trim() && !isStreaming
-                    ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
-                    : 'var(--bld-bg-elevated)',
-                  color: inputValue.trim() && !isStreaming ? '#fff' : 'var(--bld-text-disabled)',
-                  fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s', flexShrink: 0,
-                  boxShadow: inputValue.trim() && !isStreaming ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
-                }}
-                title="Send message"
-              >
-                {isStreaming ? <span style={{ fontSize: 12 }}>…</span> : '↑'}
-              </button>
+              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
+                {isStreaming ? 'Claude is working…' : 'Enter to send · Shift+Enter for new line'}
+              </span>
+              {isStreaming ? (
+                <button
+                  data-testid="ai-stop-btn"
+                  onClick={stopStreaming}
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    border: '2px solid var(--bld-error, #ef4444)',
+                    cursor: 'pointer', background: 'transparent',
+                    color: 'var(--bld-error, #ef4444)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s', flexShrink: 0,
+                  }}
+                  title="Stop generation"
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'var(--bld-error, #ef4444)';
+                    (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-error, #ef4444)';
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <rect x="2" y="2" width="8" height="8" rx="1.5" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  data-testid="ai-send-btn"
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    border: 'none', cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+                    background: inputValue.trim()
+                      ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
+                      : 'var(--bld-bg-elevated)',
+                    color: inputValue.trim() ? '#fff' : 'var(--bld-text-disabled)',
+                    fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s', flexShrink: 0,
+                    boxShadow: inputValue.trim() ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
+                  }}
+                  title="Send message"
+                >
+                  ↑
+                </button>
+              )}
             </div>
           </div>
         </div>

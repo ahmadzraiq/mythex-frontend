@@ -33,7 +33,6 @@ import {
   emitReadme,
   emitThemeTs,
   emitThemeSyncComponent,
-  emitAuthSyncComponent,
   emitActionCtxTs,
 } from './files/static-files';
 import { emitUtilsTs } from './files/utils-template';
@@ -91,10 +90,7 @@ export function codegenProject(
     files.push(emitThemeTs());
     files.push(emitThemeSyncComponent());
   }
-  if (ctx.flags.hasAuth) {
-    const unauthRedirect = (ctx.store.authConfig as Record<string, string> | undefined)?.unauthenticatedRedirect ?? '/sign-in';
-    files.push(emitAuthSyncComponent(unauthRedirect));
-  }
+
 
   if (ctx.flags.hasFetch || ctx.flags.hasGraphQL || (ctx.store.pageDataSources ?? []).length > 0) {
     files.push(emitApiTs(ctx));

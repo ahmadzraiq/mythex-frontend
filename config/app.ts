@@ -60,14 +60,4 @@ export default {
   workflows: root.workflows,
   dataSources: root.dataSources,
   sharedComponents: root.sharedComponents,
-  /** Action to run once on first app mount — used for session restore. */
-  startupAction: '9b0c1d2e-f3a4-5678-9abc-def012345678' as string | undefined,
-  /** Global authentication configuration passed to SDUIEngine. */
-  authConfig: {
-    tokenType: 'bearer' as const,
-    userEndpoint: 'http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me',
-    unauthenticatedRedirect: '/sign-in',
-    authenticatedRedirect: '/',
-    unauthorizedRedirect: '/',
-  },
 } as const;

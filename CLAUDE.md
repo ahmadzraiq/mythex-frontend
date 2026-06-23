@@ -481,6 +481,29 @@ Add a `popover` config to any `Box` node to turn it into a trigger for a floatin
 - `content`: single root UINode (same flat SxProps format as pages)
 - Inside content, access props via `context.component.props.<name>` and local variables via `context.component.variables.<name>`
 - **Prefer a shared component when a UI block repeats within a page or is reused across pages.** Create the component once, then place instances (with `_shared: { id, name }`) instead of duplicating the node tree. This keeps `page.json` small and changes localized.
+- **SC-internal state**: if a variable or workflow is only needed inside this SC, create it under `components/<id>/store/` and `components/<id>/workflows/` — never in global `store/` or `workflows/`. Examples of SC-only state: display value, active tab, open accordion, carousel index, form step.
+
+**SC-internal variable + workflow — file structure:**
+```
+components/sc-calc/store/calcDisplay.json     ← { "id": "uuid-calc-display", "name": "calcDisplay", ... }
+components/sc-calc/store/calcState.json       ← { "id": "uuid-calc-state",   "name": "calcState",   ... }
+components/sc-calc/workflows/calcInput.json   ← { "id": "uuid-calc-input",   ... }
+```
+
+Inside SC `content` — read an SC variable (UUID from the variable file's `id`):
+```json
+{ "js": "context?.component?.variables?.['uuid-calc-display']" }
+```
+
+Inside an SC workflow — write back to an SC variable:
+```js
+variables['uuid-calc-display'] = newValue;
+```
+
+Action on a node inside the SC — invoke an SC workflow (same syntax as global):
+```json
+{ "trigger": "click", "workflowId": "uuid-calc-input" }
+```
 
 ---
 
@@ -700,7 +723,13 @@ Workflow step calling another global workflow:
 
 ## Workflow best practices
 
+- SC-scoped workflow (`components/<id>/workflows/<name>`) = logic private to one shared component; accesses SC variables via `variables['uuid']` and reads them in bindings via `context?.component?.variables?.['uuid']`.
 - Page-scoped workflow (`pages/<name>/workflows/<name>`) = one node, one action.
 - Global workflow (`workflows/<name>`) = shared across multiple nodes; called via `runProjectWorkflow` with `params`.
 - Inside a mapped container: use `context?.item?.data?.field` in step configs.
 - `branch` and `whileLoop` conditions MUST be `{ "js": "boolExpr" }` objects, not raw strings.
+
+**Scoping decision — choose the narrowest scope that covers the need:**
+- State/logic only used inside one SC → SC-scoped (`components/<id>/store` + `components/<id>/workflows`)
+- State/logic only used on one page → page-scoped (`pages/<name>/workflows`)
+- State/logic shared across pages or components → global (`store` + `workflows`)

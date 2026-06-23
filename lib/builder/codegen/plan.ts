@@ -82,7 +82,7 @@ function detectFeatures(store: BuilderStore): FeatureFlags {
     hasToast: actionTypes.has('showToast'),
     hasFetch: actionTypes.has('fetch') || (store.pageDataSources ?? []).some(ds => ds.type === 'rest'),
     hasGraphQL: actionTypes.has('graphql') || (store.pageDataSources ?? []).some(ds => ds.type === 'graphql'),
-    hasAuth: !!(store.authConfig) || (store.pages ?? []).some(p => (p as unknown as Record<string, unknown>).meta && ((p as unknown as Record<string, unknown>).meta as Record<string, unknown>)?.isProtected) || actionTypes.has('authenticate') || actionTypes.has('restoreSession') || actionTypes.has('setUser'),
+    hasAuth: false,
     hasGoogleMap: types.has('GoogleMap') || types.has('GoogleMapPlaces'),
     hasHtmlContent: types.has('HtmlContent'),
     hasVideo: types.has('Video'),

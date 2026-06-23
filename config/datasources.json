@@ -6,7 +6,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -15,7 +15,7 @@
     "cacheTag": "cart",
     "cacheTTL": 60,
     "cacheKeyVars": [
-      "auth.token"
+      "auth0001-a5b6-4000-c000-000000000001"
     ]
   },
   "b2c3d4e5-f6a7-8901-bcde-f12345678901": {
@@ -104,7 +104,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/cart",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -118,7 +118,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/checkout/shipping-methods",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "d0e1f2a3-b4c5-6789-defa-890123456789": {
@@ -144,7 +144,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheKeyVars": [
       "globalContext.browser.query.code"
@@ -159,7 +159,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheKeyVars": [
       "globalContext.browser.query.id"
@@ -172,7 +172,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "c5d6e7f8-a9b0-1234-cdef-345678901234": {
@@ -182,7 +182,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "d6e7f8a9-b0c1-2345-defa-456789012345": {
@@ -194,7 +194,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheKeyVars": [
       "globalContext.browser.query.id"
@@ -207,7 +207,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "f8a9b0c1-d2e3-4567-fabc-678901234567": {
@@ -217,7 +217,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/orders",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "a9b0c1d2-e3f4-5678-abcd-789012345678": {
@@ -227,7 +227,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/account/addresses",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "b0c1d2e3-f4a5-6789-bcde-890123456789": {
@@ -249,7 +249,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/dashboard",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-dashboard",
     "cacheTTL": 60
@@ -263,7 +263,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-orders",
     "cacheTTL": 30,
@@ -278,7 +278,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-order-detail",
     "cacheTTL": 30,
@@ -293,7 +293,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-products",
     "cacheTTL": 30,
@@ -308,7 +308,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-product-detail",
     "cacheTTL": 30,
@@ -323,7 +323,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-customers",
     "cacheTTL": 30,
@@ -338,7 +338,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-variants",
     "cacheTTL": 30,
@@ -351,7 +351,7 @@
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/facets",
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-facets",
     "cacheTTL": 60
@@ -365,7 +365,7 @@
     },
     "method": "GET",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "cacheTag": "admin-collections",
     "cacheTTL": 30,

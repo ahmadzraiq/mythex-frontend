@@ -50,12 +50,23 @@ export function buildSeedConfig(): Record<string, unknown> {
   const builderCfg = getBuilderConfig();
 
   // Map screen config-name → route path  (e.g. "home" → "/")
-  const rawRoutes = (root.routes as unknown as { routes?: Array<{ path: string; config?: string }> }).routes
-    ?? (root.routes as unknown as Array<{ path: string; config?: string }>);
+  type RouteEntry = { path: string; config?: string; protectionCondition?: string; protectionRedirect?: string };
+  const rawRoutes = (root.routes as unknown as { routes?: Array<RouteEntry> }).routes
+    ?? (root.routes as unknown as Array<RouteEntry>);
   const routeMap = new Map<string, string>(
     rawRoutes
       .filter(r => r.config)
       .map(r => [r.config!, r.path]),
+  );
+  const protectionConditionMap = new Map<string, string>(
+    rawRoutes
+      .filter(r => r.config && r.protectionCondition)
+      .map(r => [r.config!, r.protectionCondition!]),
+  );
+  const protectionRedirectMap = new Map<string, string>(
+    rawRoutes
+      .filter(r => r.config && r.protectionRedirect)
+      .map(r => [r.config!, r.protectionRedirect!]),
   );
 
   // ── Pages from screens ────────────────────────────────────────────────────
@@ -76,11 +87,16 @@ export function buildSeedConfig(): Record<string, unknown> {
     // but the builder requires an id on every node for selection to work.
     const nodes = assignNodeIds(rawNodes);
 
+    const protectionCondition = protectionConditionMap.get(name);
+    const protectionRedirect = protectionRedirectMap.get(name);
+
     return {
       id: `page-${name}`,
       name: toLabel(name),
       route,
       nodes,
+      ...(protectionCondition ? { protectionCondition } : {}),
+      ...(protectionRedirect ? { protectionRedirect } : {}),
     };
   });
 

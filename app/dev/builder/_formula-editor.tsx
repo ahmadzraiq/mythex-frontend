@@ -27,14 +27,14 @@ import { getSharedComponents } from '@/lib/builder/shared-component-data';
 // ─── Tab content components (extracted to _formula-editor-tabs.tsx) ───────────
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
   ContextDataSection, PagesDataSection, ColorsDataSection, TypographyDataSection,
-  BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection, AuthDataSection,
+  BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection,
   EnvVarsSection,
   type VarRowItem } from './_formula-editor-tabs';
 import {
   Tooltip, VariableTree, CollectionEntry,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
-  SharedComponentContextSection, AuthDataSection, ParametersSection, FunctionLibrary,
+  SharedComponentContextSection, ParametersSection, FunctionLibrary,
   EnvVarsSection, useBuilderProjectId,
   type VarRowItem,
 } from './_formula-editor-tabs';
@@ -100,7 +100,7 @@ import { isJsBoundValue } from '@/lib/sdui/formula-evaluator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'auth' | 'formulas' | 'env';
+type Tab = 'variables' | 'data' | 'quick' | 'workflow' | 'formulas' | 'env';
 
 export interface FormulaEditorProps {
   label: string;
@@ -1545,7 +1545,6 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
           ...(!serverContext ? [{ id: 'variables' as Tab, icon: '{x}', label: 'Variables' }] : []),
           ...(!serverContext ? [{ id: 'data' as Tab, icon: '≡', label: 'Data' }] : []),
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
-          { id: 'auth' as Tab, icon: '🔐', label: 'Auth' },
           ...(!serverContext ? [{ id: 'env' as Tab, icon: '⚙', label: 'Env' }] : []),
           ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
@@ -1638,11 +1637,6 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
                 <ItemContextGroup onInsert={insertChip} initialOpen={true} />
               </>
             )}
-          </div>
-        )}
-        {tab === 'auth' && (
-          <div style={{ overflowY: 'auto', flex: 1 }}>
-            <AuthDataSection onInsert={insertChip} />
           </div>
         )}
         {tab === 'env' && (

@@ -790,7 +790,7 @@
   },
   "admin-login-fetch": {
     "name": "admin-login-fetch",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/auth/login",
     "method": "POST",
     "headers": {
@@ -825,25 +825,35 @@
         },
         "trueBranch": [
           {
-            "id": "step-authenticate",
-            "type": "authenticate",
+            "id": "step-save-token",
+            "type": "changeVariableValue",
             "config": {
-              "accessToken": {
-                "formula": "context?.workflow?.['step-login']?.result?.token"
-              },
-              "persist": true
+              "variableName": "auth0001-a5b6-4000-c000-000000000001",
+              "value": {
+                "js": "context.workflow['step-login'].result.token"
+              }
             }
           },
           {
-            "id": "step-fetch-user",
-            "action": "8a9b0c1d-e2f3-4567-89ab-cdef01234567"
+            "type": "fetchData",
+            "config": {
+              "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/auth/me",
+              "method": "GET",
+              "headers": {
+                "Authorization": {
+                  "js": "'Bearer ' + context.workflow['step-login'].result.token"
+                }
+              }
+            },
+            "id": "step-fetch-user"
           },
           {
-            "id": "step-set-user",
-            "type": "setUser",
+            "id": "step-save-user",
+            "type": "changeVariableValue",
             "config": {
-              "user": {
-                "formula": "context?.workflow?.['step-fetch-user']?.result?.activeCustomer"
+              "variableName": "auth0002-a5b6-4000-c000-000000000002",
+              "value": {
+                "js": "context.workflow['step-fetch-user'].result?.activeCustomer ?? null"
               }
             }
           },
@@ -922,12 +932,14 @@
   },
   "ad-update-order-state": {
     "name": "ad-update-order-state",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/orders/state",
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": {
+        "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']"
+      }
     },
     "body": {
       "order_id": "{{globalContext.browser.query.order_id}}",
@@ -957,12 +969,14 @@
   },
   "ad-update-product": {
     "name": "ad-update-product",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products/update",
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": {
+        "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']"
+      }
     },
     "body": {
       "product_id": "{{globalContext.browser.query.product_id}}",
@@ -994,12 +1008,14 @@
   },
   "ad-delete-product": {
     "name": "ad-delete-product",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/products/delete",
     "method": "DELETE",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": {
+        "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']"
+      }
     },
     "body": {
       "product_id": "{{globalContext.browser.query.product_id}}"
@@ -1034,12 +1050,14 @@
   },
   "ad-update-stock": {
     "name": "ad-update-stock",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/stock",
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": {
+        "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']"
+      }
     },
     "body": {
       "variant_id": "{{context.item.data.id}}",
@@ -1052,12 +1070,14 @@
   },
   "ad-reindex-search": {
     "name": "ad-reindex-search",
-    "type": "fetch",
+    "type": "fetchData",
     "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/search/reindex",
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": {
+        "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']"
+      }
     },
     "body": {}
   },

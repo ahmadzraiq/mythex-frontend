@@ -247,7 +247,7 @@
                         "type": "Text",
                         "props": { "className": "text-[13px] font-bold text-white leading-none" },
                         "text": {
-                          "formula": "(auth?.user?.firstName?.[0] || auth?.user?.emailAddress?.[0] || 'A').toUpperCase()"
+                          "formula": "(variables['auth0002-a5b6-4000-c000-000000000002']?.firstName?.[0] || variables['auth0002-a5b6-4000-c000-000000000002']?.emailAddress?.[0] || 'A').toUpperCase()"
                         }
                       }
                     ]
@@ -260,14 +260,14 @@
                         "type": "Text",
                         "props": { "className": "text-[13px] font-medium text-[var(--theme-admin-text)] truncate" },
                         "text": {
-                          "formula": "concat(auth?.user?.firstName || '', ' ', auth?.user?.lastName || '').trim() || 'Admin'"
+                          "formula": "(variables['auth0002-a5b6-4000-c000-000000000002']?.firstName || '') + ' ' + (variables['auth0002-a5b6-4000-c000-000000000002']?.lastName || '').trim() || 'Admin'"
                         }
                       },
                       {
                         "type": "Text",
                         "props": { "className": "text-[11px] text-[var(--theme-admin-label)] truncate" },
                         "text": {
-                          "formula": "auth?.user?.emailAddress || 'admin@example.com'"
+                          "formula": "variables['auth0002-a5b6-4000-c000-000000000002']?.emailAddress || 'admin@example.com'"
                         }
                       }
                     ]

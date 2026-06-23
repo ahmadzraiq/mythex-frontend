@@ -81,11 +81,6 @@ export type ActionStepType =
   // Data / API
   | 'graphql'
   | 'fetchData'
-  // Auth
-  | 'authenticate'
-  | 'setUser'
-  | 'clearSession'
-  | 'restoreSession'
   // Project workflows
   | 'runProjectWorkflow'
   // Code
@@ -570,16 +565,6 @@ export const ACTION_CATEGORIES: { category: string; context?: 'client' | 'server
     context: 'client',
     items: [
       { type: 'controlPopover', label: 'Control popover', icon: '◱' },
-    ],
-  },
-  {
-    category: 'Auth',
-    items: [
-      { type: 'authenticate',    label: 'Authenticate',     icon: '🔐' },
-      { type: 'setUser',         label: 'Set User',         icon: '👤' },
-      { type: 'clearSession',    label: 'Clear Session',    icon: '🚪' },
-      // restoreSession intentionally omitted from palette — engine handler still works for
-      // backward-compat with existing config/actions/auth.json workflows
     ],
   },
   // ── Backend / Data & API (client-side calls to server endpoints) ──────────

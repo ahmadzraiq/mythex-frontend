@@ -45,7 +45,6 @@ export function SDUIEngine({
   engineConfig,
   routes = [],
   paramChangeAction,
-  authConfig,
   builderMode = false,
   builderViewportHeight,
   builderViewport,
@@ -526,12 +525,6 @@ export function SDUIEngine({
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
           triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
           setStepResult: (result) => { resultRef.current = result; },
-          getAuthConfig: () => authConfig,
-          getGraphqlEndpoint: () => {
-            const ep = authConfig?.userQueryEndpoint;
-            return ep?.startsWith('http') ? ep : undefined;
-          },
-          getGraphqlHeaders: () => authConfig?.userQueryHeaders,
         };
         const handlerResult = await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx);
         if (handlerResult !== false) {
@@ -673,7 +666,7 @@ export function SDUIEngine({
     }
   }, []);
 
-  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore, globalContext, authConfig, onDatasourceError);
+  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore, globalContext, onDatasourceError);
 
   // ── Declarative trigger listeners ─────────────────────────────────────────────
   // Scans actionsConfig for workflows with isTrigger:true and wires up the

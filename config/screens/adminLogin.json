@@ -69,7 +69,7 @@
                 },
                 "actions": [
                   {
-                    "trigger": "click",
+                    "trigger": "submit",
                     "workflowId": "admin-submit-login"
                   }
                 ],

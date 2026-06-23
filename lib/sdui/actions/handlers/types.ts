@@ -4,7 +4,6 @@
  */
 
 import type { SDUIAction } from '../../types';
-import type { AuthConfig } from '../../engine-types';
 
 export type ActionDef = Record<string, unknown> & {
   type?: string;
@@ -38,8 +37,6 @@ export interface ActionHandlerContext {
   useSduiStore?: { getState: () => { setData: (path: string, value: unknown) => void } };
   /** Clears the DS cache for `name` and triggers the engine to re-fetch it. */
   triggerDataSourceRefetch?: (name: string) => void;
-  /** Returns the global auth configuration (tokenStorageKey, userQuery, redirects, etc.). */
-  getAuthConfig?: () => AuthConfig | undefined;
   /** Returns the global GraphQL endpoint URL. */
   getGraphqlEndpoint?: () => string | undefined;
   /** Returns the global GraphQL request headers. */

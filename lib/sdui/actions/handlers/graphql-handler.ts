@@ -11,7 +11,6 @@
 
 import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
-import { buildAuthHeaders } from '../../auth-token-storage';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 // ─── Simple LRU cache ────────────────────────────────────────────────────────
@@ -70,25 +69,10 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
         }
       }
     }
-    const authCfgTyped = (ctx as ActionHandlerContext & { getAuthConfig?: () => import('../../engine-types').AuthConfig }).getAuthConfig?.();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      // Inject stored bearer token (when configured by the user)
-      ...buildAuthHeaders(authCfgTyped),
       ...actionHeaders,
     };
-
-    // Fallback: if no Authorization header from localStorage (e.g. persist: false),
-    // check the in-memory Zustand store. step-authenticate sets auth.accessToken
-    // synchronously before subsequent steps run, so ctx.get() finds it immediately.
-    const authHeaderKey = authCfgTyped?.tokenSend?.header ?? 'Authorization';
-    if (!headers[authHeaderKey]) {
-      const memToken = ctx.get('auth.accessToken') as string | null;
-      if (memToken && typeof memToken === 'string') {
-        const prefix = authCfgTyped?.tokenSend?.prefix ?? 'Bearer ';
-        headers[authHeaderKey] = `${prefix}${memToken}`;
-      }
-    }
 
     // ── Variables ─────────────────────────────────────────────────────────────
     // Start with actionDef.variables, then overlay ctx.payload so callers can

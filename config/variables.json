@@ -30,14 +30,18 @@
       "initialValue": false,
       "folder": "Admin"
     },
-    "a0b1c2d3-e4f5-6789-abcd-ef0123456789": {
-      "label": "Auth",
+    "auth0001-a5b6-4000-c000-000000000001": {
+      "label": "Auth Token",
+      "type": "string",
+      "initialValue": "",
+      "saveInLocalStorage": true,
+      "folder": "Auth"
+    },
+    "auth0002-a5b6-4000-c000-000000000002": {
+      "label": "Current User",
       "type": "object",
-      "initialValue": {
-        "user": null,
-        "token": null
-      },
-      "folder": "App"
+      "initialValue": null,
+      "folder": "Auth"
     },
     "c1d2e3f4-a5b6-7890-cdef-123456789012": {
       "label": "Redirect After Login",

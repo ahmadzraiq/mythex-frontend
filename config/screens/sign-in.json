@@ -58,7 +58,7 @@
                 },
                 "actions": [
                   {
-                    "trigger": "click",
+                    "trigger": "submit",
                     "workflowId": "6f6da384-9f39-4502-a2b9-d39a902438c3"
                   }
                 ],

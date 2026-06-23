@@ -198,11 +198,7 @@ export function emitEnvExample(ctx: CodegenCtx): EmittedFile {
     lines.push('');
   }
 
-  if (ctx.flags.hasAuth && ctx.store.authConfig) {
-    const ac = ctx.store.authConfig;
-    if (ac.userEndpoint) lines.push(`NEXT_PUBLIC_AUTH_USER_ENDPOINT=${ac.userEndpoint}`);
-    if (ac.refreshEndpoint) lines.push(`NEXT_PUBLIC_AUTH_REFRESH_ENDPOINT=${ac.refreshEndpoint}`);
-  }
+
 
   return { path: '.env.example', content: lines.join('\n') };
 }

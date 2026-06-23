@@ -18,9 +18,8 @@ import { evaluateFormula } from './formula-evaluator';
 import { dsCacheGet, dsCacheSet } from './ds-cache';
 import { extractReferencedDataSources } from './nested-utils';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore } from './merge-state';
-import { buildAuthHeaders } from './auth-token-storage';
 import type { SDUIConfig } from './types';
-import type { NamedDataSourceDef, AuthConfig } from './engine-types';
+import type { NamedDataSourceDef } from './engine-types';
 
 const computedDefs: { output: string; expr: object }[] = [];
 
@@ -32,7 +31,6 @@ export function useNamedDataSourceFetcher(
   config: SDUIConfig,
   store: SduiStore,
   globalContext?: Record<string, unknown>,
-  authConfig?: AuthConfig,
   onDatasourceError?: (datasourceId: string, error: string) => void,
 ) {
   const prevDsRefetchKeysRef = useRef<Record<string, number>>({});
@@ -194,8 +192,7 @@ export function useNamedDataSourceFetcher(
           // Route through /api/proxy when ds.proxy is true (per-datasource opt-in).
           const useProxy = !!ds.proxy;
           const fetchUrl = useProxy ? '/api/proxy' : endpoint;
-          const authHeaders = buildAuthHeaders(authConfig);
-          const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders, ...extraHeaders };
+          const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extraHeaders };
           const body = useProxy
             ? JSON.stringify({
                 endpoint,

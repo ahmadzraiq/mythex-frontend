@@ -337,7 +337,7 @@
                                 "props": {
                                   "className": "inline-flex flex-row items-center h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
                                 },
-                                "condition": "!auth?.user",
+                                "condition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
                                 "actions": [
                                   {
                                     "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
@@ -358,7 +358,7 @@
                                 "props": {
                                   "className": "flex flex-row items-center gap-[4px]"
                                 },
-                                "condition": "auth?.user",
+                                "condition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
                                 "children": [
                                   {
                                     "type": "Box",
@@ -384,7 +384,7 @@
                                         "props": {
                                           "className": "hidden sm:flex text-[14px] font-medium text-[var(--theme-foreground)]"
                                         },
-                                        "text": "Hi, {{auth.user.firstName}}"
+                                        "text": {"js": "'Hi, ' + (variables['auth0002-a5b6-4000-c000-000000000002']?.firstName || '')"}
                                       }
                                     ]
                                   },

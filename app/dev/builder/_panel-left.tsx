@@ -32,6 +32,8 @@ import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import app from '@/config/app';
 import { ExprBuilder } from './_expr-builder';
 import { ActionBuilder } from './_action-builder';
+import { BindingIcon } from './_formula-panel';
+import { FormulaEditor } from './_formula-editor';
 import { DataTab, type DataTabSlideState } from './_data-tab';
 import { LogicTab, type LogicSlideState } from './_logic-tab';
 
@@ -44,7 +46,6 @@ import { CustomVarsSection, VarsWorkflowsSection, VarsFormulasSection, VarsPanel
 import { AssetsTab } from './_assets-tab';
 import { TriggersTab } from './_triggers-tab';
 import { ThemePanel } from './_theme-panel';
-import { FilesPanel } from './_files-panel';
 
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -664,20 +665,16 @@ const PC_SECTION: React.CSSProperties = {
 };
 
 export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setCurrentPageInteractions, workflows, setCurrentPageAccess } = useBuilderStore();
+  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setPageProtection } = useBuilderStore();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   const [pageName, setPageName] = useState(currentPage?.name ?? '');
   const [title, setTitle] = useState(currentPage?.meta?.title ?? '');
   const [description, setDescription] = useState(currentPage?.meta?.description ?? '');
   const [ogImage, setOgImage] = useState(currentPage?.meta?.ogImage ?? '');
-  const [mountWorkflow, setMountWorkflow] = useState(currentPage?.pageInteractions?.mount?.workflow ?? '');
-  const [pageAccess, setPageAccess] = useState<'everyone' | 'authenticated'>(currentPage?.access ?? 'everyone');
-  const [guestOnly, setGuestOnly] = useState(currentPage?.guestOnly ?? false);
-  const [accessCondition, setAccessCondition] = useState(currentPage?.accessCondition ?? '');
-
-  const wfMap = workflows as Record<string, import('@/config/types').WorkflowDef>;
-  const workflowNames = Object.keys(wfMap);
+  const [protectionCondition, setProtectionCondition] = useState(currentPage?.protectionCondition ?? '');
+  const [protectionRedirect, setProtectionRedirect] = useState(currentPage?.protectionRedirect ?? '');
+  const [conditionEditorOpen, setConditionEditorOpen] = useState(false);
 
   const saveMeta = () => {
     const meta: PageMeta = {};
@@ -685,14 +682,6 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
     if (description.trim()) meta.description = description.trim();
     if (ogImage.trim()) meta.ogImage = ogImage.trim();
     setCurrentPageMeta(meta);
-  };
-
-  const saveInteractions = (newMountWorkflow: string) => {
-    const interactions: Record<string, { workflow?: string }> = {};
-    if (newMountWorkflow.trim()) {
-      interactions.mount = { workflow: newMountWorkflow.trim() };
-    }
-    setCurrentPageInteractions(interactions);
   };
 
   return (
@@ -756,94 +745,89 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
         </div>
       </div>
 
-      {/* Interactions */}
+      {/* Page Protection */}
       <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Interactions</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Protection</div>
+
         <div>
-          <label style={PC_LABEL}>On mount (page load)</label>
-          <select
-            data-testid="page-config-mount-workflow"
-            value={mountWorkflow}
-            onChange={e => { setMountWorkflow(e.target.value); saveInteractions(e.target.value); }}
-            style={{ ...PC_INPUT, cursor: 'pointer' }}
-          >
-            <option value="">— none —</option>
-            {workflowNames.map(w => <option key={w} value={w}>{wfMap[w]?.name ?? w}</option>)}
-          </select>
-          {mountWorkflow && (
+          <label style={PC_LABEL}>Condition (formula)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+            <BindingIcon
+              isBound={!!protectionCondition}
+              onClick={() => setConditionEditorOpen(v => !v)}
+            />
+            {protectionCondition ? (
+              <button
+                type="button"
+                data-testid="page-config-protection-condition"
+                onClick={() => setConditionEditorOpen(v => !v)}
+                style={{
+                  flex: 1, padding: '5px 8px', background: 'rgba(59,130,246,0.08)',
+                  border: '1px solid var(--bld-accent)', borderRadius: 5,
+                  color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer',
+                  fontWeight: 500, textAlign: 'left', overflow: 'hidden',
+                  textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}
+              >
+                ƒ Edit formula
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-testid="page-config-protection-condition-empty"
+                onClick={() => setConditionEditorOpen(v => !v)}
+                style={{
+                  flex: 1, padding: '5px 8px', background: 'var(--bld-bg-elevated)',
+                  border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
+                  color: 'var(--bld-text-disabled)', fontSize: 11, cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                No condition — public access
+              </button>
+            )}
+            {conditionEditorOpen && (
+              <FormulaEditor
+                label="Protection Condition"
+                value={protectionCondition ? { js: protectionCondition } : null}
+                onChange={v => {
+                  const raw = v && typeof v === 'object' && 'js' in v ? (v as { js: string }).js
+                    : typeof v === 'string' ? v : '';
+                  setProtectionCondition(raw);
+                  setPageProtection(raw || undefined, protectionRedirect || undefined);
+                  setConditionEditorOpen(false);
+                }}
+                onClose={() => setConditionEditorOpen(false)}
+                expectedType="boolean"
+                hint="Returns true → allow access. Returns false → redirect."
+                lockToJs
+                anchorLeft={560}
+              />
+            )}
+          </div>
+          {protectionCondition && (
             <button
-              onClick={() => { setMountWorkflow(''); saveInteractions(''); }}
-              style={{ marginTop: 4, background: 'none', border: 'none', color: 'var(--bld-error)', fontSize: 10, cursor: 'pointer', padding: 0 }}
+              onClick={() => { setProtectionCondition(''); setPageProtection(undefined, protectionRedirect || undefined); }}
+              style={{ marginTop: 4, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 9, cursor: 'pointer', padding: 0 }}
             >
-              × Clear
+              × Clear condition
             </button>
           )}
-        </div>
-      </div>
-
-      {/* Private Access */}
-      <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Access</div>
-
-        {/* Who can access */}
-        <div>
-          <label style={PC_LABEL}>Who can access this page</label>
-          <select
-            data-testid="page-config-access"
-            value={pageAccess}
-            onChange={e => {
-              const val = e.target.value as 'everyone' | 'authenticated';
-              setPageAccess(val);
-              setCurrentPageAccess(val, guestOnly, accessCondition || undefined);
-            }}
-            style={{ ...PC_INPUT, cursor: 'pointer' }}
-          >
-            <option value="everyone">Everyone</option>
-            <option value="authenticated">Authenticated users</option>
-          </select>
-        </div>
-
-        {/* Additional formula condition — only shown for authenticated pages */}
-        {pageAccess === 'authenticated' && (
-          <div>
-            <label style={PC_LABEL}>Additional condition (optional)</label>
-            <input
-              data-testid="page-config-access-condition"
-              value={accessCondition}
-              onChange={e => setAccessCondition(e.target.value)}
-              onBlur={() => setCurrentPageAccess(pageAccess, guestOnly, accessCondition || undefined)}
-              placeholder="auth?.user?.role === 'admin'"
-              style={PC_INPUT}
-            />
-            <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
-              If fails → redirect to unauthorized page (set in Auth Settings)
-            </div>
+          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
+            If this returns false the user is redirected. Leave empty for public access.
           </div>
-        )}
+        </div>
 
-        {/* Hide from authenticated users (guestOnly) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
-          <label style={{ fontSize: 11, color: 'var(--bld-text-2)' }}>Hide from authenticated users</label>
-          <button
-            data-testid="page-config-guest-only"
-            onClick={() => {
-              const next = !guestOnly;
-              setGuestOnly(next);
-              setCurrentPageAccess(pageAccess, next, accessCondition || undefined);
-            }}
-            style={{
-              width: 32, height: 16, borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: guestOnly ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
-              position: 'relative', flexShrink: 0, transition: 'background 150ms',
-            }}
-            title="When on, authenticated users are redirected away from this page (e.g. /sign-in)"
-          >
-            <span style={{
-              position: 'absolute', top: 2, left: guestOnly ? 18 : 2,
-              width: 12, height: 12, borderRadius: '50%', background: 'var(--bld-accent-fg)',
-              transition: 'left 150ms',
-            }} />
-          </button>
+        <div>
+          <label style={PC_LABEL}>Redirect to</label>
+          <input
+            data-testid="page-config-protection-redirect"
+            value={protectionRedirect}
+            onChange={e => setProtectionRedirect(e.target.value)}
+            onBlur={() => setPageProtection(protectionCondition || undefined, protectionRedirect || undefined)}
+            placeholder="/login"
+            style={PC_INPUT}
+          />
         </div>
       </div>
 
@@ -867,525 +851,6 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
     </div>
   );
 }
-
-// ─── Auth Settings Slide ──────────────────────────────────────────────────────
-
-const A_INPUT: React.CSSProperties = {
-  width: '100%', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
-  borderRadius: 4, color: 'var(--bld-text-1)', fontSize: 11, padding: '5px 8px',
-  outline: 'none', boxSizing: 'border-box',
-};
-
-// Aliases used inside AuthSettingsSlidePanelContent and RolesManagerView
-const AUTH_INPUT = A_INPUT;
-const AUTH_FIELD_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
-  textTransform: 'none', display: 'block', marginBottom: 4,
-};
-const AUTH_SELECT: React.CSSProperties = {
-  ...A_INPUT, appearance: 'none', paddingRight: 24, cursor: 'pointer',
-};
-const AUTH_CARD: React.CSSProperties = {
-  background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 8,
-  padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10,
-};
-const AUTH_STEP_NUM: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: 'var(--bld-text-2)',
-};
-const AUTH_DIVIDER = (
-  <div style={{ height: 1, background: 'var(--bld-bg-input)', margin: '2px 0' }} />
-);
-const A_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 600, color: 'var(--bld-text-3)',
-  textTransform: 'none', display: 'block', marginBottom: 4,
-};
-const A_SECTION: React.CSSProperties = {
-  padding: '10px 12px', borderBottom: 'none',
-  display: 'flex', flexDirection: 'column', gap: 8,
-};
-const A_SECTION_TITLE: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)',
-  textTransform: 'none',
-};
-const A_ROW: React.CSSProperties = {
-  display: 'flex', alignItems: 'center',
-  padding: '6px 12px', borderBottom: '1px solid var(--bld-bg-panel)',
-};
-
-type AuthView = 'settings' | 'roles';
-
-export function AuthSettingsSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { authConfig, setAuthConfig, pages } = useBuilderStore();
-  const [view, setView] = useState<AuthView>('settings');
-
-  // ── Settings state ──────────────────────────────────────────────────────────
-  const [tokenType, setTokenType] = useState<'bearer' | 'basic' | 'custom'>(authConfig?.tokenType ?? 'bearer');
-  // Endpoint mode — 'graphql' when a userQuery exists, otherwise 'rest'
-  const [endpointType, setEndpointType] = useState<'rest' | 'graphql'>(authConfig?.userQuery ? 'graphql' : 'rest');
-  const [userEndpoint, setUserEndpoint] = useState(authConfig?.userEndpoint ?? '');
-  const [userQueryEndpoint, setUserQueryEndpoint] = useState(authConfig?.userQueryEndpoint ?? '');
-  const [userQuery, setUserQuery] = useState(authConfig?.userQuery ?? '');
-  const [unauthenticatedRedirect, setUnauthenticatedRedirect] = useState(authConfig?.unauthenticatedRedirect ?? '');
-  const [unauthorizedRedirect, setUnauthorizedRedirect] = useState(authConfig?.unauthorizedRedirect ?? '');
-  const [roleProperty, setRoleProperty] = useState(authConfig?.roleProperty ?? 'role');
-
-  const step1Done = endpointType === 'rest'
-    ? userEndpoint.trim().length > 0
-    : userQueryEndpoint.trim().length > 0 && userQuery.trim().length > 0;
-
-  const save = useCallback(() => {
-    setAuthConfig({
-      ...(authConfig ?? {}),
-      tokenType,
-      tokenStorageKey: 'authToken',
-      // Write only the fields relevant to the selected endpoint mode; clear the other
-      userEndpoint:       endpointType === 'rest'     ? (userEndpoint.trim() || undefined)      : undefined,
-      userQueryEndpoint:  endpointType === 'graphql'  ? (userQueryEndpoint.trim() || undefined) : undefined,
-      userQuery:          endpointType === 'graphql'  ? (userQuery.trim() || undefined)         : undefined,
-      unauthenticatedRedirect: unauthenticatedRedirect.trim() || '/sign-in',
-      unauthorizedRedirect: unauthorizedRedirect.trim() || '/',
-      authenticatedRedirect: authConfig?.authenticatedRedirect ?? '/',
-      roleProperty: roleProperty.trim() || 'role',
-    });
-  }, [authConfig, setAuthConfig, tokenType, endpointType, userEndpoint, userQueryEndpoint, userQuery, unauthenticatedRedirect, unauthorizedRedirect, roleProperty]);
-
-  const allRoutes = pages.map(p => ({ label: p.name || p.route || p.id, route: p.route ?? '/' }));
-
-  if (view === 'roles') {
-    return <RolesManagerView onBack={() => setView('settings')} />;
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', padding: '12px', gap: 10 }}>
-
-      {/* Step 1 — Configuration */}
-      <div style={AUTH_CARD}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={AUTH_STEP_NUM}>1. Configuration</div>
-          {step1Done
-            ? <span style={{ color: 'var(--bld-success)', fontSize: 16 }}>✓</span>
-            : <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Fill in to continue</span>}
-        </div>
-        <div>
-          <label style={AUTH_FIELD_LABEL}>Auth type *</label>
-          <div style={{ position: 'relative' }}>
-            <select value={tokenType} onChange={e => { setTokenType(e.target.value as 'bearer' | 'basic' | 'custom'); }} onBlur={save} style={AUTH_SELECT}>
-              <option value="bearer">Auth Bearer Token</option>
-              <option value="basic">Auth Basic</option>
-              <option value="custom">Custom</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
-          </div>
-        </div>
-        <div>
-          <label style={AUTH_FIELD_LABEL}>User endpoint *</label>
-          {/* REST / GraphQL mode toggle */}
-          <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 4, padding: 2, gap: 2, marginBottom: 8 }}>
-            {(['rest', 'graphql'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => { setEndpointType(mode); }}
-                onBlur={save}
-                style={{
-                  flex: 1, padding: '4px 0', fontSize: 11, border: 'none', cursor: 'pointer', borderRadius: 3, fontWeight: 500,
-                  background: endpointType === mode ? 'var(--bld-border-subtle)' : 'transparent',
-                  color:      endpointType === mode ? 'var(--bld-text-1)'  : 'var(--bld-text-disabled)',
-                }}
-              >{mode === 'rest' ? 'REST API' : 'GraphQL'}</button>
-            ))}
-          </div>
-
-          {endpointType === 'rest' ? (
-            <input
-              data-testid="auth-config-user-endpoint"
-              value={userEndpoint}
-              onChange={e => setUserEndpoint(e.target.value)}
-              onBlur={save}
-              placeholder="https://api-url.com/users/me"
-              style={AUTH_INPUT}
-            />
-          ) : (
-            <>
-              <input
-                data-testid="auth-config-graphql-endpoint"
-                value={userQueryEndpoint}
-                onChange={e => setUserQueryEndpoint(e.target.value)}
-                onBlur={save}
-                placeholder="https://api.example.com/graphql"
-                style={{ ...AUTH_INPUT, marginBottom: 6 }}
-              />
-              <label style={{ ...AUTH_FIELD_LABEL, marginTop: 0 }}>User query</label>
-              <textarea
-                data-testid="auth-config-user-query"
-                value={userQuery}
-                onChange={e => setUserQuery(e.target.value)}
-                onBlur={save}
-                placeholder={'{ me { id email firstName lastName } }'}
-                rows={4}
-                style={{ ...AUTH_INPUT, resize: 'vertical', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.5 }}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {AUTH_DIVIDER}
-
-      {/* Step 2 — Redirections */}
-      <div style={AUTH_CARD}>
-        <div style={AUTH_STEP_NUM}>2. Define redirections</div>
-        <div>
-          <label style={AUTH_FIELD_LABEL}>Page to redirect on unauthenticated access (not signed in)</label>
-          <div style={{ position: 'relative' }}>
-            <select data-testid="auth-config-unauth-redirect" value={unauthenticatedRedirect} onChange={e => { setUnauthenticatedRedirect(e.target.value); }} onBlur={save} style={AUTH_SELECT}>
-              <option value="">None</option>
-              {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
-          </div>
-        </div>
-        <div>
-          <label style={AUTH_FIELD_LABEL}>Page to redirect on unauthorized access (not matching roles)</label>
-          <div style={{ position: 'relative' }}>
-            <select data-testid="auth-config-unauth-role-redirect" value={unauthorizedRedirect} onChange={e => { setUnauthorizedRedirect(e.target.value); }} onBlur={save} style={AUTH_SELECT}>
-              <option value="">None</option>
-              {allRoutes.map(r => <option key={r.route} value={r.route}>{r.label}</option>)}
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--bld-text-disabled)', fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
-          </div>
-        </div>
-      </div>
-
-      {AUTH_DIVIDER}
-
-      {/* Step 3 — User role (optional) */}
-      <div style={AUTH_CARD}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={AUTH_STEP_NUM}>3. User role configuration <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--bld-text-disabled)' }}>(optional)</span></div>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <label style={AUTH_FIELD_LABEL}>User role property</label>
-            <input value={roleProperty} onChange={e => setRoleProperty(e.target.value)} onBlur={save} placeholder="role" style={AUTH_INPUT} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={AUTH_FIELD_LABEL}>Property type</label>
-            <div style={{ height: 28, display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4 }}>
-              <span style={{ fontSize: 11, color: 'var(--bld-info)', fontWeight: 700 }}>T</span>
-              <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>Text</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {AUTH_DIVIDER}
-
-      {/* Manage roles button */}
-      <button
-        onClick={() => setView('roles')}
-        style={{ width: '100%', padding: '10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', fontSize: 12, fontWeight: 600 }}
-      >
-        Manage roles
-      </button>
-    </div>
-  );
-}
-
-// ─── Roles Manager View ───────────────────────────────────────────────────────
-
-const RM = {
-  searchRow: {
-    display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8,
-  } as React.CSSProperties,
-  searchInput: {
-    flex: 1, height: 30, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
-    borderRadius: 6, color: 'var(--bld-text-2)', fontSize: 11, padding: '0 10px 0 28px',
-    outline: 'none', boxSizing: 'border-box',
-  } as React.CSSProperties,
-  addBtn: {
-    display: 'flex', alignItems: 'center', gap: 4, height: 30,
-    padding: '0 10px', background: 'none', border: '1px solid var(--bld-accent)',
-    borderRadius: 6, color: 'var(--bld-info)', fontSize: 11, fontWeight: 600,
-    cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-  } as React.CSSProperties,
-  tableHead: {
-    display: 'flex', alignItems: 'center', padding: '0 10px',
-    height: 28, background: 'var(--bld-bg-elevated)',
-    borderRadius: '6px 6px 0 0', borderBottom: 'none',
-  } as React.CSSProperties,
-  thText: {
-    fontSize: 10, fontWeight: 700, color: 'var(--bld-text-disabled)',
-    textTransform: 'none',
-  } as React.CSSProperties,
-  row: {
-    display: 'flex', alignItems: 'center', padding: '0 10px',
-    height: 38, borderBottom: '1px solid var(--bld-bg-elevated)', cursor: 'default',
-  } as React.CSSProperties,
-  cellText: { fontSize: 12, color: 'var(--bld-text-2)' } as React.CSSProperties,
-  timeText: { fontSize: 11, color: 'var(--bld-text-disabled)' } as React.CSSProperties,
-  tag: {
-    fontSize: 10, padding: '2px 7px', borderRadius: 12,
-    background: 'var(--bld-bg-elevated)', color: 'var(--bld-accent)', fontWeight: 500,
-    border: '1px solid var(--bld-accent)44',
-  } as React.CSSProperties,
-  sectionTitle: {
-    fontSize: 12, fontWeight: 700, color: 'var(--bld-text-1)', marginBottom: 2,
-  } as React.CSSProperties,
-  sectionSub: {
-    fontSize: 10, color: 'var(--bld-text-disabled)',
-  } as React.CSSProperties,
-};
-
-function timeAgo(ts: number) {
-  const d = Date.now() - ts;
-  if (d < 60000) return 'just now';
-  if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
-  if (d < 86400000) return `${Math.floor(d / 3600000)}h ago`;
-  return `${Math.floor(d / 86400000)}d ago`;
-}
-
-function RolesManagerView({ onBack }: { onBack: () => void }) {
-  const { authConfig, setAuthConfig } = useBuilderStore();
-  const roles = authConfig?.roles ?? [];
-  const userGroups = authConfig?.userGroups ?? [];
-
-  const [roleSearch, setRoleSearch] = useState('');
-  const [groupSearch, setGroupSearch] = useState('');
-  const [addRoleInput, setAddRoleInput] = useState('');
-  const [showAddRole, setShowAddRole] = useState(false);
-  const [addGroupPanel, setAddGroupPanel] = useState<{ name: string; roleIds: string[] } | null>(null);
-
-  const persist = (nextRoles: typeof roles, nextGroups: typeof userGroups) =>
-    setAuthConfig({ ...(authConfig ?? {}), roles: nextRoles, userGroups: nextGroups });
-
-  const addRole = () => {
-    const name = addRoleInput.trim();
-    if (!name) return;
-    persist([...roles, { id: `role-${Date.now()}`, name, createdAt: Date.now() }], userGroups);
-    setAddRoleInput('');
-    setShowAddRole(false);
-  };
-
-  const deleteRole = (id: string) =>
-    persist(roles.filter(r => r.id !== id), userGroups.map(g => ({ ...g, roles: g.roles.filter(rid => rid !== id) })));
-
-  const addGroup = () => {
-    if (!addGroupPanel?.name.trim()) return;
-    persist(roles, [...userGroups, { id: `grp-${Date.now()}`, name: addGroupPanel.name.trim(), roles: addGroupPanel.roleIds, createdAt: Date.now() }]);
-    setAddGroupPanel(null);
-  };
-
-  const deleteGroup = (id: string) => persist(roles, userGroups.filter(g => g.id !== id));
-
-  const visibleRoles = roles.filter(r => r.name.toLowerCase().includes(roleSearch.toLowerCase()));
-  const visibleGroups = userGroups.filter(g => g.name.toLowerCase().includes(groupSearch.toLowerCase()));
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-
-      {/* Header */}
-      <div style={{ padding: '10px 12px', borderBottom: 'none', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, background: 'var(--bld-bg-base)' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--bld-info)', cursor: 'pointer', fontSize: 13, padding: '2px 6px', lineHeight: 1, borderRadius: 4 }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-        >← Back</button>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-1)' }}>Roles &amp; User Groups</span>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-        {/* ── Roles ── */}
-        <section>
-          <div style={{ marginBottom: 10 }}>
-            <div style={RM.sectionTitle}>Roles</div>
-          </div>
-
-          {/* Search + Add */}
-          <div style={RM.searchRow}>
-            <SearchInput value={roleSearch} onChange={setRoleSearch} placeholder="Search by role name" style={{ flex: 1 }} />
-            <button onClick={() => { setShowAddRole(v => !v); setAddRoleInput(''); }} style={RM.addBtn}>
-              + Add role
-            </button>
-          </div>
-
-          {/* Inline add input */}
-          {showAddRole && (
-            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-              <input
-                autoFocus
-                value={addRoleInput}
-                onChange={e => setAddRoleInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addRole(); if (e.key === 'Escape') { setShowAddRole(false); } e.stopPropagation(); }}
-                placeholder="Role name (e.g. admin)"
-                style={{ ...AUTH_INPUT, flex: 1, height: 32 }}
-              />
-              <button
-                onClick={addRole}
-                disabled={!addRoleInput.trim()}
-                style={{ height: 32, padding: '0 12px', borderRadius: 6, border: 'none', fontSize: 11, fontWeight: 600, cursor: addRoleInput.trim() ? 'pointer' : 'default', background: addRoleInput.trim() ? 'var(--bld-accent)' : 'var(--bld-bg-input)', color: addRoleInput.trim() ? 'var(--bld-accent-fg)' : 'var(--bld-border-subtle)' }}
-              >
-                Create
-              </button>
-            </div>
-          )}
-
-          {/* Table */}
-          <div style={{ border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={RM.tableHead}>
-              <span style={{ ...RM.thText, flex: 1 }}>Role name</span>
-              <span style={{ ...RM.thText, width: 80 }}>Created at</span>
-              <span style={{ width: 28 }} />
-            </div>
-            {visibleRoles.length === 0 ? (
-              <div style={{ padding: '16px 10px', fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
-                {roleSearch ? 'No matching roles' : 'No roles yet — add one above'}
-              </div>
-            ) : visibleRoles.map((role, i) => (
-              <div
-                key={role.id}
-                style={{ ...RM.row, background: i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
-                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)')}
-              >
-                <span style={{ ...RM.cellText, flex: 1 }}>{role.name}</span>
-                <span style={{ ...RM.timeText, width: 80 }}>{timeAgo(role.createdAt)}</span>
-                <button
-                  onClick={() => deleteRole(role.id)}
-                  style={{ width: 28, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--bld-error)'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--bld-text-disabled)'; e.currentTarget.style.background = 'none'; }}
-                  title="Delete role"
-                >×</button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── User Groups ── */}
-        <section>
-          <div style={{ marginBottom: 10 }}>
-            <div style={RM.sectionTitle}>User group</div>
-            <div style={RM.sectionSub}>Manage page access with user groups</div>
-          </div>
-
-          <div style={RM.searchRow}>
-            <SearchInput value={groupSearch} onChange={setGroupSearch} placeholder="Search by user group name" style={{ flex: 1 }} />
-            <button onClick={() => setAddGroupPanel({ name: '', roleIds: [] })} style={RM.addBtn}>
-              + Add user group
-            </button>
-          </div>
-
-          <div style={{ border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={RM.tableHead}>
-              <span style={{ ...RM.thText, width: 90 }}>Group name</span>
-              <span style={{ ...RM.thText, flex: 1, marginLeft: 8 }}>Roles</span>
-              <span style={{ ...RM.thText, width: 70 }}>Created at</span>
-              <span style={{ width: 28 }} />
-            </div>
-            {visibleGroups.length === 0 ? (
-              <div style={{ padding: '16px 10px', fontSize: 11, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>
-                {groupSearch ? 'No matching groups' : 'No user groups yet — add one above'}
-              </div>
-            ) : visibleGroups.map((group, i) => (
-              <div
-                key={group.id}
-                style={{ ...RM.row, height: 'auto', minHeight: 38, padding: '6px 10px', alignItems: 'flex-start', background: i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bld-bg-elevated)')}
-                onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--bld-bg-base)' : 'var(--bld-bg-panel)')}
-              >
-                <span style={{ ...RM.cellText, width: 90, paddingTop: 2, fontWeight: 500 }}>{group.name}</span>
-                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 4, marginLeft: 8, paddingTop: 2 }}>
-                  {group.roles.map(rid => {
-                    const r = roles.find(x => x.id === rid);
-                    return r ? <span key={rid} style={RM.tag}>{r.name}</span> : null;
-                  })}
-                  {group.roles.length === 0 && <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>No roles</span>}
-                </div>
-                <span style={{ ...RM.timeText, width: 70, paddingTop: 2 }}>{timeAgo(group.createdAt)}</span>
-                <button
-                  onClick={() => deleteGroup(group.id)}
-                  style={{ width: 28, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, borderRadius: 4, flexShrink: 0 }}
-                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--bld-error)'; e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--bld-text-disabled)'; e.currentTarget.style.background = 'none'; }}
-                  title="Delete group"
-                >×</button>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      {/* Add user group drawer — slides in from right inside the panel */}
-      {addGroupPanel && (
-        <>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }} onClick={() => setAddGroupPanel(null)} />
-          <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '75%', background: 'var(--bld-bg-base)', borderLeft: '1px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', zIndex: 51, boxShadow: '-12px 0 32px rgba(0,0,0,0.6)' }}>
-            {/* Drawer header */}
-            <div style={{ padding: '12px 14px', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bld-bg-base)' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--bld-text-1)' }}>User group</span>
-              <button onClick={() => setAddGroupPanel(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0, borderRadius: 4 }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--bld-text-1)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--bld-text-disabled)')}
-              >×</button>
-            </div>
-
-            {/* Drawer body */}
-            <div style={{ flex: 1, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Given name *</label>
-                <input
-                  autoFocus
-                  value={addGroupPanel.name}
-                  onChange={e => setAddGroupPanel(p => p ? { ...p, name: e.target.value } : p)}
-                  onKeyDown={e => { if (e.key === 'Enter') addGroup(); e.stopPropagation(); }}
-                  placeholder="Enter a value"
-                  style={AUTH_INPUT}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 8 }}>Roles *</label>
-                {roles.length === 0 ? (
-                  <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', padding: '8px 0' }}>No roles available — go back and add roles first.</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {roles.map(role => {
-                      const checked = addGroupPanel.roleIds.includes(role.id);
-                      return (
-                        <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 6, cursor: 'pointer', background: checked ? 'var(--bld-bg-elevated)' : 'transparent', border: `1px solid ${checked ? 'var(--bld-accent)' : 'var(--bld-bg-input)'}` }}
-                          onMouseEnter={e => { if (!checked) e.currentTarget.style.background = 'var(--bld-bg-elevated)'; }}
-                          onMouseLeave={e => { if (!checked) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked ? 'var(--bld-accent)' : 'var(--bld-border-subtle)'}`, background: checked ? 'var(--bld-accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {checked && <span style={{ color: 'var(--bld-accent-fg)', fontSize: 10, lineHeight: 1 }}>✓</span>}
-                          </div>
-                          <input type="checkbox" checked={checked} onChange={() => setAddGroupPanel(p => p ? { ...p, roleIds: checked ? p.roleIds.filter(id => id !== role.id) : [...p.roleIds, role.id] } : p)} style={{ display: 'none' }} />
-                          <span style={{ fontSize: 12, color: 'var(--bld-text-2)', fontWeight: checked ? 600 : 400 }}>{role.name}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Drawer footer */}
-            <div style={{ padding: '12px 14px', borderTop: 'none' }}>
-              <button
-                onClick={addGroup}
-                disabled={!addGroupPanel.name.trim()}
-                style={{ width: '100%', padding: '9px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: addGroupPanel.name.trim() ? 'pointer' : 'default', background: addGroupPanel.name.trim() ? 'var(--bld-accent)' : 'var(--bld-bg-input)', color: addGroupPanel.name.trim() ? 'var(--bld-accent-fg)' : 'var(--bld-border-subtle)' }}
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 type LeftTabId = 'layers' | 'components' | 'data' | 'logic' | 'triggers' | 'assets' | 'theme' | 'files';
 
 interface PanelLeftProps {

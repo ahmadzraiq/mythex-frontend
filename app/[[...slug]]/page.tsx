@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSduiStore } from '@/store/sdui-store';
-import { SDUIEngine, paramChangeRunActionRef, startupRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
+import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedDataSourceDef } from '@/lib/sdui/sdui-engine';
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
@@ -17,7 +17,6 @@ import variablesJson from '@/config/variables.json';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 import { buildSyncDefsFromVariables } from '@/lib/sdui/search-param-sync';
 
-const AUTH_USER_PATH = 'auth.user';
 const ROUTE_PATH = 'route.path';
 const syncDefs = buildSyncDefsFromVariables(
   (variablesJson as { variables?: Record<string, unknown> }).variables ?? {}
@@ -178,10 +177,6 @@ export default function DynamicRoutePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const setData = useSduiStore((s) => s.setData);
-  const isAuthenticated = !!useSduiStore((s) => s.data[AUTH_USER_PATH]);
-  const sessionRestored = useSduiStore((s) => s.sessionRestored);
-  // Track whether the startup action has been fired once per mount
-  const startupFiredRef = useRef(false);
 
   // Receives live config from the builder via postMessage (preview-dev only)
   const [builderLive, setBuilderLive] = useState<BuilderLiveConfig | null>(null);
@@ -237,8 +232,6 @@ export default function DynamicRoutePage() {
   }, []);
 
   const routes = app.routes;
-  const authConfig = (app as AppConfig).authConfig;
-  const defaultRedirect = authConfig?.unauthenticatedRedirect ?? app.defaultRedirect ?? '/sign-in';
   const sortedRoutes = useMemo(() => sortRoutes(routes), [routes]);
 
   const path = pathname || '/';
@@ -265,70 +258,10 @@ export default function DynamicRoutePage() {
     });
   }, [pathname, path, searchParams, setData, sortedRoutes, route]);
 
-  // Fire the startup action (restoreSession) exactly once per page mount.
-  // Must run BEFORE the auth guard effect so sessionRestored is set first.
+  // Route redirect (static)
   useEffect(() => {
-    if (startupFiredRef.current) return;
-    startupFiredRef.current = true;
-    const startupAction = (app as AppConfig).startupAction;
-    if (startupAction) {
-      setTimeout(() => {
-        if (startupRunActionRef.current) {
-          startupRunActionRef.current(startupAction);
-        } else {
-          useSduiStore.getState().setSessionRestored(true);
-        }
-      }, 0);
-    } else {
-      useSduiStore.getState().setSessionRestored(true);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auth route guard — runs after session restore completes.
-  useEffect(() => {
-    if (!sessionRestored) return;
-
-    if (route?.redirect) {
-      router.replace(route.redirect);
-      return;
-    }
-
-    const routeTyped = route as (typeof routes)[0] | null;
-
-    // guestOnly: redirect authenticated users away (e.g. /sign-in when already logged in)
-    if (routeTyped?.guestOnly && isAuthenticated) {
-      router.replace(authConfig?.authenticatedRedirect ?? '/');
-      return;
-    }
-
-    // auth: redirect unauthenticated users to login, storing the intended path
-    if (routeTyped?.auth && !isAuthenticated) {
-      const routeRedirect = (routeTyped as { authRedirect?: string })?.authRedirect;
-      const loginPath = routeRedirect ?? defaultRedirect;
-      // Only store return-path for the default storefront sign-in (not admin login)
-      if (!routeRedirect) {
-        const REDIRECT_AFTER_LOGIN_UUID = 'c1d2e3f4-a5b6-7890-cdef-123456789012';
-        getGlobalVariableStore().getState().setState((prev: Record<string, unknown>) => ({
-          ...prev,
-          [REDIRECT_AFTER_LOGIN_UUID]: pathname,
-        }));
-      }
-      router.replace(loginPath);
-      return;
-    }
-
-    // accessCondition: redirect authenticated users who fail the formula condition
-    if (routeTyped?.auth && isAuthenticated && routeTyped?.accessCondition) {
-      const mergedState = {
-        ...useSduiStore.getState().data,
-        ...getGlobalVariableStore().getState().getFullState(),
-      };
-      const allowed = evaluateFormula(routeTyped.accessCondition, mergedState).value;
-      if (!allowed) {
-        router.replace(authConfig?.unauthorizedRedirect ?? '/');
-      }
-    }
-  }, [route, isAuthenticated, sessionRestored, router, defaultRedirect, pathname, authConfig]);
+    if (route?.redirect) router.replace(route.redirect);
+  }, [route?.redirect, router]);
 
   const ui = (app.ui ?? {}) as PageUI;
   const redirecting = ui.redirecting ?? { text: 'Redirecting...', wrapperClassName: 'flex items-center justify-center min-h-screen', textClassName: 'text-[var(--theme-muted-foreground)]' };
@@ -344,6 +277,24 @@ export default function DynamicRoutePage() {
   }
 
   const routeTyped = route as (typeof routes)[0] | null;
+
+  // Protection guard — evaluated synchronously during render so the page never
+  // mounts (and never fires any datasource fetches) when access is denied.
+  if (routeTyped?.protectionCondition) {
+    const mergedState = {
+      ...useSduiStore.getState().data,
+      ...getGlobalVariableStore().getState().getFullState(),
+    };
+    const allowed = evaluateFormula(routeTyped.protectionCondition, mergedState).value;
+    if (!allowed) {
+      router.replace(routeTyped.protectionRedirect ?? '/');
+      return (
+        <div className={redirecting.wrapperClassName}>
+          <p className={redirecting.textClassName}>{redirecting.text}</p>
+        </div>
+      );
+    }
+  }
 
   const configName = route?.config ?? 'notFound';
   const config = (app.screens[configName] ?? app.screens.notFound) as Record<string, unknown> | undefined;
@@ -389,14 +340,6 @@ export default function DynamicRoutePage() {
     ? { ...(app.actions as ActionsConfig), ...buildLiveActionsConfig(builderLive) }
     : app.actions as ActionsConfig;
 
-  // Determine whether we should cover the page while session is being restored
-  // or while a redirect is pending (auth/guestOnly). We render the engine always
-  // so it can mount, register paramChangeRunActionRef, and run startupAction —
-  // otherwise restoreSession never fires and the spinner loops forever.
-  const needsCover = !sessionRestored
-    || (routeTyped?.auth && !isAuthenticated)
-    || (routeTyped?.guestOnly && isAuthenticated);
-
   return (
     <main className={layoutClass} style={{ position: 'relative' }}>
       <SDUIEngine
@@ -406,10 +349,9 @@ export default function DynamicRoutePage() {
         actionsConfig={effectiveActions}
         routes={app.routes}
         paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
-        authConfig={authConfig}
         dataSources={(app as { dataSources?: Record<string, NamedDataSourceDef> }).dataSources}
       />
-      {needsCover && (
+      {false && (
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,

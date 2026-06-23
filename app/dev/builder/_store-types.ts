@@ -349,44 +349,11 @@ export interface BuilderPage {
   wx: number;
   /** World-space Y position of the page frame (top-left corner). Used for free canvas layout. */
   wy: number;
-  // ── Access control ──────────────────────────────────────────────────────────
-  /** Who can access this page. 'everyone' = public, 'authenticated' = logged-in only. */
-  access?: 'everyone' | 'authenticated';
-  /** Optional JS formula for fine-grained access (role/permission/plan).
-   *  Evaluated after the auth check. Falsy → redirect to authConfig.unauthorizedRedirect. */
-  accessCondition?: string;
-  /** If true, authenticated users are redirected away (e.g. /sign-in, /register pages). */
-  guestOnly?: boolean;
-}
-
-/** Global authentication configuration stored in the builder project. */
-export interface AuthRole {
-  id: string;
-  name: string;
-  createdAt: number;
-}
-
-export interface AuthUserGroup {
-  id: string;
-  name: string;
-  roles: string[];  // role ids
-  createdAt: number;
-}
-
-export interface AuthConfig {
-  tokenType?: 'bearer' | 'basic' | 'custom';
-  tokenStorageKey?: string;
-  userQuery?: string;
-  userQueryEndpoint?: string;
-  userQueryHeaders?: Record<string, string>;
-  userEndpoint?: string;
-  refreshEndpoint?: string;
-  unauthenticatedRedirect?: string;
-  unauthorizedRedirect?: string;
-  authenticatedRedirect?: string;
-  roleProperty?: string;
-  roles?: AuthRole[];
-  userGroups?: AuthUserGroup[];
+  // ── Page protection ─────────────────────────────────────────────────────────
+  /** JS formula evaluated at render time. Falsy → redirect to protectionRedirect. */
+  protectionCondition?: string;
+  /** Path to redirect to when protectionCondition is falsy. Defaults to '/'. */
+  protectionRedirect?: string;
 }
 
 /**
@@ -801,12 +768,8 @@ export interface BuilderStore {
   setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
   /** Set per-page URL query parameter definitions for the current page */
   setCurrentPageQueryParams: (params: Array<{ name: string; value: string }>) => void;
-  /** Set per-page access control (who can see the page, optional formula, guestOnly flag) */
-  setCurrentPageAccess: (access: 'everyone' | 'authenticated', guestOnly: boolean, accessCondition?: string) => void;
-  /** Global authentication configuration for the project */
-  authConfig?: AuthConfig;
-  /** Update the global auth configuration */
-  setAuthConfig: (config: AuthConfig) => void;
+  /** Set the page protection condition and redirect path for the current page */
+  setPageProtection: (condition: string | undefined, redirect: string | undefined) => void;
   /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
   engineConventions: {
     graphqlEndpoint?: string;

@@ -5613,59 +5613,6 @@ export function NodePropsPanel({
         </>
       )}
 
-      {/* ── Auth: Authenticate ─────────────────────────────────────────────── */}
-      {step.type === 'authenticate' && (
-        <>
-          <BoundField
-            label="Access Token"
-            value={cfg.accessToken as FormulaValue | undefined}
-            onChange={v => setCfg('accessToken', v)}
-            placeholder="Access Token"
-            workflowTrigger={workflowTrigger}
-          />
-          <BoundField
-            label="Metadata"
-            value={cfg.user as FormulaValue | undefined}
-            onChange={v => setCfg('user', v)}
-            placeholder="{}"
-            expectedType="object"
-            code
-            workflowTrigger={workflowTrigger}
-          />
-          <BoundToggleField
-            label="Persist Session"
-            value={cfg.persist as FormulaValue | undefined}
-            onChange={v => setCfg('persist', v)}
-            workflowTrigger={workflowTrigger}
-          />
-        </>
-      )}
-
-      {/* ── Auth: Set User ─────────────────────────────────────────────────── */}
-      {step.type === 'setUser' && (
-        <>
-          <BoundField
-            label="User"
-            required
-            value={cfg.user as FormulaValue | undefined}
-            onChange={v => setCfg('user', v)}
-            placeholder="{object}"
-            expectedType="object"
-            workflowTrigger={workflowTrigger}
-          />
-          {!cfg.user && (
-            <div style={{ fontSize: 11, color: 'var(--bld-error)', marginTop: 4 }}>This field is required</div>
-          )}
-        </>
-      )}
-
-      {/* ── Auth: Clear Session ────────────────────────────────────────────── */}
-      {step.type === 'clearSession' && (
-        <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--bld-bg-input)', borderRadius: 6, border: '1px solid var(--bld-border-subtle)' }}>
-          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Removes the stored token from localStorage and clears the authenticated user.</span>
-        </div>
-      )}
-
       {step.type === 'navigateTo' && (
         <NavigateToConfig cfg={cfg} setCfg={setCfg} />
       )}

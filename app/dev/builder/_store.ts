@@ -16,11 +16,11 @@
 import { create } from 'zustand';
 import type { SDUINode } from '@/lib/sdui/types/node';
 export type { SDUINode };
-import routesConfig from '@/config/routes.json';
-import root from '@/config/root';
-import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
 import { updateSharedComponent, getSharedComponents, loadSharedComponents, clearSharedComponents, initialSharedComponentIds } from '@/lib/builder/shared-component-data';
-import { getBuilderConfig } from '@/lib/builder/config-data';
+// NOTE: config/root, config/routes.json, config-resolver and config-data are
+// intentionally NOT statically imported here. They are only needed in admin/dev
+// mode and are dynamically imported inside getRoutePages() / the admin branch of
+// loadFromConfig. This keeps the real-project JS bundle free of all that data.
 import { getGlobalVariableStore, registerStorageVar, unregisterStorageVar, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import { registerVariableNames, registerCollectionNames } from '@/lib/sdui/variable-name-registry';
@@ -401,12 +401,7 @@ export function restoreWorkflowTestResults(): Record<string, import('./_store-ty
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
-// Registry for resolveScreenConfig — layouts used for $slot injection.
-// fragments is empty: all reusable content is now in shared-components.json.
-const _fragmentRegistry: ConfigRegistry = {
-  layouts: root.layouts as ConfigRegistry['layouts'],
-  fragments: root.fragments as ConfigRegistry['fragments'],
-};
+// _fragmentRegistry is built lazily inside getRoutePages() — not at module level.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** localStorage key: maps legacy positional IDs → stable UUIDs */
@@ -458,41 +453,69 @@ function _assignIds(nodes: SDUINode[], prefix: string, ctr: { n: number }): SDUI
   });
 }
 
-function _extractPageNodes(configName: string): SDUINode[] {
-  const screen = root.screens[configName as keyof typeof root.screens];
-  if (!screen) return [];
-  try {
-    const resolved = resolveScreenConfig(
-      screen as Parameters<typeof resolveScreenConfig>[0],
-      _fragmentRegistry,
-    );
-    const ui = (resolved as { ui?: unknown }).ui as SDUINode | SDUINode[] | undefined;
-    if (!ui) return [];
-    const raw = Array.isArray(ui) ? ui : [ui];
-    return _assignIds(raw, configName, { n: 0 });
-  } catch {
-    return [];
-  }
+// Lazy initializer — only computed when admin/dev mode is actually entered.
+// For real projects loadFromConfig returns early before this is ever called.
+// All config/* imports are deferred inside this function so they never bloat
+// the real-project JS bundle.
+let _routePages: BuilderPage[] | null = null;
+async function getRoutePages(): Promise<BuilderPage[]> {
+  if (_routePages) return _routePages;
+  // Dynamic imports — these pull in all 75+ screen JSONs + action files.
+  // They are intentionally NOT at the top of the file.
+  const [
+    { default: routesConfig },
+    { default: root },
+    { resolveScreenConfig },
+  ] = await Promise.all([
+    import('@/config/routes.json'),
+    import('@/config/root'),
+    import('@/lib/sdui/config-resolver'),
+  ]);
+
+  type AnyRoot = { screens: Record<string, unknown>; layouts: Record<string, unknown>; fragments: Record<string, unknown> };
+  const typedRoot = root as AnyRoot;
+  const fragmentRegistry = {
+    layouts: typedRoot.layouts,
+    fragments: typedRoot.fragments,
+  };
+
+  const extractNodes = (configName: string): SDUINode[] => {
+    const screen = typedRoot.screens[configName];
+    if (!screen) return [];
+    try {
+      const resolved = resolveScreenConfig(
+        screen as Parameters<typeof resolveScreenConfig>[0],
+        fragmentRegistry as Parameters<typeof resolveScreenConfig>[1],
+      );
+      const ui = (resolved as { ui?: unknown }).ui as SDUINode | SDUINode[] | undefined;
+      if (!ui) return [];
+      const raw = Array.isArray(ui) ? ui : [ui];
+      return _assignIds(raw, configName, { n: 0 });
+    } catch {
+      return [];
+    }
+  };
+
+  _routePages = (routesConfig as { routes: Array<{ path: string; config: string; protectionCondition?: string; protectionRedirect?: string }> })
+    .routes.map((r, i) => {
+      const screen = typedRoot.screens[r.config] as
+        | { queryParams?: Array<{ name: string; value: string }> }
+        | undefined;
+      return {
+        id: `page-${r.config}`,
+        name: r.config,
+        route: r.path,
+        nodes: extractNodes(r.config),
+        ...(screen?.queryParams ? { queryParams: screen.queryParams } : {}),
+        ...(r.protectionCondition ? { protectionCondition: r.protectionCondition } : {}),
+        ...(r.protectionRedirect ? { protectionRedirect: r.protectionRedirect } : {}),
+        wx: i * (1280 + 80),
+        wy: 0,
+      };
+    });
+
+  return _routePages;
 }
-
-// Initialise one page per route pre-populated with the screen's content nodes.
-const ROUTE_PAGES: BuilderPage[] = (routesConfig as { routes: Array<{ path: string; config: string }> })
-  .routes.map((r, i) => {
-    const screen = root.screens[r.config as keyof typeof root.screens] as
-      | { queryParams?: Array<{ name: string; value: string }> }
-      | undefined;
-    return {
-      id: `page-${r.config}`,
-      name: r.config,
-      route: r.path,
-      nodes: _extractPageNodes(r.config),
-      ...(screen?.queryParams ? { queryParams: screen.queryParams } : {}),
-      wx: i * (1280 + 80),
-      wy: 0,
-    };
-  });
-
-const INITIAL_PAGES: BuilderPage[] = ROUTE_PAGES;
 
 // ─── Auto-sync middleware: keeps pageNodes ↔ pages[focusedIdx].nodes in sync ──
 // Three cases:
@@ -620,12 +643,8 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   pageDataSources: [],
   dsActionsMap: {} as Record<string, string>,
   engineConventions: {},
-  authConfig: undefined,
   appPreviewData: (() => {
     const defaults: Record<string, unknown> = {
-    // ── Auth ──────────────────────────────────────────────────────────────────
-    'auth.user': { id: 'u1', firstName: 'Jane', lastName: 'Doe', emailAddress: 'jane@example.com' },
-
     // ── Nav ───────────────────────────────────────────────────────────────────
     'nav.collections': [
       { name: 'Women', slug: 'women' },
@@ -3497,16 +3516,14 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, queryParams: params } : p),
     })),
 
-  setCurrentPageAccess: (access, guestOnly, accessCondition) =>
+  setPageProtection: (condition, redirect) =>
     set((s) => ({
       pages: s.pages.map((p) =>
         p.id === s.focusedPageId
-          ? { ...p, access, guestOnly, accessCondition: accessCondition ?? p.accessCondition }
+          ? { ...p, protectionCondition: condition, protectionRedirect: redirect }
           : p
       ),
     })),
-
-  setAuthConfig: (config) => set({ authConfig: config }),
 
   setAppPreviewData: (data) => set({ appPreviewData: data }),
   patchEngineConventions: (patch) =>
@@ -3727,6 +3744,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   },
 
   loadFromConfig: async (projectId?: string, opts?: { eagerAll?: boolean /* unused — always true for real projects now */ }) => {
+
     // ── Real backend project ──────────────────────────────────────────────────
     // Any projectId that is not the dev-only "admin" magic ID means a real
     // backend project. We load exclusively from the
@@ -3748,14 +3766,17 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           // Restore canvas positions — prefer saved pagePositions, fall back to per-page coords
           const savedPositions = (saved?.pagePositions ?? {}) as Record<string, { wx: number; wy: number }>;
 
-          const rawPages: BuilderPage[] = pageStubs.map((page, i) => ({
-            id: page.id,
-            name: page.name,
-            route: page.route,
-            nodes: _assignIds((page.nodes ?? []) as SDUINode[], page.id, { n: 0 }),
-            wx: savedPositions[page.id]?.wx ?? page.wx ?? (i * (vpWidth + GAP)),
-            wy: savedPositions[page.id]?.wy ?? page.wy ?? 0,
-          }));
+          const rawPages: BuilderPage[] = pageStubs.map((page, i) => {
+            const nodes = _assignIds((page.nodes ?? []) as SDUINode[], page.id, { n: 0 });
+            return {
+              id: page.id,
+              name: page.name,
+              route: page.route,
+              nodes,
+              wx: savedPositions[page.id]?.wx ?? page.wx ?? (i * (vpWidth + GAP)),
+              wy: savedPositions[page.id]?.wy ?? page.wy ?? 0,
+            };
+          });
 
           const firstPageNodes = rawPages[0]?.nodes ?? [];
           const pages = assignDefaultPagePositions(rawPages, vpWidth);
@@ -3781,7 +3802,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             if (Array.isArray(saved?.colorFolders)) next.colorFolders = saved!.colorFolders as typeof s.colorFolders;
             if (saved?.themeOverrides) next.themeOverrides = saved.themeOverrides as typeof s.themeOverrides;
             if (saved?.themeDarkOverrides) next.themeDarkOverrides = saved.themeDarkOverrides as typeof s.themeDarkOverrides;
-            if (saved?.authConfig && typeof saved.authConfig === 'object') next.authConfig = saved.authConfig as typeof s.authConfig;
             // Restore user-created global formulas (functions). The static config/formulas.json
             // seeds the base formulas; saved.formulas contains any user-added ones on top.
             if (saved?.formulas && typeof saved.formulas === 'object') {
@@ -3798,6 +3818,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             }
             return next;
           });
+
 
           // Apply saved theme overrides to the DOM — initTheme() ran at mount time before
           // loadFromConfig completed, so the CSS vars need a second pass here.
@@ -3852,6 +3873,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
             const formulas = useBuilderStore.getState().globalFormulas;
             registerGlobalFormulas(formulas as Record<string, unknown>);
           } catch { /* non-fatal */ }
+
 
           // ── Restore shared components (user-imported only) ───────────────────
           // Always start from a clean slate — the static config/shared-components.json
@@ -3939,21 +3961,23 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
 
     // ── Admin / dev mode (no projectId or projectId === 'admin') ──────────────
     {
-      const showcaseRoutePage = INITIAL_PAGES.find(p => p.route === '/sc-component-showcase');
-      const defaultPageId = showcaseRoutePage?.id ?? INITIAL_PAGES[0]?.id ?? 'page-home';
-      const defaultNodes = INITIAL_PAGES.find(p => p.id === defaultPageId)?.nodes ?? [];
+      const initialPages = await getRoutePages();
+      const showcaseRoutePage = initialPages.find(p => p.route === '/sc-component-showcase');
+      const defaultPageId = showcaseRoutePage?.id ?? initialPages[0]?.id ?? 'page-home';
+      const defaultNodes = initialPages.find(p => p.id === defaultPageId)?.nodes ?? [];
       set(() => ({
-        pages: INITIAL_PAGES,
+        pages: initialPages,
         focusedPageId: defaultPageId,
         currentPageId: defaultPageId,
         canvasNodes: [],
         pageNodes: clone(defaultNodes),
-        history: [makeSnapshot(INITIAL_PAGES, defaultPageId, clone(defaultNodes), [])],
+        history: [makeSnapshot(initialPages, defaultPageId, clone(defaultNodes), [])],
         historyIdx: 0,
       }));
     }
 
     try {
+      const { getBuilderConfig } = await import('@/lib/builder/config-data');
       const json = getBuilderConfig() as unknown as {
         dataSources?: DataSourceConfig[];
         dsFolders?: Folder[];

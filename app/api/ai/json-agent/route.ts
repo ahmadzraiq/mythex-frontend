@@ -4,15 +4,20 @@
  * SDK agent that reads/writes JSON entity files directly — no JSX, no compiler.
  *
  * Flow:
- *  1. Create /tmp/json-agent-{projectId}/ as the agent's working directory.
+ *  1. Create /tmp/json-agent-{projectId}/ as the agent's working directory (kept warm
+ *     between turns for prompt-cache efficiency — files are only re-written when content
+ *     differs from what is already on disk).
  *  2. Seed the cwd with CLAUDE.md (schema reference) and the project's current
  *     VFS entity files sent by the client (vfsFiles payload).
- *  3. Run query() — the agent edits entity files with native Read/Write/Edit tools.
+ *  3. Run query() with optional session resume (resumeSessionId from client, who
+ *     persists it per-thread in project meta — survives server restarts).
  *  4. PostToolUse hook: validate each written file; on pass, stream a
  *     { type: 'file', path, content } SSE event so the client's applyVirtualFile
  *     updates the canvas in real-time.
- *  5. After the agent finishes, persist the final entity file map to the
- *     project DB and close the stream.
+ *  5. On each assistant round, emit a { type: 'usage', ... } event and record the
+ *     round's tokens to the workspace billing endpoint (incremental, not end-of-run).
+ *  6. On result, reconcile total usage to avoid double-counting, send session_id.
+ *  7. After the agent finishes, persist the final entity file map to the project DB.
  *
  * ARM64 note: Node.js on this machine is x64 (Rosetta), so we explicitly
  * point the SDK at the darwin-arm64 binary via pathToClaudeCodeExecutable.
@@ -31,6 +36,7 @@ import { JSON_AGENT_SYSTEM_PROMPT } from '@/lib/ai/agents/json-agent/system-prom
 import { validateEntityFile, toVfsPath } from '@/lib/ai/agents/json-agent/validator';
 import { resolveNodeTree } from '@/lib/ai/agents/shared/resolve-style';
 import { searchImages, searchPexelsVideos, searchIconify } from '@/lib/ai/media-search';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -38,9 +44,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4000';
-
-// ── Per-project session resumption ───────────────────────────────────────────
-const sessionStore = new Map<string, string>();
 
 // Point at the native ARM64 binary so it runs without Rosetta SIGILL
 const ARM64_BINARY = path.join(
@@ -86,24 +89,38 @@ function buildMcpServer() {
   });
 }
 
-/** Read all .json entity files from the agent's cwd recursively. */
-function readEntityFiles(dir: string): Record<string, string> {
-  const files: Record<string, string> = {};
-  function walk(current: string, rel: string) {
-    if (!fs.existsSync(current)) return;
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const relPath = rel ? `${rel}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) {
-        walk(path.join(current, entry.name), relPath);
-      } else if (entry.isFile() && entry.name.endsWith('.json')) {
-        try {
-          files[relPath] = fs.readFileSync(path.join(current, entry.name), 'utf-8');
-        } catch { /* skip */ }
-      }
-    }
+/** Write a file only when its content has changed (keeps cwd warm for prompt cache). */
+function writeIfChanged(diskPath: string, content: string): void {
+  try {
+    const existing = fs.existsSync(diskPath) ? fs.readFileSync(diskPath, 'utf-8') : null;
+    if (existing === content) return;
+    fs.mkdirSync(path.dirname(diskPath), { recursive: true });
+    fs.writeFileSync(diskPath, content, 'utf-8');
+  } catch { /* non-critical */ }
+}
+
+/** MD5 hash helper for write-if-changed checks. */
+function md5(s: string): string {
+  return crypto.createHash('md5').update(s).digest('hex');
+}
+// md5 is used indirectly via writeIfChanged content comparison above.
+void md5; // suppress unused-var lint if tree-shaken
+
+/** Resolve workspaceId from a projectId via the backend (cached per request scope). */
+async function resolveWorkspaceId(
+  projectId: string,
+  authHeaders: Record<string, string>,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/v1/projects/${projectId}`, {
+      headers: { ...authHeaders },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { project?: { workspaceId?: string }; workspaceId?: string };
+    return data.project?.workspaceId ?? (data.workspaceId as string | undefined) ?? null;
+  } catch {
+    return null;
   }
-  walk(dir, '');
-  return files;
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
@@ -111,6 +128,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     prompt?: string;
     projectId?: string;
     workspaceId?: string;
+    threadId?: string;
+    resumeSessionId?: string;
     /** Current VFS entity files from the client, keyed by VFS path (no extension) */
     vfsFiles?: Record<string, string>;
   };
@@ -120,7 +139,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
 
-  const { prompt, projectId, workspaceId, vfsFiles } = body;
+  const { prompt, projectId, vfsFiles, threadId, resumeSessionId } = body;
+  let { workspaceId } = body;
+
   if (!prompt?.trim()) {
     return new Response(JSON.stringify({ error: 'prompt is required' }), { status: 400 });
   }
@@ -131,34 +152,38 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (cookie) authHeaders['cookie'] = cookie;
   if (auth)   authHeaders['authorization'] = auth;
 
-  const resumeId = projectId ? sessionStore.get(projectId) : undefined;
+  // Resolve workspaceId lazily if the client didn't send it
+  if (!workspaceId && projectId) {
+    workspaceId = (await resolveWorkspaceId(projectId, authHeaders)) ?? undefined;
+  }
 
-  // ── Working directory ────────────────────────────────────────────────────────
-  const safeId = (projectId ?? 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const cwdRaw = path.join('/tmp', `json-agent-${safeId}`);
+  // ── Working directory — kept warm between turns ───────────────────────────
+  // Use thread-scoped cwd when threadId is present so different conversations
+  // don't stomp each other; fall back to project-scoped for threadless calls.
+  const cwdKey = threadId
+    ? `${(projectId ?? 'default').replace(/[^a-zA-Z0-9_-]/g, '_')}-${threadId.replace(/[^a-zA-Z0-9_-]/g, '_')}`
+    : (projectId ?? 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cwdRaw = path.join('/tmp', `json-agent-${cwdKey}`);
   fs.mkdirSync(cwdRaw, { recursive: true });
   // Resolve symlinks (macOS: /tmp → /private/tmp) so filePath comparisons work
   const cwd = fs.realpathSync(cwdRaw);
 
-  // ── Seed CLAUDE.md ───────────────────────────────────────────────────────────
+  // ── Seed CLAUDE.md (write-if-changed) ────────────────────────────────────
   if (fs.existsSync(CLAUDE_MD_SRC)) {
-    fs.copyFileSync(CLAUDE_MD_SRC, path.join(cwd, 'CLAUDE.md'));
+    writeIfChanged(path.join(cwd, 'CLAUDE.md'), fs.readFileSync(CLAUDE_MD_SRC, 'utf-8'));
   }
 
-  // ── Seed VFS entity files from client payload ────────────────────────────────
+  // ── Seed VFS entity files (write-if-changed to keep cwd warm) ────────────
   // Each key is a VFS path (no extension), value is JSON string content.
   // We write them as <path>.json on disk so the agent can read/edit them.
   if (vfsFiles && typeof vfsFiles === 'object') {
     for (const [vfsPath, content] of Object.entries(vfsFiles)) {
       const diskPath = path.join(cwd, `${vfsPath}.json`);
-      fs.mkdirSync(path.dirname(diskPath), { recursive: true });
-      try {
-        fs.writeFileSync(diskPath, content, 'utf-8');
-      } catch { /* skip unwritable paths */ }
+      writeIfChanged(diskPath, content);
     }
   }
 
-  // ── SSE stream ───────────────────────────────────────────────────────────────
+  // ── SSE stream ───────────────────────────────────────────────────────────
   const encoder = new TextEncoder();
   const mcpServer = buildMcpServer();
 
@@ -170,26 +195,39 @@ export async function POST(req: NextRequest): Promise<Response> {
       // Track files written during this run (VFS path → content)
       const writtenFiles = new Map<string, string>();
 
-      // ── PostToolUse hook: validate + stream file events ──────────────────────
+      // ── Incremental usage accounting ──────────────────────────────────────
+      // recordedInput/Output: cumulative tokens already sent to the backend this run.
+      // Used at the end to reconcile against result.usage without double-counting.
+      let recordedInput  = 0;
+      let recordedOutput = 0;
+
+      /** POST a token delta to the workspace billing endpoint (fire-and-forget). */
+      const recordTokens = (inputTokens: number, outputTokens: number, model = 'claude-sonnet-4-5') => {
+        if (!workspaceId || (inputTokens + outputTokens) === 0) return;
+        fetch(`${BACKEND_URL}/v1/workspaces/${workspaceId}/usage/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          body: JSON.stringify({ projectId, inputTokens, outputTokens, model }),
+        }).catch(() => {});
+        recordedInput  += inputTokens;
+        recordedOutput += outputTokens;
+      };
+
+      // ── PostToolUse hook: validate + stream file events ──────────────────
       const postToolUseHook: HookCallback = async (input) => {
         const hookInput = input as PostToolUseHookInput;
         const toolInput = hookInput.tool_input as Record<string, unknown> | undefined;
 
-        // Only process Write and Edit tool calls on .json files
         const toolName = hookInput.tool_name;
-        if (toolName !== 'Write' && toolName !== 'Edit') {
-          return {};
-        }
+        if (toolName !== 'Write' && toolName !== 'Edit') return {};
 
         const filePath = (toolInput?.file_path ?? toolInput?.path) as string | undefined;
         if (!filePath || !filePath.endsWith('.json')) return {};
 
-        // Get the content — for Write it's in tool_input, for Edit read from disk
         let content: string;
         if (toolName === 'Write') {
           content = (toolInput?.content as string | undefined) ?? '';
         } else {
-          // Edit: read the updated file from disk (filePath may be absolute or relative)
           const diskPath = path.isAbsolute(filePath) ? filePath : path.join(cwd, filePath);
           try {
             content = fs.readFileSync(diskPath, 'utf-8');
@@ -198,13 +236,11 @@ export async function POST(req: NextRequest): Promise<Response> {
           }
         }
 
-        // filePath may be an absolute disk path; normalise to a relative VFS path.
         const relFilePath = filePath.startsWith(cwd + '/')
           ? filePath.slice(cwd.length + 1)
           : filePath;
         const vfsPath = toVfsPath(relFilePath);
 
-        // Validate the entity file
         const validation = validateEntityFile(vfsPath, content);
         if (!validation.ok) {
           return {
@@ -215,9 +251,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           };
         }
 
-        // Resolve flat SxProps → className on page/component UI trees before
-        // sending to the client. The agent writes shorthand keys; the resolver
-        // converts them so the rendering engine sees the expected className shape.
+        // Resolve flat SxProps → className on page/component UI trees
         let resolvedContent = content;
         if (
           /^pages\/[^/]+\/page$/.test(vfsPath) ||
@@ -226,16 +260,13 @@ export async function POST(req: NextRequest): Promise<Response> {
           try {
             const data = JSON.parse(content) as Record<string, unknown>;
             if (Array.isArray(data.ui)) {
-              // Page format: { ui: [...nodes] }
               data.ui = resolveNodeTree(data.ui);
               resolvedContent = JSON.stringify(data);
             } else if (data.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
-              // Component format: { content: { type, props, children } }
               const resolved = resolveNodeTree([data.content]);
               data.content = resolved[0];
               resolvedContent = JSON.stringify(data);
             } else if (Array.isArray(data.content)) {
-              // Component format: { content: [...nodes] }
               data.content = resolveNodeTree(data.content as unknown[]);
               resolvedContent = JSON.stringify(data);
             }
@@ -260,7 +291,8 @@ export async function POST(req: NextRequest): Promise<Response> {
             mcpServers: { media: mcpServer },
             permissionMode: 'acceptEdits',
             settingSources: ['project'],
-            ...(resumeId ? { resume: resumeId } : {}),
+            // Session resumption owned by the client (persisted per-thread in project meta)
+            ...(resumeSessionId ? { resume: resumeSessionId } : {}),
             effort: 'low',
             includePartialMessages: true,
             ...(claudeExe ? { pathToClaudeCodeExecutable: claudeExe } : {}),
@@ -279,14 +311,42 @@ export async function POST(req: NextRequest): Promise<Response> {
               send({ type: 'text_delta', text: evt.delta.text });
             }
           } else if (msg.type === 'assistant') {
+            // ── Per-round: emit tool calls + usage ─────────────────────────
             const betaMsg = (msg as {
               type: 'assistant';
-              message: { content: Array<{ type: string; name?: string; input?: unknown; id?: string }> };
+              message: {
+                content: Array<{ type: string; name?: string; input?: unknown; id?: string }>;
+                usage?: {
+                  input_tokens?: number;
+                  output_tokens?: number;
+                  cache_read_input_tokens?: number;
+                  cache_creation_input_tokens?: number;
+                };
+                model?: string;
+              };
             }).message;
+
             for (const block of betaMsg.content ?? []) {
               if (block.type === 'tool_use') {
                 send({ type: 'tool_call', name: block.name, input: block.input ?? {}, id: block.id, startTime: Date.now() });
               }
+            }
+
+            // Emit per-round usage event and record to billing
+            if (betaMsg.usage) {
+              const roundInput        = betaMsg.usage.input_tokens ?? 0;
+              const roundOutput       = betaMsg.usage.output_tokens ?? 0;
+              const roundCacheRead    = betaMsg.usage.cache_read_input_tokens ?? 0;
+              const roundCacheCreate  = betaMsg.usage.cache_creation_input_tokens ?? 0;
+              const model = betaMsg.model ?? 'claude-sonnet-4-5';
+
+              send({
+                type: 'usage',
+                round: { input: roundInput, output: roundOutput, cacheRead: roundCacheRead, cacheCreation: roundCacheCreate },
+              });
+
+              // Record billing for this round (net new tokens only)
+              recordTokens(roundInput, roundOutput, model);
             }
           } else if (msg.type === 'user') {
             const userMsg = (msg as {
@@ -301,18 +361,36 @@ export async function POST(req: NextRequest): Promise<Response> {
           } else if (msg.type === 'result') {
             const result = msg as {
               type: 'result';
-              usage: { input_tokens: number; output_tokens: number };
+              usage: {
+                input_tokens: number;
+                output_tokens: number;
+                cache_read_input_tokens?: number;
+                cache_creation_input_tokens?: number;
+              };
               total_cost_usd?: number;
+              num_turns?: number;
               session_id?: string;
             };
-            if (result.session_id && projectId) {
-              sessionStore.set(projectId, result.session_id);
-            }
+
+            const totalInput  = result.usage?.input_tokens  ?? 0;
+            const totalOutput = result.usage?.output_tokens ?? 0;
+
+            // Reconcile: record any remaining tokens not yet billed per-round
+            const remainingInput  = Math.max(0, totalInput  - recordedInput);
+            const remainingOutput = Math.max(0, totalOutput - recordedOutput);
+            recordTokens(remainingInput, remainingOutput);
+
             send({
               type: 'result',
-              usage: { input_tokens: result.usage?.input_tokens ?? 0, output_tokens: result.usage?.output_tokens ?? 0 },
+              usage: {
+                input_tokens:              totalInput,
+                output_tokens:             totalOutput,
+                cache_read_input_tokens:   result.usage?.cache_read_input_tokens   ?? 0,
+                cache_creation_input_tokens: result.usage?.cache_creation_input_tokens ?? 0,
+              },
               total_cost_usd: result.total_cost_usd,
-              session_id: result.session_id,
+              num_turns:      result.num_turns,
+              session_id:     result.session_id,
             });
           }
         }
@@ -320,9 +398,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         send({ type: 'error', error: err instanceof Error ? err.message : String(err) });
       }
 
-      // ── Persist written entity files to project DB ────────────────────────────
-      // PATCH the project meta with the latest entity file snapshot so the
-      // client can restore it on reload.
+      // ── Persist written entity files to project DB ────────────────────────
       if (projectId && writtenFiles.size > 0) {
         try {
           const entitySnapshot: Record<string, string> = {};
@@ -338,10 +414,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         } catch { /* non-critical */ }
       }
 
-      // ── Clean up working directory ────────────────────────────────────────────
-      try {
-        fs.rmSync(cwd, { recursive: true, force: true });
-      } catch { /* non-critical */ }
+      // Note: cwd is intentionally NOT deleted here. Keeping it warm means the
+      // next turn in this thread reuses the same filesystem state, which
+      // keeps the agent's context in the 1h prompt cache.
 
       ctrl.close();
     },

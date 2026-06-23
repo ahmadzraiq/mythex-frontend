@@ -1,15 +1,11 @@
-'use client';
-
-/**
- * Lightweight Zustand store that holds the AI-generated DSL source files.
- * Shared between useWebContainerDsl (writer) and FilesPanel (reader).
- */
-
 import { create } from 'zustand';
 
 interface DslSourcesState {
+  /** Map of file path → source content, representing the current DSL file tree. */
   sources: Record<string, string>;
+  /** Replace the entire sources map. */
   setSources: (sources: Record<string, string>) => void;
+  /** Set (or overwrite) a single file entry. */
   setSource: (path: string, content: string) => void;
 }
 

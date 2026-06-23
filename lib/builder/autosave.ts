@@ -73,7 +73,6 @@ export function serializeBuilderState(store: BuilderStore): Record<string, unkno
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
-  if (store.authConfig) result.authConfig = store.authConfig;
   return result;
 }
 
@@ -95,7 +94,6 @@ function serializeMeta(store: BuilderStore): Record<string, unknown> {
   };
   const pm = serializeProjectMeta(store);
   if (pm) result.projectMeta = pm;
-  if (store.authConfig) result.authConfig = store.authConfig;
   return result;
 }
 
