@@ -3265,14 +3265,9 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
   // Mixed/partial templates like "Hello {{name}}" stay as plain strings.
   function textToFormulaValue(text: string | { formula?: string; js?: string } | unknown): FormulaValue {
     if (!text) return text as FormulaValue;
-    // Already a formula object — pass through directly
+    // Already a binding object — pass through directly (preserves { js } format)
     if (typeof text === 'object' && text !== null) {
-      const obj = text as Record<string, unknown>;
-      if ('formula' in obj) return text as unknown as FormulaValue;
-      // { js: "..." } format (stored by set_text for JS formula expressions)
-      if ('js' in obj && typeof obj.js === 'string') {
-        return { formula: obj.js } as unknown as FormulaValue;
-      }
+      return text as unknown as FormulaValue;
     }
     if (typeof text !== 'string') return String(text) as unknown as FormulaValue;
     const m = text.match(/^\{\{(.+)\}\}$/);
@@ -3280,11 +3275,14 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
     return text;
   }
 
-  // Convert FormulaValue back → stored text template string.
-  // Formula objects are wrapped in {{}} for the SDUI renderer's template engine.
-  function formulaValueToText(v: FormulaValue): string {
-    if (v && typeof v === 'object' && 'formula' in (v as object)) {
-      return `{{${(v as { formula: string }).formula}}}`;
+  // Convert FormulaValue back → stored text value.
+  // { formula } and { js } bindings are stored as { js } for consistency.
+  // Plain strings are stored as-is.
+  function formulaValueToText(v: FormulaValue): unknown {
+    if (v && typeof v === 'object') {
+      const o = v as Record<string, unknown>
+      if (typeof o.js === 'string') return { js: o.js }
+      if (typeof o.formula === 'string') return { js: o.formula }
     }
     return (v as string) ?? '';
   }
@@ -3415,10 +3413,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
                     expectedType="string"
                     value={displayValue}
                     onChange={v => {
-                      const stored = v && typeof v === 'object' && 'formula' in (v as object)
-                        ? v
-                        : formulaValueToText(v as FormulaValue);
-                      patchText(stored);
+                      patchText(formulaValueToText(v as FormulaValue));
                     }}
                   >
                     <textarea

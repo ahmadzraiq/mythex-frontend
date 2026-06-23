@@ -16,6 +16,7 @@
 import React, { useEffect, useRef, memo, useMemo, useCallback, useDeferredValue } from 'react';
 import { useBuilderStore } from './_store';
 import { SDUIEngine } from '@/lib/sdui/sdui-engine';
+import type { ActionsConfig } from '@/lib/sdui/sdui-engine';
 import appConfig from '@/config/app';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -26,6 +27,23 @@ import { computeSnap, type SnapGuide, type ContentRect } from './_snap-engine';
 const app = appConfig as any;
 
 export const VIEWPORT_H = 900;
+
+/**
+ * Returns app.actions merged with the builder store's dynamic workflows
+ * (keyed by UUID). The store workflows are written by the json-agent via VFS;
+ * they never appear in the static app.actions import, so without this merge
+ * agent-created workflows would silently fail to resolve.
+ *
+ * The `base` override is kept for callers that supply their own actionsConfig.
+ */
+function useMergedActionsConfig(base?: Record<string, unknown>): ActionsConfig {
+  const storeWorkflows = useBuilderStore(s => s.workflows);
+  return useMemo(
+    () => ({ ...(base ?? (app.actions as Record<string, unknown>)), ...(storeWorkflows as Record<string, unknown>) }) as ActionsConfig,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [base, storeWorkflows],
+  );
+}
 
 const BUILDER_ATTRS = [
   'data-builder-id', 'data-builder-type',
@@ -479,13 +497,14 @@ export const PageEngine = memo(function PageEngine({
   shownPopovers?: Set<string>;
   queryParams?: Array<{ name: string; value: string }>;
 }) {
+  const mergedActions = useMergedActionsConfig(actionsConfigProp);
   if (!pageConfig.ui) return <EmptyCanvas />;
   return (
     <SDUIEngine
       key="builder-engine"
       config={pageConfig}
       configName={configName}
-      actionsConfig={actionsConfigProp ?? app.actions}
+      actionsConfig={mergedActions}
       routes={app.routes}
       builderMode
       builderViewportHeight={VIEWPORT_H}
@@ -543,6 +562,7 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       } as SDUIConfig['ui'],
   }), [screenState, displayNodes]);
 
+  const mergedActions = useMergedActionsConfig();
   if (!nodes.length) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: VIEWPORT_H, gap: 8, color: 'var(--bld-text-3)', fontFamily: 'system-ui', userSelect: 'none' }}>
@@ -556,7 +576,7 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       key={`pg-${pageId}`}
       config={cfg}
       configName={configName}
-      actionsConfig={app.actions ?? {}}
+      actionsConfig={mergedActions}
       routes={app.routes ?? []}
       builderMode
       builderViewport={viewport}
@@ -582,12 +602,13 @@ export const CanvasNodeEngine = memo(function CanvasNodeEngine({
     ui: node,
   }), [node]);
 
+  const mergedActions = useMergedActionsConfig();
   return (
     <SDUIEngine
       key={`canvas-${node.id}`}
       config={cfg}
       configName="canvasNode"
-      actionsConfig={app.actions ?? {}}
+      actionsConfig={mergedActions}
       routes={app.routes ?? []}
       builderMode
     />

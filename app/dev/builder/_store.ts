@@ -2529,7 +2529,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
       const newWx = s.pages.length > 0 ? rightmostWx + GAP : 0;
 
       const newPage: BuilderPage = {
-        id: id ?? `page-${Date.now()}`,
+        id: id ?? `page-${crypto.randomUUID()}`,
         name: name ?? route,
         route,
         nodes: [],
@@ -2551,7 +2551,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   addPageAt: (name, wx, wy, initialNode) => {
     set(s => {
       const newPage: BuilderPage = {
-        id: `page-${Date.now()}`,
+        id: `page-${crypto.randomUUID()}`,
         name,
         route: '',
         nodes: initialNode ? [initialNode] : [],

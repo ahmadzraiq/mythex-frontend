@@ -1,147 +1,201 @@
 /**
- * decompile-workflows
+ * decompile-workflows.ts — reconstructs `defineWorkflow` declarations from actions/*.json.
  *
- * Converts builder store workflows back to source files matching Claude's style:
- *   - One file per workflow at `src/workflows/<name>.ts`
- *   - `import { defineWorkflow, setVar, vars, ... } from 'builder';`
- *   - `export default defineWorkflow({ path: '...', params: {} }, (params) => { ... });`
+ * Only entries with `_dslName` + `_src` are emitted.
+ * Step types handled:
+ *   changeVariableValue → setVar(varName, expr)
+ *   branch              → if (cond) { ... } else { ... }
+ *   multiOptionBranch   → if/else-if chain
+ *   runJavaScript       → raw code block
+ *   navigateTo          → navigate(route)
+ *   runProjectWorkflow  → workflowName(args)
+ *   emitComponentTrigger → (skipped — internal SC relay)
+ *   fetchCollection     → fetch(dsName)
  */
 
-import type { WorkflowMeta } from '@/app/dev/builder/_store-types';
-import type { ResolveContext } from './resolve';
+import fs from 'fs'
+import path from 'path'
+import type { DecompiledEntry } from './decompile-vars'
+import { resolveUuidsInExpr, type UuidMap } from './uuid-map'
 
-type StepRecord = Record<string, unknown>;
-
-// ── Step → DSL call ───────────────────────────────────────────────────────────
-
-interface StepResult {
-  code: string;
-  usedHelpers: Set<string>;
+interface WfStep {
+  id?: string
+  type: string
+  config?: Record<string, unknown>
+  trueBranch?: WfStep[]
+  falseBranch?: WfStep[]
+  branches?: Array<{ label: string; steps: WfStep[]; condition?: string }>
+  defaultBranch?: WfStep[]
+  steps?: WfStep[]
 }
 
-function serializeStep(step: StepRecord, ctx: ResolveContext, indent: number): StepResult {
-  const pad     = '  '.repeat(indent);
-  const type    = step.type as string | undefined;
-  const cfg     = (step.config ?? {}) as Record<string, unknown>;
-  const helpers = new Set<string>();
+interface WfEntry {
+  _dslName?: string
+  _src?: string
+  name?: string
+  meta?: { name?: string; params?: string[] }
+  steps?: WfStep[]
+  params?: string[]
+}
 
-  switch (type) {
+export function decompileWorkflows(uuidMap: UuidMap, configDir?: string): DecompiledEntry[] {
+  const dir = configDir ?? path.join(process.cwd(), 'config')
+  const results: DecompiledEntry[] = []
+
+  const actionsDir = path.join(dir, 'actions')
+  if (!fs.existsSync(actionsDir)) return results
+
+  let order = 0
+  for (const file of fs.readdirSync(actionsDir).sort()) {
+    if (!file.endsWith('.json')) continue
+    let actionJson: Record<string, WfEntry> | null = null
+    try {
+      actionJson = JSON.parse(fs.readFileSync(path.join(actionsDir, file), 'utf-8'))
+    } catch {
+      continue
+    }
+    if (!actionJson) continue
+
+    for (const [, entry] of Object.entries(actionJson)) {
+      const name = entry._dslName ?? entry.name
+      const src = entry._src
+      if (!name || !src) continue
+
+      const paramNames: string[] = entry.params ?? entry.meta?.params ?? []
+      const steps = entry.steps ?? []
+
+      const body = stepsToCode(steps, uuidMap, paramNames, 2)
+      const paramStr = paramNames.length > 0 ? `(${paramNames.join(', ')})` : '()'
+      const fnBody = body.trim() ? `${paramStr} => {\n${body}\n}` : `${paramStr} => {}`
+
+      results.push({
+        text: `export const ${name} = defineWorkflow(${fnBody})`,
+        srcFile: src,
+        kind: 'workflow',
+        order: order++,
+      })
+    }
+  }
+
+  return results
+}
+
+function stepsToCode(steps: WfStep[], uuidMap: UuidMap, paramNames: string[], depth: number): string {
+  const pad = ' '.repeat(depth)
+  const lines: string[] = []
+
+  for (const step of steps) {
+    const line = stepToCode(step, uuidMap, paramNames, depth)
+    if (line != null) lines.push(line)
+  }
+
+  return lines.join('\n')
+}
+
+function stepToCode(step: WfStep, uuidMap: UuidMap, paramNames: string[], depth: number): string | null {
+  const pad = ' '.repeat(depth)
+
+  switch (step.type) {
     case 'changeVariableValue': {
-      const varId   = cfg.varId as string | undefined;
-      const val     = cfg.value;
-      const varName = varId ? (ctx.uuidToVar.get(varId) ?? varId) : '?';
-      helpers.add('setVar');
-      return { code: `${pad}setVar('${varName}', ${JSON.stringify(val)})`, usedHelpers: helpers };
-    }
-
-    case 'navigateTo': {
-      const route = cfg.route ?? cfg.path;
-      helpers.add('navigate');
-      return { code: `${pad}navigate('${route ?? '/'}')`, usedHelpers: helpers };
-    }
-
-    case 'runJavaScript': {
-      const code = (cfg.code as string ?? '// custom code')
-        .split('\n')
-        .map((l: string, i: number) => (i === 0 ? l : pad + l))
-        .join('\n');
-      // runJavaScript has no builder DSL equivalent — emit as a comment
-      return { code: `${pad}// custom JS: ${code}`, usedHelpers: helpers };
+      const cfg = step.config ?? {}
+      const varUuid = String(cfg.variableName ?? '')
+      const varName = uuidMap.vars.get(varUuid) ?? varUuid
+      const val = cfg.value
+      const valExpr = resolveValue(val, uuidMap)
+      return `${pad}setVar(${varName}, ${valExpr})`
     }
 
     case 'branch': {
-      const cond = cfg.condition ?? cfg.if ?? 'true';
-      return { code: `${pad}// if (${cond}) { ... } else { ... }`, usedHelpers: helpers };
+      const cfg = step.config ?? {}
+      const cond = resolveExpr(String(cfg.condition ?? 'true'), uuidMap)
+      const trueBranch = step.trueBranch ?? []
+      const falseBranch = step.falseBranch ?? []
+      const trueCode = stepsToCode(trueBranch, uuidMap, paramNames, depth + 2)
+      const falseCode = stepsToCode(falseBranch, uuidMap, paramNames, depth + 2)
+      let out = `${pad}if (${cond}) {\n${trueCode}\n${pad}}`
+      if (falseCode.trim()) {
+        out += ` else {\n${falseCode}\n${pad}}`
+      }
+      return out
     }
 
-    case 'fetchCollection':
-    case 'fetchItem': {
-      const url = cfg.url ?? cfg.endpoint;
-      const key = cfg.key ?? cfg.storeKey;
-      return { code: `${pad}fetch('${url ?? ''}', { key: '${key ?? ''}' })`, usedHelpers: helpers };
+    case 'multiOptionBranch': {
+      const cfg = step.config ?? {}
+      const cond = resolveExpr(String(cfg.condition ?? ''), uuidMap)
+      const branches = step.branches ?? []
+      const defaultBranch = step.defaultBranch ?? []
+      const parts: string[] = []
+      for (let i = 0; i < branches.length; i++) {
+        const b = branches[i]
+        const branchCode = stepsToCode(b.steps ?? [], uuidMap, paramNames, depth + 2)
+        const keyword = i === 0 ? `${pad}if` : ` else if`
+        parts.push(`${keyword} (${cond} === ${JSON.stringify(b.label)}) {\n${branchCode}\n${pad}}`)
+      }
+      if (defaultBranch.length > 0) {
+        const defCode = stepsToCode(defaultBranch, uuidMap, paramNames, depth + 2)
+        parts.push(` else {\n${defCode}\n${pad}}`)
+      }
+      return parts.join('')
     }
+
+    case 'runJavaScript': {
+      const cfg = step.config ?? {}
+      const code = resolveExpr(String(cfg.code ?? ''), uuidMap)
+      // Indent the code block
+      const indented = code.split('\n').map(l => pad + l).join('\n')
+      return indented
+    }
+
+    case 'navigateTo': {
+      const cfg = step.config ?? {}
+      const route = cfg.route ?? cfg.path ?? ''
+      if (route === 'back' || route === -1) return `${pad}navigate(-1)`
+      return `${pad}navigate(${JSON.stringify(route)})`
+    }
+
+    case 'runProjectWorkflow': {
+      const cfg = step.config ?? {}
+      const wfId = String(cfg.workflowId ?? '')
+      const wfName = uuidMap.workflows.get(wfId) ?? wfId
+      const params = cfg.params as Record<string, unknown> | undefined
+      if (params && Object.keys(params).length > 0) {
+        const argList = Object.values(params).map(v => resolveValue(v, uuidMap)).join(', ')
+        return `${pad}${wfName}(${argList})`
+      }
+      return `${pad}${wfName}()`
+    }
+
+    case 'fetchCollection': {
+      const cfg = step.config ?? {}
+      const dsId = String(cfg.datasourceId ?? cfg.collectionId ?? '')
+      const dsName = uuidMap.datasources.get(dsId) ?? dsId
+      return `${pad}fetch(${dsName})`
+    }
+
+    case 'emitComponentTrigger':
+      // Internal SC relay — skip
+      return null
 
     default:
-      return { code: `${pad}// ${type ?? 'step'}: ${JSON.stringify(cfg)}`, usedHelpers: helpers };
+      // Unknown step — emit a comment
+      return `${pad}// step: ${step.type}`
   }
 }
 
-// ── Single workflow → file source ─────────────────────────────────────────────
-
-function serializeWorkflowFile(
-  meta: WorkflowMeta,
-  steps: StepRecord[],
-  ctx: ResolveContext,
-): string {
-  const allHelpers = new Set<string>();
-  const stepLines: string[] = [];
-
-  for (const step of steps) {
-    const { code, usedHelpers } = serializeStep(step as StepRecord, ctx, 2);
-    stepLines.push(code);
-    for (const h of usedHelpers) allHelpers.add(h);
+function resolveValue(val: unknown, uuidMap: UuidMap): string {
+  if (val === null || val === undefined) return 'null'
+  if (typeof val === 'boolean') return String(val)
+  if (typeof val === 'number') return String(val)
+  if (typeof val === 'string') return JSON.stringify(val)
+  if (typeof val === 'object') {
+    const obj = val as Record<string, unknown>
+    if ('formula' in obj) return resolveExpr(String(obj.formula), uuidMap)
+    if ('js' in obj) return resolveExpr(String(obj.js), uuidMap)
   }
-
-  // Detect if any step reads vars
-  const bodyStr = stepLines.join('\n');
-  if (bodyStr.includes("vars['")) allHelpers.add('vars');
-
-  // Build params from meta
-  const paramNames = (meta.params ?? []).map(p => p.name).filter(Boolean);
-  const paramsObj  = paramNames.length > 0
-    ? `{ ${paramNames.map(p => `${p}: ''`).join(', ')} }`
-    : '{}';
-
-  // Determine function signature
-  const fnSignature = paramNames.length > 0 ? `(params) => {` : `() => {`;
-
-  // Named imports
-  const helperImports = ['defineWorkflow', ...Array.from(allHelpers).sort()];
-  const importLine = `import { ${helperImports.join(', ')} } from 'builder';`;
-
-  const lines: string[] = [
-    importLine,
-    '',
-    'export default defineWorkflow(',
-    `  { path: '${meta.name}', params: ${paramsObj} },`,
-    `  ${fnSignature}`,
-    ...stepLines,
-    '  },',
-    ');',
-    '',
-  ];
-
-  return lines.join('\n');
+  return JSON.stringify(val)
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
-
-function toSafeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_-]/g, '_');
+function resolveExpr(expr: string, uuidMap: UuidMap): string {
+  return resolveUuidsInExpr(expr, uuidMap)
 }
 
-/**
- * Convert global workflows to a map of { filePath → source }.
- * Each workflow gets its own `src/workflows/<name>.ts` file.
- * Returns an empty object if there are no exportable workflows.
- */
-export function decompileWorkflows(
-  wfMeta: Record<string, WorkflowMeta>,
-  wfSteps: Record<string, unknown[]>,
-  ctx: ResolveContext,
-): Record<string, string> {
-  const files: Record<string, string> = {};
-
-  const exportable = Object.entries(wfMeta).filter(
-    ([, meta]) => !meta.isSystem && !meta.isTrigger && !meta.isAppTrigger,
-  );
-
-  for (const [id, meta] of exportable) {
-    const steps    = (wfSteps[id] ?? []) as StepRecord[];
-    const filename = toSafeFilename(meta.name ?? id);
-    const filePath = `src/workflows/${filename}.ts`;
-    files[filePath] = serializeWorkflowFile(meta, steps, ctx);
-  }
-
-  return files;
-}

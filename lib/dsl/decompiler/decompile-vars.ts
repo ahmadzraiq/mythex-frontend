@@ -1,60 +1,61 @@
 /**
- * decompile-vars
+ * decompile-vars.ts — reconstructs `defineVar` declarations from variables.json entries.
  *
- * Converts builder store variables back to source files matching Claude's style:
- *   - One file per variable at `src/store/<name>.ts`
- *   - `import { defineVar } from 'builder';`
- *   - `export default defineVar('string', '0');`
+ * Only entries that have `_dslName` and `_src` are emitted (DSL-authored variables).
  */
 
-import type { CustomVar } from '@/app/dev/builder/_store-types';
+import fs from 'fs'
+import path from 'path'
 
-function serializeInitialValue(value: unknown): string {
-  if (value === undefined || value === null) return 'null';
-  return JSON.stringify(value, null, 2)
-    .split('\n')
-    .map((line, i) => (i === 0 ? line : '  ' + line))
-    .join('\n');
-}
-
-function defaultForType(type: CustomVar['type']): unknown {
-  switch (type) {
-    case 'string':  return '';
-    case 'number':  return 0;
-    case 'boolean': return false;
-    case 'array':   return [];
-    case 'object':  return {};
-    case 'form':    return {};
-    default:        return null;
-  }
-}
-
-function toSafeFilename(name: string): string {
-  // Convert camelCase or any valid name to a safe filename (preserve as-is mostly)
-  return name.replace(/[^a-zA-Z0-9_-]/g, '_');
+export interface DecompiledEntry {
+  text: string
+  srcFile: string
+  kind: 'var' | 'function' | 'workflow' | 'component' | 'page' | 'datasource' | 'trigger'
+  order: number
 }
 
 /**
- * Convert CustomVar[] to a map of { filePath → source }.
- * Returns an empty object if there are no variables to emit.
- *
- * Each variable gets its own file:
- *   src/store/display.ts  → import { defineVar } from 'builder';\nexport default defineVar('string', '0');\n
+ * Read variables.json and emit `export const name = defineVar(initial)` for every
+ * DSL-authored entry (_dslName + _src present).
  */
-export function decompileVars(vars: CustomVar[]): Record<string, string> {
-  const exportable = vars.filter(v => v.name && !v.name.startsWith('_'));
-  const files: Record<string, string> = {};
+export function decompileVars(configDir?: string): DecompiledEntry[] {
+  const dir = configDir ?? path.join(process.cwd(), 'config')
+  const results: DecompiledEntry[] = []
 
-  for (const v of exportable) {
-    const varType  = v.type ?? 'string';
-    const initVal  = serializeInitialValue(v.initialValue ?? defaultForType(v.type));
-    const filename = toSafeFilename(v.label ?? v.name);
-    const filePath = `src/store/${filename}.ts`;
-
-    let code = `import { defineVar } from 'builder';\n\nexport default defineVar('${varType}', ${initVal});\n`;
-
-    files[filePath] = code;
+  let varsJson: { variables?: Record<string, { _dslName?: string; _src?: string; type?: string; initialValue?: unknown; label?: string }> } | null = null
+  try {
+    varsJson = JSON.parse(fs.readFileSync(path.join(dir, 'variables.json'), 'utf-8'))
+  } catch {
+    return results
   }
 
-  return files;
+  if (!varsJson?.variables) return results
+
+  let order = 0
+  for (const [, entry] of Object.entries(varsJson.variables)) {
+    const name = entry._dslName
+    const src = entry._src
+    if (!name || !src) continue
+
+    const initial = entry.initialValue
+    const initialLiteral = formatLiteral(initial)
+
+    results.push({
+      text: `export const ${name} = defineVar(${initialLiteral})`,
+      srcFile: src,
+      kind: 'var',
+      order: order++,
+    })
+  }
+
+  return results
+}
+
+function formatLiteral(val: unknown): string {
+  if (val === null || val === undefined) return 'null'
+  if (typeof val === 'string') return JSON.stringify(val)
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val)
+  if (Array.isArray(val)) return JSON.stringify(val)
+  if (typeof val === 'object') return JSON.stringify(val)
+  return JSON.stringify(val)
 }

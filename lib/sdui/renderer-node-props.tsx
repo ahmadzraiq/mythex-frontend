@@ -169,26 +169,89 @@ export function applyStateOverrides(
 }
 
 /**
+ * Wraps a raw formula value (number/string) into the appropriate Tailwind class string.
+ * The compiler stores raw values in classFormulas (not pre-wrapped class strings), so the
+ * renderer must wrap them here. The key identifies which CSS property is targeted.
+ */
+const CLASS_FORMULA_WRAPPERS: Record<string, (v: unknown) => string> = {
+  text:        v => `text-[${v}px]`,
+  bg:          v => `bg-[${v}]`,
+  textColor:   v => `!text-[${v}]`,
+  borderColor: v => `border-[${v}]`,
+  opacity:     v => `opacity-[${v}]`,
+  z:           v => `z-[${v}]`,
+  radius:      v => `rounded-[${v}px]`,
+  radiusTL:    v => `rounded-tl-[${v}px]`,
+  radiusTR:    v => `rounded-tr-[${v}px]`,
+  radiusBR:    v => `rounded-br-[${v}px]`,
+  radiusBL:    v => `rounded-bl-[${v}px]`,
+  border:      v => `border-[${v}px]`,
+  w:           v => v === 'full' ? 'w-full' : v === 'screen' ? 'w-screen' : v === 'fit' ? 'w-fit' : v === 'auto' ? 'w-auto' : `w-[${v}px]`,
+  h:           v => v === 'full' ? 'h-full' : v === 'screen' ? 'h-screen' : v === 'fit' ? 'h-fit' : v === 'auto' ? 'h-auto' : `h-[${v}px]`,
+  minW:        v => `min-w-[${v}px]`,
+  maxW:        v => `max-w-[${v}px]`,
+  minH:        v => `min-h-[${v}px]`,
+  maxH:        v => `max-h-[${v}px]`,
+  p:           v => `p-[${v}px]`,
+  px:          v => `px-[${v}px]`,
+  py:          v => `py-[${v}px]`,
+  pt:          v => `pt-[${v}px]`,
+  pr:          v => `pr-[${v}px]`,
+  pb:          v => `pb-[${v}px]`,
+  pl:          v => `pl-[${v}px]`,
+  m:           v => `m-[${v}px]`,
+  mx:          v => `mx-[${v}px]`,
+  my:          v => `my-[${v}px]`,
+  mt:          v => `mt-[${v}px]`,
+  mr:          v => `mr-[${v}px]`,
+  mb:          v => `mb-[${v}px]`,
+  ml:          v => `ml-[${v}px]`,
+  gap:         v => `gap-[${v}px]`,
+  gapX:        v => `gap-x-[${v}px]`,
+  gapY:        v => `gap-y-[${v}px]`,
+  top:         v => `top-[${v}px]`,
+  right:       v => `right-[${v}px]`,
+  bottom:      v => `bottom-[${v}px]`,
+  left:        v => `left-[${v}px]`,
+  cursor:      v => `cursor-${v}`,
+  overflow:    v => `overflow-${v}`,
+  justify:     v => `justify-${v}`,
+  items:       v => `items-${v}`,
+  direction:   v => v === 'col' ? 'flex-col' : v === 'row' ? 'flex-row' : `flex-${v}`,
+  display:     v => v === 'none' ? 'hidden' : String(v),
+  position:    v => String(v),
+  colSpan:     v => v === 'full' ? 'col-span-full' : `col-span-${v}`,
+  shadow:      v => `shadow-${v}`,
+};
+
+/**
  * Evaluates any `classFormulas` sidecar on the node and appends the resulting
  * Tailwind classes to `cleanProps.className`.
- * classFormulas is a builder-side sidecar (node.props.classFormulas) that stores
- * { formula } objects for class-based FieldWithBinding fields (selfAlignment, textAlign, etc.).
+ * classFormulas entries store raw values (not pre-wrapped class strings); the
+ * CLASS_FORMULA_WRAPPERS map converts each raw value to the correct Tailwind class.
  */
 export function applyClassFormulas(
   node: SDUINode,
   cleanProps: Record<string, unknown>,
   sduiContext: SDUIContext,
 ): void {
-  const classFormulas = node.props?.classFormulas as Record<string, { formula?: string; js?: string }> | undefined;
+  const classFormulas = node.props?.classFormulas as Record<string, unknown> | undefined;
   if (!classFormulas) return;
   let extraCls = '';
-  for (const [, fv] of Object.entries(classFormulas)) {
-    if (fv && typeof fv === 'object') {
-      const formulaStr = fv.formula ?? fv.js;
-      if (typeof formulaStr === 'string' && formulaStr) {
-        const { value } = evaluateFormula(formulaStr, (sduiContext as { state?: Record<string, unknown> }).state ?? {});
-        if (typeof value === 'string' && value) extraCls += ' ' + value;
-      }
+  const state = (sduiContext as { state?: Record<string, unknown> }).state ?? {};
+  for (const [key, fv] of Object.entries(classFormulas)) {
+    if (!fv || typeof fv !== 'object') continue;
+    // Pass the full binding object (fv) so {js: "..."} routes to evaluateJsBinding,
+    // which correctly injects user-defined functions (formatDisplay, etc.) into scope.
+    const { value } = evaluateFormula(fv as object, state);
+    if (value == null) continue;
+    const wrapper = CLASS_FORMULA_WRAPPERS[key];
+    if (wrapper) {
+      const cls = wrapper(value);
+      if (cls) extraCls += ' ' + cls;
+    } else {
+      // Legacy: formula already evaluates to a complete class string (builder-side formulas)
+      if (typeof value === 'string' && value) extraCls += ' ' + value;
     }
   }
   if (extraCls) {

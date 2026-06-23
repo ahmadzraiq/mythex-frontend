@@ -1173,18 +1173,6 @@ async function executeTool(
       return `Written: ${compFilePath}`;
     }
 
-    case 'write_group': {
-      const { page, group, ui } = inp as { page: string; group: string; ui: unknown[] };
-      const wgPath = `pages/${page}/groups/${group}`;
-      if (writtenPaths.has(wgPath)) return `Error: "${wgPath}" was already written this task. Use edit_page to update nodes in this group.`;
-      const resolved = resolveStyleNodes({ ui }) as { ui: unknown[] };
-      assignNodeIds(resolved.ui as Record<string, unknown>[]);
-      registerNodeNames(resolved.ui as Record<string, unknown>[], nodeNameToId, idToPath);
-      engine.writeFile(wgPath, resolvePathRefs(JSON.stringify(resolved.ui, null, 2), pathToId));
-      writtenPaths.add(wgPath);
-      return `Written: ${wgPath}`;
-    }
-
     case 'edit_page': {
       const { path, node_name, changes } = inp as { path: string; node_name: string; changes: Record<string, unknown> };
       const actualPath = friendlyToActual.get(path) ?? path;

@@ -30,7 +30,6 @@ components/<id>/store/<name>              — SC-internal variable  (read only)
 components/<id>/workflows/<name>          — SC-internal workflow  (read only)
 components/<id>/utils/<name>              — SC-internal formula   (read only)
 pages/<name>/page                         — full page UI tree
-pages/<name>/groups/<group>               — named _group section
 pages/<name>/workflows/<name>             — page-scoped workflow  e.g. pages/Calculator/workflows/handleClick
 pages/<name>/triggers/<type>              — page-scoped lifecycle trigger
 \`\`\`

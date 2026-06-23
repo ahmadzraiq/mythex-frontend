@@ -117,9 +117,16 @@ function ToolRow({ tool, stepNumber }: { tool: AiToolCall; stepNumber: number })
         }}>
           {label}
         </span>
-        {/* Checkmark badge on done */}
+        {/* Checkmark + optional duration on done */}
         {isDone && (
-          <span style={{ fontSize: 9, color: 'var(--bld-success)', flexShrink: 0, animation: 'toolDotPop 0.35s ease-out' }}>✓</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, animation: 'toolDotPop 0.35s ease-out' }}>
+            <span style={{ fontSize: 9, color: 'var(--bld-success)' }}>✓</span>
+            {tool.duration != null && (
+              <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>
+                {tool.duration < 1000 ? `${tool.duration}ms` : `${(tool.duration / 1000).toFixed(1)}s`}
+              </span>
+            )}
+          </span>
         )}
         {/* AI blind badge — tool failed client-side but AI was told "ok" */}
         {tool.aiBlind && (
@@ -372,6 +379,14 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
     ? `${(serverDurationMs / 1000).toFixed(1)}s`
     : totalMs !== null ? `${(totalMs / 1000).toFixed(1)}s` : null;
 
+  // Sum of individual tool durations (only available after tool_result events are received)
+  const toolTotalMs = !streaming
+    ? tools.reduce<number | null>((acc, t) => {
+        if (t.duration == null) return acc;
+        return (acc ?? 0) + t.duration;
+      }, null)
+    : null;
+
   // Check whether any tool has a phase tag — if so use grouped display
   const hasPhases = tools.some(t => t.phase !== undefined);
   const groups = hasPhases ? groupToolsByPhase(tools) : null;
@@ -468,6 +483,14 @@ function ToolCallsGroup({ tools, streaming, isThinking, agentDebugInfo }: {
         </span>
         {timeLabel && (
           <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>· {timeLabel}</span>
+        )}
+        {toolTotalMs != null && (
+          <span
+            title="Total time spent in tool execution (excludes LLM thinking time)"
+            style={{ fontSize: 11, color: 'var(--bld-text-disabled)', opacity: 0.7 }}
+          >
+            · {toolTotalMs < 1000 ? `${toolTotalMs}ms` : `${(toolTotalMs / 1000).toFixed(1)}s`} tools
+          </span>
         )}
         <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>{expanded ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:expanded?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
       </button>
@@ -1764,7 +1787,7 @@ export function AiChatPanel() {
         {/* Title */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-1)' }}>AI Assistant</div>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>TypeScript / JSX</div>
+          <div style={{ fontSize: 10, color: 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>JSON / SDUI</div>
         </div>
 
         {/* New chat */}

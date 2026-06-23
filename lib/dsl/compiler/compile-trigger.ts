@@ -17,11 +17,10 @@ import crypto from 'crypto'
 import {
   buildVfsRegistry,
   loadDslRegistry,
-  resolveExprRefs,
-  resolveVarIdents,
   saveDslRegistry,
   type VfsRegistry,
 } from './resolve-vfs'
+import { lowerAction, makeEnv } from './lower/index'
 import { compileWorkflowFile as _compileWorkflow } from './compile-workflow'
 import type { WorkflowStep } from './compile-workflow'
 
@@ -51,7 +50,7 @@ function compileBodyToSteps(
   pathToId: Map<string, string>,
 ): WorkflowStep[] {
   if (!ts.isBlock(body)) {
-    const code = resolveVarIdents(resolveExprRefs(nodeText(body), pathToId), pathToId)
+    const code = lowerAction(nodeText(body), makeEnv({ pathToId }))
     return [{
       id: crypto.randomUUID(),
       type: 'runJavaScript',
@@ -71,7 +70,7 @@ function compileBodyToSteps(
       steps.push({
         id: crypto.randomUUID(),
         type: 'runJavaScript',
-        config: { code: resolveVarIdents(resolveExprRefs(code, pathToId), pathToId) },
+        config: { code: lowerAction(code, makeEnv({ pathToId })) },
       })
     }
     jsBuffer = []
@@ -98,7 +97,7 @@ function compileBodyToSteps(
         const valArg  = stmt.expression.arguments[1]
         const vfsPath = ts.isStringLiteral(pathArg) ? pathArg.text : nodeText(pathArg)
         const variableName = pathToId.get(vfsPath) ?? pathToId.get(`store/${vfsPath}`) ?? vfsPath
-        const value = valArg ? (ts.isStringLiteral(valArg) ? valArg.text : { js: resolveVarIdents(resolveExprRefs(nodeText(valArg), pathToId), pathToId) }) : null
+        const value = valArg ? (ts.isStringLiteral(valArg) ? valArg.text : { js: lowerAction(nodeText(valArg), makeEnv({ pathToId })) }) : null
         steps.push({ id: crypto.randomUUID(), type: 'changeVariableValue', config: { variableName, value } })
         continue
       }

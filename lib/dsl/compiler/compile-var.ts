@@ -25,7 +25,57 @@ interface VarEntry {
   _src: string
 }
 
-function parseInitialValue(argNode: ts.Expression | undefined): unknown {
+/**
+ * Recursively evaluate a literal expression to a primitive JS value.
+ * Handles string/number/boolean literals, unary minus, binary string
+ * concatenation (a + b), and parenthesised forms.
+ * Returns undefined when the expression is too complex to evaluate statically.
+ */
+function evalLiteralExpr(node: ts.Expression): unknown {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text
+  if (ts.isNumericLiteral(node)) return Number(node.text)
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false
+  if (node.kind === ts.SyntaxKind.NullKeyword) return null
+  if (node.kind === ts.SyntaxKind.UndefinedKeyword) return null
+  if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.MinusToken) {
+    if (ts.isNumericLiteral(node.operand)) return -Number(node.operand.text)
+  }
+  if (ts.isParenthesizedExpression(node)) return evalLiteralExpr(node.expression)
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.PlusToken
+  ) {
+    const left = evalLiteralExpr(node.left)
+    const right = evalLiteralExpr(node.right)
+    if (typeof left === 'string' && typeof right === 'string') return left + right
+    if (typeof left === 'number' && typeof right === 'number') return left + right
+  }
+  return undefined
+}
+
+/**
+ * Build a resolver that looks up module-level `const NAME = LITERAL` declarations
+ * in a SourceFile. Supports string/number/boolean literals and string concatenation.
+ * Used to resolve identifier references in defineVar(IDENTIFIER) initial values.
+ */
+function buildConstResolver(sf: ts.SourceFile): (name: string) => unknown {
+  const consts = new Map<string, unknown>()
+  ts.forEachChild(sf, node => {
+    if (!ts.isVariableStatement(node)) return
+    for (const decl of node.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+      const val = evalLiteralExpr(decl.initializer)
+      if (val !== undefined) consts.set(decl.name.text, val)
+    }
+  })
+  return (name: string) => consts.get(name)
+}
+
+function parseInitialValue(
+  argNode: ts.Expression | undefined,
+  resolveConst?: (name: string) => unknown,
+): unknown {
   if (!argNode) return null
 
   if (ts.isStringLiteral(argNode)) return argNode.text
@@ -39,15 +89,27 @@ function parseInitialValue(argNode: ts.Expression | undefined): unknown {
     if (ts.isNumericLiteral(argNode.operand)) return -Number(argNode.operand.text)
   }
 
+  // Identifier: look up in module-level const declarations (e.g. defineVar(SAMPLE))
+  if (ts.isIdentifier(argNode) && resolveConst) {
+    const resolved = resolveConst(argNode.text)
+    if (resolved !== undefined) return resolved
+  }
+
+  // Static expressions: string/number concatenation, parenthesised forms
+  const literal = evalLiteralExpr(argNode)
+  if (literal !== undefined) return literal
+
   // Arrays and objects: try to parse source text as JSON
   if (ts.isArrayLiteralExpression(argNode) || ts.isObjectLiteralExpression(argNode)) {
     try {
       // Convert TS literal to JSON-compatible text
       const srcText = argNode.getText()
-      // Replace single quotes with double quotes (simple heuristic)
+      // Replace single quotes with double quotes, unquoted keys → quoted keys,
+      // and strip trailing commas (valid JS, invalid JSON).
       const jsonLike = srcText
         .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":')
         .replace(/'/g, '"')
+        .replace(/,(\s*[}\]])/g, '$1')
       return JSON.parse(jsonLike)
     } catch {
       // Return raw source text as string if parsing fails
@@ -96,6 +158,7 @@ export interface CompiledVar {
  */
 export function compileVarsToJson(sourceCode: string, uuidSeed = 'dsl'): CompiledVar[] {
   const sf = ts.createSourceFile('dsl-vars.ts', sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const resolveConst = buildConstResolver(sf)
   const results: CompiledVar[] = []
 
   function visit(node: ts.Node) {
@@ -114,7 +177,7 @@ export function compileVarsToJson(sourceCode: string, uuidSeed = 'dsl'): Compile
         const typeArg = decl.initializer.arguments[0]
         const initArg = decl.initializer.arguments[1]
         const typeStr = ts.isStringLiteral(typeArg) ? typeArg.text : 'string'
-        const initial = parseInitialValue(initArg)
+        const initial = parseInitialValue(initArg, resolveConst)
 
         const uuid = seedUuid(`${uuidSeed}:var:${exportName}`)
         results.push({
@@ -165,6 +228,7 @@ export function compileVarFile(
   // Parse the source file to extract defineVar calls with their initialValues
   const source = fs.readFileSync(srcPath, 'utf-8')
   const sf = ts.createSourceFile(srcPath, source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  const resolveConst = buildConstResolver(sf)
 
   const defineCalls = new Map<string, { typeStr: string; initial: unknown }>()
 
@@ -185,7 +249,7 @@ export function compileVarFile(
         const initArg = decl.initializer.arguments[1]
 
         const typeStr = ts.isStringLiteral(typeArg) ? typeArg.text : 'string'
-        const initial = parseInitialValue(initArg)
+        const initial = parseInitialValue(initArg, resolveConst)
 
         defineCalls.set(exportName, { typeStr, initial })
       }

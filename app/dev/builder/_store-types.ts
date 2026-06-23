@@ -27,10 +27,14 @@ export type BuilderModelId = typeof BUILDER_MODELS[number]['id'];
 // ─── AI Chat types ─────────────────────────────────────────────────────────────
 
 export interface AiToolCall {
+  /** tool_use block id from the SDK — used to match tool_result completion events */
+  id?: string;
   name: string;
   input: Record<string, unknown>;
   result?: unknown;
   status?: 'pending' | 'success' | 'error' | 'generating';
+  /** Milliseconds from tool request to tool result — set when tool_result event arrives */
+  duration?: number;
   /** Which pipeline phase emitted this tool call — used for grouped display in the chat panel.
    *  Static values: planning, structure, media, styling, animation, workflows, binding.
    *  Dynamic values: combined:<slug>, sc:<slug>, styling:<slug>, workflows:<slug>, etc. */

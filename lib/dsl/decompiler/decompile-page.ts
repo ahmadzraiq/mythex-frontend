@@ -10,7 +10,7 @@
 import type { BuilderPage } from '@/app/dev/builder/_store-types';
 import type { SDUINode } from '@/lib/sdui/types/node';
 import type { ResolveContext } from './resolve';
-import { decompileNodes, collectComponentTypes, hasWorkflowRefs, hasVarRefs } from './decompile-nodes';
+import { decompileNodes, collectComponentTypes, hasVarRefs } from './decompile-nodes';
 
 /**
  * The exact set of JSX element identifiers exported from 'builder'
@@ -18,7 +18,7 @@ import { decompileNodes, collectComponentTypes, hasWorkflowRefs, hasVarRefs } fr
  */
 const BUILDER_COMPONENTS = new Set([
   'Box', 'Text', 'Input', 'Textarea', 'Image', 'Icon',
-  'Video', 'Iframe', 'FormContainer', 'SC',
+  'Video', 'Iframe', 'FormContainer', 'SC', 'For', 'Show',
 ]);
 
 export function decompilePage(page: BuilderPage, ctx: ResolveContext): string {
@@ -27,9 +27,8 @@ export function decompilePage(page: BuilderPage, ctx: ResolveContext): string {
   const title  = page.meta?.title ?? page.name;
 
   // Collect which builder symbols are actually used
-  const usedTypes    = collectComponentTypes(nodes);
-  const needsWorkflow = hasWorkflowRefs(nodes);
-  const needsVars    = hasVarRefs(nodes);
+  const usedTypes = collectComponentTypes(nodes);
+  const needsVars = hasVarRefs(nodes);
 
   // Only import known builder components; custom components defined in the page don't come from 'builder'
   const componentImports = [...usedTypes]
@@ -37,7 +36,13 @@ export function decompilePage(page: BuilderPage, ctx: ResolveContext): string {
     .sort();
 
   const namedImports: string[] = ['definePage', ...componentImports];
-  if (needsWorkflow) namedImports.push('workflow');
+  // Always include action factories and structural components
+  if (!namedImports.includes('For'))   namedImports.push('For');
+  if (!namedImports.includes('Show'))  namedImports.push('Show');
+  if (!namedImports.includes('run'))   namedImports.push('run');
+  if (!namedImports.includes('set'))   namedImports.push('set');
+  if (!namedImports.includes('when'))  namedImports.push('when');
+  if (!namedImports.includes('ev'))    namedImports.push('ev');
   if (needsVars)     namedImports.push('vars');
 
   const importLine = `import { ${namedImports.join(', ')} } from 'builder';`;

@@ -12,7 +12,7 @@
  *   onClick={workflow(...)}     → node.actions = [{ trigger: 'click', steps: [executeWorkflow(uuid)] }]
  *   arr.map(x => <Box>)         → node.map + node.key on child
  *   {condition && <Box>}        → Box gets condition: "condition"
- *   <Text>{vars['store/x']}</Text>  → text: "{{variables['uuid']}}"
+ *   <Text>{vars['store/x']}</Text>  → text: { js: "variables['uuid']" }
  *   <Text>static string</Text>  → text: "static string"
  *   <Text>{expr}</Text>         → text: { js: "resolvedExpr" }
  */
@@ -25,14 +25,16 @@ import {
   buildVfsRegistry,
   getOrCreateUuid,
   loadDslRegistry,
-  resolveExprRefs,
   saveDslRegistry,
   type VfsRegistry,
 } from './resolve-vfs'
+import { lowerExpression, lowerAction as lowerActionBabel, makeEnv } from './lower/index'
+
 import {
   resolveStyleParams,
   SHORTHAND_KEYS,
   SHORTHAND_FORMULA_CSS_MAP,
+  SHORTHAND_FORMULA_CLASS_MAP,
   styleKeyToCssProps,
   RESPONSIVE_BPS,
   DSL_BP_TO_INTERNAL,
@@ -57,9 +59,11 @@ interface SduiNodeConfig {
   props: Record<string, unknown>
   children?: SduiNodeConfig[]
   text?: unknown
-  map?: string
+  map?: string | { js: string; as?: string; key?: string }
   key?: unknown
   condition?: unknown
+  /** Render-body local consts — evaluated into the subtree scope at runtime */
+  locals?: Array<{ name: string; js: string }>
   actions?: Array<
     | { action: string; params?: Record<string, unknown>; trigger?: string }
     | { trigger: string; steps: object[] }
@@ -83,6 +87,54 @@ function nodeText(n: ts.Node): string {
 
 let _currentLocalFns = new Map<string, string>()
 
+// Page-local parameterized functions (const X = defineFunction((a,b)=>…) inside a page body).
+// These are NOT project-level functions — they live inside the page closure and often
+// reference page-local consts like `rates`. Stored here with page-local consts already
+// inlined so that lowerExpression can inline `X(arg1,arg2)` → `(fnBody)(arg1,arg2)`.
+let _currentLocalParamFns = new Map<string, string>()
+
+// Module-level const literals (arrays, objects) defined in the page source file
+// but outside the definePage fn (e.g. `const WEEKDAYS = [...]`).
+// Inlined into formula expressions that reference them so the renderer evaluator
+// can resolve the value without a state-path lookup.
+let _currentPageLocals = new Map<string, string>()
+
+// AST nodes for page-level local functions (arrow, expression, or declaration).
+// Used so onClick={prevMonth} is compiled as an action AND {Tab('A','a')} can be inlined.
+let _currentPageLocalNodes = new Map<string, ts.FunctionLikeDeclaration>()
+
+// The current .map() callback parameter name (e.g. `cell` in `.map((cell) => ...)`).
+// Set by processMapCall before compiling the callback JSX so lowerExpression/lowerAction
+// can rewrite `cell.field` → `context.item.field` via the LoweringEnv mapStack.
+let _currentMapParam: string | undefined = undefined
+
+// The current .map() callback index parameter name (e.g. `i` in `.map((cell, i) => ...)`).
+// Passed into LoweringEnv mapStack so lowerExpression rewrites `i` → `context.item.index`.
+let _currentMapIndexParam: string | undefined = undefined
+
+// Parent (outer) map params — set when an inner nested map is being compiled so that
+// lowerExpression/lowerAction can resolve outer-map param refs (e.g. `qi`) inside the
+// inner map's click handlers to `context.item.parent.index`.
+let _parentMapParam: string | undefined = undefined
+let _parentMapIndexParam: string | undefined = undefined
+
+// Stack of callback-local declarations from nested .map() block bodies.
+// Each entry carries the raw locals map and the outer map's param/index names so that
+// lowerExpression can inline parameterised calls like `choose(i)` in formulas/workflow code.
+// Pushed/popped by processMapCall around every convertJsxElement call.
+let _mapCallbackLocalsStack: Array<{
+  locals: Map<string, string>
+  paramName: string | undefined
+  indexParamName: string | undefined
+}> = []
+
+// Maps workflow UUID → declared parameter names (e.g. 'deleteExpense' uuid → ['id']).
+// Populated by scanning the source for defineWorkflow calls at the start of each compile.
+// Used by parseArrowWorkflowCall and buildRunStepParams so that positional call-site args
+// are keyed by the workflow's declared param name (e.g. `id`) instead of `arg0`, keeping
+// the caller's `params.id` consistent with `parameters.id` in the workflow's code.
+let _workflowParamNames: Map<string, string[]> = new Map()
+
 // Runtime SC registry — populated from DSL-compiled defineComponent() calls in
 // the same compilation pass. Overrides the static _scByName during page compile.
 let _runtimeScMap = new Map<string, { id: string; name: string; content: Record<string, unknown>; triggers?: Array<{ id: string; name: string }> }>()
@@ -95,6 +147,42 @@ let _componentPropNames: string[] = []
 // Maps triggerName → internal workflow ID so onClick={triggerName} compiles
 // to an inline executeWorkflow action instead of a bare JS binding.
 let _scTriggerNames: Map<string, string> = new Map()
+
+// ─── Babel lowering env builder ───────────────────────────────────────────────
+
+/**
+ * Build a LoweringEnv from the current module-level globals.
+ * Called at each resolveExprToSdui / rewriteBodyForRunJs call site so the
+ * Babel lowerers have access to the current compilation context.
+ *
+ * @param pathToId  The per-page variable/workflow UUID map.
+ * @param eventParam  Optional event handler parameter name (e.g. "e").
+ */
+function buildLoweringEnv(
+  pathToId: Map<string, string>,
+  eventParam?: string,
+): ReturnType<typeof makeEnv> {
+  // Build mapStack from the current nested-map globals.
+  // _mapCallbackLocalsStack is pushed BEFORE convertJsxElement and its last entry IS
+  // the current (innermost) map frame — so we only iterate the stack, never add
+  // _currentMapParam separately (that would double-count the innermost frame).
+  const mapStack: ReturnType<typeof makeEnv>['mapStack'] = _mapCallbackLocalsStack.map(frame => ({
+    itemParam: frame.paramName,
+    indexParam: frame.indexParamName,
+    locals: frame.locals,
+  }))
+
+  const env = makeEnv({
+    pathToId,
+    pageLocals: _currentPageLocals,
+    localFns: _currentLocalFns,
+    localParamFns: _currentLocalParamFns,
+    componentProps: _componentPropNames,
+    eventParam,
+    mapStack,
+  })
+  return env
+}
 
 // ─── Inline action builder ────────────────────────────────────────────────────
 
@@ -120,11 +208,12 @@ function buildInlineAction(
 ): { trigger: string; workflowId: string } {
   if (params && Object.keys(params).length > 0) {
     const inlineId = crypto.randomUUID();
+    const stepId = crypto.createHash('sha256').update(`${inlineId}:step0`).digest('hex').slice(0, 32)
     _inlineWorkflows.set(inlineId, {
       id: inlineId,
       meta: { name: `inline-${workflowId.slice(0, 8)}`, trigger },
       steps: [{
-        id: crypto.randomUUID(),
+        id: stepId,
         type: 'runProjectWorkflow',
         config: { workflowId, params },
       }],
@@ -171,13 +260,74 @@ function collectPageLocalFns(fnBody: ts.Node): Map<string, string> {
           init.arguments[0] &&
           (ts.isArrowFunction(init.arguments[0]) || ts.isFunctionExpression(init.arguments[0]))
         ) {
-          result.set(name, arrowToIife(init.arguments[0] as ts.ArrowFunction | ts.FunctionExpression))
+          const arrow = init.arguments[0] as ts.ArrowFunction | ts.FunctionExpression
+          if (arrow.parameters.length === 0) {
+            // Zero-arg: store as IIFE so lowerExpression replaces `name()` → inlined body
+            result.set(name, arrowToIife(arrow))
+          } else {
+            // Parameterized: store fn text with:
+            //   1. Parameters renamed to _p0, _p1, … so lowerExpression cannot confuse
+            //      a parameter name (e.g. `cur`) with a variable identifier and
+            //      produce invalid syntax like `((variables['uuid']) => …)`.
+            //   2. Any page-local consts (e.g. `rates`) already substituted in, so the
+            //      inline form is self-contained.
+            let fnText = nodeText(arrow)
+            // Step 1: rename params
+            arrow.parameters.forEach((p, i) => {
+              if (ts.isIdentifier(p.name)) {
+                fnText = replaceIdentInCode(fnText, p.name.text, `_p${i}`)
+              }
+            })
+            // Step 2: inline page-local consts
+            for (const [constName, constVal] of _currentPageLocals) {
+              fnText = replaceIdentInCode(fnText, constName, `(${constVal})`)
+            }
+            _currentLocalParamFns.set(name, fnText)
+          }
           continue
         }
 
-        // const fn = () => expr  OR  const fn = () => { stmts }
+        // const fn = () => expr  OR  const fn = (a, b) => expr
         if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
-          result.set(name, arrowToIife(init))
+          // Also register in _currentPageLocalNodes so that calls like {Tab('A','a')}
+          // in JSX children can be inlined by processJsxExpression.
+          _currentPageLocalNodes.set(name, init)
+          if (init.parameters.length === 0) {
+            // Zero-arg: store as IIFE so lowerExpression replaces `name()` → inlined body.
+            result.set(name, arrowToIife(init))
+          } else {
+            // Parameterized plain arrow: rename params to _p0, _p1, … and store in
+            // _currentLocalParamFns so lowerExpression replaces `name(` with `(fn)(`.
+            // This mirrors the defineFunction parameterized path, avoiding variable name
+            // collisions when the parameter shares a name with a DSL variable.
+            let fnText = nodeText(init)
+            init.parameters.forEach((p, i) => {
+              if (ts.isIdentifier(p.name)) {
+                fnText = replaceIdentInCode(fnText, p.name.text, `_p${i}`)
+              }
+            })
+            // Inline any page-local consts already collected so the fn text is self-contained.
+            for (const [constName, constVal] of _currentPageLocals) {
+              fnText = replaceIdentInCode(fnText, constName, `(${constVal})`)
+            }
+            _currentLocalParamFns.set(name, fnText)
+          }
+          continue
+        }
+
+        // const data = [...] or const data = {...}
+        // Register into _currentPageLocals so resolveExprToSdui can inline them.
+        if (ts.isArrayLiteralExpression(init) || ts.isObjectLiteralExpression(init)) {
+          _currentPageLocals.set(name, nodeText(init))
+          continue
+        }
+
+        // const derived = someArray.filter(...) / .slice() / .sort() etc.
+        // Register as a computed local so formula references to it get the transitive
+        // IIFE preamble treatment in resolveExprToSdui (which will also pull in deps
+        // like `recipes` that appear in the expression).
+        if (ts.isCallExpression(init) || ts.isPropertyAccessExpression(init)) {
+          _currentPageLocals.set(name, nodeText(init))
           continue
         }
       }
@@ -193,6 +343,116 @@ function collectPageLocalFns(fnBody: ts.Node): Map<string, string> {
   }
 
   return result
+}
+
+/**
+ * Collect top-level module-level `const name = [...]` or `const name = {...}` declarations
+ * from a page source file. These are plain data literals (not functions, not define* calls).
+ * They are inlined into formula expressions so `{ js: "WEEKDAYS" }` resolves correctly.
+ */
+function collectPageLocalConsts(sf: ts.SourceFile): Map<string, string> {
+  const result = new Map<string, string>()
+  _currentPageLocalNodes = new Map()
+  ts.forEachChild(sf, node => {
+    // const foo = (...) => ...  or  const foo = function(...) { ... }
+    if (ts.isVariableStatement(node)) {
+      for (const decl of node.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+        const init = decl.initializer
+        if (
+          ts.isCallExpression(init) &&
+          ts.isIdentifier(init.expression) &&
+          init.expression.text.startsWith('define')
+        ) continue
+        if (
+          ts.isArrayLiteralExpression(init) ||
+          ts.isObjectLiteralExpression(init) ||
+          ts.isArrowFunction(init) ||
+          ts.isFunctionExpression(init)
+        ) {
+          result.set(decl.name.text, nodeText(init))
+          // Store arrow/function nodes so onClick={fnName} compiles as an action
+          // and {Factory('a','b')} factory calls can be inlined.
+          if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
+            _currentPageLocalNodes.set(decl.name.text, init)
+          }
+        }
+        // Call expressions: e.g. `const currencies = Object.keys(rates)`.
+        // Collected so resolveExprToSdui can inline them (with their dependencies) as
+        // IIFE preambles when they are referenced in page formulas or map sources.
+        if (ts.isCallExpression(init) || ts.isPropertyAccessExpression(init)) {
+          result.set(decl.name.text, nodeText(init))
+        }
+        // Primitive module-level consts (numbers, strings, booleans) used in formula
+        // expressions, e.g. `const totalHabits = 6` referenced in text bindings.
+        if (
+          ts.isNumericLiteral(init) ||
+          ts.isStringLiteral(init) ||
+          ts.isNoSubstitutionTemplateLiteral(init) ||
+          init.kind === ts.SyntaxKind.TrueKeyword ||
+          init.kind === ts.SyntaxKind.FalseKeyword
+        ) {
+          result.set(decl.name.text, nodeText(init))
+        }
+        // Catch-all for any other expression types not covered above:
+        // binary expressions (e.g. `subtotal + SHIPPING`), template expressions,
+        // conditional expressions, prefix/postfix unary, etc.
+        if (!result.has(decl.name.text) && ts.isExpression(init)) {
+          result.set(decl.name.text, nodeText(init))
+        }
+      }
+      return
+    }
+    // function Foo(label, desc, ...) { return <JSX> }
+    // Register as inlinable factory so {Foo('a','b')} in JSX children works.
+    if (ts.isFunctionDeclaration(node) && node.name) {
+      _currentPageLocalNodes.set(node.name.text, node)
+    }
+  })
+  return result
+}
+
+/**
+ * Collect render-body `const` declarations from a page/component render function body.
+ * These are preserved as `locals[]` on the root node so they can be evaluated into
+ * the subtree scope at runtime (exact round-trip — no inlining).
+ *
+ * Only const declarations that are NOT `define*` calls are collected.
+ * Imperative statements (`let`, assignments) are skipped — they live in workflow bodies.
+ */
+function collectRenderBodyLocals(fnBody: ts.Node): Array<{ name: string; js: string }> {
+  const locals: Array<{ name: string; js: string }> = []
+
+  function scanBlock(block: ts.Block) {
+    for (const stmt of block.statements) {
+      // Stop at return — anything after return is unreachable
+      if (ts.isReturnStatement(stmt)) break
+      if (!ts.isVariableStatement(stmt)) continue
+      // Only `const`, not `let` or `var`
+      if (!(stmt.declarationList.flags & ts.NodeFlags.Const)) continue
+
+      for (const decl of stmt.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+        const name = decl.name.text
+        const init = decl.initializer
+
+        // Skip define* calls
+        if (
+          ts.isCallExpression(init) &&
+          ts.isIdentifier(init.expression) &&
+          init.expression.text.startsWith('define')
+        ) continue
+
+        locals.push({ name, js: nodeText(init) })
+      }
+    }
+  }
+
+  if (ts.isBlock(fnBody)) {
+    scanBlock(fnBody)
+  }
+
+  return locals
 }
 
 /**
@@ -212,32 +472,7 @@ function arrowToIife(fn: ts.ArrowFunction | ts.FunctionExpression): string {
   return nodeText(fn)
 }
 
-/**
- * Inline zero-argument local function calls: `filteredWorkouts()` → their body.
- * Does multiple passes to handle transitive calls (totalCalories → filteredWorkouts).
- */
-function inlineLocalFnCalls(code: string): string {
-  if (_currentLocalFns.size === 0) return code
-  let result = code
-  for (let pass = 0; pass < 5; pass++) {
-    let changed = false
-    for (const [name, iife] of _currentLocalFns) {
-      const pattern = new RegExp(`(?<![.\\w])\\b${name}\\s*\\(\\s*\\)`, 'g')
-      const next = result.replace(pattern, iife)
-      if (next !== result) { result = next; changed = true }
-    }
-    if (!changed) break
-  }
-  return result
-}
 
-/**
- * Resolve a JS expression string to SDUI format.
- * Handles:
- *   vars['store/x']   → variables['uuid']   (legacy)
- *   display           → variables['uuid']   (new API bare var identifier)
- *   workflows/name    → uuid               (action references)
- */
 /**
  * Replace a bare identifier `name` with `replacement` in JS/TS code,
  * but ONLY in code contexts — not inside string literals (single/double/backtick).
@@ -249,13 +484,29 @@ export function replaceIdentInCode(code: string, name: string, replacement: stri
   // replaceCalls=false (default) is used for variable resolution where we skip calls to
   // avoid accidentally replacing global function names like `formatDisplay(...)`.
   const identRe = new RegExp(
-    `(?<![.'"\\[\\w])\\b${name}\\b(?!['\"\\]])${replaceCalls ? '' : '(?!\\s*\\()'}`,
+    `(?<![.'"\\w])\\b${name}\\b(?!['"])${replaceCalls ? '' : '(?!\\s*\\()'}`,
     'g',
   )
 
+  // Replace within a non-string segment, guarding against object property key position.
+  // An identifier in key position is preceded (ignoring whitespace) by `{` or `,` AND
+  // immediately followed by `:`.  This prevents `{ dept: 'v' }` from becoming
+  // `{ variables['uuid']: 'v' }` while still replacing the identifier in expressions.
+  function applySegment(segment: string): string {
+    return segment.replace(identRe, (match: string, offset: number) => {
+      const afterSlice = segment.slice(offset + match.length)
+      if (/^\s*:/.test(afterSlice)) {
+        const beforeTrimmed = segment.slice(0, offset).trimEnd()
+        const lastCh = beforeTrimmed.length > 0 ? beforeTrimmed[beforeTrimmed.length - 1] : ''
+        if (lastCh === '{' || lastCh === ',') return match
+      }
+      return replacement
+    })
+  }
+
   // Fast path: no string literals present
   if (!code.includes('"') && !code.includes("'") && !code.includes('`')) {
-    return code.replace(identRe, replacement)
+    return applySegment(code)
   }
 
   const out: string[] = []
@@ -310,7 +561,7 @@ export function replaceIdentInCode(code: string, name: string, replacement: stri
             else break
           }
           // Apply replacement inside interpolation content
-          out.push(code.slice(interpStart, i).replace(identRe, replacement))
+          out.push(applySegment(code.slice(interpStart, i)))
           out.push('}')
           i++ // skip the closing }
           continue
@@ -326,36 +577,14 @@ export function replaceIdentInCode(code: string, name: string, replacement: stri
     // Regular code — accumulate until next string start, then apply replacement
     const start = i
     while (i < code.length && code[i] !== "'" && code[i] !== '"' && code[i] !== '`') i++
-    out.push(code.slice(start, i).replace(identRe, replacement))
+    out.push(applySegment(code.slice(start, i)))
   }
 
   return out.join('')
 }
 
 function resolveExprToSdui(exprText: string, pathToId: Map<string, string>): string {
-  // First inline any page-local function calls (e.g. filteredWorkouts() → inlined body)
-  let result = inlineLocalFnCalls(exprText)
-  // Then legacy vars['...'] replacement
-  result = resolveExprRefs(result, pathToId)
-
-  // Replace bare variable identifier references (new API).
-  // Only replace word-boundary matches that are keys in pathToId (var kind).
-  // We avoid replacing inside property accesses (e.g. w.name — only `w`, not `.name`).
-  // We also avoid replacing inside string literals (single, double, template literal plain parts).
-  for (const [key, uuid] of pathToId) {
-    // Only process bare names (no '/' path separators)
-    if (key.includes('/') || key === uuid) continue
-    // Skip if not an identifier (starts with letter/underscore)
-    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) continue
-    result = replaceIdentInCode(result, key, `variables['${uuid}']`)
-  }
-  // When compiling an SC render fn, rewrite component prop names →
-  // context.component?.props?.['name'] so bindings like {label} resolve correctly.
-  for (const propName of _componentPropNames) {
-    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(propName)) continue
-    result = replaceIdentInCode(result, propName, `context.component?.props?.['${propName}']`)
-  }
-  return result
+  return lowerExpression(exprText, buildLoweringEnv(pathToId))
 }
 
 /**
@@ -377,14 +606,6 @@ function unwrapArrowBody(s: string): string {
   // Block body: strip outer { }
   if (body.startsWith('{') && body.endsWith('}')) return body.slice(1, -1).trim()
   return body
-}
-
-function wrapText(exprText: string): string {
-  // If the expr is already a simple variable reference template, keep it
-  if (exprText.startsWith('"') || exprText.startsWith("'")) {
-    return exprText.slice(1, -1)
-  }
-  return `{{${exprText}}}`
 }
 
 /** Parse `workflow('path', { k: v })` call */
@@ -431,8 +652,27 @@ function parseWorkflowCall(
  * Parse `() => workflowRef(args)` — new API direct workflow call with args.
  * Returns an action entry if the arrow body is a single call to a known workflow.
  */
+/**
+ * Resolve a workflow-call param value expression to a JS string,
+ * rewriting map callback param references to context.item.* paths.
+ */
+function resolveWfParamExpr(node: ts.Expression, pathToId: Map<string, string>): string {
+  // Bare map item param (e.g. `f` in ['all','unread'].map(f => ...) → context.item.data
+  if (ts.isIdentifier(node)) {
+    if (_currentMapParam && node.text === _currentMapParam) return 'context.item.data'
+    if (_currentMapIndexParam && node.text === _currentMapIndexParam) return 'context.item.index'
+  }
+  // Property access on the map param: n.id, n.type → context.item.data.id, context.item.data.type
+  if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
+    if (_currentMapParam && node.expression.text === _currentMapParam) {
+      return `context.item.data.${node.name.text}`
+    }
+  }
+  return resolveExprToSdui(nodeText(node), pathToId)
+}
+
 function parseArrowWorkflowCall(
-  arrow: ts.ArrowFunction,
+  arrow: ts.ArrowFunction | ts.FunctionExpression,
   pathToId: Map<string, string>,
 ): { action: string; params?: Record<string, unknown> } | null {
   let callExpr: ts.CallExpression | null = null
@@ -463,18 +703,90 @@ function parseArrowWorkflowCall(
   const uuid = pathToId.get(wfName) ?? pathToId.get(`workflows/${wfName}`)
   if (!uuid) return null
 
-  // Compile positional args to params
+  // Compile args to params
   let params: Record<string, unknown> | undefined
   if (callExpr.arguments.length > 0) {
     params = {}
-    callExpr.arguments.forEach((arg, i) => {
-      const key = `arg${i}`
-      if (ts.isStringLiteral(arg))       params![key] = arg.text
-      else if (ts.isNumericLiteral(arg)) params![key] = Number(arg.text)
-      else if (arg.kind === ts.SyntaxKind.TrueKeyword)  params![key] = true
-      else if (arg.kind === ts.SyntaxKind.FalseKeyword) params![key] = false
-      else params![key] = { js: resolveExprToSdui(nodeText(arg), pathToId) }
-    })
+    const firstArg = callExpr.arguments[0]
+    const declaredParams = _workflowParamNames.get(uuid)
+    // Single object literal arg: workflow({ id: item.id, name: item.name })
+    // Two possible conventions:
+    //   WRAP — workflow has exactly one param whose name does NOT appear as a key in the
+    //          object (e.g. addToCart({id, name, price}) with (args)). The AI passes a
+    //          whole struct that the workflow accesses as args.id → parameters.args.id.
+    //   SPREAD — all other cases: props match declared param names (e.g. saveEdit({id})
+    //            with (id)), or there are multiple declared params. The object's keys are
+    //            mapped directly to top-level params → parameters.id = value.
+    if (callExpr.arguments.length === 1 && ts.isObjectLiteralExpression(firstArg)) {
+      // Collect the property names present in the object literal
+      const objPropNames = firstArg.properties
+        .filter((p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p))
+        .map(p => (ts.isIdentifier(p.name) ? p.name.text : ts.isStringLiteral(p.name) ? p.name.text : null))
+        .filter((k): k is string => k !== null)
+
+      // WRAP only when the workflow has exactly one declared param whose name does NOT
+      // appear in the object's own property list — meaning the param is a container.
+      const shouldWrap = !!(declaredParams &&
+        declaredParams.length === 1 &&
+        declaredParams[0] &&
+        !objPropNames.includes(declaredParams[0]))
+
+      if (shouldWrap) {
+        // Build a formula string that evaluates to the entire object at runtime
+        const wrapperKey = declaredParams![0]
+        const propParts: string[] = []
+        for (const prop of firstArg.properties) {
+          if (!ts.isPropertyAssignment(prop)) continue
+          const k = ts.isIdentifier(prop.name) ? prop.name.text
+                  : ts.isStringLiteral(prop.name) ? prop.name.text : null
+          if (!k) continue
+          const val = prop.initializer
+          let valExpr: string
+          if (ts.isStringLiteral(val))       valExpr = JSON.stringify(val.text)
+          else if (ts.isNumericLiteral(val)) valExpr = val.text
+          else if (val.kind === ts.SyntaxKind.TrueKeyword)  valExpr = 'true'
+          else if (val.kind === ts.SyntaxKind.FalseKeyword) valExpr = 'false'
+          else {
+            valExpr = (ts.isArrowFunction(val) && val.parameters.length === 0 && !ts.isBlock(val.body))
+              ? resolveWfParamExpr(val.body as ts.Expression, pathToId)
+              : resolveWfParamExpr(val, pathToId)
+          }
+          propParts.push(`${JSON.stringify(k)}: ${valExpr}`)
+        }
+        params[wrapperKey] = { js: `{${propParts.join(', ')}}` }
+      } else {
+        // Spread object properties as individual top-level params
+        for (const prop of firstArg.properties) {
+          if (!ts.isPropertyAssignment(prop)) continue
+          const k = ts.isIdentifier(prop.name) ? prop.name.text
+                  : ts.isStringLiteral(prop.name) ? prop.name.text : null
+          if (!k) continue
+          const val = prop.initializer
+          if (ts.isStringLiteral(val))       params[k] = val.text
+          else if (ts.isNumericLiteral(val)) params[k] = Number(val.text)
+          else if (val.kind === ts.SyntaxKind.TrueKeyword)  params[k] = true
+          else if (val.kind === ts.SyntaxKind.FalseKeyword) params[k] = false
+          else {
+            const raw = (ts.isArrowFunction(val) && val.parameters.length === 0 && !ts.isBlock(val.body))
+              ? resolveWfParamExpr(val.body as ts.Expression, pathToId)
+              : resolveWfParamExpr(val, pathToId)
+            params[k] = { js: raw }
+          }
+        }
+      }
+    } else {
+      // Positional args: workflow(a, b) — key by declared param name when available
+      // so the caller's params.id matches `parameters.id` in the workflow's code.
+      const declaredParams = _workflowParamNames.get(uuid)
+      callExpr.arguments.forEach((arg, i) => {
+        const key = declaredParams?.[i] ?? `arg${i}`
+        if (ts.isStringLiteral(arg))       params![key] = arg.text
+        else if (ts.isNumericLiteral(arg)) params![key] = Number(arg.text)
+        else if (arg.kind === ts.SyntaxKind.TrueKeyword)  params![key] = true
+        else if (arg.kind === ts.SyntaxKind.FalseKeyword) params![key] = false
+        else params![key] = { js: resolveWfParamExpr(arg, pathToId) }
+      })
+    }
   }
 
   return { action: uuid, ...(params ? { params } : {}) }
@@ -494,9 +806,10 @@ function parseArrowWorkflowCall(
 function parseSxProp(
   obj: ts.ObjectLiteralExpression,
   pathToId: Map<string, string>,
-): { className: string; style: Record<string, unknown>; responsiveStyles: Record<string, Record<string, unknown>> } {
+): { className: string; style: Record<string, unknown>; classFormulas: Record<string, unknown>; responsiveStyles: Record<string, Record<string, unknown>> } {
   const staticShorthand: Record<string, unknown> = {}
   const dynamicStyle: Record<string, unknown> = {}
+  const dynamicClassFormulas: Record<string, unknown> = {}
 
   for (const prop of obj.properties) {
     if (!ts.isPropertyAssignment(prop)) continue
@@ -507,17 +820,22 @@ function parseSxProp(
 
     const v = prop.initializer
 
-    // () => expr — zero-arg arrow function → formula → camelCase CSS in props.style
+    // () => expr — zero-arg arrow function → formula
     if (ts.isArrowFunction(v) && v.parameters.length === 0) {
       const exprText = arrowToIife(v)
       const resolved = resolveExprToSdui(exprText, pathToId)
-      const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
-      if (mapping) {
-        const wrappedExpr = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-        dynamicStyle[mapping.cssKey] = { js: wrappedExpr }
+      const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[k]
+      if (classWrapper) {
+        dynamicClassFormulas[k] = { js: classWrapper(resolved) }
       } else {
-        // unknown shorthand key — emit as-is under the original key
-        dynamicStyle[k] = { js: resolved }
+        const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
+        if (mapping) {
+          const wrappedExpr = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+          dynamicStyle[mapping.cssKey] = { js: wrappedExpr }
+        } else {
+          // unknown shorthand key — emit as-is under the original key
+          dynamicStyle[k] = { js: resolved }
+        }
       }
       continue
     }
@@ -530,14 +848,19 @@ function parseSxProp(
     if (v.kind === ts.SyntaxKind.TrueKeyword)  { staticShorthand[k] = true;  continue }
     if (v.kind === ts.SyntaxKind.FalseKeyword) { staticShorthand[k] = false; continue }
 
-    // Any other expression — formula → props.style via mapping
+    // Any other expression — formula
     const resolved = resolveExprToSdui(nodeText(v), pathToId)
-    const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
-    if (mapping) {
-      const wrappedExpr = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-      dynamicStyle[mapping.cssKey] = { js: wrappedExpr }
+    const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[k]
+    if (classWrapper) {
+      dynamicClassFormulas[k] = { js: classWrapper(resolved) }
     } else {
-      dynamicStyle[k] = { js: resolved }
+      const mapping = SHORTHAND_FORMULA_CSS_MAP[k]
+      if (mapping) {
+        const wrappedExpr = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+        dynamicStyle[mapping.cssKey] = { js: wrappedExpr }
+      } else {
+        dynamicStyle[k] = { js: resolved }
+      }
     }
   }
 
@@ -549,7 +872,7 @@ function parseSxProp(
     rStyles[bp] = cssObj as Record<string, unknown>
   }
 
-  return { className, style: dynamicStyle, responsiveStyles: rStyles }
+  return { className, style: dynamicStyle, classFormulas: dynamicClassFormulas, responsiveStyles: rStyles }
 }
 
 /**
@@ -664,6 +987,79 @@ function parseAnimationProp(
     else if (ts.isNumericLiteral(v)) result[k] = Number(v.text)
     else if (v.kind === ts.SyntaxKind.TrueKeyword)  result[k] = true
     else if (v.kind === ts.SyntaxKind.FalseKeyword) result[k] = false
+  }
+  return result
+}
+
+// ─── Validation rule parsers ─────────────────────────────────────────────────
+
+/**
+ * Parse an ObjectLiteralExpression representing a single validation rule
+ * e.g. { rule: 'required', message: 'Required' }
+ *      { rule: 'minLength', value: 3, message: 'Too short' }
+ *      { rule: 'formula', formula: 'value === true', message: 'Must agree' }
+ */
+function parseValidationRule(expr: ts.ObjectLiteralExpression): Record<string, unknown> | null {
+  const obj: Record<string, unknown> = {}
+  for (const prop of expr.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue
+    const key = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+    if (!key) continue
+    const val = prop.initializer
+    if (ts.isStringLiteral(val))         obj[key] = val.text
+    else if (ts.isNumericLiteral(val))   obj[key] = Number(val.text)
+    else if (val.kind === ts.SyntaxKind.TrueKeyword)  obj[key] = true
+    else if (val.kind === ts.SyntaxKind.FalseKeyword) obj[key] = false
+  }
+  return Object.keys(obj).length > 0 ? obj : null
+}
+
+/** Parse _validation={[...]} — array of rule objects → stored as-is (trigger defaults to submit) */
+function parseValidationRules(expr: ts.ArrayLiteralExpression): Record<string, unknown>[] {
+  const rules: Record<string, unknown>[] = []
+  for (const el of expr.elements) {
+    if (ts.isObjectLiteralExpression(el)) {
+      const rule = parseValidationRule(el)
+      if (rule) rules.push(rule)
+    }
+  }
+  return rules
+}
+
+/** Parse _validation={{ trigger: 'submit', rules: [...] }} — object with trigger + rules */
+function parseValidationObject(expr: ts.ObjectLiteralExpression): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const prop of expr.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue
+    const key = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+    if (!key) continue
+    const val = prop.initializer
+    if (key === 'trigger' && ts.isStringLiteral(val)) {
+      result.trigger = val.text
+    } else if (key === 'rules' && ts.isArrayLiteralExpression(val)) {
+      result.rules = parseValidationRules(val)
+    }
+  }
+  return result
+}
+
+/** Parse popover={{ trigger, placement, offset, ... }} object literal */
+function parsePopoverConfig(expr: ts.ObjectLiteralExpression): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const prop of expr.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue
+    const key = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+    if (!key) continue
+    const val = prop.initializer
+    if (ts.isStringLiteral(val)) {
+      result[key] = val.text
+    } else if (ts.isNumericLiteral(val)) {
+      result[key] = Number(val.text)
+    } else if (val.kind === ts.SyntaxKind.TrueKeyword) {
+      result[key] = true
+    } else if (val.kind === ts.SyntaxKind.FalseKeyword) {
+      result[key] = false
+    }
   }
   return result
 }
@@ -796,7 +1192,20 @@ function convertScReference(
       continue
     }
     if (ts.isJsxExpression(init) && init.expression) {
-      const raw = nodeText(init.expression)
+      const expr = init.expression
+      // Literal values — emit as plain primitives, not {js: "..."} bindings
+      if (ts.isNumericLiteral(expr)) {
+        passedProps[attrName] = Number(expr.text)
+        continue
+      }
+      if (ts.isPrefixUnaryExpression(expr) && expr.operator === ts.SyntaxKind.MinusToken
+          && ts.isNumericLiteral(expr.operand)) {
+        passedProps[attrName] = -Number((expr.operand as ts.NumericLiteral).text)
+        continue
+      }
+      if (expr.kind === ts.SyntaxKind.TrueKeyword)  { passedProps[attrName] = true;  continue }
+      if (expr.kind === ts.SyntaxKind.FalseKeyword) { passedProps[attrName] = false; continue }
+      const raw = nodeText(expr)
       // Arrow functions need their body unwrapped so the renderer can evaluate them as formulas
       const resolved = resolveExprToSdui(unwrapArrowBody(raw), pathToId)
       passedProps[attrName] = { js: resolved }
@@ -863,13 +1272,411 @@ function convertScReference(
   // Instance props overlay the model defaults
   instanceRoot.props = { ...(modelRoot.props as Record<string, unknown> ?? {}), ...passedProps }
   instanceRoot._shared = { id: scModel.id, name: scModel.name }
-  instanceRoot._overrides = []
+  instanceRoot._overrides = Object.keys(passedProps)
   // Page-level trigger bindings only. The SC relay action is internal to the SC
   // model and is NOT copied to instances — each instance gets a single direct
   // binding (e.g. trigger:'click' → executeWorkflow(uuid)).
   instanceRoot.actions = triggerActions
   if (mapContext) { instanceRoot.map = mapContext.mapExpr; if (mapContext.keyExpr) instanceRoot.key = mapContext.keyExpr }
   return instanceRoot as unknown as SduiNodeConfig
+}
+
+
+// ─── Action factory parsers (run / when / seq / set) ─────────────────────────
+
+interface ParsedAction {
+  trigger: string
+  workflowId: string
+  params?: Record<string, unknown>
+}
+interface InlineStep {
+  id: string
+  type: string
+  config: Record<string, unknown>
+}
+
+/**
+ * Parse `run(wf, { key: val })` → action entry.
+ * Returns null if not a recognized run() call.
+ */
+function parseRunCall(
+  expr: ts.CallExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): ParsedAction | null {
+  const args = expr.arguments
+  if (args.length < 1) return null
+
+  const wfArg = args[0]
+  let wfUuid: string | undefined
+
+  if (ts.isIdentifier(wfArg)) {
+    wfUuid = pathToId.get(wfArg.text) ?? pathToId.get(`workflows/${wfArg.text}`)
+  }
+  if (!wfUuid) return null
+
+  let params: Record<string, unknown> | undefined
+  if (args.length >= 2 && ts.isObjectLiteralExpression(args[1])) {
+    params = {}
+    for (const prop of (args[1] as ts.ObjectLiteralExpression).properties) {
+      if (!ts.isPropertyAssignment(prop)) continue
+      const k = ts.isIdentifier(prop.name) ? prop.name.text
+               : ts.isStringLiteral(prop.name) ? prop.name.text : null
+      if (!k) continue
+      const val = prop.initializer
+      if (ts.isStringLiteral(val))       params[k] = val.text
+      else if (ts.isNumericLiteral(val)) params[k] = Number(val.text)
+      else if (val.kind === ts.SyntaxKind.TrueKeyword)  params[k] = true
+      else if (val.kind === ts.SyntaxKind.FalseKeyword) params[k] = false
+      else if (ts.isPropertyAccessExpression(val) && val.name.text === 'value' &&
+               ts.isIdentifier(val.expression) && val.expression.text === 'ev') {
+        // ev.value → event-value binding
+        params[k] = { js: '__ev_value__' }
+      } else {
+        // () => expr — unwrap arrow
+        const resolved = (ts.isArrowFunction(val) && val.parameters.length === 0 && !ts.isBlock(val.body))
+          ? resolveExprToSdui(nodeText(val.body as ts.Expression), pathToId)
+          : resolveExprToSdui(nodeText(val), pathToId)
+        params[k] = { js: resolved }
+      }
+    }
+  }
+
+  return buildInlineAction(trigger, wfUuid, params)
+}
+
+/**
+ * Parse `set(varRef, value)` → inline workflow with changeVariableValue step.
+ * Returns the inline workflow UUID if recognized.
+ */
+function parseSetCall(
+  expr: ts.CallExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): { trigger: string; workflowId: string } | null {
+  const args = expr.arguments
+  if (args.length < 2) return null
+
+  const varArg = args[0]
+  let varUuid: string | undefined
+
+  if (ts.isIdentifier(varArg)) {
+    varUuid = pathToId.get(varArg.text)
+  }
+  if (!varUuid) return null
+
+  const valArg = args[1]
+  let value: unknown
+
+  if (ts.isStringLiteral(valArg))       value = valArg.text
+  else if (ts.isNumericLiteral(valArg)) value = Number(valArg.text)
+  else if (valArg.kind === ts.SyntaxKind.TrueKeyword)  value = true
+  else if (valArg.kind === ts.SyntaxKind.FalseKeyword) value = false
+  // ev.value
+  else if (ts.isPropertyAccessExpression(valArg) && valArg.name.text === 'value' &&
+           ts.isIdentifier(valArg.expression) && valArg.expression.text === 'ev') {
+    value = { js: '__ev_value__' }
+  }
+  // () => expr
+  else if (ts.isArrowFunction(valArg) && valArg.parameters.length === 0 && !ts.isBlock(valArg.body)) {
+    value = { js: resolveExprToSdui(nodeText(valArg.body as ts.Expression), pathToId) }
+  }
+  else {
+    value = { js: resolveExprToSdui(nodeText(valArg), pathToId) }
+  }
+
+  const inlineId = crypto.randomUUID()
+  _inlineWorkflows.set(inlineId, {
+    id: inlineId,
+    meta: { name: `set-${varUuid.slice(0, 8)}`, trigger },
+    steps: [{
+      id: crypto.randomUUID(),
+      type: 'changeVariableValue',
+      config: { variableName: varUuid, value: value },
+    }],
+  })
+  return { trigger, workflowId: inlineId }
+}
+
+/**
+ * Parse `when(cond, action)` → inline workflow with passThroughCondition + action step.
+ */
+function parseWhenCall(
+  expr: ts.CallExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): { trigger: string; workflowId: string } | null {
+  const args = expr.arguments
+  if (args.length < 2) return null
+
+  const condArg = args[0]
+  let condExpr: string
+  if (ts.isArrowFunction(condArg) && condArg.parameters.length === 0 && !ts.isBlock(condArg.body)) {
+    condExpr = resolveExprToSdui(nodeText(condArg.body as ts.Expression), pathToId)
+  } else {
+    condExpr = resolveExprToSdui(nodeText(condArg), pathToId)
+  }
+
+  const actionArg = args[1]
+  if (!ts.isCallExpression(actionArg)) return null
+  if (!ts.isIdentifier(actionArg.expression)) return null
+
+  const innerName = actionArg.expression.text
+  let innerAction: { trigger: string; workflowId: string } | null = null
+
+  if (innerName === 'run') {
+    innerAction = parseRunCall(actionArg, trigger, pathToId)
+  } else if (innerName === 'set') {
+    innerAction = parseSetCall(actionArg, trigger, pathToId)
+  }
+  if (!innerAction) return null
+
+  // Wrap in a passThroughCondition inline workflow
+  const inlineId = crypto.randomUUID()
+  _inlineWorkflows.set(inlineId, {
+    id: inlineId,
+    meta: { name: `when-${inlineId.slice(0, 8)}`, trigger },
+    steps: [
+      {
+        id: crypto.randomUUID(),
+        type: 'passThroughCondition',
+        config: { condition: { js: condExpr } },
+      },
+      {
+        id: crypto.randomUUID(),
+        type: 'runProjectWorkflow',
+        config: { workflowId: innerAction.workflowId },
+      },
+    ],
+  })
+  return { trigger, workflowId: inlineId }
+}
+
+/**
+ * Parse `seq(action1, action2, ...)` → inline workflow with multiple steps.
+ */
+function parseSeqCall(
+  expr: ts.CallExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): { trigger: string; workflowId: string } | null {
+  const steps: InlineStep[] = []
+
+  for (const arg of expr.arguments) {
+    if (!ts.isCallExpression(arg) || !ts.isIdentifier(arg.expression)) continue
+    const name = arg.expression.text
+    let action: { trigger: string; workflowId: string } | null = null
+
+    if (name === 'run') action = parseRunCall(arg, trigger, pathToId)
+    else if (name === 'set') action = parseSetCall(arg, trigger, pathToId)
+    else if (name === 'when') action = parseWhenCall(arg, trigger, pathToId)
+
+    if (action) {
+      steps.push({
+        id: crypto.randomUUID(),
+        type: 'runProjectWorkflow',
+        config: { workflowId: action.workflowId },
+      })
+    }
+  }
+
+  if (steps.length === 0) return null
+
+  const inlineId = crypto.randomUUID()
+  _inlineWorkflows.set(inlineId, {
+    id: inlineId,
+    meta: { name: `seq-${inlineId.slice(0, 8)}`, trigger },
+    steps,
+  })
+  return { trigger, workflowId: inlineId }
+}
+
+/**
+ * Rewrite an arrow function body into a JavaScript string suitable for a
+ * `runJavaScript` step. The engine's runJavaScript handler provides:
+ *   - `variables['uuid']`           — writable Proxy for the variable store
+ *   - `wwLib.runStep({ type, config })` — dispatches any step type
+ *   - `context`                     — full formula context (context.event?.value etc.)
+ *
+ * Rewriting performed:
+ *   - Known variable identifiers → `variables['uuid']`
+ *   - Known workflow calls wfName(args) → `await wwLib.runStep({ type:'runProjectWorkflow', ... })`
+ *   - eventParam.value → `context.event?.value`
+ */
+function rewriteBodyForRunJs(
+  arrow: ts.ArrowFunction | ts.FunctionExpression,
+  pathToId: Map<string, string>,
+  eventParam: string | undefined,
+): string {
+  const bodyText = ts.isBlock(arrow.body)
+    ? arrow.body.statements.map(s => nodeText(s)).join('\n')
+    : nodeText(arrow.body)
+  const env = buildLoweringEnv(pathToId, eventParam)
+  return lowerActionBabel(bodyText, env)
+}
+
+
+/**
+ * Parse any arrow function as an event action, emitting a single `runJavaScript`
+ * inline workflow step. The step body has all variable/workflow references
+ * rewritten to their runtime forms (`variables['uuid']`, `wwLib.runStep(...)`).
+ *
+ * Handles all JS patterns natively: if/else, assignments, workflow calls,
+ * multi-statement blocks, event param (`e.value` → `context.event?.value`).
+ */
+function parseArrowAction(
+  arrow: ts.ArrowFunction | ts.FunctionExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): { trigger: string; workflowId: string } | null {
+  const eventParam =
+    arrow.parameters.length > 0 && ts.isIdentifier(arrow.parameters[0].name)
+      ? arrow.parameters[0].name.text
+      : undefined
+
+  // ── Zero-param single workflow call: () => wf(args) — fast path ───────────
+  // Delegate to existing parseArrowWorkflowCall for zero-param arrows that call
+  // a single known workflow. This preserves the existing params → payload mapping.
+  if (!ts.isBlock(arrow.body) || (ts.isBlock(arrow.body) && arrow.body.statements.length === 1)) {
+    const existing = parseArrowWorkflowCall(arrow, pathToId)
+    if (existing) {
+      return buildInlineAction(trigger, existing.action, existing.params)
+    }
+  }
+
+  // ── All other patterns: emit runJavaScript ─────────────────────────────────
+  let code = rewriteBodyForRunJs(arrow, pathToId, eventParam)
+  if (!code.trim()) return null
+
+  // ── Inline page-local zero-arg function calls (e.g. isCorrect(), progress()) ──
+  // Zero-arg defineFunction bodies live in _currentLocalFns as IIFE strings like
+  // "((() => body)())". Strip the IIFE wrapper to get the raw body, apply UUID resolution,
+  // then substitute every fnName() call with the inlined (body) expression.
+  const iifePrefix = '((() => '
+  const iifeSuffix = ')())'
+  for (const [localName, iife] of _currentLocalFns) {
+    const callRe = new RegExp(`\\b${localName}\\s*\\(\\)`, 'g')
+    if (!callRe.test(code)) continue
+    // Extract raw body from IIFE wrapper
+    let body = (iife.startsWith(iifePrefix) && iife.endsWith(iifeSuffix))
+      ? iife.slice(iifePrefix.length, -iifeSuffix.length).trim()
+      : iife
+    // Apply variable UUID resolution to the body
+    for (const [varName, uuid] of pathToId) {
+      if (varName.includes('/') || varName === uuid) continue
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) continue
+      body = replaceIdentInCode(body, varName, `variables['${uuid}']`)
+    }
+    code = code.replace(new RegExp(`\\b${localName}\\s*\\(\\)`, 'g'), `(${body})`)
+  }
+
+  // ── Inline parameterised map-callback local function calls (e.g. choose(i)) ──
+  // These functions are defined inside an outer .map() block body and are not available
+  // at runtime. The _mapCallbackLocalsStack exposes outer map locals to inner map handlers.
+  // Stack[0] = outermost map locals, Stack[last] = innermost — depth = stack.length-1-si.
+  for (let si = 0; si < _mapCallbackLocalsStack.length; si++) {
+    const entry = _mapCallbackLocalsStack[si]
+    // How many context.item levels need to be bumped for this stack entry:
+    // innermost locals are at depth 0 (current map's own, if any), outermost at depth N-1.
+    const contextDepth = _mapCallbackLocalsStack.length - 1 - si
+    for (const [localName, localExpr] of entry.locals) {
+      const callTestRe = new RegExp(`(?<![.'"\\w])\\b${localName}\\b(?=\\s*\\()`)
+      if (!callTestRe.test(code)) continue
+      // Build inlined form from raw text: rewrite param → context refs, resolve UUIDs, bump depth
+      let inlinedVal = localExpr
+      if (entry.paramName) {
+        inlinedVal = inlinedVal.replace(
+          new RegExp(`(?<![.'"\`\\w])\\b${entry.paramName}\\.`, 'g'),
+          'context.item.data.',
+        )
+        inlinedVal = replaceIdentInCode(inlinedVal, entry.paramName, 'context.item.data')
+      }
+      if (entry.indexParamName) {
+        inlinedVal = replaceIdentInCode(inlinedVal, entry.indexParamName, 'context.item.index')
+      }
+      for (const [varName, uuid] of pathToId) {
+        if (varName.includes('/') || varName === uuid) continue
+        if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) continue
+        inlinedVal = replaceIdentInCode(inlinedVal, varName, `variables['${uuid}']`)
+      }
+      // Bump context depth: context.item.data → context.item.parent.data (per depth level)
+      if (contextDepth > 0) {
+        const parentChain = 'parent.'.repeat(contextDepth)
+        inlinedVal = inlinedVal
+          .replace(/\bcontext\.item\.data\b/g, `context.item.${parentChain}data`)
+          .replace(/\bcontext\.item\.index\b/g, `context.item.${parentChain}index`)
+      }
+      // Replace call: localName(args) → (inlinedVal)(args)
+      const callRe = new RegExp(`(?<![.'"\\w])\\b${localName}\\b(?=\\s*\\()`, 'g')
+      code = code.replace(callRe, `(${inlinedVal})`)
+    }
+  }
+
+  // ── Prepend page-local const declarations referenced in the workflow code ──
+  // Uses transitive dependency collection (same approach as resolveExprToSdui) so
+  // that indirect deps like `total` (needed by `totalPages`'s value) are included.
+  const wfNeeded = new Set<string>()
+  function collectWfDeps(scope: string, depth = 0) {
+    if (depth > 8) return
+    // Strip single/double-quoted literals to avoid false-positive identifier matches
+    const scopeNoStrings = scope
+      .replace(/'(?:[^'\\]|\\.)*'/g, '""')
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    for (const [localName, localValue] of _currentPageLocals) {
+      if (wfNeeded.has(localName)) continue
+      // Skip local component factories — functions whose bodies contain JSX syntax.
+      // These are valid in JSX render context only and must not appear in runJavaScript preambles.
+      // Non-JSX helper functions (e.g. setSort, toggle helpers) ARE included.
+      if (_currentPageLocalNodes.has(localName)) {
+        const isJsxFactory = /<\/|return\s*\(?\s*<[A-Z]|=>\s*\(?[\s\S]{0,20}<[A-Z]/.test(localValue)
+        if (isJsxFactory) continue
+      }
+      const re = new RegExp(`(?<![.'"[/\\w])\\b${localName}\\b`)
+      if (!re.test(scopeNoStrings)) continue
+      wfNeeded.add(localName)
+      collectWfDeps(localValue, depth + 1)  // recurse for transitive deps
+    }
+  }
+  collectWfDeps(code)
+
+  const wfPreamble: string[] = []
+  for (const [localName, localValue] of _currentPageLocals) {
+    if (!wfNeeded.has(localName)) continue
+    let resolvedValue = localValue
+    for (const [varName, uuid] of pathToId) {
+      if (varName.includes('/') || varName === uuid) continue
+      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) continue
+      resolvedValue = replaceIdentInCode(resolvedValue, varName, `variables['${uuid}']`)
+    }
+    wfPreamble.push(`const ${localName} = ${resolvedValue};`)
+  }
+  if (wfPreamble.length > 0) code = wfPreamble.join('\n') + '\n' + code
+
+  const inlineId = crypto.randomUUID()
+  _inlineWorkflows.set(inlineId, {
+    id: inlineId,
+    meta: { name: `js-${inlineId.slice(0, 8)}`, trigger },
+    steps: [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }],
+  })
+  return { trigger, workflowId: inlineId }
+}
+
+/**
+ * Top-level event factory dispatcher — handles run/when/seq/set call expressions
+ * in onClick/onChange/onSubmit props.
+ */
+function parseActionFactory(
+  expr: ts.CallExpression,
+  trigger: string,
+  pathToId: Map<string, string>,
+): { trigger: string; workflowId: string } | null {
+  if (!ts.isIdentifier(expr.expression)) return null
+  const name = expr.expression.text
+  if (name === 'run')  return parseRunCall(expr, trigger, pathToId)
+  if (name === 'set')  return parseSetCall(expr, trigger, pathToId)
+  if (name === 'when') return parseWhenCall(expr, trigger, pathToId)
+  if (name === 'seq')  return parseSeqCall(expr, trigger, pathToId)
+  return null
 }
 
 function convertJsxElement(
@@ -914,7 +1721,7 @@ function convertJsxElement(
   }
 
   if (mapContext) {
-    result.map = mapContext.mapExpr
+    result.map = { js: mapContext.mapExpr }
     if (mapContext.keyExpr) result.key = mapContext.keyExpr
   }
 
@@ -924,7 +1731,57 @@ function convertJsxElement(
 
   // Process attributes
   for (const attr of opening.attributes.properties) {
-    if (ts.isJsxSpreadAttribute(attr)) continue
+    // JSX spread: {...props} — extract known object literal spreads, resolve identifier spreads
+    if (ts.isJsxSpreadAttribute(attr)) {
+      const spreadExpr = attr.expression
+      // Helper: process a parsed object literal's properties into flatSxStatic/result.props
+      // using the same Tailwind alias tables as regular attribute processing.
+      function applySpreadObj(objExpr: ts.ObjectLiteralExpression, getSrc: (n: ts.Node) => string) {
+        for (const prop of objExpr.properties) {
+          if (!ts.isPropertyAssignment(prop) || !ts.isIdentifier(prop.name)) continue
+          const k = prop.name.text
+          const v = prop.initializer
+          if (v.kind === ts.SyntaxKind.TrueKeyword) {
+            const flatBool = FLAT_BOOL_PROPS[k]
+            if (flatBool) { for (const [fk, fv] of Object.entries(flatBool)) flatSxStatic[fk] = fv }
+            else { flatSxStatic[k] = true }
+          } else if (v.kind === ts.SyntaxKind.FalseKeyword) {
+            flatSxStatic[k] = false
+          } else if (ts.isNumericLiteral(v)) {
+            // size: 12 → text: 12; mb: 8 → mb: 8
+            const alias = FLAT_STRING_ALIASES[k]
+            flatSxStatic[alias ?? k] = Number(v.text)
+          } else if (ts.isStringLiteral(v)) {
+            // color: '#94a3b8' → textColor; tracking: 'widest' → tracking
+            const alias = FLAT_STRING_ALIASES[k]
+            const sxKey = alias ?? k
+            if (SHORTHAND_KEYS.has(sxKey)) flatSxStatic[sxKey] = v.text
+            else result.props[k] = v.text
+          } else {
+            const vText = getSrc(v)
+            result.props[k] = { js: resolveExprToSdui(vText, pathToId) }
+          }
+        }
+      }
+      if (ts.isObjectLiteralExpression(spreadExpr)) {
+        applySpreadObj(spreadExpr, n => nodeText(n))
+      } else if (ts.isIdentifier(spreadExpr)) {
+        // Identifier spread: look up in _currentPageLocals and expand as sx props
+        const localVal = _currentPageLocals.get(spreadExpr.text)
+        if (localVal) {
+          const tmpSrc = ts.createSourceFile('__sp__.ts', `(${localVal})`, ts.ScriptTarget.Latest, true)
+          const first = tmpSrc.statements[0]
+          if (ts.isExpressionStatement(first)) {
+            const inner = ts.isParenthesizedExpression(first.expression)
+              ? first.expression.expression : first.expression
+            if (ts.isObjectLiteralExpression(inner)) {
+              applySpreadObj(inner, n => n.getFullText(tmpSrc).trim())
+            }
+          }
+        }
+      }
+      continue
+    }
     if (!ts.isJsxAttribute(attr)) continue
 
     const attrName = ts.isIdentifier(attr.name) ? attr.name.text : attr.name.getText()
@@ -938,6 +1795,8 @@ function convertJsxElement(
         for (const [k, v] of Object.entries(flatBool)) {
           flatSxStatic[k] = v
         }
+      } else if (attrName === '_popoverContent') {
+        result._popoverContent = true
       } else {
         result.props[attrName] = true
       }
@@ -946,6 +1805,11 @@ function convertJsxElement(
 
     // String literal: src="..." name="..." etc.
     if (ts.isStringLiteral(init)) {
+      // Icon: color is a direct prop passed to the CDN URL, not a CSS text-color class
+      if (result.type === 'Icon' && attrName === 'color') {
+        result.props.color = init.text
+        continue
+      }
       // Flat string prop aliases (e.g. color="red" on Text → sx.textColor)
       const flatAlias = FLAT_STRING_ALIASES[attrName]
       if (flatAlias) {
@@ -955,7 +1819,7 @@ function convertJsxElement(
       if (attrName === 'key') {
         result.key = init.text
       } else if (attrName === 'condition') {
-        result.condition = init.text
+        result.condition = { js: init.text }
       } else if (attrName === 'name') {
         result.name = init.text
       } else if (SHORTHAND_KEYS.has(attrName)) {
@@ -972,14 +1836,17 @@ function convertJsxElement(
       const expr = init.expression
       const exprText = nodeText(expr)
 
-      // sx={{ ... }} — typed styling prop → props.className + props.style
+      // sx={{ ... }} — typed styling prop → props.className + props.classFormulas + props.style
       // style={{ ... }} — React-standard alias; treated identically to sx
       if ((attrName === 'sx' || attrName === 'style') && ts.isObjectLiteralExpression(expr)) {
-        const { className, style, responsiveStyles } = parseSxProp(expr, pathToId)
+        const { className, style, classFormulas, responsiveStyles } = parseSxProp(expr, pathToId)
         if (className) {
           result.props.className = result.props.className
             ? `${result.props.className as string} ${className}`
             : className
+        }
+        if (Object.keys(classFormulas).length) {
+          result.props.classFormulas = { ...(result.props.classFormulas as Record<string, unknown> ?? {}), ...classFormulas }
         }
         if (Object.keys(style).length) {
           result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), ...style }
@@ -1015,7 +1882,10 @@ function convertJsxElement(
       }
 
       if (attrName === 'condition') {
-        result.condition = resolveExprToSdui(exprText, pathToId)
+        const condExpr = (ts.isArrowFunction(expr) && expr.parameters.length === 0)
+          ? arrowToIife(expr)
+          : exprText
+        result.condition = { js: resolveExprToSdui(condExpr, pathToId) }
         continue
       }
 
@@ -1024,32 +1894,57 @@ function convertJsxElement(
         continue
       }
 
+      // Icon: size and color are direct props (CDN URL params), not CSS aliases
+      if (result.type === 'Icon' && (attrName === 'color' || attrName === 'size')) {
+        if (ts.isNumericLiteral(expr)) {
+          result.props[attrName] = Number(expr.text)
+        } else if (ts.isStringLiteral(expr)) {
+          result.props[attrName] = expr.text
+        } else {
+          const resolved = (ts.isArrowFunction(expr) && expr.parameters.length === 0)
+            ? arrowToIife(expr)
+            : exprText
+          result.props[attrName] = { js: resolveExprToSdui(resolved, pathToId) }
+        }
+        continue
+      }
+
       // Flat numeric/dynamic prop aliases (e.g. size={14} on Text, cols={3}, color={() => ...})
       const flatAlias = FLAT_STRING_ALIASES[attrName]
       if (flatAlias) {
         if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
           const bodyText = arrowToIife(expr)
-          const mapping = SHORTHAND_FORMULA_CSS_MAP[flatAlias]
-          if (mapping) {
-            const resolved = resolveExprToSdui(bodyText, pathToId)
-            const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-            result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+          const resolved = resolveExprToSdui(bodyText, pathToId)
+          const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[flatAlias]
+          if (classWrapper) {
+            result.props.classFormulas = { ...(result.props.classFormulas as Record<string, unknown> ?? {}), [flatAlias]: { js: classWrapper(resolved) } }
           } else {
-            flatSxDynamic[flatAlias] = { js: resolveExprToSdui(bodyText, pathToId) }
+            const mapping = SHORTHAND_FORMULA_CSS_MAP[flatAlias]
+            if (mapping) {
+              const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+              result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+            } else {
+              flatSxDynamic[flatAlias] = { js: resolved }
+            }
           }
         } else if (ts.isNumericLiteral(expr)) {
           flatSxStatic[flatAlias] = Number(expr.text)
         } else if (ts.isStringLiteral(expr)) {
           flatSxStatic[flatAlias] = expr.text
         } else {
-          // General expression → dynamic formula, not className string
-          const mapping = SHORTHAND_FORMULA_CSS_MAP[flatAlias]
-          if (mapping) {
-            const resolved = unwrapArrowBody(resolveExprToSdui(exprText, pathToId))
-            const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-            result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+          // General expression → dynamic formula
+          const resolved = unwrapArrowBody(resolveExprToSdui(exprText, pathToId))
+          const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[flatAlias]
+          if (classWrapper) {
+            result.props.classFormulas = { ...(result.props.classFormulas as Record<string, unknown> ?? {}), [flatAlias]: { js: classWrapper(resolved) } }
           } else {
-            flatSxDynamic[flatAlias] = { js: unwrapArrowBody(resolveExprToSdui(exprText, pathToId)) }
+            const mapping = SHORTHAND_FORMULA_CSS_MAP[flatAlias]
+            if (mapping) {
+              const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+              result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+            } else {
+              flatSxDynamic[flatAlias] = { js: resolved }
+            }
           }
         }
         continue
@@ -1059,13 +1954,18 @@ function convertJsxElement(
       if (SHORTHAND_KEYS.has(attrName)) {
         if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
           const bodyText = arrowToIife(expr)
-          const mapping = SHORTHAND_FORMULA_CSS_MAP[attrName]
-          if (mapping) {
-            const resolved = resolveExprToSdui(bodyText, pathToId)
-            const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-            result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+          const resolved = resolveExprToSdui(bodyText, pathToId)
+          const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[attrName]
+          if (classWrapper) {
+            result.props.classFormulas = { ...(result.props.classFormulas as Record<string, unknown> ?? {}), [attrName]: { js: classWrapper(resolved) } }
           } else {
-            flatSxDynamic[attrName] = { js: resolveExprToSdui(bodyText, pathToId) }
+            const mapping = SHORTHAND_FORMULA_CSS_MAP[attrName]
+            if (mapping) {
+              const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+              result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+            } else {
+              flatSxDynamic[attrName] = { js: resolved }
+            }
           }
         } else if (ts.isNumericLiteral(expr)) {
           flatSxStatic[attrName] = Number(expr.text)
@@ -1076,22 +1976,38 @@ function convertJsxElement(
         } else if (expr.kind === ts.SyntaxKind.FalseKeyword) {
           flatSxStatic[attrName] = false
         } else {
-          // General expression → dynamic formula, routed to props.style not className
-          const mapping = SHORTHAND_FORMULA_CSS_MAP[attrName]
-          if (mapping) {
-            const resolved = unwrapArrowBody(resolveExprToSdui(exprText, pathToId))
-            const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
-            result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+          // General expression → dynamic formula
+          const resolved = unwrapArrowBody(resolveExprToSdui(exprText, pathToId))
+          const classWrapper = SHORTHAND_FORMULA_CLASS_MAP[attrName]
+          if (classWrapper) {
+            result.props.classFormulas = { ...(result.props.classFormulas as Record<string, unknown> ?? {}), [attrName]: { js: classWrapper(resolved) } }
           } else {
-            flatSxDynamic[attrName] = { js: unwrapArrowBody(resolveExprToSdui(exprText, pathToId)) }
+            const mapping = SHORTHAND_FORMULA_CSS_MAP[attrName]
+            if (mapping) {
+              const wrapped = mapping.wrapExpr ? mapping.wrapExpr(resolved) : resolved
+              result.props.style = { ...(result.props.style as Record<string, unknown> ?? {}), [mapping.cssKey]: { js: wrapped } }
+            } else {
+              flatSxDynamic[attrName] = { js: resolved }
+            }
           }
         }
         continue
       }
 
-      // onClick/onChange/onSubmit — new API: direct identifier ref to a workflow
+      // onClick/onChange/onSubmit — event factory API (run/when/seq/set) + legacy patterns
       if (attrName === 'onClick' || attrName === 'onChange' || attrName === 'onSubmit') {
         const eventTrigger = propToTrigger(attrName)
+
+        // ── New API: run(wf, args) / when(cond, action) / seq(...) / set(var, val) ──
+        if (ts.isCallExpression(expr)) {
+          const action = parseActionFactory(expr, eventTrigger, pathToId)
+          if (action) {
+            result.actions = result.actions ?? []
+            result.actions.push(action)
+            continue
+          }
+        }
+
         // Pattern: onClick={triggerName} — bare identifier matching a known SC trigger
         // (used inside SC render functions: onClick={onPress} → inline action on node)
         if (ts.isIdentifier(expr)) {
@@ -1111,6 +2027,19 @@ function convertJsxElement(
             continue
           }
         }
+        // Pattern: onClick={prevMonth} — page-level const arrow (not a defineWorkflow)
+        if (ts.isIdentifier(expr)) {
+          const localFn = _currentPageLocalNodes.get(expr.text)
+          // parseArrowAction requires an ArrowFunction or FunctionExpression body
+          if (localFn && (ts.isArrowFunction(localFn) || ts.isFunctionExpression(localFn))) {
+            const action = parseArrowAction(localFn, eventTrigger, pathToId)
+            if (action) {
+              result.actions = result.actions ?? []
+              result.actions.push(action)
+              continue
+            }
+          }
+        }
         // Pattern: onClick={() => workflowRef(args)} — zero-arg arrow calling a workflow
         if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
           const action = parseArrowWorkflowCall(expr, pathToId)
@@ -1121,6 +2050,8 @@ function convertJsxElement(
           }
         }
         // Defensive unwrap: onClick={(()=>workflowRef(args))} — parenthesised arrow.
+        // Also handles prop-substituted handlers like onClick={(()=>{var=val})} that
+        // arise when a local component prop (e.g. onDec, onInc) is an arrow function.
         if (ts.isParenthesizedExpression(expr) && ts.isArrowFunction(expr.expression)
             && expr.expression.parameters.length === 0) {
           const action = parseArrowWorkflowCall(expr.expression, pathToId)
@@ -1128,6 +2059,46 @@ function convertJsxElement(
             result.actions = result.actions ?? []
             result.actions.push(buildInlineAction(eventTrigger, action.action, action.params))
             continue
+          }
+          // Fall back to full arrow action (handles block bodies, setVar, etc.)
+          const arrowAction = parseArrowAction(expr.expression, eventTrigger, pathToId)
+          if (arrowAction) {
+            result.actions = result.actions ?? []
+            result.actions.push(arrowAction)
+            continue
+          }
+        }
+        // Natural arrow functions: e => var = e.value, () => var = val, () => { ... }
+        if (ts.isArrowFunction(expr)) {
+          const action = parseArrowAction(expr, eventTrigger, pathToId)
+          if (action) {
+            result.actions = result.actions ?? []
+            result.actions.push(action)
+            continue
+          }
+        }
+
+        // Ternary with boolean-literal condition: cond ? arrowA : arrowB
+        // Arises when a boolean prop (e.g. isFrom={true}) is substituted into a local
+        // component that uses onClick={isFrom ? () => doA : () => doB}.
+        // After substitution: onClick={true ? () => doA : () => doB} → select doA.
+        if (ts.isConditionalExpression(expr)) {
+          const ternary = expr as ts.ConditionalExpression
+          const condKind = ternary.condition.kind
+          const selectedBranch =
+            condKind === ts.SyntaxKind.TrueKeyword  ? ternary.whenTrue  :
+            condKind === ts.SyntaxKind.FalseKeyword ? ternary.whenFalse : null
+          if (selectedBranch) {
+            const unwrapped = ts.isParenthesizedExpression(selectedBranch)
+              ? selectedBranch.expression : selectedBranch
+            if (ts.isArrowFunction(unwrapped)) {
+              const action = parseArrowAction(unwrapped, eventTrigger, pathToId)
+              if (action) {
+                result.actions = result.actions ?? []
+                result.actions.push(action)
+                continue
+              }
+            }
           }
         }
       }
@@ -1143,8 +2114,79 @@ function convertJsxElement(
         }
       }
 
-      // Generic expression prop
-      result.props[attrName] = { js: resolveExprToSdui(exprText, pathToId) }
+      // ── Form special props — top-level node fields, NOT inside props ────────────
+      // The renderer reads _initialValue, _debounce, _controlled, _validation directly
+      // from the node object; they must never land in result.props.
+
+      if (attrName === '_initialValue') {
+        if (ts.isStringLiteral(expr))              result._initialValue = expr.text
+        else if (ts.isNumericLiteral(expr))        result._initialValue = Number(expr.text)
+        else if (expr.kind === ts.SyntaxKind.TrueKeyword)  result._initialValue = true
+        else if (expr.kind === ts.SyntaxKind.FalseKeyword) result._initialValue = false
+        else if (expr.kind === ts.SyntaxKind.NullKeyword)  result._initialValue = null
+        continue
+      }
+
+      if (attrName === '_debounce' && ts.isObjectLiteralExpression(expr)) {
+        const obj: Record<string, unknown> = {}
+        for (const prop of expr.properties) {
+          if (!ts.isPropertyAssignment(prop)) continue
+          const key = ts.isIdentifier(prop.name) ? prop.name.text : null
+          if (!key) continue
+          const val = prop.initializer
+          if (val.kind === ts.SyntaxKind.TrueKeyword)       obj[key] = true
+          else if (val.kind === ts.SyntaxKind.FalseKeyword) obj[key] = false
+          else if (ts.isNumericLiteral(val))                obj[key] = Number(val.text)
+        }
+        result._debounce = obj
+        continue
+      }
+
+      if (attrName === '_controlled') {
+        if (ts.isObjectLiteralExpression(expr)) {
+          const obj: Record<string, unknown> = {}
+          for (const prop of expr.properties) {
+            if (!ts.isPropertyAssignment(prop)) continue
+            const key = ts.isIdentifier(prop.name) ? prop.name.text : null
+            if (key && ts.isStringLiteral(prop.initializer)) obj[key] = prop.initializer.text
+          }
+          result._controlled = obj
+        }
+        continue
+      }
+
+      if (attrName === '_validation') {
+        if (ts.isArrayLiteralExpression(expr)) {
+          result._validation = parseValidationRules(expr)
+        } else if (ts.isObjectLiteralExpression(expr)) {
+          result._validation = parseValidationObject(expr)
+        }
+        continue
+      }
+
+      if (attrName === 'popover' && ts.isObjectLiteralExpression(expr)) {
+        result.popover = parsePopoverConfig(expr)
+        continue
+      }
+
+      if (attrName === '_popoverContent') {
+        // Value form: _popoverContent={true} / _popoverContent={false}
+        if (expr.kind === ts.SyntaxKind.TrueKeyword)  { result._popoverContent = true; continue }
+        if (expr.kind === ts.SyntaxKind.FalseKeyword) { continue } // false = don't set
+      }
+
+      // Generic expression prop.
+      // Unwrap parentheses so that `(() => expr)` (produced by inlineLocalComponent when a
+      // zero-arg arrow-function prop is substituted) is recognised as an ArrowFunction and
+      // converted to its body via arrowToIife — giving `(expr)` instead of the unevaluated
+      // function reference `(() => expr)`.
+      let unwrappedExpr: ts.Expression = expr
+      while (ts.isParenthesizedExpression(unwrappedExpr))
+        unwrappedExpr = unwrappedExpr.expression
+      const genericExpr = (ts.isArrowFunction(unwrappedExpr) && unwrappedExpr.parameters.length === 0)
+        ? arrowToIife(unwrappedExpr)
+        : exprText
+      result.props[attrName] = { js: resolveExprToSdui(genericExpr, pathToId) }
     }
   }
 
@@ -1246,6 +2288,70 @@ function processJsxExpression(
   relSrc: string,
   localComponents?: Map<string, LocalComponentDef>,
 ): SduiNodeConfig | SduiNodeConfig[] | null {
+  // () => <expr> — strip zero-param arrow wrapper used for lazy/reactive JSX children
+  if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
+    const body = expr.body
+    if (ts.isParenthesizedExpression(body)) {
+      return processJsxExpression(body.expression, pathToId, relSrc, localComponents)
+    }
+    if (ts.isExpression(body)) {
+      return processJsxExpression(body, pathToId, relSrc, localComponents)
+    }
+    // () => { const x = init; return expr } — block body: inline const locals, then process
+    if (ts.isBlock(body)) {
+      const locals = new Map<string, string>()
+      let returnExpr: ts.Expression | null = null
+      for (const stmt of body.statements) {
+        if (
+          ts.isVariableStatement(stmt) &&
+          (stmt.declarationList.flags & ts.NodeFlags.Const)
+        ) {
+          for (const decl of stmt.declarationList.declarations) {
+            if (ts.isIdentifier(decl.name) && decl.initializer) {
+              locals.set(decl.name.text, nodeText(decl.initializer))
+            }
+          }
+        } else if (ts.isReturnStatement(stmt) && stmt.expression) {
+          returnExpr = stmt.expression
+        }
+      }
+      if (returnExpr) {
+        let retText = nodeText(returnExpr)
+        // Run substitution rounds until stable so that transitive references are
+        // resolved. Example: `const fd = local.form.formData; const ready = fd.x`
+        // — first round expands `ready` to `fd.x`; second round replaces the `fd`
+        // that was introduced by expanding `ready`. Circular const refs are
+        // impossible in valid TypeScript so this always terminates.
+        let prevText: string
+        do {
+          prevText = retText
+          for (const [localName, localValue] of locals) {
+            retText = replaceIdentInCode(retText, localName, `(${localValue})`, true)
+          }
+        } while (retText !== prevText)
+        const fakeSrc = `const __r = ${retText}`
+        const tmpSf = ts.createSourceFile('__blk.tsx', fakeSrc, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+        let retNode: ts.Expression | null = null
+        const findInit = (n: ts.Node): void => {
+          if (!retNode && ts.isVariableDeclaration(n) && n.initializer) {
+            retNode = n.initializer
+            return
+          }
+          ts.forEachChild(n, findInit)
+        }
+        findInit(tmpSf)
+        if (retNode) return processJsxExpression(retNode, pathToId, relSrc, localComponents)
+      }
+    }
+  }
+
+  // (() => expr) — parenthesised arrow produced by inlineLocalComponent when a prop that
+  // was passed as `() => someExpr` gets wrapped in parens before text-substitution into
+  // the component body.  Unwrap the outer parens so the ArrowFunction branch above fires.
+  if (ts.isParenthesizedExpression(expr)) {
+    return processJsxExpression(expr.expression, pathToId, relSrc, localComponents)
+  }
+
   // arr.map(item => <Box>...)
   if (ts.isCallExpression(expr) &&
       ts.isPropertyAccessExpression(expr.expression) &&
@@ -1253,43 +2359,137 @@ function processJsxExpression(
     return processMapCall(expr, pathToId, relSrc, localComponents)
   }
 
-  // condition && <Box>
+  // Local JSX factory call: {FilterBtn('All', 'all')} where FilterBtn is a page-level const
+  // arrow/function-declaration returning JSX. Inline the call by AST-substituting params →
+  // arg texts using substituteIdentifiers (which correctly skips JSX attribute names),
+  // re-parsing the substituted JSX, and compiling the result.
+  if (ts.isCallExpression(expr) && ts.isIdentifier(expr.expression)) {
+    const factoryFn = _currentPageLocalNodes.get(expr.expression.text)
+    if (factoryFn) {
+      const paramNames = factoryFn.parameters
+        .map(p => (ts.isIdentifier(p.name) ? p.name.text : ''))
+        .filter(Boolean)
+      const argTexts = Array.from(expr.arguments).map(a => nodeText(a))
+      if (paramNames.length === argTexts.length) {
+        // For block-body functions (function declarations and block-body arrows),
+        // extract the JSX text from the return statement rather than using the whole
+        // block `{ return (<JSX>) }` — which TypeScript would misparse as an object literal.
+        let bodyText: string
+        if (ts.isBlock(factoryFn.body)) {
+          const jsxRoot = findJsxRoot(factoryFn.body)
+          bodyText = jsxRoot ? nodeText(jsxRoot) : nodeText(factoryFn.body)
+        } else {
+          bodyText = nodeText(factoryFn.body as ts.Expression)
+        }
+        // Build param→arg map and use AST-aware substituteIdentifiers so that
+        // JSX attribute names (e.g. `onClick` in `onClick={onClick}`) are skipped
+        // and only the VALUE identifiers are replaced.
+        const paramValues = new Map<string, string>()
+        for (let i = 0; i < paramNames.length; i++) {
+          paramValues.set(paramNames[i], argTexts[i])
+        }
+        bodyText = substituteIdentifiers(bodyText, paramValues)
+        // Re-parse the substituted JSX body as TSX to get a fresh AST
+        const fakeSrc = `const __r = ${bodyText}`
+        const tmpSf = ts.createSourceFile('__inline.tsx', fakeSrc, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+        let inlinedJsx: ts.JsxElement | ts.JsxSelfClosingElement | null = null
+        const findInlined = (n: ts.Node): void => {
+          if (!inlinedJsx && (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n))) {
+            inlinedJsx = n as ts.JsxElement | ts.JsxSelfClosingElement
+            return
+          }
+          ts.forEachChild(n, findInlined)
+        }
+        findInlined(tmpSf)
+        if (inlinedJsx) {
+          return convertJsxElement(inlinedJsx, pathToId, relSrc, undefined, localComponents)
+        }
+      }
+    }
+  }
+
+  // condition && <Box>  (or condition && (<Box/>))  or  condition && arr.map(...)
   if (ts.isBinaryExpression(expr) &&
       expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-    const right = expr.right
     const conditionText = resolveExprToSdui(nodeText(expr.left), pathToId)
-
-    if (ts.isJsxElement(right) || ts.isJsxSelfClosingElement(right)) {
-      const node = convertJsxElement(right, pathToId, relSrc, undefined, localComponents)
-      node.condition = conditionText
+    // Unwrap parentheses around the RHS
+    let rhs: ts.Expression = expr.right
+    while (ts.isParenthesizedExpression(rhs)) rhs = rhs.expression
+    if (ts.isJsxElement(rhs) || ts.isJsxSelfClosingElement(rhs)) {
+      const node = convertJsxElement(rhs, pathToId, relSrc, undefined, localComponents)
+      node.condition = { js: conditionText }
       return node
     }
-    if (ts.isParenthesizedExpression(right)) {
-      const inner = right.expression
-      if (ts.isJsxElement(inner) || ts.isJsxSelfClosingElement(inner)) {
-        const node = convertJsxElement(inner, pathToId, relSrc, undefined, localComponents)
-        node.condition = conditionText
-        return node
+    // Also handle map calls, ternaries, etc. on the RHS (e.g. condition && arr.map(...))
+    const rhsResult = processJsxExpression(rhs, pathToId, relSrc, localComponents)
+    if (rhsResult && !Array.isArray(rhsResult) && ('map' in rhsResult || 'children' in rhsResult)) {
+      // Merge with any existing per-item condition (e.g. inner && set by processMapCall)
+      // rather than overwriting it — both conditions must hold simultaneously.
+      const existingCond = (rhsResult.condition as { js: string } | undefined)?.js
+      if (existingCond) {
+        rhsResult.condition = { js: `(${conditionText}) && (${existingCond})` }
+      } else {
+        rhsResult.condition = { js: conditionText }
       }
+      return rhsResult
+    }
+    if (Array.isArray(rhsResult) && rhsResult.length > 0) {
+      for (const n of rhsResult) { if (!n.condition) n.condition = { js: conditionText } }
+      return rhsResult
     }
   }
 
   // condition ? <A> : <B>
   if (ts.isConditionalExpression(expr)) {
     const condition = resolveExprToSdui(nodeText(expr.condition), pathToId)
-    const whenTrue = expr.whenTrue
-    const whenFalse = expr.whenFalse
+    // Unwrap parenthesized arms — AI often writes `cond ? (<Box/>) : (<Box/>)`
+    const unwrapJsx = (e: ts.Expression): ts.JsxElement | ts.JsxSelfClosingElement | null => {
+      if (ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return e
+      if (ts.isParenthesizedExpression(e)) return unwrapJsx(e.expression)
+      return null
+    }
+    const trueJsx = unwrapJsx(expr.whenTrue)
+    const falseJsx = unwrapJsx(expr.whenFalse)
 
-    const trueNode = (ts.isJsxElement(whenTrue) || ts.isJsxSelfClosingElement(whenTrue))
-      ? convertJsxElement(whenTrue, pathToId, relSrc, undefined, localComponents)
-      : null
-    const falseNode = (ts.isJsxElement(whenFalse) || ts.isJsxSelfClosingElement(whenFalse))
-      ? convertJsxElement(whenFalse, pathToId, relSrc, undefined, localComponents)
-      : null
+    const trueNode = trueJsx ? convertJsxElement(trueJsx, pathToId, relSrc, undefined, localComponents) : null
+    const falseNode = falseJsx ? convertJsxElement(falseJsx, pathToId, relSrc, undefined, localComponents) : null
+
+    // Negate a condition string without creating double-negations
+    const negateCondition = (cond: string): string => {
+      if (cond.startsWith('!(') && cond.endsWith(')')) return cond.slice(2, -1)  // !(expr) → expr
+      if (/^![^(]/.test(cond)) return cond.slice(1)                               // !expr  → expr
+      return `!(${cond})`
+    }
 
     const results: SduiNodeConfig[] = []
-    if (trueNode) { trueNode.condition = condition; results.push(trueNode) }
-    if (falseNode) { falseNode.condition = `!(${condition})`; results.push(falseNode) }
+    if (trueNode) { trueNode.condition = { js: condition }; results.push(trueNode) }
+
+    if (falseNode) {
+      // Simple case: false branch is a JSX element
+      falseNode.condition = { js: negateCondition(condition) }
+      results.push(falseNode)
+    } else {
+      // The false branch may be a chained ternary (A ? B : C ? D : E).
+      // Unwrap parentheses, recursively expand, and prepend !(outerCond) to
+      // each returned node's condition so all three branches become siblings.
+      let falseExpr: ts.Expression = expr.whenFalse
+      while (ts.isParenthesizedExpression(falseExpr)) falseExpr = (falseExpr as ts.ParenthesizedExpression).expression
+      const outer = negateCondition(condition)
+      const innerResult = processJsxExpression(falseExpr, pathToId, relSrc, localComponents)
+      if (innerResult) {
+        const nodes = Array.isArray(innerResult) ? innerResult : [innerResult as SduiNodeConfig]
+        for (const n of nodes) {
+          const sn = n as SduiNodeConfig
+          if (sn.condition && typeof sn.condition === 'object' && 'js' in (sn.condition as object)) {
+            sn.condition = { js: `${outer} && (${(sn.condition as { js: string }).js})` }
+          } else {
+            sn.condition = { js: outer }
+          }
+          results.push(sn)
+        }
+      }
+    }
+
     return results.length > 0 ? results : null
   }
 
@@ -1308,7 +2508,84 @@ function processJsxExpression(
     return processJsxChildren(expr.children, pathToId, relSrc, localComponents)
   }
 
+  // Value expression children: {count}, {'text'}, {items.length}, {ok ? 'Yes' : 'No'}
+  // Emit as inline Text nodes with the expression as a formula.
+  // This handles: numeric literals, string literals, template literals, ternaries/binary ops on values.
+  if (
+    ts.isNumericLiteral(expr) ||
+    ts.isStringLiteral(expr) ||
+    ts.isTemplateExpression(expr) ||
+    ts.isNoSubstitutionTemplateLiteral(expr) ||
+    ts.isConditionalExpression(expr) ||
+    ts.isBinaryExpression(expr) ||
+    ts.isPropertyAccessExpression(expr) ||
+    ts.isElementAccessExpression(expr) ||
+    ts.isCallExpression(expr) ||
+    ts.isIdentifier(expr)
+  ) {
+    let textValue: unknown
+    if (ts.isNumericLiteral(expr)) {
+      textValue = Number(expr.text)
+    } else if (ts.isStringLiteral(expr)) {
+      textValue = expr.text
+    } else {
+      // Dynamic: wrap as formula
+      const resolved = resolveExprToSdui(nodeText(expr), pathToId)
+      textValue = { js: resolved }
+    }
+    return {
+      type: 'Text',
+      id: crypto.randomUUID(),
+      props: {},
+      text: textValue,
+    }
+  }
+
   return null
+}
+
+/**
+ * For inline array literals used as map sources, strip zero-arg arrow wrappers from
+ * object property values before building the reactive formula string.
+ * `{ value: () => expr }` → `{ value: expr }`
+ * This is safe because the entire map source is already a reactive {js} formula that
+ * re-evaluates when variables change, so wrapping values in arrows gains nothing and
+ * causes the renderer to receive a function reference instead of a computed value.
+ */
+function resolveInlineArrayMapSource(
+  arrayExpr: ts.ArrayLiteralExpression,
+  pathToId: Map<string, string>,
+): string {
+  const srcFile = arrayExpr.getSourceFile()
+  const srcText = srcFile.getText()
+  const arrStart = arrayExpr.getStart()
+  const arrEnd = arrayExpr.getEnd()
+  const subs: Array<[number, number, string]> = []
+
+  function visit(node: ts.Node) {
+    if (
+      ts.isPropertyAssignment(node) &&
+      ts.isArrowFunction(node.initializer) &&
+      node.initializer.parameters.length === 0 &&
+      !ts.isBlock(node.initializer.body)
+    ) {
+      const arrowFn = node.initializer
+      const bodyText = (arrowFn.body as ts.Expression).getText()
+      subs.push([arrowFn.getStart(), arrowFn.getEnd(), bodyText])
+      return  // don't recurse into the arrow body
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  visit(arrayExpr)
+
+  subs.sort((a, b) => b[0] - a[0])
+  let result = srcText.slice(arrStart, arrEnd)
+  for (const [s, e, repl] of subs) {
+    result = result.slice(0, s - arrStart) + repl + result.slice(e - arrStart)
+  }
+
+  return resolveExprToSdui(result, pathToId)
 }
 
 function processMapCall(
@@ -1318,10 +2595,234 @@ function processMapCall(
   localComponents?: Map<string, LocalComponentDef>,
 ): SduiNodeConfig | null {
   const arrayExpr = (call.expression as ts.PropertyAccessExpression).expression
-  const mapExpr = resolveExprToSdui(nodeText(arrayExpr), pathToId)
+  const mapExpr = ts.isArrayLiteralExpression(arrayExpr)
+    ? resolveInlineArrayMapSource(arrayExpr as ts.ArrayLiteralExpression, pathToId)
+    : resolveExprToSdui(nodeText(arrayExpr), pathToId)
 
   const cbArg = call.arguments[0]
   if (!cbArg || (!ts.isArrowFunction(cbArg) && !ts.isFunctionExpression(cbArg))) return null
+
+  // Extract the callback parameter names (e.g. `item, i` in `.map((item, i) => ...)`)
+  // so we can rewrite `item.field` → `context.item.field` and `i` → `context.item.index`.
+  const callbackParam =
+    cbArg.parameters.length > 0 && ts.isIdentifier(cbArg.parameters[0].name)
+      ? cbArg.parameters[0].name.text
+      : undefined
+  const indexParam =
+    cbArg.parameters.length > 1 && ts.isIdentifier(cbArg.parameters[1].name)
+      ? cbArg.parameters[1].name.text
+      : undefined
+
+  // ─── Ternary callback: (item) => condition ? <TrueJsx> : <FalseJsx> ──────────
+  // When the map callback returns a ternary of two JSX branches, compile BOTH with
+  // opposite conditions inside a transparent container. This preserves onClick
+  // handlers (and all other attributes) in the false branch.
+  {
+    const unwrapExpr = (n: ts.Node): ts.Node => {
+      while (ts.isParenthesizedExpression(n as ts.Expression))
+        n = (n as ts.ParenthesizedExpression).expression
+      return n
+    }
+    let bodyNode: ts.Node = unwrapExpr(cbArg.body)
+    if (ts.isBlock(bodyNode)) {
+      for (const stmt of (bodyNode as ts.Block).statements) {
+        if (ts.isReturnStatement(stmt) && stmt.expression) {
+          bodyNode = unwrapExpr(stmt.expression)
+          break
+        }
+      }
+    }
+    if (ts.isConditionalExpression(bodyNode)) {
+      // ── Flatten nested ternaries: A ? X : B ? Y : Z  →  [{cond:A,jsx:X}, {cond:B,jsx:Y}, {cond:null,jsx:Z}]
+      const unwrapJsx = (e: ts.Expression): ts.JsxElement | ts.JsxSelfClosingElement | null => {
+        if (ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return e
+        if (ts.isParenthesizedExpression(e)) return unwrapJsx(e.expression)
+        return null
+      }
+      type TernaryBranch = { condition: ts.Expression | null; jsx: ts.JsxElement | ts.JsxSelfClosingElement }
+      const flattenTernary = (expr: ts.Expression): TernaryBranch[] | null => {
+        const unwrap = (e: ts.Expression): ts.Expression => {
+          while (ts.isParenthesizedExpression(e)) e = e.expression
+          return e
+        }
+        const branches: TernaryBranch[] = []
+        let cur: ts.Expression = unwrap(expr)
+        while (ts.isConditionalExpression(cur)) {
+          const t = cur as ts.ConditionalExpression
+          const trueJsx = unwrapJsx(t.whenTrue)
+          if (!trueJsx) return null
+          branches.push({ condition: t.condition, jsx: trueJsx })
+          cur = unwrap(t.whenFalse)
+        }
+        const elseJsx = unwrapJsx(cur)
+        if (!elseJsx) return null
+        branches.push({ condition: null, jsx: elseJsx })
+        return branches.length >= 2 ? branches : null
+      }
+
+      const branches = flattenTernary(bodyNode as ts.Expression)
+      if (branches) {
+        // Extract key from the first (true) branch, resolving param names to context paths
+        let ternaryKeyExpr: string | undefined
+        const firstOpening = ts.isJsxElement(branches[0].jsx) ? branches[0].jsx.openingElement : branches[0].jsx
+        for (const attr of firstOpening.attributes.properties) {
+          if (!ts.isJsxAttribute(attr) || !ts.isIdentifier(attr.name) || attr.name.text !== 'key') continue
+          if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression)
+            ternaryKeyExpr = resolveExprToSdui(nodeText(attr.initializer.expression), pathToId)
+          else if (attr.initializer && ts.isStringLiteral(attr.initializer))
+            ternaryKeyExpr = attr.initializer.text
+          break
+        }
+        // Rewrite callback/index param names in the key expression
+        if (ternaryKeyExpr && callbackParam)
+          ternaryKeyExpr = replaceIdentInCode(ternaryKeyExpr, callbackParam, 'context.item.data')
+        if (ternaryKeyExpr && indexParam)
+          ternaryKeyExpr = replaceIdentInCode(ternaryKeyExpr, indexParam, 'context.item.index')
+
+        // Collect block-local consts declared before the return ternary
+        const callbackLocals = new Map<string, string>()
+        if (ts.isBlock(cbArg.body)) {
+          for (const stmt of (cbArg.body as ts.Block).statements) {
+            if (!ts.isVariableStatement(stmt)) continue
+            for (const decl of stmt.declarationList.declarations) {
+              if (ts.isIdentifier(decl.name) && decl.initializer)
+                callbackLocals.set(decl.name.text, nodeText(decl.initializer))
+            }
+          }
+        }
+
+        const prevMapParam            = _currentMapParam
+        const prevMapIndexParam       = _currentMapIndexParam
+        const prevParentMapParam      = _parentMapParam
+        const prevParentMapIndexParam = _parentMapIndexParam
+        _parentMapParam      = _currentMapParam
+        _parentMapIndexParam = _currentMapIndexParam
+        if (callbackParam) _currentMapParam      = callbackParam
+        if (indexParam)    _currentMapIndexParam = indexParam
+
+        // Compile all branches (map/key omitted — container carries them)
+        _mapCallbackLocalsStack.push({ locals: callbackLocals, paramName: callbackParam, indexParamName: indexParam })
+        const compiled = branches.map(b => convertJsxElement(b.jsx, pathToId, relSrc, undefined, localComponents))
+        _mapCallbackLocalsStack.pop()
+
+        _currentMapParam      = prevMapParam
+        _currentMapIndexParam = prevMapIndexParam
+        _parentMapParam      = prevParentMapParam
+        _parentMapIndexParam = prevParentMapIndexParam
+
+        if (compiled.every(Boolean)) {
+          const rewriteCond = (raw: string): string => {
+            if (!callbackParam) return raw
+            let s = raw.replace(new RegExp(`\\b${callbackParam}\\.`, 'g'), 'context.item.data.')
+            return replaceIdentInCode(s, callbackParam, 'context.item.data')
+          }
+          const negateCondition = (cond: string): string => {
+            if (cond.startsWith('!(') && cond.endsWith(')')) return cond.slice(2, -1)
+            if (/^![^(]/.test(cond)) return cond.slice(1)
+            return `!(${cond})`
+          }
+
+          // Build mutually-exclusive conditions:
+          // branch[0]: cond_0
+          // branch[1]: !(cond_0) && cond_1
+          // branch[N] (else, condition===null): !(cond_0) && !(cond_1) && …
+          const negatedSoFar: string[] = []
+          const rewritten: SduiNodeConfig[] = []
+          for (let i = 0; i < branches.length; i++) {
+            const node = compiled[i]!
+            const rawCond = branches[i].condition
+            let branchCond: string
+            if (rawCond === null) {
+              // else branch: all prior conditions negated
+              branchCond = negatedSoFar.join(' && ')
+            } else {
+              const resolvedCond = rewriteCond(resolveExprToSdui(nodeText(rawCond), pathToId))
+              branchCond = negatedSoFar.length > 0
+                ? `${negatedSoFar.join(' && ')} && ${resolvedCond}`
+                : resolvedCond
+              negatedSoFar.push(negateCondition(rewriteCond(resolveExprToSdui(nodeText(rawCond), pathToId))))
+            }
+            node.condition = { js: branchCond }
+            rewritten.push(node)
+          }
+
+          const container: SduiNodeConfig = {
+            type:     'Box',
+            id:       crypto.randomUUID(),
+            props:    {},
+            map:      { js: mapExpr },
+            children: rewritten,
+            actions:  [],
+          }
+          if (ternaryKeyExpr) container.key = ternaryKeyExpr
+          return container
+        }
+      }
+    }
+  }
+  // ─── End ternary callback handling ────────────────────────────────────────────
+
+  // ─── AND callback: (item) => condition && <JSX> ───────────────────────────────
+  // When the map callback returns `condition && <JSX>`, compile the JSX and attach
+  // the condition.  This covers patterns like:
+  //   activeTab === tabKey && (<Box>...</Box>)
+  // The condition is resolved via resolveExprToSdui which calls lowerExpression,
+  // converting any callback-param references (e.g. `tabKey`) to `context.item.data`.
+  {
+    const unwrapExpr = (n: ts.Node): ts.Node => {
+      while (ts.isParenthesizedExpression(n as ts.Expression))
+        n = (n as ts.ParenthesizedExpression).expression
+      return n
+    }
+    let bodyNode: ts.Node = unwrapExpr(cbArg.body)
+    if (ts.isBlock(bodyNode)) {
+      for (const stmt of (bodyNode as ts.Block).statements) {
+        if (ts.isReturnStatement(stmt) && stmt.expression) {
+          bodyNode = unwrapExpr(stmt.expression)
+          break
+        }
+      }
+    }
+    if (
+      ts.isBinaryExpression(bodyNode) &&
+      (bodyNode as ts.BinaryExpression).operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+    ) {
+      let rhs: ts.Expression = (bodyNode as ts.BinaryExpression).right
+      while (ts.isParenthesizedExpression(rhs)) rhs = rhs.expression
+      if (ts.isJsxElement(rhs) || ts.isJsxSelfClosingElement(rhs)) {
+        const condText = resolveExprToSdui(nodeText((bodyNode as ts.BinaryExpression).left), pathToId)
+        // Extract key from the JSX element
+        let andKeyExpr: string | undefined
+        const opening = ts.isJsxElement(rhs) ? rhs.openingElement : rhs
+        for (const attr of opening.attributes.properties) {
+          if (!ts.isJsxAttribute(attr) || !ts.isIdentifier(attr.name) || attr.name.text !== 'key') continue
+          if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression)
+            andKeyExpr = resolveExprToSdui(nodeText(attr.initializer.expression), pathToId)
+          else if (attr.initializer && ts.isStringLiteral(attr.initializer))
+            andKeyExpr = attr.initializer.text
+          break
+        }
+        const prevMapParam      = _currentMapParam
+        const prevMapIndexParam = _currentMapIndexParam
+        const prevParentMapParam      = _parentMapParam
+        const prevParentMapIndexParam = _parentMapIndexParam
+        _parentMapParam      = _currentMapParam
+        _parentMapIndexParam = _currentMapIndexParam
+        if (callbackParam) _currentMapParam      = callbackParam
+        if (indexParam)    _currentMapIndexParam = indexParam
+        const compiled = convertJsxElement(rhs, pathToId, relSrc, { mapExpr, keyExpr: andKeyExpr }, localComponents)
+        _currentMapParam      = prevMapParam
+        _currentMapIndexParam = prevMapIndexParam
+        _parentMapParam      = prevParentMapParam
+        _parentMapIndexParam = prevParentMapIndexParam
+        if (compiled) {
+          compiled.condition = { js: condText }
+          return compiled
+        }
+      }
+    }
+  }
+  // ─── End AND callback handling ────────────────────────────────────────────────
 
   // Find the JSX return inside the callback
   let innerJsx: ts.JsxElement | ts.JsxSelfClosingElement | null = null
@@ -1337,6 +2838,19 @@ function processMapCall(
 
   if (!innerJsx) return null
 
+  // Collect const declarations from the callback block body so they can be inlined
+  // into formulas that reference them (e.g. `const isToday = day.X === Y`).
+  const callbackLocals = new Map<string, string>()
+  if (ts.isBlock(cbArg.body)) {
+    for (const stmt of cbArg.body.statements) {
+      if (!ts.isVariableStatement(stmt)) continue
+      for (const decl of stmt.declarationList.declarations) {
+        if (ts.isIdentifier(decl.name) && decl.initializer)
+          callbackLocals.set(decl.name.text, nodeText(decl.initializer))
+      }
+    }
+  }
+
   // Extract key={...} from the inner JSX
   const opening = ts.isJsxElement(innerJsx) ? innerJsx.openingElement : innerJsx
   for (const attr of opening.attributes.properties) {
@@ -1350,7 +2864,25 @@ function processMapCall(
     break
   }
 
-  return convertJsxElement(innerJsx, pathToId, relSrc, { mapExpr, keyExpr }, localComponents)
+  const prevMapParam = _currentMapParam
+  const prevMapIndexParam = _currentMapIndexParam
+  const prevParentMapParam = _parentMapParam
+  const prevParentMapIndexParam = _parentMapIndexParam
+  _parentMapParam = _currentMapParam
+  _parentMapIndexParam = _currentMapIndexParam
+  if (callbackParam) _currentMapParam = callbackParam
+  if (indexParam) _currentMapIndexParam = indexParam
+  // Expose this map's block-body locals so inner-map onClick handlers (parseArrowAction)
+  // can inline calls like `choose(i)` from the outer map's callback block body.
+  _mapCallbackLocalsStack.push({ locals: callbackLocals, paramName: callbackParam, indexParamName: indexParam })
+  const compiled = convertJsxElement(innerJsx, pathToId, relSrc, { mapExpr, keyExpr }, localComponents)
+  _mapCallbackLocalsStack.pop()
+  _currentMapParam = prevMapParam
+  _currentMapIndexParam = prevMapIndexParam
+  _parentMapParam = prevParentMapParam
+  _parentMapIndexParam = prevParentMapIndexParam
+  if (!compiled || !callbackParam) return compiled
+  return compiled
 }
 
 // ─── Extract text content from a JSX element ─────────────────────────────────
@@ -1366,10 +2898,13 @@ function extractTextContent(
 
   // Single expression child: <Text>{expr}</Text>
   if (textChildren.length === 1 && ts.isJsxExpression(textChildren[0])) {
-    const expr = textChildren[0].expression
+    let expr = textChildren[0].expression
     if (!expr) return undefined
     // String literals inside JSX expressions: <Text>{"hello"}</Text> → "hello"
     if (ts.isStringLiteral(expr)) return expr.text
+    // Unwrap parentheses: (() => expr) produced by inlineLocalComponent when a zero-arg
+    // arrow prop is substituted into the component body as a text child.
+    while (ts.isParenthesizedExpression(expr)) expr = expr.expression
     // Arrow function: {() => expr} — strip the () => wrapper so the formula evaluator
     // receives the inner expression directly (not a function object).
     if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
@@ -1388,18 +2923,41 @@ function extractTextContent(
     return t || undefined
   }
 
-  // Mixed: concatenate
-  const parts: string[] = []
+  // Mixed: build a JS string-concatenation expression emitted as {js: "..."}
+  // e.g. <Text>Hello {name}!</Text> → { js: "'Hello ' + variables['uuid'] + '!'" }
+  const jsParts: string[] = []
   for (const c of textChildren) {
     if (ts.isJsxText(c)) {
-      const t = c.text.trim()
-      if (t) parts.push(t)
+      // JSX whitespace normalization:
+      // - Strip indentation noise (whitespace around newlines) so multiline
+      //   JSX formatting doesn't inject literal newline text.
+      // - Preserve a single space adjacent to expressions on the same line
+      //   (e.g. `{expr} pts` — the leading " pts" space is a word separator).
+      // - Skip text nodes that are entirely whitespace containing newlines.
+      const t = c.text
+        .replace(/[ \t]*\n[ \t]*/g, '\n')   // collapse whitespace around each newline
+        .replace(/^\n+/, '')                 // strip leading newlines
+        .replace(/\n+$/, '')                 // strip trailing newlines
+        .replace(/\n+/g, ' ')               // remaining internal newlines → single space
+        .replace(/ {2,}/g, ' ')             // collapse multiple spaces to one
+      if (t.trim()) jsParts.push(JSON.stringify(t))
     } else if (ts.isJsxExpression(c) && c.expression) {
-      const resolved = resolveExprToSdui(nodeText(c.expression), pathToId)
-      parts.push(`{{${resolved}}}`)
+      let expr: ts.Expression = c.expression
+      // Unwrap (() => body) from inlineLocalComponent prop substitution
+      while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+      let exprText: string
+      if (ts.isArrowFunction(expr) && expr.parameters.length === 0) {
+        exprText = ts.isBlock(expr.body)
+          ? `(${nodeText(expr)})()`
+          : nodeText(expr.body as ts.Expression)
+      } else {
+        exprText = nodeText(expr)
+      }
+      const resolved = resolveExprToSdui(exprText, pathToId)
+      jsParts.push(`(${resolved})`)
     }
   }
-  return parts.join('')
+  return { js: jsParts.join(' + ') }
 }
 
 // ─── Post-process node: extract text from Text nodes ─────────────────────────
@@ -1446,9 +3004,13 @@ function findJsxRoot(node: ts.Node): ts.JsxElement | ts.JsxSelfClosingElement | 
     return findJsxRoot(node.expression)
   }
   if (ts.isBlock(node)) {
+    // Only look in return statements — skip variable declarations (their arrow-function
+    // bodies may contain JSX helper components that are NOT the page root).
     for (const stmt of node.statements) {
-      const found = findJsxRoot(stmt)
-      if (found) return found
+      if (ts.isReturnStatement(stmt)) {
+        const found = findJsxRoot(stmt)
+        if (found) return found
+      }
     }
   }
   let found: ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment | null = null
@@ -1479,7 +3041,7 @@ function isComponentName(name: string): boolean {
  * and return a map of component name → body info for inlining.
  * Only top-level declarations are collected (not nested functions).
  */
-function collectLocalComponents(sf: ts.SourceFile): Map<string, LocalComponentDef> {
+function collectLocalComponents(sf: ts.SourceFile, extraBlock?: ts.Block): Map<string, LocalComponentDef> {
   const result = new Map<string, LocalComponentDef>()
   const src = sf.getFullText()
 
@@ -1521,7 +3083,7 @@ function collectLocalComponents(sf: ts.SourceFile): Map<string, LocalComponentDe
     return { paramDefaults, localConsts, bodyText }
   }
 
-  ts.forEachChild(sf, node => {
+  function scanNode(node: ts.Node) {
     // const CalcButton = (...) => <JSX>  or  const CalcButton = function(...) { ... }
     if (ts.isVariableStatement(node)) {
       for (const decl of node.declarationList.declarations) {
@@ -1535,7 +3097,20 @@ function collectLocalComponents(sf: ts.SourceFile): Map<string, LocalComponentDe
         if (def) result.set(decl.name.text, def)
       }
     }
-  })
+    // function Toggle({ on, onClick }) { return <JSX> }
+    if (ts.isFunctionDeclaration(node) && node.name && isComponentName(node.name.text)) {
+      const def = extractDef(node)
+      if (def) result.set(node.name.text, def)
+    }
+  }
+
+  ts.forEachChild(sf, scanNode)
+
+  // Also scan inside the page render-function body for components defined there
+  // (e.g. `const Field = ({ label, child }) => <Box>...</Box>` inside definePage).
+  if (extraBlock) {
+    for (const stmt of extraBlock.statements) scanNode(stmt)
+  }
 
   return result
 }
@@ -1574,6 +3149,24 @@ function substituteIdentifiers(bodyText: string, propValues: Map<string, string>
       ) { ts.forEachChild(node, visit); return }
       // Skip: JSX attribute name `onClick={...}` — only the name part, not the value
       if (ts.isJsxAttribute(p) && p.name === node) { ts.forEachChild(node, visit); return }
+
+      // Beta-reduce: identifier is callee of a call expression and its value is a
+      // parameterized arrow function (e.g. onPick(c) with onPick = "(c) => val = c").
+      // Replace the entire CallExpression with the inlined body to avoid the
+      // malformed `(c) => body(c)` that plain identifier substitution would produce.
+      if (ts.isCallExpression(p) && p.expression === node) {
+        const rawVal = propValues.get(node.text)!.trim()
+        const arrowMatch = rawVal.match(/^\(([^()]*)\)\s*=>([\s\S]+)$/)
+        if (arrowMatch) {
+          const params = arrowMatch[1].split(',').map(s => s.trim()).filter(Boolean)
+          let body = arrowMatch[2].trim()
+          p.arguments.forEach((arg, i) => {
+            if (params[i]) body = replaceIdentInCode(body, params[i], arg.getText())
+          })
+          subs.push([p.getStart(), p.getEnd(), body])
+          return  // don't recurse — entire call expression is replaced
+        }
+      }
 
       subs.push([node.getStart(), node.getEnd(), propValues.get(node.text)!])
       return
@@ -1619,6 +3212,17 @@ function inlineLocalComponent(
       callProps.set(attrName, JSON.stringify(init.text))
     } else if (ts.isJsxExpression(init) && init.expression) {
       callProps.set(attrName, init.expression.getText())
+    }
+  }
+
+  // If the component accepts `children` and the call site has JSX children,
+  // collect them as a single fragment text so `{children}` in the body resolves.
+  if (ts.isJsxElement(jsxNode) && jsxNode.children.length > 0 && comp.paramDefaults.has('children')) {
+    const childTexts = jsxNode.children
+      .map(c => c.getText().trim())
+      .filter(t => t.length > 0)
+    if (childTexts.length > 0) {
+      callProps.set('children', childTexts.length === 1 ? childTexts[0] : `<>${childTexts.join('')}</>`)
     }
   }
 
@@ -1717,18 +3321,51 @@ export function compilePageToJson(
   runtimeScMap?: Map<string, { id: string; name: string; content: Record<string, unknown>; triggers?: Array<{ id: string; name: string }> }>,
   componentPropNames?: string[],
   scTriggerNames?: Map<string, string>,
-): CompiledPage | null {
+): CompiledPage[] {
   const fakeFilename = 'dsl-chat.tsx'
   const sf = ts.createSourceFile(fakeFilename, sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
   const resolvedPathToId = pathToId ?? new Map<string, string>()
   const localComponents = collectLocalComponents(sf)
-  let result: CompiledPage | null = null
+  const results: CompiledPage[] = []
 
   // Set module-level state for this compile call
   _runtimeScMap = runtimeScMap ?? new Map()
   _componentPropNames = componentPropNames ?? []
   _scTriggerNames = scTriggerNames ?? new Map()
   _inlineWorkflows = new Map()  // reset per compile call
+  _currentPageLocals = collectPageLocalConsts(sf)
+
+  // Scan source for defineWorkflow declarations and map UUID → param names so that
+  // positional call-site args (deleteExpense(item.id)) are keyed by declared param name
+  // ('id') instead of positional 'arg0', keeping them consistent with the workflow's
+  // generated code which uses `parameters.id`.
+  _workflowParamNames = new Map()
+  function collectWorkflowParams(node: ts.Node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isCallExpression(node.initializer)
+    ) {
+      const call = node.initializer
+      if (ts.isIdentifier(call.expression) && call.expression.text === 'defineWorkflow') {
+        const wfName = node.name.text
+        const fnArg = call.arguments[0]
+        if (fnArg && (ts.isArrowFunction(fnArg) || ts.isFunctionExpression(fnArg))) {
+          const paramNames = fnArg.parameters
+            .map(p => (ts.isIdentifier(p.name) ? p.name.text : ''))
+            .filter(Boolean)
+          if (paramNames.length > 0) {
+            const uuid =
+              resolvedPathToId.get(wfName) ?? resolvedPathToId.get(`workflows/${wfName}`)
+            if (uuid) _workflowParamNames.set(uuid, paramNames)
+          }
+        }
+      }
+    }
+    ts.forEachChild(node, collectWorkflowParams)
+  }
+  collectWorkflowParams(sf)
 
   function extractPageCall(call: ts.CallExpression): { pageName: string; layout: string; title: string; fnArg: ts.ArrowFunction | ts.FunctionExpression } | null {
     const firstArg = call.arguments[0]
@@ -1766,9 +3403,44 @@ export function compilePageToJson(
     return { pageName, layout, title, fnArg }
   }
 
-  function visitNode(node: ts.Node) {
-    if (result) return
+  function compileOnePage(extracted: { pageName: string; layout: string; title: string; fnArg: ts.ArrowFunction | ts.FunctionExpression }) {
+    const jsxRoot = findJsxRoot(extracted.fnArg.body)
+    if (!jsxRoot) return
+    // Reset inline workflows for each page so they don't bleed across pages
+    _inlineWorkflows = new Map()
+    _currentLocalParamFns = new Map()
+    _mapCallbackLocalsStack = []
+    _currentPageLocals = collectPageLocalConsts(sf)
+    _currentLocalFns = collectPageLocalFns(extracted.fnArg.body)
+    const renderLocals = collectRenderBodyLocals(extracted.fnArg.body)
+    // Merge page-body local components (e.g. const Field = ({ label, child }) => ...)
+    // into the module-level component map so inline expansion works for both.
+    const pageBodyBlock = ts.isBlock(extracted.fnArg.body) ? extracted.fnArg.body : undefined
+    const effectiveLocalComponents = pageBodyBlock
+      ? collectLocalComponents(sf, pageBodyBlock)
+      : localComponents
+    try {
+      const content = jsxToSduiNodes(jsxRoot, resolvedPathToId, fakeFilename, effectiveLocalComponents)
+      const rootNode = Array.isArray(content) ? content[0] ?? null : content
+      if (rootNode && renderLocals.length > 0) {
+        rootNode.locals = renderLocals.map(local => ({
+          name: local.name,
+          js: resolveExprToSdui(local.js, resolvedPathToId),
+        }))
+      }
+      results.push({
+        pageName: extracted.pageName,
+        title: extracted.title,
+        layout: extracted.layout,
+        content: rootNode,
+        inlineWorkflows: new Map(_inlineWorkflows),
+      })
+    } finally {
+      _currentLocalFns = new Map()
+    }
+  }
 
+  function visitNode(node: ts.Node) {
     // export default definePage(...)
     if (
       ts.isExportAssignment(node) &&
@@ -1777,23 +3449,7 @@ export function compilePageToJson(
       node.expression.expression.text === 'definePage'
     ) {
       const extracted = extractPageCall(node.expression as ts.CallExpression)
-      if (extracted) {
-        const jsxRoot = findJsxRoot(extracted.fnArg.body)
-        if (!jsxRoot) return
-        _currentLocalFns = collectPageLocalFns(extracted.fnArg.body)
-        try {
-          const content = jsxToSduiNodes(jsxRoot, resolvedPathToId, fakeFilename, localComponents)
-          result = {
-            pageName: extracted.pageName,
-            title: extracted.title,
-            layout: extracted.layout,
-            content: Array.isArray(content) ? content[0] ?? null : content,
-            inlineWorkflows: new Map(_inlineWorkflows),
-          }
-        } finally {
-          _currentLocalFns = new Map()
-        }
-      }
+      if (extracted) compileOnePage(extracted)
       return
     }
 
@@ -1806,25 +3462,9 @@ export function compilePageToJson(
           if (!ts.isIdentifier(decl.initializer.expression)) continue
           if (decl.initializer.expression.text !== 'definePage') continue
           const extracted = extractPageCall(decl.initializer as ts.CallExpression)
-          if (extracted) {
-            const jsxRoot = findJsxRoot(extracted.fnArg.body)
-            if (!jsxRoot) return
-            _currentLocalFns = collectPageLocalFns(extracted.fnArg.body)
-            try {
-              const content = jsxToSduiNodes(jsxRoot, resolvedPathToId, fakeFilename, localComponents)
-              result = {
-                pageName: extracted.pageName,
-                title: extracted.title,
-                layout: extracted.layout,
-                content: Array.isArray(content) ? content[0] ?? null : content,
-                inlineWorkflows: new Map(_inlineWorkflows),
-              }
-            } finally {
-              _currentLocalFns = new Map()
-            }
-            return
-          }
+          if (extracted) compileOnePage(extracted)
         }
+        return
       }
     }
 
@@ -1836,7 +3476,15 @@ export function compilePageToJson(
   _componentPropNames = []
   _scTriggerNames = new Map()
   _inlineWorkflows = new Map()
-  return result
+  _currentPageLocals = new Map()
+  _currentPageLocalNodes = new Map()
+  _currentMapParam = undefined
+  _currentMapIndexParam = undefined
+  _parentMapParam = undefined
+  _parentMapIndexParam = undefined
+  _mapCallbackLocalsStack = []
+  _workflowParamNames = new Map()
+  return results
 }
 
 // ─── Disk-based compile ───────────────────────────────────────────────────────

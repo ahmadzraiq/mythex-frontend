@@ -37,8 +37,30 @@ export const SHORTHAND_KEYS = new Set([
   'border','borderStyle','borderColor',
   'radius','radiusTL','radiusTR','radiusBR','radiusBL',
   'position','inset0','top','right','bottom','left','z',
-  'overflow','cursor','opacity','objectFit','extra',
+  'overflow','cursor','opacity','objectFit','extra','shadow',
 ])
+
+/**
+ * Maps shorthand keys that support dynamic formula values in `props.classFormulas`.
+ * Each entry is a pass-through: `e => e`. The compiler stores the raw value expression
+ * and the renderer wraps it into the correct Tailwind class via CLASS_FORMULA_WRAPPERS.
+ *
+ * Keys NOT listed here (gridCols, flex1, wrap, etc.) fall back to props.style.
+ */
+export const SHORTHAND_FORMULA_CLASS_MAP: Record<string, (expr: string) => string> = {
+  bg: e => e, textColor: e => e, borderColor: e => e,
+  opacity: e => e, z: e => e, text: e => e,
+  radius: e => e, radiusTL: e => e, radiusTR: e => e, radiusBR: e => e, radiusBL: e => e,
+  border: e => e,
+  w: e => e, h: e => e, minW: e => e, maxW: e => e, minH: e => e, maxH: e => e,
+  p: e => e, px: e => e, py: e => e, pt: e => e, pr: e => e, pb: e => e, pl: e => e,
+  m: e => e, mx: e => e, my: e => e, mt: e => e, mr: e => e, mb: e => e, ml: e => e,
+  gap: e => e, gapX: e => e, gapY: e => e,
+  top: e => e, right: e => e, bottom: e => e, left: e => e,
+  cursor: e => e, overflow: e => e, justify: e => e, items: e => e,
+  direction: e => e, display: e => e, position: e => e, colSpan: e => e,
+  shadow: e => e,
+}
 
 /** Maps shorthand keys to camelCase CSS for dynamic formula values. */
 export const SHORTHAND_FORMULA_CSS_MAP: Record<string, { cssKey: string; wrapExpr?: (e: string) => string }> = {
@@ -309,6 +331,7 @@ export function resolveStyleParams(
   if (i.cursor) tokens.push(`cursor-${i.cursor}`)
   { const { base: v, bpOverrides } = unwrapResponsive(i.opacity); if (v != null) tokens.push(`opacity-[${v}]`); addBp('opacity', bpOverrides) }
   if (i.objectFit) tokens.push(`object-${i.objectFit}`)
+  if (i.shadow) tokens.push(`shadow-${i.shadow}`)
   if (i.extra) tokens.push(String(i.extra).trim())
 
   return { className: tokens.filter(Boolean).join(' '), responsiveStyles }

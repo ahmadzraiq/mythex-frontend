@@ -20,7 +20,7 @@ import { compileThemeFile } from './compile-theme'
 
 export async function compileFile(srcPath: string): Promise<void> {
   const ext = path.extname(srcPath)
-  if (!['.ts', '.tsx'].includes(ext)) return
+  if (!['.ts', '.tsx', '.js', '.jsx'].includes(ext)) return
 
   // Build VFS registry once per file compile (shared across all compilers)
   const registry = buildVfsRegistry()

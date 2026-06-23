@@ -28,6 +28,8 @@ interface ChartProps {
   chartType?: ChartType;
   data?: ChartDataPoint[];
   dataKey?: string;
+  nameKey?: string;
+  showTooltip?: boolean;
   colors?: string[];
   className?: string;
   style?: React.CSSProperties;
@@ -52,6 +54,8 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
       chartType = 'bar',
       data = DEFAULT_DATA,
       dataKey = 'value',
+      nameKey = 'name',
+      showTooltip = true,
       colors = DEFAULT_COLORS,
       className = '',
       style,
@@ -59,16 +63,16 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
     },
     ref,
   ) => {
-    const chartData = data?.length ? data : DEFAULT_DATA;
+    const chartData = Array.isArray(data) && data.length ? data : DEFAULT_DATA;
 
     const renderChart = () => {
       if (chartType === 'line') {
         return (
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+            <XAxis dataKey={nameKey} tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
+            {showTooltip && <Tooltip />}
             <Line type="monotone" dataKey={dataKey} stroke={colors[0]} strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         );
@@ -76,21 +80,21 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
       if (chartType === 'pie') {
         return (
           <PieChart>
-            <Pie data={chartData} dataKey={dataKey} nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+            <Pie data={chartData} dataKey={dataKey} nameKey={nameKey} cx="50%" cy="50%" outerRadius={80} label>
               {chartData.map((_, idx) => (
                 <Cell key={idx} fill={colors[idx % colors.length]} />
               ))}
             </Pie>
-            <Tooltip />
+            {showTooltip && <Tooltip />}
           </PieChart>
         );
       }
       return (
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+          <XAxis dataKey={nameKey} tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip />
+          {showTooltip && <Tooltip />}
           <Bar dataKey={dataKey} fill={colors[0]} radius={[4, 4, 0, 0]} />
         </BarChart>
       );

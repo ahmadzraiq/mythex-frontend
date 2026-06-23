@@ -94,6 +94,20 @@ export function getRegisteredFormulas(): Record<string, _GlobalFormulaDef> {
   return _registeredFormulas;
 }
 
+// ─── Scope variable injection helpers ────────────────────────────────────────
+
+/**
+ * Named scopes that are explicitly bound as parameters in evaluateFormula.
+ * Custom scope variables (e.g. `cell` from map.as) must NOT be in this set
+ * or they will shadow the explicit parameters.
+ */
+const FORMULA_STANDARD_SCOPES = new Set([
+  'collections', 'variables', 'context', 'globalContext', 'pages', 'theme', 'event',
+  'parameters', 'env', 'route', 'auth', '_workflow', 'local', 'value', 'get',
+  '$item', '$index', '$parent',
+]);
+const VALID_IDENT_RE = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+
 // ─── Core evaluator ───────────────────────────────────────────────────────────
 
 /**
@@ -177,6 +191,8 @@ export function evaluateFormula(formula: string | object, context: Record<string
     userFns[fnName] = (...args: unknown[]) => {
       const body = formulaDef.formula || '';
       if (!body.trim()) return undefined;
+      // paramNames are the REAL JS parameter names stored by the compiler (e.g. ['year','month']).
+      // new Function(...paramNames, body) binds them natively so the verbatim body works as-is.
       const paramNames = (formulaDef.params ?? []).map(p => p.name);
       const paramCtx: Record<string, unknown> = {};
       paramNames.forEach((p, i) => { paramCtx[p] = args[i]; });
@@ -185,9 +201,23 @@ export function evaluateFormula(formula: string | object, context: Record<string
       const hasStatements = !isExpression(body);
       if (hasStatements) {
         try {
+          // Build a preamble that exposes every sibling user function by its real name
+          // so statement-body functions can call each other without __userFns__['x'] syntax.
+          const siblingPreamble = Object.keys(userFns)
+            .filter(k => VALID_IDENT_RE.test(k) && k !== fnName)
+            .map(k => `const ${k} = __userFns__[${JSON.stringify(k)}];`)
+            .join('\n');
           // eslint-disable-next-line no-new-func
-          const fn = new Function('parameters', 'variables', ...paramNames, `"use strict";\n${body}`);
-          return fn(paramCtx, (context.variables ?? {}) as Record<string, unknown>, ...args);
+          const fn = new Function(
+            'parameters', 'variables', '__userFns__', ...paramNames,
+            `"use strict";\n${siblingPreamble ? siblingPreamble + '\n' : ''}${body}`,
+          );
+          return fn(
+            paramCtx,
+            (context.variables ?? {}) as Record<string, unknown>,
+            userFns,
+            ...args,
+          );
         } catch { return undefined; }
       }
       // Simple expression body: use evaluateFormula for full state access (variables, collections, etc.)
@@ -195,6 +225,14 @@ export function evaluateFormula(formula: string | object, context: Record<string
       try { return evaluateFormula(body, innerCtx, ctxGet).value; } catch { return undefined; }
     };
   }
+
+  // Dynamic scope variable declarations — exposes custom-named loop vars (e.g. `cell` from
+  // map.as, or `product` from <For each={...}>{(product) => ...}</For>) as named locals so
+  // condition strings like "cell.day > 0" and formula strings resolve correctly.
+  const scopeVarDecls = Object.keys(context)
+    .filter(k => VALID_IDENT_RE.test(k) && !FORMULA_STANDARD_SCOPES.has(k))
+    .map(k => `const ${k} = (__state__ ?? {})[${JSON.stringify(k)}]; `)
+    .join('');
 
   try {
     // Named scopes: variables['UUID'], collections['UUID'], context.item, route.*, auth.*,
@@ -219,6 +257,7 @@ export function evaluateFormula(formula: string | object, context: Record<string
       `const local = (__state__ ?? {})['local'] ?? {}; ` +
       `const value = (__state__ ?? {})['value']; ` +
       `const get = (p) => { if (!p) return undefined; if (__ctxGet__) return __ctxGet__(p); if (!__state__) return undefined; if (p in __state__) return __state__[p]; const parts = p.split('.'); let c = __state__; for (const k of parts) { if (c == null || typeof c !== 'object') return undefined; c = c[k]; } return c; }; ` +
+      scopeVarDecls +
       `return (${processed});`
     );
     const value = fn(

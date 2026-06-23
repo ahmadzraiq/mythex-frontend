@@ -127,7 +127,7 @@ export interface PopoverConfig {
   componentId?: string;
 }
 
-/** Single UI node in the JSON tree */
+  /** Single UI node in the JSON tree */
 export interface SDUINode {
   type: SDUIComponentType;
   /** Stable identifier — used by visual builder for selection & annotation */
@@ -136,7 +136,9 @@ export interface SDUINode {
   name?: string;
   key?: string;
   condition?: ConditionValue;
-  map?: string;
+  map?: string | { js: string; as?: string; key?: string; formula?: string; keyField?: string };
+  /** Render-body local const declarations, evaluated into subtree scope at runtime */
+  locals?: Array<{ name: string; js: string }>;
   props?: Record<string, unknown>;
   className?: string;
   children?: SDUINode[];
@@ -173,12 +175,4 @@ export interface SDUINode {
   popover?: PopoverConfig;
   /** Marks this Box as the popover content container (rendered in the floating panel) */
   _popoverContent?: boolean;
-  /**
-   * Named group/section marker.
-   * Value is a display name (e.g. "Hero", "Pricing", "Footer").
-   * Makes this node addressable as a virtual file under pages/<page>/groups/<name>
-   * Use for top-level sections that should be independently editable.
-   * The renderer ignores this field — it is builder-only metadata.
-   */
-  _group?: string;
 }

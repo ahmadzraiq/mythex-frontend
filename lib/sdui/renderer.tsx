@@ -896,9 +896,26 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   const formStateForScope = activeFormKey
     ? (store.getState().getFullState()[activeFormKey] as Record<string, unknown> | undefined) ?? null
     : null;
-  const stateWithScope = formStateForScope
+  // Evaluate node.locals[] into the scope — render-body const declarations preserved
+  // from <For>/{definePage with consts} are injected by name here so { js: "varName" }
+  // bindings in child nodes resolve without any compiler rewriting.
+  let stateWithLocals = formStateForScope
     ? { ...stateBase, local: { data: { form: formStateForScope } } }
     : stateBase;
+  const _nodeLocals = (node as { locals?: Array<{ name: string; js: string }> }).locals;
+  if (_nodeLocals && _nodeLocals.length > 0) {
+    const localsScope: Record<string, unknown> = {};
+    for (const local of _nodeLocals) {
+      try {
+        const result = evaluateFormula({ js: local.js }, stateWithLocals);
+        localsScope[local.name] = result.value;
+        // Make the evaluated value available for subsequent locals in this list
+        stateWithLocals = { ...stateWithLocals, ...localsScope };
+      } catch { /* non-fatal — local remains undefined */ }
+    }
+    stateWithLocals = { ...stateWithLocals, ...localsScope };
+  }
+  const stateWithScope = stateWithLocals;
 
   // Scoped getter: redirect local.data.form.* to the per-FC isolated store
   // so {{local.data.form.formData.x}} template interpolation also resolves correctly.
@@ -1121,6 +1138,10 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
           const mapKeyField = (typeof mapCfg === 'object' && 'keyField' in mapCfg)
             ? (mapCfg as { keyField?: string }).keyField
             : undefined;
+          // map.as — the loop parameter name from <For each={...}>{(as) => ...}</For>
+          const mapAs = (typeof mapCfg === 'object' && 'as' in mapCfg)
+            ? (mapCfg as { as?: string }).as
+            : undefined;
           const itemKey = mapKeyField && typeof item === 'object' && item !== null
             ? String((item as Record<string, unknown>)[mapKeyField] ?? index)
             : (node.key ? `${node.key}-${index}` : index);
@@ -1134,6 +1155,9 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
                 $item: item,
                 $index: index,
                 $parent: effectiveScope?.$item,
+                // Inject loop variable by the param name used in <For> render prop
+                // so { js: "product.title" } resolves when as="product"
+                ...(mapAs ? { [mapAs]: item } : {}),
                 context: {
                   // Preserve outer context.component so {{context.component.props.*}} and
                   // context.component.variables['uuid'] subscriptions still resolve inside the map.

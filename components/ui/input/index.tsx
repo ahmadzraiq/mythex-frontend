@@ -55,6 +55,9 @@ const inputStyle = tva({
     },
 
     variant: {
+      plain:
+        'border-0 rounded-none bg-transparent',
+
       underlined:
         'rounded-none border-b data-[invalid=true]:border-b-2 data-[invalid=true]:border-error-700 data-[invalid=true]:data-[disabled=true]:hover:border-error-700',
 
@@ -90,6 +93,7 @@ const inputFieldStyle = tva({
 
   parentVariants: {
     variant: {
+      plain: 'web:outline-0 web:outline-none px-0',
       underlined: 'web:outline-0 web:outline-none px-0',
       outline: 'web:outline-0 web:outline-none',
       rounded: 'web:outline-0 web:outline-none px-4',
@@ -101,7 +105,7 @@ type IInputProps = React.ComponentProps<typeof UIInput> &
   VariantProps<typeof inputStyle> & { className?: string };
 const Input = React.forwardRef<React.ComponentRef<typeof UIInput>, IInputProps>(
   function Input(
-    { className, variant = 'outline', size = 'md', ...props },
+    { className, variant = 'plain', size = 'md', ...props },
     ref
   ) {
     return (

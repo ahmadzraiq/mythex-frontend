@@ -147,8 +147,6 @@ function buildNodeBlob(
     push(summary);
   }
 
-  // _group marker
-  if (node._group) push(`_group:${node._group as string}`);
 
   // _shared component instance — include component model id and display name
   const shared = node._shared as Record<string, unknown> | undefined;

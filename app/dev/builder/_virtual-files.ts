@@ -15,10 +15,16 @@
  *     components/    shared components, each with optional sub-folders:
  *                      store/ utils/ workflows/ triggers/
  *     pages/         one folder per page:
- *                      page.json, groups/, workflows/, triggers/
+ *                      page.json, workflows/, triggers/
  *
  * The same pattern (store/ utils/ workflows/ triggers/) repeats inside
  * components and pages — developers always know what each folder means.
+ *
+ * Every foldered entity exposes a uniform `folder: "Name"` string at the
+ * VFS boundary. Internally, variables/datasources/colors use a Folder[]
+ * registry (folderId), but this is translated transparently on read and
+ * write so the agent always sees the same `folder` field regardless of
+ * entity type.
  *
  * Public API:
  *   buildFileTree(store)                  → VirtualFolder root
@@ -45,15 +51,15 @@ import {
   deleteSharedComponent,
 } from '@/lib/builder/shared-component-data';
 import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
+import { deResolveNodeTree } from '@/lib/sdui/deresolve-sx';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface VirtualFile {
   kind: 'file';
   name: string;
-  /** Logical address used as key for read/apply, e.g. "pages/home/groups/Hero" */
   path: string;
-  icon: 'page' | 'routes' | 'data' | 'theme' | 'variable' | 'formula' | 'workflow' | 'trigger' | 'component' | 'group' | 'color';
+  icon: 'page' | 'routes' | 'data' | 'theme' | 'variable' | 'formula' | 'workflow' | 'trigger' | 'component' | 'color';
 }
 
 export interface VirtualFolder {
@@ -78,6 +84,42 @@ function vfile(name: string, path: string, icon: VirtualFile['icon']): VirtualFi
 
 function vfolder(name: string, path: string, children: VirtualEntry[]): VirtualFolder {
   return { kind: 'folder', name, path, children };
+}
+
+// ─── Folder registry translation helpers ─────────────────────────────────────
+
+/**
+ * READ: resolve a Folder[] registry entry to its plain name string.
+ * Returns undefined when no folderId is set or the folder is not found.
+ */
+function folderNameFor(folders: Folder[], folderId?: string): string | undefined {
+  if (!folderId) return undefined;
+  return folders.find(f => f.id === folderId)?.name;
+}
+
+/**
+ * WRITE: find an existing folder by name in the registry, or create a new one.
+ * Returns the folder id so it can be stored as `folderId` on the entity.
+ * `scope` determines which store mutator is called for creation.
+ */
+function folderIdFor(
+  store: BuilderStore,
+  scope: 'var' | 'ds' | 'color',
+  name?: string,
+): string | undefined {
+  if (!name) return undefined;
+  const folders: Folder[] =
+    scope === 'var' ? (store.varFolders as Folder[])
+    : scope === 'ds' ? (store.dsFolders as Folder[])
+    : (store.colorFolders as Folder[]);
+  const existing = folders.find(f => f.name === name);
+  if (existing) return existing.id;
+  const id = crypto.randomUUID();
+  const newFolder: Folder = { id, name, parentId: null };
+  if (scope === 'var') store.addVarFolder(newFolder);
+  else if (scope === 'ds') store.addDsFolder(newFolder);
+  else store.addColorFolder(newFolder);
+  return id;
 }
 
 /**
@@ -374,15 +416,6 @@ function buildPageSubTree(store: BuilderStore, page: BuilderPage): VirtualFolder
     vfile('page.json', `${base}/page`, 'page'),
   ];
 
-  // groups/ — nodes with _group flag
-  const groupNames = collectGroupNames(page.nodes);
-  if (groupNames.length > 0) {
-    const groupFiles: VirtualFile[] = groupNames.map(name =>
-      vfile(`${name}.json`, `${base}/groups/${name}`, 'group'),
-    );
-    sub.push(vfolder('groups', `${base}/groups`, groupFiles));
-  }
-
   // workflows/ — page-scoped (!isTrigger) scoped to this page
   const allWfs = store.workflows as Record<string, import('@/config/types').WorkflowDef>;
   const pageWfs = Object.entries(allWfs).filter(
@@ -416,18 +449,6 @@ function buildPageSubTree(store: BuilderStore, page: BuilderPage): VirtualFolder
   return vfolder(page.name, base, sub);
 }
 
-/** Walk a node tree and collect all unique _group values. */
-function collectGroupNames(nodes: SDUINode[]): string[] {
-  const seen = new Set<string>();
-  function walk(n: SDUINode) {
-    const g = (n as unknown as Record<string, unknown>)._group;
-    if (typeof g === 'string' && g) seen.add(g);
-    if (Array.isArray(n.children)) n.children.forEach(walk);
-  }
-  nodes.forEach(walk);
-  return [...seen];
-}
-
 // ─── readVirtualFile ──────────────────────────────────────────────────────────
 
 export function readVirtualFile(store: BuilderStore, path: string): string {
@@ -455,7 +476,11 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
 
   // design/colors
   if (path === 'design/colors') {
-    return store.customColors;
+    return (store.customColors as Array<Record<string, unknown>>).map(c => {
+      const { folderId, ...rest } = c;
+      const folderName = folderNameFor(store.colorFolders as Folder[], folderId as string | undefined);
+      return folderName ? { ...rest, folder: folderName } : rest;
+    });
   }
 
   // store/<folder?>/<varName>  OR  store/<varName>
@@ -463,7 +488,9 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
     const varName = parts[parts.length - 1];
     const v = (store.customVars as CustomVar[]).find(cv => cv.name === varName);
     if (!v) throw new Error(`Variable "${varName}" not found`);
-    return v;
+    const { folderId, ...rest } = v as CustomVar & { folderId?: string };
+    const folderName = folderNameFor(store.varFolders as Folder[], folderId);
+    return folderName ? { ...rest, folder: folderName } : rest;
   }
 
   // utils/<folder?>/<formulaName>
@@ -499,7 +526,9 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
     const id = parts[parts.length - 1];
     const ds = (store.pageDataSources as DataSourceConfig[]).find(d => d.id === id);
     if (!ds) throw new Error(`Datasource "${id}" not found`);
-    return ds;
+    const { folderId, ...rest } = ds as DataSourceConfig & { folderId?: string };
+    const folderName = folderNameFor(store.dsFolders as Folder[], folderId);
+    return folderName ? { ...rest, folder: folderName } : rest;
   }
 
   // components/<folder?>/<id>/component
@@ -515,17 +544,9 @@ function resolveStoreSlice(store: BuilderStore, path: string): unknown {
   if (parts[0] === 'pages' && parts[2] === 'page') {
     const page = store.pages.find(p => p.name.toLowerCase() === parts[1].toLowerCase());
     if (!page) throw new Error(`Page "${parts[1]}" not found`);
-    return pageToScreenJson(page);
-  }
-
-  // pages/<name>/groups/<groupName>
-  if (parts[0] === 'pages' && parts[2] === 'groups') {
-    const page = store.pages.find(p => p.name.toLowerCase() === parts[1].toLowerCase());
-    if (!page) throw new Error(`Page "${parts[1]}" not found`);
-    const groupName = parts[3];
-    const nodes = collectGroupNodes(page.nodes, groupName);
-    if (!nodes.length) throw new Error(`Group "${groupName}" not found in page "${parts[1]}"`);
-    return nodes.length === 1 ? nodes[0] : nodes;
+    const json = pageToScreenJson(page) as { meta: unknown; ui: unknown[] };
+    if (Array.isArray(json.ui)) json.ui = deResolveNodeTree(json.ui);
+    return json;
   }
 
   // pages/<name>/workflows/<folder?>/<wfName>
@@ -578,7 +599,14 @@ function resolveComponentSlice(parts: string[]): unknown {
   if (!sc) throw new Error(`Component "${scId}" not found`);
 
   if (subPath[0] === 'component' || subSection === 'component') {
-    return sc;
+    // De-resolve className → SxProps for AI context
+    const out = { ...sc } as Record<string, unknown>;
+    if (Array.isArray(out.content)) {
+      out.content = deResolveNodeTree(out.content as unknown[]);
+    } else if (out.content && typeof out.content === 'object') {
+      out.content = deResolveNodeTree([out.content as unknown])[0];
+    }
+    return out;
   }
 
   if (subPath[0] === 'store' && subPath.length > 1) {
@@ -626,6 +654,46 @@ export function applyVirtualFile(
 }
 
 
+/**
+ * Recursively walks a node tree and expands any "reference-only" _shared nodes
+ * (nodes that have _shared metadata but no children) by copying the component
+ * model's content inline. This matches the builder-native pattern where a
+ * shared component instance is stored as the full content tree tagged with
+ * _shared metadata — not as a blank placeholder.
+ *
+ * The AI naturally writes reference-only nodes (compact, no duplication), so
+ * this expansion runs transparently at write-time so the renderer always sees
+ * the full inline content it expects.
+ */
+function expandSharedRefs(nodes: SDUINode[]): SDUINode[] {
+  const allSCs = getSharedComponents();
+  function expand(node: SDUINode): SDUINode {
+    const n = node as unknown as Record<string, unknown>;
+    const shared = n._shared as { id: string; name: string } | undefined;
+    if (shared && (!Array.isArray(n.children) || (n.children as unknown[]).length === 0)) {
+      const model = allSCs[shared.id];
+      if (model?.content) {
+        const content = model.content as Record<string, unknown>;
+        const expanded: Record<string, unknown> = {
+          ...content,
+          _shared: shared,
+          _overrides: (n._overrides as unknown[]) ?? [],
+          id: n.id,
+        };
+        if (Array.isArray(expanded.children)) {
+          expanded.children = (expanded.children as SDUINode[]).map(expand);
+        }
+        return expanded as unknown as SDUINode;
+      }
+    }
+    if (Array.isArray(n.children)) {
+      return { ...n, children: (n.children as SDUINode[]).map(expand) } as unknown as SDUINode;
+    }
+    return node;
+  }
+  return nodes.map(expand);
+}
+
 function applyParsedSlice(store: BuilderStore, path: string, value: unknown): void {
   const parts = path.split('/');
 
@@ -657,12 +725,15 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
 
   // design/colors — array of CustomColor
   if (path === 'design/colors') {
-    const colors = value as Array<{ id: string; name: string; light: string; dark: string }>;
+    const colors = value as Array<{ id: string; name: string; light: string; dark: string; folder?: string }>;
     if (!Array.isArray(colors)) throw new Error('colors must be an array');
     for (const c of colors) {
+      const { folder, ...colorData } = c;
+      const folderId = folderIdFor(store, 'color', folder);
+      const resolved = folderId ? { ...colorData, folderId } : colorData;
       const existing = store.customColors.find(cc => cc.id === c.id);
-      if (existing) store.updateCustomColor(c.id, c);
-      else store.addCustomColor(c);
+      if (existing) store.updateCustomColor(c.id, resolved as typeof existing);
+      else store.addCustomColor(resolved as typeof existing);
     }
     return;
   }
@@ -670,12 +741,15 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   // store/<varName>  (the varName is the last segment)
   if (parts[0] === 'store') {
     const varName = parts[parts.length - 1];
-    const data = value as CustomVar;
+    const { folder, ...rest } = value as CustomVar & { folder?: string };
+    const data = rest as CustomVar;
     if (data.initialValue === undefined) throw new Error(`store/${varName}: "initialValue" is required (not "value")`);
     if (!data.id || !data.name) throw new Error(`store/${varName}: JSON must include "id" and "name" fields`);
-    const existing = (store.customVars as CustomVar[]).find(cv => cv.id === data.id);
-    if (existing) store.updateCustomVar(existing.name, data);
-    else store.addCustomVar(data);
+    const folderId = folderIdFor(store, 'var', folder);
+    const resolved: CustomVar = folderId ? { ...data, folderId } : data;
+    const existing = (store.customVars as CustomVar[]).find(cv => cv.id === resolved.id);
+    if (existing) store.updateCustomVar(existing.name, resolved);
+    else store.addCustomVar(resolved);
     return;
   }
 
@@ -727,11 +801,14 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
 
   // data/<dsId>
   if (parts[0] === 'data') {
-    const data = value as DataSourceConfig;
+    const { folder, ...rest } = value as DataSourceConfig & { folder?: string };
+    const data = rest as DataSourceConfig;
     if (!data.id) throw new Error(`data/${parts[parts.length - 1]}: JSON must include an "id" field`);
-    const existing = (store.pageDataSources as DataSourceConfig[]).find(d => d.id === data.id);
-    if (existing) store.updatePageDataSource(data.id, data);
-    else store.addPageDataSource(data);
+    const folderId = folderIdFor(store, 'ds', folder);
+    const resolved: DataSourceConfig = folderId ? { ...data, folderId } : data;
+    const existing = (store.pageDataSources as DataSourceConfig[]).find(d => d.id === resolved.id);
+    if (existing) store.updatePageDataSource(resolved.id, resolved);
+    else store.addPageDataSource(resolved);
     return;
   }
 
@@ -756,7 +833,7 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
     const rawUi = data.ui;
     if (!rawUi) throw new Error(`pages/${pageName}/page: "ui" field is required — write { "ui": [rootNode] }`);
     if (!Array.isArray(rawUi)) throw new Error(`pages/${pageName}/page: "ui" must be an array — write { "ui": [rootNode] }`);
-    const rawNodes = rawUi as SDUINode[];
+    const rawNodes = expandSharedRefs(rawUi as SDUINode[]);
     if (page) {
       store.replacePageNodes(page.id, rawNodes);
       if (data.meta) store.setCurrentPageMeta(data.meta as Parameters<typeof store.setCurrentPageMeta>[0]);
@@ -766,28 +843,11 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
       // Pre-generate the ID so we can call replacePageNodes without re-reading
       // the store snapshot (store.pages is stale after addPage runs its set()).
       // Use lowercase route so it matches the routes_written event (avoids duplicate page).
-      const newPageId = `page-${Date.now()}`;
+      const newPageId = `page-${crypto.randomUUID()}`;
       store.addPage(`/${pageName.toLowerCase()}`, pageName, newPageId);
       store.replacePageNodes(newPageId, rawNodes);
       store.focusPage(newPageId);
     }
-    return;
-  }
-
-  // pages/<name>/groups/<groupName> — replace the _group node's subtree
-  if (parts[0] === 'pages' && parts[2] === 'groups') {
-    const pageName = parts[1];
-    const groupName = parts[3];
-    const page = store.pages.find(p => p.name === pageName);
-    if (!page) throw new Error(`Page "${pageName}" not found`);
-    const incoming = Array.isArray(value) ? (value as SDUINode[]) : [value as SDUINode];
-    let newNodes = replaceGroupNodes(page.nodes as SDUINode[], groupName, incoming);
-    // If no existing _group stub was found, append the incoming node as a new top-level node
-    if (newNodes.length === (page.nodes as SDUINode[]).length &&
-        !collectGroupNodes(newNodes, groupName).length) {
-      newNodes = [...newNodes, { ...incoming[0], _group: groupName } as SDUINode];
-    }
-    store.replacePageNodes(page.id, newNodes);
     return;
   }
 
@@ -832,63 +892,15 @@ function applyParsedSlice(store: BuilderStore, path: string, value: unknown): vo
   throw new Error(`Unknown path: ${path}`);
 }
 
-// ─── Group node helpers ───────────────────────────────────────────────────────
-
-/** Collect all nodes where _group === groupName from a page node tree. */
-function collectGroupNodes(nodes: SDUINode[], groupName: string): SDUINode[] {
-  const result: SDUINode[] = [];
-  function walk(n: SDUINode) {
-    const g = (n as unknown as Record<string, unknown>)._group;
-    if (g === groupName) { result.push(n); return; }
-    if (Array.isArray(n.children)) n.children.forEach(walk);
-  }
-  nodes.forEach(walk);
-  return result;
-}
-
-/**
- * Replace every node with _group === groupName with the incoming nodes.
- * Keeps relative order of replacement (first match gets first incoming node).
- */
-function replaceGroupNodes(nodes: SDUINode[], groupName: string, incoming: SDUINode[]): SDUINode[] {
-  let replacementIdx = 0;
-  function walk(n: SDUINode): SDUINode | null {
-    const g = (n as unknown as Record<string, unknown>)._group;
-    if (g === groupName) {
-      if (replacementIdx < incoming.length) {
-        return { ...incoming[replacementIdx++], _group: groupName } as SDUINode;
-      }
-      return null; // remove extra nodes beyond what was supplied
-    }
-    if (Array.isArray(n.children)) {
-      const newChildren = n.children.flatMap(c => {
-        const r = walk(c);
-        return r ? [r] : [];
-      });
-      return { ...n, children: newChildren };
-    }
-    return n;
-  }
-  return nodes.flatMap(n => { const r = walk(n); return r ? [r] : []; });
-}
-
 // ─── pageToScreenJson ─────────────────────────────────────────────────────────
 
 /**
- * Replace `_group` section nodes and `_shared` component instance nodes with
- * lightweight reference stubs so that `page.json` is a concise structural
- * outline. Full content lives in `groups/<name>.json` and
- * `components/<id>/component.json` respectively.
+ * Replace `_shared` component instance nodes with lightweight reference stubs
+ * so that `page.json` is a concise structural outline.
  */
-function stubGroupNodes(nodes: SDUINode[]): unknown[] {
+function stubPageNodes(nodes: SDUINode[]): unknown[] {
   return nodes.map(n => {
     const rec = n as unknown as Record<string, unknown>;
-
-    // Stub _group sections → groups/<name>
-    const group = rec._group;
-    if (typeof group === 'string' && group) {
-      return { $ref: `groups/${group}`, _group: group, type: rec.type, id: rec.id };
-    }
 
     // Stub _shared component instances → components/<id>
     const shared = rec._shared as { id?: string; name?: string } | undefined;
@@ -898,17 +910,18 @@ function stubGroupNodes(nodes: SDUINode[]): unknown[] {
 
     // Plain nodes — recurse into children
     if (Array.isArray(n.children)) {
-      return { ...rec, children: stubGroupNodes(n.children) };
+      return { ...rec, children: stubPageNodes(n.children) };
     }
     return n;
   });
 }
 
 export function pageToScreenJson(page: BuilderPage): Record<string, unknown> {
-  const stubbed = stubGroupNodes(page.nodes);
+  const stubbed = stubPageNodes(page.nodes);
   return {
     meta: page.meta ?? {},
-    ui: stubbed.length === 1 ? stubbed[0] : stubbed,
+    // Always an array — applyParsedSlice and the PostToolUse resolver both require Array.isArray(ui).
+    ui: stubbed,
   };
 }
 

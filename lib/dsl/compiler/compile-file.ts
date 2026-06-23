@@ -104,14 +104,20 @@ function parseInitialValue(node: ts.Expression | undefined): { value: unknown; t
 
   if (ts.isArrayLiteralExpression(node)) {
     try {
-      const src = nodeText(node).replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":').replace(/'/g, '"')
+      const src = nodeText(node)
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":')
+        .replace(/'/g, '"')
+        .replace(/,(\s*[}\]])/g, '$1')
       return { value: JSON.parse(src), type: 'array' }
     } catch { return { value: [], type: 'array' } }
   }
 
   if (ts.isObjectLiteralExpression(node)) {
     try {
-      const src = nodeText(node).replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":').replace(/'/g, '"')
+      const src = nodeText(node)
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":')
+        .replace(/'/g, '"')
+        .replace(/,(\s*[}\]])/g, '$1')
       return { value: JSON.parse(src), type: 'object' }
     } catch { return { value: {}, type: 'object' } }
   }
@@ -127,6 +133,76 @@ function extractParamNames(fn: ts.ArrowFunction | ts.FunctionExpression): string
     else names.push('_')
   }
   return names
+}
+
+/**
+ * Compile a component-internal workflow body (defineWorkflow(() => { ... })).
+ * Recognises setVar, navigate, and falls back to runJavaScript for other statements.
+ * `nameMap` is used to replace internal SC state names with their `variables[...]` paths.
+ */
+function compileScWorkflowBody(
+  body: ts.Block,
+  pathToId: Map<string, string>,
+  nameMap: Map<string, string>,
+): unknown[] {
+  const steps: unknown[] = []
+  let jsBuffer: string[] = []
+
+  function flushJs() {
+    if (jsBuffer.length === 0) return
+    let code = jsBuffer.join('\n').trim()
+    if (!code) return
+    for (const [name, replacement] of nameMap.entries()) {
+      code = replaceIdentInCode(code, name, replacement)
+    }
+    steps.push({ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } })
+    jsBuffer = []
+  }
+
+  for (const stmt of body.statements) {
+    if (
+      ts.isExpressionStatement(stmt) &&
+      ts.isCallExpression(stmt.expression) &&
+      ts.isIdentifier(stmt.expression.expression)
+    ) {
+      const fn = stmt.expression.expression.text
+      if (fn === 'setVar') {
+        flushJs()
+        const pathArg = stmt.expression.arguments[0]
+        const valArg  = stmt.expression.arguments[1]
+        const varName = ts.isIdentifier(pathArg) ? pathArg.text : nodeText(pathArg)
+        // Resolve the variable name via the internal name map first, then pathToId
+        const variableName = nameMap.has(varName)
+          ? nameMap.get(varName)!.replace(/^variables\['(.+)'\]$/, '$1')
+          : (pathToId.get(varName) ?? varName)
+        let value: unknown = null
+        if (valArg) {
+          if (ts.isStringLiteral(valArg)) {
+            value = valArg.text
+          } else {
+            let expr = nodeText(valArg)
+            for (const [n, r] of nameMap.entries()) {
+              expr = replaceIdentInCode(expr, n, r)
+            }
+            value = { js: expr }
+          }
+        }
+        steps.push({ id: crypto.randomUUID(), type: 'changeVariableValue', config: { variableName, value } })
+        continue
+      }
+      if (fn === 'navigate') {
+        flushJs()
+        const navPath = ts.isStringLiteral(stmt.expression.arguments[0])
+          ? stmt.expression.arguments[0].text
+          : nodeText(stmt.expression.arguments[0])
+        steps.push({ id: crypto.randomUUID(), type: 'navigateTo', config: { path: navPath } })
+        continue
+      }
+    }
+    jsBuffer.push(nodeText(stmt))
+  }
+  flushJs()
+  return steps
 }
 
 // ─── PASS 1: Collect all declarations across all source files ─────────────────
@@ -382,7 +458,38 @@ export function pass2Compile(
 
   const routes: Array<{ path: string; config: string; name: string }> = []
 
-  for (const [, content] of Object.entries(sources)) {
+  // ── Pre-pass: compile ALL defineComponent files first ─────────────────────
+  // This builds globalRuntimeScMap so cross-file SC references (e.g. a page
+  // using a component defined in components/CalcButton.tsx) are always resolved
+  // regardless of file iteration order.
+  type ScMapEntry = { id: string; name: string; content: Record<string, unknown>; triggers?: Array<{ id: string; name: string }> }
+  const globalRuntimeScMap = new Map<string, ScMapEntry>()
+
+  for (const [srcFile, content] of Object.entries(sources)) {
+    if (!content.includes('defineComponent')) continue
+    try {
+      const scEvents = compileComponents(content, declMap, pathToId, projectId)
+      for (const ev of scEvents) {
+        if (ev.type === 'component_written') {
+          try {
+            const parsed = JSON.parse(ev.content) as Record<string, unknown>
+            events.push({ ...ev, content: JSON.stringify({ ...parsed, _src: srcFile }) })
+            const scId = String(parsed.id ?? '')
+            const scName = String(parsed.name ?? scId)
+            const uiArr = parsed.ui as unknown[] | undefined
+            const scContent = (Array.isArray(uiArr) ? uiArr[0] : parsed.content) as Record<string, unknown> | undefined
+            const scTriggers = parsed.triggers as Array<{ id: string; name: string; domEvent?: string }> | undefined
+            if (scId && scContent) globalRuntimeScMap.set(scName.toLowerCase(), { id: scId, name: scName, content: scContent, triggers: scTriggers })
+          } catch { events.push(ev) }
+        } else {
+          events.push(ev)
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  // ── Main pass: compile everything except defineComponent ───────────────────
+  for (const [srcFile, content] of Object.entries(sources)) {
     // ── Variables ─────────────────────────────────────────────────────────────
     if (content.includes('defineVar')) {
       try {
@@ -390,7 +497,8 @@ export function pass2Compile(
         const patched = patchVarSource(content, declMap)
         const compiledVars = compileVarsToJson(patched, projectId)
         for (const v of compiledVars) {
-          events.push({ type: 'var_written', path: `store/${v.varName}`, content: JSON.stringify(v.entry) })
+          const entry = { ...v.entry, _dslName: v.varName, _src: srcFile }
+          events.push({ type: 'var_written', path: `store/${v.varName}`, content: JSON.stringify(entry) })
         }
       } catch { /* skip */ }
     }
@@ -402,7 +510,8 @@ export function pass2Compile(
         const patched = patchWorkflowSource(content, declMap, pathToId)
         const compiledWfs = compileAllWorkflowsToJson(patched, pathToId, projectId)
         for (const wf of compiledWfs) {
-          events.push({ type: 'workflow_written', path: `workflows/${wf.wfName}`, content: JSON.stringify(wf.config) })
+          const config = { ...wf.config, _dslName: wf.wfName, _src: srcFile }
+          events.push({ type: 'workflow_written', path: `workflows/${wf.wfName}`, content: JSON.stringify(config) })
         }
       } catch { /* skip */ }
     }
@@ -411,7 +520,10 @@ export function pass2Compile(
     if (content.includes('defineFunction') || content.includes('defineFormula')) {
       try {
         const fnEvents = compileFunctions(content, declMap, pathToId, projectId)
-        events.push(...fnEvents)
+        for (const ev of fnEvents) {
+          const parsed = JSON.parse(ev.content) as Record<string, unknown>
+          events.push({ ...ev, content: JSON.stringify({ ...parsed, _src: srcFile }) })
+        }
       } catch { /* skip */ }
     }
 
@@ -419,44 +531,32 @@ export function pass2Compile(
     if (content.includes('defineDatasource')) {
       try {
         const dsEvents = compileDatasources(content, declMap, projectId)
-        events.push(...dsEvents)
-      } catch { /* skip */ }
-    }
-
-    // ── Shared Components ─────────────────────────────────────────────────────
-    const runtimeScMap = new Map<string, { id: string; name: string; content: Record<string, unknown>; triggers?: Array<{ id: string; name: string }> }>()
-    if (content.includes('defineComponent')) {
-      try {
-        const scEvents = compileComponents(content, declMap, pathToId, projectId)
-        events.push(...scEvents)
-        for (const ev of scEvents) {
-          if (ev.type === 'component_written') {
-            try {
-              const parsed = JSON.parse(ev.content) as Record<string, unknown>
-              const scId = String(parsed.id ?? '')
-              const scName = String(parsed.name ?? scId)
-              // Support both old (ui: [tree]) and new (content: tree) shapes
-              const uiArr = parsed.ui as unknown[] | undefined
-              const scContent = (Array.isArray(uiArr) ? uiArr[0] : parsed.content) as Record<string, unknown> | undefined
-              const scTriggers = parsed.triggers as Array<{ id: string; name: string; domEvent?: string }> | undefined
-              if (scId && scContent) runtimeScMap.set(scName.toLowerCase(), { id: scId, name: scName, content: scContent, triggers: scTriggers })
-            } catch { /* skip malformed */ }
-          }
+        for (const ev of dsEvents) {
+          const parsed = JSON.parse(ev.content) as Record<string, unknown>
+          events.push({ ...ev, content: JSON.stringify({ ...parsed, _src: srcFile }) })
         }
       } catch { /* skip */ }
     }
 
-    // ── Pages ─────────────────────────────────────────────────────────────────
+    // ── Triggers ──────────────────────────────────────────────────────────────
+    if (content.includes('defineTrigger')) {
+      try {
+        const trigEvents = compileTriggers(content, pathToId, srcFile)
+        events.push(...trigEvents)
+      } catch { /* skip */ }
+    }
+
+    // ── Pages — use globalRuntimeScMap so cross-file SCs are resolved ─────────
     if (content.includes('definePage')) {
       try {
         const patched = patchPageSource(content)
-        const compiled = compilePageToJson(patched, pathToId, runtimeScMap)
-        if (compiled) {
+        const compiledPages = compilePageToJson(patched, pathToId, globalRuntimeScMap)
+        for (const compiled of compiledPages) {
           const pageName = compiled.pageName
           events.push({
             type: 'page_written',
             path: `pages/${pageName}/page`,
-            content: JSON.stringify({ meta: { title: compiled.title }, ui: [compiled.content] }),
+            content: JSON.stringify({ meta: { title: compiled.title, _src: srcFile }, ui: [compiled.content] }),
           })
           routes.push({
             path: `/${pageName === 'home' ? '' : pageName}`,
@@ -466,6 +566,13 @@ export function pass2Compile(
           // Emit inline workflows under the page path so applyVirtualFile assigns pageScope automatically
           for (const [id, wf] of (compiled.inlineWorkflows ?? new Map())) {
             events.push({ type: 'workflow_written', path: `pages/${pageName}/workflows/${id}`, content: JSON.stringify(wf) })
+          }
+        }
+        if (compiledPages.length === 0) {
+          // fallback: register route stub
+          const pageName = inferPageNameFromSource(content)
+          if (pageName && !routes.find(r => r.config === pageName)) {
+            routes.push({ path: `/${pageName === 'home' ? '' : pageName}`, config: pageName, name: pageName })
           }
         }
       } catch {
@@ -482,6 +589,135 @@ export function pass2Compile(
     events.push({ type: 'routes_written', path: 'routes', content: JSON.stringify({ routes }) })
   }
 
+  return events
+}
+
+// ─── Trigger compilation ──────────────────────────────────────────────────────
+
+/**
+ * Compile all `defineTrigger('type', fn)` or `export const x = defineTrigger(...)` calls
+ * in a source file and emit `trigger_written` events.
+ *
+ * App-level triggers  → path: `actions/app-triggers`
+ * Page-level triggers → path: `actions/dsl-triggers-{page}`
+ *   (detected from srcFile: pages/home/triggers.ts → page = 'home')
+ */
+function compileTriggers(
+  content: string,
+  pathToId: Map<string, string>,
+  srcFile: string,
+): CompiledEvent[] {
+  const events: CompiledEvent[] = []
+
+  // Derive page scope from srcFile path: "pages/home/triggers.ts" → "home"
+  let pageScope: string | undefined
+  const pageMatch = srcFile.match(/pages\/([^/]+)\//)
+  if (pageMatch) pageScope = pageMatch[1]
+
+  const sf = ts.createSourceFile(srcFile, content, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+
+  function compileBodyToSteps(body: ts.Block | ts.Expression): unknown[] {
+    if (!ts.isBlock(body)) {
+      return [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code: nodeText(body) } }]
+    }
+    const steps: unknown[] = []
+    let jsBuffer: string[] = []
+
+    function flushJs() {
+      if (jsBuffer.length === 0) return
+      const code = jsBuffer.join('\n').trim()
+      if (code) steps.push({ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } })
+      jsBuffer = []
+    }
+
+    for (const stmt of body.statements) {
+      if (
+        ts.isExpressionStatement(stmt) &&
+        ts.isCallExpression(stmt.expression) &&
+        ts.isIdentifier(stmt.expression.expression)
+      ) {
+        const fn = stmt.expression.expression.text
+        if (fn === 'fetch') {
+          flushJs()
+          const dsArg = stmt.expression.arguments[0]
+          const dsPath = ts.isStringLiteral(dsArg) ? dsArg.text : nodeText(dsArg)
+          const collectionName = pathToId.get(dsPath) ?? pathToId.get(`data/${dsPath}`) ?? dsPath
+          steps.push({ id: crypto.randomUUID(), type: 'fetchCollection', config: { collectionName } })
+          continue
+        }
+        if (fn === 'setVar') {
+          flushJs()
+          const pathArg = stmt.expression.arguments[0]
+          const valArg  = stmt.expression.arguments[1]
+          const vfsPath = ts.isIdentifier(pathArg) ? pathArg.text : nodeText(pathArg)
+          const variableName = pathToId.get(vfsPath) ?? pathToId.get(`store/${vfsPath}`) ?? vfsPath
+          const value = valArg
+            ? (ts.isStringLiteral(valArg) ? valArg.text : { js: nodeText(valArg) })
+            : null
+          steps.push({ id: crypto.randomUUID(), type: 'changeVariableValue', config: { variableName, value } })
+          continue
+        }
+        if (fn === 'navigate') {
+          flushJs()
+          const navPath = ts.isStringLiteral(stmt.expression.arguments[0])
+            ? stmt.expression.arguments[0].text
+            : nodeText(stmt.expression.arguments[0])
+          steps.push({ id: crypto.randomUUID(), type: 'navigateTo', config: { path: navPath } })
+          continue
+        }
+      }
+      jsBuffer.push(nodeText(stmt))
+    }
+    flushJs()
+    return steps
+  }
+
+  function visitNode(node: ts.Node) {
+    // Named: export const onLoad = defineTrigger('appLoad', () => {...})
+    // or unnamed: export default defineTrigger('appLoad', () => {...})
+    let triggerType: string | null = null
+    let dslName: string | null = null
+    let fnArg: ts.ArrowFunction | ts.FunctionExpression | null = null
+
+    if (
+      ts.isVariableStatement(node)
+    ) {
+      for (const decl of node.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+        if (!ts.isCallExpression(decl.initializer)) continue
+        if (!ts.isIdentifier(decl.initializer.expression)) continue
+        if (decl.initializer.expression.text !== 'defineTrigger') continue
+
+        dslName = decl.name.text
+        const typeArg = decl.initializer.arguments[0]
+        const fnArgNode = decl.initializer.arguments[1]
+        if (typeArg && ts.isStringLiteral(typeArg)) triggerType = typeArg.text
+        if (fnArgNode && (ts.isArrowFunction(fnArgNode) || ts.isFunctionExpression(fnArgNode))) {
+          fnArg = fnArgNode as ts.ArrowFunction | ts.FunctionExpression
+        }
+      }
+    }
+
+    if (triggerType && fnArg) {
+      const id = crypto.randomUUID()
+      const steps = compileBodyToSteps(fnArg.body as ts.Block | ts.Expression)
+      const entry: Record<string, unknown> = {
+        id,
+        name: triggerType,
+        trigger: triggerType,
+        steps,
+        _dslName: dslName ?? triggerType,
+        _src: srcFile,
+      }
+      if (pageScope) entry.pageScope = pageScope
+
+      const targetPath = pageScope ? `actions/dsl-triggers-${pageScope}` : 'actions/app-triggers'
+      events.push({ type: 'trigger_written', path: targetPath, content: JSON.stringify({ [id]: entry }) })
+    }
+    ts.forEachChild(node, visitNode)
+  }
+
+  ts.forEachChild(sf, visitNode)
   return events
 }
 
@@ -633,7 +869,7 @@ function patchWorkflowCalls(
 ): void {
   // Workflow-to-workflow calls are emitted as runJavaScript steps
   // (the code is preserved as-is with var refs substituted).
-  // This is handled by compileAllWorkflowsToJson which uses resolveExprRefs.
+  // This is handled by compileAllWorkflowsToJson which uses the Babel lowerAction.
 }
 
 /**
@@ -663,6 +899,35 @@ function patchFetchCalls(
     ts.forEachChild(node, visit)
   }
   visit(fn.body)
+}
+
+/**
+ * Hoist all import declarations to the top of the file and deduplicate them.
+ *
+ * AI-generated multi-page DSL files often emit one `import` block per page
+ * section. TypeScript's parser treats the *last* import it encounters as the
+ * start of the module body and silently ignores everything declared before it,
+ * causing the first page and its workflows to be dropped. This normalisation
+ * fixes that by consolidating every `import { … } from '…'` line to the top.
+ */
+function normalizeImports(source: string): string {
+  // Matches single-line `import { … } from 'path'` or `import { … } from "path"`
+  // (possibly with a trailing semicolon). DSL files always use this style.
+  const importRe = /^import\s+\{[^}\n]*\}\s+from\s+['"][^'"]+['"];?\s*(?:\r?\n)?/gm
+  const seen = new Set<string>()
+  const collected: string[] = []
+
+  const rest = source.replace(importRe, match => {
+    const key = match.trim().replace(/;$/, '')
+    if (!seen.has(key)) {
+      seen.add(key)
+      collected.push(key)
+    }
+    return ''
+  })
+
+  if (collected.length === 0) return source
+  return collected.join('\n') + '\n\n' + rest.replace(/^(\r?\n)+/, '')
 }
 
 /**
@@ -720,21 +985,42 @@ function patchPageSource(source: string): string {
   for (const [start, end, replacement] of patches) {
     result = result.slice(0, start) + replacement + result.slice(end)
   }
+
+  // Inline module-level literal consts so identifiers like GRAY, DARK, ORANGE
+  // are substituted with their values before page compilation.
+  // Only string / number / boolean literals are inlined (no side effects).
+  const sf2 = ts.createSourceFile('__patch2.tsx', result, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
+  for (const stmt of sf2.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+      const constName = decl.name.text
+      const init = decl.initializer
+      if (
+        ts.isStringLiteral(init) ||
+        ts.isNumericLiteral(init) ||
+        init.kind === ts.SyntaxKind.TrueKeyword ||
+        init.kind === ts.SyntaxKind.FalseKeyword
+      ) {
+        result = replaceIdentInCode(result, constName, `(${init.getText(sf2)})`)
+      }
+    }
+  }
+
   return result
 }
 
 // ─── Function (formula) compiler ─────────────────────────────────────────────
 
 /**
- * Replace a bare parameter identifier in a JS code string with parameters.paramName,
- * skipping occurrences inside string literals.
+ * Replace a bare identifier in a JS code string with a replacement expression,
+ * skipping occurrences inside string literals and after property-access dots.
+ * Used for global DSL-name → variables['uuid'] resolution only.
  */
-function replaceIdentInBodyForParam(code: string, name: string, replacement?: string): string {
-  // Skip replacing if already prefixed with "parameters."
-  const prefixed = replacement ?? `parameters.${name}`
-  const identRe = new RegExp(`(?<![.'"\\[\\w])\\b${name}\\b(?!['"\\]])`, 'g')
+function replaceIdentInBodyForParam(code: string, name: string, replacement: string): string {
+  const identRe = new RegExp(`(?<![.'"\\w])\\b${name}\\b(?!['"])`, 'g')
   if (!code.includes('"') && !code.includes("'") && !code.includes('`')) {
-    return code.replace(identRe, prefixed)
+    return code.replace(identRe, replacement)
   }
   const out: string[] = []
   let i = 0
@@ -761,7 +1047,7 @@ function replaceIdentInBodyForParam(code: string, name: string, replacement?: st
             if (code[i] === '{') depth++; else if (code[i] === '}') depth--
             if (depth > 0) i++; else break
           }
-          out.push(code.slice(s, i).replace(identRe, prefixed))
+          out.push(code.slice(s, i).replace(identRe, replacement))
           out.push('}'); i++; continue
         }
         const start = i
@@ -772,9 +1058,48 @@ function replaceIdentInBodyForParam(code: string, name: string, replacement?: st
     }
     const start = i
     while (i < code.length && code[i] !== "'" && code[i] !== '"' && code[i] !== '`') i++
-    out.push(code.slice(start, i).replace(identRe, prefixed))
+    out.push(code.slice(start, i).replace(identRe, replacement))
   }
   return out.join('')
+}
+
+const DEFINE_CALL_NAMES_SET = new Set([
+  'defineVar', 'defineWorkflow', 'defineFunction', 'defineFormula',
+  'defineDatasource', 'defineComponent', 'defineTrigger', 'definePage',
+])
+
+/**
+ * Collect all module-level non-exported, non-define* const/function declarations
+ * as structured entries so callers can filter per function by which names actually
+ * appear in the function body (rawBody.includes(name)).
+ */
+function collectModuleBlob(sf: ts.SourceFile): { entries: Array<{ name: string; decl: string }> } {
+  const entries: Array<{ name: string; decl: string }> = []
+
+  for (const stmt of sf.statements) {
+    if (ts.isVariableStatement(stmt)) {
+      if ((stmt.modifiers ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword)) continue
+      const decl_text = nodeText(stmt)
+      for (const decl of stmt.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+        const init = decl.initializer
+        // Skip define* calls — those are handled by their own compiler passes
+        if (
+          ts.isCallExpression(init) &&
+          ts.isIdentifier(init.expression) &&
+          DEFINE_CALL_NAMES_SET.has(init.expression.text)
+        ) continue
+        entries.push({ name: decl.name.text, decl: decl_text })
+      }
+    } else if (ts.isFunctionDeclaration(stmt)) {
+      if ((stmt.modifiers ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword)) continue
+      if (stmt.name) {
+        entries.push({ name: stmt.name.text, decl: nodeText(stmt) })
+      }
+    }
+  }
+
+  return { entries }
 }
 
 function compileFunctions(
@@ -786,72 +1111,130 @@ function compileFunctions(
   const events: CompiledEvent[] = []
   const sf = ts.createSourceFile('__fn.tsx', source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
 
+  // Collect module-level consts/helpers (non-define*, non-exported) as structured
+  // entries. Each function filters to only the entries it actually references so
+  // unrelated consts (e.g. WEEKDAYS in pad2) are not bundled in.
+  const { entries: moduleEntries } = collectModuleBlob(sf)
+  const moduleDeclaredSet = new Set(moduleEntries.map(e => e.name))
+
+  // Single pass — visit both exported and non-exported defineFunction declarations.
   ts.forEachChild(sf, function visit(node: ts.Node) {
-    if (ts.isVariableStatement(node)) {
-      const isExported = (node.modifiers ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword)
-      if (!isExported) return
-      for (const decl of node.declarationList.declarations) {
-        if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
-        if (!ts.isCallExpression(decl.initializer)) continue
-        if (!ts.isIdentifier(decl.initializer.expression)) continue
-        const callee = decl.initializer.expression.text
-        if (callee !== 'defineFunction' && callee !== 'defineFormula') continue
+    if (!ts.isVariableStatement(node)) return
+    for (const decl of node.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+      if (!ts.isCallExpression(decl.initializer)) continue
+      if (!ts.isIdentifier(decl.initializer.expression)) continue
+      const callee = decl.initializer.expression.text
+      if (callee !== 'defineFunction' && callee !== 'defineFormula') continue
 
-        const name = decl.name.text
-        const info = declMap.get(name)
-        if (!info || info.kind !== 'function') continue
+      const name = decl.name.text
+      const fnArg = decl.initializer.arguments[0]
+      if (!fnArg) continue
 
-        const fnArg = decl.initializer.arguments[0]
-        if (!fnArg) continue
-
-        // Extract just the function body (without the `(args) =>` wrapper) so it
-        // matches GlobalFormulaDef.formula — the inner expression or statements only.
-        // Parameter names are rewritten to parameters.paramName so the body is
-        // consistent with the builder convention (access via the parameters object).
-        let formulaBody = ''
-        let fnParamNames: string[] = []
-        if (ts.isArrowFunction(fnArg) || ts.isFunctionExpression(fnArg)) {
-          const fn = fnArg as ts.ArrowFunction | ts.FunctionExpression
-          fnParamNames = fn.parameters.map(p =>
-            ts.isIdentifier(p.name) ? p.name.text : ''
-          ).filter(Boolean)
-          if (ts.isBlock(fn.body)) {
-            // Block body: strip outer { }
-            formulaBody = fn.body.getText().slice(1, -1).trim()
-          } else {
-            // Concise body: the expression itself
-            formulaBody = nodeText(fn.body as ts.Node)
-          }
+      // Extract raw body text + real param names. Track isConcise (arrow with no block)
+      // so we can add an explicit return() when the blob is prepended later.
+      let rawBody = ''
+      let paramNames: string[] = []
+      let isConcise = false
+      if (ts.isArrowFunction(fnArg) || ts.isFunctionExpression(fnArg)) {
+        const fn = fnArg as ts.ArrowFunction | ts.FunctionExpression
+        paramNames = fn.parameters
+          .map(p => ts.isIdentifier(p.name) ? p.name.text : '')
+          .filter(Boolean)
+        if (ts.isBlock(fn.body)) {
+          rawBody = fn.body.getText().slice(1, -1).trim()
         } else {
-          formulaBody = nodeText(fnArg)
+          rawBody = nodeText(fn.body as ts.Node)
+          isConcise = true
         }
-        // Replace bare param names with parameters.paramName (builder convention)
-        for (const paramName of fnParamNames) {
-          formulaBody = replaceIdentInBodyForParam(formulaBody, paramName)
-        }
+      } else {
+        rawBody = nodeText(fnArg)
+      }
 
-        // Resolve bare DSL variable/function names → variables['uuid'] / __userFns__['name']
-        for (const [key, uuid] of pathToId) {
-          if (key.includes('/') || key === uuid) continue
-          if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) continue
-          if (fnParamNames.includes(key)) continue  // already rewritten above
-          formulaBody = replaceIdentInBodyForParam(formulaBody, key, `variables['${uuid}']`)
-        }
+      // Rewrite params to parameters.X BEFORE global resolution.
+      // The lookbehind on '.' in replaceIdentInBodyForParam prevents double-rewriting
+      // if the body already contains 'parameters.x' from a prior run.
+      let resolvedBody = rawBody
+      for (const paramName of paramNames) {
+        // Pre-pass: handle spread syntax `...paramName` → `...parameters.paramName`.
+        // The main replacer's lookbehind blocks this because `...` ends with `.`.
+        resolvedBody = resolvedBody.replace(
+          new RegExp(`\\.\\.\\.${paramName}\\b`, 'g'),
+          `...parameters.${paramName}`,
+        )
+        resolvedBody = replaceIdentInBodyForParam(resolvedBody, paramName, `parameters.${paramName}`)
+      }
+      // Fix shorthand object properties that became invalid after param rewriting.
+      // e.g. `{ id: nextId, text, done: false }` → `{ id: parameters.nextId, parameters.text, done: false }`
+      // The `parameters.text` in shorthand position is not valid JS; convert to `text: parameters.text`.
+      // Lookahead must be `}` only (not `,`) to avoid incorrectly firing on function call arguments
+      // where `(a, parameters.b, c)` has commas that would otherwise match.
+      resolvedBody = resolvedBody.replace(
+        /([{,]\s*)(parameters\.([a-zA-Z_$][\w$]*))\s*(?=\s*})/g,
+        (_, prefix, full, propName) => `${prefix}${propName}: ${full}`,
+      )
 
-        const config = {
-          id: info.uuid,
-          name,
-          label: name,
+      // Apply global → variables['uuid'] resolution. Module-declared names are skipped
+      // (they'll be in scope via the prepended blob). Param names are already gone
+      // (rewritten to parameters.X) so the lookbehind naturally prevents double-touch.
+      const skipGlobal = moduleDeclaredSet
+      for (const [key, uuid] of pathToId) {
+        if (key.includes('/') || key === uuid) continue
+        if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) continue
+        if (skipGlobal.has(key)) continue
+        // Pre-pass: handle spread syntax `...varName` → `...variables['uuid']`.
+        // The main replacer's lookbehind on '.' blocks `...players` because the char
+        // immediately before `players` is '.', indistinguishable from a property access.
+        resolvedBody = resolvedBody.replace(
+          new RegExp(`\\.\\.\\.${key}\\b`, 'g'),
+          `...variables['${uuid}']`,
+        )
+        resolvedBody = replaceIdentInBodyForParam(resolvedBody, key, `variables['${uuid}']`)
+      }
+
+      // Transitively collect all module entries needed by the function body.
+      // A single-pass filter misses indirect deps: if rawBody references `grandTotal`
+      // and grandTotal's declaration references `totalAssets`, `totalAssets` must also
+      // be included. We recurse until no new entries are added.
+      const neededNames = new Set<string>()
+      function collectTransitiveDeps(text: string, depth = 0) {
+        if (depth > 8) return
+        for (const entry of moduleEntries) {
+          if (neededNames.has(entry.name)) continue
+          if (text.includes(entry.name)) {
+            neededNames.add(entry.name)
+            collectTransitiveDeps(entry.decl, depth + 1)
+          }
+        }
+      }
+      collectTransitiveDeps(rawBody)
+      // Preserve original declaration order so earlier deps come before later ones.
+      const moduleBlob = moduleEntries.filter(e => neededNames.has(e.name)).map(e => e.decl).join('\n')
+
+      // If a blob is prepended to a concise body, the combined text is a statement
+      // block and needs an explicit return so the function doesn't return undefined.
+      const formulaBody = moduleBlob
+        ? isConcise
+          ? `${moduleBlob}\nreturn (${resolvedBody})`
+          : `${moduleBlob}\n${resolvedBody}`
+        : resolvedBody
+
+      const info = declMap.get(name)
+      const uuid = info?.uuid ?? seedUuid(`fn:${name}`)
+      const fnParams = paramNames.map((p, i) => ({ id: `p${i + 1}`, name: p, type: 'any' as const }))
+
+      events.push({
+        type: 'utils_written',
+        path: `utils/${name}`,
+        content: JSON.stringify({
+          id: uuid, name, label: name,
           formula: { js: formulaBody },
-          params: (info.fnParams ?? []).map((p, i) => ({ id: `p${i + 1}`, name: p, type: 'any' as const })),
+          params: fnParams,
           folder: 'DSL',
           _dslName: name,
-        }
-
-        events.push({ type: 'utils_written', path: `utils/${name}`, content: JSON.stringify(config) })
-      }
+        }),
+      })
     }
-    ts.forEachChild(node, visit)
   })
 
   return events
@@ -914,8 +1297,6 @@ function compileComponents(
 
   ts.forEachChild(sf, function visit(node: ts.Node) {
     if (ts.isVariableStatement(node)) {
-      const isExported = (node.modifiers ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword)
-      if (!isExported) return
       for (const decl of node.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
         if (!ts.isCallExpression(decl.initializer)) continue
@@ -1021,13 +1402,21 @@ function compileComponents(
         let uiTree = null
         const propNames = Object.keys(props)
         const renderArg = decl.initializer.arguments[2]
+
+        // SC internal state containers (populated during render body scan)
+        const scInternalVars: Record<string, unknown> = {}
+        const scInternalFormulas: Record<string, unknown> = {}
+        const scInternalWorkflows: Record<string, unknown> = {}
+        const scInternalReplacements = new Map<string, string>()
+        const scInternalNames = new Set<string>()
+
         if (renderArg && (ts.isArrowFunction(renderArg) || ts.isFunctionExpression(renderArg))) {
           try {
-            // ── Local const inlining ──────────────────────────────────────────
-            // Extract local const/let declarations from the render function body
-            // (e.g. `const bgColor = type === 'operator' ? '#FF9F0A' : ...`)
-            // and substitute their names in the render source so they don't become
-            // bare `{ js: "bgColor" }` bindings that resolve to undefined at runtime.
+            // ── Local const inlining + component-scoped state detection ──────────
+            // Extract local const/let declarations from the render function body.
+            // - `defineVar`/`defineWorkflow`/`defineFunction`/`defineFormula` calls
+            //   become component-internal variables/workflows/formulas in the SC JSON.
+            // - Other consts (e.g. `const bgColor = ...`) are inlined as expressions.
             const renderBody = renderArg.body
             const renderSrc = nodeText(renderArg)
             let processedRenderSrc = renderSrc
@@ -1038,13 +1427,80 @@ function compileComponents(
                 for (const vDecl of stmt.declarationList.declarations) {
                   if (!ts.isIdentifier(vDecl.name) || !vDecl.initializer) continue
                   const constName = vDecl.name.text
-                  // Skip PascalCase names (local component references, not value consts)
-                  if (/^[A-Z]/.test(constName)) continue
+                  if (/^[A-Z]/.test(constName)) continue // skip PascalCase component refs
+
+                  if (ts.isCallExpression(vDecl.initializer) && ts.isIdentifier(vDecl.initializer.expression)) {
+                    const callee = vDecl.initializer.expression.text
+
+                    if (callee === 'defineVar') {
+                      // component-scoped variable
+                      const varId = `${componentId}-var-${constName}`
+                      const initArg = vDecl.initializer.arguments[0]
+                      const { value: initialValue, type: varType } = parseInitialValue(initArg)
+                      scInternalVars[varId] = { id: varId, label: constName, type: varType, initialValue }
+                      // In render: `count` → `variables['Counter-var-count']`
+                      scInternalReplacements.set(constName, `variables['${varId}']`)
+                      scInternalNames.add(constName)
+                      continue
+                    }
+
+                    if (callee === 'defineFunction' || callee === 'defineFormula') {
+                      // component-scoped formula
+                      const fnId = `${componentId}-fn-${constName}`
+                      const fnArg = vDecl.initializer.arguments[0]
+                      let formulaExpr = ''
+                      if (fnArg && (ts.isArrowFunction(fnArg) || ts.isFunctionExpression(fnArg))) {
+                        const fnParams = extractParamNames(fnArg as ts.ArrowFunction | ts.FunctionExpression)
+                        const bodyNode = (fnArg as ts.ArrowFunction | ts.FunctionExpression).body
+                        const bodyText = ts.isBlock(bodyNode)
+                          ? `(() => { ${bodyNode.statements.map(s => nodeText(s)).join('\n')} })()`
+                          : nodeText(bodyNode)
+                        // Build formula expression: function body with param names as local vars
+                        formulaExpr = fnParams.length > 0
+                          ? `((${fnParams.join(', ')}) => ${bodyText})`
+                          : bodyText
+                      } else if (fnArg) {
+                        formulaExpr = nodeText(fnArg)
+                      }
+                      scInternalFormulas[fnId] = { id: fnId, name: constName, formula: formulaExpr }
+                      // In render: `display(count)` → the call stays as-is; we just mark it as internal
+                      scInternalReplacements.set(constName, `formulas['${fnId}']`)
+                      scInternalNames.add(constName)
+                      continue
+                    }
+
+                    if (callee === 'defineWorkflow') {
+                      // component-scoped workflow
+                      const wfId = `${componentId}-wf-${constName}`
+                      const fnArg = vDecl.initializer.arguments[0]
+                      let wfSteps: unknown[] = []
+                      if (fnArg && (ts.isArrowFunction(fnArg) || ts.isFunctionExpression(fnArg))) {
+                        const bodyNode = (fnArg as ts.ArrowFunction | ts.FunctionExpression).body
+                        if (ts.isBlock(bodyNode)) {
+                          // Compile steps using the same logic as compileBodyToSteps in compile-trigger.ts
+                          wfSteps = compileScWorkflowBody(bodyNode, pathToId, scInternalReplacements)
+                        }
+                      }
+                      scInternalWorkflows[wfId] = { id: wfId, name: constName, params: [], steps: wfSteps }
+                      // In render: `increment` as action → the trigger map resolves this; mark as internal
+                      scInternalNames.add(constName)
+                      // Also register in scTriggerMap so onClick={increment} compiles as a trigger action
+                      scTriggerMap.set(constName, wfId)
+                      continue
+                    }
+                  }
+
+                  // Regular const — inline as expression (skip component-scoped names)
+                  if (scInternalNames.has(constName)) continue
                   const constExpr = vDecl.initializer.getText().trim()
-                  // Inline: replace every bare reference to constName with its expression
                   processedRenderSrc = replaceIdentInCode(processedRenderSrc, constName, `(${constExpr})`)
                 }
               }
+            }
+
+            // Apply component-scoped replacements in the render source
+            for (const [name, replacement] of scInternalReplacements.entries()) {
+              processedRenderSrc = replaceIdentInCode(processedRenderSrc, name, replacement)
             }
 
             // Wrap the (processed) render fn in a fake definePage call
@@ -1055,7 +1511,7 @@ function compileComponents(
             // Pass propNames so the compiler rewrites bare prop identifiers →
             // context.component?.props?.['name'] inside the SC render function.
             // Pass scTriggerMap so onClick={triggerName} compiles to actions.
-            const compiled = compilePageToJson(fakePageSrc, pathToId, undefined, propNames, scTriggerMap)
+            const [compiled] = compilePageToJson(fakePageSrc, pathToId, undefined, propNames, scTriggerMap)
             if (compiled?.content) {
               uiTree = compiled.content
               // Stamp _sharedKey on every node so the builder can identify
@@ -1085,7 +1541,10 @@ function compileComponents(
           _dslName: exportName,
         }
         if (scTriggers.length > 0) config.triggers = scTriggers
-        if (Object.keys(scWorkflows).length > 0) config.workflows = scWorkflows
+        const allWorkflows = { ...scWorkflows, ...scInternalWorkflows }
+        if (Object.keys(allWorkflows).length > 0) config.workflows = allWorkflows
+        if (Object.keys(scInternalVars).length > 0) config.variables = scInternalVars
+        if (Object.keys(scInternalFormulas).length > 0) config.formulas = scInternalFormulas
 
         events.push({ type: 'component_written', path: `components/${componentId}/component`, content: JSON.stringify(config) })
       }
@@ -1124,8 +1583,13 @@ export function compileAllSources(
   sources: Record<string, string>,
   projectId = 'dsl',
 ): CompiledEvent[] {
-  const declMap = pass1Collect(sources, projectId)
-  return pass2Compile(sources, declMap, projectId)
+  // Consolidate any mid-file import declarations to the top so the TypeScript
+  // parser sees all declarations in every page section of the file.
+  const normalized = Object.fromEntries(
+    Object.entries(sources).map(([k, v]) => [k, normalizeImports(v)])
+  )
+  const declMap = pass1Collect(normalized, projectId)
+  return pass2Compile(normalized, declMap, projectId)
 }
 
 /** Expose the DeclMap publicly for tooling / testing. */

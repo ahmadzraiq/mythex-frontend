@@ -53,16 +53,12 @@ export function isJsBinding(v: unknown): v is JsBinding {
  * Writes (async / wwLib): use wwLib.variables.set instead.
  */
 function makeVariablesProxy(state: Record<string, unknown>, allowWrite: boolean): Record<string, unknown> {
-  // Resolve VFS-style paths like 'store/name' or 'store/folder/name' to their
-  // name-registry UUID by trying the last path segment as a fallback.
+  // Resolve a variable reference to its UUID.
+  // Supports:
+  //   - Direct UUID access:  variables['a1b2-...']   → found in state as-is
+  //   - Name-based access:   variables['cartCount']  → name registry lookup
   const resolveUuidByPath = (prop: string): string | undefined => {
-    const direct = getVariableUuidByName(prop);
-    if (direct) return direct;
-    if (prop.includes('/')) {
-      const segment = prop.split('/').pop()!;
-      return getVariableUuidByName(segment);
-    }
-    return undefined;
+    return getVariableUuidByName(prop);
   };
 
   return new Proxy({} as Record<string, unknown>, {
@@ -404,9 +400,16 @@ function buildUserFns(): Record<string, (...args: unknown[]) => unknown> {
         try {
           const state = getGlobalVariableStore().getState().getFullState();
           const vars = makeVariablesProxy(state, false);
+          // Generate sibling preamble lazily at call time (not definition time) so
+          // all sibling formulas are already in `fns` when the function is invoked.
+          // This mirrors the siblingPreamble logic in formula-evaluator.ts evaluateFormula.
+          const siblingPreamble = Object.keys(fns)
+            .filter(k => JS_VALID_IDENT_RE.test(k) && k !== name)
+            .map(k => `const ${k} = __userFns__[${JSON.stringify(k)}];`)
+            .join('\n');
           // eslint-disable-next-line no-new-func
           const fn = new Function('parameters', 'variables', '__userFns__', ...paramNames,
-            `"use strict";\n${ensureReturn(formula)}`);
+            `"use strict";\n${siblingPreamble ? siblingPreamble + '\n' : ''}${ensureReturn(formula)}`);
           return fn(paramCtx, vars, fns, ...args);
         } catch (e) {
           return undefined;
@@ -416,6 +419,19 @@ function buildUserFns(): Record<string, (...args: unknown[]) => unknown> {
     return fns;
   } catch { return {}; }
 }
+
+/**
+ * Keys explicitly passed as named parameters to evaluateJsBinding (or reserved JS names).
+ * Custom scope variables not in this set (e.g. `cell` from map.as) will be declared
+ * as locals from the __scope__ object so bare-name access works.
+ */
+const JS_STANDARD_SCOPES = new Set([
+  'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event',
+  'parameters', 'route', 'auth', 'wwLib', 'fns', '__userFns__', '__scope__',
+  'local', 'value', '_workflow', 'env', 'get',
+  '$item', '$index', '$parent',
+]);
+const JS_VALID_IDENT_RE = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
 export function evaluateJsBinding(
   binding: JsBinding | string,
@@ -427,18 +443,24 @@ export function evaluateJsBinding(
   const userFns = buildUserFns();
   // Expose each user function as a local constant so the code can call
   // formatDisplay(...), typeColor(...), etc. directly by name.
-  const validIdRe = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
   const userFnPreamble = Object.keys(userFns)
-    .filter(k => validIdRe.test(k))
+    .filter(k => JS_VALID_IDENT_RE.test(k))
     .map(k => `const ${k} = __userFns__[${JSON.stringify(k)}];`)
+    .join('\n');
+
+  // Expose custom scope variables (e.g. loop vars from map.as: `cell`, `product`)
+  // as named locals so `{ js: "cell.day" }` bindings resolve correctly.
+  const scopePreamble = Object.keys(context)
+    .filter(k => JS_VALID_IDENT_RE.test(k) && !JS_STANDARD_SCOPES.has(k))
+    .map(k => `const ${k} = __scope__[${JSON.stringify(k)}];`)
     .join('\n');
 
   const body = ensureReturn(code);
   try {
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns', '__userFns__',
-      `"use strict";\n${userFnPreamble ? userFnPreamble + '\n' : ''}${body}`,
+      'variables', 'collections', 'context', 'globalContext', 'pages', 'theme', 'event', 'parameters', 'route', 'auth', 'wwLib', 'fns', '__userFns__', '__scope__',
+      `"use strict";\n${userFnPreamble ? userFnPreamble + '\n' : ''}${scopePreamble ? scopePreamble + '\n' : ''}${body}`,
     );
     const value = fn(
       makeVariablesProxy(context, /* allowWrite */ false),
@@ -454,6 +476,7 @@ export function evaluateJsBinding(
       makeWwLib({ workflow: context.workflow as Record<string, { result: unknown; error: unknown }>, parameters: context.parameters as Record<string, unknown> }),
       FORMULA_FNS,
       userFns,
+      context, // __scope__ — full state so scope vars (e.g. cell) are accessible by name
     );
     return { value, error: null };
   } catch (e) {

@@ -9,8 +9,8 @@
  *   for...of / array.forEach        → forEach step
  *   Everything else                  → runJavaScript step (whole body or segment)
  *
- * vars['store/x'] references in runJavaScript code are rewritten to
- * variables['<uuid>'] via resolveExprRefs.
+ * vars['store/x'] and bare variable references in runJavaScript code are rewritten to
+ * variables['<uuid>'] via the shared Babel lowering (lowerAction).
  */
 
 import fs from 'fs'
@@ -21,11 +21,10 @@ import {
   buildVfsRegistry,
   getOrCreateUuid,
   loadDslRegistry,
-  resolveExprRefs,
-  resolveVarIdents,
   saveDslRegistry,
   type VfsRegistry,
 } from './resolve-vfs'
+import { lowerAction, lowerExpression, makeEnv } from './lower/index'
 import type { WorkflowParam } from '@/config/types'
 
 export interface WorkflowStep {
@@ -76,7 +75,7 @@ function nodeText(node: ts.Node): string {
  * Same semantics as replaceIdentInCode in compile-page.ts.
  */
 function replaceParamInCode(code: string, name: string, replacement: string): string {
-  const identRe = new RegExp(`(?<![.'"\\[\\w])\\b${name}\\b(?!['"\\]])`, 'g')
+  const identRe = new RegExp(`(?<![.'"\\w])\\b${name}\\b(?!['"])`, 'g')
   if (!code.includes('"') && !code.includes("'") && !code.includes('`')) {
     return code.replace(identRe, replacement)
   }
@@ -122,7 +121,7 @@ function replaceParamInCode(code: string, name: string, replacement: string): st
 }
 
 /**
- * Apply all parameter replacements (name → parameters.argN) to a JS expression string.
+ * Apply all parameter replacements (name → parameters.name) to a JS expression string.
  */
 function applyParamMap(code: string, paramMap: Map<string, string>): string {
   let result = code
@@ -299,6 +298,66 @@ function classifyStatement(stmt: ts.Statement): StepCandidate {
 
 const DSL_DEFINE_CALLS = new Set(['defineWorkflow', 'defineVar', 'defineFunction', 'definePage', 'defineComponent'])
 
+/**
+ * Collect module-level plain literal constants (const TOTAL = 3, const NAME = 'x', etc.)
+ * so they can be inlined into runJavaScript step code where the runtime has no access
+ * to the DSL module scope. Mirrors _currentPageLocals in compile-page.ts.
+ */
+function collectModuleLiteralConsts(sf: ts.SourceFile): Map<string, string> {
+  const result = new Map<string, string>()
+  for (const stmt of sf.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) continue
+      const init = decl.initializer
+      // Skip all DSL define* calls
+      if (
+        ts.isCallExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        DSL_DEFINE_CALLS.has(init.expression.text)
+      ) continue
+      // Skip functions/arrows — handled by collectHelperDefs
+      if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) continue
+      // Collect primitive literals and literal arrays/objects
+      if (
+        ts.isNumericLiteral(init) ||
+        ts.isStringLiteral(init) ||
+        ts.isNoSubstitutionTemplateLiteral(init) ||
+        init.kind === ts.SyntaxKind.TrueKeyword ||
+        init.kind === ts.SyntaxKind.FalseKeyword ||
+        ts.isArrayLiteralExpression(init) ||
+        ts.isObjectLiteralExpression(init)
+      ) {
+        result.set(decl.name.text, nodeText(init))
+        continue
+      }
+      // Handle `X.length` where X is a previously-collected array literal —
+      // evaluate the length at compile time so `const total = posts.length`
+      // becomes `const total = 15` in workflow code.
+      if (
+        ts.isPropertyAccessExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        init.name.text === 'length' &&
+        result.has(init.expression.text)
+      ) {
+        const targetName = init.expression.text
+        for (const s of sf.statements) {
+          if (!ts.isVariableStatement(s)) continue
+          for (const d of s.declarationList.declarations) {
+            if (
+              ts.isIdentifier(d.name) && d.name.text === targetName &&
+              d.initializer && ts.isArrayLiteralExpression(d.initializer)
+            ) {
+              result.set(decl.name.text, String(d.initializer.elements.length))
+            }
+          }
+        }
+      }
+    }
+  }
+  return result
+}
+
 function collectHelperDefs(sf: ts.SourceFile): Map<string, string> {
   const helpers = new Map<string, string>()
   for (const stmt of sf.statements) {
@@ -349,8 +408,7 @@ function prependHelpers(
   const preamble: string[] = []
   for (const [helperName, helperText] of helperDefs) {
     if (!code.includes(helperName)) continue
-    let resolved = resolveExprRefs(helperText, pathToId)
-    resolved = resolveVarIdents(resolved, pathToId)
+    let resolved = lowerExpression(helperText, makeEnv({ pathToId }))
     if (paramMap) resolved = applyParamMap(resolved, paramMap)
     preamble.push(resolved)
   }
@@ -372,6 +430,7 @@ function compileBlockToSteps(
   pathToId: Map<string, string>,
   paramMap?: Map<string, string>,
   helperDefs?: Map<string, string>,
+  constMap?: Map<string, string>,
 ): WorkflowStep[] {
   const stmts: ts.Statement[] = ts.isBlock(node)
     ? [...node.statements]
@@ -379,10 +438,16 @@ function compileBlockToSteps(
 
   let code = stmts.map(s => stmtToInlineJs(s, pathToId, paramMap)).join('\n').trim()
   if (!code) return []
-  code = resolveExprRefs(code, pathToId)
-  code = resolveVarIdents(code, pathToId)
+  code = lowerAction(code, makeEnv({ pathToId }))
   if (paramMap) code = applyParamMap(code, paramMap)
   if (helperDefs) code = prependHelpers(code, helperDefs, pathToId, paramMap)
+  // Inline module-level literal constants (e.g. TOTAL → 3) so runJavaScript
+  // code doesn't reference identifiers that don't exist in the runtime scope.
+  if (constMap) {
+    for (const [name, value] of constMap) {
+      code = replaceParamInCode(code, name, `(${value})`)
+    }
+  }
   return [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
 }
 
@@ -429,6 +494,7 @@ export function compileWorkflowToJson(
 ): CompiledWorkflow | null {
   const sf = ts.createSourceFile('dsl-workflow.tsx', sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
   const helperDefs = collectHelperDefs(sf)
+  const constMap = collectModuleLiteralConsts(sf)
   let result: CompiledWorkflow | null = null
 
   function visitNode(node: ts.Node) {
@@ -489,24 +555,26 @@ export function compileWorkflowToJson(
 
     if (wfName && wfFn) {
       const uuid = seedUuid(`${uuidSeed}:workflow:${wfName}`)
-      // Build param map: param name → parameters.argN
+      // Build param map: param name → parameters.paramName (engine passes params by name)
       const paramMap = new Map<string, string>()
-      wfFn.parameters.forEach((p, i) => {
-        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
+      wfFn.parameters.forEach((p) => {
+        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.${p.name.text}`)
       })
       const params = extractWorkflowParams(wfFn.parameters)
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
+        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs, constMap)
       } else if (wfFn.body) {
-        let code = resolveExprRefs(nodeText(wfFn.body), pathToId)
-        code = resolveVarIdents(code, pathToId)
+        let code = lowerAction(nodeText(wfFn.body), makeEnv({ pathToId: pathToId }))
         if (paramMap.size > 0) code = applyParamMap(code, paramMap)
         // Prepend any referenced top-level helper functions
         if (helperDefs) {
           for (const [helperName, helperText] of helperDefs) {
             if (code.includes(helperName)) code = `${helperText}\n${code}`
           }
+        }
+        for (const [name, value] of constMap) {
+          code = replaceParamInCode(code, name, `(${value})`)
         }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
@@ -542,6 +610,7 @@ export function compileAllWorkflowsToJson(
 ): CompiledWorkflow[] {
   const sf = ts.createSourceFile('dsl-workflow.tsx', sourceCode, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
   const helperDefs = collectHelperDefs(sf)
+  const constMap = collectModuleLiteralConsts(sf)
   const results: CompiledWorkflow[] = []
 
   function visitNode(node: ts.Node) {
@@ -551,9 +620,11 @@ export function compileAllWorkflowsToJson(
       ts.isIdentifier(node.expression.expression) &&
       node.expression.expression.text === 'defineWorkflow'
 
-    const isNamed =
-      ts.isVariableStatement(node) &&
-      (node.modifiers ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword)
+    // Accept both exported and non-exported variable statements.
+    // Pass 1 adds all defineWorkflow UUIDs to pathToId regardless of export status,
+    // so pages can reference them by name. This pass must compile them all too,
+    // otherwise the page references a UUID that has no workflow JSON behind it.
+    const isNamed = ts.isVariableStatement(node)
 
     let wfName: string | null = null
     let wfPath = ''
@@ -601,23 +672,25 @@ export function compileAllWorkflowsToJson(
 
     if (wfName && wfFn) {
       const uuid = seedUuid(`${uuidSeed}:workflow:${wfName}`)
-      // Build param map: param name → parameters.argN
+      // Build param map: param name → parameters.paramName (engine passes params by name)
       const paramMap = new Map<string, string>()
-      wfFn.parameters.forEach((p, i) => {
-        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
+      wfFn.parameters.forEach((p) => {
+        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.${p.name.text}`)
       })
       const params = extractWorkflowParams(wfFn.parameters)
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
+        steps = compileBlockToSteps(wfFn.body, pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs, constMap)
       } else if (wfFn.body) {
-        let code = resolveExprRefs(nodeText(wfFn.body), pathToId)
-        code = resolveVarIdents(code, pathToId)
+        let code = lowerAction(nodeText(wfFn.body), makeEnv({ pathToId: pathToId }))
         if (paramMap.size > 0) code = applyParamMap(code, paramMap)
         if (helperDefs) {
           for (const [helperName, helperText] of helperDefs) {
             if (code.includes(helperName)) code = `${helperText}\n${code}`
           }
+        }
+        for (const [name, value] of constMap) {
+          code = replaceParamInCode(code, name, `(${value})`)
         }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
@@ -650,6 +723,7 @@ export function compileWorkflowFile(
   const source = fs.readFileSync(srcPath, 'utf-8')
   const sf = ts.createSourceFile(srcPath, source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TSX)
   const helperDefs = collectHelperDefs(sf)
+  const constMap = collectModuleLiteralConsts(sf)
 
   const configDir = path.join(process.cwd(), 'config')
   const actionsDir = path.join(configDir, 'actions')
@@ -724,25 +798,28 @@ export function compileWorkflowFile(
     if (wfName && wfFn) {
       const wfUuid = getOrCreateUuid('workflows', wfName, vfsReg, dslReg)
 
-      // Build param map for substitution in step code
+      // Build param map: param name → parameters.paramName (engine passes params by name)
       const paramMap = new Map<string, string>()
-      wfFn.parameters.forEach((p, i) => {
-        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.arg${i}`)
+      wfFn.parameters.forEach((p) => {
+        if (ts.isIdentifier(p.name)) paramMap.set(p.name.text, `parameters.${p.name.text}`)
       })
       const params = extractWorkflowParams(wfFn.parameters)
 
       // Compile function body to steps
       let steps: WorkflowStep[] = []
       if (ts.isBlock(wfFn.body)) {
-        steps = compileBlockToSteps(wfFn.body, vfsReg.pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs)
+        steps = compileBlockToSteps(wfFn.body, vfsReg.pathToId, paramMap.size > 0 ? paramMap : undefined, helperDefs, constMap)
       } else if (wfFn.body) {
         // Concise arrow function body → wrap in runJavaScript
-        let code = resolveVarIdents(resolveExprRefs(nodeText(wfFn.body), vfsReg.pathToId), vfsReg.pathToId)
+        let code = lowerAction(nodeText(wfFn.body), makeEnv({ pathToId: vfsReg.pathToId }))
         if (paramMap.size > 0) code = applyParamMap(code, paramMap)
         if (helperDefs.size > 0) {
           for (const [helperName, helperText] of helperDefs) {
             if (code.includes(helperName)) code = `${helperText}\n${code}`
           }
+        }
+        for (const [name, value] of constMap) {
+          code = replaceParamInCode(code, name, `(${value})`)
         }
         steps = [{ id: crypto.randomUUID(), type: 'runJavaScript', config: { code } }]
       }
