@@ -29,11 +29,83 @@ components/<id>/store/<varId>         — SC-internal variable
 components/<id>/utils/<formulaId>     — SC-internal formula
 components/<id>/workflows/<wfId>      — SC-internal workflow
 components/<id>/triggers/<triggerId>  — SC custom event
+
+server/models/<Name>                  — backend data model (source of truth for schema)
+server/models/<folder>/<Name>         — model in a folder
+server/enums/<Name>                   — shared enum (name + values[])
+server/apis/<slug>                    — backend HTTP endpoint workflow (API_ENDPOINT)
+server/middleware/<name>              — backend middleware workflow (auth/guards)
+server/functions/<name>               — backend reusable function workflow (hooks/events)
+server/seeds/<Model>                  — seed rows for a model
 ```
 
-On disk, every path ends in `.json`. Example: `store/displayValue.json`, `pages/calculator/page.json`.
+### Seeds and relational IDs
 
-Every entity that can be foldered (`store`, `utils`, `workflows`, `data`, colors in `design/colors`) supports an optional `"folder": "Name"` string field. The folder is the path segment between the root and the entity name. Nesting is flat at one level.
+Seed rows are inserted independently per model. There is **no cross-seed reference syntax** — you cannot reference another seed file's auto-generated ID (e.g. you cannot set `authorId` in a `Post` seed to the DB ID of a `User` seed row, because User IDs are only created at apply time).
+
+**Rule**: when a model has a required `relation` field pointing to another model, seed both models but leave the FK field `null` in the dependent seed. Cross-seed FK values cannot be wired at generation time — IDs only exist after apply.
+
+On disk, every path ends in `.json`. Example: `store/displayValue.json`, `pages/dashboard/page.json`, `server/models/Post.json`.
+
+Every entity that can be foldered (`store`, `utils`, `workflows`, `data`, colors in `design/colors`, and all `server/*` entities) supports an optional `"folder": "Name"` string field. The folder is the path segment between the root and the entity name. For `server/*`, the folder is presentation-only — it never changes the table name, route, or endpoint URL.
+
+---
+
+## Backend (`server/`) — model-first
+
+The backend is **model-first**: `server/models/<Name>.json` is the single source of truth. Writing a model file runs a migration (create/alter table) automatically; deleting requires confirmation.
+
+To expose model data over HTTP, write an explicit `server/apis/<slug>.json` (`kind: "API_ENDPOINT"`) that uses ORM steps (`ormFindMany`, `ormCreate`, `ormFindOne`, `ormUpdate`, `ormDelete`). Always create the necessary `server/apis/` files alongside every model.
+
+Model JSON shape:
+
+```
+{
+  "id": "uuid",                  // stable model id (auto-generated if omitted)
+  "name": "Post",               // PascalCase model name
+  "table": "posts",             // snake_case physical table
+  "folder": "Blog",             // optional, presentation only
+  "timestamps": true,            // created_at / updated_at (default true)
+  "softDelete": false,           // deleted_at column + auto-filter
+  "actorTracking": false,        // created_by / updated_by from identity
+  "fields": [
+    { "id": "uuid", "name": "title", "type": "text", "required": true, "unique": false, "searchable": true },
+    { "name": "publishedAt", "type": "datetime" },
+    { "name": "status", "type": "enum", "enum": "PostStatus" },
+    { "name": "cover", "type": "file" },
+    { "name": "slug", "type": "text", "computed": { "expr": "lower(row.title)", "persisted": true } },
+    { "name": "author", "type": "relation", "relation": { "kind": "manyToOne", "to": "User" } }
+  ],
+  // IMPORTANT: name relation fields after the related model (e.g. "author", "owner"), NOT after the FK column (e.g. NOT "authorId", "ownerId").
+  // The system creates the FK column automatically as <fieldName>Id. Naming it "ownerId" makes the include return { ownerId: {...} } instead of { owner: {...} }.
+  "indexes": [{ "fields": ["title"], "unique": false }],
+  "search": ["title"],            // full-text searchable fields
+  "validations": { "title": "row.title.length > 0" },   // boolean expr (refs row.*) enforced on write
+  "hooks": { "beforeCreate": "functionName" },  // -> server/functions/<name>, runs in write tx
+  "events": { "onCreate": "functionName" },     // -> server/functions/<name>, async after commit
+  "access": { "create": ["requireAuth"], "*": ["requireAuth"] }  // -> server/middleware/<name>
+}
+```
+
+Field `type`: `text | int | bigint | decimal | float | money | bool | json | uuid | date | datetime | timestamp | enum | file | relation`. Each field has a stable `id` (UUID) — keep it on rename; it is auto-generated when omitted on first write. Computed `expr` and `validations` reference fields as `row.<field>`.
+
+Authorization is **never** policy logic inside the model — `access` maps a CRUD op (`list`/`read`/`create`/`update`/`delete`/`*`) to MIDDLEWARE workflow names in `server/middleware/`. Reusable logic goes in `server/functions/` and is referenced by `hooks`/`events`. Compose RBAC, auth flows, and notifications from these primitives.
+
+### Wiring the frontend to backend data
+
+To render backend data on a page:
+1. Create a `server/apis/<slug>.json` endpoint (e.g. `server/apis/list-posts.json`) with `"path": "/posts"` and ORM steps.
+2. Create a `data/<id>.json` datasource whose `url` matches the endpoint `path`:
+
+```json
+{ "id": "posts-ds", "name": "Posts", "type": "rest", "url": "/posts", "method": "GET", "trigger": "mount" }
+```
+
+The engine automatically prepends the backend run URL and project ID to any datasource `url` that starts with `/`. Use an absolute URL (e.g. `https://...`) only for third-party APIs.
+
+Read the fetched data in bindings via `collections['posts-ds']` (direct array, no `.data` wrapper).
+
+> Forbidden API fields: do NOT add `outputSchema` or `security` to any `server/apis/` file — they are not part of the schema and the validator will reject them.
 
 ---
 
@@ -43,24 +115,31 @@ Use these in `text`, `src`, `condition`, `value`, workflow step `config`, etc.
 
 ```
 variables['550e8400-e29b-41d4-a716-446655440000']  — read a store variable by its UUID id field
-collections['c3d4e5f6-...']?.data                  — datasource data array (UUID from data/<id>.json)
+collections['<uuid>']                     — datasource fetched data (array or object); no .data wrapper
+collections['<uuid>'].loading             — true while fetching
+collections['<uuid>'].error               — error object if last fetch failed
 context?.item?.data?.field                — map-item field
 context?.item?.data?.index                — 0-based index in list
 context?.item?.parent?.data               — outer map item (nested maps)
-auth.user, auth.token                     — auth state
+variables['auth0001-a5b6-4000-c000-000000000001']  — auth token (string)
+variables['auth0002-a5b6-4000-c000-000000000002']  — current user (object)
 event.value                               — change/focus/blur (Input/Textarea only)
 globalContext?.browser?.path              — current URL path
+globalContext?.browser?.params?.<name>    — URL path parameter (set by :name in routes.json)
+globalContext?.browser?.query?.<key>      — query string value
 globalContext.browser.breakpoint          — "desktop"|"laptop"|"tablet"|"mobile"
 globalContext.screen.width                — viewport width in px
 local.data.form.formData.<field>          — form field value (inside FormContainer)
 context.component.props.<name>            — SC property value (inside shared component)
-context.component.variables.<name>        — SC-scoped variable
+context?.component?.variables?.['<uuid>'] — SC-scoped variable (always use UUID, not name)
 context.workflow['stepId'].result         — step result (set id: 'stepId' on the step)
 parameters['name']                        — global workflow only (called via runProjectWorkflow)
+route?.<paramName>                        — URL path parameter shorthand (same as browser.params)
 theme?.['colors']?.['primary']            — resolved hex of a theme color token
+fns.<utilName>(args)                      — call a user-defined formula from utils/<name>.json by its name field
 ```
 
-Dynamic bindings use `{ "js": "JS expression" }` — this is the **only** dynamic binding format.  
+Dynamic bindings use `{ "js": "JS expression" }`. `{ "formula": "…" }` also works and is equivalent.  
 `condition` on a node is a raw JS string (no wrapper).  
 **Always use the `id` field from the entity's JSON file in bindings — never path strings.**  
 Example: if `store/displayValue.json` has `"id": "550e8400-e29b-41d4-a716-446655440000"`, write `variables['550e8400-e29b-41d4-a716-446655440000']` everywhere that variable is read or written.
@@ -76,7 +155,6 @@ Example: if `store/displayValue.json` has `"id": "550e8400-e29b-41d4-a716-446655
   "label": "Display Value",
   "type": "string",
   "initialValue": "0",
-  "folder": "Calculator"
 }
 ```
 
@@ -84,6 +162,8 @@ Example: if `store/displayValue.json` has `"id": "550e8400-e29b-41d4-a716-446655
 - `type`: `string` | `number` | `boolean` | `object` | `array`
 - `initialValue`: must match the type exactly (`"string"` → string, `"number"` → number literal, etc.)
 - `folder`: optional grouping label
+- `saveInLocalStorage`: optional `true` — persists value across page refreshes (required for auth token variable)
+- `resetOnNavigate`: optional `true` — clears value on every page navigation
 
 ---
 
@@ -91,7 +171,7 @@ Example: if `store/displayValue.json` has `"id": "550e8400-e29b-41d4-a716-446655
 
 ```json
 {
-  "meta": { "title": "Calculator" },
+  "meta": { "title": "Dashboard" },
   "ui": [
     {
       "type": "Box",
@@ -141,21 +221,33 @@ Example: if `store/displayValue.json` has `"id": "550e8400-e29b-41d4-a716-446655
 **RULES:**
 - `text` belongs ONLY on `Text` nodes. `Box` never has a `text` field.
 - A button = `Box` with `cursor: "pointer"` containing a `Text` child.
-- `map` lives at node level (not inside props).
+- `map` belongs on the **item node** (the node that becomes one repeated row/card), never on the container that wraps the list. The container (e.g. a `Box` with `grid` or `col`) is the parent; the node with `map` is its direct child.
 - `_disabledOverlay: { "color": "#000", "opacity": 0.4, "blur": 2 }` — visual overlay over the node when `props.disabled` is truthy. All fields optional.
 
 ### map — list rendering
 
-Simple form (items come from a variable):
+`map` goes on the **item node** (the child), not on the container. The container is the grid/col Box; the item is its direct child:
+
 ```json
-"map": { "js": "variables['uuid-of-items-variable']" }
+{
+  "type": "Box",
+  "props": { "grid": true, "cols": 4, "gap": 12 },
+  "children": [
+    {
+      "type": "Box",
+      "map": { "js": "variables['uuid-of-items-variable']", "keyField": "id" },
+      "props": { "radius": 999, "cursor": "pointer" },
+      "children": [...]
+    }
+  ]
+}
 ```
 
-Rich form — use when you need to rename the loop variable or specify the key field:
+Rich form — use when you need to rename the loop variable:
 ```json
-"map": { "js": "variables['uuid']", "as": "product", "keyField": "id" }
+"map": { "js": "variables['uuid']", "as": "row", "keyField": "id" }
 ```
-- `as`: renames the loop variable (default: `item`). With `"as": "product"`, write `context?.product?.data?.field` instead of `context?.item?.data?.field`.
+- `as`: renames the loop variable (default: `item`). With `"as": "row"`, write `context?.row?.data?.field` instead of `context?.item?.data?.field`.
 - `keyField`: the property name on each item used as the React key (e.g. `"id"`, `"uuid"`).
 
 ### Icon node
@@ -227,7 +319,7 @@ Write all styling as flat keys directly in `props`. The server converts them to 
 | `row` | `true` — flex + direction row (horizontal stack) |
 | `grid` | `true` — enables `display: grid` |
 | `center` | `true` — items: center + justify: center |
-| `display` | `"flex"` \| `"grid"` \| `"block"` \| `"inline-block"` \| `"inline"` \| `"hidden"` |
+| `display` | `"flex"` \| `"grid"` \| `"block"` \| `"inline-block"` \| `"inline"` \| `"none"` — layout switching only; use `condition` to show/hide nodes |
 | `direction` | `"row"` \| `"col"` \| `"row-reverse"` \| `"col-reverse"` |
 | `items` | `"start"` \| `"end"` \| `"center"` \| `"stretch"` \| `"baseline"` |
 | `justify` | `"start"` \| `"end"` \| `"center"` \| `"between"` \| `"around"` \| `"evenly"` |
@@ -357,7 +449,24 @@ Base props apply to all screens. Override smaller screens with `xl`, `lg`, or `m
 
 ---
 
-## Animation — `props.animation`
+## Animation — hover/press/scroll styles
+
+For interactive state styling (color change on hover, scale on press, etc.) write `hover`, `press`, or `scroll` directly in `props` alongside other SxProp keys. Any SxProp key inside the object is converted to CSS automatically:
+
+```json
+"props": {
+  "bg": "#6366f1",
+  "cursor": "pointer",
+  "hover": { "bg": "#4f46e5", "scale": 1.02, "duration": 150 },
+  "press": { "scale": 0.97, "opacity": 0.85, "duration": 100 }
+}
+```
+
+SxProp keys (`bg`, `textColor`, `borderColor`, `opacity`, `radius`, etc.) go into `styles`. Animation-control keys (`scale`, `opacity` as number, `duration`, `easing`, `y`, `x`) stay flat on the phase.
+
+## Animation — enter/exit/loop/scroll (motion)
+
+For entrance animations, looping effects, and scroll-triggered transitions use `props.animation`:
 
 ```json
 "animation": {
@@ -382,9 +491,7 @@ Base props apply to all screens. Override smaller screens with `xl`, `lg`, or `m
     "duration": 500,
     "threshold": 0.2,
     "once": true
-  },
-  "hover": { "scale": 1.05, "duration": 200 },
-  "press": { "scale": 0.95, "opacity": 0.8, "duration": 100 }
+  }
 }
 ```
 
@@ -392,8 +499,6 @@ Base props apply to all screens. Override smaller screens with `xl`, `lg`, or `m
 **Exit types:** `fadeOut` | `slideOutUp` | `slideOutDown` | `slideOutLeft` | `slideOutRight` | `zoomOut` | `blurOut`  
 **Loop types:** `pulse` | `breathe` | `float` | `flash` | `spin` | `shake` | `wiggle` | `bounce` | `heartbeat` | `glowPulse`  
 **Easing:** `linear` | `easeIn` | `easeOut` | `easeInOut` | `backIn` | `backOut` | `backInOut`
-
-`enter`, `exit`, `loop`, `scroll`, `hover`, `press` must always be nested inside `"animation": { ... }`. Writing them as direct keys on `props` has no effect.
 
 ---
 
@@ -479,30 +584,30 @@ Add a `popover` config to any `Box` node to turn it into a trigger for a floatin
 - `id`: kebab-case identifier, e.g. `sc-my-card`
 - `properties`: array of `{ id, name, type: "text"|"number"|"boolean"|"object", defaultValue }`
 - `content`: single root UINode (same flat SxProps format as pages)
-- Inside content, access props via `context.component.props.<name>` and local variables via `context.component.variables.<name>`
+- Inside content, access props via `context.component.props.<name>` and local variables via `context?.component?.variables?.['<uuid>']` (always use the UUID from the variable file's `id` field, not the name)
 - **Prefer a shared component when a UI block repeats within a page or is reused across pages.** Create the component once, then place instances (with `_shared: { id, name }`) instead of duplicating the node tree. This keeps `page.json` small and changes localized.
 - **SC-internal state**: if a variable or workflow is only needed inside this SC, create it under `components/<id>/store/` and `components/<id>/workflows/` — never in global `store/` or `workflows/`. Examples of SC-only state: display value, active tab, open accordion, carousel index, form step.
 
 **SC-internal variable + workflow — file structure:**
 ```
-components/sc-calc/store/calcDisplay.json     ← { "id": "uuid-calc-display", "name": "calcDisplay", ... }
-components/sc-calc/store/calcState.json       ← { "id": "uuid-calc-state",   "name": "calcState",   ... }
-components/sc-calc/workflows/calcInput.json   ← { "id": "uuid-calc-input",   ... }
+components/sc-card/store/isOpen.json      ← { "id": "uuid-sc-open",   "name": "isOpen",   ... }
+components/sc-card/store/activeTab.json   ← { "id": "uuid-sc-tab",    "name": "activeTab", ... }
+components/sc-card/workflows/onToggle.json ← { "id": "uuid-sc-toggle", ... }
 ```
 
 Inside SC `content` — read an SC variable (UUID from the variable file's `id`):
 ```json
-{ "js": "context?.component?.variables?.['uuid-calc-display']" }
+{ "js": "context?.component?.variables?.['uuid-sc-open']" }
 ```
 
 Inside an SC workflow — write back to an SC variable:
 ```js
-variables['uuid-calc-display'] = newValue;
+variables['uuid-sc-open'] = newValue;
 ```
 
 Action on a node inside the SC — invoke an SC workflow (same syntax as global):
 ```json
-{ "trigger": "click", "workflowId": "uuid-calc-input" }
+{ "trigger": "click", "workflowId": "uuid-sc-toggle" }
 ```
 
 ---
@@ -514,9 +619,9 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
   "id": "wf-a1b2c3d4-1111-4aaa-8bbb-000000000001",
   "meta": {
     "id": "wf-a1b2c3d4-1111-4aaa-8bbb-000000000001",
-    "name": "Handle Calculator Click",
+    "name": "Handle Button Click",
     "trigger": "click",
-    "pageScope": "calculator"
+    "pageScope": "myPage"
   },
   "steps": [
     {
@@ -531,7 +636,7 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 }
 ```
 
-- `meta.trigger`: `click` | `change` | `focus` | `blur` | `valueChange` | `enterKey` | `submit` | `appLoad` | `pageLoad` | `pageUnload`
+- `meta.trigger`: `click` | `change` | `focus` | `blur` | `valueChange` | `enterKey` | `submit` | `appLoad` | `pageLoad` | `pageUnload` | `reachEnd` | `mounted` | `beforeUnmount` | `propertyChange` | `execution`
 - `meta.pageScope`: required for `pages/<name>/workflows/` path; must equal the page name
 - For global `workflows/<name>.json`: omit `pageScope`
 
@@ -543,14 +648,16 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 | `resetVariableValue` | `variableName` (UUID) |
 | `branch` | `condition: { js }` + top-level `trueBranch: []`, `falseBranch: []` |
 | `multiOptionBranch` | `condition: { js }` + top-level `branches: [{ label, steps }]`, `defaultBranch: []` |
-| `navigateTo` | `path` (route), `linkType: "internal"\|"external"`, `newTab` |
+| `navigateTo` | `path` (route), `linkType: "internal"\|"external"`, `newTab`, optional `queryParams: { key: value }` to set/merge URL query params (use `null` to remove a param). Hardcode the destination path or embed JS inline — do NOT create a shared "navigate" helper workflow whose only job is calling navigateTo. |
 | `runJavaScript` | **code must be nested under `config`**: `{ "type": "runJavaScript", "config": { "code": "..." } }`. Globals: `variables` (writable; UUID or name), `parameters` (params from the calling action), `fns`, `wwLib`, `context` |
-| `fetchCollection` | `collectionId` (data path) |
+| `fetchData` | `url`, `method`, `headers`, `body` (all support `{ "js": "…" }` expressions). Result at `context.workflow['stepId'].result`. Use for ad-hoc HTTP calls (login, API mutations, etc.) |
+| `fetchCollection` | `collectionId` (datasource UUID from `data/<id>.json`) — triggers a named datasource refetch |
 | `forEach` | `items: { js }` + top-level `loopBody: []` |
 | `whileLoop` | `condition: { js }` + top-level `loopBody: []` |
 | `timeDelay` | `ms` |
 | `runProjectWorkflow` | `workflowId` (UUID from the workflow's `id` field), `params: {}` |
 | `returnValue` | `value` |
+| `passThroughCondition` | `condition: { js }` — no-op if true; short-circuits (stops) the workflow if false |
 | `copyToClipboard` | `text` |
 | `scrollToElement` | `targetNodeId` (node `name` field) |
 | `controlAnimation` | `targetNodeId`, `action: "trigger"\|"exit"\|"startLoop"\|"stopLoop"` |
@@ -567,6 +674,8 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 ```
 `code` goes under `config`, never at the step root. Inside the code body, `parameters['key']` reads params passed from the action's `params` field, and `variables['uuid'] = value` writes back to the store.
 
+> If a workflow uses `parameters['...']` in any step, its `meta` must declare a matching `params` array: `"params": [{ "name": "key", "type": "text" }]`. Without this declaration the caller cannot pass values.
+
 ---
 
 ## Trigger entity — `pages/<name>/triggers/<type>.json`
@@ -579,7 +688,7 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
     "name": "On Page Load",
     "trigger": "pageLoad",
     "isTrigger": true,
-    "pageScope": "calculator"
+    "pageScope": "myPage"
   },
   "steps": []
 }
@@ -592,11 +701,48 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 ```json
 {
   "routes": [
-    { "path": "/calculator", "config": "calculator", "name": "Calculator" },
+    { "path": "/dashboard", "config": "dashboard", "name": "Dashboard" },
+    { "path": "/items/:id", "config": "itemDetail", "name": "Item Detail" },
     { "path": "/", "config": "home", "name": "Home" }
   ]
 }
 ```
+
+- Every page MUST have a route entry — without one, the page is unreachable.
+- `config` = the page name (VFS folder name under `pages/`).
+- Use `:paramName` in `path` for dynamic segments. Read params in formulas via `route?.<paramName>` or `globalContext?.browser?.params?.<paramName>`.
+
+### List→detail navigation: always carry the item ID
+
+When navigating from a list to a detail or edit page you **must** pass the item's ID. Two valid patterns — choose either:
+
+**Option A — path param** (cleaner URL):
+```json
+// routes.json
+{ "path": "/products/:id", "config": "productDetail" }
+
+// navigateTo step config
+{ "path": { "js": "'/products/' + context.item.data.id" }, "linkType": "internal" }
+
+// on the detail page — read the ID
+// formula:  route?.id   OR  globalContext?.browser?.params?.id
+// datasource url: { "js": "'/products/' + route?.id" }
+```
+
+**Option B — query param** (static route is fine):
+```json
+// routes.json
+{ "path": "/productdetail", "config": "productDetail" }
+
+// navigateTo step config
+{ "path": "/productdetail", "linkType": "internal", "queryParams": { "id": { "js": "context.item.data.id" } } }
+
+// on the detail page — read the ID
+// formula:  globalContext?.browser?.query?.id
+// datasource url: { "js": "'/products/' + globalContext?.browser?.query?.id" }
+```
+
+Never navigate to a detail/edit page without embedding the ID in the path or query params. A detail page that reads an ID that was never passed will always get `undefined`.
 
 ---
 
@@ -604,13 +750,12 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 
 ```json
 {
-  "id": "products",
-  "name": "Products",
+  "id": "items",
+  "name": "Items",
   "type": "rest",
-  "url": "https://api.example.com/products",
+  "url": "/items",
   "method": "GET",
-  "trigger": "mount",
-  "folder": "Catalog"
+  "trigger": "mount"
 }
 ```
 
@@ -622,11 +767,11 @@ Action on a node inside the SC — invoke an SC workflow (same syntax as global)
 
 ```json
 {
-  "name": "formatPrice",
-  "description": "Format a number as a currency string",
-  "formula": "new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parameters?.['amount'])",
+  "name": "formatDate",
+  "description": "Format a date value for display",
+  "formula": "new Date(parameters?.['value']).toLocaleDateString()",
   "params": [
-    { "name": "amount", "type": "Number", "testValue": 9.99 }
+    { "name": "value", "type": "String", "testValue": "2024-01-15" }
   ]
 }
 ```
@@ -694,6 +839,17 @@ These are leaf nodes (no children). Use SxProps (`w`, `h`, etc.) for sizing unle
 }
 ```
 
+**CSS variable naming**: each theme token `"--primary": "#6366f1"` generates two CSS variables at runtime:
+- `--primary` — an RGB triplet (e.g. `30 41 59`) used internally by Tailwind for opacity utilities (`bg-primary/50`)
+- `--theme-primary` — the original hex value (`#6366f1`) for direct CSS references
+
+**Always use the `--theme-` prefixed variable** when referencing a theme color in SxProps or inline CSS:
+```json
+"bg": "var(--theme-primary)",
+"textColor": "var(--theme-foreground)"
+```
+Using `var(--primary)` directly will produce a broken color because `30 41 59` is not a valid CSS color string.
+
 ---
 
 ## Media tool
@@ -718,7 +874,6 @@ Workflow step calling another global workflow:
 ```json
 { "type": "runProjectWorkflow", "config": { "workflowId": "wf-global-uuid-here", "params": { "mode": "reset" } } }
 ```
-
 ---
 
 ## Workflow best practices
@@ -733,3 +888,4 @@ Workflow step calling another global workflow:
 - State/logic only used inside one SC → SC-scoped (`components/<id>/store` + `components/<id>/workflows`)
 - State/logic only used on one page → page-scoped (`pages/<name>/workflows`)
 - State/logic shared across pages or components → global (`store` + `workflows`)
+

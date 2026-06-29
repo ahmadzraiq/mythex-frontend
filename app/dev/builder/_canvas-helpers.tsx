@@ -319,6 +319,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
               <InactivePageWrapper
                 pageId={page.id}
                 pageName={page.name || 'page'}
+                pageRoute={page.route}
                 nodes={page.nodes as SDUINode[]}
                 previewStates={activePreviewStates}
                 shownPopovers={shownPopovers}
@@ -419,6 +420,7 @@ export const AllPagesGrid = memo(function AllPagesGrid({
 const InactivePageWrapper = memo(function InactivePageWrapper({
   pageId,
   pageName,
+  pageRoute,
   nodes,
   previewStates,
   shownPopovers,
@@ -427,6 +429,9 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
 }: {
   pageId: string;
   pageName: string;
+  /** App route path for this page (e.g. '/products') — passed to the engine so
+   *  globalContext.browser.path reflects the page route, not the builder URL. */
+  pageRoute?: string;
   nodes: SDUINode[];
   previewStates?: string[];
   shownPopovers?: Set<string>;
@@ -466,6 +471,7 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
     <InactivePageEngine
       pageId={pageId}
       configName={pageName || 'page'}
+      pageRoute={pageRoute}
       nodes={displayNodes}
       previewStates={previewStates}
       shownPopovers={shownPopovers}
@@ -480,6 +486,7 @@ const InactivePageWrapper = memo(function InactivePageWrapper({
 export const PageEngine = memo(function PageEngine({
   pageConfig,
   configName,
+  pageRoute,
   previewStates,
   previewData,
   actionsConfig: actionsConfigProp,
@@ -489,6 +496,9 @@ export const PageEngine = memo(function PageEngine({
 }: {
   pageConfig: SDUIConfig;
   configName: string;
+  /** App route path (e.g. '/products') — used as builderPath so globalContext.browser.path
+   *  returns the page route rather than the builder's own URL. */
+  pageRoute?: string;
   previewStates?: string[];
   previewData?: Record<string, unknown>;
   actionsConfig?: Record<string, unknown>;
@@ -509,6 +519,7 @@ export const PageEngine = memo(function PageEngine({
       builderMode
       builderViewportHeight={VIEWPORT_H}
       builderViewport={viewport}
+      builderPath={pageRoute}
       previewStates={previewStates}
       previewData={previewData}
       shownPopovers={shownPopovers}
@@ -525,6 +536,7 @@ export const PageEngine = memo(function PageEngine({
 export const InactivePageEngine = memo(function InactivePageEngine({
   pageId,
   configName,
+  pageRoute,
   nodes,
   previewStates,
   shownPopovers,
@@ -533,6 +545,9 @@ export const InactivePageEngine = memo(function InactivePageEngine({
 }: {
   pageId: string;
   configName: string;
+  /** App route path (e.g. '/products') — used as builderPath so globalContext.browser.path
+   *  returns the page route rather than the builder's own URL. */
+  pageRoute?: string;
   nodes: SDUINode[];
   previewStates?: string[];
   shownPopovers?: Set<string>;
@@ -580,6 +595,7 @@ export const InactivePageEngine = memo(function InactivePageEngine({
       routes={app.routes ?? []}
       builderMode
       builderViewport={viewport}
+      builderPath={pageRoute}
       previewStates={previewStates}
       shownPopovers={shownPopovers}
       builderQueryParams={queryParams}

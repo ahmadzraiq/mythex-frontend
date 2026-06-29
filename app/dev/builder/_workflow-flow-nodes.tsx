@@ -72,6 +72,7 @@ export function updateStepAtPath(
     if (tag === 'try' && s.tryBody) return { ...s, tryBody: updateStepAtPath(s.tryBody, subPath, updater) };
     if (tag === 'catch' && s.catchBody) return { ...s, catchBody: updateStepAtPath(s.catchBody, subPath, updater) };
     if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: updateStepAtPath(s.finallyBody, subPath, updater) };
+    if (tag === 'txbody' && s.transactionBody) return { ...s, transactionBody: updateStepAtPath(s.transactionBody, subPath, updater) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: updateStepAtPath(b.steps, subPath, updater) } : b) };
@@ -101,6 +102,7 @@ export function insertStepAtPath(
     if (tag === 'try' && s.tryBody) return { ...s, tryBody: insertStepAtPath(s.tryBody, subPath, newStep) };
     if (tag === 'catch' && s.catchBody) return { ...s, catchBody: insertStepAtPath(s.catchBody, subPath, newStep) };
     if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: insertStepAtPath(s.finallyBody, subPath, newStep) };
+    if (tag === 'txbody' && s.transactionBody) return { ...s, transactionBody: insertStepAtPath(s.transactionBody, subPath, newStep) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: insertStepAtPath(b.steps, subPath, newStep) } : b) };
@@ -122,6 +124,7 @@ export function removeStepAtPath(steps: ActionStep[], path: number[]): ActionSte
     if (tag === 'try' && s.tryBody) return { ...s, tryBody: removeStepAtPath(s.tryBody, subPath) };
     if (tag === 'catch' && s.catchBody) return { ...s, catchBody: removeStepAtPath(s.catchBody, subPath) };
     if (tag === 'finally' && s.finallyBody) return { ...s, finallyBody: removeStepAtPath(s.finallyBody, subPath) };
+    if (tag === 'txbody' && s.transactionBody) return { ...s, transactionBody: removeStepAtPath(s.transactionBody, subPath) };
     if (tag?.startsWith('branch-') && s.branches) {
       const bIdx = parseInt(tag.split('-')[1], 10);
       return { ...s, branches: s.branches.map((b, bi) => bi === bIdx ? { ...b, steps: removeStepAtPath(b.steps, subPath) } : b) };
@@ -228,7 +231,10 @@ export function FlowRenderer({
             {(step.type === 'tryCatch') && (
               <TryCatchNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
             )}
-            {!['branch', 'multiOptionBranch', 'forEach', 'whileLoop', 'passThroughCondition', 'tryCatch'].includes(step.type) && (
+            {(step.type === 'ormTransaction') && (
+              <OrmTransactionNode step={step} stepPath={stepPath} isSelected={isSelected} selectedPath={selectedPath} copiedStep={copiedStep} onSelect={onSelect} onInsert={onInsert} onContextMenu={onContextMenu} onUpdateStep={onUpdateStep} />
+            )}
+            {!['branch', 'multiOptionBranch', 'forEach', 'whileLoop', 'passThroughCondition', 'tryCatch', 'ormTransaction'].includes(step.type) && (
               <ActionNode step={step} stepPath={stepPath} isSelected={isSelected} onSelect={onSelect} onContextMenu={onContextMenu} />
             )}
 
@@ -801,6 +807,51 @@ export function TryCatchNode({
         <line x1={xFirst} y1={24} x2={xLast} y2={24} stroke="var(--bld-border-subtle)" strokeWidth={1} />
         <line x1={rowW / 2} y1={24} x2={rowW / 2} y2={36} stroke="var(--bld-border-subtle)" strokeWidth={1} />
       </svg>
+      <Connector />
+    </div>
+  );
+}
+
+export function OrmTransactionNode({
+  step, stepPath, isSelected, selectedPath, copiedStep,
+  onSelect, onInsert, onContextMenu, onUpdateStep,
+}: {
+  step: ActionStep; stepPath: (string | number)[]; isSelected: boolean;
+  selectedPath: (string | number)[] | null; copiedStep: ActionStep | null;
+  onSelect: (p: (string | number)[]) => void;
+  onInsert: (idx: number, prefix: (string | number)[], x: number, y: number) => void;
+  onContextMenu: (e: React.MouseEvent, s: ActionStep, p: (string | number)[]) => void;
+  onUpdateStep: (p: (string | number)[], patch: Partial<ActionStep>) => void;
+}) {
+  const txBody = step.transactionBody ?? [];
+  const BODY_W = 260;
+
+  return (
+    <div data-testid={`action-node-${step.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div
+        style={{ ...S.pillNode(isSelected), border: isSelected ? '1.5px solid var(--bld-accent)' : '1.5px dashed var(--bld-border-subtle)', background: 'var(--bld-surface-2)' }}
+        onClick={() => onSelect(stepPath)}
+      >
+        <span>⚛</span>
+        <span>{step.name || 'Transaction'}</span>
+        <button style={S.moreBtn} type="button" onClick={e => { e.stopPropagation(); onContextMenu(e, step, stepPath); }}>⋮</button>
+      </div>
+      <div style={S.vLine} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: BODY_W, border: '1.5px dashed var(--bld-border-subtle)', borderRadius: 8, padding: '8px 8px 4px', background: 'var(--bld-surface-1)' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-info)', background: 'var(--bld-info)22', border: '1px solid var(--bld-info)55', borderRadius: 20, padding: '2px 10px', marginBottom: 6, alignSelf: 'center' }}>
+          transaction body
+        </span>
+        <FlowRenderer
+          steps={txBody}
+          pathPrefix={[...stepPath, 'txbody']}
+          selectedPath={selectedPath}
+          copiedStep={copiedStep}
+          onSelect={onSelect}
+          onInsert={onInsert}
+          onContextMenu={onContextMenu}
+          onUpdateStep={onUpdateStep}
+        />
+      </div>
       <Connector />
     </div>
   );

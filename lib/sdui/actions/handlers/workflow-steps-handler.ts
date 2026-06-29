@@ -847,31 +847,11 @@ async function runSteps(
       const instanceId = (cfg.instanceId as string | undefined) ?? (compInfo.instanceId as string | undefined);
       const modelId = (cfg.modelId ?? compInfo.id) as string | undefined;
 
-      if (typeof window !== 'undefined') {
-        console.log('[executeComponentAction] step:', {
-          stepId: step.id,
-          workflowId,
-          modelId,
-          instanceId,
-          cfgArgs: cfg.args,
-          ambientComponentId: compInfo.id,
-        });
-      }
-
       if (workflowId && modelId) {
         let scModel: { workflows?: Record<string, { steps: WorkflowStep[]; params?: Array<{ name: string }> }> } | undefined;
         try { scModel = require('@/lib/builder/shared-component-data').getSharedComponents()[modelId]; } catch { /* noop */ }
         if (!scModel) { try { scModel = require('@/config/shared-components.json')[modelId]; } catch { /* noop */ } }
         const wf = scModel?.workflows?.[workflowId];
-        if (typeof window !== 'undefined') {
-          console.log('[executeComponentAction] model lookup:', {
-            modelId,
-            modelFound: !!scModel,
-            availableWorkflows: scModel?.workflows ? Object.keys(scModel.workflows) : [],
-            workflowFound: !!wf,
-            stepCount: wf?.steps?.length ?? 0,
-          });
-        }
         if (wf?.steps) {
           const vsState = getGlobalVariableStore().getState().getFullState();
 
@@ -1191,16 +1171,6 @@ export const workflowStepsHandler =
   (ctx: ActionHandlerContext) =>
   async (actionDef: ActionDef): Promise<void> => {
     const steps = (actionDef.steps ?? []) as WorkflowStep[];
-    // Skip verbose logging for high-frequency drag-update actions
-    if (typeof window !== 'undefined' && (actionDef as Record<string, unknown>).trigger !== 'drag') {
-      console.log('[workflowStepsHandler] invoked:', {
-        action: (actionDef as Record<string, unknown>).name ?? (actionDef as Record<string, unknown>).id,
-        trigger: (actionDef as Record<string, unknown>).trigger,
-        stepCount: steps.length,
-        stepTypes: steps.map(s => (s as unknown as Record<string, unknown>).type ?? (s as unknown as Record<string, unknown>).action),
-        payloadParams: ctx.payload?.parameters,
-      });
-    }
     // workflowCtx is shared across all steps (including sub-branches).
     // Pre-populate with any existing workflow context so chained workflow calls
     // can read results from prior top-level steps.
@@ -1261,13 +1231,6 @@ export const workflowStepsHandler =
       parameters = Object.fromEntries(
         Object.entries(rawParamsFromPayload).map(([k, v]) => [k, resolveParamValue(v, callingCtx)])
       );
-      if (typeof window !== 'undefined') {
-        console.log('[workflow-steps-handler] resolved payload parameters:', {
-          action: (actionDef as Record<string, unknown>).name ?? (actionDef as Record<string, unknown>).id,
-          raw: rawParamsFromPayload,
-          resolved: parameters,
-        });
-      }
     }
     // Also check the params defined on the actionDef itself (for JSON config usage).
     // Skip if params is an Array — that's parameter METADATA (e.g. [{id,name,testValue}])

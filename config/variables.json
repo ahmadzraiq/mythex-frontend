@@ -30,6 +30,12 @@
       "initialValue": false,
       "folder": "Admin"
     },
+    "app00001-0000-4000-a000-000000000001": {
+      "label": "App Loading",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Auth"
+    },
     "auth0001-a5b6-4000-c000-000000000001": {
       "label": "Auth Token",
       "type": "string",
@@ -3067,6 +3073,66 @@
       "type": "boolean",
       "initialValue": false,
       "folder": "Admin"
+    },
+    "iscroll-page-0000-0000-0000-000000000001": {
+      "label": "Scroll Test - Page",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Scroll Test"
+    },
+    "iscroll-items-0000-0000-0000-000000000001": {
+      "label": "Scroll Test - Items",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Scroll Test"
+    },
+    "iscroll-loading-000-0000-0000-000000000001": {
+      "label": "Scroll Test - Loading",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Scroll Test"
+    },
+    "iscroll-hasmore-000-0000-0000-000000000001": {
+      "label": "Scroll Test - Has More",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Scroll Test"
+    },
+    "isd00001-0000-4000-a000-000000000001": {
+      "label": "Dropdown - Page",
+      "type": "number",
+      "initialValue": 1,
+      "folder": "Scroll Test"
+    },
+    "isd00002-0000-4000-a000-000000000001": {
+      "label": "Dropdown - Items",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Scroll Test"
+    },
+    "isd00003-0000-4000-a000-000000000001": {
+      "label": "Dropdown - Loading",
+      "type": "boolean",
+      "initialValue": false,
+      "folder": "Scroll Test"
+    },
+    "isd00004-0000-4000-a000-000000000001": {
+      "label": "Dropdown - Has More",
+      "type": "boolean",
+      "initialValue": true,
+      "folder": "Scroll Test"
+    },
+    "toast-list-0000-0000-4000-a000-000000000001": {
+      "label": "Toast - List",
+      "type": "array",
+      "initialValue": [],
+      "folder": "Toast"
+    },
+    "toast-pos0-0000-4000-a000-000000000001": {
+      "label": "Toast - Position",
+      "type": "string",
+      "initialValue": "bottom-right",
+      "folder": "Toast"
     }
   },
   "varFolders": [
@@ -3209,6 +3275,14 @@
     {
       "id": "Component Showcase",
       "label": "Component Showcase"
+    },
+    {
+      "id": "Scroll Test",
+      "label": "Scroll Test"
+    },
+    {
+      "id": "Toast",
+      "label": "Toast"
     }
   ]
 }

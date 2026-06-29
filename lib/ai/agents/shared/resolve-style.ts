@@ -494,6 +494,39 @@ function resolveNode(node: unknown): unknown {
       if (iconSize  !== undefined) resolvedProps.size  = iconSize;
       if (iconColor !== undefined) resolvedProps.color = iconColor;
     }
+
+    // Lift hover/press/scroll shorthand from props into props.animation.
+    // AI writes: props.hover.bg = "#4f46e5" (natural CSS-in-JS pattern)
+    // Engine reads: props.animation.hover.styles.backgroundColor = "#4f46e5"
+    const INTERACTION_PHASES = ['hover', 'press', 'scroll'] as const;
+    const ANIM_NATIVE = new Set([
+      'scale', 'opacity', 'duration', 'easing', 'y', 'x',
+      'type', 'threshold', 'once', 'enabled', 'repeatCount',
+    ]);
+    for (const phase of INTERACTION_PHASES) {
+      const phaseVal = resolvedProps[phase];
+      if (!phaseVal || typeof phaseVal !== 'object' || Array.isArray(phaseVal)) continue;
+      delete resolvedProps[phase];
+      const phaseObj = phaseVal as Record<string, unknown>;
+      const animPhase: Record<string, unknown> = {};
+      const cssStyles: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(phaseObj)) {
+        if (ANIM_NATIVE.has(k)) {
+          animPhase[k] = v;
+        } else {
+          Object.assign(cssStyles, styleKeyToCssProps(k, v));
+        }
+      }
+      if (Object.keys(cssStyles).length) animPhase.styles = cssStyles;
+      if (Object.keys(animPhase).length) {
+        const existing = (resolvedProps.animation ?? {}) as Record<string, unknown>;
+        resolvedProps.animation = {
+          ...existing,
+          [phase]: { ...((existing[phase] as Record<string, unknown>) ?? {}), ...animPhase },
+        };
+      }
+    }
+
     n.props = resolvedProps;
 
     // Merge breakpoint overrides into node.responsive[bp].styles

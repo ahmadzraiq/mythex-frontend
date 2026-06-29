@@ -994,6 +994,87 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // mount-once: lifecycle triggers fire exactly once when the node mounts
 
+  // reachEnd scroll listener — fires once per reach, resets when scrolled back up.
+  // Collects all node actions with trigger === 'reachEnd', groups by scrollTarget,
+  // and attaches the appropriate window or element scroll listener.
+  const _reachEndNodeRef = useRef<Element | null>(null);
+  const _reachEndActions = useMemo(() => {
+    if (!node?.actions || !Array.isArray(node.actions)) return null;
+    const out: Array<{ action: unknown; threshold: number; scrollTarget: 'window' | 'element' }> = [];
+    for (const item of node.actions as Array<unknown>) {
+      if (!item || typeof item !== 'object') continue;
+      const actionRef = item as Record<string, unknown>;
+      const trigger = typeof actionRef.trigger === 'string' ? actionRef.trigger : null;
+      if (trigger !== 'reachEnd') continue;
+      const cfg = actionRef.config as Record<string, unknown> | undefined;
+      out.push({
+        action: item,
+        threshold: typeof cfg?.threshold === 'number' ? cfg.threshold : 100,
+        scrollTarget: cfg?.scrollTarget === 'element' ? 'element' : 'window',
+      });
+    }
+    return out.length ? out : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node?.actions]);
+
+  const _reachEndRunRef = useRef(runAction);
+  _reachEndRunRef.current = runAction;
+  const _reachEndScopeRef = useRef(effectiveScope);
+  _reachEndScopeRef.current = effectiveScope;
+
+  useEffect(() => {
+    if (!_reachEndActions) return;
+    const windowActions = _reachEndActions.filter(a => a.scrollTarget !== 'element');
+    const elementActions = _reachEndActions.filter(a => a.scrollTarget === 'element');
+    const cleanups: Array<() => void> = [];
+
+    if (windowActions.length > 0) {
+      const windowFired = { current: false };
+      const minThreshold = Math.min(...windowActions.map(a => a.threshold));
+      const handleWindowScroll = () => {
+        const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+        if (remaining <= minThreshold) {
+          if (!windowFired.current) {
+            windowFired.current = true;
+            for (const a of windowActions) {
+              Promise.resolve(_reachEndRunRef.current(a.action as Parameters<typeof runAction>[0], undefined, _reachEndScopeRef.current)).catch(() => {});
+            }
+          }
+        } else {
+          windowFired.current = false;
+        }
+      };
+      window.addEventListener('scroll', handleWindowScroll, { passive: true });
+      cleanups.push(() => window.removeEventListener('scroll', handleWindowScroll));
+    }
+
+    if (elementActions.length > 0) {
+      const el = _reachEndNodeRef.current;
+      if (el) {
+        const elementFired = { current: false };
+        const minThreshold = Math.min(...elementActions.map(a => a.threshold));
+        const handleElementScroll = () => {
+          const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+          if (remaining <= minThreshold) {
+            if (!elementFired.current) {
+              elementFired.current = true;
+              for (const a of elementActions) {
+                Promise.resolve(_reachEndRunRef.current(a.action as Parameters<typeof runAction>[0], undefined, _reachEndScopeRef.current)).catch(() => {});
+              }
+            }
+          } else {
+            elementFired.current = false;
+          }
+        };
+        el.addEventListener('scroll', handleElementScroll, { passive: true });
+        cleanups.push(() => el.removeEventListener('scroll', handleElementScroll));
+      }
+    }
+
+    return () => { for (const c of cleanups) c(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_reachEndActions]);
+
   // Seed the global variable store for non-SC controlled nodes that have _initialValue.
   // Unlike Input/Textarea (which inject value/defaultValue into cleanProps), these nodes
   // (e.g. a plain Box controlled by a page variable) rely on formulas that read
@@ -1392,13 +1473,27 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
 
   // When the node has a popover config, separate PopoverContent children from
   // regular children. PopoverContent is rendered by PopoverHost, not inline.
+  // When an SC node has no inline children, use the model's content so that
+  // JSON-authored _shared references (e.g. navbar/footer in page ui) render
+  // without needing the content pre-expanded into node.children.
+  const _scInlineChildren: SDUINode[] | undefined = (() => {
+    if (_linkedMeta && _linkedKind && !node.children?.length) {
+      const _scM = getLinkedComponentModel(_linkedKind, _linkedMeta.id) as
+        | { content?: SDUINode }
+        | undefined;
+      if (_scM?.content) return [_scM.content];
+    }
+    return undefined;
+  })();
+  const _effectiveChildren = (_scInlineChildren ?? node.children) as SDUINode[] | undefined;
+
   let _popoverContentNode: SDUINode | undefined;
-  const renderableNodeChildren = node.popover && node.children?.length
-    ? (node.children as SDUINode[]).filter(c => {
+  const renderableNodeChildren = node.popover && _effectiveChildren?.length
+    ? (_effectiveChildren).filter(c => {
         if ((c as SDUINode)._popoverContent) { _popoverContentNode = c; return false; }
         return true;
       })
-    : node.children;
+    : _effectiveChildren;
 
   let children: React.ReactNode = null;
   if (renderableNodeChildren?.length) {
@@ -1421,6 +1516,11 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   } else if (textContent !== undefined && !CHANGE_TEXT_TYPES.has(node.type as string)) {
     // Input/TextareaInput: node.text is injected as cleanProps.value above, not as children.
     children = textContent;
+  }
+
+  // Inject ref for element-scroll reachEnd so the scroll listener can attach to the DOM node.
+  if (_reachEndActions?.some(a => a.scrollTarget === 'element')) {
+    cleanProps.ref = _reachEndNodeRef;
   }
 
   // Guard: strip onPress from any component that is NOT a press-type.

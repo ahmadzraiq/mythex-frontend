@@ -1,6 +1,8 @@
 {
-  "layout": "admin",
-  "content": {
+  "dataSources": [
+    "ad000007-0000-0000-0000-000000000007"
+  ],
+  "ui": {
     "type": "Box",
     "props": {
       "className": "flex flex-col gap-[24px] w-full"
@@ -233,8 +235,5 @@
         "_group": "Variants Table"
       }
     ]
-  },
-  "dataSources": [
-    "ad000007-0000-0000-0000-000000000007"
-  ]
+  }
 }

@@ -1,0 +1,267 @@
+{
+  "iscroll-wf-init": {
+    "name": "Load Initial Products",
+    "trigger": "pageLoad",
+    "isTrigger": true,
+    "pageScope": "infiniteScrollTest",
+    "steps": [
+      {
+        "id": "step-reset-page",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-page-0000-0000-0000-000000000001",
+          "value": 1
+        }
+      },
+      {
+        "id": "step-reset-items",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-items-0000-0000-0000-000000000001",
+          "value": []
+        }
+      },
+      {
+        "id": "step-reset-hasmore",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-hasmore-000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-set-loading",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-loading-000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-fetch-products",
+        "type": "fetchData",
+        "config": {
+          "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?page=1&pageSize=8",
+          "method": "GET"
+        }
+      },
+      {
+        "id": "step-set-items",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-items-0000-0000-0000-000000000001",
+          "value": { "js": "context.workflow['step-fetch-products'].result?.search?.items ?? []" }
+        }
+      },
+      {
+        "id": "step-set-hasmore",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-hasmore-000-0000-0000-000000000001",
+          "value": { "js": "(context.workflow['step-fetch-products'].result?.search?.items?.length ?? 0) >= 8" }
+        }
+      },
+      {
+        "id": "step-hide-loading",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-loading-000-0000-0000-000000000001",
+          "value": false
+        }
+      }
+    ]
+  },
+  "isd-wf-open-dropdown": {
+    "name": "Dropdown - Load First Page",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-reset-page",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00001-0000-4000-a000-000000000001", "value": 1 }
+      },
+      {
+        "id": "step-reset-items",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00002-0000-4000-a000-000000000001", "value": [] }
+      },
+      {
+        "id": "step-reset-hasmore",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00004-0000-4000-a000-000000000001", "value": true }
+      },
+      {
+        "id": "step-set-loading",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00003-0000-4000-a000-000000000001", "value": true }
+      },
+      {
+        "id": "step-fetch",
+        "type": "fetchData",
+        "config": {
+          "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?page=1&pageSize=6",
+          "method": "GET"
+        }
+      },
+      {
+        "id": "step-set-items",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "isd00002-0000-4000-a000-000000000001",
+          "value": { "js": "context.workflow['step-fetch'].result?.search?.items ?? []" }
+        }
+      },
+      {
+        "id": "step-set-hasmore",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "isd00004-0000-4000-a000-000000000001",
+          "value": { "js": "(context.workflow['step-fetch'].result?.search?.items?.length ?? 0) >= 6" }
+        }
+      },
+      {
+        "id": "step-hide-loading",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00003-0000-4000-a000-000000000001", "value": false }
+      }
+    ]
+  },
+  "isd-wf-load-more-dropdown": {
+    "name": "Dropdown - Load More",
+    "trigger": "reachEnd",
+    "steps": [
+      {
+        "id": "step-guard",
+        "type": "branch",
+        "config": {
+          "condition": { "js": "variables['isd00003-0000-4000-a000-000000000001'] === true || variables['isd00004-0000-4000-a000-000000000001'] === false" }
+        },
+        "trueBranch": [
+          { "id": "step-bail", "type": "returnValue", "config": { "value": null } }
+        ],
+        "falseBranch": []
+      },
+      {
+        "id": "step-set-loading",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00003-0000-4000-a000-000000000001", "value": true }
+      },
+      {
+        "id": "step-next-page",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "isd00001-0000-4000-a000-000000000001",
+          "value": { "js": "(variables['isd00001-0000-4000-a000-000000000001'] ?? 1) + 1" }
+        }
+      },
+      {
+        "id": "step-fetch-more",
+        "type": "fetchData",
+        "config": {
+          "url": { "js": "'http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?page=' + variables['isd00001-0000-4000-a000-000000000001'] + '&pageSize=6'" },
+          "method": "GET"
+        }
+      },
+      {
+        "id": "step-append",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const newItems = context.workflow['step-fetch-more'].result?.search?.items ?? []; variables['isd00002-0000-4000-a000-000000000001'] = [...(variables['isd00002-0000-4000-a000-000000000001'] || []), ...newItems];"
+        }
+      },
+      {
+        "id": "step-update-hasmore",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "isd00004-0000-4000-a000-000000000001",
+          "value": { "js": "(context.workflow['step-fetch-more'].result?.search?.items?.length ?? 0) >= 6" }
+        }
+      },
+      {
+        "id": "step-hide-loading",
+        "type": "changeVariableValue",
+        "config": { "variableName": "isd00003-0000-4000-a000-000000000001", "value": false }
+      }
+    ]
+  },
+  "iscroll-wf-load-more": {
+    "name": "Load More Products",
+    "trigger": "reachEnd",
+    "isTrigger": true,
+    "pageScope": "infiniteScrollTest",
+    "config": {
+      "threshold": 200,
+      "scrollTarget": "window"
+    },
+    "steps": [
+      {
+        "id": "step-guard",
+        "type": "branch",
+        "config": {
+          "condition": {
+            "js": "variables['iscroll-loading-000-0000-0000-000000000001'] === true || variables['iscroll-hasmore-000-0000-0000-000000000001'] === false"
+          }
+        },
+        "trueBranch": [
+          {
+            "id": "step-bail",
+            "type": "returnValue",
+            "config": {
+              "value": null
+            }
+          }
+        ],
+        "falseBranch": []
+      },
+      {
+        "id": "step-set-loading",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-loading-000-0000-0000-000000000001",
+          "value": true
+        }
+      },
+      {
+        "id": "step-next-page",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-page-0000-0000-0000-000000000001",
+          "value": { "js": "(variables['iscroll-page-0000-0000-0000-000000000001'] ?? 1) + 1" }
+        }
+      },
+      {
+        "id": "step-fetch-more",
+        "type": "fetchData",
+        "config": {
+          "url": {
+            "js": "'http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/shop/search?page=' + variables['iscroll-page-0000-0000-0000-000000000001'] + '&pageSize=8'"
+          },
+          "method": "GET"
+        }
+      },
+      {
+        "id": "step-append-items",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const newItems = context.workflow['step-fetch-more'].result?.search?.items ?? []; variables['iscroll-items-0000-0000-0000-000000000001'] = [...(variables['iscroll-items-0000-0000-0000-000000000001'] || []), ...newItems];"
+        }
+      },
+      {
+        "id": "step-update-hasmore",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-hasmore-000-0000-0000-000000000001",
+          "value": { "js": "(context.workflow['step-fetch-more'].result?.search?.items?.length ?? 0) >= 8" }
+        }
+      },
+      {
+        "id": "step-hide-loading",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "iscroll-loading-000-0000-0000-000000000001",
+          "value": false
+        }
+      }
+    ]
+  }
+}

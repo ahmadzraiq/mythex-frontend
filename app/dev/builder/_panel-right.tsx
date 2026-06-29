@@ -1851,7 +1851,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
       if (formulaStr) {
         const zustandData = useSduiStore.getState().data;
         const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
         if (value != null && typeof value !== 'object') {
           const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
           if (el) (el.style as unknown as Record<string, string>)[cssKey] = toCssValue(cssKey, value);
@@ -1876,7 +1876,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
       if (formulaStr) {
         const zustandData = useSduiStore.getState().data;
         const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+        const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
         if (value != null && typeof value !== 'object') {
           const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
           if (el) {
@@ -1902,7 +1902,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
     const formulaStr = (v as { formula?: string }).formula ?? '';
     const zustandData = useSduiStore.getState().data;
     const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-    const { value, error } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+    const { value, error } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
     if (error) return formulaStr; // fallback: raw string works as a Tailwind token
     return value != null && typeof value !== 'object' ? String(value) : formulaStr;
   }, []);
@@ -1926,7 +1926,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
       const formulaStr = (v as { formula?: string }).formula ?? '';
       const zustandData = useSduiStore.getState().data;
       const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-      const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+      const { value } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
       if (typeof value === 'string' && value) applyFn(value);
       commitHistory();
     } else {
@@ -4600,7 +4600,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
                 if (formulaStr) {
                   const zustandData = useSduiStore.getState().data;
                   const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
                   if (fval != null && typeof fval !== 'object') {
                     const px = parseFloat(String(fval)) || 0;
                     const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;
@@ -4647,7 +4647,7 @@ export function DesignTab({ node, searchQuery = '', hideBehavior = false }: { no
                 if (formulaStr) {
                   const zustandData = useSduiStore.getState().data;
                   const vs = getGlobalVariableStore().getState().getFullState() as Record<string, unknown>;
-                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, theme: THEME_OBJ });
+                  const { value: fval } = evaluateFormula(formulaStr, { ...zustandData, ...vs, variables: vs, theme: THEME_OBJ });
                   if (fval != null && typeof fval !== 'object') {
                     const py = parseFloat(String(fval)) || 0;
                     const el = document.querySelector(`[data-builder-id="${nodeId}"]`) as HTMLElement | null;

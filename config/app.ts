@@ -1,10 +1,9 @@
 /**
  * App config - loads root.ts (single entry point for all config)
- * Uses config resolver for $slot and layout composition
  */
 
 import root from './root';
-import { resolveScreenConfig, type ConfigRegistry } from '@/lib/sdui/config-resolver';
+import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
 import formulasJson from './formulas.json';
 import variablesJson from './variables.json';
 import dataSourcesJson from './datasources.json';
@@ -36,17 +35,12 @@ registerGlobalFormulas(formulasJson as Record<string, unknown>);
   registerCollectionNames(colMap);
 }
 
-const registry: ConfigRegistry = {
-  layouts: root.layouts as ConfigRegistry['layouts'],
-  fragments: root.fragments as ConfigRegistry['fragments'],
-};
-
 const rawScreens = root.screens as Record<string, Record<string, unknown>>;
 
 const screens = Object.fromEntries(
   Object.entries(rawScreens).map(([name, screen]) => [
     name,
-    resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0], registry),
+    resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0]),
   ])
 ) as unknown as Record<string, { meta?: object; state?: object; ui: object }>;
 
@@ -54,7 +48,6 @@ export default {
   ...root.routes,
   screens,
   rawScreens,
-  registry,
   actions: root.actions,
   /** Unified named-workflow dictionary for runtime executeWorkflow step resolution. */
   workflows: root.workflows,

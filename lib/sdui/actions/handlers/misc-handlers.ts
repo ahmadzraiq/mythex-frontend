@@ -1,8 +1,7 @@
 /**
- * Handlers for restore, clearPersistedPaths, goToPage, removeAt, share, setTheme, setState, showToast, log, cycleIndex, mergeAtPath
+ * Handlers for restore, clearPersistedPaths, goToPage, removeAt, share, setTheme, setState, log, cycleIndex, mergeAtPath
  */
 
-import { toast } from 'sonner';
 import { getNestedValue, setNestedValue } from '../../nested-utils';
 import { resolveActionValue, resolveValue } from '../resolve-value';
 import { PERSIST_PATHS, THEME_PATH } from '../../variable-config';
@@ -132,16 +131,6 @@ export const setStateHandler: (ctx: ActionHandlerContext) => (actionDef: ActionD
       const finalValue = value ?? getNestedValue(prev, p.path);
       return setNestedValue(prev, p.path, finalValue, p.merge);
     });
-  };
-
-export const showToastHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =
-  (ctx) => async (actionDef) => {
-    const payload = ctx.payload ?? actionDef;
-    const pl = (typeof payload === 'object' && payload ? payload : {}) as { message?: string; type?: 'success' | 'error' | 'info' };
-    const msg = String(pl.message ?? 'Done');
-    if (pl.type === 'error') toast.error(msg);
-    else if (pl.type === 'info') toast.info(msg);
-    else toast.success(msg);
   };
 
 export const logHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<void> =

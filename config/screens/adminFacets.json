@@ -1,6 +1,8 @@
 {
-  "layout": "admin",
-  "content": {
+  "dataSources": [
+    "ad000008-0000-0000-0000-000000000008"
+  ],
+  "ui": {
     "type": "Box",
     "props": {
       "className": "flex flex-col gap-[24px] w-full"
@@ -201,8 +203,5 @@
         "_group": "Facets Table"
       }
     ]
-  },
-  "dataSources": [
-    "ad000008-0000-0000-0000-000000000008"
-  ]
+  }
 }

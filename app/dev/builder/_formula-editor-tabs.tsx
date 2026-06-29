@@ -21,6 +21,18 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { envVariables, type EnvVariable } from '@/lib/platform/api-client';
+
+// Module-level cache — shared with _formula-editor.tsx so only one fetch per project per session.
+const _envVarsListCache: Record<string, EnvVariable[]> = {};
+const _envVarsListFetching: Record<string, Promise<EnvVariable[]>> = {};
+function getCachedEnvVarsList(projectId: string): Promise<EnvVariable[]> {
+  if (_envVarsListCache[projectId]) return Promise.resolve(_envVarsListCache[projectId]);
+  if (_envVarsListFetching[projectId]) return _envVarsListFetching[projectId];
+  _envVarsListFetching[projectId] = envVariables.list(projectId)
+    .then((r) => { _envVarsListCache[projectId] = r.envVariables; delete _envVarsListFetching[projectId]; return r.envVariables; })
+    .catch(() => { delete _envVarsListFetching[projectId]; return []; });
+  return _envVarsListFetching[projectId];
+}
 import { useBuilderStore, findNode, findParentNode, type DataSourceConfig, type CustomVar, type SDUINode, type WorkflowParam } from './_store';
 import { getSharedComponents } from '@/lib/builder/shared-component-data';
 import { useSduiStore } from '@/store/sdui-store';
@@ -2952,7 +2964,7 @@ export function ParametersSection({
                 {/* Name */}
                 <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flex: 1, fontWeight: 500 }}>
                   {p.name || <em style={{ color: 'var(--bld-text-disabled)' }}>Unnamed</em>}
-                  {p.allowMultiple && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 4 }}>[ ]</span>}
+                  {p.type === 'Array' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginLeft: 4 }}>[ ]</span>}
                 </span>
                 {/* Test value preview */}
                 <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -2989,14 +3001,15 @@ export function useBuilderProjectId(): string | null {
 
 export function EnvVarsSection({ onInsert }: { onInsert: (chip: string) => void }) {
   const projectId             = useBuilderProjectId();
-  const [vars, setVars]       = useState<EnvVariable[]>([]);
+  const [vars, setVars]       = useState<EnvVariable[]>(() => projectId ? (_envVarsListCache[projectId] ?? []) : []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
+    if (_envVarsListCache[projectId]) { setVars(_envVarsListCache[projectId]); return; }
     setLoading(true);
-    envVariables.list(projectId)
-      .then((r) => setVars(r.envVariables))
+    getCachedEnvVarsList(projectId)
+      .then(setVars)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [projectId]);
@@ -3054,6 +3067,132 @@ export function EnvVarsSection({ onInsert }: { onInsert: (chip: string) => void 
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── WorkflowVariablesSection ──────────────────────────────────────────────────
+// Surfaced in the Quick tab (server workflow context only).
+// Shows loop variables, middleware-injected context, custom variables, and system vars.
+
+export type WorkflowVarGroup = 'loop' | 'middleware' | 'custom' | 'system';
+
+export interface WorkflowVarEntry {
+  name: string;
+  /** Formula to insert when clicked */
+  formula: string;
+  group: WorkflowVarGroup;
+  hint?: string;
+}
+
+const GROUP_LABELS: Record<WorkflowVarGroup, string> = {
+  loop:       'LOOP',
+  middleware: 'FROM MIDDLEWARE',
+  custom:     'CUSTOM VARIABLES',
+  system:     'SYSTEM',
+};
+
+const GROUP_COLORS: Record<WorkflowVarGroup, string> = {
+  loop:       '#d97706', // amber
+  middleware: '#7c3aed', // violet
+  custom:     '#059669', // emerald
+  system:     '#0284c7', // sky
+};
+
+export function WorkflowVariablesSection({
+  vars,
+  isInsideLoop,
+  onInsert,
+}: {
+  vars: WorkflowVarEntry[];
+  isInsideLoop: boolean;
+  onInsert: (formula: string, label: string, type: 'collection' | 'variable' | 'context' | 'pages' | 'theme' | 'form' | 'error' | 'event' | 'shared-component' | 'parameter') => void;
+}) {
+  const [open, setOpen] = useState(true);
+
+  const loopItems: WorkflowVarEntry[] = isInsideLoop
+    ? [
+        { name: 'item',  formula: "$var.item",  group: 'loop', hint: 'Current iteration value' },
+        { name: 'index', formula: "$var.index", group: 'loop', hint: 'Current iteration index (0-based)' },
+      ]
+    : [];
+
+  const grouped: Record<WorkflowVarGroup, WorkflowVarEntry[]> = {
+    loop:       loopItems,
+    middleware: vars.filter(v => v.group === 'middleware'),
+    custom:     vars.filter(v => v.group === 'custom'),
+    system:     vars.filter(v => v.group === 'system'),
+  };
+
+  const hasAny = Object.values(grouped).some(g => g.length > 0);
+  if (!hasAny) return null;
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '3px 10px', cursor: 'pointer',
+  };
+
+  return (
+    <div style={{ borderBottom: 'none' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+          padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
+          borderBottom: open ? '1px solid #1f2937' : 'none',
+        }}
+        onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bld-bg-base)')}
+        onMouseLeave={ev => (ev.currentTarget.style.background = 'none')}
+      >
+        <span style={{ color: 'var(--bld-text-2)', display: 'flex', alignItems: 'center' }}>
+          <FEChevron open={open} size={8} />
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed' }}>
+          WORKFLOW VARIABLES
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ paddingBottom: 4 }}>
+          {(Object.entries(grouped) as [WorkflowVarGroup, WorkflowVarEntry[]][]).map(([group, items]) => {
+            if (items.length === 0) return null;
+            const color = GROUP_COLORS[group];
+            const label = GROUP_LABELS[group];
+            return (
+              <div key={group}>
+                <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {label}
+                </div>
+                {items.map(entry => (
+                  <div
+                    key={entry.name}
+                    style={rowStyle}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-elevated)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    onClick={() => onInsert(entry.formula, entry.name, 'variable')}
+                  >
+                    <span style={{
+                      fontSize: 9, color, fontFamily: 'monospace',
+                      background: `${color}22`, borderRadius: 3, padding: '1px 4px',
+                      flexShrink: 0, minWidth: 22, textAlign: 'center', fontWeight: 700,
+                    }}>
+                      {group === 'loop' ? '↻' : group === 'system' ? '⚙' : group === 'middleware' ? '→' : '(x)'}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--bld-text-2)', flex: 1, fontFamily: 'monospace' }}>
+                      {entry.name}
+                    </span>
+                    {entry.hint && (
+                      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {entry.hint}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,428 +2,320 @@
   "routes": [
     {
       "path": "/",
-      "config": "home",
-      "layout": "full"
+      "config": "home"
     },
     {
       "path": "/cart",
-      "config": "cart",
-      "layout": "full"
+      "config": "cart"
     },
     {
       "path": "/checkout",
-      "config": "checkout",
-      "layout": "full"
+      "config": "checkout"
     },
     {
       "path": "/product",
-      "config": "product",
-      "layout": "full"
+      "config": "product"
     },
     {
       "path": "/collection",
-      "config": "collection",
-      "layout": "full"
+      "config": "collection"
     },
     {
       "path": "/search",
       "config": "search",
-      "layout": "full",
       "paramChangeAction": "fetchSearchResults"
     },
     {
       "path": "/sign-in",
-      "config": "signIn",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "signIn"
     },
     {
       "path": "/register",
-      "config": "register",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "register"
     },
     {
       "path": "/forgot-password",
-      "config": "forgotPassword",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "forgotPassword"
     },
     {
       "path": "/reset-password",
-      "config": "resetPassword",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "resetPassword"
     },
     {
       "path": "/verify",
-      "config": "verify",
-      "layout": "centered",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "verify"
     },
     {
       "path": "/verify-pending",
-      "config": "verifyPending",
-      "layout": "centered",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
-      "protectionRedirect": "/"
+      "config": "verifyPending"
     },
     {
       "path": "/account/orders",
-      "config": "accountOrders",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/sign-in"
+      "config": "accountOrders"
     },
     {
       "path": "/account/order",
-      "config": "accountOrderDetail",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/sign-in"
+      "config": "accountOrderDetail"
     },
     {
       "path": "/account/addresses",
-      "config": "accountAddresses",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/sign-in"
+      "config": "accountAddresses"
     },
     {
       "path": "/account/profile",
-      "config": "accountProfile",
-      "layout": "full",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/sign-in"
+      "config": "accountProfile"
     },
     {
       "path": "/order-confirmation",
-      "config": "orderConfirmation",
-      "layout": "full"
+      "config": "orderConfirmation"
     },
     {
       "path": "/not-found",
-      "config": "notFound",
-      "layout": "centered"
+      "config": "notFound"
     },
     {
       "path": "/workflow-test",
-      "config": "workflowTest",
-      "layout": "full"
+      "config": "workflowTest"
     },
     {
       "path": "/javascript-test",
-      "config": "javascriptTest",
-      "layout": "full"
+      "config": "javascriptTest"
     },
     {
       "path": "/animation-test",
-      "config": "animationTest",
-      "layout": "full"
+      "config": "animationTest"
     },
     {
       "path": "/hero-showcase",
-      "config": "heroShowcase",
-      "layout": "full"
+      "config": "heroShowcase"
     },
     {
       "path": "/pricing-card-test",
-      "config": "pricingCardTest",
-      "layout": "full"
+      "config": "pricingCardTest"
     },
     {
       "path": "/styling-test",
-      "config": "stylingTest",
-      "layout": "full"
+      "config": "stylingTest"
     },
     {
       "path": "/controls-showcase",
-      "config": "controlsShowcase",
-      "layout": "full"
+      "config": "controlsShowcase"
     },
     {
       "path": "/expr-css-test",
-      "config": "exprCssTest",
-      "layout": "full"
+      "config": "exprCssTest"
     },
     {
       "path": "/json-test",
-      "config": "jsonTest",
-      "layout": "full"
+      "config": "jsonTest"
     },
     {
       "path": "/hero-saas-workflow",
-      "config": "heroSaaSWorkflow",
-      "layout": "full"
+      "config": "heroSaaSWorkflow"
     },
     {
       "path": "/height-fill-test",
-      "config": "heightFillTest",
-      "layout": "full"
+      "config": "heightFillTest"
     },
     {
       "path": "/layered-depth-hero",
-      "config": "layeredDepthHero",
-      "layout": "full"
+      "config": "layeredDepthHero"
     },
     {
       "path": "/cta-button-wfit",
-      "config": "ctaButtonWfit",
-      "layout": "full"
+      "config": "ctaButtonWfit"
     },
     {
       "path": "/hero-layered-collage",
-      "config": "heroLayeredCollage",
-      "layout": "full"
+      "config": "heroLayeredCollage"
     },
     {
       "path": "/hero-layered-depth",
-      "config": "heroLayeredDepth",
-      "layout": "full"
+      "config": "heroLayeredDepth"
     },
     {
       "path": "/hero-overlay-depth",
-      "config": "heroOverlayDepth",
-      "layout": "full"
+      "config": "heroOverlayDepth"
     },
     {
       "path": "/hero-image-fill",
-      "config": "heroImageFill",
-      "layout": "full"
+      "config": "heroImageFill"
     },
     {
       "path": "/hero-asymmetric-depth",
-      "config": "heroAsymmetricDepth",
-      "layout": "full"
+      "config": "heroAsymmetricDepth"
     },
     {
       "path": "/landing-showcase",
-      "config": "landingShowcase",
-      "layout": "full"
+      "config": "landingShowcase"
     },
     {
       "path": "/pricing",
-      "config": "pricing",
-      "layout": "full"
+      "config": "pricing"
     },
     {
       "path": "/video-hero",
-      "config": "videoHero",
-      "layout": "full"
+      "config": "videoHero"
     },
     {
       "path": "/tech-hero",
-      "config": "techHero",
-      "layout": "full"
+      "config": "techHero"
     },
     {
       "path": "/calculator",
-      "config": "calculator",
-      "layout": "full"
+      "config": "calculator"
     },
     {
       "path": "/calculator2",
-      "config": "calculator2",
-      "layout": "full"
+      "config": "calculator2"
     },
     {
       "path": "/counter-example",
-      "config": "counterExample",
-      "layout": "full"
+      "config": "counterExample"
     },
     {
       "path": "/pricing-nested",
-      "config": "pricingNested",
-      "layout": "full"
+      "config": "pricingNested"
     },
     {
       "path": "/video-hero-test",
-      "config": "videoHeroTest",
-      "layout": "full"
+      "config": "videoHeroTest"
     },
     {
       "path": "/responsive-test",
-      "config": "responsiveTest",
-      "layout": "full"
+      "config": "responsiveTest"
     },
     {
       "path": "/shared-component-test",
-      "config": "sharedComponentTest",
-      "layout": "full"
+      "config": "sharedComponentTest"
     },
     {
       "path": "/navbar-types",
-      "config": "navbarTypes",
-      "layout": "full"
+      "config": "navbarTypes"
     },
     {
       "path": "/navbar-fixed",
-      "config": "navbarFixed",
-      "layout": "full"
+      "config": "navbarFixed"
     },
     {
       "path": "/navbar-sticky",
-      "config": "navbarSticky",
-      "layout": "full"
+      "config": "navbarSticky"
     },
     {
       "path": "/navbar-transparent",
-      "config": "navbarTransparent",
-      "layout": "full"
+      "config": "navbarTransparent"
     },
     {
       "path": "/navbar-blur",
-      "config": "navbarBlur",
-      "layout": "full"
+      "config": "navbarBlur"
     },
     {
       "path": "/navbar-floating",
-      "config": "navbarFloating",
-      "layout": "full"
+      "config": "navbarFloating"
     },
     {
       "path": "/navbar-centered",
-      "config": "navbarCentered",
-      "layout": "full"
+      "config": "navbarCentered"
     },
     {
       "path": "/navbar-sidebar",
-      "config": "navbarSidebar",
-      "layout": "full"
+      "config": "navbarSidebar"
     },
     {
       "path": "/navbar-bottom",
-      "config": "navbarBottom",
-      "layout": "full"
+      "config": "navbarBottom"
     },
     {
       "path": "/navbar-scroll-aware",
-      "config": "navbarScrollAware",
-      "layout": "full"
+      "config": "navbarScrollAware"
     },
     {
       "path": "/popover-test",
-      "config": "popoverTest",
-      "layout": "full"
+      "config": "popoverTest"
     },
     {
       "path": "/animation-showcase",
-      "config": "animationShowcase",
-      "layout": "full"
+      "config": "animationShowcase"
     },
     {
       "path": "/triggers-test",
-      "config": "triggersTest",
-      "layout": "full"
+      "config": "triggersTest"
+    },
+    {
+      "path": "/infinite-scroll-test",
+      "config": "infiniteScrollTest"
+    },
+    {
+      "path": "/toast-test",
+      "config": "toastTest"
     },
     {
       "path": "/workflow-call-test",
-      "config": "workflowCallTest",
-      "layout": "full"
+      "config": "workflowCallTest"
     },
     {
       "path": "/theme-custom-colors-test",
-      "config": "themeCustomColorsTest",
-      "layout": "full"
+      "config": "themeCustomColorsTest"
     },
     {
       "path": "/sc-component-showcase",
-      "config": "scComponentShowcase",
-      "layout": "full"
+      "config": "scComponentShowcase"
     },
     {
       "path": "/admin/login",
-      "config": "adminLogin",
-      "layout": "none"
+      "config": "adminLogin"
     },
     {
       "path": "/admin",
-      "config": "adminDashboard",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminDashboard"
     },
     {
       "path": "/admin/orders",
-      "config": "adminOrders",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminOrders"
     },
     {
       "path": "/admin/order",
-      "config": "adminOrderDetail",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminOrderDetail"
     },
     {
       "path": "/admin/products",
-      "config": "adminProducts",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminProducts"
     },
     {
       "path": "/admin/product",
-      "config": "adminProductEdit",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminProductEdit"
     },
     {
       "path": "/admin/customers",
-      "config": "adminCustomers",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminCustomers"
     },
     {
       "path": "/admin/product-variants",
-      "config": "adminProductVariants",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminProductVariants"
     },
     {
       "path": "/admin/facets",
-      "config": "adminFacets",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminFacets"
     },
     {
       "path": "/admin/collections",
-      "config": "adminCollections",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminCollections"
     },
     {
       "path": "/admin/assets",
-      "config": "adminAssets",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminAssets"
     },
     {
       "path": "/admin/promotions",
-      "config": "adminPromotions",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminPromotions"
     },
     {
       "path": "/admin/system",
-      "config": "adminSystem",
-      "layout": "admin",
-      "protectionCondition": "variables['auth0002-a5b6-4000-c000-000000000002'] != null",
-      "protectionRedirect": "/admin/login"
+      "config": "adminSystem"
+    },
+    {
+      "path": "/path-params-test/:category/:id",
+      "config": "pathParamsTest"
     }
   ]
 }

@@ -373,20 +373,6 @@ export interface BackendTable {
   createdAt: string;
 }
 
-export interface BackendView {
-  id: string;
-  name: string;
-  slug: string;
-  tableId: string;
-  parameters: unknown[];
-  filters: unknown[];
-  sort: unknown[];
-  fields: unknown[];
-  security: 'PUBLIC' | 'AUTHENTICATED' | 'ROLE';
-  allowedRoles: string[];
-  createdAt: string;
-}
-
 export interface BackendWorkflow {
   id: string;
   name: string;
@@ -398,8 +384,9 @@ export interface BackendWorkflow {
   security: 'PUBLIC' | 'AUTHENTICATED' | 'ROLE';
   middlewareIds?: string[];
   graph: unknown;
-  inputSchema?: Array<{ id: string; name: string; type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array' }>;
+  inputSchema?: Array<import('../config/types').WorkflowParam>;
   createdAt: string;
+  folder?: string | null;
   autoGroupTableId?: string | null;
   securityPolicy?: { access: 'public' | 'authenticated'; middlewareIds: string[] };
 }
@@ -460,33 +447,109 @@ export const backendTables = {
   deleteColumn: (projectId: string, tableId: string, columnId: string) =>
     apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/tables/${tableId}/columns/${columnId}`, { method: 'DELETE' }),
 
-  importErd: (projectId: string, erd: string) =>
-    apiFetch<{ tables: BackendTable[]; workflowsCreated: number }>(
-      `/api/projects/${projectId}/tables/import-erd`,
-      { method: 'POST', body: JSON.stringify({ erd }) },
-    ),
-
   deleteAll: (projectId: string) =>
     apiFetch<{ deleted: number }>(`/api/projects/${projectId}/tables/all`, { method: 'DELETE' }),
 };
 
-// Views API
-export const backendViews = {
+// ── Backend — Models (model-first source of truth) ─────────────────────────────
+
+/** The authored model definition JSON (see lib/backend-vfs for the shape). */
+export type ModelFieldType =
+  | 'text' | 'int' | 'bigint' | 'decimal' | 'float' | 'bool' | 'boolean'
+  | 'json' | 'uuid' | 'timestamp' | 'datetime' | 'date' | 'file' | 'enum' | 'money' | 'relation';
+
+export type ModelRelationKind = 'manyToOne' | 'oneToMany' | 'oneToOne' | 'manyToMany';
+
+export interface ModelRelationJson {
+  to: string;
+  kind: ModelRelationKind;
+  onDelete?: 'cascade' | 'setNull' | 'restrict' | 'noAction';
+  field?: string;
+  through?: string;
+}
+
+export interface ModelComputedJson {
+  expr: string;
+  persisted?: boolean;
+}
+
+export interface ModelFieldJson {
+  id: string;
+  name: string;
+  type: ModelFieldType;
+  required?: boolean;
+  unique?: boolean;
+  indexed?: boolean;
+  default?: string;
+  description?: string;
+  enum?: string;
+  relation?: ModelRelationJson;
+  computed?: ModelComputedJson;
+  searchable?: boolean;
+}
+
+export interface ModelIndexJson { fields: string[]; unique?: boolean }
+
+export interface ModelDefinitionJson {
+  id: string;
+  name: string;
+  table: string;
+  folder?: string;
+  timestamps?: boolean;
+  softDelete?: boolean;
+  actorTracking?: boolean;
+  fields: ModelFieldJson[];
+  indexes?: ModelIndexJson[];
+  search?: string[];
+  validations?: Record<string, string>;
+  hooks?: Record<string, string>;
+  events?: Record<string, string>;
+  access?: Record<string, string[]>;
+  [key: string]: unknown;
+}
+
+export interface ModelEnumJson { id?: string; name: string; values: string[]; folder?: string }
+
+export const backendModels = {
   list: (projectId: string) =>
-    apiFetch<{ views: BackendView[] }>(`/api/projects/${projectId}/views`),
+    apiFetch<{ models: ModelDefinitionJson[] }>(`/api/projects/${projectId}/models`),
 
-  create: (projectId: string, body: Partial<BackendView> & { tableId: string }) =>
-    apiFetch<{ view: BackendView }>(`/api/projects/${projectId}/views`, {
-      method: 'POST', body: JSON.stringify(body),
-    }),
+  get: (projectId: string, name: string) =>
+    apiFetch<{ model: ModelDefinitionJson }>(`/api/projects/${projectId}/models/${encodeURIComponent(name)}`),
 
-  update: (projectId: string, viewId: string, body: Partial<BackendView>) =>
-    apiFetch<{ view: BackendView }>(`/api/projects/${projectId}/views/${viewId}`, {
-      method: 'PATCH', body: JSON.stringify(body),
-    }),
+  upsert: (projectId: string, definition: ModelDefinitionJson, confirmDestructive = false) =>
+    apiFetch<{ model: ModelDefinitionJson; migration: { ddl: string[]; warnings: string[] } }>(
+      `/api/projects/${projectId}/models`,
+      { method: 'POST', body: JSON.stringify({ definition, confirmDestructive }) },
+    ),
 
-  delete: (projectId: string, viewId: string) =>
-    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/views/${viewId}`, { method: 'DELETE' }),
+  delete: (projectId: string, name: string, confirmDestructive = true) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/models/${encodeURIComponent(name)}?confirmDestructive=${confirmDestructive}`, { method: 'DELETE' }),
+};
+
+export const backendEnums = {
+  list: (projectId: string) =>
+    apiFetch<{ enums: ModelEnumJson[] }>(`/api/projects/${projectId}/enums`),
+
+  upsert: (projectId: string, body: ModelEnumJson) =>
+    apiFetch<{ enum: ModelEnumJson }>(`/api/projects/${projectId}/enums`, { method: 'POST', body: JSON.stringify(body) }),
+
+  delete: (projectId: string, name: string) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/enums/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+};
+
+export const backendSeeds = {
+  list: (projectId: string) =>
+    apiFetch<{ seeds: Array<{ model: string; rows: Record<string, unknown>[] }> }>(`/api/projects/${projectId}/seeds`),
+
+  set: (projectId: string, model: string, rows: Record<string, unknown>[]) =>
+    apiFetch<{ seed: { model: string; rows: Record<string, unknown>[] } }>(`/api/projects/${projectId}/seeds/${encodeURIComponent(model)}`, { method: 'PUT', body: JSON.stringify({ rows }) }),
+
+  apply: (projectId: string, model: string) =>
+    apiFetch<{ applied: number; errors: string[] }>(`/api/projects/${projectId}/seeds/${encodeURIComponent(model)}/apply`, { method: 'POST', body: JSON.stringify({}) }),
+
+  delete: (projectId: string, model: string) =>
+    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/seeds/${encodeURIComponent(model)}`, { method: 'DELETE' }),
 };
 
 // Workflows API
@@ -527,6 +590,19 @@ export const backendWorkflows = {
     }),
 };
 
+// Unified backend config — single call returning models + enums + workflows + seeds.
+export interface BackendConfigSnapshot {
+  models:    ModelDefinitionJson[];
+  enums:     ModelEnumJson[];
+  workflows: BackendWorkflow[];
+  seeds:     Array<{ id: string; model: string; rows: Record<string, unknown>[] }>;
+}
+
+export const backendConfig = {
+  getAll: (projectId: string) =>
+    apiFetch<BackendConfigSnapshot>(`/api/projects/${projectId}/backend-config`),
+};
+
 // Storage API
 export const backendStorage = {
   list: (projectId: string, bucket?: string) => {
@@ -534,9 +610,14 @@ export const backendStorage = {
     return apiFetch<{ files: BackendFileObject[] }>(`/api/projects/${projectId}/storage${qs}`);
   },
 
-  presignUpload: (projectId: string, body: { bucket: 'public' | 'private'; key: string; mime: string }) =>
+  presignUpload: (projectId: string, body: { bucket: 'public' | 'private'; key: string; mime: string; sizeMb?: number }) =>
     apiFetch<{ url: string; bucket: string; key: string; expiresIn: number }>(
       `/api/projects/${projectId}/storage/presign-upload`, { method: 'POST', body: JSON.stringify(body) }),
+
+  register: (projectId: string, body: { bucket: 'public' | 'private'; key: string; mime: string; size: number; sha256?: string }) =>
+    apiFetch<{ file: BackendFileObject }>(`/api/projects/${projectId}/storage/register`, {
+      method: 'POST', body: JSON.stringify(body),
+    }),
 
   getPresignedUrl: (projectId: string, fileId: string) =>
     apiFetch<{ url: string; expiresIn: number | null }>(`/api/projects/${projectId}/storage/${fileId}/presigned`),
@@ -545,41 +626,55 @@ export const backendStorage = {
     apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/storage/${fileId}`, { method: 'DELETE' }),
 };
 
-// Data Plane (row CRUD) API
-export interface RowsListOptions {
-  filters?: Array<{ field: string; operator: string; value?: unknown }>;
-  sort?: Array<{ field: string; dir: 'asc' | 'desc' }>;
-  fields?: string[];
+
+// ── Model data plane (generic CRUD over /v1/db, model = source of truth) ───────
+export interface DbListOptions {
+  where?: unknown;
+  orderBy?: unknown;
+  include?: unknown;
+  select?: unknown;
+  search?: string;
   page?: number;
   pageSize?: number;
 }
 
-export const backendRows = {
-  list: (projectId: string, tableName: string, opts?: RowsListOptions) => {
+export interface DbListResult {
+  data: Record<string, unknown>[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export const backendDb = {
+  list: (projectId: string, model: string, opts?: DbListOptions) => {
     const params: Record<string, string> = {};
-    if (opts?.filters?.length)   params.filters  = JSON.stringify(opts.filters);
-    if (opts?.sort?.length)      params.sort     = JSON.stringify(opts.sort);
-    if (opts?.fields?.length)    params.fields   = opts.fields.join(',');
-    if (opts?.page !== undefined) params.page    = String(opts.page);
+    if (opts?.where !== undefined)   params.where   = JSON.stringify(opts.where);
+    if (opts?.orderBy !== undefined) params.orderBy = JSON.stringify(opts.orderBy);
+    if (opts?.include !== undefined) params.include = JSON.stringify(opts.include);
+    if (opts?.select !== undefined)  params.select  = JSON.stringify(opts.select);
+    if (opts?.search)                params.search  = opts.search;
+    if (opts?.page !== undefined)    params.page    = String(opts.page);
     if (opts?.pageSize !== undefined) params.pageSize = String(opts.pageSize);
     const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-    return apiFetch<{ data: Record<string, unknown>[]; total: number; page: number; pageSize: number; totalPages: number }>(
-      `/api/projects/${projectId}/data/${tableName}${qs}`,
-    );
+    return apiFetch<DbListResult>(`/api/db/${projectId}/${encodeURIComponent(model)}${qs}`);
   },
 
-  insert: (projectId: string, tableName: string, row: Record<string, unknown>) =>
-    apiFetch<{ row: Record<string, unknown> }>(`/api/projects/${projectId}/data/${tableName}`, {
-      method: 'POST', body: JSON.stringify(row),
+  get: (projectId: string, model: string, id: string) =>
+    apiFetch<Record<string, unknown>>(`/api/db/${projectId}/${encodeURIComponent(model)}/${id}`),
+
+  create: (projectId: string, model: string, data: Record<string, unknown>) =>
+    apiFetch<Record<string, unknown>>(`/api/db/${projectId}/${encodeURIComponent(model)}`, {
+      method: 'POST', body: JSON.stringify({ data }),
     }),
 
-  update: (projectId: string, tableName: string, rowId: string, patch: Record<string, unknown>) =>
-    apiFetch<{ row: Record<string, unknown> }>(`/api/projects/${projectId}/data/${tableName}/${rowId}`, {
-      method: 'PATCH', body: JSON.stringify(patch),
+  update: (projectId: string, model: string, id: string, data: Record<string, unknown>) =>
+    apiFetch<Record<string, unknown>>(`/api/db/${projectId}/${encodeURIComponent(model)}/${id}`, {
+      method: 'PATCH', body: JSON.stringify({ data }),
     }),
 
-  delete: (projectId: string, tableName: string, rowId: string) =>
-    apiFetch<{ ok: boolean }>(`/api/projects/${projectId}/data/${tableName}/${rowId}`, { method: 'DELETE' }),
+  delete: (projectId: string, model: string, id: string) =>
+    apiFetch<{ deleted: boolean; id: string }>(`/api/db/${projectId}/${encodeURIComponent(model)}/${id}`, { method: 'DELETE' }),
 };
 
 // Project Auth (end-user management)

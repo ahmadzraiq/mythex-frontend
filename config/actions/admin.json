@@ -815,7 +815,18 @@
       },
       {
         "id": "step-login",
-        "action": "admin-login-fetch"
+        "type": "fetchData",
+        "config": {
+          "url": "http://localhost:4000/v1/run/cmpfgh9d20003ti913oelf5bs/admin/auth/login",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "email": "{{local.data.form.formData.email}}",
+            "password": "{{local.data.form.formData.password}}"
+          }
+        }
       },
       {
         "id": "step-branch",

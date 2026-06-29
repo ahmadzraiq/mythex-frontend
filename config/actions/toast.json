@@ -1,0 +1,69 @@
+{
+  "show-toast": {
+    "name": "Show Toast",
+    "trigger": "click",
+    "params": [
+      { "name": "message", "type": "String", "testValue": "Hello!" },
+      { "name": "type", "type": "String", "testValue": "info" },
+      { "name": "duration", "type": "Number", "testValue": 3000 },
+      { "name": "limit", "type": "Number", "testValue": 5 },
+      { "name": "position", "type": "String", "testValue": "" }
+    ],
+    "steps": [
+      {
+        "id": "step-add-toast",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const id = 'toast-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);\nconst limit = parameters['limit'] || 5;\nconst dur = (parameters['duration'] !== undefined && parameters['duration'] !== null) ? Number(parameters['duration']) : 3000;\nconst pos = parameters['position'] || variables['toast-pos0-0000-4000-a000-000000000001'] || 'bottom-right';\nconst arr = variables['toast-list-0000-0000-4000-a000-000000000001'] || [];\nconst trimmed = arr.length >= limit ? arr.slice(arr.length - limit + 1) : arr;\nvariables['toast-list-0000-0000-4000-a000-000000000001'] = [\n  ...trimmed,\n  { id: id, message: parameters['message'] || '', type: parameters['type'] || 'info', position: pos }\n];\nif (dur > 0) {\n  setTimeout(function() {\n    variables['toast-list-0000-0000-4000-a000-000000000001'] =\n      (variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t) { return t.id !== id; });\n  }, dur);\n}"
+        }
+      }
+    ]
+  },
+  "dismiss-toast": {
+    "name": "Dismiss Toast",
+    "trigger": "click",
+    "params": [
+      { "name": "id", "type": "String", "testValue": "" }
+    ],
+    "steps": [
+      {
+        "id": "step-dismiss",
+        "type": "runJavaScript",
+        "config": {
+          "code": "const tid = parameters['id'];\nvariables['toast-list-0000-0000-4000-a000-000000000001'] =\n  (variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t) { return t.id !== tid; });"
+        }
+      }
+    ]
+  },
+  "set-toast-position": {
+    "name": "Set Toast Position",
+    "trigger": "click",
+    "params": [
+      { "name": "position", "type": "String", "testValue": "bottom-right" }
+    ],
+    "steps": [
+      {
+        "id": "step-set-pos",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "toast-pos0-0000-4000-a000-000000000001",
+          "value": { "js": "parameters['position']" }
+        }
+      }
+    ]
+  },
+  "dismiss-all-toasts": {
+    "name": "Dismiss All Toasts",
+    "trigger": "click",
+    "steps": [
+      {
+        "id": "step-dismiss-all",
+        "type": "changeVariableValue",
+        "config": {
+          "variableName": "toast-list-0000-0000-4000-a000-000000000001",
+          "value": []
+        }
+      }
+    ]
+  }
+}

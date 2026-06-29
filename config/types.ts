@@ -2,12 +2,39 @@
  * App config types - used by page and config
  */
 
+export interface WorkflowParamValidation {
+  /** Text: minimum character length */
+  minLength?: number;
+  /** Text: maximum character length */
+  maxLength?: number;
+  /** Text: regex pattern the value must match */
+  pattern?: string;
+  /** Number: minimum value */
+  min?: number;
+  /** Number: maximum value */
+  max?: number;
+  /** Array: minimum number of items */
+  minItems?: number;
+  /** Array: maximum number of items */
+  maxItems?: number;
+  /** Text | Number: value must be one of these */
+  enum?: string[];
+}
+
 export interface WorkflowParam {
   id: string;
   name: string;
-  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array';
-  allowMultiple?: boolean;
+  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array' | 'File';
+  /** Where this param comes from in the HTTP request */
+  in?: 'path' | 'query' | 'body' | 'header';
+  /** Whether the param is required (path params are always required) */
+  required?: boolean;
+  /** Human-readable description shown in docs */
+  description?: string;
+  /** Test value used in the formula editor dry-runs */
   testValue?: unknown;
+  /** Runtime validation rules */
+  validation?: WorkflowParamValidation;
 }
 
 export interface WorkflowDef {
@@ -21,12 +48,13 @@ export interface WorkflowDef {
   isTrigger?: boolean;
   isAppTrigger?: boolean;
   pageScope?: string;
+  /** Extra trigger configuration (e.g. threshold + scrollTarget for reachEnd) */
+  config?: Record<string, unknown>;
 }
 
 export type PageUI = {
   redirecting?: { text?: string; wrapperClassName?: string; textClassName?: string };
   pageNotFound?: { text?: string; wrapperClassName?: string; textClassName?: string };
-  layoutClasses?: Record<string, string>;
 };
 
 export type AppConfig = {
@@ -36,11 +64,6 @@ export type AppConfig = {
     path: string;
     config?: string;
     redirect?: string;
-    /** JS formula evaluated at render time. Falsy → redirect to protectionRedirect. Leave empty for public access. */
-    protectionCondition?: string;
-    /** Path to redirect to when protectionCondition is falsy. Defaults to '/'. */
-    protectionRedirect?: string;
-    layout?: string;
     dynamic?: boolean;
     paramChangeAction?: string;
     keyBy?: string[];

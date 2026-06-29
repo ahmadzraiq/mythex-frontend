@@ -64,10 +64,14 @@ function makeVariablesProxy(state: Record<string, unknown>, allowWrite: boolean)
   return new Proxy({} as Record<string, unknown>, {
     get(_t, prop: string | symbol) {
       if (typeof prop !== 'string') return undefined;
-      // Direct UUID access — keep backward-compat with formula-style bracket paths.
-      if (prop in state) return state[prop];
+      // Always read from the live store so setTimeout callbacks see current values,
+      // not the stale snapshot captured when the runJavaScript step started.
+      const liveState = getGlobalVariableStore().getState().data;
+      if (prop in liveState) return liveState[prop];
       const uuid = resolveUuidByPath(prop);
-      if (uuid) return state[uuid];
+      if (uuid) return liveState[uuid];
+      // Fall back to the initial snapshot for any key not yet in the live store.
+      if (prop in state) return state[prop];
       return undefined;
     },
     set(_t, prop: string | symbol, value: unknown) {
@@ -272,30 +276,6 @@ export function makeWwLib(ctx: WwLibContext = {}) {
       },
       reset(formId: string): Promise<unknown> {
         return invoke('resetForm', { formId });
-      },
-    },
-
-    // ── Auth ───────────────────────────────────────────────────────────────
-    auth: {
-      authenticate(opts: {
-        url?: string;
-        method?: string;
-        body?: unknown;
-        tokenPath?: string;
-        userPath?: string;
-        persist?: boolean;
-        headers?: Record<string, string>;
-      }): Promise<unknown> {
-        return invoke('authenticate', opts as Record<string, unknown>);
-      },
-      setUser(user: Record<string, unknown>): Promise<unknown> {
-        return invoke('setUser', { user });
-      },
-      clearSession(): Promise<unknown> {
-        return invoke('clearSession', {});
-      },
-      restoreSession(): Promise<unknown> {
-        return invoke('restoreSession', {});
       },
     },
 

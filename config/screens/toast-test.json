@@ -1,0 +1,860 @@
+{
+  "meta": {
+    "title": "Toast Test"
+  },
+  "ui": {
+    "type": "Box",
+    "props": {
+      "className": "flex flex-col min-h-screen bg-[#0f172a] w-full"
+    },
+    "children": [
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col w-full px-[24px] py-[32px] gap-[8px] border-b border-[#1e293b]"
+        },
+        "children": [
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[28px] font-bold text-white"
+            },
+            "text": "Toast Notifications"
+          },
+          {
+            "type": "Text",
+            "props": {
+              "className": "text-[15px] text-[#94a3b8]"
+            },
+            "text": "Test all toast variants, durations, stacking, and dismiss behaviour."
+          }
+        ]
+      },
+      {
+        "type": "Box",
+        "props": {
+          "className": "flex flex-col w-full px-[24px] py-[32px] gap-[32px]"
+        },
+        "children": [
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold uppercase tracking-widest text-[#64748b]"
+                },
+                "text": "Toast Types"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-wrap gap-[12px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#166534] hover:opacity-90",
+                      "style": {
+                        "border": "1px solid #22c55e"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Operation completed successfully!",
+                          "type": "success",
+                          "duration": 3000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:check-circle",
+                          "size": 16,
+                          "color": "#4ade80"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#4ade80]"
+                        },
+                        "text": "Success"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#7f1d1d] hover:opacity-90",
+                      "style": {
+                        "border": "1px solid #ef4444"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Something went wrong. Please try again.",
+                          "type": "error",
+                          "duration": 3000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:x-circle",
+                          "size": 16,
+                          "color": "#f87171"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#f87171]"
+                        },
+                        "text": "Error"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#78350f] hover:opacity-90",
+                      "style": {
+                        "border": "1px solid #f59e0b"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "This action may have unintended effects.",
+                          "type": "warning",
+                          "duration": 3000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:alert-triangle",
+                          "size": 16,
+                          "color": "#fbbf24"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#fbbf24]"
+                        },
+                        "text": "Warning"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e3a5f] hover:opacity-90",
+                      "style": {
+                        "border": "1px solid #3b82f6"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Here is some useful information for you.",
+                          "type": "info",
+                          "duration": 3000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:info",
+                          "size": 16,
+                          "color": "#60a5fa"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#60a5fa]"
+                        },
+                        "text": "Info"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold uppercase tracking-widest text-[#64748b]"
+                },
+                "text": "Duration"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-wrap gap-[12px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "This toast disappears in 1 second.",
+                          "type": "info",
+                          "duration": 1000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:timer",
+                          "size": 16,
+                          "color": "#94a3b8"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "1 second"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "This toast stays for 5 seconds.",
+                          "type": "info",
+                          "duration": 5000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:timer",
+                          "size": 16,
+                          "color": "#94a3b8"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "5 seconds"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "This toast is persistent — dismiss it manually.",
+                          "type": "warning",
+                          "duration": 0
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:pin",
+                          "size": 16,
+                          "color": "#fbbf24"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "Persistent (no auto-dismiss)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold uppercase tracking-widest text-[#64748b]"
+                },
+                "text": "Stacking & Limits"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-wrap gap-[12px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Stack toast #1",
+                          "type": "success",
+                          "duration": 5000
+                        }
+                      },
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Stack toast #2",
+                          "type": "info",
+                          "duration": 5000
+                        }
+                      },
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Stack toast #3",
+                          "type": "warning",
+                          "duration": 5000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:layers",
+                          "size": 16,
+                          "color": "#94a3b8"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "Fire 3 toasts at once"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Overflow toast #1",
+                          "type": "info",
+                          "duration": 8000,
+                          "limit": 3
+                        }
+                      },
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Overflow toast #2",
+                          "type": "info",
+                          "duration": 8000,
+                          "limit": 3
+                        }
+                      },
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Overflow toast #3",
+                          "type": "info",
+                          "duration": 8000,
+                          "limit": 3
+                        }
+                      },
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Overflow toast #4 — oldest is trimmed (limit=3)",
+                          "type": "warning",
+                          "duration": 8000,
+                          "limit": 3
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:list-x",
+                          "size": 16,
+                          "color": "#f87171"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "Fire 4 toasts with limit=3"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#450a0a] hover:opacity-90",
+                      "style": {
+                        "border": "1px solid #dc2626"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "dismiss-all-toasts",
+                        "trigger": "click"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:trash-2",
+                          "size": 16,
+                          "color": "#f87171"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#f87171]"
+                        },
+                        "text": "Dismiss All"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold uppercase tracking-widest text-[#64748b]"
+                },
+                "text": "Position"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] text-[#475569]"
+                },
+                "text": "Current position:"
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-mono font-semibold text-[#818cf8]",
+                  "style": {
+                    "display": "inline"
+                  }
+                },
+                "text": {
+                  "js": "variables['toast-pos0-0000-4000-a000-000000000001'] || 'bottom-right'"
+                }
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "grid gap-[10px]",
+                  "style": {
+                    "gridTemplateColumns": "repeat(3, 1fr)"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'top-left' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — top left",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "top-left"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↖ Top Left"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'top-center' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — top center",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "top-center"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↑ Top Center"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'top-right' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — top right",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "top-right"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↗ Top Right"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'bottom-left' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — bottom left",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "bottom-left"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↙ Bottom Left"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'bottom-center' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — bottom center",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "bottom-center"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↓ Bottom Center"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center justify-center gap-[8px] px-[16px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": {
+                          "js": "variables['toast-pos0-0000-4000-a000-000000000001'] === 'bottom-right' ? '1px solid #818cf8' : '1px solid #334155'"
+                        }
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Toast — bottom right",
+                          "type": "info",
+                          "duration": 2500,
+                          "position": "bottom-right"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-[#94a3b8]"
+                        },
+                        "text": "↘ Bottom Right"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Box",
+            "props": {
+              "className": "flex flex-col gap-[12px]"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[13px] font-semibold uppercase tracking-widest text-[#64748b]"
+                },
+                "text": "Long Messages"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-wrap gap-[12px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Your order has been placed successfully. We will send a confirmation email to your registered address within the next few minutes.",
+                          "type": "success",
+                          "duration": 6000
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:align-left",
+                          "size": 16,
+                          "color": "#94a3b8"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "Long success message"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex items-center gap-[8px] px-[20px] py-[10px] rounded-[8px] cursor-pointer bg-[#1e293b] hover:bg-[#273447]",
+                      "style": {
+                        "border": "1px solid #334155"
+                      }
+                    },
+                    "actions": [
+                      {
+                        "workflowId": "show-toast",
+                        "trigger": "click",
+                        "params": {
+                          "message": "Error 500: Internal Server Error. The server encountered an unexpected condition that prevented it from fulfilling the request.",
+                          "type": "error",
+                          "duration": 0
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "icon": "lucide:alert-octagon",
+                          "size": 16,
+                          "color": "#f87171"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] font-medium text-[#94a3b8]"
+                        },
+                        "text": "Long error (persistent)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

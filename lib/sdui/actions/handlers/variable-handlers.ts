@@ -137,16 +137,6 @@ export const setVarHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef
       } catch { /* ignore serialization errors */ }
     }
 
-    // ── Dev logs ───────────────────────────────────────────────────────────────
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      if (path === 'showcase-kanban-drag') {
-        const v = value as Record<string, unknown>;
-        console.log('[kanban-drag] col:', v?.targetCol, '| idx:', v?.targetIndex, '| card:', v?.cardId);
-      } else if (path === 'showcase-kanban-cards') {
-        console.log('[kanban-cards] updated, count:', Array.isArray(value) ? value.length : '?');
-      }
-    }
-
     ctx.store.getState().setState((prev) => setNestedValue(prev, path, value));
     if (!path.startsWith('screens.')) {
       ctx.useSduiStore?.getState().setData(path, value);

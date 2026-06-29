@@ -21,6 +21,55 @@ import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableS
 import type { SDUIConfig } from './types';
 import type { NamedDataSourceDef } from './engine-types';
 
+function getAllSCs(): Record<string, { content?: unknown }> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const live = require('@/lib/builder/shared-component-data').getSharedComponents?.();
+    if (live) return live as Record<string, { content?: unknown }>;
+  } catch { /* noop */ }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@/config/shared-components.json') as Record<string, { content?: unknown }>;
+  } catch { /* noop */ }
+  return {};
+}
+
+/**
+ * Walk a config tree and collect the `content` objects from any `_shared` SC nodes.
+ * Pages reference shared components via `_shared: { id }` stubs — the SC content is not
+ * pre-expanded into the page config, so `extractReferencedDataSources` would miss any
+ * datasources used inside the SC (e.g. Nav Collections in the navbar). This function
+ * traverses the full config tree and collects every SC's content for the datasource scan.
+ */
+function collectSharedComponentContents(node: unknown, out: unknown[] = [], visited = new Set<string>()): unknown[] {
+  if (!node || typeof node !== 'object') return out;
+  if (Array.isArray(node)) {
+    for (const child of node) collectSharedComponentContents(child, out, visited);
+    return out;
+  }
+  const n = node as Record<string, unknown>;
+
+  if (n._shared && typeof n._shared === 'object') {
+    const shared = n._shared as { id?: string };
+    if (shared.id && !visited.has(shared.id)) {
+      visited.add(shared.id);
+      const scModel = getAllSCs()[shared.id];
+      if (scModel?.content) {
+        out.push(scModel.content);
+        collectSharedComponentContents(scModel.content, out, visited);
+      }
+    }
+  }
+
+  for (const val of Object.values(n)) {
+    if (val && typeof val === 'object') {
+      collectSharedComponentContents(val, out, visited);
+    }
+  }
+  return out;
+}
+
+
 const computedDefs: { output: string; expr: object }[] = [];
 
 type SduiStore = ReturnType<typeof useSduiStore>;
@@ -69,10 +118,9 @@ export function useNamedDataSourceFetcher(
     const resolveVariables = (vars: Record<string, unknown>): Record<string, unknown> => {
       const result: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(vars)) {
-        if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
-          const f = (v as { formula: unknown }).formula;
+        if (typeof v === 'object' && v !== null && ('formula' in (v as object) || 'js' in (v as object))) {
           try {
-            result[k] = evaluateFormula(f as string | object, currentState).value;
+            result[k] = evaluateFormula(v as object, currentState).value;
           } catch {
             result[k] = null;
           }
@@ -109,7 +157,14 @@ export function useNamedDataSourceFetcher(
     prevDsRefetchKeysRef.current = { ...dsRefetchKeys };
 
     const allNames = Object.keys(dataSources);
-    const referencedNames = new Set(extractReferencedDataSources(config, allNames));
+    // Also scan contents of any _shared SC nodes so datasources used inside shared
+    // components (e.g. navbar's Nav Collections) are fetched even though they are not
+    // pre-expanded into the page config tree.
+    const scContents = collectSharedComponentContents(config);
+    const referencedNames = new Set([
+      ...extractReferencedDataSources(config, allNames),
+      ...scContents.flatMap(sc => extractReferencedDataSources(sc, allNames)),
+    ]);
 
     // Build a set of triggered datasource UUIDs. Entries in triggeredKeys may be
     // either a datasource UUID (direct) or a cacheTag (from invalidateCache: ["tag"]).
@@ -175,9 +230,9 @@ export function useNamedDataSourceFetcher(
           const extraHeaders: Record<string, string> = {};
           if (ds.headers) {
             for (const [k, v] of Object.entries(ds.headers)) {
-              if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
+              if (typeof v === 'object' && v !== null && ('formula' in (v as object) || 'js' in (v as object))) {
                 try {
-                  const result = evaluateFormula((v as { formula: unknown }).formula as string | object, currentState).value;
+                  const result = evaluateFormula(v as object, currentState).value;
                   if (result != null) extraHeaders[k] = String(result);
                 } catch { /* skip header if formula fails */ }
               } else {
@@ -239,9 +294,9 @@ export function useNamedDataSourceFetcher(
             });
           } else if (rawHeaders && typeof rawHeaders === 'object') {
             for (const [k, v] of Object.entries(rawHeaders as Record<string, unknown>)) {
-              if (typeof v === 'object' && v !== null && 'formula' in (v as object)) {
+              if (typeof v === 'object' && v !== null && ('formula' in (v as object) || 'js' in (v as object))) {
                 try {
-                  const result = evaluateFormula((v as { formula: unknown }).formula as string | object, currentState).value;
+                  const result = evaluateFormula(v as object, currentState).value;
                   if (result != null) headers[k] = String(result);
                 } catch { /* skip header if formula fails */ }
               } else {

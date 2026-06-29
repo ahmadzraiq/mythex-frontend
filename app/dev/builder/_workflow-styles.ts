@@ -58,12 +58,16 @@ export const S = {
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
+    position: 'relative' as const,
+    backgroundColor: 'var(--bld-bg-canvas)',
+    backgroundImage: 'radial-gradient(ellipse 80% 55% at 75% -5%, rgba(99,102,241,0.08) 0%, transparent 60%)',
   },
   canvasArea: {
     flex: 1,
     overflow: 'hidden',
     position: 'relative' as const,
-    background: 'var(--bld-bg-canvas)',
+    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)',
+    backgroundSize: '22px 22px',
     cursor: 'default',
   },
   flowColumn: {
@@ -250,7 +254,8 @@ export const S = {
   rightPanel: {
     width: 288,
     borderLeft: '1px solid var(--bld-bg-input)',
-    background: 'var(--bld-bg-panel)',
+    backgroundColor: 'var(--bld-bg-panel)',
+    backgroundImage: 'radial-gradient(ellipse 120% 30% at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 55%)',
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',

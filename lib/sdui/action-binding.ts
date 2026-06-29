@@ -24,7 +24,7 @@ const PRESS_HANDLER_TYPES = new Set(['MenuItem', 'MenuItemLabel']);
  * log "Unknown event handler property" and silently discard them.
  * Note: submitValidationError is handled explicitly below before this set is checked.
  */
-const LIFECYCLE_TRIGGERS = new Set(['created', 'mounted']);
+const LIFECYCLE_TRIGGERS = new Set(['created', 'mounted', 'reachEnd']);
 
 /** Attach a single action to the appropriate React event prop based on the trigger event name */
 function bindEventHandler(

@@ -5504,7 +5504,7 @@
             "type": "Box",
             "id": "kanban-section",
             "props": {
-              "className": "flex flex-col gap-4"
+              "className": "flex flex-col gap-4 w-full"
             },
             "children": [
               {
@@ -5524,13 +5524,13 @@
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-row gap-3 items-start"
+                  "className": "flex flex-row gap-3 items-start w-full"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
+                      "className": "flex-1 min-w-0 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
                         "outline": {
                           "formula": "variables['showcase-kanban-drag']?.targetCol === 'todo' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #60a5fa' : 'none'"
@@ -5566,17 +5566,21 @@
                           "keyField": "id"
                         },
                         "props": {
-                          "className": "flex flex-col gap-2"
+                          "className": "flex flex-col gap-2 w-full"
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
                               "style": {
+                                "zIndex": {
+                                  "js": "context.item.data.id === variables['showcase-kanban-drag']?.cardId ? 10 : 0"
+                                },
                                 "transform": {
-                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='todo'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
+                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='todo'; const sh=70; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
                                 }
-                              }
+                              },
+                              "className": "w-full"
                             },
                             "children": [
                               {
@@ -5586,14 +5590,14 @@
                                   "style": {
                                     "border": "2px dashed #a5b4fc"
                                   },
-                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col"
+                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col w-full"
                                 }
                               },
                               {
                                 "type": "Box",
                                 "condition": "!context.item.data._placeholder",
                                 "props": {
-                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col",
+                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col w-full",
                                   "style": {
                                     "opacity": {
                                       "formula": "context.item.data.id===variables['showcase-kanban-drag']?.cardId ? 0.3 : 1"
@@ -5605,7 +5609,7 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84
+                                    "slotHeight": 70
                                   }
                                 },
                                 "actions": [
@@ -5648,7 +5652,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
+                      "className": "flex-1 min-w-0 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
                         "outline": {
                           "formula": "variables['showcase-kanban-drag']?.targetCol === 'doing' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #facc15' : 'none'"
@@ -5684,17 +5688,21 @@
                           "keyField": "id"
                         },
                         "props": {
-                          "className": "flex flex-col gap-2"
+                          "className": "flex flex-col gap-2 w-full"
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
                               "style": {
+                                "zIndex": {
+                                  "js": "context.item.data.id === variables['showcase-kanban-drag']?.cardId ? 10 : 0"
+                                },
                                 "transform": {
-                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='doing'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
+                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='doing'; const sh=70; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
                                 }
-                              }
+                              },
+                              "className": "w-full"
                             },
                             "children": [
                               {
@@ -5704,14 +5712,14 @@
                                   "style": {
                                     "border": "2px dashed #a5b4fc"
                                   },
-                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col"
+                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col w-full"
                                 }
                               },
                               {
                                 "type": "Box",
                                 "condition": "!context.item.data._placeholder",
                                 "props": {
-                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col",
+                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col w-full",
                                   "style": {
                                     "opacity": {
                                       "formula": "context.item.data.id===variables['showcase-kanban-drag']?.cardId ? 0.3 : 1"
@@ -5723,7 +5731,7 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84
+                                    "slotHeight": 70
                                   }
                                 },
                                 "actions": [
@@ -5766,7 +5774,7 @@
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex-1 flex flex-col gap-2 rounded-xl p-3",
+                      "className": "flex-1 min-w-0 flex flex-col gap-2 rounded-xl p-3",
                       "style": {
                         "outline": {
                           "formula": "variables['showcase-kanban-drag']?.targetCol === 'done' && variables['showcase-kanban-drag']?.cardId !== null ? '2px solid #4ade80' : 'none'"
@@ -5802,17 +5810,21 @@
                           "keyField": "id"
                         },
                         "props": {
-                          "className": "flex flex-col gap-2"
+                          "className": "flex flex-col gap-2 w-full"
                         },
                         "children": [
                           {
                             "type": "Box",
                             "props": {
                               "style": {
+                                "zIndex": {
+                                  "js": "context.item.data.id === variables['showcase-kanban-drag']?.cardId ? 10 : 0"
+                                },
                                 "transform": {
-                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='done'; const sh=84; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
+                                  "js": "const kd=variables['showcase-kanban-drag']; const myId=context.item.data.id; if(!kd?.cardId||myId==='__placeholder__') return 'none'; const col='done'; const sh=70; if(kd.sourceCol===col&&kd.targetCol===col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const ti=kd.targetIndex??di; const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di&&mi<=ti) return 'translateY(-'+sh+'px)'; if(mi<di&&mi>=ti) return 'translateY('+sh+'px)'; return 'none'; } if(kd.sourceCol===col&&kd.targetCol!==col){ const cards=(variables['showcase-kanban-cards']??[]).filter(c=>c.col===col); const di=cards.findIndex(c=>c.id===kd.cardId); const mi=context.item.data.index; if(myId===kd.cardId) return 'none'; if(mi>di) return 'translateY(-'+sh+'px)'; return 'none'; } return 'none';"
                                 }
-                              }
+                              },
+                              "className": "w-full"
                             },
                             "children": [
                               {
@@ -5822,14 +5834,14 @@
                                   "style": {
                                     "border": "2px dashed #a5b4fc"
                                   },
-                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col"
+                                  "className": "h-[76px] rounded-[8px] bg-[#eef2ff] flex-col w-full"
                                 }
                               },
                               {
                                 "type": "Box",
                                 "condition": "!context.item.data._placeholder",
                                 "props": {
-                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col",
+                                  "className": "rounded-lg p-3 shadow-sm cursor-grab select-none bg-[var(--theme-background)] flex flex-col w-full",
                                   "style": {
                                     "opacity": {
                                       "formula": "context.item.data.id===variables['showcase-kanban-drag']?.cardId ? 0.3 : 1"
@@ -5841,7 +5853,7 @@
                                     "enabled": true,
                                     "axis": "both",
                                     "snapBack": true,
-                                    "slotHeight": 84
+                                    "slotHeight": 70
                                   }
                                 },
                                 "actions": [

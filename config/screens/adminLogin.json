@@ -2,7 +2,7 @@
   "meta": {
     "title": "Admin Login"
   },
-  "content": {
+  "ui": {
     "type": "Box",
     "props": {
       "className": "min-h-screen w-full flex items-center justify-center bg-[var(--theme-admin-sidebar)] flex-col"

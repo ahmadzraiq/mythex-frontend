@@ -3,191 +3,82 @@
     "title": "Workflow Call-Chain Test"
   },
   "state": {},
-  "layout": "store",
-  "content": {
+  "ui": {
     "type": "Box",
+    "_shared": {
+      "id": "sc-app-layout",
+      "name": "App Layout"
+    },
     "props": {
-      "className": "w-full flex flex-col items-center gap-8 px-6 py-12 min-h-screen"
+      "className": "w-full min-h-screen flex flex-col"
     },
     "children": [
       {
-        "type": "Text",
-        "props": {
-          "className": "text-3xl font-bold text-center text-[var(--theme-foreground)] flex-col"
+        "type": "Box",
+        "_shared": {
+          "id": "sc-navbar",
+          "name": "Navbar"
         },
-        "text": "Workflow Call-Chain Test"
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-sm text-center max-w-[720px] text-gray-600 dark:text-gray-400 flex-col"
-        },
-        "text": "Four scenarios exercise parameter passing across every workflow kind: element, pageTrigger, pageWorkflow, globalWorkflow, and componentWorkflow. Each button below triggers a chain; the result variable is displayed beneath."
+        "props": {},
+        "children": []
       },
       {
         "type": "Box",
+        "id": "app-layout-content",
         "props": {
-          "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+          "className": "flex-1 flex flex-col pt-[64px]"
         },
         "children": [
           {
-            "type": "Text",
-            "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
-            },
-            "text": "Scenario 1 — page workflow with params"
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
-            },
-            "text": "Button → pageWorkflowA(greeting=\"Hi\", count=2) → sets wftest-result-1."
-          },
-          {
             "type": "Box",
-            "id": "wftest-btn-1",
             "props": {
-              "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+              "className": "w-full flex flex-col items-center gap-8 px-6 py-12 min-h-screen"
             },
-            "actions": [
-              {
-                "trigger": "click",
-                "workflowId": "runScenario1"
-              }
-            ],
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-semibold text-white flex-col"
+                  "className": "text-3xl font-bold text-center text-[var(--theme-foreground)] flex-col"
                 },
-                "text": "Run Scenario 1"
-              }
-            ]
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
-            },
-            "text": "result1: {{variables['wftest-result-1-0000-0000-0000-000000000001']}}"
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
-            },
-            "text": "Scenario 2 — page workflow calls global workflow with params"
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
-            },
-            "text": "Button → pageWorkflowB → runProjectWorkflow GlobalGreet(name=\"World\", times=3) → sets wftest-result-2."
-          },
-          {
-            "type": "Box",
-            "id": "wftest-btn-2",
-            "props": {
-              "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
-            },
-            "actions": [
-              {
-                "trigger": "click",
-                "workflowId": "runScenario2"
-              }
-            ],
-            "children": [
+                "text": "Workflow Call-Chain Test"
+              },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-sm font-semibold text-white flex-col"
+                  "className": "text-sm text-center max-w-[720px] text-gray-600 dark:text-gray-400 flex-col"
                 },
-                "text": "Run Scenario 2"
-              }
-            ]
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
-            },
-            "text": "result2: {{variables['wftest-result-2-0000-0000-0000-000000000002']}}"
-          }
-        ]
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
-            },
-            "text": "Scenario 3 — SC internal button calls SC workflow with params"
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
-            },
-            "text": "SC instance's own button → executeComponentAction scWorkflowA(label=props.label) → sets per-instance scResult + mirrors to wftest-result-3."
-          },
-          {
-            "type": "Box",
-            "_shared": {
-              "id": "sc-workflow-caller",
-              "name": "Workflow Caller"
-            },
-            "id": "wftest-sc-inst-1",
-            "props": {
-              "label": "SC Instance A"
-            },
-            "children": [
+                "text": "Four scenarios exercise parameter passing across every workflow kind: element, pageTrigger, pageWorkflow, globalWorkflow, and componentWorkflow. Each button below triggers a chain; the result variable is displayed beneath."
+              },
               {
                 "type": "Box",
-                "id": "sc-workflow-caller-root",
                 "props": {
-                  "className": "flex flex-col gap-3 p-4 rounded-lg border border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950 w-full max-w-[360px]"
+                  "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300 flex-col"
+                      "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
                     },
-                    "text": "{{context.component.props.label}}"
+                    "text": "Scenario 1 — page workflow with params"
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] text-purple-900 dark:text-purple-200 flex-col"
+                      "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
                     },
-                    "text": "instanceId: {{context.component.instanceId}}"
+                    "text": "Button → pageWorkflowA(greeting=\"Hi\", count=2) → sets wftest-result-1."
                   },
                   {
                     "type": "Box",
-                    "id": "sc-workflow-caller-run-btn",
+                    "id": "wftest-btn-1",
                     "props": {
-                      "className": "flex flex-row items-center justify-center px-3 py-2 rounded-md cursor-pointer bg-purple-600 hover:bg-purple-700"
+                      "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
                     },
                     "actions": [
                       {
                         "trigger": "click",
-                        "workflowId": "runScWorkflowAInternal"
+                        "workflowId": "runScenario1"
                       }
                     ],
                     "children": [
@@ -196,80 +87,227 @@
                         "props": {
                           "className": "text-sm font-semibold text-white flex-col"
                         },
-                        "text": "Run scWorkflowA (internal)"
+                        "text": "Run Scenario 1"
                       }
                     ]
                   },
                   {
                     "type": "Text",
                     "props": {
-                      "className": "text-xs text-purple-800 dark:text-purple-200 flex-col"
+                      "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
                     },
-                    "text": "scResult: {{context.component.variables['sc-caller-scresult-0000-0000-0000-000000000010']}}"
+                    "text": "result1: {{variables['wftest-result-1-0000-0000-0000-000000000001']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
+                    },
+                    "text": "Scenario 2 — page workflow calls global workflow with params"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
+                    },
+                    "text": "Button → pageWorkflowB → runProjectWorkflow GlobalGreet(name=\"World\", times=3) → sets wftest-result-2."
+                  },
+                  {
+                    "type": "Box",
+                    "id": "wftest-btn-2",
+                    "props": {
+                      "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                    },
+                    "actions": [
+                      {
+                        "trigger": "click",
+                        "workflowId": "runScenario2"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-white flex-col"
+                        },
+                        "text": "Run Scenario 2"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
+                    },
+                    "text": "result2: {{variables['wftest-result-2-0000-0000-0000-000000000002']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
+                    },
+                    "text": "Scenario 3 — SC internal button calls SC workflow with params"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
+                    },
+                    "text": "SC instance's own button → executeComponentAction scWorkflowA(label=props.label) → sets per-instance scResult + mirrors to wftest-result-3."
+                  },
+                  {
+                    "type": "Box",
+                    "_shared": {
+                      "id": "sc-workflow-caller",
+                      "name": "Workflow Caller"
+                    },
+                    "id": "wftest-sc-inst-1",
+                    "props": {
+                      "label": "SC Instance A"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "id": "sc-workflow-caller-root",
+                        "props": {
+                          "className": "flex flex-col gap-3 p-4 rounded-lg border border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950 w-full max-w-[360px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300 flex-col"
+                            },
+                            "text": "{{context.component.props.label}}"
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] text-purple-900 dark:text-purple-200 flex-col"
+                            },
+                            "text": "instanceId: {{context.component.instanceId}}"
+                          },
+                          {
+                            "type": "Box",
+                            "id": "sc-workflow-caller-run-btn",
+                            "props": {
+                              "className": "flex flex-row items-center justify-center px-3 py-2 rounded-md cursor-pointer bg-purple-600 hover:bg-purple-700"
+                            },
+                            "actions": [
+                              {
+                                "trigger": "click",
+                                "workflowId": "runScWorkflowAInternal"
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-sm font-semibold text-white flex-col"
+                                },
+                                "text": "Run scWorkflowA (internal)"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-xs text-purple-800 dark:text-purple-200 flex-col"
+                            },
+                            "text": "scResult: {{context.component.variables['sc-caller-scresult-0000-0000-0000-000000000010']}}"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
+                    },
+                    "text": "result3 (external mirror): {{variables['wftest-result-3-0000-0000-0000-000000000003']}}"
+                  }
+                ]
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
+                    },
+                    "text": "Scenario 4 — nested chain (page → SC instance → global)"
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
+                    },
+                    "text": "Button → pageWorkflowExtKick → executeComponentAction scWorkflowB(multiplier=5) on the SC instance above → runProjectWorkflow GlobalFinalize(sum=50) → sets wftest-result-4."
+                  },
+                  {
+                    "type": "Box",
+                    "id": "wftest-btn-4",
+                    "props": {
+                      "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                    },
+                    "actions": [
+                      {
+                        "trigger": "click",
+                        "workflowId": "runScenario4"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-sm font-semibold text-white flex-col"
+                        },
+                        "text": "Run Scenario 4"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
+                    },
+                    "text": "result4: {{variables['wftest-result-4-0000-0000-0000-000000000004']}}"
                   }
                 ]
               }
             ]
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
-            },
-            "text": "result3 (external mirror): {{variables['wftest-result-3-0000-0000-0000-000000000003']}}"
           }
         ]
       },
       {
         "type": "Box",
-        "props": {
-          "className": "w-full max-w-[720px] flex flex-col gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+        "_shared": {
+          "id": "sc-footer",
+          "name": "Footer"
         },
-        "children": [
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-[24px] font-bold text-foreground text-base font-semibold text-[var(--theme-foreground)] flex-col"
-            },
-            "text": "Scenario 4 — nested chain (page → SC instance → global)"
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-xs text-gray-500 dark:text-gray-400 flex-col"
-            },
-            "text": "Button → pageWorkflowExtKick → executeComponentAction scWorkflowB(multiplier=5) on the SC instance above → runProjectWorkflow GlobalFinalize(sum=50) → sets wftest-result-4."
-          },
-          {
-            "type": "Box",
-            "id": "wftest-btn-4",
-            "props": {
-              "className": "flex flex-row items-center justify-center self-start px-4 py-2 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700"
-            },
-            "actions": [
-              {
-                "trigger": "click",
-                "workflowId": "runScenario4"
-              }
-            ],
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-sm font-semibold text-white flex-col"
-                },
-                "text": "Run Scenario 4"
-              }
-            ]
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-sm font-mono text-gray-800 dark:text-gray-200 flex-col"
-            },
-            "text": "result4: {{variables['wftest-result-4-0000-0000-0000-000000000004']}}"
-          }
-        ]
+        "props": {},
+        "children": []
       }
     ]
   }

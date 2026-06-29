@@ -6,11 +6,11 @@
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
-      "first_name": "{{local.data.form.formData.firstName}}",
-      "last_name": "{{local.data.form.formData.lastName}}"
+      "first_name": { "js": "local?.data?.form?.formData?.firstName" },
+      "last_name": { "js": "local?.data?.form?.formData?.lastName" }
     }
   },
   "4d5e6f7a-8b9c-0d1e-2f3a-b4c5d6e7f8a9": {
@@ -41,19 +41,19 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
-      "full_name": "{{local.data.form.formData.fullName}}",
-      "street_line1": "{{local.data.form.formData.streetLine1}}",
-      "street_line2": "{{local.data.form.formData.streetLine2}}",
-      "city": "{{local.data.form.formData.city}}",
-      "province": "{{local.data.form.formData.province}}",
-      "postal_code": "{{local.data.form.formData.postalCode}}",
-      "country_code": "{{local.data.form.formData.countryCode}}",
-      "phone_number": "{{local.data.form.formData.phoneNumber}}",
-      "default_shipping_address": "{{local.data.form.formData.defaultShippingAddress}}",
-      "default_billing_address": "{{local.data.form.formData.defaultBillingAddress}}"
+      "full_name": { "js": "local?.data?.form?.formData?.fullName" },
+      "street_line1": { "js": "local?.data?.form?.formData?.streetLine1" },
+      "street_line2": { "js": "local?.data?.form?.formData?.streetLine2" },
+      "city": { "js": "local?.data?.form?.formData?.city" },
+      "province": { "js": "local?.data?.form?.formData?.province" },
+      "postal_code": { "js": "local?.data?.form?.formData?.postalCode" },
+      "country_code": { "js": "local?.data?.form?.formData?.countryCode" },
+      "phone_number": { "js": "local?.data?.form?.formData?.phoneNumber" },
+      "default_shipping_address": { "js": "local?.data?.form?.formData?.defaultShippingAddress" },
+      "default_billing_address": { "js": "local?.data?.form?.formData?.defaultBillingAddress" }
     }
   },
   "5e6f7a8b-9c0d-1e2f-3a4b-c5d6e7f8a9b0": {
@@ -88,11 +88,11 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
-      "current_password": "{{local.data.form.formData.currentPassword}}",
-      "new_password": "{{local.data.form.formData.newPassword}}"
+      "current_password": { "js": "local?.data?.form?.formData?.currentPassword" },
+      "new_password": { "js": "local?.data?.form?.formData?.newPassword" }
     }
   },
   "a6626679-62d9-4aa5-a842-7ebcc266e658": {
@@ -108,19 +108,19 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
-      "full_name": "{{local.data.form.formData.fullName}}",
-      "street_line1": "{{local.data.form.formData.streetLine1}}",
-      "street_line2": "{{local.data.form.formData.streetLine2}}",
-      "city": "{{local.data.form.formData.city}}",
-      "province": "{{local.data.form.formData.province}}",
-      "postal_code": "{{local.data.form.formData.postalCode}}",
-      "country_code": "{{local.data.form.formData.countryCode}}",
-      "phone_number": "{{local.data.form.formData.phoneNumber}}",
-      "default_shipping_address": "{{local.data.form.formData.defaultShippingAddress}}",
-      "default_billing_address": "{{local.data.form.formData.defaultBillingAddress}}"
+      "full_name": { "js": "local?.data?.form?.formData?.fullName" },
+      "street_line1": { "js": "local?.data?.form?.formData?.streetLine1" },
+      "street_line2": { "js": "local?.data?.form?.formData?.streetLine2" },
+      "city": { "js": "local?.data?.form?.formData?.city" },
+      "province": { "js": "local?.data?.form?.formData?.province" },
+      "postal_code": { "js": "local?.data?.form?.formData?.postalCode" },
+      "country_code": { "js": "local?.data?.form?.formData?.countryCode" },
+      "phone_number": { "js": "local?.data?.form?.formData?.phoneNumber" },
+      "default_shipping_address": { "js": "local?.data?.form?.formData?.defaultShippingAddress" },
+      "default_billing_address": { "js": "local?.data?.form?.formData?.defaultBillingAddress" }
     }
   },
   "8b9c0d1e-2f3a-4b5c-6d7e-f8a9b0c1d2e3": {
@@ -145,7 +145,7 @@
     },
     "method": "DELETE",
     "headers": {
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     }
   },
   "9c0d1e2f-3a4b-5c6d-7e8f-a9b0c1d2e3f4": {

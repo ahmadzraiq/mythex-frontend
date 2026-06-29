@@ -114,23 +114,27 @@ export function useBuilderAutosave(
   onStatus: (s: SaveStatus) => void,
 ): (s: BuilderStore) => void {
   const timerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isFirstRender  = useRef(true);
   const onStatusRef    = useRef(onStatus);
   onStatusRef.current  = onStatus;
 
-  const pageSnapshotsRef = useRef<Map<string, string>>(new Map());
-  const metaSnapshotRef  = useRef('');
+  // null means "not yet seeded" — no save can fire until seedBaseline() is called.
+  const pageSnapshotsRef = useRef<Map<string, string> | null>(null);
+  const metaSnapshotRef  = useRef<string | null>(null);
 
   const seedBaseline = useCallback((s: BuilderStore) => {
-    pageSnapshotsRef.current.clear();
+    const map = new Map<string, string>();
     for (const page of s.pages) {
-      pageSnapshotsRef.current.set(page.id, JSON.stringify(page));
+      map.set(page.id, JSON.stringify(page));
     }
-    metaSnapshotRef.current = JSON.stringify(serializeMeta(s));
+    pageSnapshotsRef.current = map;
+    metaSnapshotRef.current  = JSON.stringify(serializeMeta(s));
   }, []);
 
   const save = useCallback(async () => {
     if (!projectId) return;
+    // Baseline not seeded yet — config hasn't finished loading. Never save in
+    // this state (covers hot-reload remounts, initial render, and any race).
+    if (pageSnapshotsRef.current === null) return;
     const s = useBuilderStore.getState() as BuilderStore;
 
     // ── Find dirty pages ─────────────────────────────────────────────────────
@@ -138,36 +142,12 @@ export function useBuilderAutosave(
     for (const page of s.pages) {
       const currentJson = JSON.stringify(page);
       const prevJson = pageSnapshotsRef.current.get(page.id) ?? '';
-      if (currentJson === prevJson) continue;
-
-      // Integrity guard: if the saved baseline had real content but the outgoing
-      // state has almost nothing, this is a hot-reload stale-state flush, not a
-      // user action. Block it to prevent overwriting the user's work.
-      if (prevJson) {
-        const baselineNodeCount = (JSON.stringify(JSON.parse(prevJson).nodes ?? []).match(/"id"/g) ?? []).length;
-        const currentNodeCount  = (JSON.stringify(page.nodes ?? []).match(/"id"/g) ?? []).length;
-        if (baselineNodeCount > 3 && currentNodeCount <= 1) continue;
-      }
-
-      dirtyPages.push(page);
+      if (currentJson !== prevJson) dirtyPages.push(page);
     }
 
     // ── Check if metadata changed ────────────────────────────────────────────
     const currentMeta = JSON.stringify(serializeMeta(s));
-    const metaDirty = currentMeta !== metaSnapshotRef.current;
-
-    // Integrity guard: never overwrite non-empty customVars/dataSources with empty.
-    const metaSafe = !metaDirty ? false : (() => {
-      if (!metaSnapshotRef.current) return true;
-      const prev = JSON.parse(metaSnapshotRef.current) as Record<string, unknown>;
-      const next = JSON.parse(currentMeta) as Record<string, unknown>;
-      const prevVars = (prev.customVars as unknown[] | undefined)?.length ?? 0;
-      const nextVars = (next.customVars as unknown[] | undefined)?.length ?? 0;
-      const prevDS   = (prev.pageDataSources as unknown[] | undefined)?.length ?? 0;
-      const nextDS   = (next.pageDataSources as unknown[] | undefined)?.length ?? 0;
-      if ((prevVars > 0 && nextVars === 0) || (prevDS > 0 && nextDS === 0)) return false;
-      return true;
-    })();
+    const metaSafe = currentMeta !== metaSnapshotRef.current;
 
     if (dirtyPages.length === 0 && !metaSafe) return; // nothing to save
 
@@ -236,7 +216,6 @@ export function useBuilderAutosave(
       if (next.length === prev.length && next.every((v, i) => v === prev[i])) return;
       prevSliceRef.current = next;
 
-      if (isFirstRender.current) { isFirstRender.current = false; return; }
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => { void saveRef.current(); }, DEBOUNCE_MS);
     });

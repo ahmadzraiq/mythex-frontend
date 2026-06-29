@@ -681,9 +681,15 @@ export function RepeatInDesign({ node }: { node: SDUINode }) {
         onToggle={() => patchMapResponsive(hasMap ? null : 'store.items')}
         onChange={v => {
           if (isBoundValue(v)) {
-            const f = (v as { formula: string }).formula.trim();
+            const raw = v as Record<string, unknown>;
+            const f = String(raw.formula ?? raw.js ?? '').trim();
             const isSimplePath = /^[\w$.]+$/.test(f);
-            patchMapResponsive(isSimplePath ? f : v as object);
+            // Preserve js-binding objects as-is; only simplify formula strings
+            if (raw.js !== undefined) {
+              patchMapResponsive(v as object);
+            } else {
+              patchMapResponsive(isSimplePath ? f : v as object);
+            }
           } else {
             patchMapResponsive(null);
           }

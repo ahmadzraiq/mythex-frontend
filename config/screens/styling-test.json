@@ -2,885 +2,920 @@
   "meta": {
     "title": "Styling Test"
   },
-  "layout": "store",
   "state": {},
-  "content": {
+  "ui": {
     "type": "Box",
+    "_shared": {
+      "id": "sc-app-layout",
+      "name": "App Layout"
+    },
     "props": {
-      "className": "w-full max-w-[900px] mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
+      "className": "w-full min-h-screen flex flex-col"
     },
     "children": [
       {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
+        "type": "Box",
+        "_shared": {
+          "id": "sc-navbar",
+          "name": "Navbar"
         },
-        "text": "Styling Capability Test"
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-gray-500 dark:text-gray-400 text-[14px] flex-col"
-        },
-        "text": "Tests all new styling features added in the builder. Each section shows a static case and a formula-bound case."
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A1 — RGBA Color (Color Picker)"
+        "props": {},
+        "children": []
       },
       {
         "type": "Box",
+        "id": "app-layout-content",
         "props": {
-          "className": "flex flex-row gap-[16px] flex-wrap"
+          "className": "flex-1 flex flex-col pt-[64px]"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "w-[120px] h-[60px] rounded-[8px] flex flex-col items-center justify-center bg-[rgba(99,_102,_241,_0.3)]"
+              "className": "w-full max-w-[900px] mx-auto px-[16px] py-[40px] flex flex-col gap-[32px]"
             },
             "children": [
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] text-[#312e81] font-medium flex-col"
+                  "className": "text-[24px] text-foreground font-bold text-gray-900 dark:text-gray-100 flex-col"
                 },
-                "text": "rgba indigo 30%"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] rounded-[8px] flex flex-col items-center justify-center bg-[rgba(239,_68,_68,_0.5)]"
-            },
-            "children": [
+                "text": "Styling Capability Test"
+              },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] text-[#7f1d1d] font-medium flex-col"
+                  "className": "text-gray-500 dark:text-gray-400 text-[14px] flex-col"
                 },
-                "text": "rgba red 50%"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A2 — Width/Height with % and vh/vw Units"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-col gap-[8px]"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#dbeafe] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px] w-[75%]"
-            },
-            "children": [
+                "text": "Tests all new styling features added in the builder. Each section shows a static case and a formula-bound case."
+              },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[11px] text-[#1e40af] flex-col"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
                 },
-                "text": "w: 75% (static)"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#dcfce7] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px] w-[50vw]"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-[#166534] flex-col"
-                },
-                "text": "w: 50vw (static)"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#fef9c3] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px]",
-              "style": {
-                "width": {
-                  "formula": "variables['style-test-0000-0000-0000-width-pct'] + '%'"
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-[#854d0e] flex-col"
-                },
-                "text": "w: bound to ST Width % variable (60%)"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A4 — New CSS Properties"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-col gap-[12px]"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-row gap-[12px] flex-wrap"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "w-[120px] bg-[#f3f4f6] rounded-[4px] overflow-hidden aspect-[16/9] flex-col"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[10px] text-gray-600 p-[4px] flex-col"
-                    },
-                    "text": "aspect-ratio: 16/9"
-                  }
-                ]
+                "text": "A1 — RGBA Color (Color Picker)"
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex flex-row bg-[#f3f4f6] rounded-[4px] overflow-hidden h-[60px]"
+                  "className": "flex flex-row gap-[16px] flex-wrap"
                 },
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "bg-[#6366f1] flex flex-col items-center justify-center grow"
+                      "className": "w-[120px] h-[60px] rounded-[8px] flex flex-col items-center justify-center bg-[rgba(99,_102,_241,_0.3)]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[10px] text-white flex-col"
+                          "className": "text-[11px] text-[#312e81] font-medium flex-col"
                         },
-                        "text": "flex-grow: 1"
+                        "text": "rgba indigo 30%"
                       }
                     ]
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "w-[60px] bg-[#ec4899] flex flex-col items-center justify-center"
+                      "className": "w-[120px] h-[60px] rounded-[8px] flex flex-col items-center justify-center bg-[rgba(239,_68,_68,_0.5)]"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "text-[10px] text-white flex-col"
+                          "className": "text-[11px] text-[#7f1d1d] font-medium flex-col"
                         },
-                        "text": "fixed"
+                        "text": "rgba red 50%"
                       }
                     ]
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#f3f4f6] rounded-[4px] p-[8px] overflow-hidden overflow-hidden flex-col",
-              "style": {
-                "WebkitLineClamp": "2",
-                "WebkitBoxOrient": "vertical",
-                "display": "-webkit-box"
-              }
-            },
-            "children": [
+              },
               {
                 "type": "Text",
                 "props": {
-                  "className": "text-[13px] text-gray-700 flex-col"
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
                 },
-                "text": "line-clamp: 2 — This is a long text that should be clamped to exactly 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. It should truncate here."
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "flex flex-row gap-[12px]"
-            },
-            "children": [
+                "text": "A2 — Width/Height with % and vh/vw Units"
+              },
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex-1 bg-[#fef9c3] rounded-[4px] p-[8px] break-all flex-col"
+                  "className": "flex flex-col gap-[8px]"
                 },
                 "children": [
                   {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#dbeafe] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px] w-[75%]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#1e40af] flex-col"
+                        },
+                        "text": "w: 75% (static)"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#dcfce7] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px] w-[50vw]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#166534] flex-col"
+                        },
+                        "text": "w: 50vw (static)"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#fef9c3] rounded-[4px] h-[32px] flex flex-row items-center pl-[8px]",
+                      "style": {
+                        "width": {
+                          "formula": "variables['style-test-0000-0000-0000-width-pct'] + '%'"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#854d0e] flex-col"
+                        },
+                        "text": "w: bound to ST Width % variable (60%)"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "A4 — New CSS Properties"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-col gap-[12px]"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row gap-[12px] flex-wrap"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-[120px] bg-[#f3f4f6] rounded-[4px] overflow-hidden aspect-[16/9] flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[10px] text-gray-600 p-[4px] flex-col"
+                            },
+                            "text": "aspect-ratio: 16/9"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex flex-row bg-[#f3f4f6] rounded-[4px] overflow-hidden h-[60px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "bg-[#6366f1] flex flex-col items-center justify-center grow"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[10px] text-white flex-col"
+                                },
+                                "text": "flex-grow: 1"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "w-[60px] bg-[#ec4899] flex flex-col items-center justify-center"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[10px] text-white flex-col"
+                                },
+                                "text": "fixed"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#f3f4f6] rounded-[4px] p-[8px] overflow-hidden overflow-hidden flex-col",
+                      "style": {
+                        "WebkitLineClamp": "2",
+                        "WebkitBoxOrient": "vertical",
+                        "display": "-webkit-box"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[13px] text-gray-700 flex-col"
+                        },
+                        "text": "line-clamp: 2 — This is a long text that should be clamped to exactly 2 lines. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. It should truncate here."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "flex flex-row gap-[12px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex-1 bg-[#fef9c3] rounded-[4px] p-[8px] break-all flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] text-[#854d0e] flex-col"
+                            },
+                            "text": "word-break: break-all — Superlongwordthatbreaks"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "flex-1 bg-[#f0fdf4] rounded-[4px] p-[8px] whitespace-nowrap overflow-hidden text-ellipsis flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[11px] text-[#166534] flex-col"
+                            },
+                            "text": "whitespace-nowrap + text-overflow: ellipsis on a long text that should truncate"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#faf5ff] rounded-[4px] p-[8px] flex flex-row items-center gap-[8px]"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[14px] text-[#7c3aed] underline decoration-[#ec4899] flex-col"
+                        },
+                        "text": "text-decoration-color: pink underline"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#fef2f2] rounded-[4px] p-[12px] relative pointer-events-none flex-col"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[12px] text-[#991b1b] flex-col"
+                        },
+                        "text": "pointer-events: none — clicking this box does nothing"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "A5 — Per-side Border"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-t-[4px] border-t-[#6366f1]",
+                      "style": {
+                        "borderTopStyle": "solid"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-gray-600 flex-col"
+                        },
+                        "text": "border-top: 4px indigo"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-l-[4px] border-l-[#ec4899]",
+                      "style": {
+                        "borderLeftStyle": "solid"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-gray-600 flex-col"
+                        },
+                        "text": "border-left: 4px pink"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-t-[2px] border-t-[#6366f1] border-r-[4px] border-r-[#ec4899] border-b-[6px] border-b-[#10b981] border-l-[2px] border-l-[#f59e0b]",
+                      "style": {
+                        "borderTopStyle": "solid",
+                        "borderRightStyle": "solid",
+                        "borderBottomStyle": "solid",
+                        "borderLeftStyle": "solid"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-gray-600 flex-col"
+                        },
+                        "text": "all 4 sides different"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "A6 — Gradient Direction"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
+                      "style": {
+                        "background": "linear-gradient(to right, #6366f1, #ec4899)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "to right"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
+                      "style": {
+                        "background": "linear-gradient(to bottom, #6366f1, #ec4899)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "to bottom"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
+                      "style": {
+                        "background": "radial-gradient(circle, #6366f1, #ec4899)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "radial"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
+                      "style": {
+                        "background": "linear-gradient(135deg, #6366f1, #ec4899, #f59e0b)"
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "135deg 3-stop"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "A7 — Formula Bindings (Opacity, Radius, Padding, Z-Index)"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#6366f1] flex flex-col items-center justify-center",
+                      "style": {
+                        "opacity": {
+                          "formula": "variables['style-test-0000-0000-0000-opacity-val']"
+                        },
+                        "borderRadius": {
+                          "formula": "variables['style-test-0000-0000-0000-radius-px'] + 'px'"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white flex-col"
+                        },
+                        "text": "opacity + radius bound"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "bg-[#dbeafe] flex flex-row items-center",
+                      "style": {
+                        "paddingTop": {
+                          "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
+                        },
+                        "paddingRight": {
+                          "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
+                        },
+                        "paddingBottom": {
+                          "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
+                        },
+                        "paddingLeft": {
+                          "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#1e40af] flex-col"
+                        },
+                        "text": "padding bound (16px var)"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[80px] h-[40px] bg-[#fef9c3] rounded-[4px] flex flex-col items-center justify-center relative",
+                      "style": {
+                        "zIndex": {
+                          "formula": "variables['style-test-0000-0000-0000-z-index']"
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[10px] text-[#854d0e] flex-col"
+                        },
+                        "text": "z-index bound"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "A9 — Background Image (props.style)"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[200px] h-[100px] rounded-[8px] flex flex-col items-end justify-end p-[8px] bg-[url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)] bg-[cover] bg-[center]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "bg-[rgba(0,0,0,0.5)] rounded-[4px] px-[6px] py-[2px] flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[10px] text-white flex-col"
+                            },
+                            "text": "bg-image cover"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[200px] h-[100px] rounded-[8px] flex flex-col items-center justify-center bg-[url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)] bg-[contain] bg-no-repeat bg-[center]"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "bg-[rgba(0,0,0,0.5)] rounded-[4px] px-[6px] py-[2px] flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[10px] text-white flex-col"
+                            },
+                            "text": "bg-image contain"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "B/C — Animation: New Enter Types"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[16px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#6366f1] rounded-[8px] flex flex-col items-center justify-center",
+                      "animation": {
+                        "enter": {
+                          "type": "revealUp",
+                          "duration": 600,
+                          "delay": 0
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "revealUp"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#ec4899] rounded-[8px] flex flex-col items-center justify-center",
+                      "animation": {
+                        "enter": {
+                          "type": "charFall",
+                          "duration": 600,
+                          "delay": 200
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "charFall"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#10b981] rounded-[8px] flex flex-col items-center justify-center",
+                      "animation": {
+                        "enter": {
+                          "type": "charBounce",
+                          "duration": 600,
+                          "delay": 400
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white font-medium flex-col"
+                        },
+                        "text": "charBounce"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "B3 — Timeline: translateX / translateY / rotate"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[16px] flex-wrap items-center"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[60px] h-[60px] bg-[#6366f1] rounded-[8px] flex-col",
+                      "animation": {
+                        "timeline": [
+                          {
+                            "property": "translateX",
+                            "from": -60,
+                            "to": 60,
+                            "startMs": 0,
+                            "endMs": 800,
+                            "loop": true
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[60px] h-[60px] bg-[#ec4899] rounded-[8px] flex-col",
+                      "animation": {
+                        "timeline": [
+                          {
+                            "property": "translateY",
+                            "from": -20,
+                            "to": 20,
+                            "startMs": 0,
+                            "endMs": 600,
+                            "loop": true
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[60px] h-[60px] bg-[#f59e0b] rounded-[8px] flex-col",
+                      "animation": {
+                        "timeline": [
+                          {
+                            "property": "rotate",
+                            "from": -15,
+                            "to": 15,
+                            "startMs": 0,
+                            "endMs": 700,
+                            "loop": true
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
                     "type": "Text",
                     "props": {
-                      "className": "text-[11px] text-[#854d0e] flex-col"
+                      "className": "text-[11px] text-gray-500 flex-col"
                     },
-                    "text": "word-break: break-all — Superlongwordthatbreaks"
+                    "text": "← translateX | translateY | rotate (looping)"
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "B5 — Filter FX with Duration"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#f0abfc] rounded-[8px] flex flex-col items-center justify-center",
+                      "animation": {
+                        "filter": {
+                          "enabled": true,
+                          "blur": 4,
+                          "duration": 600,
+                          "loop": true
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#701a75] flex-col"
+                        },
+                        "text": "blur loop"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[120px] h-[60px] bg-[#fef9c3] rounded-[8px] flex flex-col items-center justify-center",
+                      "animation": {
+                        "filter": {
+                          "enabled": true,
+                          "brightness": 1.8,
+                          "duration": 800
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-[#854d0e] flex-col"
+                        },
+                        "text": "brightness transition"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
+                },
+                "text": "C2 — New Panel Sections Preview"
+              },
+              {
+                "type": "Box",
+                "props": {
+                  "className": "flex flex-row gap-[12px] flex-wrap"
+                },
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
+                      "style": {
+                        "background": "linear-gradient(90deg, #e5e7eb 25%, #f9fafb 50%, #e5e7eb 75%)"
+                      },
+                      "animation": {
+                        "shimmer": {
+                          "baseColor": "#e5e7eb",
+                          "highlightColor": "#f9fafb",
+                          "duration": 1200
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-gray-500 flex-col"
+                        },
+                        "text": "shimmer skeleton"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-[140px] h-[80px] bg-[#1e293b] rounded-[8px] flex flex-col items-center justify-center overflow-hidden relative",
+                      "animation": {
+                        "particles": {
+                          "count": 30,
+                          "color": "#6366f1",
+                          "speed": 0.8,
+                          "maxRadius": 2,
+                          "connectDistance": 60
+                        }
+                      }
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[11px] text-white flex-col"
+                        },
+                        "text": "particles"
+                      }
+                    ]
                   }
                 ]
               },
               {
                 "type": "Box",
                 "props": {
-                  "className": "flex-1 bg-[#f0fdf4] rounded-[4px] p-[8px] whitespace-nowrap overflow-hidden text-ellipsis flex-col"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[11px] text-[#166534] flex-col"
-                    },
-                    "text": "whitespace-nowrap + text-overflow: ellipsis on a long text that should truncate"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#faf5ff] rounded-[4px] p-[8px] flex flex-row items-center gap-[8px]"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[14px] text-[#7c3aed] underline decoration-[#ec4899] flex-col"
-                },
-                "text": "text-decoration-color: pink underline"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#fef2f2] rounded-[4px] p-[12px] relative pointer-events-none flex-col"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[12px] text-[#991b1b] flex-col"
-                },
-                "text": "pointer-events: none — clicking this box does nothing"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A5 — Per-side Border"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-t-[4px] border-t-[#6366f1]",
-              "style": {
-                "borderTopStyle": "solid"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-gray-600 flex-col"
-                },
-                "text": "border-top: 4px indigo"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-l-[4px] border-l-[#ec4899]",
-              "style": {
-                "borderLeftStyle": "solid"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-gray-600 flex-col"
-                },
-                "text": "border-left: 4px pink"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[4px] flex flex-col items-center justify-center border-t-[2px] border-t-[#6366f1] border-r-[4px] border-r-[#ec4899] border-b-[6px] border-b-[#10b981] border-l-[2px] border-l-[#f59e0b]",
-              "style": {
-                "borderTopStyle": "solid",
-                "borderRightStyle": "solid",
-                "borderBottomStyle": "solid",
-                "borderLeftStyle": "solid"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-gray-600 flex-col"
-                },
-                "text": "all 4 sides different"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A6 — Gradient Direction"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
-              "style": {
-                "background": "linear-gradient(to right, #6366f1, #ec4899)"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "to right"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
-              "style": {
-                "background": "linear-gradient(to bottom, #6366f1, #ec4899)"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "to bottom"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
-              "style": {
-                "background": "radial-gradient(circle, #6366f1, #ec4899)"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "radial"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
-              "style": {
-                "background": "linear-gradient(135deg, #6366f1, #ec4899, #f59e0b)"
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "135deg 3-stop"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A7 — Formula Bindings (Opacity, Radius, Padding, Z-Index)"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#6366f1] flex flex-col items-center justify-center",
-              "style": {
-                "opacity": {
-                  "formula": "variables['style-test-0000-0000-0000-opacity-val']"
-                },
-                "borderRadius": {
-                  "formula": "variables['style-test-0000-0000-0000-radius-px'] + 'px'"
+                  "className": "h-[40px] flex-col"
                 }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white flex-col"
-                },
-                "text": "opacity + radius bound"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "bg-[#dbeafe] flex flex-row items-center",
-              "style": {
-                "paddingTop": {
-                  "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
-                },
-                "paddingRight": {
-                  "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
-                },
-                "paddingBottom": {
-                  "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
-                },
-                "paddingLeft": {
-                  "formula": "variables['style-test-0000-0000-0000-padding-px'] + 'px'"
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-[#1e40af] flex-col"
-                },
-                "text": "padding bound (16px var)"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[80px] h-[40px] bg-[#fef9c3] rounded-[4px] flex flex-col items-center justify-center relative",
-              "style": {
-                "zIndex": {
-                  "formula": "variables['style-test-0000-0000-0000-z-index']"
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[10px] text-[#854d0e] flex-col"
-                },
-                "text": "z-index bound"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "A9 — Background Image (props.style)"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[200px] h-[100px] rounded-[8px] flex flex-col items-end justify-end p-[8px] bg-[url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)] bg-[cover] bg-[center]"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "bg-[rgba(0,0,0,0.5)] rounded-[4px] px-[6px] py-[2px] flex-col"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[10px] text-white flex-col"
-                    },
-                    "text": "bg-image cover"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[200px] h-[100px] rounded-[8px] flex flex-col items-center justify-center bg-[url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400)] bg-[contain] bg-no-repeat bg-[center]"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "bg-[rgba(0,0,0,0.5)] rounded-[4px] px-[6px] py-[2px] flex-col"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[10px] text-white flex-col"
-                    },
-                    "text": "bg-image contain"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "B/C — Animation: New Enter Types"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[16px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#6366f1] rounded-[8px] flex flex-col items-center justify-center",
-              "animation": {
-                "enter": {
-                  "type": "revealUp",
-                  "duration": 600,
-                  "delay": 0
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "revealUp"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#ec4899] rounded-[8px] flex flex-col items-center justify-center",
-              "animation": {
-                "enter": {
-                  "type": "charFall",
-                  "duration": 600,
-                  "delay": 200
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "charFall"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#10b981] rounded-[8px] flex flex-col items-center justify-center",
-              "animation": {
-                "enter": {
-                  "type": "charBounce",
-                  "duration": 600,
-                  "delay": 400
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white font-medium flex-col"
-                },
-                "text": "charBounce"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "B3 — Timeline: translateX / translateY / rotate"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[16px] flex-wrap items-center"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[60px] h-[60px] bg-[#6366f1] rounded-[8px] flex-col",
-              "animation": {
-                "timeline": [
-                  {
-                    "property": "translateX",
-                    "from": -60,
-                    "to": 60,
-                    "startMs": 0,
-                    "endMs": 800,
-                    "loop": true
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[60px] h-[60px] bg-[#ec4899] rounded-[8px] flex-col",
-              "animation": {
-                "timeline": [
-                  {
-                    "property": "translateY",
-                    "from": -20,
-                    "to": 20,
-                    "startMs": 0,
-                    "endMs": 600,
-                    "loop": true
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[60px] h-[60px] bg-[#f59e0b] rounded-[8px] flex-col",
-              "animation": {
-                "timeline": [
-                  {
-                    "property": "rotate",
-                    "from": -15,
-                    "to": 15,
-                    "startMs": 0,
-                    "endMs": 700,
-                    "loop": true
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "type": "Text",
-            "props": {
-              "className": "text-[11px] text-gray-500 flex-col"
-            },
-            "text": "← translateX | translateY | rotate (looping)"
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "B5 — Filter FX with Duration"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#f0abfc] rounded-[8px] flex flex-col items-center justify-center",
-              "animation": {
-                "filter": {
-                  "enabled": true,
-                  "blur": 4,
-                  "duration": 600,
-                  "loop": true
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-[#701a75] flex-col"
-                },
-                "text": "blur loop"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[120px] h-[60px] bg-[#fef9c3] rounded-[8px] flex flex-col items-center justify-center",
-              "animation": {
-                "filter": {
-                  "enabled": true,
-                  "brightness": 1.8,
-                  "duration": 800
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-[#854d0e] flex-col"
-                },
-                "text": "brightness transition"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Text",
-        "props": {
-          "className": "text-[24px] font-bold text-foreground font-semibold text-gray-800 dark:text-gray-200 border-b-[1px] border-b-[#e5e7eb] pb-[8px] flex-col"
-        },
-        "text": "C2 — New Panel Sections Preview"
-      },
-      {
-        "type": "Box",
-        "props": {
-          "className": "flex flex-row gap-[12px] flex-wrap"
-        },
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[60px] rounded-[8px] flex flex-col items-center justify-center",
-              "style": {
-                "background": "linear-gradient(90deg, #e5e7eb 25%, #f9fafb 50%, #e5e7eb 75%)"
-              },
-              "animation": {
-                "shimmer": {
-                  "baseColor": "#e5e7eb",
-                  "highlightColor": "#f9fafb",
-                  "duration": 1200
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-gray-500 flex-col"
-                },
-                "text": "shimmer skeleton"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-[140px] h-[80px] bg-[#1e293b] rounded-[8px] flex flex-col items-center justify-center overflow-hidden relative",
-              "animation": {
-                "particles": {
-                  "count": 30,
-                  "color": "#6366f1",
-                  "speed": 0.8,
-                  "maxRadius": 2,
-                  "connectDistance": 60
-                }
-              }
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[11px] text-white flex-col"
-                },
-                "text": "particles"
               }
             ]
           }
@@ -888,9 +923,12 @@
       },
       {
         "type": "Box",
-        "props": {
-          "className": "h-[40px] flex-col"
-        }
+        "_shared": {
+          "id": "sc-footer",
+          "name": "Footer"
+        },
+        "props": {},
+        "children": []
       }
     ]
   }

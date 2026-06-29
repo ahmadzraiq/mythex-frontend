@@ -79,7 +79,7 @@ import routes from '@/config/routes.json';
 import { WorkflowCanvas } from './_workflow-canvas';
 import { useBuilderAutosave, type SaveStatus } from '@/lib/builder/autosave';
 import { useShallow } from 'zustand/react/shallow';
-import { DataApiTab } from './_data-api-tab';
+import { DataApiTab, type DataApiSection } from './_data-api-tab';
 
 void useRef; void useState; // suppress unused-import lint
 
@@ -848,6 +848,8 @@ function TopBar({
   projectId,
   mainMode,
   onMainModeChange,
+  dataSection,
+  onDataSectionChange,
   leftTab,
   onSetLeftTab,
   onOpenPageConfig,
@@ -863,6 +865,8 @@ function TopBar({
   projectId: string | null;
   mainMode: 'interface' | 'data-api';
   onMainModeChange: (mode: 'interface' | 'data-api') => void;
+  dataSection: DataApiSection;
+  onDataSectionChange: (s: DataApiSection) => void;
   leftTab: LeftTabId;
   onSetLeftTab: (t: LeftTabId) => void;
   onOpenPageConfig: () => void;
@@ -1180,6 +1184,38 @@ function TopBar({
             </div>
           )}
         </div>
+
+        {mainMode === 'data-api' && (
+          <>
+            <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.07)', margin: '0 2px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {DATA_API_NAV_ITEMS.map((item) => {
+                const isActive = dataSection === item.id;
+                return (
+                  <button key={item.id}
+                    onClick={() => onDataSectionChange(item.id)}
+                    title={item.label}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '4px 9px',
+                      background: isActive ? 'rgba(99,102,241,0.18)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(99,102,241,0.45)' : 'transparent'}`,
+                      borderRadius: 7,
+                      color: isActive ? 'var(--bld-accent-fg)' : 'var(--bld-text-disabled)',
+                      cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 500 : 400,
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bld-bg-elevated)'; e.currentTarget.style.color = 'var(--bld-text-2)'; } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--bld-text-disabled)'; } }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {mainMode === 'interface' && (
           <>
@@ -1749,6 +1785,36 @@ function rightSlideTitle(state: RightSlideState): string {
   return '';
 }
 
+// ─── Data & API left nav ──────────────────────────────────────────────────────
+
+const DATA_API_NAV_ITEMS: Array<{ id: DataApiSection; label: string; icon: React.ReactNode }> = [
+  {
+    id: 'models',
+    label: 'Models',
+    icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="2" y1="11" x2="14" y2="11"/></svg>,
+  },
+  {
+    id: 'enums',
+    label: 'Enums',
+    icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="3" y1="5" x2="13" y2="5"/><line x1="3" y1="8" x2="10" y2="8"/><line x1="3" y1="11" x2="8" y2="11"/></svg>,
+  },
+  {
+    id: 'tables',
+    label: 'Data',
+    icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/></svg>,
+  },
+  {
+    id: 'backend-workflows',
+    label: 'API',
+    icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 8h3l2-4 3 8 2-4h2"/></svg>,
+  },
+  {
+    id: 'storage',
+    label: 'Storage',
+    icon: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="8" cy="5" rx="6" ry="2.5"/><path d="M2 5v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V5"/><path d="M2 8v3c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V8"/></svg>,
+  },
+];
+
 function BuilderPageInner() {
   const initTheme = useBuilderStore(s => s.initTheme);
   const loadFromConfig = useBuilderStore(s => s.loadFromConfig);
@@ -1763,6 +1829,12 @@ function BuilderPageInner() {
     if (typeof window === 'undefined') return 'interface';
     const saved = sessionStorage.getItem('bld:mainMode');
     return (saved === 'data-api' ? 'data-api' : 'interface') as 'interface' | 'data-api';
+  });
+  const [dataSection, setDataSection] = useState<DataApiSection>(() => {
+    if (typeof window === 'undefined') return 'models';
+    const saved = sessionStorage.getItem('bld:dataSection');
+    const valid: DataApiSection[] = ['models', 'enums', 'tables', 'backend-workflows', 'storage'];
+    return (valid.includes(saved as DataApiSection) ? saved : 'models') as DataApiSection;
   });
   const [leftTab, setLeftTab] = useState<LeftTabId>('components');
   const [leftSlide, setLeftSlide] = useState<LeftSlideState>(null);
@@ -1782,6 +1854,11 @@ function BuilderPageInner() {
   // Persistent reference to the dev-preview window so we can reuse it and send
   // updated config via postMessage without reopening a new tab on every click.
   const previewWinRef = useRef<Window | null>(null);
+
+  // Guard for the beforeunload emergency-save: true only after loadFromConfig
+  // completes successfully. Prevents an in-progress or failed load from saving
+  // an empty store state over real backend data during rapid hot-reloads.
+  const configLoadedRef = useRef(false);
 
   const projectId = useProjectId();
   const isAdminMode = !projectId || projectId === 'admin';
@@ -1846,10 +1923,15 @@ function BuilderPageInner() {
   // After the async load settles, seed the autosave baseline so it doesn't
   // treat the freshly-loaded state as "dirty" and immediately save it back.
   useEffect(() => {
+    // Reset the guard so rapid hot-reloads don't let a stale `true` value
+    // slip through before the new load completes.
+    configLoadedRef.current = false;
     void loadFromConfig(projectId ?? undefined).then(() => {
       if (projectId && projectId !== 'admin') {
         seedAutosaveBaseline(useBuilderStore.getState());
       }
+      // Mark config as loaded so the beforeunload emergency-save is allowed.
+      configLoadedRef.current = true;
       setConfigLoading(false);
 
       // If wizard triggered AI build mode, open chat and auto-send the build request
@@ -1904,6 +1986,10 @@ function BuilderPageInner() {
   useEffect(() => {
     if (!projectId) return;
     const handler = () => {
+      // Only save if config has been fully loaded. During rapid hot-reloads the
+      // store may still be at its empty initial state (loadFromConfig in-flight),
+      // and saving that would overwrite real backend data with an empty config.
+      if (!configLoadedRef.current) return;
       const s = useBuilderStore.getState();
       const pagesWithLive = s.pages.map(p =>
         p.id === s.currentPageId ? { ...p, nodes: s.pageNodes } : p
@@ -2228,6 +2314,8 @@ function BuilderPageInner() {
         projectId={projectId}
         mainMode={mainMode}
         onMainModeChange={(m) => { setMainMode(m); sessionStorage.setItem('bld:mainMode', m); }}
+        dataSection={dataSection}
+        onDataSectionChange={(s) => { setDataSection(s); sessionStorage.setItem('bld:dataSection', s); }}
         leftTab={leftTab}
         onSetLeftTab={setLeftTab}
         onOpenPageConfig={() => { setLeftSlideWidth(320); setLeftSlide({ kind: 'pageConfig' }); }}
@@ -2242,7 +2330,7 @@ function BuilderPageInner() {
       {/* ── Data & API full-screen view ────────────────────────────────────── */}
       {mainMode === 'data-api' && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <DataApiTab projectId={projectId ?? ''} />
+          <DataApiTab projectId={projectId ?? ''} section={dataSection} />
         </div>
       )}
 

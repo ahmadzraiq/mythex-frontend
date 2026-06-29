@@ -1,6 +1,5 @@
 {
-  "layout": "admin",
-  "content": {
+  "ui": {
     "type": "Box",
     "props": {
       "className": "flex flex-col gap-[24px] w-full"

@@ -69,7 +69,8 @@ export function PageTriggersInRightPanel() {
     .filter(([, wf]) =>
       wf.isTrigger &&
       !wf.isAppTrigger &&
-      wf.pageScope === pageConfig &&
+      (wf.pageScope === pageConfig ||
+       wf.pageScope?.toLowerCase() === focusedPage?.name?.toLowerCase()) &&
       PAGE_TRIGGER_VALUES.has(wf.trigger ?? ''),
     )
     .map(([id, wf]) => ({

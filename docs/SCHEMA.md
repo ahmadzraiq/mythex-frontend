@@ -970,12 +970,6 @@ await wwLib.popovers.open('id') / .close('id') / .toggle('id')
 await wwLib.forms.setState(formId, { valid: true })
 await wwLib.forms.reset(formId)
 
-// ── Auth ─────────────────────────────────────────────────────────────
-await wwLib.auth.authenticate({ url, method, body, tokenPath, userPath, persist })
-await wwLib.auth.setUser({ id, email })
-await wwLib.auth.restoreSession()
-await wwLib.auth.clearSession()
-
 // ── Files / browser ──────────────────────────────────────────────────
 await wwLib.files.upload({ url, file, fieldName, headers })
 await wwLib.files.download('https://…/foo.pdf', 'foo.pdf')

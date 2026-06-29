@@ -17,6 +17,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useBuilderStore, findNode, hasFormContainerAncestor } from './_store';
 import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store';
 import { backendWorkflows } from '@/lib/platform/api-client';
+import { useBackendConfig } from '@/lib/builder/use-backend-config';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
 import type { SharedComponentModel } from '@/config/shared-component-types';
 import { useSduiStore } from '@/store/sdui-store';
@@ -57,6 +58,7 @@ import {
   TypeSearchDropdown, WorkflowMetaPanel, CanvasOnOffToggle,
   NavigateToConfig, SetFormStateConfig, ResetFormConfig,
   NodePropsPanel, ParamsConfigPanel,
+  type WorkflowVarEntry,
 } from './_workflow-node-configs';
 import {
   getStepAtPath, updateStepAtPath, insertStepAtPath, removeStepAtPath,
@@ -469,9 +471,13 @@ export interface WorkflowCanvasProps {
   onClose: () => void;
   /** When true, renders as a flex child filling its container instead of a fixed full-screen overlay. */
   inline?: boolean;
+  /** When true, hides the top bar entirely. */
+  hideHeader?: boolean;
+  /** Extra nodes rendered inside the right panel header (after the title). */
+  rightPanelHeaderSlot?: React.ReactNode;
 }
 
-export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanvasProps) {
+export function WorkflowCanvas({ target, onClose, inline = false, hideHeader = false, rightPanelHeaderSlot }: WorkflowCanvasProps) {
   const store = useBuilderStore();
 
   // Sync inline canvas target into the store so FormulaEditor can match test results
@@ -497,19 +503,19 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       }));
   }, [store.workflows]);
 
-  // Server FUNCTION-kind workflows for injection into Functions category
-  const [serverFunctionsList, setServerFunctionsList] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
-    if (target.kind !== 'serverWorkflow') return;
-    backendWorkflows.list(target.projectId).then((res) => {
-      setServerFunctionsList(
-        (res.workflows ?? [])
-          .filter((w: { kind: string }) => w.kind === 'FUNCTION')
-          .map((w: { id: string; name: string }) => ({ id: w.id, name: w.name }))
-      );
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : null]);
+  // Server FUNCTION-kind workflows — derived from the shared backend config cache (no extra fetch).
+  const serverProjectId = target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : undefined;
+  const { workflows: serverWorkflowsAll } = useBackendConfig(serverProjectId);
+  const serverFunctionsList = useMemo(
+    () => serverWorkflowsAll
+      .filter((w) => w.kind === 'FUNCTION')
+      .map((w) => ({ id: w.id, name: w.name })),
+    [serverWorkflowsAll],
+  );
+
+  // Middleware vars — variables injected by the applied middleware workflows via setRequestContext.
+  // These are loaded once when the workflow is opened and its middlewareIds are known.
+  const [middlewareVars, setMiddlewareVars] = useState<WorkflowVarEntry[]>([]);
 
   // ── Local state ─────────────────────────────────────────────────────────────
   const [steps, setSteps] = useState<ActionStep[]>([]);
@@ -523,6 +529,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
   const worldRef = useRef<HTMLDivElement>(null);
   const [triggerValue, setTriggerValue] = useState<string>('click');
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
+  const [reachEndConfig, setReachEndConfig] = useState<{ threshold: number; scrollTarget: 'window' | 'element' }>({ threshold: 100, scrollTarget: 'window' });
   const [addPopoverState, setAddPopoverState] = useState<{ insertIdx: number; pathPrefix: (string | number)[]; x: number; y: number } | null>(null);
   const [copiedStep, setCopiedStep] = useState<ActionStep | null>(null);
   // Sentinel: true when the Parameters node (global workflow only) is selected
@@ -546,6 +553,39 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
     store.setLiveCanvasSteps(steps as object[]);
   }, [steps]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Auto-save for server workflows ───────────────────────────────────────────
+  // serverSnapshotRef holds the JSON of the data that was last fetched from (or
+  // last written to) the server. The auto-save effect only fires a PATCH when the
+  // current state actually differs from that snapshot — so opening a workflow
+  // never triggers an unnecessary write.
+  const autoSaveTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const serverSnapshotRef   = useRef<string | null>(null);
+  useEffect(() => {
+    if (target.kind !== 'serverWorkflow') return;
+    const currentJson = JSON.stringify({
+      graph: steps.map(serializeStep),
+      name:  workflowMeta.name,
+      inputSchema: workflowMeta.params ?? [],
+    });
+    // No snapshot yet (initial render before async load) or identical to server — skip.
+    if (serverSnapshotRef.current === null || serverSnapshotRef.current === currentJson) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      serverSnapshotRef.current = currentJson;
+      void backendWorkflows.update(
+        (target as { projectId: string }).projectId,
+        (target as { workflowId: string }).workflowId,
+        {
+          graph: steps.map(serializeStep) as unknown,
+          name: workflowMeta.name,
+          inputSchema: (workflowMeta.params ?? []) as unknown,
+        },
+      );
+    }, 800);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, workflowMeta]);
+
   const currentSteps = steps;
   const setCurrentSteps = setSteps;
 
@@ -568,6 +608,11 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
           const elementParams = (first.params as WorkflowParam[] | undefined) ?? [];
           setWorkflowMeta(prev => ({ ...prev, params: elementParams }));
           initialSteps = deserializeStepArray(first.steps as unknown[], dam);
+          const cfg = first.config as Record<string, unknown> | undefined;
+          if (cfg) setReachEndConfig({
+            threshold: typeof cfg.threshold === 'number' ? cfg.threshold : 100,
+            scrollTarget: cfg.scrollTarget === 'element' ? 'element' : 'window',
+          });
         } else {
           // Legacy flat steps array (backward compat)
           initialSteps = deserializeStepArray(nodeActions as unknown[], dam);
@@ -583,12 +628,20 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       const wf = store.workflows[target.id];
       setWorkflowMeta(wf ? { id: wf.id, name: wf.name ?? 'Workflow', params: wf.params as WorkflowParam[] | undefined } : { id: target.id, name: 'Workflow' });
       if (wf?.trigger) setTriggerValue(wf.trigger);
+      if (wf?.config) setReachEndConfig({
+        threshold: typeof wf.config.threshold === 'number' ? wf.config.threshold : 100,
+        scrollTarget: wf.config.scrollTarget === 'element' ? 'element' : 'window',
+      });
       initialSteps = deserializeStepArray((wf?.steps ?? []) as unknown[], store.directActionsMap);
       setSteps(initialSteps);
     } else if (target.kind === 'pageWorkflow') {
       const wf = store.workflows[target.name];
       setWorkflowMeta({ id: target.name, name: wf?.name ?? target.name, params: wf?.params as WorkflowParam[] | undefined });
       setTriggerValue(wf?.trigger ?? 'click');
+      if (wf?.config) setReachEndConfig({
+        threshold: typeof wf.config.threshold === 'number' ? wf.config.threshold : 100,
+        scrollTarget: wf.config.scrollTarget === 'element' ? 'element' : 'window',
+      });
       initialSteps = deserializeStepArray((wf?.steps ?? []) as unknown[], store.directActionsMap);
       setSteps(initialSteps);
     } else if (target.kind === 'componentWorkflow') {
@@ -603,27 +656,69 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       });
       initialSteps = wf?.steps ? deserializeStepArray(wf.steps as unknown[], store.directActionsMap) : [];
       setSteps(initialSteps);
-    } else if (target.kind === 'serverWorkflow') {
-      backendWorkflows.get(target.projectId, target.workflowId).then((res) => {
-        const wf = res.workflow;
-        setWorkflowMeta({
-          id:     wf.id,
-          name:   wf.name,
-          params: (wf.inputSchema as WorkflowParam[] | undefined) ?? [],
-        });
-        if (wf.kind) setServerWfKind(wf.kind as 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE');
-        const rawGraph = Array.isArray(wf.graph) ? wf.graph as unknown[] : [];
-        const loaded = deserializeStepArray(rawGraph, store.directActionsMap);
-        setSteps(loaded);
-        historyRef.current = [loaded];
-        historyIdxRef.current = 0;
-      }).catch(() => {/* workflow may not exist yet — start empty */});
     }
-    // Seed history with the initial state so undo never goes past it
+    // Server workflows are initialized in a separate effect below that reads
+    // from the shared cache — no individual GET needed.
+    // Seed history with the initial state so undo never goes past it.
     historyRef.current = [initialSteps];
     historyIdxRef.current = 0;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Server workflow init from cache (no GET request) ─────────────────────────
+  // Fires once when the shared backend-config cache delivers the workflow list.
+  const serverInitDoneRef = useRef(false);
+  useEffect(() => {
+    if (target.kind !== 'serverWorkflow') return;
+    if (serverInitDoneRef.current) return;
+    if (serverWorkflowsAll.length === 0) return; // cache not populated yet
+    const wf = serverWorkflowsAll.find(w => w.id === (target as { workflowId: string }).workflowId);
+    if (!wf) return;
+    serverInitDoneRef.current = true;
+
+    const rawGraph = Array.isArray(wf.graph) ? wf.graph as unknown[] : [];
+    const loaded = deserializeStepArray(rawGraph, store.directActionsMap);
+    serverSnapshotRef.current = JSON.stringify({
+      graph: loaded.map(serializeStep),
+      name:  wf.name,
+      inputSchema: wf.inputSchema ?? [],
+    });
+    setWorkflowMeta({
+      id:     wf.id,
+      name:   wf.name,
+      params: (wf.inputSchema as WorkflowParam[] | undefined) ?? [],
+      method: wf.method ?? undefined,
+      path:   wf.path ?? undefined,
+    });
+    if (wf.kind) setServerWfKind(wf.kind as 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE');
+    setSteps(loaded);
+    historyRef.current = [loaded];
+    historyIdxRef.current = 0;
+
+    // Extract setRequestContext vars from middleware workflows — also from cache.
+    const mwIds: string[] = (wf.middlewareIds as string[] | undefined) ?? [];
+    if (mwIds.length > 0) {
+      const vars: WorkflowVarEntry[] = [];
+      const seen = new Set<string>();
+      for (const id of mwIds) {
+        const mwWf = serverWorkflowsAll.find(w => w.id === id);
+        if (!mwWf) continue;
+        const mwSteps = Array.isArray(mwWf.graph) ? mwWf.graph as unknown[] : [];
+        for (const s of mwSteps) {
+          const step = s as Record<string, unknown>;
+          if (step.type === 'setRequestContext') {
+            const key = (step.config as Record<string, unknown>)?.key as string | undefined;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              vars.push({ name: key, formula: `parameters?.['${key}']`, group: 'middleware', hint: 'from middleware' });
+            }
+          }
+        }
+      }
+      setMiddlewareVars(vars);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverWorkflowsAll]);
 
   // ── Copy workflow JSON ────────────────────────────────────────────────────────
   function handleCopyJson() {
@@ -646,6 +741,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
       const wrapped = serializedSteps.length > 0
         ? [{
             trigger: triggerValue,
+            ...(triggerValue === 'reachEnd' ? { config: reachEndConfig } : {}),
             ...(elementParams.length > 0 ? { params: elementParams } : {}),
             steps: serializedSteps,
           }]
@@ -657,6 +753,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
         id: target.id,
         name: workflowMeta.name ?? target.id,
         trigger: triggerValue,
+        ...(triggerValue === 'reachEnd' ? { config: reachEndConfig } : {}),
         steps: steps as object[],
         params: workflowMeta.params as import('@/config/types').WorkflowParam[] | undefined,
       });
@@ -666,6 +763,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
         id: target.name,
         name: workflowMeta.name ?? target.name,
         trigger: triggerValue,
+        ...(triggerValue === 'reachEnd' ? { config: reachEndConfig } : {}),
         steps: steps as object[],
         params: workflowMeta.params as import('@/config/types').WorkflowParam[] | undefined,
       });
@@ -1110,28 +1208,24 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
   return (
     <div data-testid="workflow-canvas" style={inline ? { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: 'var(--bld-bg-base)' } : S.overlay} onClick={() => { setTriggerDropdownOpen(false); setAddPopoverState(null); setContextMenuState(null); }}>
       {/* Top bar */}
-      <div style={S.topBar} onClick={e => e.stopPropagation()}>
+      {!hideHeader && <div style={S.topBar} onClick={e => e.stopPropagation()}>
         {/* Left: workflow name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow' || target.kind === 'serverWorkflow' ? toHumanName(workflowMeta.name) : 'Workflow'}
           </span>
         </div>
-        {/* Copy JSON */}
-        <button
-          data-testid="workflow-canvas-copy-json"
-          style={{ ...S.closeBtn, color: copiedJson ? 'var(--bld-success)' : 'var(--bld-text-3)' }}
-          onClick={handleCopyJson}
-          title="Copy workflow steps as JSON"
-        >
-          <span style={{ fontSize: 13 }}>{copiedJson ? '✓' : '{}'}</span>
-          {copiedJson ? 'Copied!' : 'Copy JSON'}
-        </button>
         {/* Right: Close */}
-        <button data-testid="workflow-canvas-close" style={S.closeBtn} onClick={handleClose}>
-          <span style={{ fontSize: 14 }}>×</span> Close
+        <button data-testid="workflow-canvas-close" onClick={handleClose}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.9)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'; }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 6, transition: 'color 0.12s' }}
+          title="Close">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
+          </svg>
         </button>
-      </div>
+      </div>}
 
       {/* Content area */}
       <div style={S.contentArea}>
@@ -1175,6 +1269,35 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                   />
                 )}
               </div>
+
+              {/* reachEnd extra config — threshold + scrollTarget */}
+              {triggerValue === 'reachEnd' && (
+                <div style={{ background: 'var(--bld-bg-surface)', border: '1px solid var(--bld-border)', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8, minWidth: 260 }} onClick={e => e.stopPropagation()}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reach End Options</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label style={{ fontSize: 12, color: 'var(--bld-text-2)', flexShrink: 0, width: 72 }}>Threshold</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={reachEndConfig.threshold}
+                      onChange={e => setReachEndConfig(prev => ({ ...prev, threshold: Number(e.target.value) || 0 }))}
+                      style={{ width: 64, padding: '3px 6px', fontSize: 12, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 4, color: 'var(--bld-text-1)' }}
+                    />
+                    <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>px from bottom</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label style={{ fontSize: 12, color: 'var(--bld-text-2)', flexShrink: 0, width: 72 }}>Target</label>
+                    <select
+                      value={reachEndConfig.scrollTarget}
+                      onChange={e => setReachEndConfig(prev => ({ ...prev, scrollTarget: e.target.value as 'window' | 'element' }))}
+                      style={{ flex: 1, padding: '3px 6px', fontSize: 12, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 4, color: 'var(--bld-text-1)' }}
+                    >
+                      <option value="window">Window scroll</option>
+                      <option value="element">Element scroll</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Parameters node — shown for every workflow kind */}
               <Connector />
@@ -1228,6 +1351,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
           {/* Panel header */}
           <div style={S.rightPanelHeader}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1 }}>Workflow</span>
+            {rightPanelHeaderSlot}
             {/* Workflow options menu */}
             <button
               ref={workflowMenuBtnRef}
@@ -1289,6 +1413,8 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
               <ParamsConfigPanel
                 params={workflowMeta.params ?? []}
                 onChange={params => setWorkflowMeta(prev => ({ ...prev, params }))}
+                workflowPath={workflowMeta.path}
+                workflowMethod={workflowMeta.method}
               />
             ) : selectedStep ? (
               <>
@@ -1307,6 +1433,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                       : undefined
                   }
                   isServerContext={target.kind === 'serverWorkflow'}
+                  serverWfKind={target.kind === 'serverWorkflow' ? serverWfKind : undefined}
                   projectId={target.kind === 'serverWorkflow' ? (target as { projectId: string }).projectId : undefined}
                   serverFunctions={serverFunctionsList}
                   priorSteps={
@@ -1319,6 +1446,7 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                       ? (workflowMeta.params ?? []) as import('./_store-types').GlobalFormulaParam[]
                       : undefined
                   }
+                  middlewareVars={target.kind === 'serverWorkflow' ? middlewareVars : undefined}
                 />
               </>
             ) : (target.kind === 'globalWorkflow' || target.kind === 'pageWorkflow' || target.kind === 'componentWorkflow') ? (
@@ -1327,10 +1455,16 @@ export function WorkflowCanvas({ target, onClose, inline = false }: WorkflowCanv
                 onChange={patch => setWorkflowMeta(prev => ({ ...prev, ...patch }))}
               />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--bld-text-3)', fontSize: 12, textAlign: 'center', padding: 24, gap: 8 }}>
-                <span style={{ fontSize: 32, opacity: 0.3 }}>⚡</span>
-                <span style={{ fontWeight: 600, color: 'var(--bld-text-disabled)' }}>Select an action</span>
-                <span>Click any action node to configure it</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 24, gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 24px rgba(99,102,241,0.1)' }}>
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="3,2 13,8 3,14"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginBottom: 5 }}>Select an action</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>Click any action node on the canvas<br/>to configure it here</div>
+                </div>
               </div>
             )}
           </div>

@@ -304,15 +304,15 @@ export function formulaToStoredValue(formula: string): FormulaValue {
   const trimmed = formula.trim();
   if (!trimmed) return '';
   // Pure numbers (int or float, optionally negative)
-  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return { formula: trimmed };
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return { js: trimmed };
   // String literals ("text" or 'text') — store as the plain string
   const dblQuote = trimmed.match(/^"((?:[^"\\]|\\.)*)"$/);
   if (dblQuote) return dblQuote[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
   const sglQuote = trimmed.match(/^'((?:[^'\\]|\\.)*)'$/);
   if (sglQuote) return sglQuote[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
-  // Everything else (variable access, expressions): store as { formula: "..." }
+  // Everything else (variable access, expressions): store as { js: "..." }
   // Use variables['UUID'], collections['UUID'].data.path, context.item?.['field'], etc.
-  return { formula: trimmed };
+  return { js: trimmed };
 }
 
 /** Convert stored value → editable formula string */

@@ -13,7 +13,6 @@ import { emitToggle } from './toggle';
 import { emitIncrement } from './increment';
 import { emitCycleIndex } from './cycle-index';
 import { emitNavigate } from './navigate';
-import { emitShowToast } from './show-toast';
 import { emitFetch } from './fetch';
 import { emitGraphQL } from './graphql';
 import { emitRefetch } from './refetch';
@@ -22,7 +21,6 @@ import { emitPopover } from './popover';
 import { emitSetTheme } from './set-theme';
 import { emitClearPersisted } from './clear-persisted';
 import { emitSharedComponent } from './shared-component';
-import { emitClearSession } from './clear-session';
 import {
   emitNavigateTo,
   emitChangeVariableValue,
@@ -46,9 +44,6 @@ import {
   emitFetchData,
   emitFetchCollectionsParallel,
   emitUpdateCollection,
-  emitAuthenticate,
-  emitRestoreSession,
-  emitSetUser,
   emitStopPropagation,
   emitCopyToClipboard,
   emitDownloadFile,
@@ -90,8 +85,6 @@ export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMa
     case 'navigateWithQuery':
     case 'goToPage':
       return emitNavigate(step as never, symbols);
-    case 'showToast':
-      return emitShowToast(step as never, symbols);
     case 'fetch':
       return emitFetch(step as never, symbols, stepId);
     case 'graphql':
@@ -111,9 +104,6 @@ export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMa
       return emitSetTheme(step as never, symbols);
     case 'clearPersistedPaths':
       return emitClearPersisted(step as never, symbols);
-    case 'clearSession':
-      return emitClearSession();
-
     // ── Aliases and extended action types ────────────────────────────────────
     case 'navigateTo':
       return emitNavigateTo(step as never, symbols);
@@ -172,14 +162,6 @@ export function emitStep(step: Record<string, unknown>, symbols: SymbolMap, inMa
       return emitFetchCollectionsParallel(step, symbols);
     case 'updateCollection':
       return emitUpdateCollection(step, symbols);
-
-    // ── Auth ──────────────────────────────────────────────────────────────────
-    case 'authenticate':
-      return emitAuthenticate(step, symbols);
-    case 'restoreSession':
-      return emitRestoreSession();
-    case 'setUser':
-      return emitSetUser(step, symbols);
 
     // ── DOM / Browser ─────────────────────────────────────────────────────────
     case 'stopPropagation':

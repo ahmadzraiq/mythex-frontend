@@ -32,8 +32,6 @@ import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import app from '@/config/app';
 import { ExprBuilder } from './_expr-builder';
 import { ActionBuilder } from './_action-builder';
-import { BindingIcon } from './_formula-panel';
-import { FormulaEditor } from './_formula-editor';
 import { DataTab, type DataTabSlideState } from './_data-tab';
 import { LogicTab, type LogicSlideState } from './_logic-tab';
 
@@ -665,16 +663,13 @@ const PC_SECTION: React.CSSProperties = {
 };
 
 export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }) {
-  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta, setPageProtection } = useBuilderStore();
+  const { pages, currentPageId, renamePage, removePage, setCurrentPageMeta } = useBuilderStore();
   const currentPage = pages.find(p => p.id === currentPageId);
 
   const [pageName, setPageName] = useState(currentPage?.name ?? '');
   const [title, setTitle] = useState(currentPage?.meta?.title ?? '');
   const [description, setDescription] = useState(currentPage?.meta?.description ?? '');
   const [ogImage, setOgImage] = useState(currentPage?.meta?.ogImage ?? '');
-  const [protectionCondition, setProtectionCondition] = useState(currentPage?.protectionCondition ?? '');
-  const [protectionRedirect, setProtectionRedirect] = useState(currentPage?.protectionRedirect ?? '');
-  const [conditionEditorOpen, setConditionEditorOpen] = useState(false);
 
   const saveMeta = () => {
     const meta: PageMeta = {};
@@ -740,92 +735,6 @@ export function PageConfigSlidePanelContent({ onClose }: { onClose: () => void }
             onChange={e => setOgImage(e.target.value)}
             onBlur={saveMeta}
             placeholder="https://…"
-            style={PC_INPUT}
-          />
-        </div>
-      </div>
-
-      {/* Page Protection */}
-      <div style={PC_SECTION}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bld-text-3)', textTransform: 'none' }}>Protection</div>
-
-        <div>
-          <label style={PC_LABEL}>Condition (formula)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
-            <BindingIcon
-              isBound={!!protectionCondition}
-              onClick={() => setConditionEditorOpen(v => !v)}
-            />
-            {protectionCondition ? (
-              <button
-                type="button"
-                data-testid="page-config-protection-condition"
-                onClick={() => setConditionEditorOpen(v => !v)}
-                style={{
-                  flex: 1, padding: '5px 8px', background: 'rgba(59,130,246,0.08)',
-                  border: '1px solid var(--bld-accent)', borderRadius: 5,
-                  color: 'var(--bld-accent)', fontSize: 11, cursor: 'pointer',
-                  fontWeight: 500, textAlign: 'left', overflow: 'hidden',
-                  textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}
-              >
-                ƒ Edit formula
-              </button>
-            ) : (
-              <button
-                type="button"
-                data-testid="page-config-protection-condition-empty"
-                onClick={() => setConditionEditorOpen(v => !v)}
-                style={{
-                  flex: 1, padding: '5px 8px', background: 'var(--bld-bg-elevated)',
-                  border: '1px solid var(--bld-border-subtle)', borderRadius: 5,
-                  color: 'var(--bld-text-disabled)', fontSize: 11, cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                No condition — public access
-              </button>
-            )}
-            {conditionEditorOpen && (
-              <FormulaEditor
-                label="Protection Condition"
-                value={protectionCondition ? { js: protectionCondition } : null}
-                onChange={v => {
-                  const raw = v && typeof v === 'object' && 'js' in v ? (v as { js: string }).js
-                    : typeof v === 'string' ? v : '';
-                  setProtectionCondition(raw);
-                  setPageProtection(raw || undefined, protectionRedirect || undefined);
-                  setConditionEditorOpen(false);
-                }}
-                onClose={() => setConditionEditorOpen(false)}
-                expectedType="boolean"
-                hint="Returns true → allow access. Returns false → redirect."
-                lockToJs
-                anchorLeft={560}
-              />
-            )}
-          </div>
-          {protectionCondition && (
-            <button
-              onClick={() => { setProtectionCondition(''); setPageProtection(undefined, protectionRedirect || undefined); }}
-              style={{ marginTop: 4, background: 'none', border: 'none', color: 'var(--bld-text-disabled)', fontSize: 9, cursor: 'pointer', padding: 0 }}
-            >
-              × Clear condition
-            </button>
-          )}
-          <div style={{ fontSize: 9, color: 'var(--bld-text-disabled)', marginTop: 2 }}>
-            If this returns false the user is redirected. Leave empty for public access.
-          </div>
-        </div>
-
-        <div>
-          <label style={PC_LABEL}>Redirect to</label>
-          <input
-            data-testid="page-config-protection-redirect"
-            value={protectionRedirect}
-            onChange={e => setProtectionRedirect(e.target.value)}
-            onBlur={() => setPageProtection(protectionCondition || undefined, protectionRedirect || undefined)}
-            placeholder="/login"
             style={PC_INPUT}
           />
         </div>

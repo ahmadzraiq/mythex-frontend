@@ -609,7 +609,7 @@
         "config": {
           "variableName": "showcase-kanban-drag",
           "value": {
-            "formula": "{ cardId: context?.item?.data?.id, sourceCol: context?.item?.data?.col, targetCol: context?.item?.data?.col, targetIndex: 0 }"
+            "formula": "{ cardId: context?.item?.data?.id, sourceCol: context?.item?.data?.col, targetCol: context?.item?.data?.col, targetIndex: context?.item?.data?.index ?? 0 }"
           }
         }
       }
@@ -626,7 +626,7 @@
         "config": {
           "variableName": "showcase-kanban-drag",
           "value": {
-            "js": "const cols=['todo','doing','done']; const src=variables['showcase-kanban-drag']?.sourceCol??'todo'; const ci=cols.indexOf(src); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,ci+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; const srcCards=allCards.filter(c=>c.col===src); const srcIdx=srcCards.findIndex(c=>c.id===variables['showcase-kanban-drag']?.cardId); const slotH=84; let ti; if(targetCol===src){ ti=Math.max(0,Math.min(srcCards.length-1,srcIdx+Math.round(ty/slotH))); } else { const tgtCards=allCards.filter(c=>c.col===targetCol); ti=Math.max(0,Math.min(tgtCards.length,srcIdx+Math.round(ty/slotH))); } return { cardId: variables['showcase-kanban-drag']?.cardId, sourceCol: src, targetCol, targetIndex: ti };"
+            "js": "const cols=['todo','doing','done']; const src=variables['showcase-kanban-drag']?.sourceCol??'todo'; const ci=cols.indexOf(src); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,ci+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; const srcCards=allCards.filter(c=>c.col===src); const srcIdx=srcCards.findIndex(c=>c.id===variables['showcase-kanban-drag']?.cardId); const slotH=70; let ti; if(targetCol===src){ ti=Math.max(0,Math.min(srcCards.length-1,srcIdx+Math.round(ty/slotH))); } else { const tgtCards=allCards.filter(c=>c.col===targetCol); ti=Math.max(0,Math.min(tgtCards.length,srcIdx+Math.round(ty/slotH))); } return { cardId: variables['showcase-kanban-drag']?.cardId, sourceCol: src, targetCol, targetIndex: ti };"
           }
         }
       }
@@ -643,7 +643,7 @@
         "config": {
           "variableName": "showcase-kanban-cards",
           "value": {
-            "js": "const cols=['todo','doing','done']; const cardId=context?.item?.data?.id; const sourceCol=context?.item?.data?.col; const si=cols.indexOf(sourceCol??'todo'); const cw=Math.max(event?.containerWidth??200,1); const tx=event?.translationX??0; const ty=event?.translationY??0; const colDelta=Math.round(tx/cw); const ni=Math.max(0,Math.min(2,si+colDelta)); const targetCol=cols[ni]; const allCards=variables['showcase-kanban-cards']??[]; if(!cardId) return allCards; if(targetCol!==sourceCol){ const srcCards=allCards.filter(c=>c.col===sourceCol); const srcIdx=srcCards.findIndex(c=>c.id===cardId); const slotH=84; const ti=Math.max(0,Math.min(allCards.filter(c=>c.col===targetCol).length,srcIdx+Math.round(ty/slotH))); const without=allCards.filter(c=>c.id!==cardId); const newTgt=without.filter(c=>c.col===targetCol); const updated={...allCards.find(c=>c.id===cardId),col:targetCol}; newTgt.splice(ti,0,updated); return [...without.filter(c=>c.col!==targetCol),...newTgt]; } const colCards=allCards.filter(c=>c.col===sourceCol); const curIdx=colCards.findIndex(c=>c.id===cardId); const slotH=84; const idxDelta=Math.round(ty/slotH); const newIdx=Math.max(0,Math.min(colCards.length-1,curIdx+idxDelta)); if(curIdx===newIdx) return allCards; const reordered=[...colCards]; const [moved]=reordered.splice(curIdx,1); reordered.splice(newIdx,0,moved); return [...allCards.filter(c=>c.col!==sourceCol),...reordered];"
+            "js": "const kd=variables['showcase-kanban-drag']; const cardId=kd?.cardId; const sourceCol=kd?.sourceCol; const targetCol=kd?.targetCol??sourceCol; const targetIndex=kd?.targetIndex??0; const allCards=variables['showcase-kanban-cards']??[]; if(!cardId) return allCards; if(targetCol!==sourceCol){ const without=allCards.filter(c=>c.id!==cardId); const newTgt=without.filter(c=>c.col===targetCol); const updated={...allCards.find(c=>c.id===cardId),col:targetCol}; newTgt.splice(targetIndex,0,updated); return [...without.filter(c=>c.col!==targetCol),...newTgt]; } const colCards=allCards.filter(c=>c.col===sourceCol); const curIdx=colCards.findIndex(c=>c.id===cardId); if(curIdx===targetIndex) return allCards; const reordered=[...colCards]; const [moved]=reordered.splice(curIdx,1); reordered.splice(targetIndex,0,moved); return [...allCards.filter(c=>c.col!==sourceCol),...reordered];"
           }
         }
       },

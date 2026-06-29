@@ -28,17 +28,38 @@ import { getSharedComponents } from '@/lib/builder/shared-component-data';
 export { Tooltip, VariableTree, CollectionEntry, DataTreeNode, FunctionLibrary, FnRow,
   ContextDataSection, PagesDataSection, ColorsDataSection, TypographyDataSection,
   BorderRadiusDataSection, CollectionsDataTab, PageComponentsSection,
-  EnvVarsSection,
-  type VarRowItem } from './_formula-editor-tabs';
+  EnvVarsSection, WorkflowVariablesSection,
+  type VarRowItem, type WorkflowVarEntry } from './_formula-editor-tabs';
 import {
   Tooltip, VariableTree, CollectionEntry,
   CollectionsDataTab, PageComponentsSection, FormLocalSection, ItemContextGroup,
   DataTreeNode, FEChevron, collectPageComponents, EVENT_SHAPES, EventContextSection,
   SharedComponentContextSection, ParametersSection, FunctionLibrary,
-  EnvVarsSection, useBuilderProjectId,
-  type VarRowItem,
+  EnvVarsSection, WorkflowVariablesSection, useBuilderProjectId,
+  type VarRowItem, type WorkflowVarEntry,
 } from './_formula-editor-tabs';
 import { envVariables } from '@/lib/platform/api-client';
+
+// Module-level cache so env-variables are fetched at most once per project per session.
+const envVarsCache: Record<string, Record<string, string>> = {};
+const envVarsFetching: Record<string, Promise<Record<string, string>>> = {};
+function getEnvVarsForProject(projectId: string): Promise<Record<string, string>> {
+  if (envVarsCache[projectId]) return Promise.resolve(envVarsCache[projectId]);
+  if (envVarsFetching[projectId]) return envVarsFetching[projectId];
+  envVarsFetching[projectId] = envVariables.list(projectId)
+    .then((r) => {
+      const map: Record<string, string> = {};
+      for (const v of r.envVariables) map[v.name] = v.devValue;
+      envVarsCache[projectId] = map;
+      delete envVarsFetching[projectId];
+      return map;
+    })
+    .catch(() => {
+      delete envVarsFetching[projectId];
+      return {};
+    });
+  return envVarsFetching[projectId];
+}
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
 import { setNestedValue } from '@/lib/sdui/nested-utils';
@@ -158,6 +179,14 @@ export interface FormulaEditorProps {
    * client-side only and irrelevant to server-side step binding.
    */
   serverContext?: boolean;
+  /**
+   * Runtime-scoped variables derived from prior workflow steps (createWorkflowVariable,
+   * setRequestContext keys from middleware, __token/__userId system vars).
+   * Surfaced in the WORKFLOW VARIABLES section of the Quick tab.
+   */
+  workflowVars?: import('./_formula-editor-tabs').WorkflowVarEntry[];
+  /** True when this step is inside a forEach loopBody — shows the Loop sub-group (item, index). */
+  isInsideLoop?: boolean;
 }
 
 // ─── WorkflowResultsTab ───────────────────────────────────────────────────────
@@ -299,7 +328,7 @@ function WorkflowResultGroup({
 
 // ─── FormulaEditor ────────────────────────────────────────────────────────────
 
-export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick, lockToJs, serverContext = false }: FormulaEditorProps) {
+export function FormulaEditor({ label, value, onChange, onClose, expectedType = 'any', hint, anchor = 'left', anchorLeft, anchorRight, hideUnbind, workflowTrigger, formulaParams, paramsInQuick, lockToJs, serverContext = false, workflowVars, isInsideLoop }: FormulaEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -328,18 +357,16 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   const editingSharedComponentId = useBuilderStore(s => s.editingSharedComponentId);
   const [isFocused, setIsFocused] = useState(false);
 
-  // Load env vars so formulas like env['KEY'] evaluate to their dev values in the builder
+  // Load env vars so formulas like env['KEY'] evaluate to their dev values in the builder.
+  // Uses a module-level cache so reopening the formula editor never causes a second fetch.
   const projectId = useBuilderProjectId();
-  const [envVarsMap, setEnvVarsMap] = useState<Record<string, string>>({});
+  const [envVarsMap, setEnvVarsMap] = useState<Record<string, string>>(() =>
+    projectId ? (envVarsCache[projectId] ?? {}) : {},
+  );
   useEffect(() => {
     if (!projectId) return;
-    envVariables.list(projectId)
-      .then((r) => {
-        const map: Record<string, string> = {};
-        for (const v of r.envVariables) map[v.name] = v.devValue;
-        setEnvVarsMap(map);
-      })
-      .catch(() => {});
+    if (envVarsCache[projectId]) { setEnvVarsMap(envVarsCache[projectId]); return; }
+    getEnvVarsForProject(projectId).then(setEnvVarsMap).catch(() => {});
   }, [projectId]);
 
   // Detect if the selected node is inside a repeated context (has a map ancestor)
@@ -515,7 +542,7 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
   ));
 
   const [tab, setTab] = useState<Tab>(() => {
-    if (serverContext) return 'workflow';
+    if (serverContext) return 'quick';
     if (hasEventContext || paramsForceWorkflow) return 'workflow';
     if (paramsInQuick && hasFormulaParams) return 'quick';
     return 'variables';
@@ -1541,12 +1568,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', borderBottom: 'none', flexShrink: 0 }}>
         {([
-          ...((showQuickTab && !serverContext) || (paramsInQuick && hasFormulaParams) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
+          // Quick tab: always show for server context (params + middleware vars), or for repeat/form/SC in frontend
+          ...(serverContext || showQuickTab || (paramsInQuick && hasFormulaParams) ? [{ id: 'quick' as Tab, icon: '⚡', label: 'Quick' }] : []),
           ...(!serverContext ? [{ id: 'variables' as Tab, icon: '{x}', label: 'Variables' }] : []),
           ...(!serverContext ? [{ id: 'data' as Tab, icon: '≡', label: 'Data' }] : []),
           { id: 'formulas' as Tab, icon: 'ƒ', label: 'Formulas' },
-          ...(!serverContext ? [{ id: 'env' as Tab, icon: '⚙', label: 'Env' }] : []),
-          ...(showWorkflowTab ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
+          { id: 'env' as Tab, icon: '⚙', label: 'Env' },
+          // Workflow tab: only show in frontend context (it shows frontend event vars — irrelevant for server)
+          ...(showWorkflowTab && !serverContext ? [{ id: 'workflow' as Tab, icon: '▶', label: 'Workflow' }] : []),
         ]).map(t => (
           <button key={t.id} data-testid={`formula-tab-${t.id}`} onClick={() => setTab(t.id)}
             style={{
@@ -1620,6 +1649,14 @@ export function FormulaEditor({ label, value, onChange, onClose, expectedType = 
             {paramsInQuick && hasFormulaParams && formulaParams && formulaParams.length > 0 && (
               <ParametersSection
                 params={formulaParams}
+                onInsert={insertChip}
+              />
+            )}
+            {/* Workflow variables — loop, middleware-injected, custom, system */}
+            {serverContext && (workflowVars?.length || isInsideLoop) && (
+              <WorkflowVariablesSection
+                vars={workflowVars ?? []}
+                isInsideLoop={isInsideLoop ?? false}
                 onInsert={insertChip}
               />
             )}

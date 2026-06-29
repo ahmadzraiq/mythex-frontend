@@ -6,7 +6,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -49,7 +49,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -86,7 +86,7 @@
     "method": "DELETE",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -119,7 +119,7 @@
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -139,7 +139,7 @@
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -175,7 +175,7 @@
     "method": "PATCH",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -211,7 +211,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }
@@ -248,7 +248,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}",
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" },
       "X-Guest-ID": {
         "formula": "(typeof window !== 'undefined' ? (localStorage.getItem('_gid') || (localStorage.setItem('_gid', 'g-' + Math.random().toString(36).slice(2)), localStorage.getItem('_gid'))) : '')"
       }

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useBuilderStore } from './_store';
 import { buildFileTree, readVirtualFile } from './_virtual-files';
 import type { VirtualEntry, VirtualFolder, VirtualFile } from './_virtual-files';
+import { fetchServerFiles, buildServerTree } from '@/lib/backend-vfs';
 
 // ── Icon colours per VFS file type ────────────────────────────────────────────
 
@@ -135,12 +136,29 @@ function FileNode({
 
 // ── VFS viewer (tree + JSON content pane) ─────────────────────────────────────
 
-function VfsExplorer({ projectId: _projectId }: { projectId?: string }) {
+function VfsExplorer({ projectId }: { projectId?: string }) {
   const store = useBuilderStore();
-  const tree = buildFileTree(store);
+  const frontendTree = buildFileTree(store);
+  const [serverFiles, setServerFiles] = useState<Record<string, string>>({});
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+
+  // Merge the backend (server/*) projection so the unified VFS is visible.
+  const tree: VirtualFolder = React.useMemo(() => {
+    if (Object.keys(serverFiles).length === 0) return frontendTree;
+    return { ...frontendTree, children: [...frontendTree.children, buildServerTree(serverFiles)] };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontendTree, serverFiles]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    fetchServerFiles(projectId)
+      .then((files) => { if (!cancelled) setServerFiles(files); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   // Auto-open top-level folders on mount
   useEffect(() => {
@@ -162,12 +180,16 @@ function VfsExplorer({ projectId: _projectId }: { projectId?: string }) {
 
   useEffect(() => {
     if (!selectedPath) { setContent(''); return; }
+    if (selectedPath.startsWith('server/')) {
+      setContent(serverFiles[selectedPath] ?? '// Could not read file');
+      return;
+    }
     try {
       setContent(readVirtualFile(store, selectedPath));
     } catch {
       setContent('// Could not read file');
     }
-  }, [selectedPath, store]);
+  }, [selectedPath, store, serverFiles]);
 
   const toggleFolder = useCallback((path: string) => {
     setOpenFolders(prev => {

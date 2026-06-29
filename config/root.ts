@@ -69,14 +69,10 @@ import popoverTest from './screens/popover-test.json';
 import animationShowcase from './screens/animation-showcase.json';
 import triggersTest from './screens/triggers-test.json';
 import workflowCallTest from './screens/workflow-call-test.json';
+import infiniteScrollTest from './screens/infinite-scroll-test.json';
+import toastTest from './screens/toast-test.json';
 
 import themeCustomColorsTest from './screens/theme-custom-colors-test.json';
-
-// Layouts
-import storeLayout from './layouts/store.json';
-import accountLayout from './layouts/account.json';
-import checkoutMinimalLayout from './layouts/checkout-minimal.json';
-
 
 // Actions
 import authActions from './actions/auth.json';
@@ -98,6 +94,8 @@ import sharedComponentTestActions from './actions/shared-component-test.json';
 import popoverTestActions from './actions/popover-test.json';
 import animationShowcaseActions from './actions/animation-showcase.json';
 import triggersTestActions from './actions/triggers-test.json';
+import infiniteScrollTestActions from './actions/infinite-scroll-test.json';
+import toastActions from './actions/toast.json';
 import scComponentShowcase from './screens/sc-component-showcase.json';
 import scComponentShowcaseActions from './actions/sc-component-showcase.json';
 
@@ -115,9 +113,9 @@ import adminAssets from './screens/adminAssets.json';
 import adminPromotions from './screens/adminPromotions.json';
 import adminSystem from './screens/adminSystem.json';
 import adminLogin from './screens/adminLogin.json';
+import pathParamsTest from './screens/pathParamsTest.json';
 
-// Admin layout + actions
-import adminLayout from './layouts/admin.json';
+// Admin actions
 import adminActions from './actions/admin.json';
 
 
@@ -182,6 +180,8 @@ const screens = {
   animationShowcase,
   triggersTest,
   workflowCallTest,
+  infiniteScrollTest,
+  toastTest,
   themeCustomColorsTest,
   scComponentShowcase,
   adminDashboard,
@@ -197,13 +197,7 @@ const screens = {
   adminPromotions,
   adminSystem,
   adminLogin,
-};
-
-const layouts = {
-  store: storeLayout,
-  account: accountLayout,
-  checkoutMinimal: checkoutMinimalLayout,
-  admin: adminLayout,
+  pathParamsTest,
 };
 
 const fragments = {};
@@ -228,6 +222,8 @@ const actions = {
   ...popoverTestActions,
   ...animationShowcaseActions,
   ...triggersTestActions,
+  ...infiniteScrollTestActions,
+  ...toastActions,
   ...scComponentShowcaseActions,
   ...adminActions,
 
@@ -253,6 +249,9 @@ const actionsByFile = {
   popoverTest: popoverTestActions,
   animationShowcase: animationShowcaseActions,
   triggersTest: triggersTestActions,
+  infiniteScrollTest: infiniteScrollTestActions,
+  toast: toastActions,
+  toastTest: toastActions,
   scComponentShowcase: scComponentShowcaseActions,
   admin: adminActions,
 
@@ -272,6 +271,7 @@ const workflows = Object.fromEntries(
       isTrigger: def.isTrigger as boolean | undefined,
       isAppTrigger: def.isAppTrigger as boolean | undefined,
       pageScope: def.pageScope as string | undefined,
+      config: def.config as Record<string, unknown> | undefined,
     } satisfies import('./types').WorkflowDef])
 ) as Record<string, import('./types').WorkflowDef>;
 
@@ -280,7 +280,6 @@ export const root = {
   store: {} as Record<string, never>,
   theme: themeJson,
   screens,
-  layouts,
   fragments,
   actions,
   /** Unified named-workflow dictionary derived from actions (step-based entries only). */

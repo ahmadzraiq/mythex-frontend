@@ -197,7 +197,7 @@ export function getBuilderConfig() {
       isAppTrigger: (def.isAppTrigger as boolean | undefined),
       pageScope: (def.pageScope as string | undefined),
       // Pass through params so global workflows (those with params) are detected by the store
-      params: (def.params as Array<{ id: string; name: string; type: string; allowMultiple?: boolean; testValue?: unknown }> | undefined),
+      params: (def.params as import('@/app/dev/builder/_store-types').WorkflowParam[] | undefined),
     }));
 
   // ── Register shared component workflows so executeComponentAction's picker can find them.

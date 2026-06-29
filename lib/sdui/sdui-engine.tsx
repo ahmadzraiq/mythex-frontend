@@ -54,6 +54,8 @@ export function SDUIEngine({
   previewData,
   dataSources,
   builderQueryParams,
+  pathParams,
+  builderPath,
 }: SDUIEngineProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -118,6 +120,30 @@ export function SDUIEngine({
     // merged state, so without pre-seeding here, theme would be absent on the very first
     // render and any formula like theme?.['colors']?.['primary'] would return undefined.
     initial = { ...initial, theme: THEME_OBJ, pages: PAGES_MAP };
+
+    // Pre-seed path params so route.<name> and globalContext.browser.params are available
+    // on the very first render (before useEffect/useLayoutEffect run).
+    // The component remounts (via key) whenever pathParams changes, so the closure value
+    // here is always the correct value for this mount.
+    if (pathParams && Object.keys(pathParams).length > 0) {
+      const routeParamFlat: Record<string, string> = {};
+      for (const [k, v] of Object.entries(pathParams)) {
+        routeParamFlat[`route.${k}`] = v;
+      }
+      initial = mergeDataPaths(initial, routeParamFlat);
+    }
+    const existingGlobalCtx = (initial.globalContext as Record<string, unknown>) ?? {};
+    const existingBrowser = (existingGlobalCtx.browser as Record<string, unknown>) ?? {};
+    initial = {
+      ...initial,
+      globalContext: {
+        ...existingGlobalCtx,
+        browser: {
+          ...existingBrowser,
+          params: pathParams ?? {},
+        },
+      },
+    };
     return create<{
       merged: Record<string, unknown>;
       patchVersion: number;
@@ -238,10 +264,11 @@ export function SDUIEngine({
     return {
       browser: {
         url: window.location.href,
-        path: pathname ?? window.location.pathname,
+        path: (builderMode && builderPath) ? builderPath : (pathname ?? window.location.pathname),
         domain: window.location.hostname,
         baseUrl: window.location.origin,
         query,
+        params: pathParams ?? {},
         breakpoint: activeBreakpoint,
         environment: process.env.NODE_ENV ?? 'production',
       },
@@ -251,7 +278,7 @@ export function SDUIEngine({
         scroll: { x: 0, y: 0, xPercent: 0, yPercent: 0 },
       },
     };
-  }, [pathname, searchParams, activeBreakpoint, builderMode, builderQueryParams]);
+  }, [pathname, searchParams, activeBreakpoint, builderMode, builderQueryParams, pathParams, builderPath]);
   globalContextRef.current = globalContext;
 
   useEffect(() => {
@@ -654,7 +681,7 @@ export function SDUIEngine({
     type TriggerDef = { trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
     collectionFetchErrorWorkflowsRef.current = Object.entries(actionsConfig as Record<string, TriggerDef>)
       .filter(([, def]) => def.isTrigger && def.trigger === 'collectionFetchError' &&
-        (def.isAppTrigger === true || (!!def.pageScope && def.pageScope === configName)))
+        (def.isAppTrigger === true || (!!def.pageScope && def.pageScope.toLowerCase() === (configName ?? '').toLowerCase())))
       .map(([key]) => key);
   }, [actionsConfig, configName]);
 
@@ -677,28 +704,39 @@ export function SDUIEngine({
   actionsConfigRef.current = actionsConfig;
 
   useEffect(() => {
-    if (builderMode) return;
+    console.log('[triggers] effect fired — builderMode:', builderMode, '| configName:', configName);
+    if (builderMode) {
+      console.log('[triggers] skipped — builderMode is true');
+      return;
+    }
 
     type TriggerDef = { trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
 
     const cfg = actionsConfigRef.current as Record<string, TriggerDef>;
+    console.log('[triggers] actionsConfig keys:', Object.keys(cfg));
+
     // isAppTrigger: true  → fires on every page (global)
     // pageScope set       → fires only on the matching page
     // empty pageScope + no isAppTrigger → defensive no-op (shouldn't exist post-migration)
     const matchesPage = (def: TriggerDef) =>
-      def.isAppTrigger === true || (!!def.pageScope && def.pageScope === configName);
+      def.isAppTrigger === true || (!!def.pageScope && def.pageScope.toLowerCase() === (configName ?? '').toLowerCase());
 
     // Group workflow keys by trigger type, filtered by page scope.
     const byTrigger = new Map<string, string[]>();
     for (const [key, def] of Object.entries(cfg)) {
       if (!def.isTrigger || !def.trigger) continue;
-      if (!matchesPage(def)) continue;
+      const matches = matchesPage(def);
+      console.log(`[triggers] wf="${key}" trigger="${def.trigger}" pageScope="${def.pageScope}" isAppTrigger=${def.isAppTrigger} → matchesPage=${matches}`);
+      if (!matches) continue;
       let list = byTrigger.get(def.trigger);
       if (!list) { list = []; byTrigger.set(def.trigger, list); }
       list.push(key);
     }
 
+    console.log('[triggers] byTrigger map:', Object.fromEntries(byTrigger));
+
     const run = (key: string, eventData?: Record<string, unknown>) => {
+      console.log('[triggers] running key:', key);
       runActionRef.current({ action: key }, eventData);
     };
 
@@ -712,6 +750,7 @@ export function SDUIEngine({
     const resizeKeys = byTrigger.get('resize') ?? [];
     const keydownKeys = byTrigger.get('keydown') ?? [];
     const keyupKeys = byTrigger.get('keyup') ?? [];
+    const reachEndKeys = byTrigger.get('reachEnd') ?? [];
 
     const handleScroll = () => {
       const eventData = { scrollY: window.scrollY, scrollX: window.scrollX };
@@ -730,7 +769,29 @@ export function SDUIEngine({
       for (const key of keyupKeys) run(key, eventData);
     };
 
+    // reachEnd — fire once when window scrolls to within threshold px of the bottom.
+    // Each workflow tracks its own fired state so independent thresholds work correctly.
+    const reachEndStates = reachEndKeys.map(key => {
+      const wfDef = cfg[key] as { config?: { threshold?: number } } | undefined;
+      const threshold = typeof wfDef?.config?.threshold === 'number' ? wfDef.config.threshold : 100;
+      return { key, threshold, fired: false };
+    });
+    const handleReachEndScroll = () => {
+      const remaining = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      for (const state of reachEndStates) {
+        if (remaining <= state.threshold) {
+          if (!state.fired) {
+            state.fired = true;
+            run(state.key);
+          }
+        } else {
+          state.fired = false;
+        }
+      }
+    };
+
     if (scrollKeys.length) window.addEventListener('scroll', handleScroll, { passive: true });
+    if (reachEndKeys.length) window.addEventListener('scroll', handleReachEndScroll, { passive: true });
     if (resizeKeys.length) window.addEventListener('resize', handleResize);
     if (keydownKeys.length) window.addEventListener('keydown', handleKeydown);
     if (keyupKeys.length) window.addEventListener('keyup', handleKeyup);
@@ -742,6 +803,7 @@ export function SDUIEngine({
     return () => {
       for (const key of [...pageUnloadKeys, ...appUnloadKeys]) run(key);
       if (scrollKeys.length) window.removeEventListener('scroll', handleScroll);
+      if (reachEndKeys.length) window.removeEventListener('scroll', handleReachEndScroll);
       if (resizeKeys.length) window.removeEventListener('resize', handleResize);
       if (keydownKeys.length) window.removeEventListener('keydown', handleKeydown);
       if (keyupKeys.length) window.removeEventListener('keyup', handleKeyup);

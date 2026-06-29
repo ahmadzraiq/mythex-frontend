@@ -17,271 +17,300 @@
     }
   ],
   "state": {},
-  "layout": "store",
-  "content": {
+  "ui": {
     "type": "Box",
+    "_shared": {
+      "id": "sc-app-layout",
+      "name": "App Layout"
+    },
     "props": {
-      "className": "container mx-auto px-[16px] py-[32px] flex-col"
+      "className": "w-full min-h-screen flex flex-col"
     },
     "children": [
       {
         "type": "Box",
-        "_stateTag": "loading",
-        "props": {
-          "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px] animate-pulse"
-        },
-        "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.loading",
-        "children": [
-          {
-            "type": "Box",
-            "props": {
-              "className": "lg:col-span-1 h-[256px] bg-[var(--theme-muted)] rounded-[8px] flex-col"
-            }
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "lg:col-span-3 space-y-[24px] flex-col"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "w-full flex flex-row justify-between items-center"
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "h-[20px] bg-[var(--theme-muted)] rounded-[4px] w-[96px] flex-col"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "h-[36px] bg-[var(--theme-muted)] rounded-[4px] w-[176px] flex-shrink-0 flex-col"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
-                    }
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden lg:block"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ],
         "_shared": {
-          "id": "sc-search-loading",
-          "name": "Search Loading Skeleton"
+          "id": "sc-navbar",
+          "name": "Navbar"
         },
-        "_group": "Loading State"
+        "props": {},
+        "children": []
       },
       {
         "type": "Box",
-        "_stateTag": "default",
-        "_meta": {
-          "section": "search-grid",
-          "description": "Search heading + filters sidebar + sort bar + product grid"
-        },
+        "id": "app-layout-content",
         "props": {
-          "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px]"
+          "className": "flex-1 flex flex-col pt-[64px]"
         },
-        "condition": "!collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.loading",
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "mb-[24px] lg:mb-0 lg:col-span-4 flex-col"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[30px] font-bold flex-col"
-                },
-                "text": {
-                  "formula": "(globalContext?.browser?.query?.q || '') !== '' ? 'Search results for \"' + (globalContext?.browser?.query?.q || '') + '\"' : 'Search'"
-                }
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "lg:col-span-1 flex-col"
+              "className": "container mx-auto px-[16px] py-[32px] flex-col"
             },
             "children": [
               {
                 "type": "Box",
+                "_stateTag": "loading",
                 "props": {
-                  "className": "space-y-[32px] flex-col"
+                  "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px] animate-pulse"
                 },
+                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.loading",
                 "children": [
                   {
                     "type": "Box",
                     "props": {
-                      "className": "flex flex-row items-center justify-between"
+                      "className": "lg:col-span-1 h-[256px] bg-[var(--theme-muted)] rounded-[8px] flex-col"
+                    }
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "lg:col-span-3 space-y-[24px] flex-col"
+                    },
+                    "children": [
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "w-full flex flex-row justify-between items-center"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "h-[20px] bg-[var(--theme-muted)] rounded-[4px] w-[96px] flex-col"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "h-[36px] bg-[var(--theme-muted)] rounded-[4px] w-[176px] flex-shrink-0 flex-col"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "props": {
+                          "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
+                        },
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] flex-col"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden sm:block"
+                            }
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "aspect-square bg-[var(--theme-muted)] rounded-[8px] hidden lg:block"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "_shared": {
+                  "id": "sc-search-loading",
+                  "name": "Search Loading Skeleton"
+                },
+                "_group": "Loading State"
+              },
+              {
+                "type": "Box",
+                "_stateTag": "default",
+                "_meta": {
+                  "section": "search-grid",
+                  "description": "Search heading + filters sidebar + sort bar + product grid"
+                },
+                "props": {
+                  "className": "grid grid-cols-1 lg:grid-cols-4 gap-[32px]"
+                },
+                "condition": "!collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.loading",
+                "children": [
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "mb-[24px] lg:mb-0 lg:col-span-4 flex-col"
                     },
                     "children": [
                       {
                         "type": "Text",
                         "props": {
-                          "className": "font-semibold text-[18px] text-[var(--theme-foreground)] flex-col"
+                          "className": "text-[30px] font-bold flex-col"
                         },
-                        "text": "Filters"
-                      },
-                      {
-                        "type": "Box",
-                        "condition": "arrayLength(remove(split(globalContext?.browser?.query?.facets || '', ','), '')) > 0",
-                        "props": {
-                          "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] flex-col"
-                        },
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
-                            },
-                            "text": "Clear all"
-                          }
-                        ],
-                        "actions": [
-                          {
-                            "trigger": "click",
-                            "workflowId": "10b4a7ed-330e-4827-951f-5a0535458f2e"
-                          }
-                        ]
+                        "text": {
+                          "formula": "(globalContext?.browser?.query?.q || '') !== '' ? 'Search results for \"' + (globalContext?.browser?.query?.q || '') + '\"' : 'Search'"
+                        }
                       }
                     ]
                   },
                   {
                     "type": "Box",
-                    "map": {
-                      "formula": "groupBy(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.facetValues || [], 'facetValue.facet.name', 'facetValue.facet.id')"
-                    },
-                    "key": "context.item.data.id",
                     "props": {
-                      "className": "flex flex-col gap-[20px]"
+                      "className": "lg:col-span-1 flex-col"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "space-y-[16px] flex-col"
+                          "className": "space-y-[32px] flex-col"
                         },
                         "children": [
                           {
-                            "type": "Text",
+                            "type": "Box",
                             "props": {
-                              "className": "font-medium text-[14px] text-[var(--theme-foreground)] capitalize flex-col"
+                              "className": "flex flex-row items-center justify-between"
                             },
-                            "text": "{{context.item.data.key}}"
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "font-semibold text-[18px] text-[var(--theme-foreground)] flex-col"
+                                },
+                                "text": "Filters"
+                              },
+                              {
+                                "type": "Box",
+                                "condition": "arrayLength(remove(split(globalContext?.browser?.query?.facets || '', ','), '')) > 0",
+                                "props": {
+                                  "className": "text-[14px] text-[var(--theme-muted-foreground)] hover:text-[var(--theme-foreground)] flex-col"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
+                                    },
+                                    "text": "Clear all"
+                                  }
+                                ],
+                                "actions": [
+                                  {
+                                    "trigger": "click",
+                                    "workflowId": "10b4a7ed-330e-4827-951f-5a0535458f2e"
+                                  }
+                                ]
+                              }
+                            ]
                           },
                           {
                             "type": "Box",
+                            "map": {
+                              "formula": "groupBy(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.facetValues || [], 'facetValue.facet.name', 'facetValue.facet.id')"
+                            },
+                            "key": "context.item.data.id",
                             "props": {
-                              "className": "flex flex-col gap-[8px]"
+                              "className": "flex flex-col gap-[20px]"
                             },
                             "children": [
                               {
                                 "type": "Box",
-                                "map": "context.item.data.items",
-                                "key": "context.item.data.facetValue.id",
                                 "props": {
-                                  "className": "contents flex-col"
+                                  "className": "space-y-[16px] flex-col"
                                 },
                                 "children": [
                                   {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "font-medium text-[14px] text-[var(--theme-foreground)] capitalize flex-col"
+                                    },
+                                    "text": "{{context.item.data.key}}"
+                                  },
+                                  {
                                     "type": "Box",
                                     "props": {
-                                      "className": "flex flex-row items-center gap-[8px] cursor-pointer group"
+                                      "className": "flex flex-col gap-[8px]"
                                     },
-                                    "actions": [
-                                      {
-                                        "trigger": "click",
-                                        "workflowId": "b7236203-c516-4e10-8ff7-b4afb84ce314"
-                                      }
-                                    ],
                                     "children": [
                                       {
                                         "type": "Box",
+                                        "map": "context.item.data.items",
+                                        "key": "context.item.data.facetValue.id",
                                         "props": {
-                                          "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center flex-shrink-0 border-[var(--theme-border)] flex-col"
+                                          "className": "contents flex-col"
                                         },
-                                        "condition": "!arrayIncludes(remove(split(globalContext?.browser?.query?.facets || '', ','), ''), context?.item?.data?.facetValue?.id)",
-                                        "children": []
-                                      },
-                                      {
-                                        "type": "Box",
-                                        "props": {
-                                          "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center flex-shrink-0 bg-[var(--theme-primary)] border-[var(--theme-primary)] flex-col"
-                                        },
-                                        "condition": "arrayIncludes(remove(split(globalContext?.browser?.query?.facets || '', ','), ''), context?.item?.data?.facetValue?.id)",
                                         "children": [
                                           {
-                                            "type": "Icon",
+                                            "type": "Box",
                                             "props": {
-                                              "icon": "lucide:check",
-                                              "size": 10,
-                                              "className": "!text-white flex-col"
-                                            }
+                                              "className": "flex flex-row items-center gap-[8px] cursor-pointer group"
+                                            },
+                                            "actions": [
+                                              {
+                                                "trigger": "click",
+                                                "workflowId": "b7236203-c516-4e10-8ff7-b4afb84ce314"
+                                              }
+                                            ],
+                                            "children": [
+                                              {
+                                                "type": "Box",
+                                                "props": {
+                                                  "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center flex-shrink-0 border-[var(--theme-border)] flex-col"
+                                                },
+                                                "condition": "!arrayIncludes(remove(split(globalContext?.browser?.query?.facets || '', ','), ''), context?.item?.data?.facetValue?.id)",
+                                                "children": []
+                                              },
+                                              {
+                                                "type": "Box",
+                                                "props": {
+                                                  "className": "w-[16px] h-[16px] rounded-[4px] border-[1px] flex items-center justify-center flex-shrink-0 bg-[var(--theme-primary)] border-[var(--theme-primary)] flex-col"
+                                                },
+                                                "condition": "arrayIncludes(remove(split(globalContext?.browser?.query?.facets || '', ','), ''), context?.item?.data?.facetValue?.id)",
+                                                "children": [
+                                                  {
+                                                    "type": "Icon",
+                                                    "props": {
+                                                      "icon": "lucide:check",
+                                                      "size": 10,
+                                                      "className": "!text-white flex-col"
+                                                    }
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                                },
+                                                "text": "{{context.item.data.facetValue.name}}"
+                                              },
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
+                                                },
+                                                "text": "({{context.item.data.count}})"
+                                              }
+                                            ]
                                           }
                                         ]
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
-                                        },
-                                        "text": "{{context.item.data.facetValue.name}}"
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "className": "text-[12px] text-[var(--theme-muted-foreground)] flex-col"
-                                        },
-                                        "text": "({{context.item.data.count}})"
                                       }
                                     ]
                                   }
@@ -292,298 +321,432 @@
                         ]
                       }
                     ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "lg:col-span-3 space-y-[32px] flex-col"
-            },
-            "children": [
-              {
-                "type": "Box",
-                "props": {
-                  "className": "relative z-[10] w-full flex flex-row items-center justify-between"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
-                    },
-                    "text": {
-                      "formula": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 1 ? '1 product' : (collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) + ' products'"
-                    }
                   },
                   {
                     "type": "Box",
                     "props": {
-                      "className": "relative flex-shrink-0 flex-col"
+                      "className": "lg:col-span-3 space-y-[32px] flex-col"
                     },
                     "children": [
                       {
                         "type": "Box",
                         "props": {
-                          "className": "fixed inset-0 z-[9998] flex-col"
+                          "className": "relative z-[10] w-full flex flex-row items-center justify-between"
                         },
-                        "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
-                        "actions": [
-                          {
-                            "trigger": "click",
-                            "workflowId": "25891c7a-a8fa-42ea-a028-d7405419f9d3"
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "relative z-[50] flex flex-row items-center gap-[8px] h-[36px] px-[12px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] min-w-[180px] justify-between"
-                        },
-                        "actions": [
-                          {
-                            "trigger": "click",
-                            "workflowId": "4d563f4b-2df1-4231-94b1-3e77b84b000a"
-                          }
-                        ],
                         "children": [
                           {
                             "type": "Text",
                             "props": {
-                              "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                              "className": "text-[14px] text-[var(--theme-muted-foreground)] flex-col"
                             },
                             "text": {
-                              "formula": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-asc' ? 'Name: A to Z' : (globalContext?.browser?.query?.sort || 'name-asc') === 'name-desc' ? 'Name: Z to A' : (globalContext?.browser?.query?.sort || 'name-asc') === 'price-asc' ? 'Price: Low to High' : 'Price: High to Low'"
+                              "formula": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 1 ? '1 product' : (collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) + ' products'"
                             }
                           },
                           {
-                            "type": "Icon",
+                            "type": "Box",
                             "props": {
-                              "icon": "lucide:chevron-down",
-                              "size": 14,
-                              "color": "#6b7280"
-                            }
+                              "className": "relative flex-shrink-0 flex-col"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "fixed inset-0 z-[9998] flex-col"
+                                },
+                                "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
+                                "actions": [
+                                  {
+                                    "trigger": "click",
+                                    "workflowId": "25891c7a-a8fa-42ea-a028-d7405419f9d3"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "relative z-[50] flex flex-row items-center gap-[8px] h-[36px] px-[12px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] min-w-[180px] justify-between"
+                                },
+                                "actions": [
+                                  {
+                                    "trigger": "click",
+                                    "workflowId": "4d563f4b-2df1-4231-94b1-3e77b84b000a"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                    },
+                                    "text": {
+                                      "formula": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-asc' ? 'Name: A to Z' : (globalContext?.browser?.query?.sort || 'name-asc') === 'name-desc' ? 'Name: Z to A' : (globalContext?.browser?.query?.sort || 'name-asc') === 'price-asc' ? 'Price: Low to High' : 'Price: High to Low'"
+                                    }
+                                  },
+                                  {
+                                    "type": "Icon",
+                                    "props": {
+                                      "icon": "lucide:chevron-down",
+                                      "size": 14,
+                                      "color": "#6b7280"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
+                                "props": {
+                                  "className": "absolute right-0 top-full mt-[4px] min-w-[180px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] shadow-md z-[9999] py-[4px] flex-col"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "trigger": "click",
+                                        "workflowId": "7b672abf-f276-4e2b-a1e1-cb32b528fe0b"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                        },
+                                        "text": "Name: A to Z"
+                                      },
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:check",
+                                          "size": 14,
+                                          "color": "#7c3aed"
+                                        },
+                                        "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-asc'"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "trigger": "click",
+                                        "workflowId": "024add72-4b6e-45d9-9133-7e31eaa13a49"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                        },
+                                        "text": "Name: Z to A"
+                                      },
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:check",
+                                          "size": 14,
+                                          "color": "#7c3aed"
+                                        },
+                                        "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-desc'"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "trigger": "click",
+                                        "workflowId": "c9de2993-25a7-4515-bfc6-d8361c1e1188"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                        },
+                                        "text": "Price: Low to High"
+                                      },
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:check",
+                                          "size": 14,
+                                          "color": "#7c3aed"
+                                        },
+                                        "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'price-asc'"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
+                                    },
+                                    "actions": [
+                                      {
+                                        "trigger": "click",
+                                        "workflowId": "767a96c7-1506-43d3-b781-f36b95f14bc1"
+                                      }
+                                    ],
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                        },
+                                        "text": "Price: High to Low"
+                                      },
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "icon": "lucide:check",
+                                          "size": 14,
+                                          "color": "#7c3aed"
+                                        },
+                                        "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'price-desc'"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
                           }
                         ]
                       },
                       {
                         "type": "Box",
-                        "condition": "variables['c8d9e0f1-a2b3-4567-cdef-678901234567']",
+                        "condition": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 0",
                         "props": {
-                          "className": "absolute right-0 top-full mt-[4px] min-w-[180px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] shadow-md z-[9999] py-[4px] flex-col"
+                          "className": "text-center py-[48px] flex-col"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[var(--theme-muted-foreground)] flex-col"
+                            },
+                            "text": "No products found"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Box",
+                        "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > 0",
+                        "props": {
+                          "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
                         },
                         "children": [
                           {
                             "type": "Box",
+                            "map": "collections.e5f6a7b8-c9d0-1234-efab-345678901234.search.items",
+                            "key": "searchProduct",
                             "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
+                              "className": "contents flex-col"
                             },
-                            "actions": [
-                              {
-                                "trigger": "click",
-                                "workflowId": "7b672abf-f276-4e2b-a1e1-cb32b528fe0b"
-                              }
-                            ],
                             "children": [
                               {
-                                "type": "Text",
+                                "type": "Box",
                                 "props": {
-                                  "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
+                                  "className": "group block bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] flex-col"
                                 },
-                                "text": "Name: A to Z"
-                              },
-                              {
-                                "type": "Icon",
-                                "props": {
-                                  "icon": "lucide:check",
-                                  "size": 14,
-                                  "color": "#7c3aed"
+                                "animation": {
+                                  "hover": {
+                                    "duration": 150,
+                                    "styles": {
+                                      "boxShadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+                                    }
+                                  }
                                 },
-                                "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-asc'"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
-                            },
-                            "actions": [
-                              {
-                                "trigger": "click",
-                                "workflowId": "024add72-4b6e-45d9-9133-7e31eaa13a49"
-                              }
-                            ],
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
-                                },
-                                "text": "Name: Z to A"
-                              },
-                              {
-                                "type": "Icon",
-                                "props": {
-                                  "icon": "lucide:check",
-                                  "size": 14,
-                                  "color": "#7c3aed"
-                                },
-                                "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'name-desc'"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
-                            },
-                            "actions": [
-                              {
-                                "trigger": "click",
-                                "workflowId": "c9de2993-25a7-4515-bfc6-d8361c1e1188"
-                              }
-                            ],
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
-                                },
-                                "text": "Price: Low to High"
-                              },
-                              {
-                                "type": "Icon",
-                                "props": {
-                                  "icon": "lucide:check",
-                                  "size": 14,
-                                  "color": "#7c3aed"
-                                },
-                                "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'price-asc'"
-                              }
-                            ]
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "flex flex-row items-center justify-between w-full px-[12px] py-[8px] hover:bg-[var(--theme-muted)]"
-                            },
-                            "actions": [
-                              {
-                                "trigger": "click",
-                                "workflowId": "767a96c7-1506-43d3-b781-f36b95f14bc1"
-                              }
-                            ],
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[14px] text-[var(--theme-foreground)] flex-col"
-                                },
-                                "text": "Price: High to Low"
-                              },
-                              {
-                                "type": "Icon",
-                                "props": {
-                                  "icon": "lucide:check",
-                                  "size": 14,
-                                  "color": "#7c3aed"
-                                },
-                                "condition": "(globalContext?.browser?.query?.sort || 'name-asc') === 'price-desc'"
+                                "actions": [
+                                  {
+                                    "trigger": "click",
+                                    "workflowId": "f6046c33-0164-45b5-86aa-0710fc408247"
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)] flex-col"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Image",
+                                        "props": {
+                                          "src": "{{context.item.data.productAsset.preview}}",
+                                          "alt": "{{context.item.data.productName}}",
+                                          "fill": true,
+                                          "className": "w-full h-full object-cover flex-col",
+                                          "animation": {
+                                            "hover": {
+                                              "scale": 1.05,
+                                              "duration": 300
+                                            }
+                                          },
+                                          "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        }
+                                      },
+                                      {
+                                        "type": "Box",
+                                        "props": {
+                                          "className": "w-full h-full flex items-center justify-center text-[var(--theme-muted-foreground)] flex-col"
+                                        },
+                                        "condition": "!context?.item?.data?.productAsset",
+                                        "children": [
+                                          {
+                                            "type": "Text",
+                                            "text": "No image"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "p-[16px] space-y-[8px] flex-col"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "font-medium line-clamp-2 group-hover:opacity-80 text-[var(--theme-card-foreground)] flex-col"
+                                        },
+                                        "text": "{{context.item.data.productName}}"
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[18px] font-bold text-[var(--theme-card-foreground)] flex-col"
+                                        },
+                                        "text": {
+                                          "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "_shared": {
+                                  "id": "sc-product-card",
+                                  "name": "Product Card"
+                                }
                               }
                             ]
                           }
                         ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "condition": "(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) === 0",
-                "props": {
-                  "className": "text-center py-[48px] flex-col"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "className": "text-[var(--theme-muted-foreground)] flex-col"
-                    },
-                    "text": "No products found"
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > 0",
-                "props": {
-                  "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[24px]"
-                },
-                "children": [
-                  {
-                    "type": "Box",
-                    "map": "collections.e5f6a7b8-c9d0-1234-efab-345678901234.search.items",
-                    "key": "searchProduct",
-                    "props": {
-                      "className": "contents flex-col"
-                    },
-                    "children": [
+                      },
                       {
                         "type": "Box",
                         "props": {
-                          "className": "group block bg-[var(--theme-card)] rounded-[8px] overflow-hidden border-[1px] border-[var(--border)] flex-col"
+                          "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
                         },
-                        "animation": {
-                          "hover": {
-                            "duration": 150,
-                            "styles": {
-                              "boxShadow": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
-                            }
-                          }
-                        },
-                        "actions": [
-                          {
-                            "trigger": "click",
-                            "workflowId": "f6046c33-0164-45b5-86aa-0710fc408247"
-                          }
-                        ],
+                        "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > get('collectionPageSize')",
                         "children": [
                           {
                             "type": "Box",
                             "props": {
-                              "className": "w-full aspect-square relative overflow-hidden bg-[var(--theme-muted)] flex-col"
+                              "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0 flex-col"
+                            },
+                            "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) <= 1",
+                            "children": [
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:chevron-left",
+                                  "size": 16,
+                                  "color": "#6b7280"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
+                            },
+                            "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) > 1",
+                            "children": [
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:chevron-left",
+                                  "size": 16,
+                                  "color": "#374151"
+                                }
+                              }
+                            ],
+                            "actions": [
+                              {
+                                "trigger": "click",
+                                "workflowId": "e3a8111d-44c3-4461-b71c-698d1785bb52"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "contents flex-col"
+                            },
+                            "map": {
+                              "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
                             },
                             "children": [
                               {
-                                "type": "Image",
+                                "type": "Text",
                                 "props": {
-                                  "src": "{{context.item.data.productAsset.preview}}",
-                                  "alt": "{{context.item.data.productName}}",
-                                  "fill": true,
-                                  "className": "w-full h-full object-cover flex-col",
-                                  "animation": {
-                                    "hover": {
-                                      "scale": 1.05,
-                                      "duration": 300
-                                    }
-                                  },
-                                  "sizes": "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                }
+                                  "className": "px-[8px] text-[14px] text-[var(--theme-muted-foreground)] flex-shrink-0 flex-col"
+                                },
+                                "condition": "context?.item === '...'",
+                                "text": "..."
                               },
                               {
                                 "type": "Box",
                                 "props": {
-                                  "className": "w-full h-full flex items-center justify-center text-[var(--theme-muted-foreground)] flex-col"
+                                  "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white pointer-events-none flex-shrink-0 flex-col"
                                 },
-                                "condition": "!context?.item?.data?.productAsset",
+                                "condition": "context?.item !== '...' && context?.item === max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
                                 "children": [
                                   {
                                     "type": "Text",
-                                    "text": "No image"
+                                    "props": {
+                                      "className": "text-[14px] font-medium text-white flex-col"
+                                    },
+                                    "text": "{{$item}}"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
+                                },
+                                "condition": "context?.item !== '...' && context?.item !== max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium text-[var(--theme-foreground)] flex-col"
+                                    },
+                                    "text": "{{$item}}"
+                                  }
+                                ],
+                                "actions": [
+                                  {
+                                    "trigger": "click",
+                                    "workflowId": "182725e0-e189-4bf1-ac8f-572221061727"
                                   }
                                 ]
                               }
@@ -592,191 +755,66 @@
                           {
                             "type": "Box",
                             "props": {
-                              "className": "p-[16px] space-y-[8px] flex-col"
+                              "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0 flex-col"
                             },
+                            "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
                             "children": [
                               {
-                                "type": "Text",
+                                "type": "Icon",
                                 "props": {
-                                  "className": "font-medium line-clamp-2 group-hover:opacity-80 text-[var(--theme-card-foreground)] flex-col"
-                                },
-                                "text": "{{context.item.data.productName}}"
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[18px] font-bold text-[var(--theme-card-foreground)] flex-col"
-                                },
-                                "text": {
-                                  "formula": "context?.item?.data?.priceWithTax?.value != null ? formatCurrency(context?.item?.data?.priceWithTax?.value / 100, context?.item?.data?.currencyCode || 'USD') : 'from ' + formatCurrency(context?.item?.data?.priceWithTax?.min / 100, context?.item?.data?.currencyCode || 'USD')"
+                                  "icon": "lucide:chevron-right",
+                                  "size": 16,
+                                  "color": "#6b7280"
                                 }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
+                            },
+                            "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
+                            "children": [
+                              {
+                                "type": "Icon",
+                                "props": {
+                                  "icon": "lucide:chevron-right",
+                                  "size": 16,
+                                  "color": "#374151"
+                                }
+                              }
+                            ],
+                            "actions": [
+                              {
+                                "trigger": "click",
+                                "workflowId": "091be296-4048-45a1-a65d-8205c636215b"
                               }
                             ]
                           }
                         ],
                         "_shared": {
-                          "id": "sc-product-card",
-                          "name": "Product Card"
+                          "id": "sc-search-pagination",
+                          "name": "Search Pagination"
                         }
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "Box",
-                "props": {
-                  "className": "w-full border-t border-[var(--theme-border)] pt-[32px] flex flex-row items-center justify-center gap-[8px] flex-wrap"
-                },
-                "condition": "collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems > get('collectionPageSize')",
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0 flex-col"
-                    },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) <= 1",
-                    "children": [
-                      {
-                        "type": "Icon",
-                        "props": {
-                          "icon": "lucide:chevron-left",
-                          "size": 16,
-                          "color": "#6b7280"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
-                    },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) > 1",
-                    "children": [
-                      {
-                        "type": "Icon",
-                        "props": {
-                          "icon": "lucide:chevron-left",
-                          "size": 16,
-                          "color": "#374151"
-                        }
-                      }
-                    ],
-                    "actions": [
-                      {
-                        "trigger": "click",
-                        "workflowId": "e3a8111d-44c3-4461-b71c-698d1785bb52"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "contents flex-col"
-                    },
-                    "map": {
-                      "formula": "paginationPages(collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0, variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0, get('collectionPageSize') || 12)"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "px-[8px] text-[14px] text-[var(--theme-muted-foreground)] flex-shrink-0 flex-col"
-                        },
-                        "condition": "context?.item === '...'",
-                        "text": "..."
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-primary)] bg-[var(--theme-primary)] text-white pointer-events-none flex-shrink-0 flex-col"
-                        },
-                        "condition": "context?.item !== '...' && context?.item === max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[14px] font-medium text-white flex-col"
-                            },
-                            "text": "{{$item}}"
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
-                        },
-                        "condition": "context?.item !== '...' && context?.item !== max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1))",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[14px] font-medium text-[var(--theme-foreground)] flex-col"
-                            },
-                            "text": "{{$item}}"
-                          }
-                        ],
-                        "actions": [
-                          {
-                            "trigger": "click",
-                            "workflowId": "182725e0-e189-4bf1-ac8f-572221061727"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-muted)] cursor-not-allowed pointer-events-none flex-shrink-0 flex-col"
-                    },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) >= max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
-                    "children": [
-                      {
-                        "type": "Icon",
-                        "props": {
-                          "icon": "lucide:chevron-right",
-                          "size": 16,
-                          "color": "#6b7280"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "flex items-center justify-center h-[36px] w-[36px] rounded-[6px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] hover:bg-[var(--theme-muted)] flex-shrink-0 flex-col"
-                    },
-                    "condition": "max(1, floor((variables['b7c8d9e0-f1a2-3456-bcde-567890123456'] || 0) / (get('collectionPageSize') || 12) + 1)) < max(1, ceil((collections['e5f6a7b8-c9d0-1234-efab-345678901234']?.search?.totalItems || 0) / (get('collectionPageSize') || 12)))",
-                    "children": [
-                      {
-                        "type": "Icon",
-                        "props": {
-                          "icon": "lucide:chevron-right",
-                          "size": 16,
-                          "color": "#374151"
-                        }
-                      }
-                    ],
-                    "actions": [
-                      {
-                        "trigger": "click",
-                        "workflowId": "091be296-4048-45a1-a65d-8205c636215b"
                       }
                     ]
                   }
                 ],
-                "_shared": {
-                  "id": "sc-search-pagination",
-                  "name": "Search Pagination"
-                }
+                "_group": "Search Results"
               }
             ]
           }
-        ],
-        "_group": "Search Results"
+        ]
+      },
+      {
+        "type": "Box",
+        "_shared": {
+          "id": "sc-footer",
+          "name": "Footer"
+        },
+        "props": {},
+        "children": []
       }
     ]
   }

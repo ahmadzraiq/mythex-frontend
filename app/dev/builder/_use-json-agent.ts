@@ -18,8 +18,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
 import { applyVirtualFile, serializeVirtualFiles } from './_virtual-files';
+import { fetchServerFiles, applyServerFile } from '@/lib/backend-vfs';
 import { projects as projectsApi } from '@/lib/platform/api-client';
-import type { AiChatMessage, AiToolCall } from './_store-types';
+import type { AiChatMessage, AiAttachment, AiToolCall } from './_store-types';
+import { backendStorage } from '@/lib/platform/api-client';
 
 // ── Thread type (mirrors backend schema) ──────────────────────────────────────
 
@@ -196,6 +198,8 @@ export function useJsonAgent(projectId?: string) {
           toolCalls?: unknown; metadata?: Record<string, unknown>; createdAt: string;
         }>;
       };
+
+      // Map messages, then resolve presigned URLs for attachment fileIds in background
       const mapped: AiChatMessage[] = (body.messages ?? []).map(m => ({
         id: m.id,
         role: m.role as AiChatMessage['role'],
@@ -205,9 +209,40 @@ export function useJsonAgent(projectId?: string) {
           : undefined,
         selectedNodeIds: m.metadata?.selectedNodeIds as string[] | undefined,
         createdAt: m.createdAt,
+        attachments: (() => {
+          const refs = m.metadata?.attachments as Array<{ fileId: string; name: string; mime: string; size?: number }> | undefined;
+          if (!refs?.length) return undefined;
+          // Placeholder — previewUrl filled in below once presigned URLs resolve
+          return refs.map(r => ({
+            fileId: r.fileId, name: r.name, mimeType: r.mime, size: r.size ?? 0,
+          } satisfies AiAttachment));
+        })(),
       }));
       setMessages(mapped);
       messagesRef.current = mapped;
+
+      // Resolve presigned URLs for attachments in parallel (best-effort)
+      const toResolve = mapped.filter(m => m.attachments?.length);
+      if (toResolve.length && projectId) {
+        void (async () => {
+          for (const msg of toResolve) {
+            if (!msg.attachments?.length) continue;
+            const resolved = await Promise.all(
+              msg.attachments.map(async a => {
+                try {
+                  const { url } = await backendStorage.getPresignedUrl(projectId, a.fileId);
+                  return { ...a, previewUrl: url };
+                } catch {
+                  return a;
+                }
+              }),
+            );
+            setMessages(prev => prev.map(m2 =>
+              m2.id === msg.id ? { ...m2, attachments: resolved } : m2,
+            ));
+          }
+        })();
+      }
     } catch { /* silently ignore */ }
   }, [projectId]);
 
@@ -281,9 +316,13 @@ export function useJsonAgent(projectId?: string) {
 
   const persistMessage = useCallback(async (
     threadId: string,
-    msg: Pick<AiChatMessage, 'role' | 'content' | 'toolCalls' | 'selectedNodeIds'>,
+    msg: Pick<AiChatMessage, 'role' | 'content' | 'toolCalls' | 'selectedNodeIds' | 'attachments'>,
   ) => {
     if (!projectId) return;
+    const attachmentRefs = msg.attachments?.map(a => ({ fileId: a.fileId, name: a.name, mime: a.mimeType, size: a.size }));
+    const metadata: Record<string, unknown> = {};
+    if (msg.selectedNodeIds) metadata.selectedNodeIds = msg.selectedNodeIds;
+    if (attachmentRefs?.length) metadata.attachments = attachmentRefs;
     fetch(`/api/projects/${projectId}/chat/threads/${threadId}/messages`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -291,7 +330,7 @@ export function useJsonAgent(projectId?: string) {
         role:      msg.role,
         content:   msg.content,
         toolCalls: msg.toolCalls,
-        metadata:  msg.selectedNodeIds ? { selectedNodeIds: msg.selectedNodeIds } : undefined,
+        metadata:  Object.keys(metadata).length ? metadata : undefined,
       }),
     }).catch(() => {});
   }, [projectId]);
@@ -310,8 +349,9 @@ export function useJsonAgent(projectId?: string) {
 
   // ── Send ──────────────────────────────────────────────────────────────────
 
-  const sendMessage = useCallback(async (userText: string) => {
-    if (!userText.trim() || isStreaming) return;
+  const sendMessage = useCallback(async (userText: string, attachments?: AiAttachment[]) => {
+    const hasContent = userText.trim() || (attachments && attachments.length > 0);
+    if (!hasContent || isStreaming) return;
 
     const now = new Date().toISOString();
 
@@ -330,6 +370,7 @@ export function useJsonAgent(projectId?: string) {
 
     const userMsg: AiChatMessage = {
       id: `${Date.now()}-u`, role: 'user', content: userText, createdAt: now,
+      attachments: attachments?.length ? attachments : undefined,
     };
     const assistantId = `${Date.now()}-a`;
     const assistantMsg: AiChatMessage = {
@@ -355,6 +396,14 @@ export function useJsonAgent(projectId?: string) {
 
     try {
       const vfsSnapshot = serializeVirtualFiles(useBuilderStore.getState());
+      // Merge the backend (server/*) file projection so the agent sees a unified
+      // full-stack snapshot (frontend config/ + backend server/).
+      if (projectId) {
+        try {
+          const serverFiles = await fetchServerFiles(projectId);
+          Object.assign(vfsSnapshot.files, serverFiles);
+        } catch { /* backend snapshot is best-effort */ }
+      }
       const resumeSessionId = threadId ? threadSessionsRef.current[threadId] : undefined;
 
       const res = await fetch('/api/ai/json-agent', {
@@ -367,6 +416,12 @@ export function useJsonAgent(projectId?: string) {
           threadId:        threadId ?? undefined,
           resumeSessionId: resumeSessionId ?? undefined,
           vfsFiles:        vfsSnapshot.files,
+          attachments:     attachments?.map(a => ({
+            fileId:   a.fileId,
+            name:     a.name,
+            mimeType: a.mimeType,
+            data:     a.data,
+          })),
         }),
         signal,
       });
@@ -461,13 +516,26 @@ export function useJsonAgent(projectId?: string) {
             const filePath = msg.path as string | undefined;
             const content  = msg.content as string | undefined;
             if (filePath && content !== undefined) {
-              const state = useBuilderStore.getState();
-              const result = applyVirtualFile(state, filePath, content);
-              if (!result.ok) {
-                console.warn('[json-agent] applyVirtualFile failed:', filePath, result.error);
+              if (filePath.startsWith('server/')) {
+                // Backend entity — route to the backend VFS apply (migrations etc.)
+                if (projectId) {
+                  const result = await applyServerFile(projectId, filePath, content);
+                  if (!result.ok) {
+                    console.warn('[json-agent] applyServerFile failed:', filePath, result.error);
+                  } else {
+                    filesApplied++;
+                    console.log(`[json-agent] applied (backend) ${filePath}`);
+                  }
+                }
               } else {
-                filesApplied++;
-                console.log(`[json-agent] applied ${filePath}`);
+                const state = useBuilderStore.getState();
+                const result = applyVirtualFile(state, filePath, content);
+                if (!result.ok) {
+                  console.warn('[json-agent] applyVirtualFile failed:', filePath, result.error);
+                } else {
+                  filesApplied++;
+                  console.log(`[json-agent] applied ${filePath}`);
+                }
               }
             }
           } else if (type === 'persisted') {

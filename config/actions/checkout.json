@@ -10,7 +10,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
       "full_name": "{{local.data.form.formData.fullName}}",
@@ -78,7 +78,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
       "payment_method": "{{variables['b3c4d5e6-f7a8-9012-bcde-123456789012']}}"
@@ -352,7 +352,7 @@
     "method": "POST",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer {{auth.token}}"
+      "Authorization": { "js": "'Bearer ' + variables['auth0001-a5b6-4000-c000-000000000001']" }
     },
     "body": {
       "shipping_method_id": "{{variables['a2b3c4d5-e6f7-8901-abcd-012345678901']}}"

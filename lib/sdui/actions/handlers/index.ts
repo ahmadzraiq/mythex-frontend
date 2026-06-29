@@ -23,7 +23,6 @@ import {
   removeAtHandler,
   setThemeHandler,
   setStateHandler,
-  showToastHandler,
   cycleIndexHandler,
   mergeAtPathHandler,
 } from './misc-handlers';
@@ -51,7 +50,6 @@ export const ACTION_HANDLERS: Record<string, HandlerFactory> = {
   removeAt: removeAtHandler,
   setTheme: setThemeHandler,
   setState: setStateHandler,
-  showToast: showToastHandler,
   cycleIndex: cycleIndexHandler,
   mergeAtPath: mergeAtPathHandler,
   refetchDataSource: refetchDataSourceHandler,

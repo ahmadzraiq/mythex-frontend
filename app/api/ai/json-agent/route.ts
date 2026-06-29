@@ -30,6 +30,7 @@ import {
   tool,
   type HookCallback,
   type PostToolUseHookInput,
+  type SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { JSON_AGENT_SYSTEM_PROMPT } from '@/lib/ai/agents/json-agent/system-prompt';
@@ -54,6 +55,9 @@ const claudeExe = fs.existsSync(ARM64_BINARY) ? ARM64_BINARY : undefined;
 
 // ── CLAUDE.md path (seeded from project root) ─────────────────────────────────
 const CLAUDE_MD_SRC = path.join(process.cwd(), 'CLAUDE.md');
+
+// ── Agent Skills source (.claude/skills, seeded into the agent cwd) ───────────
+const SKILLS_SRC = path.join(process.cwd(), '.claude', 'skills');
 
 // ── In-process MCP server — combined media search ────────────────────────────
 function buildMcpServer() {
@@ -99,6 +103,27 @@ function writeIfChanged(diskPath: string, content: string): void {
   } catch { /* non-critical */ }
 }
 
+/** Recursively copy a directory tree using writeIfChanged (keeps cwd warm). */
+function seedDir(srcDir: string, destDir: string): void {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+    if (entry.isDirectory()) {
+      seedDir(srcPath, destPath);
+    } else if (entry.isFile()) {
+      try {
+        writeIfChanged(destPath, fs.readFileSync(srcPath, 'utf-8'));
+      } catch { /* non-critical */ }
+    }
+  }
+}
+
 /** MD5 hash helper for write-if-changed checks. */
 function md5(s: string): string {
   return crypto.createHash('md5').update(s).digest('hex');
@@ -123,6 +148,44 @@ async function resolveWorkspaceId(
   }
 }
 
+type AttachmentPayload = {
+  fileId: string;
+  name: string;
+  mimeType: string;
+  data?: string; // base64, no data-URI prefix
+};
+
+/** Build a multimodal SDKUserMessage when the request includes file attachments. */
+async function* makeMultimodalMessage(
+  prompt: string,
+  attachments: AttachmentPayload[],
+): AsyncIterable<SDKUserMessage> {
+  const content: unknown[] = [];
+  for (const a of attachments) {
+    if (!a.data) continue;
+    if (a.mimeType.startsWith('image/')) {
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: a.mimeType, data: a.data },
+      });
+    } else {
+      // PDF or text/plain → document block
+      content.push({
+        type: 'document',
+        source: { type: 'base64', media_type: a.mimeType, data: a.data },
+      });
+    }
+  }
+  if (prompt.trim()) {
+    content.push({ type: 'text', text: prompt });
+  }
+  yield {
+    type: 'user' as const,
+    message: { role: 'user' as const, content } as SDKUserMessage['message'],
+    parent_tool_use_id: null,
+  } as SDKUserMessage;
+}
+
 export async function POST(req: NextRequest): Promise<Response> {
   let body: {
     prompt?: string;
@@ -132,6 +195,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     resumeSessionId?: string;
     /** Current VFS entity files from the client, keyed by VFS path (no extension) */
     vfsFiles?: Record<string, string>;
+    /** File attachments — base64-encoded content + metadata */
+    attachments?: AttachmentPayload[];
   };
   try {
     body = await req.json();
@@ -142,8 +207,9 @@ export async function POST(req: NextRequest): Promise<Response> {
   const { prompt, projectId, vfsFiles, threadId, resumeSessionId } = body;
   let { workspaceId } = body;
 
-  if (!prompt?.trim()) {
-    return new Response(JSON.stringify({ error: 'prompt is required' }), { status: 400 });
+  const hasAttachments = Array.isArray(body.attachments) && body.attachments.length > 0;
+  if (!prompt?.trim() && !hasAttachments) {
+    return new Response(JSON.stringify({ error: 'prompt or attachments are required' }), { status: 400 });
   }
 
   const authHeaders: Record<string, string> = {};
@@ -171,6 +237,14 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── Seed CLAUDE.md (write-if-changed) ────────────────────────────────────
   if (fs.existsSync(CLAUDE_MD_SRC)) {
     writeIfChanged(path.join(cwd, 'CLAUDE.md'), fs.readFileSync(CLAUDE_MD_SRC, 'utf-8'));
+  }
+
+  // ── Seed Agent Skills (.claude/skills → cwd/.claude/skills) ──────────────
+  // The SDK discovers these via settingSources: ['project'] + skills: 'all'.
+  // Progressive disclosure means only skill metadata is loaded until a skill
+  // is invoked, so adding skills here costs no baseline tokens.
+  if (fs.existsSync(SKILLS_SRC)) {
+    seedDir(SKILLS_SRC, path.join(cwd, '.claude', 'skills'));
   }
 
   // ── Seed VFS entity files (write-if-changed to keep cwd warm) ────────────
@@ -279,10 +353,15 @@ export async function POST(req: NextRequest): Promise<Response> {
         return {};
       };
 
+      // ── Build prompt — plain string or multimodal iterable ────────────────
+      const queryPrompt = hasAttachments
+        ? makeMultimodalMessage(prompt ?? '', body.attachments!)
+        : (prompt ?? '');
+
       // ── Run the agent ──────────────────────────────────────────────────────
       try {
         for await (const msg of query({
-          prompt: prompt!,
+          prompt: queryPrompt,
           options: {
             cwd,
             systemPrompt: JSON_AGENT_SYSTEM_PROMPT,
@@ -291,6 +370,10 @@ export async function POST(req: NextRequest): Promise<Response> {
             mcpServers: { media: mcpServer },
             permissionMode: 'acceptEdits',
             settingSources: ['project'],
+            // Enable Agent Skills (.claude/skills). This is the single switch —
+            // no need to add 'Skill' to allowedTools. Progressive disclosure keeps
+            // baseline token cost to skill metadata only until one is invoked.
+            skills: 'all',
             // Session resumption owned by the client (persisted per-thread in project meta)
             ...(resumeSessionId ? { resume: resumeSessionId } : {}),
             effort: 'low',

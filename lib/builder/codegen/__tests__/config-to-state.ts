@@ -16,16 +16,9 @@ import customColorsJson from '@/config/custom-colors.json';
 import themeJson from '@/config/theme.json';
 import root from '@/config/root';
 import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
-import type { ConfigRegistry } from '@/lib/sdui/config-resolver';
 
 import type { BuilderStore, CustomVar, DataSourceConfig } from '@/app/dev/builder/_store-types';
 import type { SDUINode } from '@/lib/sdui/types/node';
-
-// Registry matches what the builder uses in _store.ts (_fragmentRegistry)
-const _registry: ConfigRegistry = {
-  layouts: root.layouts as ConfigRegistry['layouts'],
-  fragments: (root.fragments ?? {}) as ConfigRegistry['fragments'],
-};
 
 type VariablesDef = {
   variables?: Record<string, {
@@ -58,10 +51,7 @@ type RoutesDef = {
   routes?: Array<{
     path: string;
     config?: string;
-    layout?: string;
     paramChangeAction?: string;
-    protectionCondition?: string;
-    protectionRedirect?: string;
   }>;
 };
 
@@ -107,11 +97,8 @@ function loadScreenNodes(configName: string): SDUINode[] {
 
   const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, unknown>;
 
-  // Apply layout composition (e.g. "layout": "store" injects navbar/footer via $slot),
-  // exactly as the builder does via resolveScreenConfig in _store.ts.
   const resolved = resolveScreenConfig(
     raw as Parameters<typeof resolveScreenConfig>[0],
-    _registry,
   );
 
   const rootNode = (resolved.ui ?? resolved.content) as SDUINode | null | undefined;
@@ -282,8 +269,6 @@ export function configToBuilderState(): Partial<BuilderStore> & Pick<BuilderStor
       name: cfg || r.path,
       route: r.path,
       nodes,
-      ...(r.protectionCondition ? { protectionCondition: r.protectionCondition } : {}),
-      ...(r.protectionRedirect ? { protectionRedirect: r.protectionRedirect } : {}),
     };
   });
 

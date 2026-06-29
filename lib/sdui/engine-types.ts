@@ -90,10 +90,6 @@ export interface RouteConfig {
   path: string;
   config?: string;
   dynamic?: boolean;
-  /** JS formula evaluated at render time. Falsy → redirect to protectionRedirect. Leave empty for public access. */
-  protectionCondition?: string;
-  /** Path to redirect to when protectionCondition is falsy. Defaults to '/'. */
-  protectionRedirect?: string;
 }
 
 export interface SDUIEngineProps {
@@ -128,4 +124,12 @@ export interface SDUIEngineProps {
   /** In builder mode, per-page query parameter definitions injected into
    *  globalContext.browser.query so formulas can reference them. */
   builderQueryParams?: Array<{ name: string; value: string }>;
+  /** Path params extracted from dynamic route segments (e.g. { id: '42', xyz: 'foo' }
+   *  for route /product/:id/something/:xyz).
+   *  Exposed in formulas as globalContext.browser.params.id and as route.id in the store. */
+  pathParams?: Record<string, string>;
+  /** In builder mode, the simulated path for the page being previewed (e.g. '/products').
+   *  Overrides the Next.js usePathname() result so globalContext.browser.path reflects
+   *  the page route instead of the builder's own URL. */
+  builderPath?: string;
 }

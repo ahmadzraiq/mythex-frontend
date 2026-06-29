@@ -660,10 +660,16 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
   const canSave = (isEditingExisting || name.trim().length > 0) && (urlBound || (typeof url === 'string' && url.trim().length > 0));
 
   const fetchData = async () => {
-    const urlStr = urlBound
+    let urlStr = urlBound
       ? String(resolveEntryValue({ value: typeof url === 'string' ? url : storedValueToFormula(url as FormulaValue), valueBound: true }))
       : (typeof url === 'string' ? url.trim() : '');
     if (!urlStr) return;
+    // Resolve relative URLs (e.g. /jobs) to the full backend run URL
+    if (urlStr.startsWith('/')) {
+      const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+      const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
+      urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
+    }
     setFetchState({ status: 'loading' });
     onWidthChange?.(SLIDE_WITH_RESULT);
     try {
@@ -1029,10 +1035,16 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
   const canSave = (isEditingExisting || name.trim().length > 0) && (urlBound || (typeof url === 'string' && url.trim().length > 0)) && query.trim().length > 0;
 
   const fetchData = async () => {
-    const urlStr = urlBound
+    let urlStr = urlBound
       ? String(resolveEntryValue({ value: typeof url === 'string' ? url : storedValueToFormula(url as FormulaValue), valueBound: true }))
       : (typeof url === 'string' ? url.trim() : '');
     if (!urlStr || !query.trim()) return;
+    // Resolve relative URLs to the full backend run URL
+    if (urlStr.startsWith('/')) {
+      const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+      const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
+      urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
+    }
     setFetchState({ status: 'loading' });
     onWidthChange?.(SLIDE_WITH_RESULT);
     try {

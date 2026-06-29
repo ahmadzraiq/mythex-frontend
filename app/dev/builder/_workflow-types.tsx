@@ -87,20 +87,28 @@ export type ActionStepType =
   | 'runJavaScript'
   // ── Backend (server-context) actions ─────────────────────────────
   | 'runApiEndpoint'       // Call a published API Endpoint from client
-  | 'tablesInsert'         // Server: insert row(s)
-  | 'tablesGet'            // Server: get row by id
-  | 'tablesList'           // Server: list rows
-  | 'tablesUpdate'         // Server: update row
-  | 'tablesDelete'         // Server: delete row
   | 'sendEmailAction'      // Server: send email
   | 'serverJavaScript'     // Server: run server-side JS (isolated-vm)
+  // ── Models (ORM) — model-first data access ───────────────────────────────
+  | 'ormFindMany'          // Server: ORM findMany
+  | 'ormFindOne'           // Server: ORM findFirst
+  | 'ormCreate'            // Server: ORM create (supports nested writes)
+  | 'ormCreateMany'        // Server: ORM createMany (bulk insert)
+  | 'ormUpdate'            // Server: ORM update
+  | 'ormUpdateMany'        // Server: ORM updateMany
+  | 'ormDelete'            // Server: ORM delete
+  | 'ormDeleteMany'        // Server: ORM deleteMany
+  | 'ormUpsert'            // Server: ORM upsert
+  | 'ormCount'             // Server: ORM count
+  | 'ormAggregate'         // Server: ORM aggregate (_sum/_avg/_min/_max/_count)
+  | 'ormGroupBy'           // Server: ORM groupBy with aggregates + HAVING
+  | 'ormTransaction'       // Server: ORM transaction wrapper (structural)
   // ── New server-context actions ────────────────────────────────────
   | 'sendResponse'         // Server: send HTTP response
   | 'sendStreamingResponse'// Server: send SSE streaming response
   | 'middlewareNext'       // Server: pass to next middleware/handler
   | 'workflowResult'       // Server: return value from a FUNCTION workflow
   | 'runServerFunction'    // Server: call a FUNCTION-kind workflow
-  | 'executeSQL'           // Server: execute raw SQL
   | 'runFormula'           // Server: evaluate a formula expression
   | 'throwError'           // Server: throw an error
   | 'tryCatch'             // Server: try/catch structural block
@@ -108,7 +116,15 @@ export type ActionStepType =
   | 'hashPassword'         // Server: bcrypt hash a password
   | 'verifyPassword'       // Server: compare password against bcrypt hash
   | 'generateToken'        // Server: sign a JWT
+  | 'randomToken'          // Server: generate a random token string
   | 'verifyToken'          // Server: verify a JWT
+  | 'parallelExecution'    // Server: run branches in parallel (structural)
+  // ── Middleware-specific ───────────────────────────────────────────────
+  | 'setRequestContext'    // Server (MIDDLEWARE only): inject a value into the downstream request
+  // ── Storage ──────────────────────────────────────────────────────────
+  | 'uploadFile'           // Server: upload a file buffer to S3
+  | 'getFileUrl'           // Server: get a presigned download URL for a file
+  | 'deleteFile'           // Server: delete a file from S3
   // Placeholder — new step not yet configured
   | 'unconfigured';
 
@@ -144,6 +160,8 @@ export interface ActionStep {
   tryBody?: ActionStep[];
   catchBody?: ActionStep[];
   finallyBody?: ActionStep[];
+  // ormTransaction body
+  transactionBody?: ActionStep[];
 }
 
 // ─── Trigger definitions ──────────────────────────────────────────────────────
@@ -228,6 +246,7 @@ const UNIVERSAL_TRIGGER_CATEGORIES: TriggerCategory[] = [
     category: 'Other',
     options: [
       { value: 'scroll',     label: 'On scroll' },
+      { value: 'reachEnd',   label: 'On reach end' },
       { value: 'escapeKey',  label: 'On Escape key' },
       { value: 'resize',     label: 'On page resize' },
       { value: 'keydown',    label: 'On keydown' },
@@ -288,10 +307,11 @@ export const TRIGGER_WORKFLOW_CATEGORIES: TriggerCategory[] = [
   {
     category: 'Listeners',
     options: [
-      { value: 'scroll',  label: 'On page scroll' },
-      { value: 'resize',  label: 'On page resize' },
-      { value: 'keydown', label: 'On keydown' },
-      { value: 'keyup',   label: 'On keyup' },
+      { value: 'scroll',   label: 'On page scroll' },
+      { value: 'reachEnd', label: 'On reach end (infinite scroll)' },
+      { value: 'resize',   label: 'On page resize' },
+      { value: 'keydown',  label: 'On keydown' },
+      { value: 'keyup',    label: 'On keyup' },
     ],
   },
   {
@@ -430,6 +450,7 @@ export function getTriggerIcon(value: string): React.ReactNode {
     case 'touchCancel':
       return <TI.Fingerprint />;
     case 'scroll':
+    case 'reachEnd':
     case 'created':
     case 'escapeKey':
     case 'appLoadBefore':
@@ -492,7 +513,7 @@ export const ACTION_CATEGORIES: { category: string; context?: 'client' | 'server
     items: [
       { type: 'breakLoop', label: 'Break loop', icon: '⊙' },
       { type: 'continueLoop', label: 'Continue loop', icon: '→' },
-      { type: 'passThroughCondition', label: 'Pass through condition', icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>' },
+      { type: 'passThroughCondition', label: 'Pass through condition', icon: '⌄' },
     ],
   },
   {
@@ -577,17 +598,6 @@ export const ACTION_CATEGORIES: { category: string; context?: 'client' | 'server
   },
   // ── Server-side actions (only available in server workflow context) ────────
   {
-    category: 'Tables',
-    context: 'server',
-    items: [
-      { type: 'tablesList',   label: 'List rows',    icon: '⊞' },
-      { type: 'tablesGet',    label: 'Get row',      icon: '⊡' },
-      { type: 'tablesInsert', label: 'Insert row',   icon: '+' },
-      { type: 'tablesUpdate', label: 'Update row',   icon: '✎' },
-      { type: 'tablesDelete', label: 'Delete row',   icon: '✕' },
-    ],
-  },
-  {
     category: 'Server Email',
     context: 'server',
     items: [
@@ -625,35 +635,56 @@ export function getServerActionCategories(kind: ServerWorkflowKind): { category:
 
   const flowLogic: ActionTypeDef[] = [
     ...terminators,
-    { type: 'passThroughCondition',    label: 'Pass through condition',    icon: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg>' },
+    { type: 'passThroughCondition',    label: 'Pass through condition',    icon: '⌄' },
     { type: 'branch',                  label: 'True/False split',          icon: '⟐', isStructural: true },
     { type: 'multiOptionBranch',       label: 'Multi-option split',        icon: '⟐', isStructural: true },
     { type: 'tryCatch',                label: 'Try/Catch',                 icon: '⚡', isStructural: true },
     { type: 'forEach',                 label: 'Iterator (for loop)',        icon: '↻', isStructural: true },
     { type: 'whileLoop',               label: 'While loop',                icon: '∞', isStructural: true },
+    { type: 'parallelExecution',       label: 'Parallel execution',        icon: '⇉', isStructural: true },
     { type: 'breakLoop',               label: 'Break loop',                icon: '⊙' },
     { type: 'continueLoop',            label: 'Continue loop',             icon: '→' },
     { type: 'throwError',              label: 'Throw error',               icon: '⚠' },
-    { type: 'createWorkflowVariable',  label: 'Create workflow variable',  icon: '(x)' },
-    { type: 'changeVariableValue',     label: 'Change variable value',     icon: '⇄' },
-    { type: 'resetVariableValue',      label: 'Reset variable value',      icon: '↺' },
+    { type: 'createWorkflowVariable',  label: 'Create variable',           icon: '(x)' },
+    { type: 'changeVariableValue',     label: 'Change variable',           icon: '⇄' },
+    { type: 'resetVariableValue',      label: 'Reset variable',            icon: '↺' },
     { type: 'timeDelay',               label: 'Time delay',                icon: '⏱' },
   ];
 
+  // MIDDLEWARE-only: inject value into the downstream request (like req.user = ... in Express)
+  const requestItems: ActionTypeDef[] = kind === 'MIDDLEWARE'
+    ? [{ type: 'setRequestContext', label: 'Set request context', icon: '→□' }]
+    : [];
+
   return [
+    ...(requestItems.length > 0 ? [{ category: 'Request', items: requestItems }] : []),
     { category: 'Flow (Logic)', items: flowLogic },
-    { category: 'Tables', items: [
-      { type: 'tablesList',   label: 'Get rows',    icon: '⊞' },
-      { type: 'tablesInsert', label: 'Insert rows', icon: '⊞' },
-      { type: 'tablesUpdate', label: 'Update rows', icon: '⊞' },
-      { type: 'tablesDelete', label: 'Delete rows', icon: '⊞' },
-      { type: 'executeSQL',   label: 'Execute SQL', icon: '⊞' },
+    { category: 'Models (ORM)', items: [
+      { type: 'ormFindMany',    label: 'Find many',    icon: '⊞' },
+      { type: 'ormFindOne',     label: 'Find one',     icon: '⊡' },
+      { type: 'ormCreate',      label: 'Create',       icon: '+' },
+      { type: 'ormCreateMany',  label: 'Create many',  icon: '⊞+' },
+      { type: 'ormUpdate',      label: 'Update',       icon: '✎' },
+      { type: 'ormUpdateMany',  label: 'Update many',  icon: '✎✎' },
+      { type: 'ormDelete',      label: 'Delete',       icon: '✕' },
+      { type: 'ormDeleteMany',  label: 'Delete many',  icon: '✕✕' },
+      { type: 'ormUpsert',      label: 'Upsert',       icon: '⇅' },
+      { type: 'ormCount',       label: 'Count',        icon: '#' },
+      { type: 'ormAggregate',   label: 'Aggregate',    icon: 'Σ' },
+      { type: 'ormGroupBy',     label: 'Group by',     icon: '≡' },
+      { type: 'ormTransaction', label: 'Transaction',  icon: '⚛', isStructural: true },
     ]},
     { category: 'Auth', items: [
       { type: 'hashPassword',   label: 'Hash password',    icon: '🔒' },
       { type: 'verifyPassword', label: 'Verify password',  icon: '🔓' },
       { type: 'generateToken',  label: 'Generate token',   icon: '🔑' },
+      { type: 'randomToken',    label: 'Random token',     icon: '🎲' },
       { type: 'verifyToken',    label: 'Verify token',     icon: '🛡' },
+    ]},
+    { category: 'Storage', items: [
+      { type: 'uploadFile',  label: 'Upload file',       icon: '⬆' },
+      { type: 'getFileUrl',  label: 'Get file URL',      icon: '🔗' },
+      { type: 'deleteFile',  label: 'Delete file',       icon: '🗑' },
     ]},
     { category: 'Functions', items: [
       { type: 'runFormula', label: 'Run formula', icon: 'ƒ' },
@@ -790,7 +821,6 @@ const SERVER_TYPE_DEFS: Record<string, ActionTypeDef> = {
   middlewareNext:        { type: 'middlewareNext',         label: 'Next',                     icon: '→' },
   workflowResult:        { type: 'workflowResult',         label: 'Workflow result',           icon: '⚡' },
   runServerFunction:     { type: 'runServerFunction',      label: 'Run server function',       icon: 'ƒ' },
-  executeSQL:            { type: 'executeSQL',             label: 'Execute SQL',               icon: '⊞' },
   runFormula:            { type: 'runFormula',             label: 'Run formula',               icon: 'ƒ' },
   throwError:            { type: 'throwError',             label: 'Throw error',               icon: '⚠' },
   tryCatch:              { type: 'tryCatch',               label: 'Try/Catch',                 icon: '⚡', isStructural: true },
@@ -799,6 +829,19 @@ const SERVER_TYPE_DEFS: Record<string, ActionTypeDef> = {
   verifyPassword:        { type: 'verifyPassword',         label: 'Verify password',           icon: '🔓' },
   generateToken:         { type: 'generateToken',          label: 'Generate token',            icon: '🔑' },
   verifyToken:           { type: 'verifyToken',            label: 'Verify token',              icon: '🛡' },
+  ormFindMany:           { type: 'ormFindMany',            label: 'Find many',                 icon: '⊞' },
+  ormFindOne:            { type: 'ormFindOne',             label: 'Find one',                  icon: '⊡' },
+  ormCreate:             { type: 'ormCreate',              label: 'Create',                    icon: '+' },
+  ormUpdate:             { type: 'ormUpdate',              label: 'Update',                    icon: '✎' },
+  ormUpdateMany:         { type: 'ormUpdateMany',          label: 'Update many',               icon: '✎✎' },
+  ormDelete:             { type: 'ormDelete',              label: 'Delete',                    icon: '✕' },
+  ormDeleteMany:         { type: 'ormDeleteMany',          label: 'Delete many',               icon: '✕✕' },
+  ormUpsert:             { type: 'ormUpsert',              label: 'Upsert',                    icon: '⇅' },
+  ormCount:              { type: 'ormCount',               label: 'Count',                     icon: '#' },
+  ormAggregate:          { type: 'ormAggregate',           label: 'Aggregate',                 icon: 'Σ' },
+  ormGroupBy:            { type: 'ormGroupBy',             label: 'Group by',                  icon: '≡' },
+  ormCreateMany:         { type: 'ormCreateMany',          label: 'Create many',               icon: '⊞+' },
+  ormTransaction:        { type: 'ormTransaction',         label: 'Transaction',               icon: '⚛', isStructural: true },
 };
 
 export function getActionDef(type: ActionStepType): ActionTypeDef | undefined {
@@ -917,17 +960,25 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'setFormState':
       // complete when at least one flag is explicitly set (false is a valid value)
       return cfg.isSubmitting !== undefined || cfg.isSubmitted !== undefined;
-    // Server types completeness
-    case 'tablesList':
-      return Boolean(cfg.table);
-    case 'tablesInsert':
-      return Boolean(cfg.table);
-    case 'tablesUpdate':
-      return Boolean(cfg.table) && (Boolean(cfg.rowId) || Boolean(cfg.filters));
-    case 'tablesDelete':
-      return Boolean(cfg.table) && (Boolean(cfg.rowId) || Boolean(cfg.filters));
-    case 'executeSQL':
-      return Boolean(typeof cfg.query === 'string' && (cfg.query as string).trim().length > 0);
+    // ORM step completeness
+    case 'ormFindMany':
+    case 'ormFindOne':
+    case 'ormCount':
+    case 'ormAggregate':
+    case 'ormDeleteMany':
+      return Boolean(cfg.model);
+    case 'ormCreate':
+    case 'ormCreateMany':
+    case 'ormUpdateMany':
+      return Boolean(cfg.model) && Boolean(cfg.data);
+    case 'ormUpdate':
+      return Boolean(cfg.model) && Boolean(cfg.where) && Boolean(cfg.data);
+    case 'ormDelete':
+      return Boolean(cfg.model) && Boolean(cfg.where);
+    case 'ormUpsert':
+      return Boolean(cfg.model) && Boolean(cfg.where) && Boolean(cfg.create) && Boolean(cfg.update);
+    case 'ormGroupBy':
+      return Boolean(cfg.model) && Boolean(cfg.by);
     case 'sendResponse':
       return Boolean(cfg.status) && Boolean(cfg.bodyType);
     case 'workflowResult':
@@ -955,6 +1006,7 @@ export function isStepComplete(step: ActionStep): boolean {
     case 'sendStreamingResponse':
     case 'middlewareNext':
     case 'tryCatch':
+    case 'ormTransaction':
       return true;
     default:
       return true;
@@ -1070,39 +1122,20 @@ export function getStepSummary(
       return cfg.targetNodeId ? `${cfg.enterType ?? 'fadeIn'} → ${cfg.targetNodeId}` : null;
     case 'returnValue':
       return cfg.value !== undefined ? cfgStr(cfg.value) : null;
-    case 'tablesList': {
-      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
-      if (!table) return null;
-      const filters = (cfg.filters as unknown[] | undefined) ?? [];
-      return filters.length > 0
-        ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}`
-        : `${table} · no filters`;
-    }
-    case 'tablesGet': {
-      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
-      if (!table) return null;
-      return `${table} · by id`;
-    }
-    case 'tablesInsert': {
-      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
-      return table ?? null;
-    }
-    case 'tablesUpdate': {
-      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
-      if (!table) return null;
-      const filters = (cfg.filters as unknown[] | undefined) ?? [];
-      return filters.length > 0 ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}` : table;
-    }
-    case 'tablesDelete': {
-      const table = cfgStr(cfg.table) ?? cfgStr(cfg.tableId);
-      if (!table) return null;
-      const filters = (cfg.filters as unknown[] | undefined) ?? [];
-      return filters.length > 0 ? `${table} · ${filters.length} filter${filters.length > 1 ? 's' : ''}` : table;
-    }
-    case 'executeSQL': {
-      const sql = cfgStr(cfg.query) ?? cfgStr(cfg.sql);
-      return sql ? sql.trim().slice(0, 40) : null;
-    }
+    // ORM steps
+    case 'ormFindMany':    return cfg.model ? `Find many ${cfg.model}` : null;
+    case 'ormFindOne':     return cfg.model ? `Find one ${cfg.model}` : null;
+    case 'ormCreate':      return cfg.model ? `Create ${cfg.model}` : null;
+    case 'ormUpdate':      return cfg.model ? `Update ${cfg.model}` : null;
+    case 'ormUpdateMany':  return cfg.model ? `Update many ${cfg.model}` : null;
+    case 'ormDelete':      return cfg.model ? `Delete ${cfg.model}` : null;
+    case 'ormDeleteMany':  return cfg.model ? `Delete many ${cfg.model}` : null;
+    case 'ormUpsert':      return cfg.model ? `Upsert ${cfg.model}` : null;
+    case 'ormCount':       return cfg.model ? `Count ${cfg.model}` : null;
+    case 'ormAggregate':   return cfg.model ? `Aggregate ${cfg.model}` : null;
+    case 'ormGroupBy':      return cfg.model ? `Group by ${cfg.model}` : null;
+    case 'ormCreateMany':   return cfg.model ? `Create many ${cfg.model}` : null;
+    case 'ormTransaction':  return 'Transaction block';
     default:
       return null;
   }

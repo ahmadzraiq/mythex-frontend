@@ -79,7 +79,7 @@ function detectFeatures(store: BuilderStore): FeatureFlags {
     hasMarkdown: types.has('MarkdownViewer'),
     hasLottie: types.has('LottiePlayer'),
     hasQR: types.has('QRCodeWidget'),
-    hasToast: actionTypes.has('showToast'),
+    hasToast: false,
     hasFetch: actionTypes.has('fetch') || (store.pageDataSources ?? []).some(ds => ds.type === 'rest'),
     hasGraphQL: actionTypes.has('graphql') || (store.pageDataSources ?? []).some(ds => ds.type === 'graphql'),
     hasAuth: false,

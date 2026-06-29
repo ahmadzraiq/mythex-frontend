@@ -21,10 +21,11 @@ import remarkGfm from 'remark-gfm';
 import { useSearchParams, usePathname } from 'next/navigation';
 import { useBuilderStore } from './_store';
 import { applyVirtualFile } from './_virtual-files';
-import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult } from './_store-types';
+import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult, AiAttachment } from './_store-types';
 import { type BuilderModelId } from './_store-types';
 import { useJsonAgent } from './_use-json-agent';
 import type { ChatThread } from './_use-json-agent';
+import { backendStorage } from '@/lib/platform/api-client';
 
 // ---------------------------------------------------------------------------
 // AnimatedDots
@@ -981,6 +982,165 @@ function MentionTypeahead({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Attachment helpers
+// ---------------------------------------------------------------------------
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf', 'text/plain',
+]);
+const SIZE_LIMITS: Record<string, number> = {
+  'image/': 3.75 * 1024 * 1024,
+  'application/pdf': 32 * 1024 * 1024,
+  'text/plain': 500 * 1024,
+};
+function getLimit(mime: string): number {
+  if (mime.startsWith('image/')) return SIZE_LIMITS['image/'];
+  return SIZE_LIMITS[mime] ?? 500 * 1024;
+}
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface PendingAttachment extends AiAttachment {
+  uploading: boolean;
+  uploadError?: string;
+}
+
+const CHIP_SIZE = 72;
+
+/** Single square chip — uniform 72×72 for both images and documents */
+function AttachmentChip({ att, onRemove }: { att: PendingAttachment; onRemove?: () => void }) {
+  const isImage = att.mimeType.startsWith('image/');
+  const isPdf   = att.mimeType === 'application/pdf';
+  const shortName = att.name.length > 12 ? att.name.slice(0, 10) + '…' : att.name;
+
+  return (
+    <div style={{
+      position: 'relative', flexShrink: 0,
+      width: CHIP_SIZE, height: CHIP_SIZE,
+      borderRadius: 10,
+      border: '1px solid var(--bld-ai-border)',
+      background: 'var(--bld-bg-elevated)',
+      overflow: 'hidden',
+    }}>
+      {isImage && att.previewUrl ? (
+        <img src={att.previewUrl} alt={att.name}
+          style={{ width: CHIP_SIZE, height: CHIP_SIZE, objectFit: 'cover', display: 'block' }} />
+      ) : (
+        /* Document / PDF — icon centred, filename + size at the bottom */
+        <div style={{
+          width: '100%', height: '100%',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 3,
+          padding: '6px 4px 4px',
+          boxSizing: 'border-box',
+        }}>
+          <span style={{ fontSize: 26, lineHeight: 1 }}>{isPdf ? '📄' : '📝'}</span>
+          <div style={{ textAlign: 'center', lineHeight: 1.2 }}>
+            <div style={{ fontSize: 8.5, color: 'var(--bld-text-2)', fontWeight: 600, wordBreak: 'break-all' }}>{shortName}</div>
+            <div style={{ fontSize: 8, color: 'var(--bld-text-disabled)' }}>{formatBytes(att.size)}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload spinner overlay */}
+      {att.uploading && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)',
+        }}>
+          <div style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin-step 0.7s linear infinite' }} />
+        </div>
+      )}
+
+      {/* Error state */}
+      {att.uploadError && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(127,29,29,0.75)',
+        }}>
+          <span style={{ fontSize: 8.5, color: '#fca5a5', textAlign: 'center', padding: '0 4px', lineHeight: 1.3 }}>Failed</span>
+        </div>
+      )}
+
+      {/* Remove button */}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          style={{
+            position: 'absolute', top: 3, right: 3,
+            width: 15, height: 15, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.6)', border: 'none',
+            color: '#fff', fontSize: 8, lineHeight: 1,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 0,
+          }}
+          title="Remove"
+        >✕</button>
+      )}
+    </div>
+  );
+}
+
+/** Read-only attachment strip inside a sent user message bubble.
+ *  Single images expand to fill the bubble width; multiple = uniform square grid. */
+function BubbleAttachmentStrip({ attachments }: { attachments: AiAttachment[] }) {
+  if (!attachments.length) return null;
+  const single = attachments.length === 1;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8, maxWidth: '100%' }}>
+      {attachments.map((att, i) => {
+        const isImage = att.mimeType.startsWith('image/');
+        const isPdf   = att.mimeType === 'application/pdf';
+        if (isImage) {
+          return (
+            <img key={i} src={att.previewUrl ?? ''} alt={att.name}
+              style={{
+                width: single ? '100%' : 72,
+                height: single ? 'auto' : 72,
+                maxWidth: '100%',
+                objectFit: single ? 'contain' : 'cover',
+                borderRadius: 8,
+                border: '1px solid rgba(124,58,237,0.2)',
+                flexShrink: 0,
+                display: 'block',
+              }} />
+          );
+        }
+        const shortName = att.name.length > 18 ? att.name.slice(0, 16) + '…' : att.name;
+        return (
+          <a
+            key={i}
+            href={att.previewUrl ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              width: 72, height: 72,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 3,
+              padding: '6px 4px 4px', boxSizing: 'border-box',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(124,58,237,0.18)',
+              color: 'var(--bld-text-2)', textDecoration: 'none', flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 26, lineHeight: 1 }}>{isPdf ? '📄' : '📝'}</span>
+            <div style={{ textAlign: 'center', lineHeight: 1.2 }}>
+              <div style={{ fontSize: 8.5, color: 'var(--bld-text-2)', fontWeight: 600, wordBreak: 'break-all' }}>{shortName}</div>
+              <div style={{ fontSize: 8, color: 'var(--bld-text-disabled)' }}>{formatBytes(att.size)}</div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 function MessageBubble({
   msg, onEdit, isEditing,
 }: {
@@ -1078,6 +1238,11 @@ function MessageBubble({
           fontSize: 13, lineHeight: 1.65, wordBreak: 'break-word',
           overflowWrap: 'anywhere', position: 'relative',
         }}>
+          {/* Attachment thumbnails inside user bubble */}
+          {isUser && msg.attachments && msg.attachments.length > 0 && (
+            <BubbleAttachmentStrip attachments={msg.attachments} />
+          )}
+
           {/* Node chips inside bubble */}
           {isUser && nodeNames.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 6 }}>
@@ -1483,6 +1648,9 @@ export function AiChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const attachFileInputRef = useRef<HTMLInputElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1491,6 +1659,7 @@ export function AiChatPanel() {
     messages, isStreaming, sendMessage, stopStreaming, tokenStats,
     threads, currentThreadId, loadingThreads, hasMoreThreads, loadingMoreThreads,
     deletingThreadId, loadMoreThreads, selectThread, deleteThread, startNewChat,
+    createThread,
   } = useJsonAgent(projectId);
 
   // Close history menu when clicking outside
@@ -1508,13 +1677,97 @@ export function AiChatPanel() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Attach files ──────────────────────────────────────────────────────────
+  const handleAttachFiles = useCallback(async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setAttachError(null);
+
+    const toAdd = Array.from(files).slice(0, Math.max(0, 5 - pendingAttachments.length));
+    if (toAdd.length === 0) {
+      setAttachError('Maximum 5 attachments per message.');
+      return;
+    }
+
+    for (const file of toAdd) {
+      if (!ALLOWED_MIME_TYPES.has(file.type)) {
+        setAttachError(`"${file.name}" is not supported. Use images, PDFs, or plain text.`);
+        continue;
+      }
+      const limit = getLimit(file.type);
+      if (file.size > limit) {
+        setAttachError(`"${file.name}" exceeds the ${formatBytes(limit)} limit.`);
+        continue;
+      }
+
+      // Read as base64 for Claude + preview
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip the data-URI prefix
+          resolve(result.includes(',') ? result.split(',')[1] : result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }).catch(() => null);
+
+      if (!data) continue;
+
+      const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+
+      // Placeholder entry shown immediately with upload spinner
+      const placeholder: PendingAttachment = {
+        fileId: '',
+        name: file.name,
+        mimeType: file.type,
+        size: file.size,
+        data,
+        previewUrl,
+        uploading: true,
+      };
+      const idx = pendingAttachments.length;
+      setPendingAttachments(prev => [...prev, placeholder]);
+
+      // S3 upload in background — create thread eagerly if needed so we have a threadId
+      void (async () => {
+        try {
+          let tid = currentThreadId;
+          if (!tid) tid = await createThread(inputValue.slice(0, 60).trim() || 'New Chat') ?? null;
+          const keyPrefix = tid ? `chat-attachments/${tid}` : 'chat-attachments/pending';
+          const key = `${keyPrefix}/${Date.now()}-${file.name}`;
+          const presign = await backendStorage.presignUpload(
+            projectId!,
+            { bucket: 'private', key, mime: file.type, sizeMb: file.size / (1024 * 1024) },
+          );
+          await fetch(presign.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+          const { file: registered } = await backendStorage.register(
+            projectId!,
+            { bucket: 'private', key: presign.key, mime: file.type, size: file.size },
+          );
+          setPendingAttachments(prev => prev.map((a, i) =>
+            i === idx ? { ...a, fileId: registered.id, uploading: false } : a,
+          ));
+        } catch {
+          setPendingAttachments(prev => prev.map((a, i) =>
+            i === idx ? { ...a, uploading: false, uploadError: 'Upload failed' } : a,
+          ));
+        }
+      })();
+    }
+
+    if (attachFileInputRef.current) attachFileInputRef.current.value = '';
+  }, [pendingAttachments, projectId, currentThreadId, createThread, inputValue]);
+
   // ── Send ──────────────────────────────────────────────────────────────────
   const handleSend = useCallback(() => {
     const text = inputValue.trim();
-    if (!text || isStreaming) return;
+    const hasUploading = pendingAttachments.some(a => a.uploading);
+    if ((!text && pendingAttachments.length === 0) || isStreaming || hasUploading) return;
     setInputValue('');
-    void sendMessage(text);
-  }, [inputValue, isStreaming, sendMessage]);
+    const atts = pendingAttachments.filter(a => a.fileId && !a.uploadError);
+    setPendingAttachments([]);
+    void sendMessage(text, atts.length ? atts : undefined);
+  }, [inputValue, isStreaming, pendingAttachments, sendMessage]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -1523,6 +1776,8 @@ export function AiChatPanel() {
   const handleNewChat = useCallback(() => {
     startNewChat();
     setInputValue('');
+    setPendingAttachments([]);
+    setAttachError(null);
     setHistoryOpen(false);
   }, [startNewChat]);
 
@@ -1662,6 +1917,30 @@ export function AiChatPanel() {
             boxShadow: inputFocused ? '0 2px 16px rgba(124,58,237,0.15)' : 'none',
             transition: 'box-shadow 0.3s',
           }}>
+            {/* Pending attachment strip */}
+            {pendingAttachments.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 12px 0' }}>
+                {pendingAttachments.map((att, i) => (
+                  <AttachmentChip
+                    key={i}
+                    att={att}
+                    onRemove={() => {
+                      if (att.previewUrl && att.mimeType.startsWith('image/')) URL.revokeObjectURL(att.previewUrl);
+                      setPendingAttachments(prev => prev.filter((_, j) => j !== i));
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Attach error */}
+            {attachError && (
+              <div style={{ padding: '6px 14px 0', fontSize: 10, color: 'var(--bld-error, #ef4444)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>⚠</span><span>{attachError}</span>
+                <button onClick={() => setAttachError(null)} style={{ marginLeft: 2, background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 11, padding: 0 }}>✕</button>
+              </div>
+            )}
+
             <textarea
               ref={textareaRef}
               data-testid="ai-chat-input"
@@ -1682,9 +1961,40 @@ export function AiChatPanel() {
               }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 10px' }}>
-              <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
-                {isStreaming ? 'Claude is working…' : 'Enter to send · Shift+Enter for new line'}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Paperclip attach button */}
+                <button
+                  onClick={() => attachFileInputRef.current?.click()}
+                  disabled={isStreaming || pendingAttachments.length >= 5}
+                  title="Attach image, PDF, or text file"
+                  style={{
+                    background: 'none', border: 'none', padding: '2px 4px',
+                    color: pendingAttachments.length > 0 ? 'var(--bld-ai-accent)' : 'var(--bld-text-disabled)',
+                    cursor: isStreaming || pendingAttachments.length >= 5 ? 'not-allowed' : 'pointer',
+                    opacity: isStreaming ? 0.4 : 1,
+                    fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => { if (!isStreaming) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-ai-accent)'; }}
+                  onMouseLeave={e => { if (!isStreaming && pendingAttachments.length === 0) (e.currentTarget as HTMLButtonElement).style.color = 'var(--bld-text-disabled)'; }}
+                >
+                  {/* Paperclip SVG */}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+                <input
+                  ref={attachFileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain"
+                  style={{ display: 'none' }}
+                  onChange={e => void handleAttachFiles(e.target.files)}
+                />
+                <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}>
+                  {isStreaming ? 'Claude is working…' : 'Enter to send · Shift+Enter for new line'}
+                </span>
+              </div>
               {isStreaming ? (
                 <button
                   data-testid="ai-stop-btn"
@@ -1715,17 +2025,18 @@ export function AiChatPanel() {
                 <button
                   data-testid="ai-send-btn"
                   onClick={handleSend}
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() && pendingAttachments.length === 0}
                   style={{
                     width: 34, height: 34, borderRadius: '50%',
-                    border: 'none', cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
-                    background: inputValue.trim()
+                    border: 'none',
+                    cursor: (inputValue.trim() || pendingAttachments.length > 0) ? 'pointer' : 'not-allowed',
+                    background: (inputValue.trim() || pendingAttachments.length > 0)
                       ? 'linear-gradient(135deg, var(--bld-ai-accent), var(--bld-ai-accent))'
                       : 'var(--bld-bg-elevated)',
-                    color: inputValue.trim() ? '#fff' : 'var(--bld-text-disabled)',
+                    color: (inputValue.trim() || pendingAttachments.length > 0) ? '#fff' : 'var(--bld-text-disabled)',
                     fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.2s', flexShrink: 0,
-                    boxShadow: inputValue.trim() ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
+                    boxShadow: (inputValue.trim() || pendingAttachments.length > 0) ? '0 2px 12px rgba(124,58,237,0.4)' : 'none',
                   }}
                   title="Send message"
                 >

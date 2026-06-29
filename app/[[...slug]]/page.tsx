@@ -7,7 +7,7 @@ import { SDUIEngine, paramChangeRunActionRef, type ActionsConfig, type NamedData
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { syncSearchParams } from '@/lib/sdui/search-param-sync';
 import { sortRoutes, matchRoute } from '@/lib/sdui/route-utils';
-import { evaluateFormula, registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
+import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import type { SDUIConfig } from '@/lib/sdui/types';
 import type { AppConfig, PageUI } from '@/config/types';
 import type { SDUINode } from '@/lib/sdui/types/node';
@@ -235,7 +235,9 @@ export default function DynamicRoutePage() {
   const sortedRoutes = useMemo(() => sortRoutes(routes), [routes]);
 
   const path = pathname || '/';
-  const route = matchRoute(path, sortedRoutes);
+  const routeMatch = matchRoute(path, sortedRoutes);
+  const route = routeMatch?.route;
+  const pathParams = routeMatch?.params ?? {};
 
   const paramSyncMountedRef = useRef(false);
 
@@ -244,6 +246,10 @@ export default function DynamicRoutePage() {
     const currentPath = useSduiStore.getState().data[ROUTE_PATH];
     if (currentPath !== newPath) {
       setData(ROUTE_PATH, newPath);
+    }
+    // Write each path param to route.<name> so formulas can use route.id, route.slug, etc.
+    for (const [key, val] of Object.entries(pathParams)) {
+      setData(`route.${key}`, val);
     }
     syncSearchParams({
       searchParams,
@@ -256,47 +262,24 @@ export default function DynamicRoutePage() {
       runParamChangeAction: (action) => paramChangeRunActionRef.current?.(action),
       paramSyncMountedRef,
     });
-  }, [pathname, path, searchParams, setData, sortedRoutes, route]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, path, searchParams, setData, sortedRoutes, route, JSON.stringify(pathParams)]);
 
   // Route redirect (static)
   useEffect(() => {
     if (route?.redirect) router.replace(route.redirect);
-  }, [route?.redirect, router]);
+  }, [route?.redirect, router]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const ui = (app.ui ?? {}) as PageUI;
-  const redirecting = ui.redirecting ?? { text: 'Redirecting...', wrapperClassName: 'flex items-center justify-center min-h-screen', textClassName: 'text-[var(--theme-muted-foreground)]' };
   const pageNotFound = ui.pageNotFound ?? { text: 'Page not found', wrapperClassName: 'flex items-center justify-center min-h-screen', textClassName: 'text-[var(--theme-muted-foreground)]' };
-  const layoutClasses = ui.layoutClasses ?? { centered: 'w-full min-h-screen flex items-center justify-center', full: 'w-full' };
 
   if (route?.redirect) {
-    return (
-      <div className={redirecting.wrapperClassName}>
-        <p className={redirecting.textClassName}>{redirecting.text}</p>
-      </div>
-    );
+    return null;
   }
 
   const routeTyped = route as (typeof routes)[0] | null;
 
-  // Protection guard — evaluated synchronously during render so the page never
-  // mounts (and never fires any datasource fetches) when access is denied.
-  if (routeTyped?.protectionCondition) {
-    const mergedState = {
-      ...useSduiStore.getState().data,
-      ...getGlobalVariableStore().getState().getFullState(),
-    };
-    const allowed = evaluateFormula(routeTyped.protectionCondition, mergedState).value;
-    if (!allowed) {
-      router.replace(routeTyped.protectionRedirect ?? '/');
-      return (
-        <div className={redirecting.wrapperClassName}>
-          <p className={redirecting.textClassName}>{redirecting.text}</p>
-        </div>
-      );
-    }
-  }
-
-  const configName = route?.config ?? 'notFound';
+  const configName = (route as { config?: string } | undefined)?.config ?? 'notFound';
   const config = (app.screens[configName] ?? app.screens.notFound) as Record<string, unknown> | undefined;
 
   if (!config) {
@@ -307,11 +290,10 @@ export default function DynamicRoutePage() {
     );
   }
 
-  const layoutClass = layoutClasses[route?.layout ?? 'full'] ?? layoutClasses.full;
-
   const keyByParams = (route as { keyBy?: string[] })?.keyBy ?? [];
-  const engineKey = keyByParams.length > 0
-    ? `${path}-${keyByParams
+  const pathParamValues = Object.values(pathParams).join('-');
+  const engineKey = (keyByParams.length > 0 || pathParamValues)
+    ? `${path}-${pathParamValues}-${keyByParams
         .map((p) => {
           const def = syncDefs.find((d) => d.param === p);
           const v =
@@ -341,7 +323,7 @@ export default function DynamicRoutePage() {
     : app.actions as ActionsConfig;
 
   return (
-    <main className={layoutClass} style={{ position: 'relative' }}>
+    <main style={{ position: 'relative' }}>
       <SDUIEngine
         key={engineKey}
         config={effectiveConfig}
@@ -350,18 +332,8 @@ export default function DynamicRoutePage() {
         routes={app.routes}
         paramChangeAction={(route as { paramChangeAction?: string })?.paramChangeAction}
         dataSources={(app as { dataSources?: Record<string, NamedDataSourceDef> }).dataSources}
+        pathParams={pathParams}
       />
-      {false && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--theme-background, #fff)',
-          }}
-        >
-          <p className={redirecting.textClassName}>{redirecting.text}</p>
-        </div>
-      )}
     </main>
   );
 }

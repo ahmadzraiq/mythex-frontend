@@ -475,41 +475,6 @@ export function emitUpdateCollection(step: Record<string, unknown>, symbols: Sym
   ].join('\n');
 }
 
-// ── authenticate / restoreSession / setUser ──────────────────────────────────
-
-export function emitAuthenticate(step: Record<string, unknown>, symbols: SymbolMap): string {
-  const cfg = step.config as Record<string, unknown> | undefined ?? {};
-  const tokenExpr = cfg.accessToken != null ? rewritePropValue(cfg.accessToken, symbols) : `''`;
-  const persist = cfg.persist !== false;
-  const lines = [
-    `{`,
-    `  const _token = ${tokenExpr};`,
-    `  if (_token) {`,
-  ];
-  if (persist) {
-    lines.push(`    if (typeof window !== 'undefined') localStorage.setItem('auth_token', String(_token));`);
-  }
-  lines.push(`    useStore.setState(s => ({ ...s, auth: { ...s.auth, token: _token } }));`);
-  lines.push(`  }`);
-  lines.push(`}`);
-  return lines.join('\n');
-}
-
-export function emitRestoreSession(): string {
-  return [
-    `{`,
-    `  const _token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;`,
-    `  if (_token) useStore.setState(s => ({ ...s, auth: { ...s.auth, token: _token } }));`,
-    `}`,
-  ].join('\n');
-}
-
-export function emitSetUser(step: Record<string, unknown>, symbols: SymbolMap): string {
-  const cfg = step.config as Record<string, unknown> | undefined ?? {};
-  const userExpr = rewritePropValue(cfg.user, symbols);
-  return `useStore.setState(s => ({ ...s, auth: { ...s.auth, user: ${userExpr} } }));`;
-}
-
 // ── stopPropagation ───────────────────────────────────────────────────────────
 
 export function emitStopPropagation(): string {

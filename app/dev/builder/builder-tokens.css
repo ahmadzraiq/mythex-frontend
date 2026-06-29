@@ -28,10 +28,10 @@
   --bld-border-focus:  #6366f1;
 
   /* Text */
-  --bld-text-1:        #f1f5f9;
-  --bld-text-2:        #d1d5db;
-  --bld-text-3:        #9ca3af;
-  --bld-text-disabled: #6b7280;
+  --bld-text-1:        #ffffff;
+  --bld-text-2:        #e2e8f0;
+  --bld-text-3:        #c0c7d0;
+  --bld-text-disabled: #8b95a3;
 
   /* Accent (blue) */
   --bld-accent:        #6366f1;

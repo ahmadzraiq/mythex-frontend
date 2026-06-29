@@ -472,12 +472,8 @@ async function getRoutePages(): Promise<BuilderPage[]> {
     import('@/lib/sdui/config-resolver'),
   ]);
 
-  type AnyRoot = { screens: Record<string, unknown>; layouts: Record<string, unknown>; fragments: Record<string, unknown> };
+  type AnyRoot = { screens: Record<string, unknown> };
   const typedRoot = root as AnyRoot;
-  const fragmentRegistry = {
-    layouts: typedRoot.layouts,
-    fragments: typedRoot.fragments,
-  };
 
   const extractNodes = (configName: string): SDUINode[] => {
     const screen = typedRoot.screens[configName];
@@ -485,7 +481,6 @@ async function getRoutePages(): Promise<BuilderPage[]> {
     try {
       const resolved = resolveScreenConfig(
         screen as Parameters<typeof resolveScreenConfig>[0],
-        fragmentRegistry as Parameters<typeof resolveScreenConfig>[1],
       );
       const ui = (resolved as { ui?: unknown }).ui as SDUINode | SDUINode[] | undefined;
       if (!ui) return [];
@@ -496,7 +491,7 @@ async function getRoutePages(): Promise<BuilderPage[]> {
     }
   };
 
-  _routePages = (routesConfig as { routes: Array<{ path: string; config: string; protectionCondition?: string; protectionRedirect?: string }> })
+  _routePages = (routesConfig as { routes: Array<{ path: string; config: string }> })
     .routes.map((r, i) => {
       const screen = typedRoot.screens[r.config] as
         | { queryParams?: Array<{ name: string; value: string }> }
@@ -507,8 +502,6 @@ async function getRoutePages(): Promise<BuilderPage[]> {
         route: r.path,
         nodes: extractNodes(r.config),
         ...(screen?.queryParams ? { queryParams: screen.queryParams } : {}),
-        ...(r.protectionCondition ? { protectionCondition: r.protectionCondition } : {}),
-        ...(r.protectionRedirect ? { protectionRedirect: r.protectionRedirect } : {}),
         wx: i * (1280 + 80),
         wy: 0,
       };
@@ -3514,15 +3507,6 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
   setCurrentPageQueryParams: (params) =>
     set((s) => ({
       pages: s.pages.map((p) => p.id === s.focusedPageId ? { ...p, queryParams: params } : p),
-    })),
-
-  setPageProtection: (condition, redirect) =>
-    set((s) => ({
-      pages: s.pages.map((p) =>
-        p.id === s.focusedPageId
-          ? { ...p, protectionCondition: condition, protectionRedirect: redirect }
-          : p
-      ),
     })),
 
   setAppPreviewData: (data) => set({ appPreviewData: data }),

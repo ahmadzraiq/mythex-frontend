@@ -1,58 +1,144 @@
 'use client';
 /**
- * Tables Designer — WeWeb-style live data grid.
+ * Data Browser — model-first live data grid.
  *
- * Left sidebar : table list + search + Add Table
- * Main area    : tab bar (Data | View tabs | + New view)
- *                toolbar (Insert | Columns | Filter | Sort | Pagination | Refresh)
- *                spreadsheet data grid with inline edit
- *                footer (row count + pagination)
+ * Models are the single source of truth for schema (authored in the Models
+ * designer). This panel is read-only for schema: it lists models, browses a
+ * model's rows via the generic /v1/db data plane, and supports filter / sort /
+ * pagination / full-text search plus row-value create / edit / delete.
  *
- * Modals / panels:
- *   Settings button → floating card (Name + Description + Delete)
- *   View ⋮          → floating card (View name + Description + Delete view)
- *   Grid header +   → right-side AddColumnPanel (full WeWeb form)
+ * It does NOT create/alter/drop tables or columns — that happens only in the
+ * Models designer, which drives the migration engine.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  backendTables, backendViews, backendRows,
-  type BackendTable, type BackendColumn, type BackendView,
-  type RowsListOptions,
+  backendDb,
+  type ModelDefinitionJson, type ModelFieldJson,
+  type DbListOptions,
 } from '@/lib/platform/api-client';
+import { useBackendConfig } from '@/lib/builder/use-backend-config';
 import {
   type FilterCondition, type FilterGroup, type SortSpec,
-  FilterPanel, SortPanel, Toggle, PanelFooter, uid,
+  FilterPanel, SortPanel, Toggle, PanelFooter,
 } from './_filter-sort-panels';
+import { subscribeToChannel } from '@/lib/platform/realtime';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type ActivePanel = 'insert' | 'parameters' | 'columns' | 'filter' | 'sort' | 'pagination' | null;
-
-interface ViewParameter {
-  id: string;
-  name: string;
-  type: string;
-  defaultValue: string;
-}
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE_OPTIONS = [0, 20, 50, 100, 1000] as const;
 
-const COLUMN_TYPES = [
-  'TEXT', 'INT', 'BIGINT', 'DECIMAL', 'BOOL', 'JSON', 'UUID',
-  'TIMESTAMP', 'DATE', 'FILE', 'ENUM', 'MONEY', 'VECTOR', 'RELATION',
-] as const;
-
 const TYPE_ICON: Record<string, string> = {
-  UUID: '⚷', TEXT: 'T', INT: '#', BIGINT: '#', DECIMAL: '#',
-  BOOL: '⊟', JSON: '{}', TIMESTAMP: '⎗', DATE: '⎗',
-  FILE: '⎘', ENUM: '≡', MONEY: '$', VECTOR: '∿', RELATION: '↔',
+  uuid: '⚷', text: 'T', int: '#', bigint: '#', decimal: '#', float: '#',
+  bool: '⊟', boolean: '⊟', json: '{}', timestamp: '⎗', datetime: '⎗', date: '⎗',
+  file: '⎘', enum: '≡', money: '$', relation: '↔',
 };
 
-function typeIcon(type: string) { return TYPE_ICON[type] ?? 'T'; }
+type ActivePanel = 'insert' | 'columns' | 'filter' | 'sort' | 'pagination' | null;
+
+function typeIcon(type?: string) { return TYPE_ICON[(type ?? 'text').toLowerCase()] ?? 'T'; }
+
+function camelToSnake(s: string): string {
+  return s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+}
+function snakeToCamel(s: string): string {
+  return s.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+
 function formatCell(val: unknown): string {
   if (val === null || val === undefined) return '';
   if (typeof val === 'object') return JSON.stringify(val);
   return String(val);
+}
+
+/** The row key that backs a to-one relation field (camelCase FK). */
+function fkCamelKey(field: ModelFieldJson): string {
+  const raw = field.relation?.field ?? `${camelToSnake(field.name.replace(/Id$/, ''))}_id`;
+  return snakeToCamel(raw);
+}
+
+/** A scalar column descriptor derived from a model. */
+interface GridCol {
+  key: string;        // key used to read/write on the row object
+  label: string;      // header label
+  type: string;       // field type for icon
+  system: boolean;    // id / created_at / updated_at / deleted_at
+  editable: boolean;  // false for system / computed / relations
+  field?: ModelFieldJson;
+}
+
+function buildColumns(model: ModelDefinitionJson, rows: Record<string, unknown>[]): GridCol[] {
+  const cols: GridCol[] = [];
+  const seen = new Set<string>();
+  const push = (c: GridCol) => { if (!seen.has(c.key)) { seen.add(c.key); cols.push(c); } };
+
+  push({ key: 'id', label: 'id', type: 'uuid', system: true, editable: false });
+
+  for (const f of model.fields ?? []) {
+    if (f.type === 'relation') {
+      const kind = f.relation?.kind;
+      if (kind === 'manyToOne' || kind === 'oneToOne') {
+        push({ key: fkCamelKey(f), label: fkCamelKey(f), type: 'relation', system: false, editable: true, field: f });
+      }
+      continue; // to-many relations have no scalar column
+    }
+    const computedVirtual = f.computed && f.computed.persisted === false;
+    push({
+      key: f.name, label: f.name, type: f.type, system: false,
+      editable: !f.computed, field: f,
+    });
+    void computedVirtual;
+  }
+
+  if (model.timestamps !== false) {
+    push({ key: 'created_at', label: 'created_at', type: 'timestamp', system: true, editable: false });
+    push({ key: 'updated_at', label: 'updated_at', type: 'timestamp', system: true, editable: false });
+  }
+  if (model.softDelete) push({ key: 'deleted_at', label: 'deleted_at', type: 'timestamp', system: true, editable: false });
+
+  // Surface any extra keys returned by the API that we didn't anticipate.
+  for (const row of rows) {
+    for (const k of Object.keys(row)) {
+      if (typeof row[k] === 'object' && row[k] !== null) continue; // skip included relations objects
+      push({ key: k, label: k, type: 'text', system: true, editable: false });
+    }
+    break; // first row is enough to discover the shape
+  }
+
+  return cols;
+}
+
+/** Coerce an edited string to the value type expected by the field. */
+function coerceValue(field: ModelFieldJson | undefined, str: string): unknown {
+  if (str === '') return null;
+  const t = field?.type;
+  switch (t) {
+    case 'int': case 'bigint': { const n = parseInt(str, 10); return isNaN(n) ? str : n; }
+    case 'decimal': case 'float': case 'money': { const n = parseFloat(str); return isNaN(n) ? str : n; }
+    case 'bool': case 'boolean': return str === 'true' || str === '1';
+    case 'json': try { return JSON.parse(str); } catch { return str; }
+    default: return str;
+  }
+}
+
+/** Convert UI filters to a Prisma-style where object. */
+function filtersToWhere(filters: FilterCondition[]): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  for (const f of filters) {
+    if (!f.active || !f.field) continue;
+    const v = typeof f.value === 'object' && f.value !== null ? (f.value as { formula?: string }).formula ?? '' : f.value;
+    switch (f.operator) {
+      case 'Is':              where[f.field] = { equals: v }; break;
+      case 'Is not':          where[f.field] = { not: v }; break;
+      case 'Contains':        where[f.field] = { contains: v }; break;
+      case 'Does not contain':where[f.field] = { not: { contains: v } }; break;
+      case 'Starts with':     where[f.field] = { startsWith: v }; break;
+      case 'Ends with':       where[f.field] = { endsWith: v }; break;
+      case 'Is empty':        where[f.field] = null; break;
+      case 'Is not empty':    where[f.field] = { not: null }; break;
+      default:                where[f.field] = { equals: v };
+    }
+  }
+  return where;
 }
 
 // ─── Style constants ──────────────────────────────────────────────────────────
@@ -77,7 +163,6 @@ const INPUT_STYLE: React.CSSProperties = {
   padding: '8px 12px', fontSize: 13, color: 'var(--bld-text-2)', outline: 'none',
   width: '100%', boxSizing: 'border-box',
 };
-const SELECT_STYLE: React.CSSProperties = { ...INPUT_STYLE, cursor: 'pointer' };
 const PANEL_STYLE: React.CSSProperties = {
   position: 'absolute', zIndex: 50,
   background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)',
@@ -89,205 +174,115 @@ const PANEL_STYLE: React.CSSProperties = {
 
 interface Props {
   projectId: string;
-  selectedTableId: string | null;
-  onSelectTable: (id: string | null) => void;
 }
 
-export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Props) {
-  const [tables, setTables]           = useState<BackendTable[]>([]);
-  const [tableSearch, setTableSearch] = useState('');
-  const [loadingTables, setLoadingTables] = useState(true);
+export function TablesDesigner({ projectId }: Props) {
+  const { models, loading: loadingModels } = useBackendConfig(projectId);
+  const [modelSearch, setModelSearch] = useState('');
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const onSelectTable = setSelectedTableId;
 
-  // data grid
   const [rows, setRows]             = useState<Record<string, unknown>[]>([]);
   const [totalRows, setTotalRows]   = useState(0);
   const [page, setPage]             = useState(1);
   const [pageSize, setPageSize]     = useState<number>(20);
   const [loadingRows, setLoadingRows] = useState(false);
 
-  // views
-  const [views, setViews]           = useState<BackendView[]>([]);
-  const [activeView, setActiveView] = useState<'data' | string>('data');
-  const [showNewView, setShowNewView] = useState(false);
-  const [newViewName, setNewViewName] = useState('');
-
-  // toolbar panels
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
-  // columns visibility
   const [visibleCols, setVisibleCols]     = useState<string[]>([]);
   const [pendingVisibleCols, setPendingVisibleCols] = useState<string[]>([]);
 
-  // filters
   const [filters, setFilters]             = useState<FilterCondition[]>([]);
   const [filterGroups, setFilterGroups]   = useState<FilterGroup[]>([]);
   const [pendingFilters, setPendingFilters]         = useState<FilterCondition[]>([]);
   const [pendingFilterGroups, setPendingFilterGroups] = useState<FilterGroup[]>([]);
 
-  // sorts
   const [sorts, setSorts]           = useState<SortSpec[]>([]);
   const [pendingSorts, setPendingSorts] = useState<SortSpec[]>([]);
 
   const [pendingPageSize, setPendingPageSize] = useState<number>(20);
 
-  // insert row
+  const [searchText, setSearchText] = useState('');
+  const [live, setLive] = useState(false);
+
   const [insertRowValues, setInsertRowValues] = useState<Record<string, string>>({});
   const [insertingRow, setInsertingRow] = useState(false);
 
-  // inline edit
   const [editingCell, setEditingCell] = useState<{ rowId: string; col: string } | null>(null);
   const [editingValue, setEditingValue] = useState('');
 
-  // ── settings modal (table)
-  const [showSettings, setShowSettings]   = useState(false);
-  const [settingName, setSettingName]     = useState('');
-  const [settingDesc, setSettingDesc]     = useState('');
-  const [savingSettings, setSavingSettings] = useState(false);
-
-  // ── view settings modal
-  const [viewSettingsId, setViewSettingsId] = useState<string | null>(null);
-  const [viewSettingName, setViewSettingName] = useState('');
-  const [viewSettingDesc, setViewSettingDesc] = useState('');
-  const [savingViewSettings, setSavingViewSettings] = useState(false);
-
-  // ── add column panel (right side)
-  const [showAddColPanel, setShowAddColPanel] = useState(false);
-  const [newCol, setNewCol] = useState<Partial<BackendColumn>>({ type: 'TEXT', nullable: true });
-  const [savingCol, setSavingCol] = useState(false);
-
-  // ── view parameters (definition per viewId + runtime values)
-  const [viewParamsMap, setViewParamsMap] = useState<Record<string, ViewParameter[]>>({});
-  const [pendingParams, setPendingParams] = useState<ViewParameter[]>([]);
-  const [paramValues, setParamValues] = useState<Record<string, string>>({});
-
-  // add table
-  const [showAddTable, setShowAddTable] = useState(false);
-  const [newTableName, setNewTableName] = useState('');
-  const [creatingTable, setCreatingTable] = useState(false);
-
-  // import ERD
-  const [showErdModal, setShowErdModal] = useState(false);
-
   const [error, setError] = useState('');
 
-  // Refs to avoid stale-closure re-fetches
-  const selectedTableIdRef = useRef(selectedTableId);
-  const onSelectTableRef   = useRef(onSelectTable);
-  const tablesLoadingRef   = useRef(false);
-  const rowsLoadingRef     = useRef(false);
-  useEffect(() => { selectedTableIdRef.current = selectedTableId; }, [selectedTableId]);
-  useEffect(() => { onSelectTableRef.current = onSelectTable; }, [onSelectTable]);
+  const selectedModelNameRef = useRef(selectedTableId);
+  const onSelectRef          = useRef(onSelectTable);
+  const rowsLoadingRef       = useRef(false);
+  useEffect(() => { selectedModelNameRef.current = selectedTableId; }, [selectedTableId]);
+  useEffect(() => { onSelectRef.current = onSelectTable; }, [onSelectTable]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
+  const selectedModel = models.find((m) => m.name === selectedTableId) ?? null;
 
-  const allCols = (() => {
-    if (!selectedTable) return [];
-    const userCols = selectedTable.columns.map((c) => c.name);
-    const userHas = (n: string) => userCols.includes(n);
-    // If the user explicitly defined id/created_at/updated_at (e.g. via ERD), respect their order.
-    // Otherwise prepend id and append created_at/updated_at as system columns.
-    const base: string[] = [];
-    if (!userHas('id')) base.push('id');
-    base.push(...userCols);
-    if (!userHas('created_at')) base.push('created_at');
-    if (!userHas('updated_at')) base.push('updated_at');
-    return base;
-  })();
+  const cols = selectedModel ? buildColumns(selectedModel, rows) : [];
+  const searchable = !!(selectedModel && ((selectedModel.search?.length ?? 0) > 0 || (selectedModel.fields ?? []).some((f) => f.searchable)));
 
-  const colMeta = (name: string): Partial<BackendColumn> => {
-    if (name === 'id') return { name: 'id', type: 'UUID' };
-    if (name === 'created_at') return { name: 'created_at', type: 'TIMESTAMP' };
-    if (name === 'updated_at') return { name: 'updated_at', type: 'TIMESTAMP' };
-    return selectedTable?.columns.find((c) => c.name === name) ?? { name, type: 'TEXT' };
-  };
-
-  // ── Load tables ────────────────────────────────────────────────────────────
-  const loadTables = useCallback(async () => {
-    if (tablesLoadingRef.current) return;
-    tablesLoadingRef.current = true;
-    setLoadingTables(true);
-    try {
-      const res = await backendTables.list(projectId);
-      setTables(res.tables);
-      // Auto-select first table only if nothing is selected — use refs to avoid deps
-      if (!selectedTableIdRef.current && res.tables.length > 0) {
-        onSelectTableRef.current(res.tables[0].id);
-      }
-    } catch (e) { setError((e as Error).message); }
-    finally { setLoadingTables(false); tablesLoadingRef.current = false; }
-  }, [projectId]); // removed selectedTableId & onSelectTable — accessed via refs
-
-  useEffect(() => { void loadTables(); }, [loadTables]);
-
-  // ── Load views when table changes ─────────────────────────────────────────
+  // Auto-select first model when data loads from shared cache.
   useEffect(() => {
-    if (!selectedTableId) return;
-    setActiveView('data');
-    backendViews.list(projectId)
-      .then((r) => setViews(r.views.filter((v) => v.tableId === selectedTableId)))
-      .catch(() => void 0);
-  }, [projectId, selectedTableId]);
+    if (!selectedModelNameRef.current && models.length > 0) {
+      onSelectRef.current(models[0].name);
+    }
+  }, [models]);
 
-  // ── Sync settings when table changes ──────────────────────────────────────
+  // ── Reset column visibility when model changes ───────────────────────────────
   useEffect(() => {
-    if (selectedTable) {
-      setSettingName(selectedTable.displayName ?? selectedTable.name);
-      setSettingDesc((selectedTable as unknown as { description?: string }).description ?? '');
-      const cols = ['id', 'created_at', 'updated_at', ...selectedTable.columns.map((c) => c.name)];
-      setVisibleCols(cols);
-      setPendingVisibleCols(cols);
+    if (selectedModel) {
+      const all = buildColumns(selectedModel, []).map((c) => c.key);
+      setVisibleCols(all);
+      setPendingVisibleCols(all);
+      setFilters([]); setSorts([]); setSearchText(''); setPage(1);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTable?.id]);
+  }, [selectedModel?.name]);
 
-  // ── Load rows ──────────────────────────────────────────────────────────────
-  // Use a ref for views so changes to views alone don't recreate loadRows and re-trigger the effect.
-  const viewsRef = useRef(views);
-  const viewParamsMapRef = useRef(viewParamsMap);
-  const paramValuesRef = useRef(paramValues);
-  useEffect(() => { viewsRef.current = views; }, [views]);
-  useEffect(() => { viewParamsMapRef.current = viewParamsMap; }, [viewParamsMap]);
-  useEffect(() => { paramValuesRef.current = paramValues; }, [paramValues]);
-
+  // ── Load rows ────────────────────────────────────────────────────────────────
   const loadRows = useCallback(async () => {
-    if (!selectedTable) return;
+    if (!selectedModel) return;
     if (rowsLoadingRef.current) return;
     rowsLoadingRef.current = true;
     setLoadingRows(true);
     try {
-      const currentViews = viewsRef.current;
-      const currentViewParamsMap = viewParamsMapRef.current;
-      const currentParamValues = paramValuesRef.current;
-      const activeViewObj = currentViews.find((v) => v.id === activeView);
-      const activeParams = activeView !== 'data' ? (currentViewParamsMap[activeView] ?? []) : [];
-      const paramFilters: RowsListOptions['filters'] = activeParams
-        .filter((p) => currentParamValues[p.id] !== undefined && currentParamValues[p.id] !== '')
-        .map((p) => ({ field: p.name, operator: 'Is', value: currentParamValues[p.id] }));
-
-      const mergedFilters = [
-        ...((activeViewObj?.filters as RowsListOptions['filters']) ?? []),
-        ...filters.filter((f) => f.active).map((f) => ({ field: f.field, operator: f.operator, value: f.value })),
-        ...(paramFilters ?? []),
-      ];
-      const mergedSorts = [
-        ...sorts,
-        ...((activeViewObj?.sort as RowsListOptions['sort']) ?? []),
-      ];
-      const opts: RowsListOptions = {
-        filters: mergedFilters, sort: mergedSorts,
-        page, pageSize: pageSize === 0 ? undefined : pageSize,
+      const where = filtersToWhere(filters);
+      const orderBy = sorts.map((s) => ({ [s.field]: s.dir }));
+      const opts: DbListOptions = {
+        where: Object.keys(where).length ? where : undefined,
+        orderBy: orderBy.length ? orderBy : undefined,
+        search: searchText || undefined,
+        page,
+        pageSize: pageSize === 0 ? 500 : pageSize,
       };
-      const res = await backendRows.list(projectId, selectedTable.name, opts);
+      const res = await backendDb.list(projectId, selectedModel.name, opts);
       setRows(res.data ?? []);
       setTotalRows(res.total ?? 0);
     } catch (e) { setError((e as Error).message); }
     finally { setLoadingRows(false); rowsLoadingRef.current = false; }
-  // views/viewParamsMap/paramValues accessed via refs — excluded from deps to prevent cascade
-  }, [projectId, selectedTable, activeView, filters, sorts, page, pageSize]);
+  }, [projectId, selectedModel, filters, sorts, searchText, page, pageSize]);
 
-  useEffect(() => { if (selectedTable) void loadRows(); }, [loadRows]);
+  useEffect(() => { if (selectedModel) void loadRows(); }, [loadRows]);
 
-  const displayCols = allCols.filter((c) => visibleCols.includes(c));
+  // ── Live updates (realtime) ──────────────────────────────────────────────────
+  const loadRowsRef = useRef(loadRows);
+  useEffect(() => { loadRowsRef.current = loadRows; }, [loadRows]);
+  useEffect(() => {
+    if (!live || !selectedModel) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsub = subscribeToChannel(projectId, `model:${projectId}:${selectedModel.name}`, () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { void loadRowsRef.current(); }, 300);
+    });
+    return () => { if (timer) clearTimeout(timer); unsub(); };
+  }, [live, projectId, selectedModel]);
+
+  const displayCols = cols.filter((c) => visibleCols.includes(c.key));
+  const colByKey = (key: string) => cols.find((c) => c.key === key);
 
   // ── Panel toggle ───────────────────────────────────────────────────────────
   const togglePanel = (p: ActivePanel) => {
@@ -296,31 +291,21 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
     if (p === 'filter') { setPendingFilters([...filters]); setPendingFilterGroups([...filterGroups]); }
     if (p === 'sort') setPendingSorts([...sorts]);
     if (p === 'pagination') setPendingPageSize(pageSize);
-    if (p === 'parameters' && activeView !== 'data') {
-      setPendingParams([...(viewParamsMap[activeView] ?? [])]);
-    }
     setActivePanel(p);
-    setShowSettings(false);
-    setViewSettingsId(null);
   };
 
-  const closeAllOverlays = () => {
-    setActivePanel(null);
-    setShowSettings(false);
-    setViewSettingsId(null);
-  };
-
-  // ── Insert row ─────────────────────────────────────────────────────────────
+  // ── Row CRUD ─────────────────────────────────────────────────────────────────
   const handleInsertRow = async () => {
-    if (!selectedTable) return;
+    if (!selectedModel) return;
     setInsertingRow(true);
     try {
       const payload: Record<string, unknown> = {};
-      selectedTable.columns.forEach((c) => {
-        if (insertRowValues[c.name] !== undefined && insertRowValues[c.name] !== '')
-          payload[c.name] = insertRowValues[c.name];
-      });
-      await backendRows.insert(projectId, selectedTable.name, payload);
+      for (const c of cols) {
+        if (!c.editable) continue;
+        const raw = insertRowValues[c.key];
+        if (raw !== undefined && raw !== '') payload[c.key] = coerceValue(c.field, raw);
+      }
+      await backendDb.create(projectId, selectedModel.name, payload);
       setInsertRowValues({});
       setActivePanel(null);
       await loadRows();
@@ -328,312 +313,116 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
     finally { setInsertingRow(false); }
   };
 
-  // ── Cell edit ──────────────────────────────────────────────────────────────
   const commitEdit = async () => {
-    if (!editingCell || !selectedTable) return;
+    if (!editingCell || !selectedModel) return;
+    const col = colByKey(editingCell.col);
     try {
-      await backendRows.update(projectId, selectedTable.name, editingCell.rowId, {
-        [editingCell.col]: editingValue,
-      });
+      const value = coerceValue(col?.field, editingValue);
+      await backendDb.update(projectId, selectedModel.name, editingCell.rowId, { [editingCell.col]: value });
       setRows((prev) => prev.map((r) =>
-        String(r.id) === editingCell.rowId ? { ...r, [editingCell.col]: editingValue } : r,
+        String(r.id) === editingCell.rowId ? { ...r, [editingCell.col]: value } : r,
       ));
     } catch (e) { setError((e as Error).message); }
     finally { setEditingCell(null); }
   };
 
   const deleteRow = async (rowId: string) => {
-    if (!selectedTable || !confirm('Delete this row?')) return;
+    if (!selectedModel || !confirm('Delete this row?')) return;
     try {
-      await backendRows.delete(projectId, selectedTable.name, rowId);
+      await backendDb.delete(projectId, selectedModel.name, rowId);
       setRows((prev) => prev.filter((r) => String(r.id) !== rowId));
       setTotalRows((n) => n - 1);
     } catch (e) { setError((e as Error).message); }
   };
 
-  // ── Table CRUD ─────────────────────────────────────────────────────────────
-  const createTable = async () => {
-    if (!newTableName.trim()) return;
-    setCreatingTable(true);
-    try {
-      const res = await backendTables.create(projectId, {
-        name: newTableName.trim().toLowerCase().replace(/\s+/g, '_'),
-        displayName: newTableName.trim(), createApiActions: true,
-      });
-      setTables((prev) => [...prev, res.table]);
-      onSelectTable(res.table.id);
-      setNewTableName('');
-      setShowAddTable(false);
-    } catch (e) { setError((e as Error).message); }
-    finally { setCreatingTable(false); }
-  };
-
-  const handleErdImported = useCallback(async (firstTableId?: string) => {
-    // Reload the full table list so each table has .columns populated
-    try {
-      const res = await backendTables.list(projectId);
-      setTables(res.tables);
-      if (firstTableId) onSelectTable(firstTableId);
-      else if (res.tables.length > 0) onSelectTable(res.tables[0].id);
-    } catch { /* ignore */ }
-    setShowErdModal(false);
-  }, [projectId, onSelectTable]);
-
-  const saveTableSettings = async () => {
-    if (!selectedTableId) return;
-    setSavingSettings(true);
-    try {
-      const res = await backendTables.update(projectId, selectedTableId, { displayName: settingName });
-      setTables((prev) => prev.map((t) => t.id === selectedTableId ? res.table : t));
-    } catch (e) { setError((e as Error).message); }
-    finally { setSavingSettings(false); }
-  };
-
-  const deleteTable = async () => {
-    if (!selectedTableId || !confirm('Delete this table and ALL its data? This cannot be undone.')) return;
-    try {
-      await backendTables.delete(projectId, selectedTableId);
-      setTables((prev) => prev.filter((t) => t.id !== selectedTableId));
-      onSelectTable(null);
-      setShowSettings(false);
-    } catch (e) { setError((e as Error).message); }
-  };
-
-  const deleteAllTables = async () => {
-    if (!confirm('Delete ALL tables and their data? This cannot be undone.')) return;
-    try {
-      await backendTables.deleteAll(projectId);
-      setTables([]);
-      onSelectTable(null);
-      setShowSettings(false);
-    } catch (e) { setError((e as Error).message); }
-  };
-
-  // ── View CRUD ──────────────────────────────────────────────────────────────
-  const createView = async () => {
-    if (!selectedTableId || !newViewName.trim()) return;
-    try {
-      const slug = newViewName.trim().toLowerCase().replace(/\s+/g, '-');
-      const res = await backendViews.create(projectId, {
-        tableId: selectedTableId, name: newViewName.trim(), slug, security: 'PUBLIC',
-      });
-      setViews((prev) => [...prev, res.view]);
-      setActiveView(res.view.id);
-      setNewViewName('');
-      setShowNewView(false);
-    } catch (e) { setError((e as Error).message); }
-  };
-
-  const saveViewSettings = async () => {
-    if (!viewSettingsId) return;
-    setSavingViewSettings(true);
-    try {
-      const res = await backendViews.update(projectId, viewSettingsId, { name: viewSettingName });
-      setViews((prev) => prev.map((v) => v.id === viewSettingsId ? res.view : v));
-      setViewSettingsId(null);
-    } catch (e) { setError((e as Error).message); }
-    finally { setSavingViewSettings(false); }
-  };
-
-  const deleteView = async (viewId: string) => {
-    if (!confirm('Delete this view?')) return;
-    try {
-      await backendViews.delete(projectId, viewId);
-      setViews((prev) => prev.filter((v) => v.id !== viewId));
-      if (activeView === viewId) setActiveView('data');
-      setViewSettingsId(null);
-    } catch (e) { setError((e as Error).message); }
-  };
-
-  // ── Add column ─────────────────────────────────────────────────────────────
-  const addColumn = async () => {
-    if (!selectedTableId || !newCol.name) return;
-    setSavingCol(true);
-    try {
-      const res = await backendTables.addColumn(projectId, selectedTableId, newCol);
-      setTables((prev) => prev.map((t) =>
-        t.id === selectedTableId ? { ...t, columns: [...t.columns, res.column] } : t,
-      ));
-      setVisibleCols((prev) => [...prev, res.column.name]);
-      setPendingVisibleCols((prev) => [...prev, res.column.name]);
-      setNewCol({ type: 'TEXT', nullable: true });
-      setShowAddColPanel(false);
-    } catch (e) { setError((e as Error).message); }
-    finally { setSavingCol(false); }
-  };
-
-  const filteredTables = tables.filter((t) =>
-    t.displayName.toLowerCase().includes(tableSearch.toLowerCase()) ||
-    t.name.toLowerCase().includes(tableSearch.toLowerCase()),
+  const filteredModels = models.filter((m) =>
+    m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
+    (m.table ?? '').toLowerCase().includes(modelSearch.toLowerCase()),
   );
 
   const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(totalRows / pageSize));
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      {/* Backdrop — closes any open overlay on outside click */}
-      {(activePanel || showSettings || viewSettingsId) && (
-        <div
-          style={{ position: 'absolute', inset: 0, zIndex: 40 }}
-          onClick={closeAllOverlays}
-        />
+    <div style={{
+      flex: 1, display: 'flex', height: '100%', overflow: 'hidden', position: 'relative',
+    }}>
+      {activePanel && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 40 }} onClick={() => setActivePanel(null)} />
       )}
 
-      {/* ── Left sidebar ──────────────────────────────────────────────────── */}
-      <Sidebar
-        tables={filteredTables}
-        tableSearch={tableSearch}
-        onSearchChange={setTableSearch}
-        selectedTableId={selectedTableId}
-        onSelectTable={(id) => { onSelectTable(id); setActivePanel(null); setShowSettings(false); setViewSettingsId(null); }}
-        loadingTables={loadingTables}
-        showAddTable={showAddTable}
-        onToggleAddTable={() => setShowAddTable((v) => !v)}
-        newTableName={newTableName}
-        onNewTableNameChange={setNewTableName}
-        onCreateTable={() => void createTable()}
-        creatingTable={creatingTable}
-        onCancelAddTable={() => { setShowAddTable(false); setNewTableName(''); }}
-        onImportErd={() => setShowErdModal(true)}
-        onDeleteAll={() => void deleteAllTables()}
+      {/* Sidebar */}
+      <ModelSidebar
+        models={filteredModels}
+        search={modelSearch}
+        onSearchChange={setModelSearch}
+        selected={selectedTableId}
+        onSelect={(name) => { onSelectTable(name); setActivePanel(null); }}
+        loading={loadingModels}
+        onRefresh={() => {}}
       />
-      {showErdModal && (
-        <ImportErdModal
-          projectId={projectId}
-          onImported={handleErdImported}
-          onClose={() => setShowErdModal(false)}
-        />
-      )}
 
-      {/* ── Main content ──────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-        {!selectedTable && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 13 }}>
-            Select a table from the sidebar to view its data.
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', background: 'var(--bld-bg-canvas)', backgroundImage: 'radial-gradient(ellipse 70% 45% at 85% 8%, rgba(99,102,241,0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 10% 95%, rgba(124,58,237,0.07) 0%, transparent 55%)' }}>
+        {!selectedModel && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+              boxShadow: '0 0 32px rgba(99,102,241,0.12)',
+            }}>
+              <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="12" height="12" rx="2"/>
+                <line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/>
+                <line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/>
+              </svg>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 6 }}>
+                {loadingModels ? 'Loading…' : models.length === 0 ? 'No models yet' : 'Select a table'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)', maxWidth: 260, lineHeight: 1.6 }}>
+                {models.length === 0 ? 'Go to Models to create your first model.' : 'Choose a table from the sidebar to browse and edit its data.'}
+              </div>
+            </div>
           </div>
         )}
 
-        {selectedTable && (
+        {selectedModel && (
           <>
-            {/* Breadcrumb + Settings */}
-            <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, position: 'relative', zIndex: 41 }}>
-              <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>⊞</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)' }}>{selectedTable.displayName}</span>
-              <div style={{ flex: 1 }} />
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowSettings((v) => !v); setActivePanel(null); setViewSettingsId(null); }}
-                style={showSettings ? BTN_ACTIVE : BTN}
-              >
-                ⚙ Settings
-              </button>
-
-              {/* Settings floating modal */}
-              {showSettings && (
-                <div style={{ ...PANEL_STYLE, top: '100%', right: 0, width: 340, zIndex: 60 }} onClick={(e) => e.stopPropagation()}>
-                  <SettingsCard
-                    name={settingName}
-                    desc={settingDesc}
-                    onNameChange={setSettingName}
-                    onDescChange={setSettingDesc}
-                    onSave={() => void saveTableSettings()}
-                    saving={savingSettings}
-                    onDelete={() => void deleteTable()}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* View tabs */}
-            <ViewTabBar
-              views={views}
-              activeView={activeView}
-              onSelectView={(v) => { setActiveView(v); setPage(1); closeAllOverlays(); }}
-              showNewView={showNewView}
-              onToggleNewView={() => setShowNewView((v) => !v)}
-              newViewName={newViewName}
-              onNewViewNameChange={setNewViewName}
-              onCreateView={() => void createView()}
-              onCancelNewView={() => { setShowNewView(false); setNewViewName(''); }}
-              viewSettingsId={viewSettingsId}
-              onViewSettings={(id, name, desc) => {
-                setViewSettingsId(id);
-                setViewSettingName(name);
-                setViewSettingDesc(desc);
-                setShowSettings(false);
-                setActivePanel(null);
-              }}
-              onCloseViewSettings={() => setViewSettingsId(null)}
-              viewSettingName={viewSettingName}
-              viewSettingDesc={viewSettingDesc}
-              onViewSettingNameChange={setViewSettingName}
-              onViewSettingDescChange={setViewSettingDesc}
-              onSaveViewSettings={() => void saveViewSettings()}
-              savingViewSettings={savingViewSettings}
-              onDeleteView={(id) => void deleteView(id)}
-            />
-
             {/* Toolbar */}
             <Toolbar
               activePanel={activePanel}
-              isDataTab={activeView === 'data'}
-              onTogglePanel={(p) => { togglePanel(p); }}
+              onTogglePanel={togglePanel}
               onRefresh={() => void loadRows()}
               hasActiveFilters={filters.filter((f) => f.active).length > 0}
               hasActiveSorts={sorts.length > 0}
+              searchable={searchable}
+              searchText={searchText}
+              onSearchChange={setSearchText}
+              onSearchSubmit={() => { setPage(1); void loadRows(); }}
+              live={live}
+              onToggleLive={() => setLive((v) => !v)}
             />
 
-            {/* Runtime param value bar — shown when the active view has defined parameters */}
-            {activeView !== 'data' && (viewParamsMap[activeView] ?? []).length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, padding: '8px 16px', borderBottom: '1px solid var(--bld-bg-elevated)', background: '#080d17' }}>
-                {(viewParamsMap[activeView] ?? []).map((p) => (
-                  <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: 'var(--bld-text-3)' }}>{p.name}</span>
-                    <input
-                      value={paramValues[p.id] ?? p.defaultValue}
-                      onChange={(e) => setParamValues((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                      placeholder="Enter a value"
-                      style={{ background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none', width: 160 }}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Panel popovers (toolbar panels) */}
+            {/* Panel popovers */}
             <div style={{ position: 'relative', zIndex: 41 }}>
-              {activePanel === 'insert' && activeView === 'data' && (
+              {activePanel === 'insert' && (
                 <InsertPanel
-                  table={selectedTable}
-                  insertRowValues={insertRowValues}
-                  onChangeValues={setInsertRowValues}
-                  onInsertRow={() => void handleInsertRow()}
-                  onInsertColumn={() => { setActivePanel(null); setShowAddColPanel(true); }}
+                  cols={cols.filter((c) => c.editable)}
+                  values={insertRowValues}
+                  onChange={setInsertRowValues}
+                  onInsert={() => void handleInsertRow()}
                   inserting={insertingRow}
                   onClose={() => setActivePanel(null)}
                 />
               )}
-              {activePanel === 'parameters' && activeView !== 'data' && (
-                <ParametersPanel
-                  pending={pendingParams}
-                  onChange={setPendingParams}
-                  onReset={() => setPendingParams([...(viewParamsMap[activeView] ?? [])])}
-                  onSave={() => {
-                    setViewParamsMap((prev) => ({ ...prev, [activeView]: pendingParams }));
-                    // reset runtime values for removed params
-                    const keepIds = new Set(pendingParams.map((p) => p.id));
-                    setParamValues((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => keepIds.has(k))));
-                    setActivePanel(null);
-                  }}
-                />
-              )}
               {activePanel === 'columns' && (
                 <ColumnsPanel
-                  allCols={allCols}
+                  cols={cols}
                   pending={pendingVisibleCols}
                   onChange={setPendingVisibleCols}
-                  colMeta={colMeta}
-                  onReset={() => setPendingVisibleCols(allCols)}
+                  onReset={() => setPendingVisibleCols(cols.map((c) => c.key))}
                   onSave={() => { setVisibleCols(pendingVisibleCols); setActivePanel(null); }}
                 />
               )}
@@ -642,7 +431,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
                   asPopover
                   conditions={pendingFilters}
                   groups={pendingFilterGroups}
-                  allCols={allCols}
+                  allCols={cols.map((c) => c.key)}
                   onChange={setPendingFilters}
                   onChangeGroups={setPendingFilterGroups}
                   onReset={() => { setPendingFilters([]); setPendingFilterGroups([]); }}
@@ -653,7 +442,7 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
                 <SortPanel
                   asPopover
                   pending={pendingSorts}
-                  allCols={allCols}
+                  allCols={cols.map((c) => c.key)}
                   onChange={setPendingSorts}
                   onReset={() => setPendingSorts([])}
                   onSave={() => { setSorts(pendingSorts); setPage(1); setActivePanel(null); }}
@@ -668,50 +457,30 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
               )}
             </div>
 
-            {/* Data grid */}
+            {/* Grid */}
             <DataGrid
               rows={rows}
               displayCols={displayCols}
-              colMeta={colMeta}
               loading={loadingRows}
               editingCell={editingCell}
               editingValue={editingValue}
-              isDataTab={activeView === 'data'}
               onStartEdit={(rowId, col, val) => {
-                if (col === 'id' || col === 'created_at' || col === 'updated_at') return;
+                const c = colByKey(col);
+                if (!c?.editable) return;
                 setEditingCell({ rowId, col });
-                setEditingValue(String(val ?? ''));
+                setEditingValue(val === null || val === undefined ? '' : formatCell(val));
               }}
               onEditValue={setEditingValue}
               onCommitEdit={() => void commitEdit()}
               onCancelEdit={() => setEditingCell(null)}
               onDeleteRow={(id) => void deleteRow(id)}
-              onAddColumn={() => { setShowAddColPanel(true); closeAllOverlays(); }}
             />
 
-            {/* Footer */}
-            <GridFooter
-              totalRows={totalRows}
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
+            <GridFooter totalRows={totalRows} page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
       </div>
 
-      {/* ── Add Column Panel (right-side drawer) ──────────────────────────── */}
-      {showAddColPanel && selectedTable && (
-        <AddColumnPanel
-          col={newCol}
-          onChange={setNewCol}
-          onSave={() => void addColumn()}
-          onCancel={() => { setShowAddColPanel(false); setNewCol({ type: 'TEXT', nullable: true }); }}
-          saving={savingCol}
-        />
-      )}
-
-      {/* Error toast */}
       {error && (
         <div style={{
           position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
@@ -726,115 +495,18 @@ export function TablesDesigner({ projectId, selectedTableId, onSelectTable }: Pr
   );
 }
 
-// ─── Settings card (shared by table + view) ───────────────────────────────────
-
-function SettingsCard({
-  name, desc, onNameChange, onDescChange, onSave, saving, onDelete,
-}: {
-  name: string;
-  desc: string;
-  onNameChange: (v: string) => void;
-  onDescChange: (v: string) => void;
-  onSave: () => void;
-  saving: boolean;
-  onDelete: () => void;
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* Name */}
-      <div style={{ padding: '16px 16px 12px' }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-          Name <span style={{ color: 'var(--bld-error)' }}>*</span>
-        </label>
-        <input
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          onBlur={onSave}
-          style={INPUT_STYLE}
-        />
-      </div>
-
-      {/* Description */}
-      <div style={{ padding: '0 16px 14px' }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-          Description
-        </label>
-        <RichTextArea value={desc} onChange={onDescChange} />
-      </div>
-
-      {/* Divider + Delete */}
-      <div style={{ borderTop: '1px solid var(--bld-bg-elevated)', padding: '12px 16px' }}>
-        <button
-          onClick={onDelete}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--bld-text-3)', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
-        >
-          🗑 Delete
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Rich text area (toolbar + textarea) ──────────────────────────────────────
-
-const RICH_TOOLBAR = [
-  { icon: 'T', title: 'Text' }, { icon: 'B', title: 'Bold' }, { icon: 'I', title: 'Italic' },
-  { icon: 'S̶', title: 'Strike' }, { icon: '🔗', title: 'Link' }, { icon: '≡', title: 'Bullet list' },
-  { icon: '1.', title: 'Ordered list' }, { icon: '""', title: 'Quote' }, { icon: '<>', title: 'Code' },
-  { icon: '⎖', title: 'Image' }, { icon: '▶', title: 'Video' },
-];
-
-function RichTextArea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', background: 'var(--bld-bg-elevated)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', borderBottom: '1px solid var(--bld-border-subtle)', flexWrap: 'wrap' }}>
-        {RICH_TOOLBAR.map((t) => (
-          <button
-            key={t.title}
-            title={t.title}
-            style={{ background: 'none', border: 'none', color: 'var(--bld-text-3)', cursor: 'pointer', fontSize: 11, padding: '2px 5px', borderRadius: 3 }}
-          >
-            {t.icon}
-          </button>
-        ))}
-      </div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder=""
-        rows={5}
-        style={{
-          width: '100%', background: 'transparent', border: 'none', outline: 'none',
-          color: 'var(--bld-text-2)', fontSize: 13, padding: '10px 12px', resize: 'none',
-          boxSizing: 'border-box', lineHeight: '1.5',
-        }}
-      />
-    </div>
-  );
-}
-
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-function Sidebar({
-  tables, tableSearch, onSearchChange, selectedTableId, onSelectTable,
-  loadingTables, showAddTable, onToggleAddTable, newTableName, onNewTableNameChange,
-  onCreateTable, creatingTable, onCancelAddTable, onImportErd, onDeleteAll,
+function ModelSidebar({
+  models, search, onSearchChange, selected, onSelect, loading, onRefresh,
 }: {
-  tables: BackendTable[];
-  tableSearch: string;
+  models: ModelDefinitionJson[];
+  search: string;
   onSearchChange: (v: string) => void;
-  selectedTableId: string | null;
-  onSelectTable: (id: string) => void;
-  loadingTables: boolean;
-  showAddTable: boolean;
-  onToggleAddTable: () => void;
-  newTableName: string;
-  onNewTableNameChange: (v: string) => void;
-  onCreateTable: () => void;
-  creatingTable: boolean;
-  onCancelAddTable: () => void;
-  onImportErd: () => void;
-  onDeleteAll: () => void;
+  selected: string | null;
+  onSelect: (name: string) => void;
+  loading: boolean;
+  onRefresh: () => void;
 }) {
   const sideInputStyle: React.CSSProperties = {
     background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
@@ -843,174 +515,78 @@ function Sidebar({
   };
 
   return (
-    <div style={{ width: 220, borderRight: '1px solid var(--bld-bg-elevated)', display: 'flex', flexDirection: 'column', background: '#080d17', flexShrink: 0 }}>
-      <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>Tables</span>
-        <div style={{ display: 'flex', gap: 5 }}>
-          <button
-            onClick={onImportErd}
-            title="Import from ERD (dbdiagram.io)"
-            style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', padding: '3px 8px', fontSize: 11, color: 'var(--bld-text-3)' }}
-          >⬆ ERD</button>
-          <button onClick={onToggleAddTable} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+ Add</button>
+    <div style={{
+      width: 240, borderRight: '1px solid var(--bld-bg-elevated)',
+      display: 'flex', flexDirection: 'column', flexShrink: 0,
+      backgroundColor: 'var(--bld-bg-panel)',
+      backgroundImage: 'radial-gradient(ellipse 160% 40% at 50% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 14px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid var(--bld-glass-border)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="2" width="12" height="12" rx="2"/>
+            <line x1="6" y1="2" x2="6" y2="14"/><line x1="2" y1="7" x2="14" y2="7"/>
+          </svg>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: 0.3 }}>Tables</span>
+        </div>
+        <button onClick={onRefresh} title="Refresh" style={{ ...BTN, padding: '4px 8px', border: '1px solid var(--bld-border-subtle)' }}>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.1L1 10"/>
+          </svg>
+        </button>
+      </div>
+      {/* Search */}
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+        <div style={{ position: 'relative' }}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="1.8" strokeLinecap="round" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)' }}>
+            <circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+          </svg>
+          <input value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search tables…"
+            style={{ ...sideInputStyle, paddingLeft: 28 }} />
         </div>
       </div>
-      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
-        <input value={tableSearch} onChange={(e) => onSearchChange(e.target.value)} placeholder="Search tables" style={sideInputStyle} />
-      </div>
-      {showAddTable && (
-        <div style={{ padding: 10, borderBottom: '1px solid var(--bld-bg-elevated)', background: 'rgba(79,70,229,0.05)' }}>
-          <input
-            autoFocus value={newTableName} onChange={(e) => onNewTableNameChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onCreateTable(); if (e.key === 'Escape') onCancelAddTable(); }}
-            placeholder="Table name" style={sideInputStyle}
-          />
-          <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
-            <button onClick={onCreateTable} disabled={creatingTable || !newTableName.trim()} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: creatingTable ? 0.6 : 1, fontSize: 11 }}>
-              {creatingTable ? '…' : 'Create'}
-            </button>
-            <button onClick={onCancelAddTable} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', fontSize: 11 }}>✕</button>
-          </div>
-        </div>
-      )}
+      {/* List */}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {loadingTables && <div style={{ padding: 14, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)' }}>Loading…</div>}
-        {!loadingTables && tables.length === 0 && (
-          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)' }}>No tables yet.<br />Click + Add Table.</div>
+        {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)' }}>Loading…</div>}
+        {!loading && models.length === 0 && (
+          <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>
+            No models yet.<br />Create one in <strong style={{ color: 'var(--bld-text-3)' }}>Models</strong>.
+          </div>
         )}
-        {tables.map((t) => {
-          const active = t.id === selectedTableId;
+        {models.map((m) => {
+          const active = m.name === selected;
           return (
-            <div key={t.id} onClick={() => onSelectTable(t.id)} style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', cursor: 'pointer',
-              background: active ? 'rgba(79,70,229,0.12)' : 'transparent',
+            <div key={m.id ?? m.name} onClick={() => onSelect(m.name)} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', cursor: 'pointer',
+              background: active ? 'rgba(99,102,241,0.12)' : 'transparent',
               borderLeft: `2px solid ${active ? 'var(--bld-accent)' : 'transparent'}`,
-            }}>
-              <span style={{ fontSize: 12, color: active ? 'var(--bld-badge-text)' : 'var(--bld-border-subtle)' }}>⊞</span>
+              transition: 'background 0.12s',
+            }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke={active ? 'var(--bld-accent)' : 'var(--bld-text-disabled)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <rect x="2" y="2" width="12" height="12" rx="2"/>
+                <line x1="6" y1="2" x2="6" y2="14"/><line x1="2" y1="7" x2="14" y2="7"/>
+              </svg>
               <span style={{ flex: 1, fontSize: 12, color: active ? '#e2e8f0' : 'var(--bld-text-3)', fontWeight: active ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {t.displayName}
+                {m.name}
               </span>
-              <span style={{ fontSize: 10, color: 'var(--bld-border-subtle)' }}>{t.columns.length + 3}</span>
+              <span style={{
+                fontSize: 10, color: active ? 'var(--bld-accent)' : 'var(--bld-text-disabled)',
+                background: active ? 'rgba(99,102,241,0.15)' : 'var(--bld-bg-elevated)',
+                borderRadius: 8, padding: '1px 6px', flexShrink: 0,
+              }}>
+                {(m.fields ?? []).length}
+              </span>
             </div>
           );
         })}
       </div>
-      {tables.length > 0 && (
-        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--bld-bg-elevated)' }}>
-          <button
-            onClick={onDeleteAll}
-            style={{ width: '100%', padding: '5px 0', fontSize: 11, background: 'rgba(239,68,68,0.08)', color: 'var(--bld-error)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 5, cursor: 'pointer' }}
-          >
-            🗑 Remove All Tables
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── View tab bar ─────────────────────────────────────────────────────────────
-
-function ViewTabBar({
-  views, activeView, onSelectView, showNewView, onToggleNewView,
-  newViewName, onNewViewNameChange, onCreateView, onCancelNewView,
-  viewSettingsId, onViewSettings, onCloseViewSettings,
-  viewSettingName, viewSettingDesc, onViewSettingNameChange, onViewSettingDescChange,
-  onSaveViewSettings, savingViewSettings, onDeleteView,
-}: {
-  views: BackendView[];
-  activeView: 'data' | string;
-  onSelectView: (v: 'data' | string) => void;
-  showNewView: boolean;
-  onToggleNewView: () => void;
-  newViewName: string;
-  onNewViewNameChange: (v: string) => void;
-  onCreateView: () => void;
-  onCancelNewView: () => void;
-  viewSettingsId: string | null;
-  onViewSettings: (id: string, name: string, desc: string) => void;
-  onCloseViewSettings: () => void;
-  viewSettingName: string;
-  viewSettingDesc: string;
-  onViewSettingNameChange: (v: string) => void;
-  onViewSettingDescChange: (v: string) => void;
-  onSaveViewSettings: () => void;
-  savingViewSettings: boolean;
-  onDeleteView: (id: string) => void;
-}) {
-  const tabBase: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 14px',
-    fontSize: 12, cursor: 'pointer', background: 'transparent', border: 'none',
-    borderBottom: '2px solid transparent', color: 'var(--bld-text-3)', whiteSpace: 'nowrap',
-  };
-  const tabActive: React.CSSProperties = {
-    ...tabBase, color: 'var(--bld-text-2)', borderBottom: '2px solid #6366f1', fontWeight: 600,
-  };
-
-  const sideInput: React.CSSProperties = {
-    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4,
-    padding: '3px 7px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', boxSizing: 'border-box',
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, overflow: 'visible', position: 'relative', zIndex: 41 }}>
-      <button style={activeView === 'data' ? tabActive : tabBase} onClick={() => onSelectView('data')}>
-        <span style={{ fontSize: 11 }}>⊞</span> Data
-      </button>
-
-      {views.map((v) => (
-        <div key={v.id} style={{ position: 'relative', display: 'inline-flex', alignItems: 'stretch' }}>
-          <button style={activeView === v.id ? tabActive : tabBase} onClick={() => onSelectView(v.id)}>
-            <span style={{ fontSize: 11 }}>⊙</span> {v.name}
-          </button>
-          {/* ⋮ dots */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (viewSettingsId === v.id) { onCloseViewSettings(); return; }
-              onViewSettings(v.id, v.name, '');
-            }}
-            style={{ ...BTN, padding: '4px 6px', fontSize: 13, color: 'var(--bld-text-disabled)', borderBottom: activeView === v.id ? '2px solid #6366f1' : '2px solid transparent' }}
-          >
-            ⋮
-          </button>
-
-          {/* View settings floating card */}
-          {viewSettingsId === v.id && (
-            <div
-              style={{ ...PANEL_STYLE, top: '100%', left: 0, width: 340, zIndex: 60 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SettingsCard
-                name={viewSettingName}
-                desc={viewSettingDesc}
-                onNameChange={onViewSettingNameChange}
-                onDescChange={onViewSettingDescChange}
-                onSave={onSaveViewSettings}
-                saving={savingViewSettings}
-                onDelete={() => onDeleteView(v.id)}
-              />
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* New view */}
-      {showNewView ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px' }}>
-          <input
-            autoFocus value={newViewName} onChange={(e) => onNewViewNameChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onCreateView(); if (e.key === 'Escape') onCancelNewView(); }}
-            placeholder="View name" style={{ ...sideInput, width: 120 }}
-          />
-          <button onClick={onCreateView} style={{ ...BTN_PRIMARY, padding: '3px 9px', fontSize: 11 }}>+</button>
-          <button onClick={onCancelNewView} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)', padding: '3px 6px', fontSize: 11 }}>✕</button>
-        </div>
-      ) : (
-        <button style={{ ...tabBase, color: 'var(--bld-accent)' }} onClick={onToggleNewView}>
-          + New view
-        </button>
-      )}
     </div>
   );
 }
@@ -1018,32 +594,68 @@ function ViewTabBar({
 // ─── Toolbar ──────────────────────────────────────────────────────────────────
 
 function Toolbar({
-  activePanel, isDataTab, onTogglePanel, onRefresh, hasActiveFilters, hasActiveSorts,
+  activePanel, onTogglePanel, onRefresh, hasActiveFilters, hasActiveSorts,
+  searchable, searchText, onSearchChange, onSearchSubmit,
+  live, onToggleLive,
 }: {
   activePanel: ActivePanel;
-  isDataTab: boolean;
   onTogglePanel: (p: ActivePanel) => void;
   onRefresh: () => void;
   hasActiveFilters: boolean;
   hasActiveSorts: boolean;
+  searchable: boolean;
+  searchText: string;
+  onSearchChange: (v: string) => void;
+  onSearchSubmit: () => void;
+  live: boolean;
+  onToggleLive: () => void;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0, background: '#080d17' }}>
-      {isDataTab
-        ? <button style={activePanel === 'insert' ? BTN_ACTIVE : BTN_PRIMARY} onClick={() => onTogglePanel('insert')}>+ Insert</button>
-        : <button style={(activePanel as string) === 'parameters' ? BTN_ACTIVE : { ...BTN, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', color: 'var(--bld-text-2)', borderRadius: 6 }} onClick={() => onTogglePanel('parameters')}>⊕ Parameters</button>
-      }
-      <div style={{ width: 1, height: 16, background: 'var(--bld-bg-elevated)', margin: '0 4px' }} />
-      <button style={activePanel === 'columns' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('columns')}>⊞ Columns</button>
-      <button style={activePanel === 'filter' ? BTN_ACTIVE : (hasActiveFilters ? { ...BTN, color: 'var(--bld-badge-text)' } : BTN)} onClick={() => onTogglePanel('filter')}>
-        ⫠ Filter{hasActiveFilters && <span style={{ fontSize: 10, background: 'var(--bld-accent-hover)', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+      <button style={activePanel === 'insert' ? BTN_ACTIVE : BTN_PRIMARY} onClick={() => onTogglePanel('insert')}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+        Insert row
       </button>
-      <button style={activePanel === 'sort' ? BTN_ACTIVE : (hasActiveSorts ? { ...BTN, color: 'var(--bld-badge-text)' } : BTN)} onClick={() => onTogglePanel('sort')}>
-        ↕ Sort{hasActiveSorts && <span style={{ fontSize: 10, background: 'var(--bld-accent-hover)', color: '#fff', borderRadius: 9, padding: '1px 5px', marginLeft: 3 }}>ON</span>}
+      <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', margin: '0 4px' }} />
+      <button style={activePanel === 'columns' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('columns')}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="1" width="10" height="10" rx="1"/><line x1="4" y1="1" x2="4" y2="11"/><line x1="8" y1="1" x2="8" y2="11"/></svg>
+        Columns
       </button>
-      <button style={activePanel === 'pagination' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('pagination')}>⎘ Pagination</button>
+      <button style={activePanel === 'filter' ? BTN_ACTIVE : (hasActiveFilters ? { ...BTN, color: '#a5b4fc' } : BTN)} onClick={() => onTogglePanel('filter')}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="2" y1="3" x2="10" y2="3"/><line x1="3.5" y1="6" x2="8.5" y2="6"/><line x1="5" y1="9" x2="7" y2="9"/></svg>
+        Filter{hasActiveFilters && <span style={{ fontSize: 10, background: 'var(--bld-accent)', color: '#fff', borderRadius: 8, padding: '1px 5px', marginLeft: 2 }}>ON</span>}
+      </button>
+      <button style={activePanel === 'sort' ? BTN_ACTIVE : (hasActiveSorts ? { ...BTN, color: '#a5b4fc' } : BTN)} onClick={() => onTogglePanel('sort')}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="2" y1="3" x2="10" y2="3"/><line x1="4" y1="6" x2="10" y2="6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>
+        Sort{hasActiveSorts && <span style={{ fontSize: 10, background: 'var(--bld-accent)', color: '#fff', borderRadius: 8, padding: '1px 5px', marginLeft: 2 }}>ON</span>}
+      </button>
+      <button style={activePanel === 'pagination' ? BTN_ACTIVE : BTN} onClick={() => onTogglePanel('pagination')}>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="10" height="6" rx="1"/><line x1="4" y1="3" x2="4" y2="9"/><line x1="8" y1="3" x2="8" y2="9"/></svg>
+        Rows
+      </button>
       <div style={{ flex: 1 }} />
-      <button style={BTN} onClick={onRefresh}>↺ Refresh</button>
+      {searchable && (
+        <div style={{ position: 'relative' }}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="1.8" strokeLinecap="round" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+          </svg>
+          <input value={searchText} onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSearchSubmit(); }}
+            placeholder="Search rows…"
+            style={{ ...INPUT_STYLE, width: 180, padding: '5px 10px 5px 28px', fontSize: 12 }}
+          />
+        </div>
+      )}
+      <button onClick={onToggleLive} title="Live updates" style={live ? { ...BTN_ACTIVE, gap: 6 } : { ...BTN, gap: 6, border: '1px solid rgba(255,255,255,0.08)' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: live ? '#34d399' : 'var(--bld-text-disabled)', boxShadow: live ? '0 0 6px #34d399' : 'none' }} />
+        Live
+      </button>
+      <button style={{ ...BTN, gap: 5, border: '1px solid rgba(255,255,255,0.08)' }} onClick={onRefresh}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.1L1 10"/>
+        </svg>
+        Refresh
+      </button>
     </div>
   );
 }
@@ -1051,52 +663,39 @@ function Toolbar({
 // ─── Insert panel ─────────────────────────────────────────────────────────────
 
 function InsertPanel({
-  table, insertRowValues, onChangeValues, onInsertRow, onInsertColumn, inserting, onClose,
+  cols, values, onChange, onInsert, inserting, onClose,
 }: {
-  table: BackendTable;
-  insertRowValues: Record<string, string>;
-  onChangeValues: (v: Record<string, string>) => void;
-  onInsertRow: () => void;
-  onInsertColumn: () => void;
+  cols: GridCol[];
+  values: Record<string, string>;
+  onChange: (v: Record<string, string>) => void;
+  onInsert: () => void;
   inserting: boolean;
   onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'menu' | 'row'>('menu');
-
-  if (mode === 'menu') {
-    return (
-      <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 260 }}>
-        <MenuItem icon="☰" title="Insert a row" subtitle={`Insert a new row into ${table.displayName}`} onClick={() => setMode('row')} />
-        <MenuItem icon="⊞" title="Insert a column" subtitle={`Insert a new column into ${table.displayName}`} onClick={onInsertColumn} />
-      </div>
-    );
-  }
-
   return (
-    <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 300, maxHeight: 420, overflow: 'auto' }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 320, maxHeight: 440, overflow: 'auto' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Insert a row</span>
-        <button onClick={() => setMode('menu')} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 11 }}>← Back</button>
       </div>
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {table.columns.map((col) => (
-          <div key={col.id}>
+        {cols.map((c) => (
+          <div key={c.key}>
             <label style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500, display: 'block', marginBottom: 3 }}>
-              {typeIcon(col.type)} {col.displayName ?? col.name}
-              {col.required && <span style={{ color: 'var(--bld-error)', marginLeft: 2 }}>*</span>}
+              {typeIcon(c.type)} {c.label}
+              {c.field?.required && <span style={{ color: 'var(--bld-error)', marginLeft: 2 }}>*</span>}
             </label>
             <input
               style={{ ...INPUT_STYLE, fontSize: 12, padding: '4px 8px' }}
-              value={insertRowValues[col.name] ?? ''}
-              placeholder={col.type === 'BOOL' ? 'true / false' : col.type}
-              onChange={(e) => onChangeValues({ ...insertRowValues, [col.name]: e.target.value })}
+              value={values[c.key] ?? ''}
+              placeholder={c.type === 'bool' || c.type === 'boolean' ? 'true / false' : c.type}
+              onChange={(e) => onChange({ ...values, [c.key]: e.target.value })}
             />
           </div>
         ))}
-        {table.columns.length === 0 && <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)' }}>No custom columns. Add columns via the + button.</p>}
+        {cols.length === 0 && <p style={{ fontSize: 12, color: 'var(--bld-text-disabled)' }}>No editable fields.</p>}
       </div>
       <div style={{ padding: '10px 14px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', gap: 8 }}>
-        <button onClick={onInsertRow} disabled={inserting} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: inserting ? 0.6 : 1 }}>
+        <button onClick={onInsert} disabled={inserting} style={{ ...BTN_PRIMARY, flex: 1, justifyContent: 'center', opacity: inserting ? 0.6 : 1 }}>
           {inserting ? 'Inserting…' : 'Insert row'}
         </button>
         <button onClick={onClose} style={{ ...BTN, border: '1px solid var(--bld-border-subtle)' }}>Cancel</button>
@@ -1105,32 +704,17 @@ function InsertPanel({
   );
 }
 
-function MenuItem({ icon, title, subtitle, onClick }: { icon: string; title: string; subtitle: string; onClick: () => void }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', cursor: 'pointer', background: hover ? 'rgba(99,102,241,0.08)' : 'transparent' }}>
-      <div style={{ width: 28, height: 28, background: 'var(--bld-bg-elevated)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--bld-badge-text)', flexShrink: 0 }}>{icon}</div>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</div>
-        <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginTop: 2 }}>{subtitle}</div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Columns panel ────────────────────────────────────────────────────────────
 
-function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: {
-  allCols: string[];
+function ColumnsPanel({ cols, pending, onChange, onReset, onSave }: {
+  cols: GridCol[];
   pending: string[];
   onChange: (v: string[]) => void;
-  colMeta: (name: string) => Partial<BackendColumn>;
   onReset: () => void;
   onSave: () => void;
 }) {
-  const toggle = (col: string) =>
-    onChange(pending.includes(col) ? pending.filter((c) => c !== col) : [...pending, col]);
+  const toggle = (key: string) =>
+    onChange(pending.includes(key) ? pending.filter((c) => c !== key) : [...pending, key]);
 
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 260 }}>
@@ -1138,14 +722,13 @@ function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: 
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Columns</span>
       </div>
       <div style={{ padding: '6px 0', maxHeight: 280, overflow: 'auto' }}>
-        {allCols.map((col) => {
-          const meta = colMeta(col);
-          const on = pending.includes(col);
+        {cols.map((c) => {
+          const on = pending.includes(c.key);
           return (
-            <div key={col} onClick={() => toggle(col)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', cursor: 'pointer' }}>
+            <div key={c.key} onClick={() => toggle(c.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', cursor: 'pointer' }}>
               <Toggle on={on} />
-              <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', width: 16, textAlign: 'center', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
-              <span style={{ fontSize: 12, color: 'var(--bld-text-2)' }}>{col}</span>
+              <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', width: 16, textAlign: 'center', flexShrink: 0 }}>{typeIcon(c.type)}</span>
+              <span style={{ fontSize: 12, color: 'var(--bld-text-2)' }}>{c.label}</span>
             </div>
           );
         })}
@@ -1155,17 +738,13 @@ function ColumnsPanel({ allCols, pending, onChange, colMeta, onReset, onSave }: 
   );
 }
 
-// ─── Filter panel ─────────────────────────────────────────────────────────────
-
-// FilterPanel, SortPanel, Toggle are imported from _filter-sort-panels.tsx
-
 // ─── Pagination panel ─────────────────────────────────────────────────────────
 
 function PaginationPanel({ pending, onChange, onSave }: { pending: number; onChange: (v: number) => void; onSave: () => void }) {
   return (
     <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 320 }}>
       <div style={{ padding: '12px 14px' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Rows per page <span style={{ color: 'var(--bld-error)' }}>*</span></div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Rows per page</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {PAGE_SIZE_OPTIONS.map((opt) => (
             <button key={opt} onClick={() => onChange(opt)} style={{
@@ -1175,7 +754,7 @@ function PaginationPanel({ pending, onChange, onSave }: { pending: number; onCha
               color: pending === opt ? 'var(--bld-badge-text)' : 'var(--bld-text-3)',
               fontWeight: pending === opt ? 600 : 400,
             }}>
-              {opt === 0 ? 'Unlimited' : opt}
+              {opt === 0 ? 'Max (500)' : opt}
             </button>
           ))}
         </div>
@@ -1187,151 +766,79 @@ function PaginationPanel({ pending, onChange, onSave }: { pending: number; onCha
   );
 }
 
-// ─── Parameters panel ─────────────────────────────────────────────────────────
-
-const PARAM_TYPES = ['TEXT', 'INT', 'DECIMAL', 'BOOL', 'DATE', 'TIMESTAMP', 'UUID'] as const;
-
-function ParametersPanel({ pending, onChange, onReset, onSave }: {
-  pending: ViewParameter[];
-  onChange: (v: ViewParameter[]) => void;
-  onReset: () => void;
-  onSave: () => void;
-}) {
-  const addParam = () =>
-    onChange([...pending, { id: uid(), name: '', type: 'TEXT', defaultValue: '' }]);
-
-  const update = (id: string, patch: Partial<ViewParameter>) =>
-    onChange(pending.map((p) => p.id === id ? { ...p, ...patch } : p));
-
-  const s: React.CSSProperties = {
-    background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
-    padding: '6px 10px', fontSize: 12, color: 'var(--bld-text-2)', outline: 'none',
-    boxSizing: 'border-box',
-  };
-
-  return (
-    <div style={{ ...PANEL_STYLE, top: 0, left: 12, minWidth: 600 }}>
-      {pending.length > 0 && (
-        <>
-          {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 32px', gap: 8, padding: '10px 16px 4px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
-            {['Parameter name', 'Parameter type', 'Default value', ''].map((h) => (
-              <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)' }}>{h}</span>
-            ))}
-          </div>
-          {/* Rows */}
-          <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pending.map((p) => (
-              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 32px', gap: 8, alignItems: 'center' }}>
-                <input
-                  value={p.name}
-                  onChange={(e) => update(p.id, { name: e.target.value })}
-                  placeholder="Parameter name"
-                  style={{ ...s, width: '100%' }}
-                />
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--bld-text-3)', pointerEvents: 'none' }}>
-                    {typeIcon(p.type)}
-                  </span>
-                  <select
-                    value={p.type}
-                    onChange={(e) => update(p.id, { type: e.target.value })}
-                    style={{ ...s, width: '100%', paddingLeft: 28 }}
-                  >
-                    {PARAM_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}
-                  </select>
-                </div>
-                <input
-                  value={p.defaultValue}
-                  onChange={(e) => update(p.id, { defaultValue: e.target.value })}
-                  placeholder="Parameter value"
-                  style={{ ...s, width: '100%' }}
-                />
-                <button
-                  onClick={() => onChange(pending.filter((x) => x.id !== p.id))}
-                  style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 16, padding: 0 }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      <div style={{ padding: pending.length > 0 ? '4px 16px 10px' : '10px 16px' }}>
-        <button onClick={addParam} style={{ ...BTN, fontSize: 12, color: 'var(--bld-text-3)', padding: '4px 0' }}>
-          + Add Parameters
-        </button>
-      </div>
-      <PanelFooter onReset={onReset} onSave={onSave} />
-    </div>
-  );
-}
-
 // ─── Data grid ────────────────────────────────────────────────────────────────
 
 function DataGrid({
-  rows, displayCols, colMeta, loading,
-  editingCell, editingValue, isDataTab,
-  onStartEdit, onEditValue, onCommitEdit, onCancelEdit, onDeleteRow, onAddColumn,
+  rows, displayCols, loading,
+  editingCell, editingValue,
+  onStartEdit, onEditValue, onCommitEdit, onCancelEdit, onDeleteRow,
 }: {
   rows: Record<string, unknown>[];
-  displayCols: string[];
-  colMeta: (name: string) => Partial<BackendColumn>;
+  displayCols: GridCol[];
   loading: boolean;
   editingCell: { rowId: string; col: string } | null;
   editingValue: string;
-  isDataTab: boolean;
   onStartEdit: (rowId: string, col: string, val: unknown) => void;
   onEditValue: (v: string) => void;
   onCommitEdit: () => void;
   onCancelEdit: () => void;
   onDeleteRow: (id: string) => void;
-  onAddColumn: () => void;
 }) {
   const COL_WIDTH = 180;
-
+  const BORDER = '1px solid rgba(255,255,255,0.05)';
   return (
-    <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+    <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      {/* Overlay sits OUTSIDE the scroll container so it always covers the full area */}
       {loading && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(8,13,23,0.7)', zIndex: 10 }}>
-          <span style={{ fontSize: 13, color: 'var(--bld-text-disabled)' }}>Loading…</span>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, backdropFilter: 'blur(6px)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 28, height: 28, border: '2.5px solid rgba(99,102,241,0.25)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 0.7s linear infinite', boxShadow: '0 0 12px rgba(99,102,241,0.3)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(165,180,252,0.8)', letterSpacing: 0.3 }}>Loading…</span>
+          </div>
         </div>
       )}
+      <div style={{ width: '100%', height: '100%', overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <thead>
-          <tr style={{ background: '#0a0f1a', position: 'sticky', top: 0, zIndex: 5 }}>
-            <th style={{ width: 36, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34 }}>
+          <tr style={{ background: 'rgba(255,255,255,0.025)', position: 'sticky', top: 0, zIndex: 5 }}>
+            <th style={{ width: 40, borderBottom: BORDER, borderRight: BORDER, padding: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 36 }}>
                 <input type="checkbox" style={{ accentColor: 'var(--bld-accent)' }} />
               </div>
             </th>
-            {displayCols.map((col) => {
-              const meta = colMeta(col);
-              const system = col === 'id' || col === 'created_at' || col === 'updated_at';
-              return (
-                <th key={col} style={{ width: COL_WIDTH, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0, textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', height: 34 }}>
-                    <span style={{ fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>{typeIcon(meta.type ?? 'TEXT')}</span>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: system ? 'var(--bld-text-3)' : '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{col}</span>
-                    <span style={{ fontSize: 11, color: 'var(--bld-border-subtle)', cursor: 'pointer', flexShrink: 0 }}>⋮</span>
-                  </div>
-                </th>
-              );
-            })}
-            {/* + add column — only on Data tab */}
-            {isDataTab && (
-              <th style={{ width: 40, borderBottom: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
-                <button onClick={onAddColumn} style={{ width: '100%', height: 34, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-border-subtle)', fontSize: 16 }} title="Add column">+</button>
+            {displayCols.map((c) => (
+              <th key={c.key} style={{ width: COL_WIDTH, borderBottom: BORDER, borderRight: BORDER, padding: 0, textAlign: 'left' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', height: 36 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(99,102,241,0.7)', flexShrink: 0, fontFamily: 'monospace' }}>{typeIcon(c.type)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.75)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
+                </div>
               </th>
-            )}
+            ))}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && !loading && (
             <tr>
-              <td colSpan={displayCols.length + 2} style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--bld-text-disabled)' }}>
-                No rows yet. Click Insert → Insert a row.
+              <td colSpan={displayCols.length + 1} style={{ padding: 60, textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                    boxShadow: '0 0 32px rgba(99,102,241,0.12)',
+                  }}>
+                    <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="12" height="12" rx="2"/>
+                      <line x1="6" y1="2" x2="6" y2="14"/><line x1="10" y1="2" x2="10" y2="14"/>
+                      <line x1="2" y1="6" x2="14" y2="6"/><line x1="2" y1="10" x2="14" y2="10"/>
+                    </svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 6 }}>No rows yet</div>
+                    <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)', lineHeight: 1.6 }}>
+                      Click <strong style={{ color: 'var(--bld-text-3)' }}>Insert row</strong> to add your first record.
+                    </div>
+                  </div>
+                </div>
               </td>
             </tr>
           )}
@@ -1347,6 +854,7 @@ function DataGrid({
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -1355,43 +863,46 @@ function DataRow({
   row, rowId, displayCols, editingCell, editingValue,
   onStartEdit, onEditValue, onCommitEdit, onCancelEdit, onDeleteRow,
 }: {
-  row: Record<string, unknown>; rowId: string; displayCols: string[];
+  row: Record<string, unknown>; rowId: string; displayCols: GridCol[];
   editingCell: { rowId: string; col: string } | null; editingValue: string;
   onStartEdit: (rowId: string, col: string, val: unknown) => void;
   onEditValue: (v: string) => void; onCommitEdit: () => void;
   onCancelEdit: () => void; onDeleteRow: (id: string) => void;
 }) {
+  const BORDER = '1px solid rgba(255,255,255,0.05)';
   const [hover, setHover] = useState(false);
   return (
-    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ background: hover ? 'rgba(99,102,241,0.04)' : 'transparent' }}>
-      <td style={{ width: 36, borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 36 }}>
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ background: hover ? 'rgba(99,102,241,0.045)' : 'transparent', transition: 'background 0.1s' }}>
+      <td style={{ width: 40, borderBottom: BORDER, borderRight: BORDER, padding: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38 }}>
           {hover
-            ? <button onClick={() => onDeleteRow(rowId)} style={{ background: 'none', border: 'none', color: 'var(--bld-error)', cursor: 'pointer', fontSize: 12, padding: 2 }} title="Delete row">✕</button>
+            ? <button onClick={() => onDeleteRow(rowId)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, borderRadius: 4, lineHeight: 1 }} title="Delete row">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+              </button>
             : <input type="checkbox" style={{ accentColor: 'var(--bld-accent)' }} />
           }
         </div>
       </td>
-      {displayCols.map((col) => {
-        const isEditing = editingCell?.rowId === rowId && editingCell?.col === col;
-        const system = col === 'id' || col === 'created_at' || col === 'updated_at';
-        const raw = row[col];
+      {displayCols.map((c) => {
+        const isEditing = editingCell?.rowId === rowId && editingCell?.col === c.key;
+        const raw = row[c.key];
+        const isEmpty = raw === null || raw === undefined || raw === '';
         return (
-          <td key={col} style={{ borderBottom: '1px solid var(--bld-bg-elevated)', borderRight: '1px solid var(--bld-bg-elevated)', padding: 0, maxWidth: 180 }} onClick={() => !system && onStartEdit(rowId, col, raw)}>
+          <td key={c.key} style={{ borderBottom: BORDER, borderRight: BORDER, padding: 0, maxWidth: 180 }} onClick={() => c.editable && onStartEdit(rowId, c.key, raw)}>
             {isEditing ? (
               <input autoFocus value={editingValue} onChange={(e) => onEditValue(e.target.value)}
                 onBlur={onCommitEdit} onKeyDown={(e) => { if (e.key === 'Enter') onCommitEdit(); if (e.key === 'Escape') onCancelEdit(); }}
-                style={{ width: '100%', height: 36, border: 'none', outline: '2px solid #6366f1', background: 'var(--bld-bg-panel)', color: 'var(--bld-text-2)', padding: '0 10px', fontSize: 12, boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38, border: 'none', outline: '1px solid rgba(99,102,241,0.6)', outlineOffset: -1, background: 'rgba(99,102,241,0.08)', color: '#e2e8f0', padding: '0 12px', fontSize: 12, boxSizing: 'border-box' }}
               />
             ) : (
-              <div style={{ padding: '0 10px', height: 36, display: 'flex', alignItems: 'center', fontSize: 12, color: system ? 'var(--bld-border-subtle)' : '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: system ? 'default' : 'text' }}>
-                {formatCell(raw)}
+              <div style={{ padding: '0 12px', height: 38, display: 'flex', alignItems: 'center', fontSize: 12, color: isEmpty ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: c.editable ? 'text' : 'default', fontFamily: c.type === 'uuid' ? 'monospace' : undefined }}>
+                {isEmpty ? '—' : formatCell(raw)}
               </div>
             )}
           </td>
         );
       })}
-      <td style={{ borderBottom: '1px solid var(--bld-bg-elevated)' }} />
     </tr>
   );
 }
@@ -1404,7 +915,7 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
   const [inputVal, setInputVal] = useState(String(page));
   useEffect(() => setInputVal(String(page)), [page]);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', borderTop: '1px solid var(--bld-bg-elevated)', fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0, background: '#080d17' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: 12, color: 'var(--bld-text-disabled)', flexShrink: 0, background: 'rgba(0,0,0,0.2)' }}>
       <span>{totalRows} {totalRows === 1 ? 'row' : 'rows'}</span>
       <div style={{ flex: 1 }} />
       <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} style={{ ...BTN, padding: '2px 8px', opacity: page <= 1 ? 0.3 : 1 }}>‹</button>
@@ -1419,227 +930,3 @@ function GridFooter({ totalRows, page, totalPages, onPageChange }: {
     </div>
   );
 }
-
-// ─── Add Column Panel (right-side drawer, WeWeb style) ────────────────────────
-
-function AddColumnPanel({ col, onChange, onSave, onCancel, saving }: {
-  col: Partial<BackendColumn>;
-  onChange: (c: Partial<BackendColumn>) => void;
-  onSave: () => void | Promise<void>;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  return (
-    <div style={{
-      position: 'absolute', right: 0, top: 0, bottom: 0, width: 340, zIndex: 60,
-      background: '#0d1526', borderLeft: '1px solid var(--bld-bg-elevated)',
-      display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 20px rgba(0,0,0,0.4)',
-    }}>
-      {/* Rows */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 0' }}>
-        {/* Column Name */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-            Column Name <span style={{ color: 'var(--bld-error)' }}>*</span>
-          </label>
-          <input
-            autoFocus
-            value={col.name ?? ''}
-            onChange={(e) => onChange({ ...col, name: e.target.value })}
-            placeholder="Column name"
-            style={INPUT_STYLE}
-          />
-        </div>
-
-        {/* Column Type */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>
-            Column Type <span style={{ color: 'var(--bld-error)' }}>*</span>
-          </label>
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--bld-text-3)', pointerEvents: 'none', zIndex: 1 }}>
-              {typeIcon(col.type ?? 'TEXT')}
-            </div>
-            <select
-              value={col.type ?? 'TEXT'}
-              onChange={(e) => onChange({ ...col, type: e.target.value as BackendColumn['type'] })}
-              style={{ ...SELECT_STYLE, paddingLeft: 32 }}
-            >
-              {COLUMN_TYPES.map((t) => (
-                <option key={t} value={t}>{typeIcon(t)} {t.charAt(0) + t.slice(1).toLowerCase()}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Allow multiple values */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-            onClick={() => onChange({ ...col, nullable: !col.nullable })}>
-            <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Allow multiple values</span>
-            <Toggle on={!!col.nullable} />
-          </label>
-        </div>
-
-        {/* Default Value */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Default Value</label>
-          <input
-            value={col.defaultVal ?? ''}
-            onChange={(e) => onChange({ ...col, defaultVal: e.target.value || undefined })}
-            placeholder="e.g. NOW() or 'hello'"
-            style={INPUT_STYLE}
-          />
-        </div>
-
-        {/* Constraints */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 10 }}>Constraints</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-              onClick={() => onChange({ ...col, required: !col.required })}>
-              <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Value is required</span>
-              <Toggle on={!!col.required} />
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-              onClick={() => onChange({ ...col, unique: !col.unique })}>
-              <span style={{ fontSize: 13, color: 'var(--bld-text-2)' }}>Value must be unique</span>
-              <Toggle on={!!col.unique} />
-            </label>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Description</label>
-          <RichTextArea value={''} onChange={() => void 0} />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: '14px 20px', borderTop: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
-        <button
-          onClick={() => void onSave()}
-          disabled={saving || !col.name?.trim()}
-          style={{ ...BTN_PRIMARY, width: '100%', justifyContent: 'center', padding: '10px 0', fontSize: 13, opacity: saving ? 0.6 : 1 }}
-        >
-          {saving ? 'Adding…' : 'Add Column'}
-        </button>
-        <button onClick={onCancel} style={{ ...BTN, width: '100%', justifyContent: 'center', padding: '8px 0', fontSize: 12, marginTop: 6 }}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── ImportErdModal ───────────────────────────────────────────────────────────
-
-function ImportErdModal({ projectId, onImported, onClose }: {
-  projectId: string;
-  onImported: (firstTableId?: string) => void;
-  onClose: () => void;
-}) {
-  const [erd, setErd] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ tables: number; workflows: number } | null>(null);
-  const [err, setErr] = useState('');
-
-  const tableCount = (erd.match(/^\s*Table\s+\w+/gim) ?? []).length;
-
-  const handleImport = async () => {
-    if (!erd.trim()) return;
-    setLoading(true);
-    setErr('');
-    setResult(null);
-    try {
-      const res = await backendTables.importErd(projectId, erd);
-      setResult({ tables: res.tables.length, workflows: res.workflowsCreated });
-      onImported(res.tables[0]?.id);
-    } catch (e) {
-      setErr((e as Error).message ?? 'Import failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const OVERLAY: React.CSSProperties = {
-    position: 'fixed', inset: 0, zIndex: 9999,
-    background: 'rgba(0,0,0,0.65)', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-  };
-  const CARD: React.CSSProperties = {
-    background: 'var(--bld-bg-base)', border: '1px solid var(--bld-bg-elevated)', borderRadius: 10,
-    boxShadow: '0 24px 64px rgba(0,0,0,0.7)', width: 560, maxWidth: '95vw',
-    display: 'flex', flexDirection: 'column', overflow: 'hidden',
-  };
-  const INPUT: React.CSSProperties = {
-    background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6,
-    color: 'var(--bld-text-2)', fontSize: 12, fontFamily: 'monospace', padding: '10px 12px',
-    resize: 'vertical', outline: 'none', width: '100%', boxSizing: 'border-box',
-  };
-
-  return (
-    <div style={OVERLAY} onClick={onClose}>
-      <div style={CARD} onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--bld-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--bld-text-2)' }}>Import ERD</span>
-            <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--bld-text-3)' }}>dbdiagram.io / DBML format</span>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <textarea
-            value={erd}
-            onChange={e => setErd(e.target.value)}
-            placeholder={`Table users {\n  id int [pk]\n  name varchar\n  email varchar [unique]\n}\n\nTable orders {\n  id int [pk]\n  user_id int\n  total decimal\n}\n\nRef: orders.user_id > users.id`}
-            rows={12}
-            style={INPUT}
-            disabled={loading}
-          />
-
-          {/* Preview */}
-          {tableCount > 0 && !result && (
-            <div style={{ fontSize: 11, color: 'var(--bld-info)', background: 'rgba(59,130,246,0.08)', borderRadius: 5, padding: '6px 10px' }}>
-              {tableCount} table{tableCount !== 1 ? 's' : ''} detected — will create tables + CRUD API endpoints
-            </div>
-          )}
-
-          {err && (
-            <div style={{ fontSize: 11, color: 'var(--bld-error)', background: 'rgba(239,68,68,0.08)', borderRadius: 5, padding: '6px 10px' }}>{err}</div>
-          )}
-
-          {result && (
-            <div style={{ fontSize: 11, color: '#34d399', background: 'rgba(52,211,153,0.08)', borderRadius: 5, padding: '6px 10px' }}>
-              {result.tables} table{result.tables !== 1 ? 's' : ''} created · {result.workflows} CRUD workflows generated
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--bld-bg-elevated)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '6px 14px', background: 'none', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-text-3)', fontSize: 12, cursor: 'pointer' }}>
-            {result ? 'Close' : 'Cancel'}
-          </button>
-          {!result && (
-            <button
-              onClick={() => void handleImport()}
-              disabled={loading || !erd.trim()}
-              style={{ padding: '6px 16px', background: loading || !erd.trim() ? '#1e3a5f' : '#3b82f6', border: 'none', borderRadius: 6, color: loading || !erd.trim() ? 'var(--bld-text-disabled)' : '#fff', fontSize: 12, cursor: loading || !erd.trim() ? 'default' : 'pointer', fontWeight: 600 }}
-            >
-              {loading ? 'Importing…' : 'Import'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Shared primitives ────────────────────────────────────────────────────────
-
-// Toggle and PanelFooter are imported from _filter-sort-panels.tsx

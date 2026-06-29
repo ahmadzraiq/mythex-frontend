@@ -79,6 +79,19 @@ export interface AiIconResult {
   prefix: string;
 }
 
+export interface AiAttachment {
+  /** DB record id returned by backendStorage.register — used for getPresignedUrl */
+  fileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  /** base64-encoded file data (no data-URI prefix). Present for freshly attached files;
+   *  absent when rehydrated from thread history (use previewUrl instead). */
+  data?: string;
+  /** Blob object URL (fresh attachments) or presigned S3 GET URL (history). Used to display the file. */
+  previewUrl?: string;
+}
+
 /** Phase O — typed debug envelope assembled per-turn from SSE events. */
 export interface PhaseODebugEnvelope {
   /** Context Agent — runs before Planner to resolve "what is the user pointing at?" */
@@ -195,6 +208,8 @@ export interface AiChatMessage {
   structureMarkers?: Array<{ nodeId: string; loop?: string | boolean; loopKey?: string; showIf?: string; direction?: string }>;
   /** Apply errors from file-agent write operations — populated when applyVirtualFile fails */
   fileApplyErrors?: Array<{ path: string; error: string }>;
+  /** Files attached by the user in this message turn */
+  attachments?: AiAttachment[];
 }
 
 // ─── Viewport ─────────────────────────────────────────────────────────────────
@@ -349,11 +364,6 @@ export interface BuilderPage {
   wx: number;
   /** World-space Y position of the page frame (top-left corner). Used for free canvas layout. */
   wy: number;
-  // ── Page protection ─────────────────────────────────────────────────────────
-  /** JS formula evaluated at render time. Falsy → redirect to protectionRedirect. */
-  protectionCondition?: string;
-  /** Path to redirect to when protectionCondition is falsy. Defaults to '/'. */
-  protectionRedirect?: string;
 }
 
 /**
@@ -408,14 +418,32 @@ export interface GlobalFormulaDef {
   formula: string;
 }
 
+export interface WorkflowParamValidation {
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  format?: 'email' | 'url' | 'uuid';
+  min?: number;
+  max?: number;
+  minItems?: number;
+  maxItems?: number;
+  enum?: string[];
+}
+
 export interface WorkflowParam {
   id: string;
   name: string;
-  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array';
-  /** When true, the param accepts multiple values (stored as an array) */
-  allowMultiple?: boolean;
-  /** Test value used in the formula editor preview when editing the global workflow */
+  type: 'Text' | 'Number' | 'Boolean' | 'Object' | 'Array' | 'File';
+  /** Where this param comes from in the HTTP request */
+  in?: 'path' | 'query' | 'body' | 'header';
+  /** Whether the param is required (path params are always required) */
+  required?: boolean;
+  /** Human-readable description for API docs */
+  description?: string;
+  /** Test value used in the formula editor preview */
   testValue?: unknown;
+  /** Runtime validation rules */
+  validation?: WorkflowParamValidation;
 }
 
 export interface WorkflowMeta {
@@ -451,6 +479,12 @@ export interface WorkflowMeta {
   pageScope?: string;
   /** Declared input parameters for global workflows */
   params?: WorkflowParam[];
+  /** HTTP method for server API_ENDPOINT workflows */
+  method?: string;
+  /** URL path for server API_ENDPOINT workflows (may contain :segments) */
+  path?: string;
+  /** Extra trigger configuration (e.g. threshold + scrollTarget for reachEnd) */
+  config?: Record<string, unknown>;
 }
 
 export type WorkflowCanvasTarget =
@@ -768,8 +802,6 @@ export interface BuilderStore {
   setCurrentPageInteractions: (interactions: Record<string, { workflow?: string }>) => void;
   /** Set per-page URL query parameter definitions for the current page */
   setCurrentPageQueryParams: (params: Array<{ name: string; value: string }>) => void;
-  /** Set the page protection condition and redirect path for the current page */
-  setPageProtection: (condition: string | undefined, redirect: string | undefined) => void;
   /** Engine conventions loaded from store.json (graphqlEndpoint, graphqlHeaders, etc.) */
   engineConventions: {
     graphqlEndpoint?: string;

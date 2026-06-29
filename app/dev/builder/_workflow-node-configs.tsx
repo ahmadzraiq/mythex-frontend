@@ -28,17 +28,21 @@ import type { SharedComponentModel } from '@/lib/builder/shared-component-data';
 import { FigmaColorPicker } from './_color-picker';
 import { BindingIcon, isBoundValue, type FormulaValue } from './_formula-panel';
 import { FormulaEditor, storedValueToFormula } from './_formula-editor';
-import { collectPageComponents } from './_formula-editor-tabs';
+import { collectPageComponents, type WorkflowVarEntry } from './_formula-editor-tabs';
+export type { WorkflowVarEntry };
 import { GqlEditor } from './_data-source-form';
 import { S } from './_workflow-styles';
 import {
   type ActionStepType, type BranchDef, type ActionStep,
   ACTION_CATEGORIES, FORM_ACTION_CATEGORY,
   getActionLabel, getActionIcon, isStructural, isConfigured, canTest,
+  getServerActionCategories,
 } from './_workflow-types';
+import type { ModelFieldJson } from '@/lib/platform/api-client';
 import type { WorkflowMeta, WorkflowParam } from './_store';
 import type { GlobalFormulaParam } from './_store-types';
-import { backendTables } from '@/lib/platform/api-client';
+import { type ModelDefinitionJson } from '@/lib/platform/api-client';
+import { useBackendConfig } from '@/lib/builder/use-backend-config';
 import {
   type FilterCondition, type FilterGroup, type SortSpec,
   FilterPanel, SortPanel, FloatingAnchor, uid,
@@ -51,22 +55,58 @@ import {
 interface WorkflowCtxValue {
   params: GlobalFormulaParam[];
   isServerContext: boolean;
+  workflowVars: WorkflowVarEntry[];
+  isInsideLoop: boolean;
 }
-const WorkflowParamsCtx = createContext<WorkflowCtxValue>({ params: [], isServerContext: false });
+const WorkflowParamsCtx = createContext<WorkflowCtxValue>({ params: [], isServerContext: false, workflowVars: [], isInsideLoop: false });
 
 /** Wrap a subtree so all BoundField instances within it receive the params and server flag. */
 export function WorkflowParamsProvider({
-  params, isServerContext, children,
+  params, isServerContext, workflowVars = [], isInsideLoop = false, children,
 }: {
   params: GlobalFormulaParam[];
   isServerContext: boolean;
+  workflowVars?: WorkflowVarEntry[];
+  isInsideLoop?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <WorkflowParamsCtx.Provider value={{ params, isServerContext }}>
+    <WorkflowParamsCtx.Provider value={{ params, isServerContext, workflowVars, isInsideLoop }}>
       {children}
     </WorkflowParamsCtx.Provider>
   );
+}
+
+/**
+ * Derives workflow-scoped runtime variables from steps that appeared before the current one.
+ * Used to populate the WORKFLOW VARIABLES section in the formula picker Quick tab.
+ */
+export function getWorkflowVarsFromPriorSteps(priorSteps: ActionStep[]): WorkflowVarEntry[] {
+  const entries: WorkflowVarEntry[] = [];
+  const seen = new Set<string>();
+
+  function addEntry(e: WorkflowVarEntry) {
+    if (!e.name || seen.has(e.name)) return;
+    seen.add(e.name);
+    entries.push(e);
+  }
+
+  for (const step of priorSteps) {
+    const cfg = step.config ?? {};
+
+    if (step.type === 'createWorkflowVariable' || step.type === 'changeVariableValue') {
+      const name = (cfg.variableName ?? cfg.name) as string | undefined;
+      if (name) addEntry({ name, formula: `context.workflow['variables'].${name}`, group: 'custom', hint: step.type === 'createWorkflowVariable' ? 'created' : 'changed' });
+    }
+
+    if (step.type === 'setRequestContext') {
+      const key = cfg.key as string | undefined;
+      if (key) addEntry({ name: key, formula: `parameters?.['${key}']`, group: 'middleware', hint: 'injected by middleware' });
+    }
+
+  }
+
+  return entries;
 }
 
 /** Convert camelCase / snake_case / kebab-case names to human-readable text. */
@@ -283,10 +323,12 @@ export function TypeSearchDropdown({
   value,
   onChange,
   isFormContext = false,
+  isServerContext = false,
 }: {
   value: ActionStepType | '';
   onChange: (type: ActionStepType) => void;
   isFormContext?: boolean;
+  isServerContext?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -306,9 +348,11 @@ export function TypeSearchDropdown({
     return () => window.removeEventListener('mousedown', handler, true);
   }, [open]);
 
-  const allCategories = isFormContext
-    ? [FORM_ACTION_CATEGORY, ...ACTION_CATEGORIES]
-    : ACTION_CATEGORIES;
+  const allCategories = isServerContext
+    ? getServerActionCategories('API_ENDPOINT')
+    : isFormContext
+      ? [FORM_ACTION_CATEGORY, ...ACTION_CATEGORIES]
+      : ACTION_CATEGORIES;
 
   const q = search.toLowerCase();
   const filtered = allCategories.map(cat => ({
@@ -437,8 +481,8 @@ export function WorkflowMetaPanel({
 }
 
 // ─── ParamsConfigPanel ────────────────────────────────────────────────────────
-// Right-panel editor for global workflow parameters (shown when the Parameters
-// node is selected on the canvas).
+// Right-panel editor for API workflow parameters.
+// Sections: Path (auto-detected, locked) | Query / Header | Body
 
 const PARAM_TYPE_ICONS: Record<string, string> = {
   Text: 'T',
@@ -448,65 +492,191 @@ const PARAM_TYPE_ICONS: Record<string, string> = {
   Array: '[ ]',
 };
 
+/** Extract :segment names from an Express-style path like /products/:id/reviews/:reviewId */
+function extractPathSegments(path: string): string[] {
+  return (path ?? '').match(/:([a-zA-Z_][a-zA-Z0-9_]*)/g)?.map(s => s.slice(1)) ?? [];
+}
+
+const HAS_BODY_METHOD = new Set(['POST', 'PUT', 'PATCH']);
+
 export function ParamsConfigPanel({
   params,
   onChange,
+  workflowPath,
+  workflowMethod,
 }: {
   params: WorkflowParam[];
   onChange: (params: WorkflowParam[]) => void;
+  workflowPath?: string;
+  workflowMethod?: string;
 }) {
-  function updateParam(index: number, patch: Partial<WorkflowParam>) {
-    const next = params.map((p, i) => (i === index ? { ...p, ...patch } : p));
-    onChange(next);
+  const pathSegments = extractPathSegments(workflowPath ?? '');
+  const isServerContext = !!(workflowPath !== undefined || workflowMethod !== undefined);
+  const showBody = !workflowMethod || HAS_BODY_METHOD.has((workflowMethod ?? '').toUpperCase());
+
+  // Sync path params + auto-assign location for any param still missing `in`
+  React.useEffect(() => {
+    if (!isServerContext) return;
+    const isGetLike = ['GET', 'DELETE', 'HEAD'].includes((workflowMethod ?? '').toUpperCase());
+    let changed = false;
+    let next = [...params];
+
+    // Auto-assign `in` for params that somehow still lack a location (backward compat)
+    next = next.map(p => {
+      if (p.in) return p;
+      changed = true;
+      if (pathSegments.includes(p.name)) return { ...p, in: 'path' as const, required: true };
+      return { ...p, in: isGetLike ? 'query' as const : 'body' as const, required: p.required ?? false };
+    });
+
+    // Sync path segments: add missing, remove stale
+    if (pathSegments.length > 0) {
+      for (const seg of pathSegments) {
+        if (!next.find(p => p.in === 'path' && p.name === seg)) {
+          next = [...next, { id: `path-${seg}`, name: seg, type: 'Text', in: 'path', required: true } as WorkflowParam];
+          changed = true;
+        }
+      }
+      const filteredNext = next.filter(p => p.in !== 'path' || pathSegments.includes(p.name));
+      if (filteredNext.length !== next.length) changed = true;
+      next = filteredNext;
+    }
+
+    if (changed) onChange(next);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflowPath, workflowMethod]);
+
+  function updateParam(id: string, patch: Partial<WorkflowParam>) {
+    onChange(params.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  function addParam() {
+  function addParam(location: 'query' | 'body' | 'header') {
     const newParam: WorkflowParam = {
       id: `p-${Date.now()}`,
       name: '',
       type: 'Text',
+      in: location,
+      required: false,
     };
     onChange([...params, newParam]);
   }
 
-  function removeParam(index: number) {
-    onChange(params.filter((_, i) => i !== index));
+  function removeParam(id: string) {
+    onChange(params.filter(p => p.id !== id));
   }
+
+  const pathParams  = params.filter(p => p.in === 'path');
+  const queryParams = params.filter(p => p.in === 'query' || p.in === 'header');
+  const bodyParams  = params.filter(p => p.in === 'body');
+
+  const sectionHeader = (label: string, badge?: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '14px 0 6px', paddingBottom: 4, borderBottom: '1px solid var(--bld-border-subtle)' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: 0.3 }}>{label}</span>
+      {badge && <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-elevated)', borderRadius: 3, padding: '1px 5px' }}>{badge}</span>}
+    </div>
+  );
+
+  const addBtn = (label: string, location: 'query' | 'body' | 'header') => (
+    <button
+      type="button"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, marginTop: 6,
+        width: '100%', padding: '6px 10px', background: 'var(--bld-bg-input)',
+        border: '1px dashed var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-info)',
+        fontSize: 11, cursor: 'pointer', fontWeight: 600,
+      }}
+      onClick={() => addParam(location)}
+    >
+      + {label}
+    </button>
+  );
 
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 8, borderBottom: 'none' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-1)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <span style={{ fontSize: 14 }}>Φ</span>
         <span>Parameters</span>
       </div>
 
-      {params.length === 0 && (
-        <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 12, fontStyle: 'italic' }}>
-          No parameters yet. Add one below.
-        </div>
+      {/* ── Path params (auto-detected from URL pattern) ─────────────────── */}
+      {isServerContext && (
+        <>
+          {sectionHeader('PATH', workflowPath || undefined)}
+          {pathParams.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontStyle: 'italic', marginBottom: 4 }}>
+              No path segments. Add <code style={{ fontSize: 10 }}>:paramName</code> to the endpoint path.
+            </div>
+          ) : (
+            pathParams.map(p => (
+              <ParamEditor
+                key={p.id}
+                param={p}
+                isPathParam
+                onUpdate={patch => updateParam(p.id, patch)}
+                onRemove={() => {/* path params can't be removed manually */}}
+              />
+            ))
+          )}
+        </>
       )}
 
-      {params.map((param, i) => (
-        <ParamEditor
-          key={param.id}
-          param={param}
-          onUpdate={patch => updateParam(i, patch)}
-          onRemove={() => removeParam(i)}
-        />
-      ))}
+      {/* ── Query / Header params ─────────────────────────────────────────── */}
+      {isServerContext && (
+        <>
+          {sectionHeader('QUERY / HEADER')}
+          {queryParams.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontStyle: 'italic' }}>
+              No query or header params yet.
+            </div>
+          )}
+          {queryParams.map(p => (
+            <ParamEditor key={p.id} param={p} onUpdate={patch => updateParam(p.id, patch)} onRemove={() => removeParam(p.id)} />
+          ))}
+          {addBtn('Add query param', 'query')}
+        </>
+      )}
 
-      <button
-        type="button"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6, marginTop: 8,
-          width: '100%', padding: '7px 10px', background: 'var(--bld-bg-input)',
-          border: '1px dashed var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-info)',
-          fontSize: 11, cursor: 'pointer', fontWeight: 600,
-        }}
-        onClick={addParam}
-      >
-        + Add Parameter
-      </button>
+      {/* ── Body params ──────────────────────────────────────────────────── */}
+      {isServerContext && showBody && (
+        <>
+          {sectionHeader('BODY', 'POST / PUT / PATCH')}
+          {bodyParams.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontStyle: 'italic' }}>
+              No body fields yet.
+            </div>
+          )}
+          {bodyParams.map(p => (
+            <ParamEditor key={p.id} param={p} onUpdate={patch => updateParam(p.id, patch)} onRemove={() => removeParam(p.id)} />
+          ))}
+          {addBtn('Add body field', 'body')}
+        </>
+      )}
+
+      {/* ── Legacy / non-server params ───────────────────────────────────── */}
+      {!isServerContext && (
+        <>
+          {params.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 12, fontStyle: 'italic' }}>
+              No parameters yet. Add one below.
+            </div>
+          )}
+          {params.map((p) => (
+            <ParamEditor key={p.id} param={p} onUpdate={patch => updateParam(p.id, patch)} onRemove={() => removeParam(p.id)} />
+          ))}
+          <button
+            type="button"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, marginTop: 8,
+              width: '100%', padding: '7px 10px', background: 'var(--bld-bg-input)',
+              border: '1px dashed var(--bld-border-subtle)', borderRadius: 6, color: 'var(--bld-info)',
+              fontSize: 11, cursor: 'pointer', fontWeight: 600,
+            }}
+            onClick={() => addParam('body')}
+          >
+            + Add Parameter
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -515,260 +685,262 @@ function ParamEditor({
   param,
   onUpdate,
   onRemove,
+  isPathParam = false,
 }: {
   param: WorkflowParam;
   onUpdate: (patch: Partial<WorkflowParam>) => void;
   onRemove: () => void;
+  isPathParam?: boolean;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [typeOpen, setTypeOpen] = useState(false);
-  // Use a ref for the tag input — avoids stale closure issues entirely.
-  // The DOM input is uncontrolled; we only read its value on submit.
-  const tagInputRef = useRef<HTMLInputElement>(null);
-  const [tagTick, setTagTick] = useState(0); // force re-render after adding a tag
+  const [validOpen, setValidOpen] = useState(false);
   const typeBtnRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const PARAM_TYPES: WorkflowParam['type'][] = ['Text', 'Number', 'Boolean', 'Object', 'Array'];
+  const PARAM_TYPES: WorkflowParam['type'][] = ['Text', 'Number', 'Boolean', 'Object', 'Array', 'File'];
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!typeOpen) return;
     const handler = (e: MouseEvent) => {
-      if (
-        typeBtnRef.current && typeBtnRef.current.contains(e.target as Node)
-      ) return;
-      if (
-        dropdownRef.current && dropdownRef.current.contains(e.target as Node)
-      ) return;
+      if (typeBtnRef.current?.contains(e.target as Node)) return;
+      if (dropdownRef.current?.contains(e.target as Node)) return;
       setTypeOpen(false);
     };
     document.addEventListener('mousedown', handler, true);
     return () => document.removeEventListener('mousedown', handler, true);
   }, [typeOpen]);
 
-  // Tag list — only used when type=Text and allowMultiple=true
-  const testTags: string[] = (param.type === 'Text' && param.allowMultiple)
-    ? Array.isArray(param.testValue) ? (param.testValue as string[]) : (param.testValue ? [String(param.testValue)] : [])
-    : [];
-
-  function commitTagInput() {
-    const raw = tagInputRef.current?.value ?? '';
-    const trimmed = raw.trim();
-    if (!trimmed) return;
-    // Read testTags fresh from param.testValue to avoid stale closure
-    const currentTags: string[] = Array.isArray(param.testValue) ? (param.testValue as string[]) : (param.testValue ? [String(param.testValue)] : []);
-    onUpdate({ testValue: [...currentTags, trimmed] });
-    if (tagInputRef.current) tagInputRef.current.value = '';
-    setTagTick(t => t + 1); // force re-render so the input stays clear
-  }
-
-  function removeTag(idx: number) {
-    onUpdate({ testValue: testTags.filter((_, i) => i !== idx) });
-  }
-
-  // When type changes, reset testValue and allowMultiple to sensible defaults
   function handleTypeChange(t: WorkflowParam['type']) {
     const patch: Partial<WorkflowParam> = { type: t };
     if (t === 'Boolean') patch.testValue = false;
     else if (t === 'Object') patch.testValue = '{}';
     else if (t === 'Array') patch.testValue = '[]';
     else patch.testValue = '';
-    if (t !== 'Text') patch.allowMultiple = false;
     onUpdate(patch);
     setTypeOpen(false);
   }
 
-  // Render the correct test-value input for each type
+  function setValidation(field: string, value: unknown) {
+    const next = { ...(param.validation ?? {}) };
+    if (value === '' || value === undefined || value === null) {
+      delete (next as Record<string, unknown>)[field];
+    } else {
+      (next as Record<string, unknown>)[field] = value;
+    }
+    onUpdate({ validation: Object.keys(next).length ? next : undefined });
+  }
+
+  const IN_LABELS: Record<string, string> = { path: 'path', query: 'query', body: 'body', header: 'header' };
+  const IN_COLORS: Record<string, string> = {
+    path:   'var(--bld-warning)',
+    query:  'var(--bld-info)',
+    body:   'var(--bld-accent)',
+    header: 'var(--bld-success)',
+  };
+  const inColor = IN_COLORS[param.in ?? ''] ?? 'var(--bld-text-disabled)';
+
   function renderTestValueInput() {
-    if (param.type === 'Text' && param.allowMultiple) {
-      // tagTick is read here only to force this function to re-run after a tag is added
-      void tagTick;
-      return (
-        <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 6px', background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 5, minHeight: 32, alignItems: 'center' }}>
-            {testTags.map((tag, ti) => (
-              <span key={ti} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--bld-bg-elevated)', color: 'var(--bld-accent)', borderRadius: 4, padding: '1px 6px', fontSize: 11 }}>
-                {tag}
-                <button type="button" onClick={e => { e.stopPropagation(); removeTag(ti); }} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>×</button>
-              </span>
-            ))}
-            <input
-              ref={tagInputRef}
-              style={{ flex: 1, minWidth: 60, background: 'transparent', border: 'none', outline: 'none', color: 'var(--bld-text-2)', fontSize: 11 }}
-              placeholder="Type and press Enter…"
-              onKeyDown={e => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  commitTagInput();
-                } else if (e.key === 'Backspace' && !(e.currentTarget as HTMLInputElement).value && testTags.length > 0) {
-                  removeTag(testTags.length - 1);
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); commitTagInput(); tagInputRef.current?.focus(); }}
-              style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
-              title="Add tag"
-            >+</button>
-          </div>
-          <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 2 }}>Press Enter or click + to add a chip</div>
-        </div>
-      );
-    }
-
     if (param.type === 'Text') {
-      return (
-        <input
-          style={S.fieldInput}
-          value={String(param.testValue ?? '')}
-          placeholder="Test text value…"
-          onChange={e => onUpdate({ testValue: e.target.value })}
-        />
-      );
+      return <input style={S.fieldInput} value={String(param.testValue ?? '')} placeholder="Test text value…" onChange={e => onUpdate({ testValue: e.target.value })} />;
     }
-
     if (param.type === 'Number') {
-      return (
-        <input
-          type="number"
-          style={S.fieldInput}
-          value={param.testValue === undefined || param.testValue === '' ? '' : String(param.testValue)}
-          placeholder="0"
-          onChange={e => onUpdate({ testValue: e.target.value === '' ? '' : Number(e.target.value) })}
-        />
-      );
+      return <input type="number" style={S.fieldInput} value={param.testValue === undefined || param.testValue === '' ? '' : String(param.testValue)} placeholder="0" onChange={e => onUpdate({ testValue: e.target.value === '' ? '' : Number(e.target.value) })} />;
     }
-
     if (param.type === 'Boolean') {
       const boolVal = param.testValue === true || param.testValue === 'true';
       return (
         <div style={{ display: 'flex', background: 'var(--bld-bg-input)', borderRadius: 5, padding: 2, gap: 2, marginTop: 2 }}>
           {[true, false].map(v => (
-            <button
-              key={String(v)}
-              type="button"
-              onClick={() => onUpdate({ testValue: v })}
-              style={{
-                flex: 1, padding: '5px 0', fontSize: 11, border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
+            <button key={String(v)} type="button" onClick={() => onUpdate({ testValue: v })}
+              style={{ flex: 1, padding: '5px 0', fontSize: 11, border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
                 background: boolVal === v ? (v ? 'rgba(34,197,94,0.2)' : 'rgba(248,113,113,0.2)') : 'transparent',
-                color: boolVal === v ? (v ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)',
-                transition: 'background 0.1s, color 0.1s',
-              }}
-            >
-              {v ? 'true' : 'false'}
-            </button>
+                color: boolVal === v ? (v ? 'var(--bld-success)' : 'var(--bld-error)') : 'var(--bld-text-disabled)' }}
+            >{v ? 'true' : 'false'}</button>
           ))}
         </div>
       );
     }
-
     if (param.type === 'Object' || param.type === 'Array') {
-      const strVal = typeof param.testValue === 'string'
-        ? param.testValue
-        : param.testValue !== undefined ? JSON.stringify(param.testValue, null, 2) : (param.type === 'Array' ? '[]' : '{}');
+      const strVal = typeof param.testValue === 'string' ? param.testValue : param.testValue !== undefined ? JSON.stringify(param.testValue, null, 2) : (param.type === 'Array' ? '[]' : '{}');
       return (
         <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid var(--bld-border-subtle)', marginTop: 2 }}>
-          <CodeMirror
-            value={strVal}
-            height="auto"
-            minHeight="70px"
-            maxHeight="160px"
-            extensions={[json()]}
-            theme={oneDark}
-            basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }}
-            style={{ fontSize: 11 }}
-            onChange={val => onUpdate({ testValue: val })}
-          />
+          <CodeMirror value={strVal} height="auto" minHeight="70px" maxHeight="160px" extensions={[json()]} theme={oneDark}
+            basicSetup={{ lineNumbers: false, foldGutter: false, highlightActiveLine: false }} style={{ fontSize: 11 }}
+            onChange={val => onUpdate({ testValue: val })} />
         </div>
       );
     }
-
     return null;
   }
 
+  function renderValidationRules() {
+    const v = param.validation ?? {};
+    const numInput = (field: string, placeholder: string) => (
+      <input type="number" style={{ ...S.fieldInput, width: '50%' }}
+        value={(v as Record<string, unknown>)[field] === undefined ? '' : String((v as Record<string, unknown>)[field])}
+        placeholder={placeholder}
+        onChange={e => setValidation(field, e.target.value === '' ? undefined : Number(e.target.value))}
+      />
+    );
+    const textInput = (field: string, placeholder: string) => (
+      <input style={S.fieldInput}
+        value={String((v as Record<string, unknown>)[field] ?? '')}
+        placeholder={placeholder}
+        onChange={e => setValidation(field, e.target.value || undefined)}
+      />
+    );
+    return (
+      <div style={{ marginTop: 8, padding: '8px', background: 'var(--bld-bg-base)', borderRadius: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {param.type === 'Text' && (
+          <>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...S.fieldLabel }}>Min length</label>
+                {numInput('minLength', '0')}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ ...S.fieldLabel }}>Max length</label>
+                {numInput('maxLength', '∞')}
+              </div>
+            </div>
+            <div>
+              <label style={S.fieldLabel}>Format</label>
+              <select style={S.fieldInput}
+                value={v.format ?? ''}
+                onChange={e => setValidation('format', e.target.value || undefined)}
+              >
+                <option value="">None</option>
+                <option value="email">Email</option>
+                <option value="url">URL</option>
+                <option value="uuid">UUID</option>
+              </select>
+            </div>
+            <div>
+              <label style={S.fieldLabel}>Pattern (regex)</label>
+              {textInput('pattern', '^[a-z]+$')}
+            </div>
+            <div>
+              <label style={S.fieldLabel}>Allowed values (comma-separated)</label>
+              <input style={S.fieldInput}
+                value={Array.isArray(v.enum) ? (v.enum as string[]).join(', ') : ''}
+                placeholder="admin, user, guest"
+                onChange={e => setValidation('enum', e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : undefined)}
+              />
+            </div>
+          </>
+        )}
+        {param.type === 'Number' && (
+          <>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ flex: 1 }}>
+                <label style={S.fieldLabel}>Min</label>
+                {numInput('min', '-∞')}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={S.fieldLabel}>Max</label>
+                {numInput('max', '+∞')}
+              </div>
+            </div>
+            <div>
+              <label style={S.fieldLabel}>Allowed values (comma-separated)</label>
+              <input style={S.fieldInput}
+                value={Array.isArray(v.enum) ? (v.enum as string[]).join(', ') : ''}
+                placeholder="1, 2, 3"
+                onChange={e => setValidation('enum', e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(Boolean) : undefined)}
+              />
+            </div>
+          </>
+        )}
+        {param.type === 'Array' && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ flex: 1 }}>
+              <label style={S.fieldLabel}>Min items</label>
+              {numInput('minItems', '0')}
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={S.fieldLabel}>Max items</label>
+              {numInput('maxItems', '∞')}
+            </div>
+          </div>
+        )}
+        {(param.type === 'Boolean' || param.type === 'Object') && (
+          <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', fontStyle: 'italic' }}>No extra rules for this type.</div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div style={{ marginBottom: 8, background: 'var(--bld-bg-panel)', border: '1px solid var(--bld-bg-input)', borderRadius: 6, overflow: 'visible', position: 'relative' }}>
+    <div style={{ marginBottom: 8, background: 'var(--bld-bg-panel)', border: `1px solid ${isPathParam ? 'var(--bld-warning)33' : 'var(--bld-bg-input)'}`, borderRadius: 6, overflow: 'visible', position: 'relative' }}>
       {/* Header row */}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', cursor: 'pointer', userSelect: 'none', borderRadius: expanded ? '6px 6px 0 0' : 6 }}
         onClick={() => setExpanded(v => !v)}
       >
         <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s' }}>▶</span>
+        {param.in && (
+          <span style={{ fontSize: 9, fontWeight: 700, color: inColor, background: `${inColor}22`, borderRadius: 3, padding: '1px 5px' }}>
+            {IN_LABELS[param.in]}
+          </span>
+        )}
         <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
           {PARAM_TYPE_ICONS[param.type] ?? 'T'}
         </span>
         <span style={{ flex: 1, fontSize: 11, color: param.name ? 'var(--bld-text-2)' : 'var(--bld-text-disabled)', fontStyle: param.name ? 'normal' : 'italic' }}>
           {param.name || 'Unnamed'}
+          {param.required && <span style={{ marginLeft: 3, color: 'var(--bld-error)', fontSize: 10 }}>*</span>}
         </span>
-        <button
-          type="button"
-          title="Remove parameter"
-          onClick={e => { e.stopPropagation(); onRemove(); }}
-          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
-        >
-          ×
-        </button>
+        {!isPathParam && (
+          <button type="button" title="Remove parameter" onClick={e => { e.stopPropagation(); onRemove(); }}
+            style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>×</button>
+        )}
       </div>
 
-      {/* Expanded body */}
       {expanded && (
-        <div style={{ padding: '0 8px 10px', borderTop: 'none' }}>
+        <div style={{ padding: '0 8px 10px' }}>
 
           {/* Name */}
           <label style={{ ...S.fieldLabel, marginTop: 8 }}>Name *</label>
-          <input
-            style={S.fieldInput}
-            value={param.name}
-            placeholder="e.g. username"
-            onChange={e => onUpdate({ name: e.target.value })}
-          />
+          <input style={isPathParam ? { ...S.fieldInput, background: 'var(--bld-bg-base)', color: 'var(--bld-text-disabled)', cursor: 'not-allowed' } : S.fieldInput}
+            value={param.name} placeholder="e.g. userId" readOnly={isPathParam}
+            onChange={e => !isPathParam && onUpdate({ name: e.target.value })} />
+
+          {/* Location — editable for non-path params */}
+          {param.in && !isPathParam && (
+            <>
+              <label style={{ ...S.fieldLabel, marginTop: 8 }}>Location</label>
+              <select
+                style={{ ...S.fieldInput, cursor: 'pointer' }}
+                value={param.in}
+                onChange={e => onUpdate({ in: e.target.value as WorkflowParam['in'] })}
+              >
+                <option value="query">query — URL query string (?key=val)</option>
+                <option value="body">body — request body (JSON)</option>
+                <option value="header">header — HTTP header</option>
+              </select>
+            </>
+          )}
 
           {/* Type */}
           <label style={{ ...S.fieldLabel, marginTop: 8 }}>Type *</label>
           <div style={{ position: 'relative' }}>
-            <button
-              ref={typeBtnRef}
-              type="button"
-              onClick={e => { e.stopPropagation(); setTypeOpen(v => !v); }}
-              style={{ ...S.fieldInput, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>
-                {PARAM_TYPE_ICONS[param.type]}
-              </span>
+            <button ref={typeBtnRef} type="button" onClick={e => { e.stopPropagation(); setTypeOpen(v => !v); }}
+              style={{ ...S.fieldInput, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--bld-bg-elevated)', color: 'var(--bld-info)', borderRadius: 3, padding: '1px 5px', fontFamily: 'monospace' }}>{PARAM_TYPE_ICONS[param.type]}</span>
               <span style={{ flex: 1, color: 'var(--bld-text-2)', fontSize: 11 }}>{param.type}</span>
               <span style={{ fontSize: 10, color: 'var(--bld-text-3)' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
             </button>
-            {/* Dropdown — absolute inside a no-overflow wrapper so it escapes the card */}
             {typeOpen && (
-              <div
-                ref={dropdownRef}
-                onClick={e => e.stopPropagation()}
-                style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0,
-                  zIndex: 99999, marginTop: 2,
-                  background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)',
-                  borderRadius: 6, overflow: 'hidden',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-                }}
-              >
+              <div ref={dropdownRef} onClick={e => e.stopPropagation()}
+                style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 99999, marginTop: 2, background: 'var(--bld-bg-input)', border: '1px solid var(--bld-border-subtle)', borderRadius: 6, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
                 {PARAM_TYPES.map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => handleTypeChange(t)}
+                  <button key={t} type="button" onClick={() => handleTypeChange(t)}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '7px 10px', background: param.type === t ? 'var(--bld-accent-subtle)' : 'transparent', border: 'none', color: param.type === t ? 'var(--bld-accent)' : 'var(--bld-text-2)', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}
                     onMouseEnter={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'var(--bld-bg-hover)'; }}
-                    onMouseLeave={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                  >
+                    onMouseLeave={e => { if (param.type !== t) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                     <span style={{ fontFamily: 'monospace', fontSize: 10, width: 28, textAlign: 'center', color: 'var(--bld-info)', background: 'var(--bld-bg-elevated)', borderRadius: 3, padding: '1px 4px' }}>{PARAM_TYPE_ICONS[t]}</span>
                     <span style={{ flex: 1 }}>{t}</span>
-                    {t === 'Text' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>abc</span>}
-                    {t === 'Number' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>123</span>}
-                    {t === 'Boolean' && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>true/false</span>}
-                    {(t === 'Object' || t === 'Array') && <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)' }}>JSON</span>}
                     {param.type === t && <span style={{ marginLeft: 4, color: 'var(--bld-accent)', fontSize: 10 }}>✓</span>}
                   </button>
                 ))}
@@ -776,32 +948,44 @@ function ParamEditor({
             )}
           </div>
 
-          {/* Allow multiple values — Text only (weWeb-style) */}
-          {param.type === 'Text' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, padding: '6px 8px', background: 'var(--bld-bg-base)', borderRadius: 5 }}>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>Allow multiple values</div>
-                <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}>Accepts a list of text values</div>
-              </div>
-              <div
-                onClick={() => onUpdate({ allowMultiple: !param.allowMultiple, testValue: param.allowMultiple ? '' : [] })}
-                style={{
-                  width: 32, height: 18, borderRadius: 9, cursor: 'pointer', flexShrink: 0,
-                  background: param.allowMultiple ? 'var(--bld-accent)' : 'var(--bld-border-subtle)',
-                  position: 'relative', transition: 'background 0.15s',
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 2, left: param.allowMultiple ? 16 : 2, width: 14, height: 14,
-                  borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.15s',
-                }} />
-              </div>
+          {/* Required toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, padding: '6px 8px', background: 'var(--bld-bg-base)', borderRadius: 5 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>Required</div>
+              <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}>Reject request if missing</div>
             </div>
-          )}
+            <div
+              onClick={() => !isPathParam && onUpdate({ required: !param.required })}
+              style={{ width: 32, height: 18, borderRadius: 9, cursor: isPathParam ? 'not-allowed' : 'pointer', flexShrink: 0, background: param.required ? 'var(--bld-accent)' : 'var(--bld-border-subtle)', position: 'relative', transition: 'background 0.15s', opacity: isPathParam ? 0.6 : 1 }}>
+              <div style={{ position: 'absolute', top: 2, left: param.required ? 16 : 2, width: 14, height: 14, borderRadius: '50%', background: 'var(--bld-accent-fg)', transition: 'left 0.15s' }} />
+            </div>
+          </div>
 
-          {/* Test value — type-specific input */}
+          {/* Description */}
+          <label style={{ ...S.fieldLabel, marginTop: 8 }}>Description</label>
+          <input style={S.fieldInput} value={param.description ?? ''} placeholder="Brief description for API docs…"
+            onChange={e => onUpdate({ description: e.target.value || undefined })} />
+
+          {/* Test value */}
           <label style={{ ...S.fieldLabel, marginTop: 10 }}>Test value</label>
           {renderTestValueInput()}
+
+          {/* Validation Rules collapsible */}
+          {param.type !== 'Boolean' && param.type !== 'Object' && (
+            <div style={{ marginTop: 10 }}>
+              <button type="button" onClick={() => setValidOpen(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--bld-text-2)', fontSize: 11, fontWeight: 600 }}>
+                <span style={{ fontSize: 9, transform: validOpen ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s', color: 'var(--bld-text-disabled)' }}>▶</span>
+                Validation rules
+                {param.validation && Object.keys(param.validation).length > 0 && (
+                  <span style={{ fontSize: 9, background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', borderRadius: 9, padding: '1px 5px' }}>
+                    {Object.keys(param.validation).length}
+                  </span>
+                )}
+              </button>
+              {validOpen && renderValidationRules()}
+            </div>
+          )}
 
         </div>
       )}
@@ -3465,13 +3649,15 @@ export function BoundField({
   const effectiveServerContext = serverContext ?? ctx.isServerContext;
   const effectiveParams = (formulaParams?.length ? formulaParams : ctx.params.length ? ctx.params : undefined);
   const effectiveParamsInQuick = paramsInQuick ?? (effectiveParams && effectiveParams.length > 0 ? true : undefined);
+  const effectiveWorkflowVars = ctx.workflowVars;
+  const effectiveIsInsideLoop = ctx.isInsideLoop;
 
   // Auto-migrate legacy $input.xxx plain strings to formula objects.
   // This is necessary for seeded/old workflows that stored bare "$input.password" etc.
   const migratedValue = React.useMemo<FormulaValue | undefined>(() => {
     if (typeof value === 'string') {
       const m = value.match(/^\$input\.(\w+)$/);
-      if (m) return { formula: `parameters?.['${m[1]}']` };
+      if (m) return { js: `parameters?.['${m[1]}']` };
     }
     return value;
   }, [value]);
@@ -3569,8 +3755,53 @@ export function BoundField({
           serverContext={effectiveServerContext}
           formulaParams={effectiveParams}
           paramsInQuick={effectiveParamsInQuick}
+          workflowVars={effectiveWorkflowVars}
+          isInsideLoop={effectiveIsInsideLoop}
         />
       )}
+    </>
+  );
+}
+
+/** Config panel for setRequestContext — MIDDLEWARE only.
+ *  Sets a named key in mwCtx.variables so it's merged into the downstream workflow's input.
+ *  Equivalent to `req.user = value` in Express middleware.
+ */
+function SetRequestContextConfig({
+  cfg,
+  setCfg,
+  workflowTrigger,
+}: {
+  cfg: Record<string, unknown>;
+  setCfg: (key: string, value: unknown) => void;
+  workflowTrigger?: string;
+}) {
+  const key = (cfg.key as string) ?? '';
+  const value = cfg.value as import('./_formula-editor').FormulaValue | undefined;
+  return (
+    <>
+      <label style={{ ...S.fieldLabel, marginTop: 10 }}>Key *</label>
+      <input
+        style={S.fieldInput}
+        value={key}
+        placeholder="e.g. __user, __role, __tenantId"
+        onChange={e => setCfg('key', e.target.value)}
+      />
+      {key && (
+        <div style={{ fontSize: 10, color: 'var(--bld-text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+          Available as <code style={{ fontSize: 10 }}>parameters?.[&apos;{key}&apos;]</code> in the downstream workflow
+        </div>
+      )}
+      <BoundField
+        label="Value *"
+        required
+        value={value}
+        onChange={v => setCfg('value', v)}
+        placeholder="Formula or literal"
+        workflowTrigger={workflowTrigger}
+        serverContext
+        paramsInQuick
+      />
     </>
   );
 }
@@ -3928,20 +4159,11 @@ function ParamBoundField({
   const strVal = !isBound ? (value as string) ?? '' : '';
   const preEditRef = useRef<FormulaValue | undefined>(value);
 
-  // Tag-chip input for Text + allowMultiple (uncontrolled ref, same as ParamEditor)
+  // Tag-chip input (kept for legacy data that may have array test values)
   const tagInputRef = useRef<HTMLInputElement>(null);
   const [tagTick, setTagTick] = React.useState(0);
   void tagTick; // consumed to trigger re-render after tag commit
-  const currentTagsFromValue = (): string[] => {
-    if (!isBound && param.type === 'Text' && param.allowMultiple) {
-      try {
-        const parsed = JSON.parse(strVal);
-        if (Array.isArray(parsed)) return parsed.map(String);
-      } catch { /* not JSON */ }
-      return strVal ? strVal.split(',').map(s => s.trim()).filter(Boolean) : [];
-    }
-    return [];
-  };
+  const currentTagsFromValue = (): string[] => [];
   const tags = currentTagsFromValue();
 
   function commitTag() {
@@ -3979,7 +4201,7 @@ function ParamBoundField({
       : param.type === 'Array' ? 'array'
       : 'string';
 
-  const isBlock = !isBound && (param.type === 'Object' || param.type === 'Array' || param.allowMultiple);
+  const isBlock = !isBound && (param.type === 'Object' || param.type === 'Array');
 
   return (
     <>
@@ -3993,9 +4215,6 @@ function ParamBoundField({
         </span>
         <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--bld-text-3)', flex: 1, margin: 0 }}>
           {param.name || 'Unnamed'}
-          {param.allowMultiple && (
-            <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--bld-text-disabled)' }}>(multi)</span>
-          )}
         </label>
       </div>
 
@@ -4072,48 +4291,6 @@ function ParamBoundField({
               style={{ fontSize: 11 }}
               onChange={val => onChange(val || undefined)}
             />
-          </div>
-
-        ) : param.allowMultiple ? (
-          /* Tag-chip input for Text + allowMultiple — Enter adds a chip */
-          <div style={{ flex: 1 }}>
-            {tags.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }} onClick={e => e.stopPropagation()}>
-                {tags.map((tag, i) => (
-                  <span
-                    key={`${tag}-${i}`}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 3,
-                      background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)',
-                      borderRadius: 4, padding: '2px 6px', fontSize: 11, color: 'var(--bld-accent)',
-                    }}
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={e => { e.stopPropagation(); removeTag(i); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 12 }}
-                    >×</button>
-                  </span>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-              <input
-                ref={tagInputRef}
-                style={{ ...S.fieldInput, flex: 1 }}
-                placeholder="Type and press Enter…"
-                onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); commitTag(); } }}
-              />
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); commitTag(); tagInputRef.current?.focus(); }}
-                style={{
-                  background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-accent)', borderRadius: 5,
-                  color: 'var(--bld-accent)', fontSize: 12, cursor: 'pointer', padding: '4px 8px', flexShrink: 0,
-                }}
-              >+</button>
-            </div>
           </div>
 
         ) : (
@@ -4406,12 +4583,13 @@ const SL = { ...S.fieldLabel, marginTop: 12 } as React.CSSProperties;
 
 /** Collapsible section with optional/incomplete status label */
 function CollapsibleSection({
-  title, status = 'Optional', defaultOpen = false, children,
+  title, status = 'Optional', defaultOpen = false, hasValue, children,
 }: {
-  title: string; status?: string; defaultOpen?: boolean; children: React.ReactNode;
+  title: string; status?: string; defaultOpen?: boolean; hasValue?: boolean; children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const color = status === 'Incomplete' ? 'var(--bld-warning)' : status === 'Optional' ? 'var(--bld-text-disabled)' : 'var(--bld-success)';
+  const effectiveStatus = hasValue && status === 'Optional' ? 'Set' : status;
+  const [open, setOpen] = useState(defaultOpen || !!hasValue);
+  const color = effectiveStatus === 'Incomplete' ? 'var(--bld-warning)' : effectiveStatus === 'Set' ? 'var(--bld-success)' : effectiveStatus === 'Optional' ? 'var(--bld-text-disabled)' : 'var(--bld-success)';
   return (
     <div style={{ marginTop: 14, border: '1px solid var(--bld-bg-elevated)', borderRadius: 6, overflow: 'hidden' }}>
       <div
@@ -4419,7 +4597,7 @@ function CollapsibleSection({
         onClick={() => setOpen(o => !o)}
       >
         <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--bld-text-2)' }}>{title}</span>
-        <span style={{ fontSize: 11, color, marginRight: 8 }}>{status}</span>
+        <span style={{ fontSize: 11, color, marginRight: 8 }}>{effectiveStatus}</span>
         <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>{open ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"block",flexShrink:0,transition:"transform 0.15s",transform:open?"rotate(180deg)":"rotate(0deg)"}}><polyline points="6 9 12 15 18 9"/></svg>}</span>
       </div>
       {open && (
@@ -4431,33 +4609,758 @@ function CollapsibleSection({
   );
 }
 
-/** Table picker dropdown — loads project tables on mount */
-function TablePicker({
+
+/** Model picker — lists model-first models (source of truth). */
+function ModelPicker({
   projectId, value, onChange,
 }: {
   projectId: string; value: string; onChange: (v: string) => void;
 }) {
-  const [tables, setTables] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
-    if (!projectId) return;
-    backendTables.list(projectId).then(res => {
-      setTables((res.tables ?? []).map((t: { id: string; name: string }) => ({ id: t.name, name: t.name })));
-    }).catch(() => {});
-  }, [projectId]);
+  const { models } = useBackendConfig(projectId);
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }}>
+      <option value="">Select a model…</option>
+      {models.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+    </select>
+  );
+}
+
+// ── ORM field-type → allowed Prisma filter operators ─────────────────────────
+const ORM_OPERATORS: Record<string, string[]> = {
+  text:      ['equals', 'not', 'contains', 'startsWith', 'endsWith', 'in', 'notIn', 'isNull'],
+  uuid:      ['equals', 'not', 'in', 'notIn', 'isNull'],
+  enum:      ['equals', 'not', 'in', 'notIn'],
+  file:      ['equals', 'not', 'isNull'],
+  int:       ['equals', 'not', 'gt', 'gte', 'lt', 'lte', 'in', 'notIn'],
+  bigint:    ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  decimal:   ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  float:     ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  money:     ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  bool:      ['equals', 'not'],
+  boolean:   ['equals', 'not'],
+  timestamp: ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  datetime:  ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+  date:      ['equals', 'not', 'gt', 'gte', 'lt', 'lte'],
+};
+function opsForField(fields: ModelFieldJson[], name: string): string[] {
+  const f = fields.find(f => f.name === name);
+  return ORM_OPERATORS[f?.type ?? 'text'] ?? ['equals', 'not'];
+}
+
+// Shared micro-styles for builders
+const BS = {
+  row: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 } as React.CSSProperties,
+  sel: { flex: '0 0 auto', background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '3px 5px', fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer', outline: 'none' } as React.CSSProperties,
+  inp: { flex: 1, minWidth: 0, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '3px 6px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none', width: '100%' } as React.CSSProperties,
+  del: { background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 13, padding: '0 2px', flexShrink: 0, lineHeight: 1 } as React.CSSProperties,
+  add: { fontSize: 11, color: 'var(--bld-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 } as React.CSSProperties,
+  adv: { fontSize: 11, color: 'var(--bld-text-disabled)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 } as React.CSSProperties,
+  andLabel: { fontSize: 10, color: 'var(--bld-text-disabled)', width: 28, flexShrink: 0, textAlign: 'center' as const },
+  numInp: { width: 64, background: 'var(--bld-bg-elevated)', border: '1px solid var(--bld-border-subtle)', borderRadius: 4, padding: '3px 6px', fontSize: 11, color: 'var(--bld-text-2)', outline: 'none' } as React.CSSProperties,
+};
+const AdvancedToggle = ({ onClick }: { onClick: () => void }) => (
+  <button onClick={onClick} style={BS.adv}>⌥ Advanced (formula)</button>
+);
+const VisualToggle = ({ onClick }: { onClick: () => void }) => (
+  <button onClick={onClick} style={{ ...BS.adv, color: 'var(--bld-accent)' }}>← Visual builder</button>
+);
+const BuilderFooter = ({ onAdd, addLabel, onAdvanced }: { onAdd?: () => void; addLabel?: string; onAdvanced: () => void }) => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+    {onAdd ? <button onClick={onAdd} style={BS.add}>{addLabel ?? '+ Add row'}</button> : <span />}
+    <AdvancedToggle onClick={onAdvanced} />
+  </div>
+);
+
+// ── Parse helpers ─────────────────────────────────────────────────────────────
+type KVRow = { id: string; field: string; op: string; value: string };
+
+function parseWhereToRows(val: FormulaValue | undefined): KVRow[] | null {
+  if (!val || typeof val !== 'string') return null;
+  try {
+    const obj = JSON.parse(val) as Record<string, unknown>;
+    if (typeof obj !== 'object' || Array.isArray(obj)) return null;
+    const rows: KVRow[] = [];
+    for (const [field, condition] of Object.entries(obj)) {
+      if (condition === null) { rows.push({ id: uid(), field, op: 'isNull', value: '' }); continue; }
+      if (typeof condition === 'object' && !Array.isArray(condition)) {
+        const entries = Object.entries(condition as Record<string, unknown>);
+        if (entries.length !== 1) return null;
+        const [op, opVal] = entries[0];
+        const valStr = Array.isArray(opVal) ? opVal.join(', ') : String(opVal ?? '');
+        rows.push({ id: uid(), field, op, value: valStr });
+      } else {
+        rows.push({ id: uid(), field, op: 'equals', value: String(condition) });
+      }
+    }
+    return rows.length > 0 ? rows : null;
+  } catch { return null; }
+}
+
+function serializeWhereRows(rows: KVRow[]): string | undefined {
+  const filled = rows.filter(r => r.field && r.op);
+  if (!filled.length) return undefined;
+  const obj: Record<string, unknown> = {};
+  for (const r of filled) {
+    if (r.op === 'isNull') { obj[r.field] = null; continue; }
+    if (r.op === 'in' || r.op === 'notIn') {
+      obj[r.field] = { [r.op]: r.value.split(',').map(s => s.trim()).filter(Boolean) };
+    } else {
+      obj[r.field] = { [r.op]: r.value };
+    }
+  }
+  return Object.keys(obj).length ? JSON.stringify(obj) : undefined;
+}
+
+function parseDataToRows(val: FormulaValue | undefined): KVRow[] | null {
+  if (!val || typeof val !== 'string') return null;
+  try {
+    const obj = JSON.parse(val) as Record<string, unknown>;
+    if (typeof obj !== 'object' || Array.isArray(obj)) return null;
+    return Object.entries(obj).map(([field, v]) => ({ id: uid(), field, op: '', value: String(v ?? '') }));
+  } catch { return null; }
+}
+
+function serializeDataRows(rows: KVRow[]): string | undefined {
+  const filled = rows.filter(r => r.field);
+  if (!filled.length) return undefined;
+  const obj: Record<string, unknown> = {};
+  for (const r of filled) {
+    const raw = r.value;
+    // try numeric / boolean coercion
+    if (raw === 'true') obj[r.field] = true;
+    else if (raw === 'false') obj[r.field] = false;
+    else if (raw !== '' && !isNaN(Number(raw))) obj[r.field] = Number(raw);
+    else obj[r.field] = raw;
+  }
+  return Object.keys(obj).length ? JSON.stringify(obj) : undefined;
+}
+
+type SortRow = { id: string; field: string; dir: 'asc' | 'desc' };
+function parseSortRows(val: FormulaValue | undefined): SortRow[] | null {
+  if (!val || typeof val !== 'string') return null;
+  try {
+    const obj = JSON.parse(val) as Record<string, string> | Array<Record<string, string>>;
+    const arr = Array.isArray(obj) ? obj : [obj];
+    return arr.map(o => {
+      const [field, dir] = Object.entries(o)[0] ?? [];
+      return { id: uid(), field: field ?? '', dir: (dir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc' };
+    }).filter(r => r.field);
+  } catch { return null; }
+}
+function serializeSortRows(rows: SortRow[]): string | undefined {
+  const filled = rows.filter(r => r.field);
+  if (!filled.length) return undefined;
+  if (filled.length === 1) return JSON.stringify({ [filled[0].field]: filled[0].dir });
+  return JSON.stringify(filled.map(r => ({ [r.field]: r.dir })));
+}
+
+// ── WhereBuilder ─────────────────────────────────────────────────────────────
+function WhereBuilder({ fields, value, onChange, workflowTrigger }: {
+  fields: ModelFieldJson[];
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const scalarFields = fields.filter(f => f.type !== 'relation');
+  const initialRows = React.useMemo(() => parseWhereToRows(value), []);
+  const isFormula = !!value && typeof value !== 'string';
+  const [adv, setAdv] = useState(isFormula || (!!value && !initialRows));
+  const [rows, setRows] = useState<KVRow[]>(initialRows ?? []);
+
+  const applyRows = (next: KVRow[]) => { setRows(next); onChange(serializeWhereRows(next)); };
+  const firstField = scalarFields[0]?.name ?? '';
+
+  if (adv) return (
+    <div>
+      <BoundField label="Where (Prisma filter object)" value={value} onChange={onChange} placeholder='{ "email": { "equals": input.email } }' workflowTrigger={workflowTrigger} serverContext />
+      <VisualToggle onClick={() => { const r = parseWhereToRows(value); setRows(r ?? []); setAdv(false); }} />
+    </div>
+  );
 
   return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }}
-    >
-      <option value="">Select a table…</option>
-      {tables.map(t => (
-        <option key={t.id} value={t.name}>
-          public • {t.name}
-        </option>
+    <div>
+      {rows.length === 0 && <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 6 }}>No conditions — returns all rows.</div>}
+      {rows.map((row, i) => {
+        const ops = opsForField(scalarFields, row.field);
+        const op = ops.includes(row.op) ? row.op : ops[0];
+        return (
+          <div key={row.id} style={BS.row}>
+            <span style={BS.andLabel}>{i === 0 ? '' : 'AND'}</span>
+            <select style={{ ...BS.sel, flex: '0 0 90px' }} value={row.field} onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, field: e.target.value, op: opsForField(scalarFields, e.target.value)[0] } : r))}>
+              {scalarFields.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+            </select>
+            <select style={{ ...BS.sel, flex: '0 0 80px' }} value={op} onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, op: e.target.value } : r))}>
+              {ops.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            {op !== 'isNull' && <input style={BS.inp} value={row.value} placeholder="value or input.field" onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, value: e.target.value } : r))} />}
+            <button style={BS.del} onClick={() => applyRows(rows.filter((_, j) => j !== i))}>✕</button>
+          </div>
+        );
+      })}
+      <BuilderFooter onAdd={() => applyRows([...rows, { id: uid(), field: firstField, op: opsForField(scalarFields, firstField)[0], value: '' }])} addLabel="+ Add condition" onAdvanced={() => setAdv(true)} />
+    </div>
+  );
+}
+
+// ── DataBuilder ───────────────────────────────────────────────────────────────
+function DataBuilder({ fields, value, onChange, workflowTrigger, label = 'Data' }: {
+  fields: ModelFieldJson[];
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+  label?: string;
+}) {
+  const writableFields = fields.filter(f => f.type !== 'relation' && !['id'].includes(f.name));
+  const initialRows = React.useMemo(() => parseDataToRows(value), []);
+  const isFormula = !!value && typeof value !== 'string';
+  const [adv, setAdv] = useState(isFormula || (!!value && !initialRows));
+  const [rows, setRows] = useState<KVRow[]>(initialRows ?? []);
+
+  const applyRows = (next: KVRow[]) => { setRows(next); onChange(serializeDataRows(next)); };
+  const firstField = writableFields[0]?.name ?? '';
+
+  if (adv) return (
+    <div>
+      <BoundField label={`${label} (field values object)`} value={value} onChange={onChange} placeholder='{ "title": input.title, "price": 9.99 }' workflowTrigger={workflowTrigger} serverContext />
+      <VisualToggle onClick={() => { const r = parseDataToRows(value); setRows(r ?? []); setAdv(false); }} />
+    </div>
+  );
+
+  return (
+    <div>
+      {rows.length === 0 && <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 6 }}>No fields set.</div>}
+      {rows.map((row, i) => (
+        <div key={row.id} style={BS.row}>
+          <select style={{ ...BS.sel, flex: '0 0 100px' }} value={row.field} onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, field: e.target.value } : r))}>
+            <option value="">field…</option>
+            {writableFields.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+          </select>
+          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>=</span>
+          <input style={BS.inp} value={row.value} placeholder="value or input.field" onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, value: e.target.value } : r))} />
+          <button style={BS.del} onClick={() => applyRows(rows.filter((_, j) => j !== i))}>✕</button>
+        </div>
       ))}
-    </select>
+      <BuilderFooter onAdd={() => applyRows([...rows, { id: uid(), field: firstField, op: '', value: '' }])} addLabel="+ Add field" onAdvanced={() => setAdv(true)} />
+    </div>
+  );
+}
+
+// ── OrderBuilder ──────────────────────────────────────────────────────────────
+function OrderBuilder({ fields, orderBy, take, skip, onOrderBy, onTake, onSkip, workflowTrigger }: {
+  fields: ModelFieldJson[];
+  orderBy: FormulaValue | undefined;
+  take: FormulaValue | undefined;
+  skip: FormulaValue | undefined;
+  onOrderBy: (v: FormulaValue | undefined) => void;
+  onTake: (v: FormulaValue | undefined) => void;
+  onSkip: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const sortableFields = fields.filter(f => f.type !== 'relation');
+  const initialRows = React.useMemo(() => parseSortRows(orderBy), []);
+  const isFormula = !!orderBy && typeof orderBy !== 'string';
+  const [adv, setAdv] = useState(isFormula || (!!orderBy && !initialRows));
+  const [rows, setRows] = useState<SortRow[]>(initialRows ?? []);
+
+  const applyRows = (next: SortRow[]) => { setRows(next); onOrderBy(serializeSortRows(next)); };
+  const firstField = sortableFields[0]?.name ?? '';
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 4, fontWeight: 600 }}>Sort by</div>
+      {adv ? (
+        <div>
+          <BoundField label="Order by (Prisma orderBy object)" value={orderBy} onChange={onOrderBy} placeholder='{ "createdAt": "desc" }' workflowTrigger={workflowTrigger} serverContext />
+          <VisualToggle onClick={() => { const r = parseSortRows(orderBy); setRows(r ?? []); setAdv(false); }} />
+        </div>
+      ) : (
+        <>
+          {rows.length === 0 && <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', marginBottom: 4 }}>No sort — default order.</div>}
+          {rows.map((row, i) => (
+            <div key={row.id} style={BS.row}>
+              <select style={{ ...BS.sel, flex: 1 }} value={row.field} onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, field: e.target.value } : r))}>
+                {sortableFields.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+              </select>
+              <select style={{ ...BS.sel, flex: '0 0 50px' }} value={row.dir} onChange={e => applyRows(rows.map((r, j) => j === i ? { ...r, dir: e.target.value as 'asc' | 'desc' } : r))}>
+                <option value="asc">asc</option>
+                <option value="desc">desc</option>
+              </select>
+              <button style={BS.del} onClick={() => applyRows(rows.filter((_, j) => j !== i))}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, marginBottom: 8 }}>
+            <button onClick={() => applyRows([...rows, { id: uid(), field: firstField, dir: 'asc' }])} style={BS.add}>+ Add sort</button>
+            <AdvancedToggle onClick={() => setAdv(true)} />
+          </div>
+        </>
+      )}
+      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 3 }}>Take (limit)</div>
+          <input style={BS.numInp} type="text" value={typeof take === 'string' ? take : ''} placeholder="e.g. 25" onChange={e => onTake(e.target.value || undefined)} />
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 3 }}>Skip (offset)</div>
+          <input style={BS.numInp} type="text" value={typeof skip === 'string' ? skip : ''} placeholder="e.g. 0" onChange={e => onSkip(e.target.value || undefined)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CursorDistinctBuilder ─────────────────────────────────────────────────────
+function CursorDistinctBuilder({ fields, cursor, distinct, onCursor, onDistinct, workflowTrigger }: {
+  fields: ModelFieldJson[];
+  cursor: FormulaValue | undefined;
+  distinct: FormulaValue | undefined;
+  onCursor: (v: FormulaValue | undefined) => void;
+  onDistinct: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const scalarFields = fields.filter(f => f.type !== 'relation');
+  const [cursorField, setCursorField] = useState(() => {
+    if (!cursor || typeof cursor !== 'string') return scalarFields[0]?.name ?? '';
+    try { return Object.keys(JSON.parse(cursor))[0] ?? scalarFields[0]?.name ?? ''; } catch { return scalarFields[0]?.name ?? ''; }
+  });
+  const [cursorVal, setCursorVal] = useState(() => {
+    if (!cursor || typeof cursor !== 'string') return '';
+    try { return String(Object.values(JSON.parse(cursor))[0] ?? ''); } catch { return ''; }
+  });
+
+  const applyDistinct = (checked: boolean, name: string) => {
+    let arr: string[] = [];
+    if (typeof distinct === 'string') { try { arr = JSON.parse(distinct) as string[]; } catch { arr = []; } }
+    const next = checked ? [...arr.filter(x => x !== name), name] : arr.filter(x => x !== name);
+    onDistinct(next.length ? JSON.stringify(next) : undefined);
+  };
+  const distinctArr: string[] = typeof distinct === 'string' ? (() => { try { return JSON.parse(distinct) as string[]; } catch { return []; } })() : [];
+
+  const applyCursor = (field: string, val: string) => {
+    if (!field || !val) { onCursor(undefined); return; }
+    onCursor(JSON.stringify({ [field]: val }));
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Cursor — start after</div>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+        <select style={{ ...BS.sel, flex: '0 0 90px' }} value={cursorField} onChange={e => { setCursorField(e.target.value); applyCursor(e.target.value, cursorVal); }}>
+          {scalarFields.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+        </select>
+        <input style={BS.inp} value={cursorVal} placeholder="value or input.lastId" onChange={e => { setCursorVal(e.target.value); applyCursor(cursorField, e.target.value); }} />
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Distinct on fields</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {scalarFields.map(f => (
+          <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={distinctArr.includes(f.name)} onChange={e => applyDistinct(e.target.checked, f.name)} />
+            {f.name}
+          </label>
+        ))}
+        {scalarFields.length === 0 && <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>No fields available</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── IncludeSelectBuilder ──────────────────────────────────────────────────────
+function IncludeSelectBuilder({ fields, include, select, onInclude, onSelect, workflowTrigger }: {
+  fields: ModelFieldJson[];
+  include: FormulaValue | undefined;
+  select: FormulaValue | undefined;
+  onInclude: (v: FormulaValue | undefined) => void;
+  onSelect: (v: FormulaValue | undefined) => void;
+  workflowTrigger?: string;
+}) {
+  const relations = fields.filter(f => f.type === 'relation');
+  const scalars = fields.filter(f => f.type !== 'relation');
+
+  const parseChecked = (val: FormulaValue | undefined): Record<string, boolean> => {
+    if (!val || typeof val !== 'string') return {};
+    try { return JSON.parse(val) as Record<string, boolean>; } catch { return {}; }
+  };
+  const [advInclude, setAdvInclude] = useState(!!include && typeof include !== 'string');
+  const [advSelect, setAdvSelect] = useState(!!select && typeof select !== 'string');
+
+  const includeMap = parseChecked(include);
+  const selectMap = parseChecked(select);
+
+  const toggleInclude = (name: string, checked: boolean) => {
+    const next = { ...includeMap };
+    if (checked) next[name] = true; else delete next[name];
+    onInclude(Object.keys(next).length ? JSON.stringify(next) : undefined);
+  };
+  const toggleSelect = (name: string, checked: boolean) => {
+    const next = { ...selectMap };
+    if (checked) next[name] = true; else delete next[name];
+    onSelect(Object.keys(next).length ? JSON.stringify(next) : undefined);
+  };
+
+  return (
+    <div>
+      {relations.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Include relations</div>
+          {advInclude ? (
+            <div>
+              <BoundField label="Include" value={include} onChange={onInclude} placeholder='{ "author": true }' workflowTrigger={workflowTrigger} serverContext />
+              <VisualToggle onClick={() => setAdvInclude(false)} />
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {relations.map(f => (
+                  <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!includeMap[f.name]} onChange={e => toggleInclude(f.name, e.target.checked)} />
+                    {f.name}
+                  </label>
+                ))}
+              </div>
+              <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end' }}><AdvancedToggle onClick={() => setAdvInclude(true)} /></div>
+            </div>
+          )}
+        </div>
+      )}
+      <div>
+        <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Select fields (overrides include)</div>
+        {advSelect ? (
+          <div>
+            <BoundField label="Select" value={select} onChange={onSelect} placeholder='{ "id": true, "title": true }' workflowTrigger={workflowTrigger} serverContext />
+            <VisualToggle onClick={() => setAdvSelect(false)} />
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {scalars.map(f => (
+                <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!selectMap[f.name]} onChange={e => toggleSelect(f.name, e.target.checked)} />
+                  {f.name}
+                </label>
+              ))}
+            </div>
+            <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end' }}><AdvancedToggle onClick={() => setAdvSelect(true)} /></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AggregateBuilder ─────────────────────────────────────────────────────────
+function AggregateBuilder({ fields, cfg, setCfg }: {
+  fields: ModelFieldJson[];
+  cfg: Record<string, unknown>;
+  setCfg: (k: string, v: unknown) => void;
+}) {
+  const numericFields = fields.filter(f => ['int', 'bigint', 'decimal', 'float', 'money'].includes(f.type));
+
+  const parseFields = (val: unknown): string[] => {
+    if (!val || typeof val !== 'string') return [];
+    try { const o = JSON.parse(val) as Record<string, boolean>; return Object.keys(o).filter(k => o[k]); } catch { return []; }
+  };
+  const toggle = (key: string, name: string, checked: boolean) => {
+    const cur = parseFields(cfg[key]);
+    const next = checked ? [...cur.filter(x => x !== name), name] : cur.filter(x => x !== name);
+    setCfg(key, next.length ? JSON.stringify(Object.fromEntries(next.map(n => [n, true]))) : undefined);
+  };
+
+  const aggKeys = ['_sum', '_avg', '_min', '_max'] as const;
+
+  return (
+    <div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--bld-text-2)', marginBottom: 8, cursor: 'pointer' }}>
+        <input type="checkbox" checked={!!cfg._count} onChange={e => setCfg('_count', e.target.checked ? 'true' : undefined)} />
+        <span>_count (total row count)</span>
+      </label>
+      {numericFields.length > 0 && aggKeys.map(key => (
+        <div key={key} style={{ marginBottom: 6 }}>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 3 }}>{key} fields</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {numericFields.map(f => (
+              <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={parseFields(cfg[key]).includes(f.name)} onChange={e => toggle(key, f.name, e.target.checked)} />
+                {f.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      {numericFields.length === 0 && <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>No numeric fields for sum/avg/min/max.</div>}
+    </div>
+  );
+}
+
+// ── GroupByBuilder ───────────────────────────────────────────────────────────
+function GroupByBuilder({ fields, value, onChange }: {
+  fields: ModelFieldJson[];
+  value: FormulaValue | undefined;
+  onChange: (v: FormulaValue | undefined) => void;
+}) {
+  const scalarFields = fields.filter(f => f.type !== 'relation');
+  const [adv, setAdv] = useState(!!value && typeof value !== 'string');
+
+  const parseArr = (v: FormulaValue | undefined): string[] => {
+    if (!v || typeof v !== 'string') return [];
+    try { return JSON.parse(v) as string[]; } catch { return []; }
+  };
+  const checked = parseArr(value);
+
+  const toggle = (name: string, on: boolean) => {
+    const next = on ? [...checked.filter(x => x !== name), name] : checked.filter(x => x !== name);
+    onChange(next.length ? JSON.stringify(next) : undefined);
+  };
+
+  if (adv) return (
+    <div>
+      <BoundField label="By fields (array)" value={value} onChange={onChange} placeholder='["status", "category"]' serverContext />
+      <VisualToggle onClick={() => setAdv(false)} />
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {scalarFields.map(f => (
+          <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--bld-text-2)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={checked.includes(f.name)} onChange={e => toggle(f.name, e.target.checked)} />
+            {f.name}
+          </label>
+        ))}
+      </div>
+      <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end' }}><AdvancedToggle onClick={() => setAdv(true)} /></div>
+    </div>
+  );
+}
+
+/**
+ * OrmStepConfig — config panel for all model-first ORM workflow steps.
+ * Covers findMany/findOne/create/update/updateMany/delete/deleteMany/upsert/count/aggregate/groupBy
+ * with full Prisma API parity: where, data, orderBy, take/skip, cursor, distinct, include/_count,
+ * select, aggregate functions, groupBy, having, hardDelete, includeTrashed.
+ */
+function OrmStepConfig({
+  kind, cfg, setCfg, projectId, workflowTrigger,
+}: {
+  kind: string;
+  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
+  projectId?: string; workflowTrigger?: string;
+}) {
+  const WRITE_KINDS = ['ormCreate', 'ormCreateMany', 'ormUpdate', 'ormUpdateMany', 'ormUpsert'];
+  const show = {
+    where: ['ormFindMany', 'ormFindOne', 'ormUpdate', 'ormUpdateMany', 'ormDelete', 'ormDeleteMany', 'ormUpsert', 'ormCount', 'ormAggregate', 'ormGroupBy'].includes(kind),
+    data: ['ormCreate', 'ormUpdate', 'ormUpdateMany'].includes(kind),
+    createMany: kind === 'ormCreateMany',
+    createUpdate: kind === 'ormUpsert',
+    orderTakeSkip: ['ormFindMany', 'ormGroupBy'].includes(kind),
+    includeSelect: ['ormFindMany', 'ormFindOne', 'ormCreate', 'ormUpdate', 'ormUpsert'].includes(kind),
+    search: kind === 'ormFindMany',
+    cursorDistinct: kind === 'ormFindMany',
+    includeTrashed: ['ormFindMany', 'ormFindOne'].includes(kind),
+    hardDelete: ['ormDelete', 'ormDeleteMany'].includes(kind),
+    aggregate: kind === 'ormAggregate',
+    groupBy: kind === 'ormGroupBy',
+  };
+
+  // Model definitions from shared cache — no extra fetch needed.
+  const { models: allModels } = useBackendConfig(projectId);
+
+  const selectedModel = (cfg.model as string) ?? '';
+  const modelFields: ModelFieldJson[] = allModels.find(m => m.name === selectedModel)?.fields ?? [];
+
+  // hasValue helpers for accordion badge/auto-open
+  const hasWhere   = !!cfg.where;
+  const hasData    = !!cfg.data;
+  const hasCreate  = !!(cfg.create || cfg.update);
+  const hasOrder   = !!(cfg.orderBy || cfg.take || cfg.skip);
+  const hasCursor  = !!(cfg.cursor || cfg.distinct);
+  const hasSearch  = !!cfg.search;
+  const hasInclude = !!(cfg.include || cfg.select);
+  const hasAgg     = !!(cfg._count || cfg._sum || cfg._avg || cfg._min || cfg._max);
+  const hasGroupBy = !!(cfg.by || cfg.having);
+
+  return (
+    <>
+      <label style={SL}>Model *</label>
+      <ModelPicker projectId={projectId ?? ''} value={selectedModel} onChange={v => setCfg('model', v)} />
+
+      {show.where && (
+        <CollapsibleSection title="Where" status="Optional" hasValue={hasWhere} defaultOpen={['ormFindOne', 'ormUpdate', 'ormDelete'].includes(kind)}>
+          <WhereBuilder
+            fields={modelFields}
+            value={cfg.where as FormulaValue | undefined}
+            onChange={v => setCfg('where', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.data && (
+        <CollapsibleSection title="Data" status={hasData ? 'Optional' : 'Incomplete'} hasValue={hasData} defaultOpen>
+          <DataBuilder
+            fields={modelFields}
+            value={cfg.data as FormulaValue | undefined}
+            onChange={v => setCfg('data', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.createMany && (
+        <CollapsibleSection title="Data (array)" status={!!cfg.data ? 'Optional' : 'Incomplete'} hasValue={!!cfg.data} defaultOpen>
+          <BoundField
+            label="Records array"
+            required
+            value={cfg.data as FormulaValue | undefined}
+            onChange={v => setCfg('data', v)}
+            placeholder='[{ "title": "..." }, { "title": "..." }]'
+            workflowTrigger={workflowTrigger}
+            serverContext
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <OnOffToggle value={(cfg.skipDuplicates as boolean) ?? false} onChange={v => setCfg('skipDuplicates', v)} />
+            <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Skip duplicates (ON CONFLICT DO NOTHING)</span>
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--bld-text-disabled)' }}>
+            Returns: <code style={{ fontSize: 10 }}>{'{ count: N }'}</code>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {show.createUpdate && (
+        <CollapsibleSection title="Create / Update" hasValue={hasCreate} defaultOpen>
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Create (when record not found)</div>
+          <DataBuilder
+            fields={modelFields}
+            value={cfg.create as FormulaValue | undefined}
+            onChange={v => setCfg('create', v)}
+            workflowTrigger={workflowTrigger}
+            label="Create"
+          />
+          <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginTop: 10, marginBottom: 4 }}>Update (when record found)</div>
+          <DataBuilder
+            fields={modelFields}
+            value={cfg.update as FormulaValue | undefined}
+            onChange={v => setCfg('update', v)}
+            workflowTrigger={workflowTrigger}
+            label="Update"
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.orderTakeSkip && (
+        <CollapsibleSection title="Order / Pagination" status="Optional" hasValue={hasOrder}>
+          <OrderBuilder
+            fields={modelFields}
+            orderBy={cfg.orderBy as FormulaValue | undefined}
+            take={cfg.take as FormulaValue | undefined}
+            skip={cfg.skip as FormulaValue | undefined}
+            onOrderBy={v => setCfg('orderBy', v)}
+            onTake={v => setCfg('take', v)}
+            onSkip={v => setCfg('skip', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.cursorDistinct && (
+        <CollapsibleSection title="Cursor / Distinct" status="Optional" hasValue={hasCursor}>
+          <CursorDistinctBuilder
+            fields={modelFields}
+            cursor={cfg.cursor as FormulaValue | undefined}
+            distinct={cfg.distinct as FormulaValue | undefined}
+            onCursor={v => setCfg('cursor', v)}
+            onDistinct={v => setCfg('distinct', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.search && (
+        <CollapsibleSection title="Search" status="Optional" hasValue={hasSearch}>
+          <BoundField label="Full-text search" value={cfg.search as FormulaValue | undefined} onChange={v => setCfg('search', v)} placeholder="search term" workflowTrigger={workflowTrigger} serverContext />
+        </CollapsibleSection>
+      )}
+
+      {show.includeSelect && (
+        <CollapsibleSection title="Include / Select" status="Optional" hasValue={hasInclude}>
+          <IncludeSelectBuilder
+            fields={modelFields}
+            include={cfg.include as FormulaValue | undefined}
+            select={cfg.select as FormulaValue | undefined}
+            onInclude={v => setCfg('include', v)}
+            onSelect={v => setCfg('select', v)}
+            workflowTrigger={workflowTrigger}
+          />
+        </CollapsibleSection>
+      )}
+
+      {show.includeTrashed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
+          <OnOffToggle value={(cfg.includeTrashed as boolean) ?? false} onChange={v => setCfg('includeTrashed', v)} />
+          <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Include soft-deleted rows</span>
+        </div>
+      )}
+
+      {show.hardDelete && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
+          <OnOffToggle value={(cfg.hardDelete as boolean) ?? false} onChange={v => setCfg('hardDelete', v)} />
+          <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Hard delete (bypass soft-delete)</span>
+        </div>
+      )}
+
+      {show.aggregate && (
+        <CollapsibleSection title="Aggregate functions" defaultOpen hasValue={hasAgg}>
+          <AggregateBuilder fields={modelFields} cfg={cfg} setCfg={setCfg} />
+        </CollapsibleSection>
+      )}
+
+      {show.groupBy && (
+        <>
+          <CollapsibleSection title="Group by" defaultOpen hasValue={hasGroupBy}>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 600, marginBottom: 4 }}>Group by fields *</div>
+              <GroupByBuilder fields={modelFields} value={cfg.by as FormulaValue | undefined} onChange={v => setCfg('by', v)} />
+            </div>
+            <BoundField
+              label="Having (post-group filter)"
+              value={cfg.having as FormulaValue | undefined}
+              onChange={v => setCfg('having', v)}
+              placeholder='{ "_count": { "id": { "gt": 5 } } }'
+              workflowTrigger={workflowTrigger}
+              serverContext
+            />
+            <BoundField
+              label="Order by (supports aggregate keys)"
+              value={cfg.orderBy as FormulaValue | undefined}
+              onChange={v => setCfg('orderBy', v)}
+              placeholder='{ "_count": { "id": "desc" } }'
+              workflowTrigger={workflowTrigger}
+              serverContext
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 3 }}>Take</div>
+                <input style={BS.numInp} type="text" value={typeof cfg.take === 'string' ? cfg.take : ''} placeholder="25" onChange={e => setCfg('take', e.target.value || undefined)} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--bld-text-3)', marginBottom: 3 }}>Skip</div>
+                <input style={BS.numInp} type="text" value={typeof cfg.skip === 'string' ? cfg.skip : ''} placeholder="0" onChange={e => setCfg('skip', e.target.value || undefined)} />
+              </div>
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="Aggregate functions" status="Optional" hasValue={hasAgg}>
+            <AggregateBuilder fields={modelFields} cfg={cfg} setCfg={setCfg} />
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* Raw SQL escape hatch hint for Server Code */}
+      {WRITE_KINDS.includes(kind) && (
+        <div style={{ marginTop: 8, padding: '7px 10px', background: 'rgba(79,70,229,0.07)', borderRadius: 6, fontSize: 11, color: 'var(--bld-text-disabled)' }}>
+          For raw SQL, use a <strong>Server Code</strong> step with <code>orm.$queryRawUnsafe(sql)</code>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -4527,12 +5430,12 @@ type RawFilter = { column?: string; field?: string; operator?: string; value?: u
 
 function migrateFilterValue(v: unknown): FormulaValue {
   if (typeof v === 'string') {
-    // Auto-migrate old $input.xxx syntax → parameters formula object
+    // Auto-migrate old $input.xxx syntax → parameters js binding
     const m = v.match(/^\$input\.(\w+)$/);
-    if (m) return { formula: `parameters?.['${m[1]}']` };
+    if (m) return { js: `parameters?.['${m[1]}']` };
     return v;
   }
-  if (v != null && typeof v === 'object' && 'formula' in v) return v as { formula: string };
+  if (v != null && typeof v === 'object' && ('formula' in v || 'js' in v)) return v as { js: string };
   if (v != null) return JSON.stringify(v);
   return '';
 }
@@ -4556,401 +5459,6 @@ function initConditions(cfg: Record<string, unknown>): FilterCondition[] {
   const ui = cfg.filterConditions as FilterCondition[] | undefined;
   if (ui?.length) return ui;
   return filtersToConditions(cfg.filters as RawFilter[] | undefined);
-}
-
-// ─── TablesListConfig (Get rows) ──────────────────────────────────────────────
-
-function TablesListConfig({
-  cfg, setCfg, step, projectId, workflowTrigger, formulaParams,
-}: {
-  cfg: Record<string, unknown>;
-  setCfg: (k: string, v: unknown) => void;
-  step: ActionStep;
-  projectId?: string;
-  workflowTrigger?: string;
-  formulaParams?: GlobalFormulaParam[];
-}) {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
-  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
-  const [sorts, setSorts] = useState<SortSpec[]>((cfg.sorts as SortSpec[]) ?? []);
-  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
-  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
-  const [pendingSorts, setPendingSorts] = useState<SortSpec[]>([]);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
-  const sortBtnRef = useRef<HTMLButtonElement>(null);
-  const pagEnabled = (cfg.paginationEnabled as boolean) ?? false;
-
-  return (
-    <>
-      <label style={SL}>Table *</label>
-      <TablePicker
-        projectId={projectId ?? ''}
-        value={(cfg.table as string) ?? ''}
-        onChange={v => setCfg('table', v)}
-      />
-
-      <CollapsibleSection title="Data" status="Optional">
-        <label style={SL}>Columns</label>
-        <select style={{ ...S.fieldInput, marginTop: 4, cursor: 'pointer' }} value={(cfg.columns as string) ?? 'all'} onChange={e => setCfg('columns', e.target.value)}>
-          <option value="all">All columns</option>
-          <option value="custom">Custom selection</option>
-        </select>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Filters & Sort" status="Optional">
-        <div style={{ marginBottom: 6 }}>
-          <button
-            ref={filterBtnRef}
-            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); setSortOpen(false); }}
-            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter {conditions.length + groups.length > 0 ? `(${conditions.length + groups.length})` : ''}
-          </button>
-          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
-            <FilterPanel
-              conditions={pendingConditions}
-              groups={pendingGroups}
-              allCols={[]}
-              onChange={setPendingConditions}
-              onChangeGroups={setPendingGroups}
-              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
-              onSave={() => {
-                setConditions(pendingConditions);
-                setGroups(pendingGroups);
-                setCfg('filterConditions', pendingConditions);
-                setCfg('filterGroups', pendingGroups);
-                setCfg('filters', conditionsToFilters(pendingConditions));
-                setFilterOpen(false);
-              }}
-              renderValue={formulaParams?.length
-                ? (val, onChg) => (
-                    <BoundField
-                      label=""
-                      value={val}
-                      onChange={onChg}
-                      workflowTrigger={workflowTrigger}
-                      serverContext
-                      formulaParams={formulaParams}
-                      paramsInQuick
-                      anchorRight={292}
-                    />
-                  )
-                : undefined}
-            />
-          </FloatingAnchor>
-        </div>
-        <div>
-          <button
-            ref={sortBtnRef}
-            onClick={() => { setPendingSorts([...sorts]); setSortOpen(o => !o); setFilterOpen(false); }}
-            style={{ ...S.toggleBtn(sorts.length > 0), width: '100%', justifyContent: 'flex-start' }}
-          >
-            ↕ Configure Sort {sorts.length > 0 ? `(${sorts.length})` : ''}
-          </button>
-          <FloatingAnchor open={sortOpen} anchorRef={sortBtnRef} minWidth={400}>
-            <SortPanel
-              pending={pendingSorts}
-              allCols={[]}
-              onChange={setPendingSorts}
-              onReset={() => setPendingSorts([])}
-              onSave={() => {
-                setSorts(pendingSorts);
-                setCfg('sorts', pendingSorts);
-                setSortOpen(false);
-              }}
-            />
-          </FloatingAnchor>
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Pagination" status={pagEnabled ? 'Optional' : 'Optional'}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--bld-text-3)' }}>Enable pagination</span>
-          <OnOffToggle value={pagEnabled} onChange={v => setCfg('paginationEnabled', v)} />
-        </div>
-        {pagEnabled && (
-          <>
-            <BoundField
-              label="Limit"
-              value={cfg.limit as FormulaValue | undefined}
-              onChange={v => setCfg('limit', v)}
-              placeholder="Number of records to return"
-              workflowTrigger={workflowTrigger}
-            />
-            <BoundField
-              label="Offset"
-              value={cfg.offset as FormulaValue | undefined}
-              onChange={v => setCfg('offset', v)}
-              placeholder="Number of records to skip"
-              workflowTrigger={workflowTrigger}
-            />
-            <label style={SL}>Include Total Count</label>
-            <OnOffToggle
-              value={(cfg.includeTotalCount as boolean) ?? false}
-              onChange={v => setCfg('includeTotalCount', v)}
-            />
-          </>
-        )}
-      </CollapsibleSection>
-    </>
-  );
-}
-
-// ─── TablesInsertConfig ───────────────────────────────────────────────────────
-
-function TablesInsertConfig({
-  cfg, setCfg, projectId, workflowTrigger,
-}: {
-  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
-  projectId?: string; workflowTrigger?: string;
-}) {
-  const insertMode = (cfg.insertMode as string) ?? 'single';
-  return (
-    <>
-      <label style={SL}>Table *</label>
-      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
-
-      <label style={SL}>Insert mode</label>
-      <div style={S.toggleGroup}>
-        <button style={S.toggleBtn(insertMode === 'single')} onClick={() => setCfg('insertMode', 'single')}>Single</button>
-        <button style={S.toggleBtn(insertMode === 'multiple')} onClick={() => setCfg('insertMode', 'multiple')}>Multiple</button>
-      </div>
-
-      <CollapsibleSection title="Data" status={cfg.data ? 'Optional' : 'Incomplete'} defaultOpen>
-        <BoundField
-          label="Data"
-          required
-          value={cfg.data as FormulaValue | undefined}
-          onChange={v => setCfg('data', v)}
-          placeholder="Record data as object / array"
-          workflowTrigger={workflowTrigger}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Options" status="Optional">
-        <label style={SL}>Return Inserted Data</label>
-        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
-        <label style={SL}>Upsert Mode</label>
-        <OnOffToggle value={(cfg.upsert as boolean) ?? false} onChange={v => setCfg('upsert', v)} />
-      </CollapsibleSection>
-    </>
-  );
-}
-
-// ─── TablesUpdateConfig ───────────────────────────────────────────────────────
-
-function TablesUpdateConfig({
-  cfg, setCfg, projectId, workflowTrigger, formulaParams,
-}: {
-  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
-  projectId?: string; workflowTrigger?: string;
-  formulaParams?: GlobalFormulaParam[];
-}) {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
-  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
-  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
-  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
-  const updateMode = (cfg.updateMode as string) ?? 'byId';
-
-  return (
-    <>
-      <label style={SL}>Table *</label>
-      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
-
-      <label style={SL}>Update mode</label>
-      <div style={S.toggleGroup}>
-        <button style={S.toggleBtn(updateMode === 'byId')} onClick={() => setCfg('updateMode', 'byId')}>By ID</button>
-        <button style={S.toggleBtn(updateMode === 'byFilters')} onClick={() => setCfg('updateMode', 'byFilters')}>By Filters</button>
-      </div>
-
-      {updateMode === 'byId' && (
-        <BoundField
-          label="Row ID *"
-          required
-          value={cfg.rowId as FormulaValue | undefined}
-          onChange={v => setCfg('rowId', v)}
-          placeholder="Enter ID to identify record"
-          workflowTrigger={workflowTrigger}
-        />
-      )}
-
-      {updateMode === 'byFilters' && (
-        <div style={{ marginTop: 8 }}>
-          <button
-            ref={filterBtnRef}
-            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
-            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter *
-          </button>
-          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
-            <FilterPanel
-              conditions={pendingConditions}
-              groups={pendingGroups}
-              allCols={[]}
-              onChange={setPendingConditions}
-              onChangeGroups={setPendingGroups}
-              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
-              onSave={() => {
-                setConditions(pendingConditions);
-                setGroups(pendingGroups);
-                setCfg('filterConditions', pendingConditions);
-                setCfg('filterGroups', pendingGroups);
-                setCfg('filters', conditionsToFilters(pendingConditions));
-                setFilterOpen(false);
-              }}
-              renderValue={formulaParams?.length
-                ? (val, onChg) => (
-                    <BoundField
-                      label=""
-                      value={val}
-                      onChange={onChg}
-                      workflowTrigger={workflowTrigger}
-                      serverContext
-                      formulaParams={formulaParams}
-                      paramsInQuick
-                      anchorRight={292}
-                    />
-                  )
-                : undefined}
-            />
-          </FloatingAnchor>
-        </div>
-      )}
-
-      <CollapsibleSection title="Data" status="Optional">
-        <BoundField
-          label="Data"
-          value={cfg.data as FormulaValue | undefined}
-          onChange={v => setCfg('data', v)}
-          placeholder="Fields to update as object"
-          workflowTrigger={workflowTrigger}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Options" status="Optional">
-        <label style={SL}>Return Updated Data</label>
-        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
-      </CollapsibleSection>
-    </>
-  );
-}
-
-// ─── TablesDeleteConfig ───────────────────────────────────────────────────────
-
-function TablesDeleteConfig({
-  cfg, setCfg, projectId, workflowTrigger, formulaParams,
-}: {
-  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void;
-  projectId?: string; workflowTrigger?: string;
-  formulaParams?: GlobalFormulaParam[];
-}) {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [conditions, setConditions] = useState<FilterCondition[]>(() => initConditions(cfg));
-  const [groups, setGroups] = useState<FilterGroup[]>((cfg.filterGroups as FilterGroup[]) ?? []);
-  const [pendingConditions, setPendingConditions] = useState<FilterCondition[]>([]);
-  const [pendingGroups, setPendingGroups] = useState<FilterGroup[]>([]);
-  const filterBtnRef = useRef<HTMLButtonElement>(null);
-  const deleteMode = (cfg.deleteMode as string) ?? 'byId';
-
-  return (
-    <>
-      <label style={SL}>Table *</label>
-      <TablePicker projectId={projectId ?? ''} value={(cfg.table as string) ?? ''} onChange={v => setCfg('table', v)} />
-
-      <label style={SL}>Delete mode</label>
-      <div style={S.toggleGroup}>
-        <button style={S.toggleBtn(deleteMode === 'byId')} onClick={() => setCfg('deleteMode', 'byId')}>By ID</button>
-        <button style={S.toggleBtn(deleteMode === 'byFilters')} onClick={() => setCfg('deleteMode', 'byFilters')}>By Filters</button>
-      </div>
-
-      {deleteMode === 'byId' && (
-        <BoundField
-          label="Row ID *"
-          required
-          value={cfg.rowId as FormulaValue | undefined}
-          onChange={v => setCfg('rowId', v)}
-          placeholder="Enter the ID of the record to delete"
-          workflowTrigger={workflowTrigger}
-        />
-      )}
-
-      {deleteMode === 'byFilters' && (
-        <div style={{ marginTop: 8 }}>
-          <button
-            ref={filterBtnRef}
-            onClick={() => { setPendingConditions([...conditions]); setPendingGroups([...groups]); setFilterOpen(o => !o); }}
-            style={{ ...S.toggleBtn(conditions.length > 0 || groups.length > 0), width: '100%', justifyContent: 'flex-start' }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg> Configure Filter * (required)
-          </button>
-          <FloatingAnchor open={filterOpen} anchorRef={filterBtnRef} minWidth={560}>
-            <FilterPanel
-              conditions={pendingConditions}
-              groups={pendingGroups}
-              allCols={[]}
-              onChange={setPendingConditions}
-              onChangeGroups={setPendingGroups}
-              onReset={() => { setPendingConditions([]); setPendingGroups([]); }}
-              onSave={() => {
-                setConditions(pendingConditions);
-                setGroups(pendingGroups);
-                setCfg('filterConditions', pendingConditions);
-                setCfg('filterGroups', pendingGroups);
-                setCfg('filters', conditionsToFilters(pendingConditions));
-                setFilterOpen(false);
-              }}
-              renderValue={formulaParams?.length
-                ? (val, onChg) => (
-                    <BoundField
-                      label=""
-                      value={val}
-                      onChange={onChg}
-                      workflowTrigger={workflowTrigger}
-                      serverContext
-                      formulaParams={formulaParams}
-                      paramsInQuick
-                      anchorRight={292}
-                    />
-                  )
-                : undefined}
-            />
-          </FloatingAnchor>
-        </div>
-      )}
-
-      <CollapsibleSection title="Options" status="Optional">
-        <label style={SL}>Return Deleted Data</label>
-        <OnOffToggle value={(cfg.returnData as boolean) ?? false} onChange={v => setCfg('returnData', v)} />
-      </CollapsibleSection>
-    </>
-  );
-}
-
-// ─── ExecuteSQLConfig ─────────────────────────────────────────────────────────
-
-function ExecuteSQLConfig({
-  cfg, setCfg, workflowTrigger,
-}: {
-  cfg: Record<string, unknown>; setCfg: (k: string, v: unknown) => void; workflowTrigger?: string;
-}) {
-  // Accept both cfg.sql (primary) and cfg.query (legacy) — keep both in sync on change.
-  const sqlValue = (cfg.sql ?? cfg.query) as FormulaValue | undefined;
-  return (
-    <BoundField
-      label="SQL Query *"
-      required
-      value={sqlValue}
-      onChange={v => { setCfg('sql', v); setCfg('query', v); }}
-      placeholder="SELECT * FROM ..."
-      multiline
-      workflowTrigger={workflowTrigger}
-    />
-  );
 }
 
 // ─── HashPasswordConfig ───────────────────────────────────────────────────────
@@ -5073,15 +5581,149 @@ const HTTP_STATUS_OPTIONS = [
 
 const BODY_TYPES = ['JSON', 'Plain Text', 'HTML', 'XML', 'CSV'];
 
+interface BodyProp { key: string; value: FormulaValue | undefined }
+
+/** Convert a FormulaValue to a JS expression string for an object-literal body formula. */
+function bodyPropToExpr(v: FormulaValue | undefined): string {
+  if (v == null) return 'null';
+  if (typeof v === 'object' && v !== null) {
+    const obj = v as Record<string, unknown>;
+    const expr = typeof obj.js === 'string' ? obj.js : typeof obj.formula === 'string' ? obj.formula : null;
+    if (expr !== null) return expr || 'null';
+  }
+  if (typeof v === 'string') return JSON.stringify(v);
+  return JSON.stringify(v);
+}
+
+/** Build the OAS schema for a model row (client-side, mirrors the docs generator). */
+function fieldTypeToOas(type: string): Record<string, unknown> {
+  switch (type) {
+    case 'int': return { type: 'integer' };
+    case 'bigint': return { type: 'integer', format: 'int64' };
+    case 'decimal': case 'float': case 'money': return { type: 'number' };
+    case 'bool': case 'boolean': return { type: 'boolean' };
+    case 'json': return { type: 'object' };
+    case 'uuid': return { type: 'string', format: 'uuid' };
+    case 'timestamp': case 'datetime': return { type: 'string', format: 'date-time' };
+    case 'date': return { type: 'string', format: 'date' };
+    default: return { type: 'string' };
+  }
+}
+
+// Keep for potential future use by other configs
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function modelToOasSchema(model: ModelDefinitionJson, asArray: boolean): Record<string, unknown> {
+  const props: Record<string, unknown> = { id: { type: 'string', format: 'uuid' } };
+  for (const f of model.fields ?? []) {
+    if (f.type === 'relation') {
+      const kind = f.relation?.kind;
+      if (kind === 'manyToOne' || kind === 'oneToOne') {
+        const raw = f.relation?.field ?? `${f.name.replace(/Id$/, '')}_id`;
+        props[raw.replace(/_([a-z0-9])/g, (_m, c) => c.toUpperCase())] = { type: 'string', format: 'uuid' };
+      }
+      continue;
+    }
+    props[f.name] = fieldTypeToOas(f.type);
+  }
+  if (model.timestamps !== false) {
+    props.created_at = { type: 'string', format: 'date-time' };
+    props.updated_at = { type: 'string', format: 'date-time' };
+  }
+  const obj = { type: 'object', properties: props };
+  return asArray ? { type: 'array', items: obj } : obj;
+}
+
+/**
+ * Derive an OAS responseSchema from Object-mode bodyProps.
+ * Each prop key becomes a property; type is inferred from the formula string
+ * (number literal → number, true/false literal → boolean, anything else → string).
+ */
+function bodyPropsToSchema(props: BodyProp[]): Record<string, unknown> | null {
+  const valid = props.filter(p => p.key.trim());
+  if (!valid.length) return null;
+  const properties: Record<string, unknown> = {};
+  for (const p of valid) {
+    const pObj = typeof p.value === 'object' && p.value !== null ? p.value as Record<string, unknown> : null;
+    const formulaStr = pObj
+      ? (typeof pObj.js === 'string' ? pObj.js.trim() : typeof pObj.formula === 'string' ? pObj.formula.trim() : '')
+      : '';
+    const type =
+      /^-?\d+(\.\d+)?$/.test(formulaStr) ? 'number' :
+      (formulaStr === 'true' || formulaStr === 'false') ? 'boolean' :
+      'string';
+    properties[p.key.trim()] = { type };
+  }
+  return { type: 'object', properties };
+}
+
+/**
+ * Best-effort OAS responseSchema derived from a formula string.
+ * Scans for top-level object literal keys: { key: ... } or { "key": ... }.
+ * Falls back to a generic object schema if no keys are found.
+ */
+function schemaFromFormula(formula: string): Record<string, unknown> {
+  const reserved = new Set(['formula', 'type', 'value', 'data', 'true', 'false', 'null']);
+  const keys = [...formula.matchAll(/[{,]\s*["']?(\w+)["']?\s*:/g)]
+    .map(m => m[1])
+    .filter((k): k is string => Boolean(k) && !reserved.has(k));
+  const unique = [...new Set(keys)];
+  if (!unique.length) return { type: 'object', additionalProperties: true };
+  const properties: Record<string, unknown> = {};
+  for (const k of unique) properties[k] = { type: 'string' };
+  return { type: 'object', properties };
+}
+
+function getFormulaString(v: FormulaValue | undefined): string {
+  if (!v) return '';
+  if (typeof v === 'object' && v !== null) {
+    const obj = v as Record<string, unknown>;
+    if (typeof obj.js === 'string') return obj.js;
+    if (typeof obj.formula === 'string') return obj.formula;
+  }
+  if (typeof v === 'string') return v;
+  return '';
+}
+
 function SendResponseConfig({
-  cfg, setCfg, isServerContext,
+  cfg, setCfg, projectId, isServerContext, workflowTrigger,
 }: {
   cfg: Record<string, unknown>;
   setCfg: (k: string, v: unknown) => void;
+  projectId?: string;
   workflowTrigger?: string;
   isServerContext?: boolean;
   priorSteps?: ActionStep[];
 }) {
+  const bodyMode = (cfg.bodyMode as string) ?? 'single';
+  const bodyProps = (cfg.bodyProps as BodyProp[]) ?? [];
+
+  // Writes bodyProps + compiled body formula + auto-derived responseSchema in one shot.
+  const applyBodyProps = (props: BodyProp[]) => {
+    setCfg('bodyProps', props);
+    const valid = props.filter((p) => p.key.trim());
+    const formula = `{ ${valid.map((p) => `${JSON.stringify(p.key)}: ${bodyPropToExpr(p.value)}`).join(', ')} }`;
+    setCfg('body', { formula });
+    setCfg('responseSchema', bodyPropsToSchema(props));
+  };
+
+  // Single-value body change: update body and re-derive schema.
+  const handleBodyChange = (v: FormulaValue | undefined) => {
+    setCfg('body', v);
+    const str = getFormulaString(v);
+    setCfg('responseSchema', str ? schemaFromFormula(str) : null);
+  };
+
+  // Body mode switch: re-derive schema from the relevant source.
+  const switchBodyMode = (mode: 'single' | 'object') => {
+    setCfg('bodyMode', mode);
+    if (mode === 'object') {
+      setCfg('responseSchema', bodyPropsToSchema(bodyProps));
+    } else {
+      const str = getFormulaString(cfg.body as FormulaValue | undefined);
+      setCfg('responseSchema', str ? schemaFromFormula(str) : null);
+    }
+  };
+
   return (
     <>
       <label style={SL}>Status *</label>
@@ -5107,13 +5749,50 @@ function SendResponseConfig({
         </select>
         {!cfg.bodyType && <span style={{ fontSize: 11, color: 'var(--bld-error)' }}>This field is required</span>}
 
-        <BoundField
-          label="Body"
-          value={cfg.body as FormulaValue | undefined}
-          onChange={v => setCfg('body', v)}
-          anchorRight={292}
-          serverContext={isServerContext}
-        />
+        <label style={SL}>Body mode</label>
+        <div style={S.toggleGroup}>
+          <button style={S.toggleBtn(bodyMode === 'single')} onClick={() => switchBodyMode('single')}>Single value</button>
+          <button style={S.toggleBtn(bodyMode === 'object')} onClick={() => switchBodyMode('object')}>Object (combine)</button>
+        </div>
+
+        {bodyMode === 'single' && (
+          <BoundField
+            label="Body"
+            value={cfg.body as FormulaValue | undefined}
+            onChange={handleBodyChange}
+            anchorRight={292}
+            serverContext={isServerContext}
+            workflowTrigger={workflowTrigger}
+          />
+        )}
+
+        {bodyMode === 'object' && (
+          <div>
+            <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)' }}>Each property combines a prior step output or value into the response object.</span>
+            {bodyProps.map((p, i) => (
+              <div key={i} style={{ border: '1px solid var(--bld-border-subtle)', borderRadius: 6, padding: 8, marginTop: 8 }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    value={p.key}
+                    onChange={(e) => applyBodyProps(bodyProps.map((x, j) => j === i ? { ...x, key: e.target.value } : x))}
+                    placeholder="property"
+                    style={{ ...S.fieldInput, flex: 1 }}
+                  />
+                  <button onClick={() => applyBodyProps(bodyProps.filter((_, j) => j !== i))} style={{ ...S.fieldInput, width: 32, cursor: 'pointer', textAlign: 'center' }}>✕</button>
+                </div>
+                <BoundField
+                  label="Value"
+                  value={p.value}
+                  onChange={(v) => applyBodyProps(bodyProps.map((x, j) => j === i ? { ...x, value: v } : x))}
+                  placeholder="step output or value"
+                  serverContext={isServerContext}
+                  workflowTrigger={workflowTrigger}
+                />
+              </div>
+            ))}
+            <button onClick={() => applyBodyProps([...bodyProps, { key: '', value: undefined }])} style={{ ...S.fieldInput, marginTop: 8, cursor: 'pointer', textAlign: 'center' }}>+ Add property</button>
+          </div>
+        )}
       </CollapsibleSection>
 
       <CollapsibleSection title="Headers" status="Optional">
@@ -5402,10 +6081,12 @@ export function NodePropsPanel({
   workflowTrigger,
   componentTriggers,
   isServerContext = false,
+  serverWfKind = 'API_ENDPOINT',
   projectId,
   serverFunctions = [],
   priorSteps = [],
   formulaParams = [],
+  middlewareVars = [],
 }: {
   step: ActionStep;
   onUpdate: (patch: Partial<ActionStep>) => void;
@@ -5414,6 +6095,8 @@ export function NodePropsPanel({
   componentTriggers?: Array<{ id: string; name: string }>;
   /** True when the canvas is in server workflow context */
   isServerContext?: boolean;
+  /** Kind of the server workflow — controls which step types are available */
+  serverWfKind?: 'API_ENDPOINT' | 'FUNCTION' | 'MIDDLEWARE';
   /** Project ID for server-context table pickers */
   projectId?: string;
   /** Available FUNCTION-kind workflows for runServerFunction picker */
@@ -5422,6 +6105,8 @@ export function NodePropsPanel({
   priorSteps?: ActionStep[];
   /** Declared workflow parameters (for server workflows) — enables formula bind in filter rows. */
   formulaParams?: GlobalFormulaParam[];
+  /** Variables injected by applied middleware workflows (via setRequestContext). */
+  middlewareVars?: WorkflowVarEntry[];
 }) {
   const cfg = step.config ?? {};
 
@@ -5435,8 +6120,19 @@ export function NodePropsPanel({
 
   const isStructuralNode = isStructural(step.type);
 
+  // Compute workflow variables from prior steps + middleware-injected vars for formula picker
+  const workflowVars = React.useMemo(() => {
+    if (!isServerContext) return [];
+    const fromSteps = getWorkflowVarsFromPriorSteps(priorSteps);
+    // Merge middleware vars first (they appear under FROM MIDDLEWARE group);
+    // deduplicate by name so a step that overrides a middleware var wins.
+    const seen = new Set(fromSteps.map(v => v.name));
+    const extra = middlewareVars.filter(v => !seen.has(v.name));
+    return [...extra, ...fromSteps];
+  }, [isServerContext, priorSteps, middlewareVars]);
+
   return (
-    <WorkflowParamsProvider params={formulaParams} isServerContext={isServerContext}>
+    <WorkflowParamsProvider params={formulaParams} isServerContext={isServerContext} workflowVars={workflowVars}>
     <div>
       <label style={S.fieldLabel}>Name</label>
       <input
@@ -5454,6 +6150,7 @@ export function NodePropsPanel({
             value={step.type}
             onChange={type => onUpdate({ type })}
             isFormContext={isFormContext}
+            isServerContext={isServerContext}
           />
         </>
       )}
@@ -5542,7 +6239,7 @@ export function NodePropsPanel({
               // Legacy: itemsPath / listPath store a variable UUID as a plain string.
               // Wrap as a formula binding so the field shows "ƒ Edit formula" (not raw UUID).
               const legacyId = (cfg.itemsPath ?? cfg.listPath) as string | undefined;
-              if (legacyId) return { formula: `variables['${legacyId}']` } as FormulaValue;
+              if (legacyId) return { js: `variables['${legacyId}']` } as FormulaValue;
               return undefined;
             })()}
             onChange={v => setCfg('items', v)}
@@ -5628,7 +6325,15 @@ export function NodePropsPanel({
       )}
 
       {step.type === 'changeVariableValue' && (
-        <ChangeVariableValueConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+        <>
+          {serverWfKind === 'MIDDLEWARE' && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, padding: '6px 8px', background: 'rgba(255,165,0,0.12)', border: '1px solid rgba(255,165,0,0.4)', borderRadius: 4, marginTop: 8, fontSize: 11, color: 'var(--bld-text)', lineHeight: 1.5 }}>
+              <span style={{ fontSize: 14 }}>⚠</span>
+              <span>In a MIDDLEWARE workflow, use <strong>Set request context</strong> instead — it injects the value into the downstream workflow&apos;s input. <em>Change variable</em> only affects this middleware&apos;s local scope.</span>
+            </div>
+          )}
+          <ChangeVariableValueConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+        </>
       )}
 
       {step.type === 'resetVariableValue' && (
@@ -6041,20 +6746,8 @@ export function NodePropsPanel({
       )}
 
       {/* ── Server action config panels ─────────────────────────────────── */}
-      {step.type === 'tablesList' && (
-        <TablesListConfig cfg={cfg} setCfg={setCfg} step={step} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
-      )}
-      {step.type === 'tablesInsert' && (
-        <TablesInsertConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
-      )}
-      {step.type === 'tablesUpdate' && (
-        <TablesUpdateConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
-      )}
-      {step.type === 'tablesDelete' && (
-        <TablesDeleteConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} formulaParams={formulaParams} />
-      )}
-      {step.type === 'executeSQL' && (
-        <ExecuteSQLConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      {step.type.startsWith('orm') && (
+        <OrmStepConfig kind={step.type} cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} />
       )}
       {step.type === 'hashPassword' && (
         <HashPasswordConfig cfg={cfg} setCfg={setCfg} />
@@ -6069,7 +6762,7 @@ export function NodePropsPanel({
         <VerifyTokenConfig cfg={cfg} setCfg={setCfg} />
       )}
       {step.type === 'sendResponse' && (
-        <SendResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} isServerContext={isServerContext} priorSteps={priorSteps} />
+        <SendResponseConfig cfg={cfg} setCfg={setCfg} projectId={projectId} workflowTrigger={workflowTrigger} isServerContext={isServerContext} priorSteps={priorSteps} />
       )}
       {step.type === 'sendStreamingResponse' && (
         <SendStreamingResponseConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
@@ -6099,6 +6792,94 @@ export function NodePropsPanel({
       {/* For server context, fetchData uses the enhanced HTTP Request form */}
       {step.type === 'fetchData' && isServerContext && (
         <ServerFetchDataConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+
+      {/* MIDDLEWARE only — inject a value into the downstream workflow's input */}
+      {step.type === 'setRequestContext' && (
+        <SetRequestContextConfig cfg={cfg} setCfg={setCfg} workflowTrigger={workflowTrigger} />
+      )}
+
+      {/* Storage — uploadFile */}
+      {step.type === 'uploadFile' && (
+        <>
+          <label style={{ ...S.fieldLabel, marginTop: 10 }}>File source *</label>
+          <BoundField
+            label="File source"
+            required
+            value={cfg.fileSource as import('./_formula-editor').FormulaValue | undefined}
+            onChange={v => setCfg('fileSource', v)}
+            placeholder="e.g. $input.__files.avatar"
+            workflowTrigger={workflowTrigger}
+            serverContext
+            paramsInQuick
+          />
+          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Bucket</label>
+          <select
+            style={S.fieldInput}
+            value={(cfg.bucket as string) ?? 'public'}
+            onChange={e => setCfg('bucket', e.target.value)}
+          >
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Folder</label>
+          <input
+            style={S.fieldInput}
+            value={(cfg.folder as string) ?? ''}
+            placeholder="e.g. uploads/avatars"
+            onChange={e => setCfg('folder', e.target.value)}
+          />
+          <label style={{ ...S.fieldLabel, marginTop: 10 }}>Filename (override)</label>
+          <BoundField
+            label="Filename"
+            value={cfg.filename as import('./_formula-editor').FormulaValue | undefined}
+            onChange={v => setCfg('filename', v)}
+            placeholder="Leave empty to use original filename"
+            workflowTrigger={workflowTrigger}
+            serverContext
+            paramsInQuick
+          />
+        </>
+      )}
+
+      {/* Storage — getFileUrl */}
+      {step.type === 'getFileUrl' && (
+        <>
+          <BoundField
+            label="File ID (or key)"
+            value={cfg.fileId as import('./_formula-editor').FormulaValue | undefined}
+            onChange={v => setCfg('fileId', v)}
+            placeholder="FileObject ID returned by uploadFile"
+            workflowTrigger={workflowTrigger}
+            serverContext
+            paramsInQuick
+          />
+          <BoundField
+            label="Expires in (seconds)"
+            value={cfg.expiresIn as import('./_formula-editor').FormulaValue | undefined}
+            onChange={v => setCfg('expiresIn', v)}
+            placeholder="3600"
+            numeric
+            workflowTrigger={workflowTrigger}
+            serverContext
+            paramsInQuick
+          />
+        </>
+      )}
+
+      {/* Storage — deleteFile */}
+      {step.type === 'deleteFile' && (
+        <>
+          <BoundField
+            label="File ID (or key)"
+            value={cfg.fileId as import('./_formula-editor').FormulaValue | undefined}
+            onChange={v => setCfg('fileId', v)}
+            placeholder="FileObject ID returned by uploadFile"
+            workflowTrigger={workflowTrigger}
+            serverContext
+            paramsInQuick
+          />
+        </>
       )}
 
       <label style={{ ...S.fieldLabel, marginTop: 12 }}>Description</label>

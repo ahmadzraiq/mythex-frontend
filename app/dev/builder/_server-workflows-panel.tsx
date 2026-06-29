@@ -15,9 +15,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { SearchInput } from './_panel-primitives';
 import {
   backendWorkflows, backendTables,
-  type BackendWorkflow, type BackendTable,
+  type BackendWorkflow,
 } from '@/lib/platform/api-client';
+import { useBackendConfig, patchCachedWorkflows } from '@/lib/builder/use-backend-config';
 import { WorkflowCanvas } from './_workflow-canvas';
+import { useBuilderStore, type DataSourceConfig } from './_store';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -50,13 +52,15 @@ interface Props { projectId: string; }
 
 export function ServerWorkflowsPanel({ projectId }: Props) {
 
-  const [workflows, setWorkflows]   = useState<BackendWorkflow[]>([]);
-  const [tables, setTables]         = useState<BackendTable[]>([]);
-  const [loading, setLoading]       = useState(true);
+  // Shared backend config cache — one request shared with all other panels.
+  const { workflows: cachedWorkflows, loading } = useBackendConfig(projectId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError]           = useState('');
 
-  // collapsed state per section key
+  // active sidebar tab
+  const [activeTab, setActiveTab] = useState<'api' | 'fn' | 'mw'>('api');
+
+  // collapsed state per section key — folders start collapsed by default
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   // search
@@ -66,15 +70,16 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   const [showAddMenu, setShowAddMenu]   = useState(false);
   const [saving, setSaving]             = useState(false);
   const [newWf, setNewWf]               = useState({
-    name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' as WfKind,
+    name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' as WfKind, folder: '',
   });
   const [showNewForm, setShowNewForm]   = useState(false);
 
   // settings modal
   const [showSettings, setShowSettings] = useState(false);
   const [settingsWf, setSettingsWf]     = useState<{
-    id: string; name: string; method: string; path: string; kind: string;
-  }>({ id: '', name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' });
+    id: string; name: string; method: string; path: string; kind: string; folder: string;
+  }>({ id: '', name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT', folder: '' });
+
   const [savingSettings, setSavingSettings] = useState(false);
 
   const [copied, setCopied] = useState(false);
@@ -92,49 +97,93 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
 
   // security popover
   const [secPopover, setSecPopover]     = useState<string | null>(null); // wfId
+  const [secPopoverAnchor, setSecPopoverAnchor] = useState<{ top: number; right: number } | null>(null);
   const [securityState, setSecurityState] = useState<Record<string, { access: 'public' | 'authenticated'; middlewareIds: string[] }>>({});
 
 
-  // ── Load ─────────────────────────────────────────────────────────────────
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [wfRes, tbRes] = await Promise.all([
-        backendWorkflows.list(projectId),
-        backendTables.list(projectId),
-      ]);
-      setWorkflows(wfRes.workflows);
-      setTables(tbRes.tables);
-      // Hydrate security state from DB values so the panel reflects what was saved.
-      const initial: Record<string, { access: 'public' | 'authenticated'; middlewareIds: string[] }> = {};
-      for (const wf of wfRes.workflows) {
-        initial[wf.id] = {
-          access: wf.security === 'AUTHENTICATED' ? 'authenticated' : 'public',
-          middlewareIds: wf.middlewareIds ?? [],
-        };
-      }
-      setSecurityState(initial);
-    } catch (e) { setError((e as Error).message); }
-    finally { setLoading(false); }
-  }, [projectId]);
+  // Sync security state whenever the cached workflows change.
+  const workflows = cachedWorkflows;
 
-  useEffect(() => { void load(); }, [load]);
+  // "Add All to Data Sources" — adds every published API endpoint as a datasource
+  const [allAdded, setAllAdded] = useState(false);
+  const { pageDataSources, addPageDataSource, addDsFolder, dsFolders } = useBuilderStore();
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+
+  const handleAddAllToDataSources = useCallback(async () => {
+    if (allAdded) return;
+    const publishedApis = workflows.filter(w => w.kind === 'API_ENDPOINT' && w.status === 'PUBLISHED');
+    if (publishedApis.length === 0) return;
+    try {
+      const { tables } = await backendTables.list(projectId);
+      const folderIdMap: Record<string, string> = {};
+      tables.forEach(t => {
+        const folderId = `be-folder-${t.id}`;
+        if (!dsFolders.find(f => f.id === folderId)) {
+          addDsFolder({ id: folderId, name: t.displayName, parentId: undefined });
+        }
+        folderIdMap[t.id] = folderId;
+      });
+      publishedApis.forEach(wf => {
+        const id = `backend-${wf.id}`;
+        if (pageDataSources.find(d => d.id === id)) return;
+        const folderId = wf.autoGroupTableId ? folderIdMap[wf.autoGroupTableId] : undefined;
+        addPageDataSource({
+          id,
+          name: wf.name,
+          type: 'rest',
+          method: (wf.method ?? 'GET') as DataSourceConfig['method'],
+          url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
+          trigger: 'action',
+          storeIn: id,
+          folderId,
+        } as DataSourceConfig);
+      });
+      setAllAdded(true);
+    } catch { /* non-fatal */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allAdded, projectId, workflows, pageDataSources, dsFolders]);
+  useEffect(() => {
+    const initial: Record<string, { access: 'public' | 'authenticated'; middlewareIds: string[] }> = {};
+    for (const wf of workflows) {
+      initial[wf.id] = {
+        access: wf.security === 'AUTHENTICATED' ? 'authenticated' : 'public',
+        middlewareIds: wf.middlewareIds ?? [],
+      };
+    }
+    setSecurityState(initial);
+    // Collapse all folders by default when data loads
+    setCollapsed((prev) => {
+      const next = { ...prev };
+      for (const wf of workflows) {
+        if (wf.folder) {
+          const key = `folder-${wf.folder}`;
+          if (!(key in next)) next[key] = true;
+        }
+      }
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflows]);
 
   // ── Derive groups ─────────────────────────────────────────────────────────
   const apiEndpoints = workflows.filter((w) => w.kind === 'API_ENDPOINT');
   const functions    = workflows.filter((w) => w.kind === 'FUNCTION');
   const middlewares  = workflows.filter((w) => w.kind === 'MIDDLEWARE');
 
-  type TableFolder = { tableName: string; displayName: string; items: BackendWorkflow[] };
-  // Group using autoGroupTableId set by the backend at table-creation time
-  const tableFolders: TableFolder[] = tables.map((t) => ({
-    tableName: t.name,
-    displayName: t.displayName ?? t.name,
-    items: apiEndpoints.filter((w) => w.autoGroupTableId === t.id),
-  }));
-
-  const tableItemIds = new Set(tableFolders.flatMap((f) => f.items.map((w) => w.id)));
-  const standaloneEndpoints = apiEndpoints.filter((w) => !tableItemIds.has(w.id));
+  // Free-form folder grouping — any workflow can have a folder string
+  type WfFolder = { name: string; items: BackendWorkflow[] };
+  const folderMap = new Map<string, BackendWorkflow[]>();
+  const standaloneEndpoints: BackendWorkflow[] = [];
+  for (const wf of apiEndpoints) {
+    const f = wf.folder?.trim();
+    if (f) {
+      if (!folderMap.has(f)) folderMap.set(f, []);
+      folderMap.get(f)!.push(wf);
+    } else {
+      standaloneEndpoints.push(wf);
+    }
+  }
+  const namedFolders: WfFolder[] = Array.from(folderMap.entries()).map(([name, items]) => ({ name, items }));
 
   // ── Search filter ─────────────────────────────────────────────────────────
   const q = search.toLowerCase();
@@ -158,17 +207,18 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
     try {
       const slug = newWf.name.trim().toLowerCase().replace(/\s+/g, '-');
       const res = await backendWorkflows.create(projectId, {
-        name: newWf.name.trim(),
+        name:   newWf.name.trim(),
         slug,
-        kind: newWf.kind,
+        kind:   newWf.kind,
+        folder: newWf.folder.trim() || undefined,
         method: newWf.kind === 'API_ENDPOINT' ? newWf.method : undefined,
         path:   newWf.kind === 'API_ENDPOINT'
           ? (newWf.path.startsWith('/') ? newWf.path : `/${newWf.path}`)
           : undefined,
       });
-      setWorkflows((prev) => [...prev, res.workflow]);
+      patchCachedWorkflows(projectId, (prev) => [...prev, res.workflow]);
       setShowNewForm(false);
-      setNewWf({ name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT' });
+      setNewWf({ name: '', method: 'POST', path: '/', kind: 'API_ENDPOINT', folder: '' });
       openCanvas(res.workflow);
     } catch (e) { setError((e as Error).message); }
     finally { setSaving(false); }
@@ -182,8 +232,9 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         name:   settingsWf.name,
         method: settingsWf.method || undefined,
         path:   settingsWf.path || undefined,
+        folder: settingsWf.folder.trim() || undefined,
       });
-      setWorkflows((prev) => prev.map((w) => w.id === settingsWf.id ? res.workflow : w));
+      patchCachedWorkflows(projectId, (prev) => prev.map((w) => w.id === res.workflow.id ? res.workflow : w));
       if (selectedId === settingsWf.id) setSelectedId(res.workflow.id);
       setShowSettings(false);
     } catch (e) { setError((e as Error).message); }
@@ -191,7 +242,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   };
 
   const openSettings = (wf: BackendWorkflow) => {
-    setSettingsWf({ id: wf.id, name: wf.name, method: wf.method ?? 'POST', path: wf.path ?? '/', kind: wf.kind });
+    setSettingsWf({ id: wf.id, name: wf.name, method: wf.method ?? 'POST', path: wf.path ?? '/', kind: wf.kind, folder: wf.folder ?? '' });
     setShowSettings(true);
   };
 
@@ -199,27 +250,44 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   // ── Sub-components ────────────────────────────────────────────────────────
   const WfRow = ({ wf, indent = false }: { wf: BackendWorkflow; indent?: boolean }) => {
     const active = selectedId === wf.id;
+    const methodColor = wf.method ? (METHOD_COLORS[wf.method] ?? 'var(--bld-text-disabled)') : null;
     return (
       <div
         onClick={() => openCanvas(wf)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: `6px ${indent ? '28px' : '14px'}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: `5px ${indent ? '24px' : '10px'} 5px ${indent ? '24px' : '10px'}`,
           cursor: 'pointer',
-          background: active ? 'rgba(79,70,229,0.12)' : 'transparent',
-          borderLeft: `2px solid ${active ? 'var(--bld-accent)' : 'transparent'}`,
+          background: active ? 'rgba(99,102,241,0.12)' : 'transparent',
+          transition: 'background 0.12s',
+          margin: '1px 6px',
+          borderRadius: 6,
         }}
+        onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+        onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
       >
         {wf.method ? (
-          <span style={{ fontSize: 9, fontWeight: 700, fontFamily: 'monospace', flexShrink: 0, padding: '1px 4px', borderRadius: 3, background: `${METHOD_COLORS[wf.method] ?? 'var(--bld-text-disabled)'}22`, color: METHOD_COLORS[wf.method] ?? 'var(--bld-text-disabled)' }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, fontFamily: 'monospace', flexShrink: 0,
+            padding: '2px 5px', borderRadius: 4,
+            background: `${methodColor}22`, color: methodColor ?? 'var(--bld-text-disabled)',
+            border: `1px solid ${methodColor ?? 'transparent'}44`,
+            minWidth: 36, textAlign: 'center',
+          }}>
             {wf.method}
           </span>
+        ) : wf.kind === 'FUNCTION' ? (
+          <span style={{ width: 28, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: 5, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4c0-1 .5-2 2-2s2 .5 2 2l-1 6c0 1 .5 2 2 2"/><circle cx="3.5" cy="10.5" r="1"/><circle cx="12.5" cy="5.5" r="1"/></svg>
+          </span>
         ) : (
-          <span style={{ fontSize: 11, color: 'var(--bld-text-disabled)', flexShrink: 0 }}>ƒ</span>
+          <span style={{ width: 28, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: 5, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)' }}>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="12" height="6" rx="2"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="8" y1="11" x2="8" y2="14"/></svg>
+          </span>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, color: active ? 'var(--bld-text-2)' : 'var(--bld-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.name}</div>
-          {wf.path && <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.path}</div>}
+          <div style={{ fontSize: 12, color: active ? '#fff' : 'rgba(255,255,255,0.75)', fontWeight: active ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.name}</div>
+          {wf.path && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wf.path}</div>}
         </div>
         <button
           onClick={(e) => {
@@ -227,7 +295,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
             setCtxMenu({ wfId: wf.id, x: rect.right, y: rect.bottom + 4 });
           }}
-          style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer', fontSize: 14, padding: '1px 4px', flexShrink: 0, lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 16, padding: '1px 4px', flexShrink: 0, lineHeight: 1 }}
           title="Options"
         >⋮</button>
       </div>
@@ -247,200 +315,209 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
+    <div style={{
+      flex: 1, display: 'flex', height: '100%', overflow: 'hidden', position: 'relative',
+    }}>
 
       {/* ── Left sidebar ────────────────────────────────────────────────── */}
-      <div style={{ width: 280, borderRight: '1px solid var(--bld-border)', display: 'flex', flexDirection: 'column', background: 'var(--bld-bg-base)', flexShrink: 0, overflow: 'hidden' }}>
-
-        {/* Search + Add button */}
-        <div style={{ padding: '10px 10px 8px', display: 'flex', gap: 6, borderBottom: 'none' }}>
-          <div style={{ flex: 1 }}>
-            <SearchInput value={search} onChange={setSearch} placeholder="Search…" />
+      <div style={{
+        width: 300, borderRight: '1px solid var(--bld-bg-elevated)',
+        display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden',
+        backgroundColor: 'var(--bld-bg-panel)',
+        backgroundImage: 'radial-gradient(ellipse 160% 40% at 50% 100%, rgba(99,102,241,0.07) 0%, transparent 60%)',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '14px 14px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bld-glass-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 8h3l2-4 3 8 2-4h2"/>
+            </svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: 0.3 }}>API</span>
           </div>
-          <button
-            onClick={() => {
-              const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
-              window.open(`${base}/v1/projects/${projectId}/docs`, '_blank');
-            }}
-            title="Open interactive API docs (Swagger)"
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: 'var(--bld-success)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
-          >
-            <span style={{ fontSize: 13 }}>⚡</span> API Docs
-          </button>
-          {workflows.length > 0 && (
-            <button
-              onClick={async () => {
-                if (!confirm('Delete ALL workflows? This cannot be undone.')) return;
-                await backendWorkflows.deleteAll(projectId).catch(() => {});
-                setWorkflows([]);
-                setSelectedId(null);
-              }}
-              title="Remove all workflows"
-              style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', fontSize: 12, background: 'rgba(239,68,68,0.08)', color: 'var(--bld-error)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}
-            >🗑</button>
-          )}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <button
-              onClick={() => setShowAddMenu((v) => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, fontWeight: 600, background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-            >
-              + Add <span style={{ fontSize: 10 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => { const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'; window.open(`${base}/v1/projects/${projectId}/docs`, '_blank'); }}
+              title="Open Swagger docs"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', fontSize: 10, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: 'var(--bld-success)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 5, cursor: 'pointer' }}>
+              <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="11" x2="8" y2="12"/></svg>
+              Docs
             </button>
-            {showAddMenu && (
-              <div
-                style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 50, minWidth: 180 }}
-                onMouseLeave={() => setShowAddMenu(false)}
-              >
-                {(['API_ENDPOINT', 'FUNCTION', 'MIDDLEWARE'] as WfKind[]).map((k) => (
-                  <button key={k}
-                    onClick={() => { setNewWf((p) => ({ ...p, kind: k })); setShowAddMenu(false); setShowNewForm(true); }}
-                    style={{ width: '100%', display: 'block', padding: '9px 14px', background: 'none', border: 'none', color: 'var(--bld-text-2)', fontSize: 12, textAlign: 'left', cursor: 'pointer' }}>
-                    {k === 'API_ENDPOINT' ? '⟶ API Endpoint' : k === 'FUNCTION' ? 'ƒ Function' : '⊕ Middleware'}
-                  </button>
-                ))}
-              </div>
+            {apiEndpoints.filter(w => w.status === 'PUBLISHED').length > 0 && (
+              <button
+                onClick={handleAddAllToDataSources}
+                disabled={allAdded}
+                title="Add all published endpoints as data sources"
+                style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', fontSize: 10, fontWeight: 600, background: allAdded ? 'transparent' : 'rgba(99,102,241,0.12)', color: allAdded ? 'var(--bld-text-disabled)' : 'var(--bld-accent)', border: `1px solid ${allAdded ? 'var(--bld-border)' : 'rgba(99,102,241,0.3)'}`, borderRadius: 5, cursor: allAdded ? 'default' : 'pointer' }}>
+                {allAdded ? '✓ Added' : '+ DS'}
+              </button>
             )}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {showAddMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowAddMenu(false)} />}
+              <button onClick={() => setShowAddMenu((v) => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', fontSize: 11, fontWeight: 600, background: 'var(--bld-accent)', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
+                + Add
+                <svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 6 8 10 12 6"/></svg>
+              </button>
+              {showAddMenu && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bld-bg-base)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, boxShadow: '0 12px 32px rgba(0,0,0,0.6)', zIndex: 50, minWidth: 200, backdropFilter: 'blur(16px)', overflow: 'hidden', padding: '4px' }}>
+                  {([
+                    { k: 'API_ENDPOINT' as WfKind, label: 'API Endpoint', desc: 'HTTP route with method & path', icon: (
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                    )},
+                    { k: 'FUNCTION' as WfKind, label: 'Function', desc: 'Internal reusable logic', icon: (
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4c0-1 .5-2 2-2s2 .5 2 2l-1 6c0 1 .5 2 2 2"/><circle cx="3.5" cy="10.5" r="1"/><circle cx="12.5" cy="5.5" r="1"/></svg>
+                    )},
+                    { k: 'MIDDLEWARE' as WfKind, label: 'Middleware', desc: 'Runs before matched routes', icon: (
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="12" height="6" rx="2"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="8" y1="11" x2="8" y2="14"/></svg>
+                    )},
+                  ]).map(({ k, label, desc, icon }) => (
+                    <button key={k}
+                      onClick={() => { setNewWf((p) => ({ ...p, kind: k })); setShowAddMenu(false); setShowNewForm(true); }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'transparent', border: 'none', borderRadius: 7, color: 'var(--bld-text-2)', fontSize: 12, textAlign: 'left', cursor: 'pointer' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>{icon}</div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--bld-text-1)' }}>{label}</div>
+                        <div style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginTop: 1 }}>{desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Workflow list */}
+        {/* Tabs: API Endpoints | Functions | Middlewares */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--bld-bg-elevated)', flexShrink: 0 }}>
+          {([
+            { key: 'api', label: 'Endpoints', count: apiEndpoints.length },
+            { key: 'fn',  label: 'Functions', count: functions.length },
+            { key: 'mw',  label: 'Middleware', count: middlewares.length },
+          ] as const).map(({ key, label, count }) => {
+            const active = activeTab === key;
+            return (
+              <button key={key} onClick={() => setActiveTab(key)} style={{
+                flex: 1, padding: '8px 4px', fontSize: 10, fontWeight: active ? 700 : 500,
+                color: active ? 'var(--bld-accent)' : 'rgba(255,255,255,0.55)',
+                background: 'none', border: 'none', borderBottom: `2px solid ${active ? 'var(--bld-accent)' : 'transparent'}`,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                transition: 'color 0.12s',
+              }}>
+                {label}
+                <span style={{ fontSize: 9, background: active ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.08)', color: active ? 'var(--bld-accent)' : 'rgba(255,255,255,0.4)', borderRadius: 8, padding: '1px 5px' }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
+        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bld-bg-elevated)' }}>
+          <SearchInput value={search} onChange={setSearch} placeholder="Search…" />
+        </div>
+
+        {/* List */}
         <div style={{ flex: 1, overflow: 'auto' }}>
           {loading && <div style={{ padding: 16, fontSize: 12, color: 'var(--bld-text-disabled)', textAlign: 'center' }}>Loading…</div>}
 
-          {!loading && (
+          {!loading && activeTab === 'api' && (
             <>
-              {/* ── API Endpoints ── */}
-              <SectionHeader label="API Endpoints" sectionKey="api" count={apiEndpoints.length} />
-              {!collapsed['api'] && (
-                <>
-                  {standaloneEndpoints.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
-
-                  {tableFolders.map((folder) => {
-                    const folderKey = `table-${folder.tableName}`;
-                    const items = folder.items.filter(filterWf);
-                    return (
-                      <div key={folder.tableName}>
-                        <button
-                          onClick={() => toggleCollapse(folderKey)}
-                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                        >
-                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', display: 'inline-block', transform: collapsed[folderKey] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
-                          <span style={{ fontSize: 11, color: 'var(--bld-text-3)', fontWeight: 500 }}>📁 {folder.displayName}</span>
-                          <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{folder.items.length}</span>
-                        </button>
-                        {!collapsed[folderKey] && items.map((wf) => <WfRow key={wf.id} wf={wf} indent />)}
-                      </div>
-                    );
-                  })}
-
-                  {apiEndpoints.filter(filterWf).length === 0 && (
-                    <div style={{ padding: '6px 14px 10px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No endpoints yet</div>
-                  )}
-                </>
+              {namedFolders.map((folder) => {
+                const folderKey = `folder-${folder.name}`;
+                const isOpen = !collapsed[folderKey];
+                const items = folder.items.filter(filterWf);
+                return (
+                  <div key={folder.name}>
+                    <button onClick={() => toggleCollapse(folderKey)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}>
+                        <polyline points="4 6 8 10 12 6"/>
+                      </svg>
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        {isOpen
+                          ? <path d="M2 6.5A1.5 1.5 0 013.5 5h3L8 6.5h4.5A1.5 1.5 0 0114 8v4.5A1.5 1.5 0 0112.5 14h-9A1.5 1.5 0 012 12.5V6.5z"/>
+                          : <path d="M2 4.5A1.5 1.5 0 013.5 3h3L8 5h4.5A1.5 1.5 0 0114 6.5v6a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V4.5z"/>}
+                      </svg>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 500, flex: 1 }}>{folder.name}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{folder.items.length}</span>
+                    </button>
+                    {isOpen && items.map((wf) => <WfRow key={wf.id} wf={wf} indent />)}
+                  </div>
+                );
+              })}
+              {standaloneEndpoints.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
+              {apiEndpoints.filter(filterWf).length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 0 20px rgba(99,102,241,0.1)' }}>
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 4 }}>No endpoints yet</div>
+                    <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Click <strong style={{ color: 'var(--bld-text-3)' }}>+ Add</strong> to create your first API endpoint.</div>
+                  </div>
+                </div>
               )}
+            </>
+          )}
 
-              {/* ── Functions ── */}
-              <div style={{ marginTop: 4 }}>
-                <SectionHeader label="Functions" sectionKey="fn" count={functions.length} />
-                {!collapsed['fn'] && (
-                  <>
-                    {functions.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
-                    {functions.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No functions yet</div>}
-                  </>
-                )}
-              </div>
+          {!loading && activeTab === 'fn' && (
+            <>
+              {functions.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
+              {functions.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', boxShadow: '0 0 20px rgba(251,191,36,0.08)' }}>
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#fbbf24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4c0-1 .5-2 2-2s2 .5 2 2l-1 6c0 1 .5 2 2 2"/><circle cx="3.5" cy="10.5" r="1"/><circle cx="12.5" cy="5.5" r="1"/></svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 4 }}>No functions yet</div>
+                    <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Functions are internal helpers reusable across your backend.</div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
-              {/* ── Middlewares ── */}
-              <div style={{ marginTop: 4 }}>
-                <SectionHeader label="Middlewares" sectionKey="mw" count={middlewares.length} />
-                {!collapsed['mw'] && (
-                  <>
-                    {middlewares.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
-                    {middlewares.length === 0 && <div style={{ padding: '4px 14px 8px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>No middlewares yet</div>}
-                  </>
-                )}
-              </div>
+          {!loading && activeTab === 'mw' && (
+            <>
+              {middlewares.filter(filterWf).map((wf) => <WfRow key={wf.id} wf={wf} />)}
+              {middlewares.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', boxShadow: '0 0 20px rgba(167,139,250,0.08)' }}>
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="12" height="6" rx="2"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="8" y1="11" x2="8" y2="14"/></svg>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', marginBottom: 4 }}>No middleware yet</div>
+                    <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', lineHeight: 1.5 }}>Middleware runs before matched routes for auth, logging, etc.</div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
-
       </div>
 
       {/* ── Center: inline WorkflowCanvas or empty state ─────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header bar for selected workflow */}
-        {selected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderBottom: 'none', background: 'var(--bld-bg-base)', flexShrink: 0, flexWrap: 'wrap' }}>
-            {selected.method && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: `${METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)'}22`, color: METHOD_COLORS[selected.method] ?? 'var(--bld-text-disabled)' }}>
-                {selected.method}
-              </span>
-            )}
-            {selected.kind === 'FUNCTION' && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(107,114,128,0.2)', color: 'var(--bld-text-3)' }}>INTERNAL</span>
-            )}
-            {selected.kind === 'MIDDLEWARE' && (
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.2)', color: 'var(--bld-accent)' }}>MIDDLEWARE</span>
-            )}
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)', flex: 1 }}>{selected.name}</span>
-
-            {/* Status badge */}
-            <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10,
-              background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.2)',
-              color: selected.status === 'PUBLISHED' ? 'var(--bld-success)' : 'var(--bld-text-3)',
-              border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
-            }}>
-              {selected.status}
-            </span>
-
-            {/* Copy URL (only when published) */}
-            {selected.kind === 'API_ENDPOINT' && selected.status === 'PUBLISHED' && (
-              <button
-                onClick={() => copyEndpointUrl(selected)}
-                title="Copy endpoint URL"
-                style={{ ...BTN, fontSize: 11, padding: '3px 10px', background: 'rgba(15,23,42,0.8)', color: copied ? 'var(--bld-success)' : 'var(--bld-text-3)', border: '1px solid var(--bld-border)' }}
-              >
-                {copied ? '✓ Copied' : '⎘ Copy URL'}
-              </button>
-            )}
-
-            {/* Security */}
-            {selected.kind === 'API_ENDPOINT' && (
-              <button
-                onClick={() => setSecPopover(selected.id)}
-                style={{ ...BTN, fontSize: 11, padding: '3px 10px', borderRadius: 5, background: 'rgba(99,102,241,0.15)', color: 'var(--bld-accent)', border: '1px solid rgba(99,102,241,0.3)' }}
-              >
-                {(() => {
-                  const sec = securityState[selected.id];
-                  if (!sec || (sec.access === 'public' && sec.middlewareIds.length === 0)) return '⊕ Public';
-                  const hasMW = sec.middlewareIds.filter(Boolean).length > 0;
-                  if (sec.access === 'authenticated' || hasMW) {
-                    return hasMW ? `🔒 Protected (${sec.middlewareIds.filter(Boolean).length} MW)` : '👤 Authenticated';
-                  }
-                  return '⊕ Public';
-                })()}
-              </button>
-            )}
-
-            {/* Status badge — reflects deploy state (live = in prod env after project deploy) */}
-            {selected.kind === 'API_ENDPOINT' && (
-              <span style={{
-                fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 5,
-                background: selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.15)' : 'rgba(100,116,139,0.15)',
-                color: selected.status === 'PUBLISHED' ? 'var(--bld-success)' : 'var(--bld-text-3)',
-                border: `1px solid ${selected.status === 'PUBLISHED' ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.3)'}`,
-              }}>
-                {selected.status === 'PUBLISHED' ? 'Live' : 'Pending deploy'}
-              </span>
-            )}
-          </div>
-        )}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--bld-bg-canvas)', backgroundImage: 'radial-gradient(ellipse 70% 50% at 85% 8%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 10% 95%, rgba(124,58,237,0.07) 0%, transparent 55%)' }}>
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
           {!selected ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bld-text-disabled)', fontSize: 13, flexDirection: 'column', gap: 10 }}>
-              <span style={{ fontSize: 32, opacity: 0.4 }}>ƒ</span>
-              <span>Select a workflow to edit it</span>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                boxShadow: '0 0 32px rgba(99,102,241,0.12)',
+              }}>
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none" stroke="var(--bld-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 8h3l2-4 3 8 2-4h2"/>
+                </svg>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--bld-text-2)', marginBottom: 6 }}>Select a workflow</div>
+                <div style={{ fontSize: 12, color: 'var(--bld-text-disabled)', maxWidth: 280, lineHeight: 1.6 }}>
+                  Choose an API endpoint, function, or middleware from the list to edit its steps.
+                </div>
+              </div>
             </div>
           ) : (
             <WorkflowCanvas
@@ -448,6 +525,31 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               target={{ kind: 'serverWorkflow', workflowId: selected.id, projectId }}
               onClose={() => setSelectedId(null)}
               inline
+              hideHeader
+              rightPanelHeaderSlot={selected.kind === 'API_ENDPOINT' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {selected.status === 'PUBLISHED' && (
+                    <button onClick={() => copyEndpointUrl(selected)} title="Copy endpoint URL"
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', fontSize: 10, fontWeight: 500, background: 'rgba(255,255,255,0.05)', color: copied ? 'var(--bld-success)' : 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, cursor: 'pointer' }}>
+                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M3 12H2.5A1.5 1.5 0 011 10.5v-7A1.5 1.5 0 012.5 2h7A1.5 1.5 0 0111 3.5V4"/></svg>
+                      {copied ? '✓' : 'Copy'}
+                    </button>
+                  )}
+                  <button onClick={(e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setSecPopoverAnchor({ top: r.bottom + 6, right: window.innerWidth - r.right }); setSecPopover(selected.id); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', fontSize: 10, fontWeight: 600, border: '1px solid', borderRadius: 5, cursor: 'pointer', background: 'rgba(255,255,255,0.05)',
+                      borderColor: (() => { const sec = securityState[selected.id]; const hasMW = (sec?.middlewareIds ?? []).filter(Boolean).length > 0; return (sec?.access === 'authenticated' || hasMW) ? 'rgba(248,113,113,0.35)' : 'rgba(34,197,94,0.35)'; })(),
+                      color: (() => { const sec = securityState[selected.id]; const hasMW = (sec?.middlewareIds ?? []).filter(Boolean).length > 0; return (sec?.access === 'authenticated' || hasMW) ? '#f87171' : 'var(--bld-success)'; })() }}>
+                    {(() => {
+                      const sec = securityState[selected.id];
+                      const hasMW = (sec?.middlewareIds ?? []).filter(Boolean).length > 0;
+                      if (!sec || (sec.access === 'public' && !hasMW)) return <><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="8" y1="5" x2="8" y2="11"/></svg>Public</>;
+                      return hasMW
+                        ? <><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>Protected</>
+                        : <><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Auth</>;
+                    })()}
+                  </button>
+                </div>
+              ) : undefined}
             />
           )}
         </div>
@@ -470,11 +572,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder</label>
-                <select style={{ ...INPUT, cursor: 'pointer' }} defaultValue="">
-                  <option value="">Select a folder</option>
-                  {tables.map((t) => <option key={t.id} value={t.name}>Table: {t.displayName}</option>)}
-                </select>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder <span style={{ fontWeight: 400, color: 'var(--bld-text-disabled)' }}>(optional)</span></label>
+                <input
+                  value={settingsWf.folder}
+                  onChange={(e) => setSettingsWf((p) => ({ ...p, folder: e.target.value }))}
+                  placeholder="e.g. Auth, Products, Admin…"
+                  style={INPUT}
+                />
               </div>
 
               {settingsWf.kind === 'API_ENDPOINT' && (
@@ -541,11 +645,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder</label>
-                <select style={{ ...INPUT, cursor: 'pointer' }} defaultValue="">
-                  <option value="">Select a folder</option>
-                  {tables.map((t) => <option key={t.id} value={t.name}>{t.displayName ?? t.name}</option>)}
-                </select>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--bld-text-3)', display: 'block', marginBottom: 6 }}>Folder <span style={{ fontWeight: 400, color: 'var(--bld-text-disabled)' }}>(optional)</span></label>
+                <input
+                  value={newWf.folder}
+                  onChange={(e) => setNewWf((p) => ({ ...p, folder: e.target.value }))}
+                  placeholder="e.g. Auth, Products, Admin…"
+                  style={INPUT}
+                />
               </div>
               {newWf.kind === 'API_ENDPOINT' && (
                 <>
@@ -591,13 +697,15 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         };
         const closeCtx = () => setCtxMenu(null);
         return (
-          <div style={menuStyle} onMouseLeave={closeCtx}>
+          <React.Fragment>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={closeCtx} />
+          <div style={{ ...menuStyle, zIndex: 300 }}>
             <button style={itemStyle} onClick={() => { openSettings(wf); closeCtx(); }}>Rename workflow</button>
             <button style={itemStyle} onClick={async () => {
               try {
                 const slug = `${wf.slug ?? wf.name.toLowerCase().replace(/\s+/g, '-')}-copy`;
-                const res = await backendWorkflows.create(projectId, { name: `${wf.name} (copy)`, slug, kind: wf.kind, method: wf.method, path: wf.path });
-                setWorkflows((p) => [...p, res.workflow]);
+                const copyRes = await backendWorkflows.create(projectId, { name: `${wf.name} (copy)`, slug, kind: wf.kind, method: wf.method, path: wf.path });
+                patchCachedWorkflows(projectId, (prev) => [...prev, copyRes.workflow]);
               } catch { /* ignore */ }
               closeCtx();
             }}>Copy workflow</button>
@@ -616,22 +724,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
                 const isDelete = method === 'DELETE';
                 const hasId = wf.path?.includes(':id');
 
-                // Build body template from table columns
+                // Build body template
                 let bodyTemplate = '{}';
                 if (hasBody || isDelete) {
-                  const linkedTable = tables.find((t) => t.id === wf.autoGroupTableId);
-                  if (linkedTable?.columns?.length) {
-                    const userCols = linkedTable.columns.filter(
-                      (c) => !['id', 'created_at', 'updated_at'].includes(c.name),
-                    );
-                    if (isDelete || (hasId && !hasBody)) {
-                      bodyTemplate = JSON.stringify({ id: '' });
-                    } else {
-                      const sample: Record<string, string> = {};
-                      if (hasId) sample['id'] = '';
-                      userCols.forEach((c) => { sample[c.name] = ''; });
-                      bodyTemplate = JSON.stringify(sample, null, 2);
-                    }
+                  if (isDelete || (hasId && !hasBody)) {
+                    bodyTemplate = JSON.stringify({ id: '' });
+                  } else {
+                    bodyTemplate = JSON.stringify({}, null, 2);
                   }
                 }
 
@@ -648,11 +747,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             <button style={{ ...itemStyle, color: 'var(--bld-error)' }} onClick={async () => {
               if (!confirm(`Delete "${wf.name}"?`)) return;
               await backendWorkflows.delete(projectId, wf.id).catch(() => {});
-              setWorkflows((p) => p.filter((w) => w.id !== wf.id));
+              patchCachedWorkflows(projectId, (prev) => prev.filter((w) => w.id !== wf.id));
               if (selectedId === wf.id) setSelectedId(null);
               closeCtx();
             }}>Delete workflow</button>
           </div>
+          </React.Fragment>
         );
       })()}
 
@@ -664,10 +764,12 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
         const setSec = (patch: Partial<typeof sec>) => setSecurityState((p) => ({ ...p, [secPopover]: { ...sec, ...patch } }));
         const mwList = middlewares;
         return (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 250 }} onClick={() => setSecPopover(null)}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 250 }} onClick={() => { setSecPopover(null); setSecPopoverAnchor(null); }}>
             <div
               style={{
-                position: 'absolute', top: 80, right: 20,
+                position: 'fixed',
+                top: secPopoverAnchor?.top ?? 80,
+                right: secPopoverAnchor?.right ?? 20,
                 background: 'var(--bld-bg-base)', border: '1px solid var(--bld-border)', borderRadius: 10,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.6)', width: 320, padding: 14,
               }}
@@ -675,7 +777,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--bld-text-2)' }}>Security</span>
-                <button onClick={() => setSecPopover(null)} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>✕</button>
+                <button onClick={() => { setSecPopover(null); setSecPopoverAnchor(null); }} style={{ background: 'none', border: 'none', color: 'var(--bld-text-disabled)', cursor: 'pointer' }}>✕</button>
               </div>
               {/* Access dropdown */}
               <div style={{ marginBottom: 12 }}>
@@ -722,11 +824,13 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               <button
                 onClick={async () => {
                   try {
-                    await backendWorkflows.update(projectId, secPopover, {
+                    const secRes = await backendWorkflows.update(projectId, secPopover, {
                       security:     sec.access === 'authenticated' ? 'AUTHENTICATED' : 'PUBLIC',
                       middlewareIds: sec.middlewareIds.filter(Boolean),
                     });
+                    patchCachedWorkflows(projectId, (prev) => prev.map((w) => w.id === secRes.workflow.id ? secRes.workflow : w));
                     setSecPopover(null);
+                    setSecPopoverAnchor(null);
                   } catch { /* ignore */ }
                 }}
                 style={{ marginTop: 14, width: '100%', padding: '7px 0', fontSize: 12, fontWeight: 600, background: 'var(--bld-accent)', color: 'var(--bld-accent-fg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}

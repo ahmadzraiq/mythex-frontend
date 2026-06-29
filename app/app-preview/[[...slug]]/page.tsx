@@ -29,7 +29,6 @@ import appConfig from '@/config/app';
 import { getGlobalVariableStore, registerVariableInitialValue } from '@/lib/sdui/global-variable-store';
 import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
-import { evaluateFormula } from '@/lib/sdui/formula-evaluator';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 import { loadSharedComponents } from '@/lib/builder/shared-component-data';
 
@@ -48,8 +47,6 @@ interface BuilderPage {
   name: string;
   route?: string;
   nodes: SDUINode[];
-  protectionCondition?: string;
-  protectionRedirect?: string;
 }
 
 interface ProjectDataSource {
@@ -71,7 +68,7 @@ interface ProjectDataSource {
 interface ProjectConfig {
   pages?: BuilderPage[];
   /** Unified workflows dict (keyed by UUID) */
-  workflows?: Record<string, { trigger?: string; steps?: unknown[]; id?: string }>;
+  workflows?: Record<string, { trigger?: string; steps?: unknown[]; id?: string; name?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string }>;
   themeOverrides?: Record<string, string>;
   themeDarkOverrides?: Record<string, string>;
   customVars?: Array<{ id?: string; type?: string; initialValue?: unknown }>;
@@ -253,17 +250,34 @@ function seedCustomVars(cfg: ProjectConfig) {
 
 
 import type { NamedDataSourceDef, RestNamedDataSourceDef } from '@/lib/sdui/engine-types';
+import { matchRoute, sortRoutes } from '@/lib/sdui/route-utils';
+
+// Base URL for the backend run endpoint — resolves relative datasource paths like "/jobs"
+// to "http://localhost:4000/v1/run/{projectId}/jobs".
+const PREVIEW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
 
 function buildDataSources(
-  pageDataSources: ProjectDataSource[] | undefined,
+  pageDataSources: ProjectDataSource[] | Record<string, ProjectDataSource> | undefined,
+  projectId?: string | null,
 ): Record<string, NamedDataSourceDef> {
-  if (!pageDataSources?.length) return {};
+  // pageDataSources may be stored as an array OR as a numeric-keyed object { "0": {...}, "1": {...} }
+  const dsArray: ProjectDataSource[] = Array.isArray(pageDataSources)
+    ? pageDataSources
+    : Object.values(pageDataSources ?? {}) as ProjectDataSource[];
+  if (!dsArray.length) return {};
   const result: Record<string, NamedDataSourceDef> = {};
-  for (const ds of pageDataSources) {
+  for (const ds of dsArray) {
+    // Resolve relative URLs (e.g. "/jobs") to the backend run endpoint
+    const resolveUrl = (url: string): string => {
+      if (url.startsWith('/') && projectId) {
+        return `${PREVIEW_BACKEND_URL}/v1/run/${projectId}${url}`;
+      }
+      return url;
+    };
     if (ds.type === 'rest' && ds.url) {
       result[ds.id] = {
         type: 'rest',
-        url: ds.url,
+        url: resolveUrl(ds.url),
         method: ds.method as RestNamedDataSourceDef['method'],
         headers: ds.headers,
         queryParams: ds.queryParams,
@@ -290,7 +304,8 @@ function buildDataSources(
 function buildActionsConfig(config: ProjectConfig): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [uuid, wf] of Object.entries(config.workflows ?? {})) {
-    result[uuid] = { trigger: wf.trigger ?? 'click', steps: wf.steps ?? [] };
+    // Spread all stored fields (preserves isTrigger, pageScope, isAppTrigger, name, etc.)
+    result[uuid] = { ...wf, trigger: wf.trigger ?? 'click', steps: wf.steps ?? [] };
   }
   return result;
 }
@@ -304,6 +319,7 @@ export default function AppPreviewPage() {
   const appPath = pathname?.replace(/^\/app-preview/, '') || '/';
 
   const [projectConfig, setProjectConfig] = useState<ProjectConfig | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -427,24 +443,31 @@ export default function AppPreviewPage() {
       );
     const hasBuilderBust = params.has('_t');
 
+    setProjectId(projectId);
     void fetchConfig(projectId, isReload || hasBuilderBust);
   }, [fetchConfig]);
 
-  // Find the page matching the current app path
-  const currentPage = useMemo<BuilderPage | null>(() => {
-    if (!projectConfig?.pages?.length) return null;
+  // Find the page matching the current app path (supports :param segments)
+  const { currentPage, pathParams } = useMemo<{ currentPage: BuilderPage | null; pathParams: Record<string, string> }>(() => {
+    if (!projectConfig?.pages?.length) return { currentPage: null, pathParams: {} };
     const pages = projectConfig.pages;
 
-    // Exact match first
-    const exact = pages.find(p => (p.route ?? '/') === appPath);
-    if (exact) return exact;
+    // Build RouteConfig-compatible list from BuilderPage.route fields
+    const routeConfigs = pages
+      .filter(p => p.route)
+      .map(p => ({ path: p.route as string }));
 
-    // Dynamic route match (prefix)
-    const dynamic = pages.find(p => p.route && appPath.startsWith(p.route + '/'));
-    if (dynamic) return dynamic;
+    const sorted = sortRoutes(routeConfigs);
+    const match = matchRoute(appPath, sorted);
+
+    if (match) {
+      const page = pages.find(p => p.route === match.route.path) ?? null;
+      return { currentPage: page, pathParams: match.params };
+    }
 
     // Home fallback
-    return pages.find(p => p.route === '/' || !p.route) ?? pages[0];
+    const fallback = pages.find(p => p.route === '/' || !p.route) ?? pages[0];
+    return { currentPage: fallback ?? null, pathParams: {} };
   }, [projectConfig, appPath]);
 
   // Protection guard is evaluated synchronously in the render path below.
@@ -468,8 +491,8 @@ export default function AppPreviewPage() {
 
   const dataSources = useMemo(() => ({
     ...(app.dataSources ?? {}),
-    ...buildDataSources(projectConfig?.pageDataSources),
-  }), [projectConfig?.pageDataSources]);
+    ...buildDataSources(projectConfig?.pageDataSources, projectId),
+  }), [projectConfig?.pageDataSources, projectId]);
 
   // ── Loading / error states ────────────────────────────────────────────────
 
@@ -519,27 +542,15 @@ export default function AppPreviewPage() {
     );
   }
 
-  // Protection guard — synchronous check before SDUIEngine mounts so no
-  // datasource fetches fire on a page the user isn't allowed to see.
-  if (currentPage.protectionCondition) {
-    const mergedState = {
-      ...useSduiStore.getState().data,
-      ...getGlobalVariableStore().getState().getFullState(),
-    };
-    const allowed = evaluateFormula(currentPage.protectionCondition, mergedState).value;
-    if (!allowed) {
-      router.replace(currentPage.protectionRedirect ?? '/');
-      return null;
-    }
-  }
-
   return (
     <SDUIEngine
+      key={`${appPath}-${Object.values(pathParams).join('-')}`}
       config={sdui}
-      configName={appPath.replace(/[^a-zA-Z0-9]/g, '_') || 'preview'}
+      configName={currentPage.name || appPath.replace(/[^a-zA-Z0-9]/g, '_') || 'preview'}
       actionsConfig={actionsConfig}
       routes={app.routes ?? []}
       dataSources={dataSources}
+      pathParams={pathParams}
     />
   );
 }

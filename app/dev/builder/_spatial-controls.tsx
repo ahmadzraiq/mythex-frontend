@@ -17,6 +17,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { isBoundValue, type FormulaValue, BindingIcon } from './_formula-panel';
 import { FormulaEditor } from './_formula-editor';
 import { ResponsiveDot, ChangedFieldContext } from './_panel-primitives';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from './_icons';
 
 // Suppress browser number spinner arrows via a globally-injected style block.
 if (typeof document !== 'undefined' && !document.getElementById('spatial-no-spin')) {
@@ -32,26 +33,6 @@ if (typeof document !== 'undefined' && !document.getElementById('spatial-no-spin
 
 // ─── Shared icons ─────────────────────────────────────────────────────────────
 
-const ArrowUp = () => (
-  <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M4 7V1M1.5 3.5L4 1l2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const ArrowDown = () => (
-  <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M4 1v6M1.5 4.5L4 7l2.5-2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const ArrowLeft = () => (
-  <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M7 4H1M3.5 1.5L1 4l2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const ArrowRight = () => (
-  <svg width={7} height={7} viewBox="0 0 8 8" fill="none" style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M1 4h6M4.5 1.5L7 4l-2.5 2.5" stroke="var(--bld-text-disabled)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 function LinkIcon() {
   return (

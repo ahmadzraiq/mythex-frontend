@@ -11,7 +11,6 @@
 import React, { useState, useCallback, useRef, lazy, Suspense, useEffect } from 'react';
 import { SearchInput } from './_panel-primitives';
 import { useSearchParams, usePathname } from 'next/navigation';
-import { backendWorkflows, type BackendWorkflow } from '@/lib/platform/api-client';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 
@@ -19,6 +18,7 @@ const CodeMirror = lazy(() => import('@uiw/react-codemirror'));
 import ReactDOM from 'react-dom';
 import { useBuilderStore, type DataSourceConfig, type DataSourceParam, type CustomVar, type Folder, persistPreviewData } from './_store';
 import { SP_BTN_PRIMARY, SP_BTN_SECONDARY, SP_INPUT, SP_LABEL } from './_slide-panel';
+import { IcoEdit, IcoCopy, IcoDuplicate, IcoTrash, IcoFolder, IcoRefresh } from './_icons';
 // Thin SVG chevron — rotated via CSS transform to point in any direction
 function Chevron({ open, size = 12, color = 'currentColor', style }: { open?: boolean; size?: number; color?: string; style?: React.CSSProperties }) {
   return (
@@ -127,14 +127,6 @@ const SUB_HDR: React.CSSProperties = {
   fontSize: 9, fontWeight: 700, color: 'var(--bld-text-disabled)', textTransform: 'none' as const, padding: '4px 12px 2px', background: 'var(--bld-bg-base)',
 };
 
-// ─── BackendApisSection ───────────────────────────────────────────────────────
-// Shows only PUBLISHED API endpoints, grouped by table folder.
-// Per-item Add button + Add All button. Scrollable. Never causes PATCH calls.
-
-import { backendTables, type BackendTable } from '@/lib/platform/api-client';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
-
 const METHOD_COLOR: Record<string, string> = {
   GET: 'var(--bld-success)', POST: 'var(--bld-info)', PUT: 'var(--bld-warning)', PATCH: 'var(--bld-accent)', DELETE: 'var(--bld-error)',
 };
@@ -142,150 +134,6 @@ const METHOD_BG: Record<string, string> = {
   GET: 'rgba(34,197,94,0.12)', POST: 'rgba(59,130,246,0.12)', PUT: 'rgba(245,158,11,0.12)',
   PATCH: 'rgba(139,92,246,0.12)', DELETE: 'rgba(239,68,68,0.12)',
 };
-
-function WfItem({ wf, added, onAdd }: { wf: BackendWorkflow; added: boolean; onAdd: () => void }) {
-  const m = wf.method ?? 'GET';
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px 5px 22px', fontSize: 11 }}>
-      <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 4px', borderRadius: 3, background: METHOD_BG[m] ?? METHOD_BG.GET, color: METHOD_COLOR[m] ?? METHOD_COLOR.GET, flexShrink: 0 }}>
-        {m}
-      </span>
-      <span style={{ flex: 1, color: 'var(--bld-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
-        {wf.name}
-      </span>
-      <button
-        onClick={onAdd}
-        disabled={added}
-        title={added ? 'Already added' : 'Add as data source'}
-        style={{
-          fontSize: 9, padding: '2px 6px', borderRadius: 3, flexShrink: 0,
-          cursor: added ? 'default' : 'pointer',
-          background: added ? 'transparent' : 'rgba(99,102,241,0.15)',
-          color: added ? 'var(--bld-text-disabled)' : 'var(--bld-accent)',
-          border: `1px solid ${added ? 'var(--bld-border)' : 'rgba(99,102,241,0.3)'}`,
-        }}
-      >{added ? '✓' : '+ Add'}</button>
-    </div>
-  );
-}
-
-function BackendApisSection({ projectId, onAdd, onAddAll, merged = false }: {
-  projectId: string;
-  onAdd: (wf: BackendWorkflow, folderId?: string) => void;
-  onAddAll: (wfs: BackendWorkflow[], tables: BackendTable[]) => void;
-  merged?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [wfs, setWfs] = useState<BackendWorkflow[]>([]);
-  const [tables, setTables] = useState<BackendTable[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
-  const [allAdded, setAllAdded] = useState(false);
-  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      backendWorkflows.list(projectId, { kind: 'API_ENDPOINT' }),
-      backendTables.list(projectId).catch(() => ({ tables: [] as BackendTable[] })),
-    ])
-      .then(([wfRes, tblRes]) => {
-        // Only show published endpoints
-        setWfs(wfRes.workflows.filter(w => w.status === 'PUBLISHED'));
-        setTables(tblRes.tables);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [projectId]);
-
-  const tableItemIds = new Set(
-    tables.flatMap(t => wfs.filter(w => w.autoGroupTableId === t.id).map(w => w.id))
-  );
-  const standalone = wfs.filter(w => !tableItemIds.has(w.id));
-
-  const toggleFolder = (key: string) =>
-    setCollapsedFolders(s => ({ ...s, [key]: !s[key] }));
-
-  const handleAdd = (wf: BackendWorkflow, folderId?: string) => {
-    if (addedIds.has(wf.id)) return;
-    onAdd(wf, folderId);
-    setAddedIds(s => { const n = new Set(s); n.add(wf.id); return n; });
-  };
-
-  const handleAddAll = () => {
-    if (allAdded) return;
-    onAddAll(wfs, tables);
-    setAddedIds(new Set(wfs.map(w => w.id)));
-    setAllAdded(true);
-  };
-
-  return (
-    <div style={merged
-      ? { display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: open ? 600 : 38, transition: 'max-height 0.22s ease' }
-      : { borderBottom: '0.5px solid var(--bld-bg-input)', display: 'flex', flexDirection: 'column', flex: open ? '1 1 0' : '0 0 auto', minHeight: 0, overflow: 'hidden', transition: 'flex 0.2s' }}>
-      <div style={{ ...SECTION_HDR, cursor: 'pointer', flexShrink: 0 }} onClick={() => setOpen(o => !o)}>
-        <span style={{ ...SEC_LABEL, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Chevron open={open} size={10} color="var(--bld-text-disabled)" />
-          Backend APIs
-          {!loading && wfs.length > 0 && <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', fontWeight: 400 }}>({wfs.length})</span>}
-        </span>
-        {!loading && wfs.length > 0 && (
-          <div onClick={e => e.stopPropagation()}>
-            <button
-              onClick={handleAddAll}
-              disabled={allAdded}
-              style={{
-                fontSize: 10, padding: '2px 8px', borderRadius: 4, cursor: allAdded ? 'default' : 'pointer',
-                background: allAdded ? 'transparent' : 'rgba(99,102,241,0.15)',
-                color: allAdded ? 'var(--bld-text-disabled)' : 'var(--bld-accent)',
-                border: `1px solid ${allAdded ? 'var(--bld-border)' : 'rgba(99,102,241,0.3)'}`,
-              }}
-            >{allAdded ? '✓ Added' : '+ Add All'}</button>
-          </div>
-        )}
-      </div>
-      {open && (
-        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 4 }}>
-          {loading ? (
-            <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-disabled)' }}>Loading…</div>
-          ) : wfs.length === 0 ? (
-            <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--bld-text-3)' }}>No published endpoints yet. Create API workflows in the Data & API tab.</div>
-          ) : (
-            <>
-              {tables.map(t => {
-                const items = wfs.filter(w => w.autoGroupTableId === t.id);
-                if (items.length === 0) return null;
-                const key = t.id;
-                const folderOpen = !collapsedFolders[key];
-                return (
-                  <div key={key}>
-                    <div
-                      onClick={() => toggleFolder(key)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', cursor: 'pointer', userSelect: 'none' as const }}
-                    >
-                      <span style={{ fontSize: 9, color: 'var(--bld-text-disabled)', transform: folderOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block', transition: 'transform 0.15s' }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline-block",verticalAlign:"middle"}}><polyline points="6 9 12 15 18 9"/></svg></span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--bld-text-2)', fontWeight: 500 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bld-text-disabled)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                        {t.displayName}
-                      </span>
-                      <span style={{ fontSize: 10, color: 'var(--bld-text-disabled)', marginLeft: 'auto' }}>{items.length}</span>
-                    </div>
-                    {folderOpen && items.map(wf => (
-                      <WfItem key={wf.id} wf={wf} added={addedIds.has(wf.id)} onAdd={() => handleAdd(wf, `be-folder-${t.id}`)} />
-                    ))}
-                  </div>
-                );
-              })}
-              {standalone.map(wf => (
-                <WfItem key={wf.id} wf={wf} added={addedIds.has(wf.id)} onAdd={() => handleAdd(wf)} />
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface DataTabProps {
   onSetSlide: (s: DataTabSlideState) => void;
@@ -310,7 +158,7 @@ export function DataTab({ onSetSlide, onWidthChange, merged = false }: DataTabPr
   const [dsOpen, setDsOpen] = useState(true);
   const [varOpen, setVarOpen] = useState(true);
   const [activeDsId, setActiveDsId] = useState<string | null>(null);
-  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders, removeVarFolder, addDsFolder } = useBuilderStore();
+  const { pageDataSources, removePageDataSource, addPageDataSource, updatePageDataSource, customVars, removeCustomVar, addCustomVar, updateCustomVar, varFolders, dsFolders, removeVarFolder } = useBuilderStore();
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [folderMenu, setFolderMenu] = useState<{ id: string; top: number; left: number } | null>(null);
@@ -564,11 +412,14 @@ export function DataTab({ onSetSlide, onWidthChange, merged = false }: DataTabPr
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
-            {customVars.length > 0 && (
+              {customVars.length > 0 && (
               <button
                 data-testid="remove-all-vars-btn"
                 title="Remove all variables"
-                onClick={() => { customVars.forEach(v => removeCustomVar(v.name)); }}
+                onClick={() => {
+                  customVars.forEach(v => removeCustomVar(v.name));
+                  varFolders.forEach(f => removeVarFolder(f.id));
+                }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bld-text-disabled)', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 3 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-error)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--bld-text-disabled)'; }}
@@ -633,65 +484,10 @@ export function DataTab({ onSetSlide, onWidthChange, merged = false }: DataTabPr
         )}
       </div>
       {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
-
-      {/* ── Backend APIs — last accordion, closed by default ── */}
-      {projectId && (
-        <BackendApisSection
-          projectId={projectId}
-          merged={merged}
-          onAdd={(wf, folderId) => {
-            const id = `backend-${wf.id}`;
-            if (pageDataSources.find(d => d.id === id)) return;
-            addPageDataSource({
-              id,
-              name: wf.name,
-              type: 'rest',
-              method: (wf.method ?? 'GET') as DataSourceConfig['method'],
-              url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
-              trigger: 'action',
-              storeIn: id,
-              folderId,
-            } as DataSourceConfig);
-          }}
-          onAddAll={(wfs, tables) => {
-            const folderIdMap: Record<string, string> = {};
-            tables.forEach(t => {
-              const folderId = `be-folder-${t.id}`;
-              if (!dsFolders.find(f => f.id === folderId)) {
-                addDsFolder({ id: folderId, name: t.displayName, parentId: undefined });
-              }
-              folderIdMap[t.id] = folderId;
-            });
-            wfs.forEach(wf => {
-              const id = `backend-${wf.id}`;
-              if (pageDataSources.find(d => d.id === id)) return;
-              const folderId = wf.autoGroupTableId ? folderIdMap[wf.autoGroupTableId] : undefined;
-              addPageDataSource({
-                id,
-                name: wf.name,
-                type: 'rest',
-                method: (wf.method ?? 'GET') as DataSourceConfig['method'],
-                url: `${BACKEND_URL}/v1/run/${projectId}/${wf.slug ?? wf.id}`,
-                trigger: 'action',
-                storeIn: id,
-                folderId,
-              } as DataSourceConfig);
-            });
-          }}
-        />
-      )}
-      {merged && <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent 0%, var(--bld-border-subtle) 20%, var(--bld-border-subtle) 80%, transparent 100%)', flexShrink: 0 }} />}
     </div>
   );
 }
 
-// ─── Shared SVG icons for context menus ──────────────────────────────────────
-const IcoEdit = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IcoCopy = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
-const IcoDuplicate = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
-const IcoTrash = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
-const IcoFolder = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
-const IcoRefresh = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
 
 // ─── VarRow — variable list item with ⋮ context menu ─────────────────────────
 

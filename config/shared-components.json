@@ -624,6 +624,25 @@
       "children": [
         {
           "type": "Box",
+          "id": "navbar-app-loader",
+          "condition": "variables['app00001-0000-4000-a000-000000000001'] === true",
+          "props": {
+            "className": "fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--theme-background)]"
+          },
+          "children": [
+            {
+              "type": "Icon",
+              "props": {
+                "icon": "lucide:loader-circle",
+                "size": 40,
+                "color": "#7c3aed",
+                "className": "animate-spin flex-col"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Box",
           "id": "navbar-inner",
           "props": {
             "className": "w-full max-w-screen-xl mx-auto px-[16px] flex-col"
@@ -943,7 +962,7 @@
                               "props": {
                                 "className": "inline-flex flex-row items-center h-[32px] px-[8px] rounded-[4px] hover:bg-[var(--theme-card-foreground)]/10"
                               },
-                              "condition": "!auth?.user",
+                              "condition": "!variables['auth0002-a5b6-4000-c000-000000000002']",
                               "actions": [
                                 {
                                   "action": "3517ed88-9e35-42fd-8d44-650cb590d210"
@@ -964,7 +983,7 @@
                               "props": {
                                 "className": "flex flex-row items-center gap-[4px]"
                               },
-                              "condition": "auth?.user",
+                              "condition": "variables['auth0002-a5b6-4000-c000-000000000002']",
                               "children": [
                                 {
                                   "type": "Box",
@@ -990,7 +1009,7 @@
                                       "props": {
                                         "className": "hidden sm:flex text-[14px] font-medium text-[var(--theme-foreground)]"
                                       },
-                                      "text": "Hi, {{auth.user.firstName}}"
+                                      "text": "Hi, {{variables['auth0002-a5b6-4000-c000-000000000002'].firstName}}"
                                     }
                                   ]
                                 },
@@ -1025,6 +1044,42 @@
               ]
             }
           ]
+        }
+      ]
+    }
+  },
+  "sc-app-layout": {
+    "id": "sc-app-layout",
+    "name": "App Layout",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "id": "app-layout-root",
+      "props": {
+        "className": "w-full min-h-screen flex flex-col"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "id": "app-layout-navbar",
+          "_shared": { "id": "sc-navbar", "name": "Navbar" },
+          "props": {},
+          "children": []
+        },
+        {
+          "type": "Box",
+          "id": "app-layout-content",
+          "props": {
+            "className": "flex-1 flex flex-col pt-[64px]"
+          },
+          "children": []
+        },
+        {
+          "type": "Box",
+          "id": "app-layout-footer",
+          "_shared": { "id": "sc-footer", "name": "Footer" },
+          "props": {},
+          "children": []
         }
       ]
     }
@@ -2627,7 +2682,7 @@
       "props": {
         "className": "border-[1px] rounded-[8px] px-[24px] bg-[var(--theme-card)] flex-col"
       },
-      "condition": "auth?.user === null",
+      "condition": "variables['auth0002-a5b6-4000-c000-000000000002'] == null",
       "children": [
         {
           "type": "Box",
@@ -2652,10 +2707,10 @@
                     "className": "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] min-h-[32px] rounded-[9999px] overflow-hidden shrink-0 flex-col",
                     "style": {
                       "backgroundColor": {
-                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
+                        "formula": "(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? '#22c55e' : (variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'var(--theme-primary)' : 'var(--theme-muted)')"
                       },
                       "color": {
-                        "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'"
+                        "formula": "(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) || variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact' ? 'white' : 'var(--theme-muted-foreground)'"
                       }
                     }
                   },
@@ -2667,7 +2722,7 @@
                         "size": 16,
                         "className": "!text-white flex-col"
                       },
-                      "condition": "auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress"
+                      "condition": "variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress"
                     },
                     {
                       "type": "Text",
@@ -2675,7 +2730,7 @@
                         "className": "font-semibold text-[14px] !text-white flex-col"
                       },
                       "text": "1",
-                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
+                      "condition": "!(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] === 'contact'"
                     },
                     {
                       "type": "Text",
@@ -2683,7 +2738,7 @@
                         "className": "font-semibold text-[14px] !text-[var(--theme-muted-foreground)] flex-col"
                       },
                       "text": "1",
-                      "condition": "!(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
+                      "condition": "!(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) && variables['d9e0f1a2-b3c4-5678-defa-789012345678'] !== 'contact'"
                     }
                   ]
                 },
@@ -2949,13 +3004,13 @@
             "className": "flex flex-row items-center justify-between w-full py-[16px]",
             "style": {
               "opacity": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 1 : 0.5"
+                "formula": "(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 1 : 0.5"
               },
               "pointerEvents": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'"
+                "formula": "(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'auto' : 'none'"
               },
               "cursor": {
-                "formula": "(auth?.user || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'"
+                "formula": "(variables['auth0002-a5b6-4000-c000-000000000002'] || collections['b8c9d0e1-f2a3-4567-bcde-678901234567']?.activeOrder?.customer?.emailAddress) ? 'pointer' : 'not-allowed'"
               }
             }
           },
@@ -10521,5 +10576,864 @@
       ]
     },
     "templateId": "tpl-icon-button"
+  },
+  "sc-auth-layout": {
+    "id": "sc-auth-layout",
+    "name": "Auth Layout",
+    "properties": [],
+    "variables": {
+      "sc-authlayout-isready-0000-000000000001": {
+        "label": "isReady",
+        "type": "boolean",
+        "initialValue": false
+      }
+    },
+    "workflows": {
+      "sc-authlayout-wf-check-auth": {
+        "id": "sc-authlayout-wf-check-auth",
+        "name": "Check Auth on Mount",
+        "trigger": "mounted",
+        "params": [],
+        "steps": [
+          {
+            "id": "sc-auth-step-reset",
+            "type": "changeVariableValue",
+            "config": {
+              "variableName": "sc-authlayout-isready-0000-000000000001",
+              "value": false
+            }
+          },
+          {
+            "id": "sc-auth-step-wait-app",
+            "type": "whileLoop",
+            "config": {
+              "condition": {
+                "js": "variables['app00001-0000-4000-a000-000000000001'] === true"
+              }
+            },
+            "loopBody": [
+              {
+                "id": "sc-auth-step-delay",
+                "type": "timeDelay",
+                "config": {
+                  "ms": 50
+                }
+              }
+            ]
+          },
+          {
+            "id": "sc-auth-step-branch",
+            "type": "branch",
+            "config": {
+              "condition": {
+                "js": "variables['auth0002-a5b6-4000-c000-000000000002'] != null"
+              }
+            },
+            "trueBranch": [
+              {
+                "id": "sc-auth-step-set-ready",
+                "type": "changeVariableValue",
+                "config": {
+                  "variableName": "sc-authlayout-isready-0000-000000000001",
+                  "value": true
+                }
+              }
+            ],
+            "falseBranch": [
+              {
+                "id": "sc-auth-step-redirect",
+                "type": "navigateTo",
+                "config": {
+                  "path": "/sign-in",
+                  "linkType": "internal"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "Box",
+      "props": {
+        "className": "w-full min-h-screen relative"
+      },
+      "children": [
+        {
+          "type": "Box",
+          "condition": "!context.component.variables['sc-authlayout-isready-0000-000000000001']",
+          "props": {
+            "className": "fixed inset-0 z-[50] flex flex-col items-center justify-center bg-[var(--theme-background)]"
+          },
+          "children": [
+            {
+              "type": "Box",
+              "props": {
+                "className": "flex items-center justify-center",
+                "animation": {
+                  "loop": {
+                    "type": "spin",
+                    "duration": 800,
+                    "repeatCount": -1
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": "lucide:loader-circle",
+                    "size": 32,
+                    "color": "#7c3aed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "condition": "context.component.variables['sc-authlayout-isready-0000-000000000001']",
+          "props": {
+            "className": "w-full"
+          },
+          "children": []
+        }
+      ]
+    }
+  },
+  "sc-toast-overlay": {
+    "id": "sc-toast-overlay",
+    "name": "Toast Overlay",
+    "properties": [],
+    "content": {
+      "type": "Box",
+      "props": {
+        "style": {
+          "position": "fixed",
+          "inset": "0",
+          "zIndex": 10000,
+          "pointerEvents": "none"
+        }
+      },
+      "children": [
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "top": "24px",
+              "left": "24px",
+              "flexDirection": "column",
+              "alignItems": "flex-start",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'top-left'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInLeft",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutLeft",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "top": "24px",
+              "left": "50%",
+              "flexDirection": "column",
+              "alignItems": "center",
+              "transform": "translateX(-50%)",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'top-center'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInDown",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutUp",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "top": "24px",
+              "right": "24px",
+              "flexDirection": "column",
+              "alignItems": "flex-end",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'top-right'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInRight",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutRight",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "bottom": "24px",
+              "left": "24px",
+              "flexDirection": "column-reverse",
+              "alignItems": "flex-start",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'bottom-left'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInLeft",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutLeft",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "bottom": "24px",
+              "left": "50%",
+              "flexDirection": "column-reverse",
+              "alignItems": "center",
+              "transform": "translateX(-50%)",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'bottom-center'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInUp",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutDown",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Box",
+          "props": {
+            "style": {
+              "position": "fixed",
+              "bottom": "24px",
+              "right": "24px",
+              "flexDirection": "column-reverse",
+              "alignItems": "flex-end",
+              "zIndex": 10000,
+              "display": "flex",
+              "gap": "10px",
+              "pointerEvents": "none"
+            }
+          },
+          "children": [
+            {
+              "type": "Box",
+              "map": {
+                "js": "(variables['toast-list-0000-0000-4000-a000-000000000001'] || []).filter(function(t){ return (t.position || 'bottom-right') === 'bottom-right'; })"
+              },
+              "props": {
+                "style": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "alignItems": "center",
+                  "gap": "10px",
+                  "padding": "12px 16px",
+                  "borderRadius": "10px",
+                  "boxShadow": "0 4px 24px rgba(0,0,0,0.18)",
+                  "minWidth": "260px",
+                  "maxWidth": "380px",
+                  "pointerEvents": "auto",
+                  "background": {
+                    "js": "context?.item?.data?.type === 'success' ? '#166534' : context?.item?.data?.type === 'error' ? '#7f1d1d' : context?.item?.data?.type === 'warning' ? '#78350f' : '#1e3a5f'"
+                  },
+                  "borderLeft": {
+                    "js": "context?.item?.data?.type === 'success' ? '4px solid #22c55e' : context?.item?.data?.type === 'error' ? '4px solid #ef4444' : context?.item?.data?.type === 'warning' ? '4px solid #f59e0b' : '4px solid #3b82f6'"
+                  }
+                }
+              },
+              "animation": {
+                "enter": {
+                  "type": "slideInRight",
+                  "duration": 320,
+                  "easing": "easeOut"
+                },
+                "exit": {
+                  "type": "slideOutRight",
+                  "duration": 200,
+                  "easing": "easeIn"
+                }
+              },
+              "children": [
+                {
+                  "type": "Icon",
+                  "props": {
+                    "icon": {
+                      "js": "context?.item?.data?.type === 'success' ? 'lucide:check-circle' : context?.item?.data?.type === 'error' ? 'lucide:x-circle' : context?.item?.data?.type === 'warning' ? 'lucide:alert-triangle' : 'lucide:info'"
+                    },
+                    "size": 18,
+                    "color": {
+                      "js": "context?.item?.data?.type === 'success' ? '#4ade80' : context?.item?.data?.type === 'error' ? '#f87171' : context?.item?.data?.type === 'warning' ? '#fbbf24' : '#60a5fa'"
+                    },
+                    "style": {
+                      "flexShrink": "0"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "style": {
+                      "flex": "1",
+                      "color": "#f1f5f9",
+                      "fontSize": "14px",
+                      "lineHeight": "1.4"
+                    }
+                  },
+                  "text": {
+                    "js": "context?.item?.data?.message ?? ''"
+                  }
+                },
+                {
+                  "type": "Box",
+                  "props": {
+                    "style": {
+                      "flexShrink": "0",
+                      "cursor": "pointer",
+                      "opacity": 0.6,
+                      "padding": "2px"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "workflowId": "dismiss-toast",
+                      "trigger": "click",
+                      "params": {
+                        "id": {
+                          "js": "context?.item?.data?.id"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "icon": "lucide:x",
+                        "size": 14,
+                        "color": "#94a3b8"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   }
 }

@@ -2,502 +2,540 @@
   "meta": {
     "title": "Create Account"
   },
-  "layout": "store",
-  "content": {
+  "ui": {
     "type": "Box",
+    "_shared": {
+      "id": "sc-app-layout",
+      "name": "App Layout"
+    },
     "props": {
-      "className": "flex flex-1 w-full items-center justify-center px-[16px] flex-col"
+      "className": "w-full min-h-screen flex flex-col"
     },
     "children": [
       {
         "type": "Box",
+        "_shared": {
+          "id": "sc-navbar",
+          "name": "Navbar"
+        },
+        "props": {},
+        "children": []
+      },
+      {
+        "type": "Box",
+        "id": "app-layout-content",
         "props": {
-          "className": "w-full max-w-[448px] min-w-0 space-y-[24px] flex flex-col"
+          "className": "flex-1 flex flex-col pt-[64px]"
         },
         "children": [
           {
             "type": "Box",
             "props": {
-              "className": "space-y-[8px] text-center flex-col"
+              "className": "flex flex-1 w-full items-center justify-center px-[16px] flex-col"
             },
             "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[30px] font-bold text-center flex-col"
-                },
-                "text": "Create Account"
-              },
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-center flex-col"
-                },
-                "text": "Sign up to start shopping with us"
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm flex-col"
-            },
-            "children": [
-              {
-                "type": "FormContainer",
-                "props": {
-                  "initialFormData": {
-                    "emailAddress": "",
-                    "firstName": "",
-                    "lastName": "",
-                    "phoneNumber": "",
-                    "password": "",
-                    "confirmPassword": ""
-                  },
-                  "className": "px-[24px] space-y-[16px] flex-col"
-                },
-                "actions": [
-                  {
-                    "trigger": "submit",
-                    "workflowId": "926c0ef9-beeb-41d3-924b-034b76b8b7cf"
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "space-y-[4px] flex-col"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-[14px] font-medium leading-none flex-col"
-                        },
-                        "text": "Email Address"
-                      },
-                      {
-                        "type": "Input",
-                        "id": "6d49365f-789e-417c-bdd6-263a14a54f68",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "!text-[var(--theme-foreground)] flex-col",
-                          "type": "email",
-                          "placeholder": "you@example.com",
-                          "placeholderTextColor": "#9ca3af",
-                          "autoComplete": "email",
-                          "name": "emailAddress"
-                        },
-                        "children": [],
-                        "_validation": {
-                          "trigger": "submit",
-                          "rules": [
-                            {
-                              "type": "required",
-                              "message": "Email is required"
-                            },
-                            {
-                              "type": "email",
-                              "message": "Please enter a valid email address"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "min-h-[18px] flex-col"
-                        },
-                        "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                            },
-                            "text": "{{local.data.form.fields.emailAddress.isValid}}"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "grid grid-cols-2 gap-[16px]"
-                    },
-                    "children": [
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "space-y-[4px] flex-col"
-                        },
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[14px] font-medium leading-none flex-col"
-                            },
-                            "text": "First name"
-                          },
-                          {
-                            "type": "Input",
-                            "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
-                            "props": {
-                              "variant": "outline",
-                              "size": "sm",
-                              "className": "!text-[var(--theme-foreground)] flex-col",
-                              "placeholder": "John",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "given-name",
-                              "name": "firstName"
-                            },
-                            "children": [],
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "First name is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "2",
-                                  "message": "Must be at least 2 characters"
-                                }
-                              ]
-                            }
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "min-h-[18px] flex-col"
-                            },
-                            "condition": "local?.data?.form?.fields?.firstName?.isValid",
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                                },
-                                "text": "{{local.data.form.fields.firstName.isValid}}"
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "space-y-[4px] flex-col"
-                        },
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[14px] font-medium leading-none flex-col"
-                            },
-                            "text": "Last name"
-                          },
-                          {
-                            "type": "Input",
-                            "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
-                            "props": {
-                              "variant": "outline",
-                              "size": "sm",
-                              "className": "!text-[var(--theme-foreground)] flex-col",
-                              "placeholder": "Doe",
-                              "placeholderTextColor": "#9ca3af",
-                              "autoComplete": "family-name",
-                              "name": "lastName"
-                            },
-                            "children": [],
-                            "_validation": {
-                              "trigger": "submit",
-                              "rules": [
-                                {
-                                  "type": "required",
-                                  "message": "Last name is required"
-                                },
-                                {
-                                  "type": "minLength",
-                                  "value": "2",
-                                  "message": "Must be at least 2 characters"
-                                }
-                              ]
-                            }
-                          },
-                          {
-                            "type": "Box",
-                            "props": {
-                              "className": "min-h-[18px] flex-col"
-                            },
-                            "condition": "local?.data?.form?.fields?.lastName?.isValid",
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                                },
-                                "text": "{{local.data.form.fields.lastName.isValid}}"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "space-y-[4px] flex-col"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-[14px] font-medium leading-none flex-col"
-                        },
-                        "text": "Phone Number"
-                      },
-                      {
-                        "type": "Input",
-                        "id": "957459a9-0326-4fae-ad84-e92d95254897",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "!text-[var(--theme-foreground)] flex-col",
-                          "type": "tel",
-                          "placeholder": "+1 234 567 8900",
-                          "placeholderTextColor": "#9ca3af",
-                          "autoComplete": "tel",
-                          "name": "phoneNumber"
-                        },
-                        "children": [],
-                        "_debounce": {
-                          "enabled": true,
-                          "delay": 600
-                        },
-                        "_validation": {
-                          "trigger": "change",
-                          "rules": [
-                            {
-                              "type": "phone",
-                              "message": "Please enter a valid phone number"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "min-h-[18px] flex-col"
-                        },
-                        "condition": "local?.data?.form?.fields?.phoneNumber?.isValid",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                            },
-                            "text": "{{local.data.form.fields.phoneNumber.isValid}}"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "space-y-[4px] flex-col"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-[14px] font-medium leading-none flex-col"
-                        },
-                        "text": "Password"
-                      },
-                      {
-                        "type": "Input",
-                        "id": "65068b99-5d5c-433a-b271-bafc413527ba",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "!text-[var(--theme-foreground)] flex-col",
-                          "placeholder": "••••••••",
-                          "placeholderTextColor": "#9ca3af",
-                          "autoComplete": "new-password",
-                          "name": "password",
-                          "secureTextEntry": true
-                        },
-                        "children": [],
-                        "_validation": {
-                          "trigger": "submit",
-                          "rules": [
-                            {
-                              "type": "required",
-                              "message": "Password is required"
-                            },
-                            {
-                              "type": "minLength",
-                              "value": "8",
-                              "message": "Password must be at least 8 characters"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "min-h-[18px] flex-col"
-                        },
-                        "condition": "local?.data?.form?.fields?.password?.isValid",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                            },
-                            "text": "{{local.data.form.fields.password.isValid}}"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "space-y-[4px] flex-col"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "text-[14px] font-medium leading-none flex-col"
-                        },
-                        "text": "Confirm Password"
-                      },
-                      {
-                        "type": "Input",
-                        "id": "cca7f8b8-c894-451f-b08e-1f467d7f7f16",
-                        "props": {
-                          "variant": "outline",
-                          "size": "sm",
-                          "className": "!text-[var(--theme-foreground)] flex-col",
-                          "placeholder": "••••••••",
-                          "placeholderTextColor": "#9ca3af",
-                          "autoComplete": "new-password",
-                          "name": "confirmPassword",
-                          "secureTextEntry": true
-                        },
-                        "children": [],
-                        "_validation": {
-                          "trigger": "submit",
-                          "rules": [
-                            {
-                              "type": "required",
-                              "message": "Please confirm your password"
-                            },
-                            {
-                              "type": "formula",
-                              "formula": {
-                                "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
-                              },
-                              "message": "Passwords do not match"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": "Box",
-                        "props": {
-                          "className": "min-h-[18px] flex-col"
-                        },
-                        "condition": "local?.data?.form?.fields?.confirmPassword?.isValid",
-                        "children": [
-                          {
-                            "type": "Text",
-                            "props": {
-                              "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
-                            },
-                            "text": "{{local.data.form.fields.confirmPassword.isValid}}"
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "props": {
-                      "className": "text-[14px] text-red-500 flex-col"
-                    },
-                    "condition": "_workflow?.lastAction === 'registerMutation' && _workflow?.lastError",
-                    "children": [
-                      {
-                        "type": "Text",
-                        "text": "{{_workflow.lastError}}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Box",
-                    "name": "Submit",
-                    "props": {
-                      "type": "submit",
-                      "className": "flex flex-row items-center justify-center cursor-pointer px-[16px] py-[8px] rounded-[6px] w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
-                    },
-                    "children": [
-                      {
-                        "type": "Text",
-                        "props": {
-                          "className": "!text-white flex-col"
-                        },
-                        "text": "Create Account"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "Box",
-            "props": {
-              "className": "px-[24px] mt-[24px] flex flex-row items-center justify-center"
-            },
-            "children": [
-              {
-                "type": "Text",
-                "props": {
-                  "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center flex-col"
-                },
-                "text": "Already have an account? "
-              },
               {
                 "type": "Box",
-                "actions": [
-                  {
-                    "trigger": "click",
-                    "workflowId": "3517ed88-9e35-42fd-8d44-650cb590d210"
-                  }
-                ],
+                "props": {
+                  "className": "w-full max-w-[448px] min-w-0 space-y-[24px] flex flex-col"
+                },
                 "children": [
                   {
-                    "type": "Text",
+                    "type": "Box",
                     "props": {
-                      "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center flex-col"
+                      "className": "space-y-[8px] text-center flex-col"
                     },
-                    "text": "Sign in"
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[30px] font-bold text-center flex-col"
+                        },
+                        "text": "Create Account"
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[var(--theme-muted-foreground)] text-center flex-col"
+                        },
+                        "text": "Sign up to start shopping with us"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "w-full rounded-[12px] border-[1px] border-[var(--theme-border)] bg-[var(--theme-card)] py-[24px] shadow-sm flex-col"
+                    },
+                    "children": [
+                      {
+                        "type": "FormContainer",
+                        "props": {
+                          "initialFormData": {
+                            "emailAddress": "",
+                            "firstName": "",
+                            "lastName": "",
+                            "phoneNumber": "",
+                            "password": "",
+                            "confirmPassword": ""
+                          },
+                          "className": "px-[24px] space-y-[16px] flex-col"
+                        },
+                        "actions": [
+                          {
+                            "trigger": "submit",
+                            "workflowId": "926c0ef9-beeb-41d3-924b-034b76b8b7cf"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "space-y-[4px] flex-col"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] font-medium leading-none flex-col"
+                                },
+                                "text": "Email Address"
+                              },
+                              {
+                                "type": "Input",
+                                "id": "6d49365f-789e-417c-bdd6-263a14a54f68",
+                                "props": {
+                                  "variant": "outline",
+                                  "size": "sm",
+                                  "className": "!text-[var(--theme-foreground)] flex-col",
+                                  "type": "email",
+                                  "placeholder": "you@example.com",
+                                  "placeholderTextColor": "#9ca3af",
+                                  "autoComplete": "email",
+                                  "name": "emailAddress"
+                                },
+                                "children": [],
+                                "_validation": {
+                                  "trigger": "submit",
+                                  "rules": [
+                                    {
+                                      "type": "required",
+                                      "message": "Email is required"
+                                    },
+                                    {
+                                      "type": "email",
+                                      "message": "Please enter a valid email address"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "min-h-[18px] flex-col"
+                                },
+                                "condition": "local?.data?.form?.fields?.emailAddress?.isValid",
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                    },
+                                    "text": "{{local.data.form.fields.emailAddress.isValid}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "grid grid-cols-2 gap-[16px]"
+                            },
+                            "children": [
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "space-y-[4px] flex-col"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium leading-none flex-col"
+                                    },
+                                    "text": "First name"
+                                  },
+                                  {
+                                    "type": "Input",
+                                    "id": "b7c54d06-8b24-443d-81da-ced51881ae34",
+                                    "props": {
+                                      "variant": "outline",
+                                      "size": "sm",
+                                      "className": "!text-[var(--theme-foreground)] flex-col",
+                                      "placeholder": "John",
+                                      "placeholderTextColor": "#9ca3af",
+                                      "autoComplete": "given-name",
+                                      "name": "firstName"
+                                    },
+                                    "children": [],
+                                    "_validation": {
+                                      "trigger": "submit",
+                                      "rules": [
+                                        {
+                                          "type": "required",
+                                          "message": "First name is required"
+                                        },
+                                        {
+                                          "type": "minLength",
+                                          "value": "2",
+                                          "message": "Must be at least 2 characters"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "min-h-[18px] flex-col"
+                                    },
+                                    "condition": "local?.data?.form?.fields?.firstName?.isValid",
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                        },
+                                        "text": "{{local.data.form.fields.firstName.isValid}}"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "space-y-[4px] flex-col"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[14px] font-medium leading-none flex-col"
+                                    },
+                                    "text": "Last name"
+                                  },
+                                  {
+                                    "type": "Input",
+                                    "id": "09e3ef50-d78b-44d2-9635-c823f9c87964",
+                                    "props": {
+                                      "variant": "outline",
+                                      "size": "sm",
+                                      "className": "!text-[var(--theme-foreground)] flex-col",
+                                      "placeholder": "Doe",
+                                      "placeholderTextColor": "#9ca3af",
+                                      "autoComplete": "family-name",
+                                      "name": "lastName"
+                                    },
+                                    "children": [],
+                                    "_validation": {
+                                      "trigger": "submit",
+                                      "rules": [
+                                        {
+                                          "type": "required",
+                                          "message": "Last name is required"
+                                        },
+                                        {
+                                          "type": "minLength",
+                                          "value": "2",
+                                          "message": "Must be at least 2 characters"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  {
+                                    "type": "Box",
+                                    "props": {
+                                      "className": "min-h-[18px] flex-col"
+                                    },
+                                    "condition": "local?.data?.form?.fields?.lastName?.isValid",
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                        },
+                                        "text": "{{local.data.form.fields.lastName.isValid}}"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "space-y-[4px] flex-col"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] font-medium leading-none flex-col"
+                                },
+                                "text": "Phone Number"
+                              },
+                              {
+                                "type": "Input",
+                                "id": "957459a9-0326-4fae-ad84-e92d95254897",
+                                "props": {
+                                  "variant": "outline",
+                                  "size": "sm",
+                                  "className": "!text-[var(--theme-foreground)] flex-col",
+                                  "type": "tel",
+                                  "placeholder": "+1 234 567 8900",
+                                  "placeholderTextColor": "#9ca3af",
+                                  "autoComplete": "tel",
+                                  "name": "phoneNumber"
+                                },
+                                "children": [],
+                                "_debounce": {
+                                  "enabled": true,
+                                  "delay": 600
+                                },
+                                "_validation": {
+                                  "trigger": "change",
+                                  "rules": [
+                                    {
+                                      "type": "phone",
+                                      "message": "Please enter a valid phone number"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "min-h-[18px] flex-col"
+                                },
+                                "condition": "local?.data?.form?.fields?.phoneNumber?.isValid",
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                    },
+                                    "text": "{{local.data.form.fields.phoneNumber.isValid}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "space-y-[4px] flex-col"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] font-medium leading-none flex-col"
+                                },
+                                "text": "Password"
+                              },
+                              {
+                                "type": "Input",
+                                "id": "65068b99-5d5c-433a-b271-bafc413527ba",
+                                "props": {
+                                  "variant": "outline",
+                                  "size": "sm",
+                                  "className": "!text-[var(--theme-foreground)] flex-col",
+                                  "placeholder": "••••••••",
+                                  "placeholderTextColor": "#9ca3af",
+                                  "autoComplete": "new-password",
+                                  "name": "password",
+                                  "secureTextEntry": true
+                                },
+                                "children": [],
+                                "_validation": {
+                                  "trigger": "submit",
+                                  "rules": [
+                                    {
+                                      "type": "required",
+                                      "message": "Password is required"
+                                    },
+                                    {
+                                      "type": "minLength",
+                                      "value": "8",
+                                      "message": "Password must be at least 8 characters"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "min-h-[18px] flex-col"
+                                },
+                                "condition": "local?.data?.form?.fields?.password?.isValid",
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                    },
+                                    "text": "{{local.data.form.fields.password.isValid}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "space-y-[4px] flex-col"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "text-[14px] font-medium leading-none flex-col"
+                                },
+                                "text": "Confirm Password"
+                              },
+                              {
+                                "type": "Input",
+                                "id": "cca7f8b8-c894-451f-b08e-1f467d7f7f16",
+                                "props": {
+                                  "variant": "outline",
+                                  "size": "sm",
+                                  "className": "!text-[var(--theme-foreground)] flex-col",
+                                  "placeholder": "••••••••",
+                                  "placeholderTextColor": "#9ca3af",
+                                  "autoComplete": "new-password",
+                                  "name": "confirmPassword",
+                                  "secureTextEntry": true
+                                },
+                                "children": [],
+                                "_validation": {
+                                  "trigger": "submit",
+                                  "rules": [
+                                    {
+                                      "type": "required",
+                                      "message": "Please confirm your password"
+                                    },
+                                    {
+                                      "type": "formula",
+                                      "formula": {
+                                        "formula": "local.data?.['form']?.['formData']?.['confirmPassword'] === local.data?.['form']?.['formData']?.['password']"
+                                      },
+                                      "message": "Passwords do not match"
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "Box",
+                                "props": {
+                                  "className": "min-h-[18px] flex-col"
+                                },
+                                "condition": "local?.data?.form?.fields?.confirmPassword?.isValid",
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "className": "text-[12px] text-red-500 dark:text-red-400 flex-col"
+                                    },
+                                    "text": "{{local.data.form.fields.confirmPassword.isValid}}"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "props": {
+                              "className": "text-[14px] text-red-500 flex-col"
+                            },
+                            "condition": "_workflow?.lastAction === 'registerMutation' && _workflow?.lastError",
+                            "children": [
+                              {
+                                "type": "Text",
+                                "text": "{{_workflow.lastError}}"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Box",
+                            "name": "Submit",
+                            "props": {
+                              "type": "submit",
+                              "className": "flex flex-row items-center justify-center cursor-pointer px-[16px] py-[8px] rounded-[6px] w-full !bg-[var(--theme-primary)] hover:!bg-[var(--theme-primary)]"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "className": "!text-white flex-col"
+                                },
+                                "text": "Create Account"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Box",
+                    "props": {
+                      "className": "px-[24px] mt-[24px] flex flex-row items-center justify-center"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "className": "text-[var(--theme-muted-foreground)] text-[14px] text-center flex-col"
+                        },
+                        "text": "Already have an account? "
+                      },
+                      {
+                        "type": "Box",
+                        "actions": [
+                          {
+                            "trigger": "click",
+                            "workflowId": "3517ed88-9e35-42fd-8d44-650cb590d210"
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "className": "text-[14px] text-[var(--theme-primary)] underline hover:opacity-80 text-center flex-col"
+                            },
+                            "text": "Sign in"
+                          }
+                        ]
+                      }
+                    ]
                   }
-                ]
+                ],
+                "_group": "Register Form"
               }
             ]
           }
-        ],
-        "_group": "Register Form"
+        ]
+      },
+      {
+        "type": "Box",
+        "_shared": {
+          "id": "sc-footer",
+          "name": "Footer"
+        },
+        "props": {},
+        "children": []
       }
     ]
   }
