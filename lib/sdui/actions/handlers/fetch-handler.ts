@@ -69,7 +69,8 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
       let res: Response;
 
       if (useProxy) {
-        res = await fetch('/api/proxy', {
+        const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+        res = await fetch(`${backendBase}/v1/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

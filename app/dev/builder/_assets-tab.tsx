@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useBuilderStore } from './_store';
 
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AssetItem {
@@ -144,7 +146,7 @@ function StockGrid({
     try {
       const params = new URLSearchParams({ q, page: String(pg) });
       if (provider === 'pexels') params.set('type', mediaType);
-      const url = `/api/builder/assets/${provider}?${params}`;
+      const url = `${BACKEND_BASE}/v1/builder/assets/${provider}?${params}`;
       const res = await fetch(url, { signal: abortRef.current.signal });
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();

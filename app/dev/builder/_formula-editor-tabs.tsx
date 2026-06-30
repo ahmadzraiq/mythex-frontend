@@ -19,7 +19,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { envVariables, type EnvVariable } from '@/lib/platform/api-client';
 
 // Module-level cache — shared with _formula-editor.tsx so only one fetch per project per session.
@@ -2992,8 +2992,8 @@ export function ParametersSection({
 // Clicking a variable inserts env['KEY_NAME'] into the formula.
 
 export function useBuilderProjectId(): string | null {
-  const pathname   = usePathname() ?? '';
-  const params     = useSearchParams();
+  const { pathname }   = useLocation();
+  const [params]     = useSearchParams();
   const fromSearch = params.get('projectId');
   const fromPath   = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
   return fromSearch ?? fromPath;

@@ -19,7 +19,7 @@ import type { WorkflowCanvasTarget, WorkflowMeta, WorkflowParam } from './_store
 import { backendWorkflows } from '@/lib/platform/api-client';
 import { useBackendConfig } from '@/lib/builder/use-backend-config';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
-import type { SharedComponentModel } from '@/config/shared-component-types';
+import type { SharedComponentModel } from '@/lib/sdui/config-shared-component-types';
 import { useSduiStore } from '@/store/sdui-store';
 
 function getLinkedModel(modelId: string): SharedComponentModel | undefined {

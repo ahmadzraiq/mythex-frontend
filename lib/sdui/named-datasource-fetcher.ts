@@ -21,6 +21,8 @@ import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableS
 import type { SDUIConfig } from './types';
 import type { NamedDataSourceDef } from './engine-types';
 
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
 function getAllSCs(): Record<string, { content?: unknown }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -244,9 +246,9 @@ export function useNamedDataSourceFetcher(
           }
           const resolvedVariables = resolveVariables((ds.variables ?? {}) as Record<string, unknown>);
 
-          // Route through /api/proxy when ds.proxy is true (per-datasource opt-in).
+          // Route through backend proxy when ds.proxy is true (per-datasource opt-in).
           const useProxy = !!ds.proxy;
-          const fetchUrl = useProxy ? '/api/proxy' : endpoint;
+          const fetchUrl = useProxy ? `${BACKEND_BASE}/v1/proxy` : endpoint;
           const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extraHeaders };
           const body = useProxy
             ? JSON.stringify({
@@ -347,8 +349,8 @@ export function useNamedDataSourceFetcher(
           }
 
           if (ds.proxy) {
-            // Route through /api/proxy — generic HTTP forwarder
-            fetch('/api/proxy', {
+            // Route through backend proxy — generic HTTP forwarder
+            fetch(`${BACKEND_BASE}/v1/proxy`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',

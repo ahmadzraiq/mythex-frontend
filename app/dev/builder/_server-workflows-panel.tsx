@@ -85,7 +85,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   const [copied, setCopied] = useState(false);
 
   const copyEndpointUrl = (wf: BackendWorkflow) => {
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+    const base = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
     const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
     navigator.clipboard.writeText(url).catch(() => {});
     setCopied(true);
@@ -107,7 +107,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
   // "Add All to Data Sources" — adds every published API endpoint as a datasource
   const [allAdded, setAllAdded] = useState(false);
   const { pageDataSources, addPageDataSource, addDsFolder, dsFolders } = useBuilderStore();
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
 
   const handleAddAllToDataSources = useCallback(async () => {
     if (allAdded) return;
@@ -335,7 +335,7 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--bld-text-2)', letterSpacing: 0.3 }}>API</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={() => { const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'; window.open(`${base}/v1/projects/${projectId}/docs`, '_blank'); }}
+            <button onClick={() => { const base = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000'; window.open(`${base}/v1/projects/${projectId}/docs`, '_blank'); }}
               title="Open Swagger docs"
               style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', fontSize: 10, fontWeight: 600, background: 'rgba(34,197,94,0.1)', color: 'var(--bld-success)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 5, cursor: 'pointer' }}>
               <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="11" x2="8" y2="12"/></svg>
@@ -710,14 +710,14 @@ export function ServerWorkflowsPanel({ projectId }: Props) {
               closeCtx();
             }}>Copy workflow</button>
             <button style={itemStyle} onClick={() => {
-              const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+              const base = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
               const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
               navigator.clipboard.writeText(url).catch(() => {});
               closeCtx();
             }}>Copy endpoint URL</button>
             {wf.kind === 'API_ENDPOINT' && (
               <button style={itemStyle} onClick={() => {
-                const base = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+                const base = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
                 const url = `${base}/v1/run/${projectId}/${wf.slug ?? wf.id}`;
                 const method = wf.method ?? 'GET';
                 const hasBody = ['POST', 'PUT', 'PATCH'].includes(method);

@@ -6,7 +6,7 @@
  * Browser-side hook for the JSON agent.
  *
  * Architecture:
- *  - AI runs server-side via @anthropic-ai/claude-agent-sdk (POST /api/ai/json-agent)
+ *  - AI runs server-side via @anthropic-ai/claude-agent-sdk (POST /v1/ai/json-agent on Fastify)
  *  - Claude uses native Read/Write/Edit/Glob/Grep tools against /tmp/json-agent-{id}/
  *  - On each validated Write/Edit, the server emits { type: 'file', path, content }
  *  - This hook applies those events via applyVirtualFile → live canvas updates
@@ -14,6 +14,8 @@
  *    in project meta so resume survives server restarts).
  *  - Messages are persisted in the backend threads API, not in project meta blobs.
  */
+
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBuilderStore } from './_store';
@@ -113,7 +115,7 @@ export function useJsonAgent(projectId?: string) {
     setLoadingThreads(true);
     try {
       const res = await fetch(
-        `/api/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}`,
+        `${BACKEND_BASE}/v1/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}`,
         { credentials: 'include' },
       );
       if (res.ok) {
@@ -132,7 +134,7 @@ export function useJsonAgent(projectId?: string) {
     try {
       const offset = threads.length;
       const res = await fetch(
-        `/api/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}&offset=${offset}`,
+        `${BACKEND_BASE}/v1/projects/${projectId}/chat/threads?limit=${THREADS_PAGE}&offset=${offset}`,
         { credentials: 'include' },
       );
       if (res.ok) {
@@ -165,7 +167,7 @@ export function useJsonAgent(projectId?: string) {
 
     // Load threads + persisted session map
     void loadThreads();
-    fetch(`/api/projects/${projectId}/config/meta`)
+    fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config/meta`)
       .then(r => r.json())
       .then((data: unknown) => {
         const meta = data as Record<string, unknown> | undefined;
@@ -188,7 +190,7 @@ export function useJsonAgent(projectId?: string) {
     setCurrentThreadId(threadId);
     try {
       const res = await fetch(
-        `/api/projects/${projectId}/chat/threads/${threadId}/messages?limit=50`,
+        `${BACKEND_BASE}/v1/projects/${projectId}/chat/threads/${threadId}/messages?limit=50`,
         { credentials: 'include' },
       );
       if (!res.ok) return;
@@ -261,7 +263,7 @@ export function useJsonAgent(projectId?: string) {
       return localId;
     }
     try {
-      const res = await fetch(`/api/projects/${projectId}/chat/threads`, {
+      const res = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/chat/threads`, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title ?? 'New Chat' }),
@@ -283,7 +285,7 @@ export function useJsonAgent(projectId?: string) {
     setDeletingThreadId(threadId);
     try {
       if (projectId) {
-        await fetch(`/api/projects/${projectId}/chat/threads/${threadId}`, {
+        await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/chat/threads/${threadId}`, {
           method: 'DELETE', credentials: 'include',
         });
       }
@@ -305,7 +307,7 @@ export function useJsonAgent(projectId?: string) {
     if (!title) return;
     setThreads(prev => prev.map(t => t.id === threadId ? { ...t, title } : t));
     if (!projectId) return;
-    fetch(`/api/projects/${projectId}/chat/threads/${threadId}`, {
+    fetch(`${BACKEND_BASE}/v1/projects/${projectId}/chat/threads/${threadId}`, {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title }),
@@ -323,7 +325,7 @@ export function useJsonAgent(projectId?: string) {
     const metadata: Record<string, unknown> = {};
     if (msg.selectedNodeIds) metadata.selectedNodeIds = msg.selectedNodeIds;
     if (attachmentRefs?.length) metadata.attachments = attachmentRefs;
-    fetch(`/api/projects/${projectId}/chat/threads/${threadId}/messages`, {
+    fetch(`${BACKEND_BASE}/v1/projects/${projectId}/chat/threads/${threadId}/messages`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -406,7 +408,7 @@ export function useJsonAgent(projectId?: string) {
       }
       const resumeSessionId = threadId ? threadSessionsRef.current[threadId] : undefined;
 
-      const res = await fetch('/api/ai/json-agent', {
+      const res = await fetch(`${BACKEND_BASE}/v1/ai/json-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -562,9 +564,10 @@ export function useJsonAgent(projectId?: string) {
               setThreadSessions(updated);
               threadSessionsRef.current = updated;
               if (projectId) {
-                fetch(`/api/projects/${projectId}/config/meta`, {
+                fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config/meta`, {
                   method: 'PATCH', headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ threadSessions: updated }),
+                  credentials: 'include',
                 }).catch(() => {});
               }
             }

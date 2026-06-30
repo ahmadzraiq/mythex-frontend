@@ -5,7 +5,7 @@
  * passed directly to `createSharedComponent` after supplying a fresh id.
  */
 
-import type { SharedComponentModel, SharedComponentProperty } from '@/config/shared-component-types';
+import type { SharedComponentModel, SharedComponentProperty } from '@/lib/sdui/config-shared-component-types';
 
 export type TemplateCategory =
   | 'Layout'

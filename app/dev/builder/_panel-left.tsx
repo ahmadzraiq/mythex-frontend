@@ -26,9 +26,9 @@ import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from '
 import { useBuilderStore, findParentNode, findNode } from './_store';
 import type { BuilderStore, BuilderPage, CustomVar, PageMeta } from './_store';
 import type { SDUINode } from '@/lib/sdui/types/node';
-import routes from '@/config/routes.json';
 import { useSduiStore } from '@/store/sdui-store';
 import { getGlobalVariableStore } from '@/lib/sdui/global-variable-store';
+import routes from '@/config/routes.json';
 import app from '@/config/app';
 import { ExprBuilder } from './_expr-builder';
 import { ActionBuilder } from './_action-builder';

@@ -1,7 +1,23 @@
 /**
  * Client-side API helpers for the platform (workspaces, projects, auth).
- * All calls go through Next.js /api/* proxy routes which forward to the backend.
+ * All calls go directly to the Fastify backend at NEXT_PUBLIC_BACKEND_URL.
  */
+
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
+/**
+ * Resolve a path to the Fastify backend.
+ * /api/auth/login       → {BACKEND_BASE}/v1/auth/login
+ * /api/projects/:id     → {BACKEND_BASE}/v1/projects/:id
+ * /api/db/...           → {BACKEND_BASE}/v1/db/...
+ * Anything not starting with /api/ is passed through unchanged.
+ */
+function backendUrl(path: string): string {
+  if (path.startsWith('/api/')) {
+    return `${BACKEND_BASE}/v1/${path.slice('/api/'.length)}`;
+  }
+  return path;
+}
 
 export interface User {
   id: string;
@@ -122,7 +138,7 @@ async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(backendUrl(path), {
     ...options,
     headers: {
       'Content-Type': 'application/json',

@@ -10,7 +10,7 @@
 
 import React, { useState, useCallback, useRef, lazy, Suspense, useEffect } from 'react';
 import { SearchInput } from './_panel-primitives';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
 
@@ -143,8 +143,8 @@ interface DataTabProps {
 }
 
 export function DataTab({ onSetSlide, onWidthChange, merged = false }: DataTabProps) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname() ?? '';
+  const [searchParams] = useSearchParams();
+  const { pathname } = useLocation();
   const projectId = searchParams.get('projectId') ??
     (pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null) ??
     (pathname.startsWith('/dev/builder') ? (new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('projectId') ?? null) : null);

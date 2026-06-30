@@ -1,3 +1,5 @@
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
 /**
  * Builder autosave — diff-based, page-level saves.
  *
@@ -157,7 +159,7 @@ export function useBuilderAutosave(
     // ── Save dirty pages in parallel ─────────────────────────────────────────
     await Promise.all(dirtyPages.map(async page => {
       try {
-        const res = await fetch(`/api/projects/${projectId}/pages/${page.id}`, {
+        const res = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/pages/${page.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(page),
@@ -173,7 +175,7 @@ export function useBuilderAutosave(
     // ── Save metadata if dirty ────────────────────────────────────────────────
     if (metaSafe) {
       try {
-        const res = await fetch(`/api/projects/${projectId}/config/meta`, {
+        const res = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config/meta`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: currentMeta,

@@ -13,7 +13,7 @@
  */
 
 function resolveWsBase(): string | null {
-  const explicit = process.env.NEXT_PUBLIC_BACKEND_WS_URL;
+  const explicit = import.meta.env.VITE_BACKEND_WS_URL;
   if (explicit) return explicit.replace(/\/$/, '');
   if (typeof window === 'undefined') return null;
   const { protocol, hostname } = window.location;

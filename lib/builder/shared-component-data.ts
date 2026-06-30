@@ -16,7 +16,7 @@ import type {
   ScopedFormulaDef,
   ScopedWorkflow,
   ComponentTrigger,
-} from '@/config/shared-component-types';
+} from '@/lib/sdui/config-shared-component-types';
 
 export type { SharedComponentModel, SharedComponentProperty, ScopedVarDef, ScopedFormulaDef, ScopedWorkflow, ComponentTrigger };
 

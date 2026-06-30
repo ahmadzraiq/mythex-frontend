@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-geist-sans: 'Geist', sans-serif;
+  --font-geist-mono: 'Geist Mono', monospace;
+  --font-inter: 'Inter', sans-serif;
+  --font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-roboto: 'Roboto', sans-serif;
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
+  --font-rajdhani: 'Rajdhani', sans-serif;
+  --font-oxanium: 'Oxanium', sans-serif;
+  --font-rubik: 'Rubik', sans-serif;
+  --font-lato: 'Lato', sans-serif;
+  --font-poppins: 'Poppins', sans-serif;
+  --font-montserrat: 'Montserrat', sans-serif;
+  --font-playfair-display: 'Playfair Display', serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
+  --font-nunito: 'Nunito', sans-serif;
+}
+
 @layer base {
   * {
     border-color: rgb(var(--border) / 1);

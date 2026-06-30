@@ -1,21 +1,13 @@
 /**
- * Input wrapper: with children renders real Gluestack Input; without children auto-injects
+ * Input wrapper: with children renders the Input container; without children auto-injects
  * an InputField child so standalone `<Input>` nodes work without explicit children in JSON.
- *
- * Controlled value for explicit-children case:
- *   When JSON declares `Input > InputField` (the standard builder structure), the `value` prop
- *   injected by the renderer onto the `Input` wrapper node is NOT forwarded to the InputField
- *   child — Gluestack's Input component passes its own props (variant, size, className) to
- *   children via context, not arbitrary user props. The InputField child subscribes to
- *   `{parentInputId}-value` in the global variable store directly via useExternalNodeValueSync
- *   (see form-field-tracker.ts), so the controlled value reaches it without any prop threading.
  *
  * Controlled value for no-children case:
  *   When no children are present, InputWithField renders its own InputField and passes
  *   `value` directly — standard controlled component pattern.
  *
  * readOnly handling: React Native TextInput uses `editable={false}` for read-only.
- * On web, NativeWind maps editable={false} → readonly DOM attribute.
+ * On web, react-native-web maps editable={false} → readonly DOM attribute.
  *
  * format prop:
  *   A positional mask string applied on every keystroke.

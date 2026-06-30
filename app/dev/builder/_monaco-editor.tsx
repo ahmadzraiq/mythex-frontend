@@ -2,27 +2,26 @@
 
 /**
  * Lazy-loaded Monaco editor wrapper.
- * Injects the builder DSL type definitions so IntelliSense works for
- * definePage, Box, vars, etc. in all TypeScript/TSX files.
- * Builder source is fetched from /api/builder-source so this module stays
- * thin and always reflects the live lib/dsl/builder/index.ts.
+ * Configures TypeScript/JavaScript compiler options for the builder's
+ * formula editor so IntelliSense works correctly.
  */
 
-import dynamic from 'next/dynamic';
-import React, { useCallback } from 'react';
+import React, { useCallback, lazy, Suspense } from 'react';
 import type { EditorProps, OnMount } from '@monaco-editor/react';
 
-const Monaco = dynamic(() => import('@monaco-editor/react'), {
-  ssr: false,
-  loading: () => (
-    <div style={{
-      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#1e1e1e', color: '#6b7280', fontSize: 12,
-    }}>
-      Loading editor…
-    </div>
-  ),
-});
+const MonacoBase = lazy(() => import('@monaco-editor/react'));
+
+function Monaco(props: EditorProps) {
+  return (
+    <Suspense fallback={
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1e1e', color: '#6b7280', fontSize: 12 }}>
+        Loading editor…
+      </div>
+    }>
+      <MonacoBase {...props} />
+    </Suspense>
+  );
+}
 
 let typesInjected = false;
 
@@ -30,22 +29,7 @@ async function injectBuilderTypes(monaco: Parameters<OnMount>[1]) {
   if (typesInjected) return;
   typesInjected = true;
 
-  let builderSource = '';
-  try {
-    const res = await fetch('/api/builder-source');
-    if (res.ok) builderSource = await res.text();
-  } catch { /* skip if unavailable */ }
-
-  const builderDts = `
-declare module 'builder' {
-${builderSource.split('\n').map(l => '  ' + l).join('\n')}
-}
-`;
-
   const ts = monaco.languages.typescript;
-
-  ts.typescriptDefaults.addExtraLib(builderDts, 'file:///node_modules/builder/index.d.ts');
-  ts.javascriptDefaults.addExtraLib(builderDts, 'file:///node_modules/builder/index.d.ts');
 
   const shared = {
     noSemanticValidation: true,

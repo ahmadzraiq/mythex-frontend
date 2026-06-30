@@ -18,7 +18,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useBuilderStore } from './_store';
 import { applyVirtualFile } from './_virtual-files';
 import type { AiChatMessage, AiToolCall, AiImageResult, AiIconResult, AiAttachment } from './_store-types';
@@ -1521,8 +1521,8 @@ function ClockIcon({ size = 14, color = 'currentColor' }: { size?: number; color
 // ---------------------------------------------------------------------------
 
 function useDslProjectId(): string | null {
-  const searchParams = useSearchParams();
-  const pathname = usePathname() ?? '';
+  const [searchParams] = useSearchParams();
+  const { pathname } = useLocation();
   const fromSearch = searchParams.get('projectId');
   const fromPath = pathname.startsWith('/builder/') ? (pathname.split('/')[2] ?? null) : null;
   return fromSearch ?? fromPath;

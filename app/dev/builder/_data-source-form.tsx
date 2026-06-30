@@ -666,7 +666,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
     if (!urlStr) return;
     // Resolve relative URLs (e.g. /jobs) to the full backend run URL
     if (urlStr.startsWith('/')) {
-      const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+      const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
       const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
       urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
     }
@@ -1041,7 +1041,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     if (!urlStr || !query.trim()) return;
     // Resolve relative URLs to the full backend run URL
     if (urlStr.startsWith('/')) {
-      const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000';
+      const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
       const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
       urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
     }

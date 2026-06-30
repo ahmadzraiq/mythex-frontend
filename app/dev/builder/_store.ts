@@ -1,5 +1,7 @@
 'use client';
 
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
 /**
  * Builder Store — Zustand state for the visual page builder.
  *
@@ -2618,7 +2620,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
         : null;
 
       if (projectId && projectId !== 'admin') {
-        fetch(`/api/projects/${projectId}/pages/${pageId}`, { credentials: 'include' })
+        fetch(`${BACKEND_BASE}/v1/projects/${projectId}/pages/${pageId}`, { credentials: 'include' })
           .then(res => res.ok ? res.json() as Promise<{ page?: { nodes?: SDUINode[] } }> : null)
           .then(data => {
             const fetchedNodes = (data?.page?.nodes ?? []) as SDUINode[];
@@ -3736,7 +3738,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
     if (projectId && projectId !== 'admin') {
       try {
         // ── Load full project config (pages with nodes + all metadata) ──────────
-        const configRes = await fetch(`/api/projects/${projectId}/config`, { credentials: 'include' });
+        const configRes = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config`, { credentials: 'include' });
         const saved = configRes.ok
           ? ((await configRes.json() as { config?: Record<string, unknown> }).config ?? null)
           : null;
@@ -3904,7 +3906,7 @@ export const useBuilderStore = create<BuilderStore>((_rawSet, get) => {
           try {
             const { serializeBuilderState } = await import('@/lib/builder/autosave');
             const config = serializeBuilderState(useBuilderStore.getState());
-            await fetch(`/api/projects/${projectId}/config`, {
+            await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(config),

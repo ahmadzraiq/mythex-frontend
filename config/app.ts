@@ -1,56 +1,9 @@
-/**
- * App config - loads root.ts (single entry point for all config)
- */
+/** Stub app config — real project data is loaded from the backend. */
 
-import root from './root';
-import { resolveScreenConfig } from '@/lib/sdui/config-resolver';
-import formulasJson from './formulas.json';
-import variablesJson from './variables.json';
-import dataSourcesJson from './datasources.json';
-import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
-import { registerVariableNames, registerCollectionNames } from '@/lib/sdui/variable-name-registry';
+const appConfig = {
+  routes: [] as Array<{ path: string; config: string; name?: string }>,
+  screens: {} as Record<string, unknown>,
+  actions: {} as Record<string, unknown>,
+};
 
-// Bootstrap global formula registry for runtime formula evaluation
-// (builder also calls registerGlobalFormulas via its store subscription)
-registerGlobalFormulas(formulasJson as Record<string, unknown>);
-
-// Bootstrap variable / collection name registries so JavaScript bindings
-// ({ "js": "variables.cartCount" }) and the runJavaScript workflow action
-// can resolve names → UUIDs at runtime.
-{
-  const vars = (variablesJson as { variables?: Record<string, { label?: string }> })?.variables ?? {};
-  const varMap: Record<string, string> = {};
-  for (const [uuid, def] of Object.entries(vars)) {
-    const label = def?.label ?? uuid;
-    if (label) varMap[label] = uuid;
-  }
-  registerVariableNames(varMap);
-
-  const ds = dataSourcesJson as Record<string, { label?: string; name?: string }>;
-  const colMap: Record<string, string> = {};
-  for (const [uuid, def] of Object.entries(ds)) {
-    const label = def?.label ?? def?.name ?? uuid;
-    if (label) colMap[label] = uuid;
-  }
-  registerCollectionNames(colMap);
-}
-
-const rawScreens = root.screens as Record<string, Record<string, unknown>>;
-
-const screens = Object.fromEntries(
-  Object.entries(rawScreens).map(([name, screen]) => [
-    name,
-    resolveScreenConfig(screen as Parameters<typeof resolveScreenConfig>[0]),
-  ])
-) as unknown as Record<string, { meta?: object; state?: object; ui: object }>;
-
-export default {
-  ...root.routes,
-  screens,
-  rawScreens,
-  actions: root.actions,
-  /** Unified named-workflow dictionary for runtime executeWorkflow step resolution. */
-  workflows: root.workflows,
-  dataSources: root.dataSources,
-  sharedComponents: root.sharedComponents,
-} as const;
+export default appConfig;

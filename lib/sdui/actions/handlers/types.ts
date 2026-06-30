@@ -47,6 +47,12 @@ export interface ActionHandlerContext {
    * know about the surrounding workflow context.
    */
   setStepResult?: (result: unknown, error?: unknown) => void;
+  /**
+   * True when running inside the builder canvas. Navigation side-effects
+   * (router.push, window.history.back, window.open) must be no-ops in this mode
+   * so that page workflows (auth guards, redirects) don't escape the canvas.
+   */
+  builderMode?: boolean;
 }
 
 export type ActionHandler = (

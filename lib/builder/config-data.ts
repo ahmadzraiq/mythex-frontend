@@ -1,3 +1,5 @@
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+
 /**
  * Builder config data — pure client-side, no server required.
  *
@@ -252,7 +254,7 @@ export function getBuilderConfig() {
  */
 export async function loadProjectConfig(projectId: string): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(`/api/projects/${projectId}/config`, {
+    const res = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config`, {
       credentials: 'include',
     });
     if (!res.ok) return null;

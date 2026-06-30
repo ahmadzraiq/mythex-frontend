@@ -15,7 +15,7 @@ import type { SDUINode } from '@/lib/sdui/types/node';
 import { BREAKPOINT_CASCADE, type BreakpointKey } from '@/lib/sdui/types/node';
 import { WorkflowBindButton, toHumanName } from './_workflow-canvas';
 import { getSharedComponents, updateSharedComponent } from '@/lib/builder/shared-component-data';
-import type { ScopedWorkflow } from '@/config/shared-component-types';
+import type { ScopedWorkflow } from '@/lib/sdui/config-shared-component-types';
 import { ResponsiveDot } from './_panel-primitives';
 
 /**

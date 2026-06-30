@@ -115,14 +115,15 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
 
     try {
       // ── Proxy routing ───────────────────────────────────────────────────────
-      // When actionDef.useProxy is true, route through /api/proxy (server-side)
+      // When actionDef.useProxy is true, route through the Fastify proxy endpoint
       // to bypass CORS or handle cookie-based auth across origins.
       const useProxy = !!(actionDef.useProxy as boolean | undefined);
 
       let res: Response;
       if (useProxy) {
+        const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
         const { 'Content-Type': _ct, ...forwardHeaders } = { ...actionHeaders };
-        res = await fetch('/api/proxy', {
+        res = await fetch(`${backendBase}/v1/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

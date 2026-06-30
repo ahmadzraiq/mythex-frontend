@@ -12,7 +12,7 @@
  */
 
 import type { SDUINode } from '@/lib/sdui/types/node';
-import type { WorkflowDef } from '@/config/types';
+import type { WorkflowDef } from '@/lib/builder/config-types';
 
 export type { WorkflowDef };
 

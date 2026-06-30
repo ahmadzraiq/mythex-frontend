@@ -1,48 +1,25 @@
 import React from 'react';
+import { flattenStyle } from '../flatten-style';
 
-import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
-import { Text as RNText } from 'react-native';
-import { textStyle } from './styles';
+type TextProps = React.ComponentPropsWithoutRef<'span'> & {
+  className?: string;
+  nativeID?: string;
+};
 
-type ITextProps = React.ComponentProps<typeof RNText> &
-  VariantProps<typeof textStyle>;
-
-const Text = React.forwardRef<React.ComponentRef<typeof RNText>, ITextProps>(
-  function Text(
-    {
-      className,
-      isTruncated,
-      bold,
-      underline,
-      strikeThrough,
-      size,
-      sub,
-      italic,
-      highlight,
-      ...props
-    },
-    ref
-  ) {
-    return (
-      <RNText
-        className={textStyle({
-          isTruncated: isTruncated as boolean,
-          bold: bold as boolean,
-          underline: underline as boolean,
-          strikeThrough: strikeThrough as boolean,
-          size,
-          sub: sub as boolean,
-          italic: italic as boolean,
-          highlight: highlight as boolean,
-          class: className,
-        })}
-        {...props}
-        ref={ref}
-      />
-    );
-  }
-);
+const Text = React.forwardRef<HTMLSpanElement, TextProps>(function Text(
+  { className, style, nativeID, ...props },
+  ref
+) {
+  return (
+    <span
+      ref={ref}
+      id={nativeID}
+      className={className}
+      style={flattenStyle(style)}
+      {...props}
+    />
+  );
+});
 
 Text.displayName = 'Text';
-
 export { Text };
