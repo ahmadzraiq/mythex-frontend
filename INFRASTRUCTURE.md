@@ -6,7 +6,7 @@
 |---|---|---|
 | **Landing** | `mythex.ai` | — |
 | **Builder** | `app.mythex.ai` | `staging.app.mythex.ai` |
-| **App Preview** | `<projectId>.app.mythex.ai` | `<projectId>.staging.app.mythex.ai` |
+| **App Preview** | `<projectId>-preview.mythex.ai` | `<projectId>-staging-preview.mythex.ai` |
 | **API** | `api.mythex.ai` | `api-staging.mythex.ai` |
 | **Branch** | `main` | `develop` |
 
@@ -20,19 +20,22 @@
 
 ---
 
+## Cloudflare Account
+- **Account ID:** `905e17326845b199c805398d7ecee945`
+
 ## Frontend Hosting (Cloudflare Pages)
 
 The builder is a Vite SPA deployed to Cloudflare Pages — free, global CDN, automatic HTTPS.
 
 | | Production | Staging |
 |---|---|---|
-| **Cloudflare Pages project** | `mythex-frontend` | `mythex-frontend` (develop branch) |
+| **Cloudflare Pages project** | `mythex-frontend` | `mythex-frontend-staging` |
 | **URL** | `app.mythex.ai` | `staging.app.mythex.ai` |
 | **Branch** | `main` | `develop` |
 
 ### Wildcard Preview Subdomains
 
-`<projectId>.app.mythex.ai` and `<projectId>.staging.app.mythex.ai` are handled by a **Cloudflare Worker** (`infra/preview-worker/`) that proxies requests to the main Pages deployment. The SPA reads `window.location.hostname` client-side to detect the project ID.
+`<projectId>-preview.mythex.ai` (prod) and `<projectId>-staging-preview.mythex.ai` (staging) are handled by a **Cloudflare Worker** (`infra/preview-worker/`) that proxies to the appropriate Pages project. Uses `*.mythex.ai` single-level wildcard — covered by Cloudflare Universal SSL.
 
 Deploy the worker once:
 ```bash
@@ -95,17 +98,18 @@ push to develop → docker build → ECR :staging → SSH staging EC2 → docker
 ## Database
 
 ### Production — RDS PostgreSQL 16
-- **Identifier:** `mythex-frontend-postgres`
-- **Endpoint:** `mythex-frontend-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
+- **Identifier:** `mythex-db`
+- **Endpoint:** `mythex-db.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
 - **DB name:** `mythex`
+- **User:** `jsonbased`
 - **Instance class:** db.t3.micro
 - **Public access:** No (VPC only)
-- **Password:** stored in `/app/.env.backend` on prod EC2
+- **Connection:** requires `?sslmode=require`
 
 ### Staging — Postgres in Docker
 - Runs as `postgres` container on staging EC2
-- **DB name:** `mythex_staging` / **User:** `staging`
-- Data in Docker volume `mythex_staging_pg_data`
+- **DB name:** `josn_based_staging` / **User:** `staging`
+- Data in Docker volume `app_postgres_data`
 
 ---
 
@@ -130,11 +134,10 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 |---|---|---|---|
 | CNAME | `@` | `mythex-landing.pages.dev` | Landing page |
 | CNAME | `app` | `mythex-frontend.pages.dev` | Builder (auto-set by Pages custom domain) |
-| CNAME | `staging.app` | `mythex-frontend.pages.dev` | Staging builder (auto-set by Pages custom domain) |
-| CNAME | `*.app` | Worker route | Wildcard previews → Cloudflare Worker |
-| CNAME | `*.staging.app` | Worker route | Wildcard staging previews → Cloudflare Worker |
+| CNAME | `staging.app` | `mythex-frontend-staging.pages.dev` | Staging builder |
+| A | `*` | `192.0.2.1` (dummy) | Wildcard — intercepted by Cloudflare Worker |
 | A | `api` | `184.33.87.6` | Backend prod (mythex-backend-prod) |
-| A | `staging.api` | `54.218.57.157` | Backend staging |
+| A | `api-staging` | `54.218.57.157` | Backend staging |
 
 > `app` and `staging.app` DNS records are automatically managed when you add custom domains in Cloudflare Pages dashboard.
 
@@ -168,10 +171,10 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 | `OPENAI_API_KEY` | OpenAI API key (shared across envs) |
 | `UNSPLASH_ACCESS_KEY` | Unsplash key (shared across envs) |
 | `PEXELS_API_KEY` | Pexels key (shared across envs) |
-| `PROD_S3_PUBLIC_BUCKET` | S3 public assets bucket (prod) |
-| `STAGING_S3_PUBLIC_BUCKET` | S3 public assets bucket (staging) |
-| `PROD_S3_PRIVATE_BUCKET` | S3 private bucket (prod) |
-| `STAGING_S3_PRIVATE_BUCKET` | S3 private bucket (staging) |
+| `PROD_S3_PUBLIC_BUCKET` | `mythex-public-assets` |
+| `PROD_S3_PRIVATE_BUCKET` | `mythex-private-storage` |
+| `STAGING_S3_PUBLIC_BUCKET` | `mythex-public-assets-staging` |
+| `STAGING_S3_PRIVATE_BUCKET` | `mythex-private-storage-staging` |
 | `STAGING_POSTGRES_PASSWORD` | Staging docker postgres password |
 | `PROD_FREE_PLAN_PROJECT_LIMIT` | Free plan project limit (prod) |
 | `STAGING_FREE_PLAN_PROJECT_LIMIT` | Free plan project limit (staging) |
@@ -187,6 +190,19 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 |---|---|
 | `CLOUDFLARE_API_TOKEN` | Cloudflare Pages deploy token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+
+---
+
+## S3 Buckets
+
+All in `us-west-2`. Managed by the backend (CORS configured on startup).
+
+| Bucket | Access | Used by |
+|--------|--------|---------|
+| `mythex-public-assets` | Public read | Production — user-uploaded public files |
+| `mythex-private-storage` | Private | Production — private attachments, AI files |
+| `mythex-public-assets-staging` | Public read | Staging — user-uploaded public files |
+| `mythex-private-storage-staging` | Private | Staging — private attachments, AI files |
 
 ---
 
@@ -270,9 +286,14 @@ ssh -i ~/.ssh/mythex-key.pem ec2-user@184.33.87.6 \
 
 ## AWS Cleanup — Completed
 
-The following old resources have been removed:
+The following old resources have been removed or renamed:
 - ✅ `json-based-frontend` ECR repo — deleted
 - ✅ `json-based-backend` ECR repo — deleted
 - ✅ EC2 `json-based-server` → renamed to `mythex-backend-prod`
 - ✅ EC2 `json-based-staging` → renamed to `mythex-backend-staging`
 - ✅ Elastic IP `184.33.87.6` → attached to `mythex-backend-prod`
+- ✅ RDS `json-based-postgres` → renamed to `mythex-db`
+- ✅ Production database `josn_based_platform` → recreated as `mythex` (clean schema, data dropped intentionally)
+- ✅ `PROD_DATABASE_URL` updated to `mythex-db.c746o20miixe.us-west-2.rds.amazonaws.com/mythex?sslmode=require`
+- ✅ S3 `zraiq-platform-public` → deleted, replaced with `mythex-public-assets` + `mythex-public-assets-staging`
+- ✅ S3 `zraiq-platform-private` → deleted, replaced with `mythex-private-storage` + `mythex-private-storage-staging`
