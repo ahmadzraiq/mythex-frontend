@@ -1,0 +1,8 @@
+name = "mythex-preview-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "*.app.mythex.ai/*", zone_name = "mythex.ai" },
+  { pattern = "*.staging.app.mythex.ai/*", zone_name = "mythex.ai" },
+]

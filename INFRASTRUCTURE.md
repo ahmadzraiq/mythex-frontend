@@ -20,24 +20,33 @@
 
 ---
 
-## Frontend Hosting (S3 + Cloudflare CDN)
+## Frontend Hosting (Cloudflare Pages)
 
-The builder is a Vite SPA — static files served from S3, proxied via Cloudflare (free CDN + HTTPS).
+The builder is a Vite SPA deployed to Cloudflare Pages — free, global CDN, automatic HTTPS.
 
 | | Production | Staging |
 |---|---|---|
-| **S3 Bucket** | `mythex-app-prod` | `mythex-app-staging` |
-| **S3 Website Endpoint** | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
-| **Cloudflare DNS** | `app CNAME → S3 endpoint` (orange cloud) | `staging.app CNAME → S3 endpoint` (orange cloud) |
-| **Wildcard preview** | `*.app CNAME → S3 prod endpoint` | `*.staging.app CNAME → S3 staging endpoint` |
+| **Cloudflare Pages project** | `mythex-app` | `mythex-app` (develop branch) |
+| **URL** | `app.mythex.ai` | `staging.app.mythex.ai` |
+| **Branch** | `main` | `develop` |
 
-No Docker, no ECR, no CloudFront for the frontend.
+### Wildcard Preview Subdomains
+
+`<projectId>.app.mythex.ai` and `<projectId>.staging.app.mythex.ai` are handled by a **Cloudflare Worker** (`infra/preview-worker/`) that proxies requests to the main Pages deployment. The SPA reads `window.location.hostname` client-side to detect the project ID.
+
+Deploy the worker once:
+```bash
+cd infra/preview-worker
+npx wrangler deploy
+```
 
 ### Deploy (GitHub Actions — automatic)
 ```
-push to main    → vite build → aws s3 sync → Cloudflare cache purge
-push to develop → vite build → aws s3 sync → Cloudflare cache purge
+push to main    → vite build → Cloudflare Pages (production)
+push to develop → vite build → Cloudflare Pages (staging branch)
 ```
+
+No Docker, no ECR, no S3 for the frontend.
 
 ---
 
@@ -116,15 +125,17 @@ push to develop → docker build → ECR :staging → SSH staging EC2 → docker
 
 Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 
-| Type | Name | Target |
-|---|---|---|
-| CNAME | `@` | Cloudflare Pages URL |
-| CNAME | `app` | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` |
-| CNAME | `*.app` | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` |
-| CNAME | `staging.app` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
-| CNAME | `*.staging.app` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
-| A | `api` | `44.255.113.95` |
-| A | `staging.api` | `54.218.57.157` |
+| Type | Name | Target | Notes |
+|---|---|---|---|
+| CNAME | `@` | `mythex-landing.pages.dev` | Landing page |
+| CNAME | `app` | `mythex-app.pages.dev` | Builder (auto-set by Pages custom domain) |
+| CNAME | `staging.app` | `mythex-app.pages.dev` | Staging builder (auto-set by Pages custom domain) |
+| CNAME | `*.app` | Worker route | Wildcard previews → Cloudflare Worker |
+| CNAME | `*.staging.app` | Worker route | Wildcard staging previews → Cloudflare Worker |
+| A | `api` | `44.255.113.95` | Backend prod |
+| A | `staging.api` | `54.218.57.157` | Backend staging |
+
+> `app` and `staging.app` DNS records are automatically managed when you add custom domains in Cloudflare Pages dashboard.
 
 ---
 
@@ -133,12 +144,8 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 ### `mythex-frontend` repo
 | Secret | Description |
 |---|---|
-| `AWS_ACCESS_KEY_ID` | deploy-admin IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | deploy-admin IAM secret key |
-| `PROD_S3_BUCKET` | `mythex-app-prod` |
-| `STAGING_S3_BUCKET` | `mythex-app-staging` |
-| `CF_ZONE_ID` | Cloudflare Zone ID for `mythex.ai` |
-| `CF_API_TOKEN` | Cloudflare API token (Cache Purge permission) |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token (Cloudflare Pages: Edit permission) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID |
 
 ### `mythex-backend` repo
 | Secret | Description |
@@ -257,7 +264,7 @@ ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
 | EC2 prod (t3.small) | ~$15/mo |
 | EC2 staging (t3.micro) | ~$8/mo |
 | RDS prod (db.t3.micro + 20GB) | ~$15/mo |
-| S3 (2 buckets, ~20MB SPA) | ~$0.05/mo |
+| Cloudflare Pages (builder) | $0 |
 | ECR (mythex-backend images) | ~$0.50/mo |
 | Cloudflare CDN + Pages | $0 |
 | **Total** | **~$39/mo** |
