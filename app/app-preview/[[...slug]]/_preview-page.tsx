@@ -418,7 +418,8 @@ export default function AppPreviewPage() {
     const fromUrl = params.get('projectId');
 
     // Subdomain-based preview: extract projectId from "{projectId}-preview.hostname"
-    const subdomainMatch = window.location.hostname.match(/^([^.]+)-preview\./);
+    // or "{projectId}-staging-preview.hostname" — strip the optional "-staging" suffix.
+    const subdomainMatch = window.location.hostname.match(/^(.+?)(?:-staging)?-preview\./);
     const fromSubdomain = subdomainMatch?.[1] ?? null;
 
     // Builder preview passes a short-lived JWT as ?token= — store it as a cookie
