@@ -26,7 +26,7 @@ The builder is a Vite SPA deployed to Cloudflare Pages — free, global CDN, aut
 
 | | Production | Staging |
 |---|---|---|
-| **Cloudflare Pages project** | `mythex-app` | `mythex-app` (develop branch) |
+| **Cloudflare Pages project** | `mythex-frontend` | `mythex-frontend` (develop branch) |
 | **URL** | `app.mythex.ai` | `staging.app.mythex.ai` |
 | **Branch** | `main` | `develop` |
 
@@ -56,8 +56,9 @@ No Docker, no ECR, no S3 for the frontend.
 |---|---|---|
 | **URL** | `https://api.mythex.ai` | `https://staging.api.mythex.ai` |
 | **Branch** | `main` | `develop` |
-| **EC2 Instance** | `i-00f618a2701b60ece` (t3.small) | `i-0258c2afc477f64fe` (t3.micro) |
-| **EC2 IP** | `44.255.113.95` | `54.218.57.157` |
+| **EC2 Name** | `mythex-backend-prod` (t3.small) | `mythex-backend-staging` (t3.micro) |
+| **EC2 Instance** | `i-00f618a2701b60ece` | `i-0258c2afc477f64fe` |
+| **EC2 IP** | `184.33.87.6` (Elastic IP) | `54.218.57.157` |
 | **Database** | RDS PostgreSQL (managed) | Postgres in Docker |
 | **Redis** | Docker on EC2 | Docker on EC2 |
 
@@ -71,8 +72,8 @@ Image tags: `:latest` (prod), `:staging` (staging), `:<commit-sha>` (both)
 
 ### SSH Access
 ```bash
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95   # prod
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157   # staging
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@184.33.87.6    # prod (mythex-backend-prod)
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157  # staging (mythex-backend-staging)
 ```
 
 ### Deploy (GitHub Actions — automatic)
@@ -96,7 +97,7 @@ push to develop → docker build → ECR :staging → SSH staging EC2 → docker
 ### Production — RDS PostgreSQL 16
 - **Identifier:** `mythex-frontend-postgres`
 - **Endpoint:** `mythex-frontend-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
-- **DB name:** `josn_based_platform`
+- **DB name:** `mythex` (was `josn_based_platform` — rename if not done)
 - **Instance class:** db.t3.micro
 - **Public access:** No (VPC only)
 - **Password:** stored in `/app/.env.backend` on prod EC2
@@ -128,11 +129,11 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 | Type | Name | Target | Notes |
 |---|---|---|---|
 | CNAME | `@` | `mythex-landing.pages.dev` | Landing page |
-| CNAME | `app` | `mythex-app.pages.dev` | Builder (auto-set by Pages custom domain) |
-| CNAME | `staging.app` | `mythex-app.pages.dev` | Staging builder (auto-set by Pages custom domain) |
+| CNAME | `app` | `mythex-frontend.pages.dev` | Builder (auto-set by Pages custom domain) |
+| CNAME | `staging.app` | `mythex-frontend.pages.dev` | Staging builder (auto-set by Pages custom domain) |
 | CNAME | `*.app` | Worker route | Wildcard previews → Cloudflare Worker |
 | CNAME | `*.staging.app` | Worker route | Wildcard staging previews → Cloudflare Worker |
-| A | `api` | `44.255.113.95` | Backend prod |
+| A | `api` | `184.33.87.6` | Backend prod (mythex-backend-prod) |
 | A | `staging.api` | `54.218.57.157` | Backend staging |
 
 > `app` and `staging.app` DNS records are automatically managed when you add custom domains in Cloudflare Pages dashboard.
@@ -154,7 +155,7 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 | `AWS_SECRET_ACCESS_KEY` | deploy-admin IAM secret key |
 | `AWS_ACCOUNT_ID` | `948075159962` |
 | `AWS_REGION` | `us-west-2` |
-| `PROD_EC2_IP` | `44.255.113.95` |
+| `PROD_EC2_IP` | `184.33.87.6` |
 | `STAGING_EC2_IP` | `54.218.57.157` |
 | `EC2_SSH_KEY` | contents of `~/.ssh/mythex-frontend-key.pem` |
 | `PROD_DATABASE_URL` | RDS PostgreSQL connection string |
@@ -251,7 +252,7 @@ docker build --platform linux/amd64 \
 docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-backend:latest
 
 # Deploy on prod EC2
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@184.33.87.6 \
   "cd /app && docker compose pull backend && docker compose up -d backend"
 ```
 
@@ -271,27 +272,11 @@ ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
 
 ---
 
-## AWS Cleanup Commands (Old Resources)
+## AWS Cleanup — Completed
 
-Run once after verifying new setup is live:
-
-```bash
-# Delete old ECR repos
-aws ecr delete-repository --repository-name mythex-frontend-frontend --region us-west-2 --force
-aws ecr delete-repository --repository-name mythex-frontend-backend --region us-west-2 --force
-
-# Deregister old ECS task definitions
-aws ecs list-task-definitions --family-prefix mythex-frontend-frontend --region us-west-2
-# aws ecs deregister-task-definition --task-definition mythex-frontend-frontend:1 --region us-west-2
-
-# Delete old CloudWatch log groups
-aws logs delete-log-group --log-group-name /ecs/mythex-frontend-frontend --region us-west-2
-aws logs delete-log-group --log-group-name /ecs/mythex-frontend-frontend-staging --region us-west-2
-
-# Delete unused IAM role
-aws iam delete-role --role-name mythex-frontend-frontend-task-role
-
-# Check for unattached Elastic IPs (costs $3.60/mo each)
-aws ec2 describe-addresses --region us-west-2 --query 'Addresses[?AssociationId==null]'
-# aws ec2 release-address --allocation-id <eipalloc-id> --region us-west-2
-```
+The following old resources have been removed:
+- ✅ `json-based-frontend` ECR repo — deleted
+- ✅ `json-based-backend` ECR repo — deleted
+- ✅ EC2 `json-based-server` → renamed to `mythex-backend-prod`
+- ✅ EC2 `json-based-staging` → renamed to `mythex-backend-staging`
+- ✅ Elastic IP `184.33.87.6` → attached to `mythex-backend-prod`
