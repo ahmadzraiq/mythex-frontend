@@ -3,6 +3,7 @@
 import { useState, type FormEvent, type CSSProperties } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { auth } from '@/lib/platform/api-client';
+import { useAuth } from './_auth-provider';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -19,6 +20,7 @@ function EyeIcon({ open }: { open: boolean }) {
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { setUser, refetchWorkspaces } = useAuth();
   const inviteToken = searchParams.get('invite');
   const prefillEmail = searchParams.get('email') ?? '';
 
@@ -36,7 +38,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await auth.login({ email, password });
+      const { user } = await auth.login({ email, password });
+      // Update AuthContext so PublicOnlyRoute redirects to /workspaces
+      setUser(user);
+      // Kick off workspace fetch so the workspaces page has data immediately
+      refetchWorkspaces();
       if (inviteToken) {
         navigate(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
       } else {

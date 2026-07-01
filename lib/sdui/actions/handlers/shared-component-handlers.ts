@@ -65,7 +65,6 @@ export const addSharedComponentHandler =
     const models = getModels();
     const model = models[componentId];
     if (!model) {
-      console.warn('[addSharedComponent] Shared component model not found:', componentId);
       return;
     }
 

@@ -1,24 +1,19 @@
 import React from 'react';
-import { flattenStyle } from '../flatten-style';
+import { View, type ViewProps } from 'react-native';
 
-type BoxProps = React.ComponentPropsWithoutRef<'div'> & {
-  className?: string;
-  nativeID?: string;
-};
+type BoxProps = Omit<ViewProps, 'style'> & { className?: string };
 
-const Box = React.forwardRef<HTMLDivElement, BoxProps>(function Box(
-  { className, style, nativeID, id, ...props },
+// RNW sets zIndex:0 by default on View (position:relative + zIndex:0 creates a CSS
+// stacking context). That traps absolutely/fixed-positioned descendants (like popover
+// panels) inside the box's stacking context, preventing them from painting above
+// sibling boxes. Override with 'auto' so no stacking context is created by default.
+const BOX_STYLE = { overflow: 'visible' as const, zIndex: 'auto' as unknown as number };
+
+const Box = React.forwardRef<View, BoxProps>(function Box(
+  { className, ...props },
   ref
 ) {
-  return (
-    <div
-      ref={ref}
-      id={nativeID ?? id}
-      className={className}
-      style={flattenStyle(style)}
-      {...props}
-    />
-  );
+  return <View ref={ref} className={`flex-row${className ? ` ${className}` : ''}`} style={BOX_STYLE} {...props} />;
 });
 
 Box.displayName = 'Box';

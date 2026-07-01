@@ -38,8 +38,9 @@ export interface PopoverHostProps {
 
 /**
  * Computes pixel-based absolute positioning for the floating panel so it is
- * anchored to the *trigger* element's actual bounding box rather than the
- * full-width wrapper `<div>`. All values are relative to `wrapperRect`.
+ * anchored to the trigger element's actual bounding box. All values are
+ * relative to wrapperRect so the panel is correctly placed even when the
+ * wrapper is scrolled or inside a transformed ancestor.
  */
 function computeRelativePlacementStyle(
   side: string,
@@ -230,6 +231,7 @@ export default function PopoverHost({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [effectiveOpen, builderMode, popoverConfig?.closeOnEscape, setOpen]);
+
 
   // ── Panel positioning (pixel-based, trigger-relative) ────────────────────
 

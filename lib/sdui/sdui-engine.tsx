@@ -8,7 +8,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BuilderContext, PopoverShownContext } from './builder-context';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useColorScheme } from 'nativewind';
 import { create } from 'zustand';
 import { useSduiStore } from '@/store/sdui-store';
@@ -57,11 +57,19 @@ export function SDUIEngine({
   pathParams,
   builderPath,
 }: SDUIEngineProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const { setColorScheme } = useColorScheme();
 
+  // Wrap navigate in a Next.js-compatible router shape so action handlers
+  // that call router.push(path) continue to work unchanged.
+  // In builder mode, all navigation is blocked — page workflows (auth guards,
+  // redirects, etc.) must not escape the canvas and change the app's URL.
+  const _noop = () => {};
+  const router = builderMode
+    ? { push: _noop, replace: _noop }
+    : { push: navigate, replace: (path: string) => navigate(path, { replace: true }) };
   const routerRef = useRef(router);
   routerRef.current = router;
   const pathnameRef = useRef(pathname);
@@ -280,6 +288,28 @@ export function SDUIEngine({
     };
   }, [pathname, searchParams, activeBreakpoint, builderMode, builderQueryParams, pathParams, builderPath]);
   globalContextRef.current = globalContext;
+
+  // Routing-only context for datasource fetching: excludes breakpoint/screen so
+  // resizing the viewport doesn't trigger a refetch of mount-triggered datasources.
+  const dsGlobalContext = useMemo(() => ({
+    browser: {
+      url: globalContext?.browser?.url,
+      path: globalContext?.browser?.path,
+      domain: globalContext?.browser?.domain,
+      baseUrl: globalContext?.browser?.baseUrl,
+      query: globalContext?.browser?.query,
+      params: globalContext?.browser?.params,
+      environment: globalContext?.browser?.environment,
+    },
+  }), [
+    globalContext?.browser?.url,
+    globalContext?.browser?.path,
+    globalContext?.browser?.domain,
+    globalContext?.browser?.baseUrl,
+    globalContext?.browser?.query,
+    globalContext?.browser?.params,
+    globalContext?.browser?.environment,
+  ]);
 
   useEffect(() => {
     mergedStore.getState().setMerged((prev) => ({
@@ -552,6 +582,7 @@ export function SDUIEngine({
           useSduiStore: useSduiStore as { getState: () => { setData: (path: string, value: unknown) => void } },
           triggerDataSourceRefetch: (name: string) => triggerDataSourceRefetchRef.current(name),
           setStepResult: (result) => { resultRef.current = result; },
+          builderMode,
         };
         const handlerResult = await dispatchToHandler(actionDef as import('./actions/handlers/types').ActionDef, handlerCtx);
         if (handlerResult !== false) {
@@ -693,7 +724,7 @@ export function SDUIEngine({
     }
   }, []);
 
-  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore, globalContext, onDatasourceError);
+  useNamedDataSourceFetcher(dataSources, dsRefetchKeys, config, useSduiStore, dsGlobalContext, onDatasourceError);
 
   // ── Declarative trigger listeners ─────────────────────────────────────────────
   // Scans actionsConfig for workflows with isTrigger:true and wires up the
@@ -704,16 +735,11 @@ export function SDUIEngine({
   actionsConfigRef.current = actionsConfig;
 
   useEffect(() => {
-    console.log('[triggers] effect fired — builderMode:', builderMode, '| configName:', configName);
-    if (builderMode) {
-      console.log('[triggers] skipped — builderMode is true');
-      return;
-    }
+    if (builderMode) return;
 
     type TriggerDef = { trigger?: string; isTrigger?: boolean; isAppTrigger?: boolean; pageScope?: string };
 
     const cfg = actionsConfigRef.current as Record<string, TriggerDef>;
-    console.log('[triggers] actionsConfig keys:', Object.keys(cfg));
 
     // isAppTrigger: true  → fires on every page (global)
     // pageScope set       → fires only on the matching page
@@ -725,18 +751,13 @@ export function SDUIEngine({
     const byTrigger = new Map<string, string[]>();
     for (const [key, def] of Object.entries(cfg)) {
       if (!def.isTrigger || !def.trigger) continue;
-      const matches = matchesPage(def);
-      console.log(`[triggers] wf="${key}" trigger="${def.trigger}" pageScope="${def.pageScope}" isAppTrigger=${def.isAppTrigger} → matchesPage=${matches}`);
-      if (!matches) continue;
+      if (!matchesPage(def)) continue;
       let list = byTrigger.get(def.trigger);
       if (!list) { list = []; byTrigger.set(def.trigger, list); }
       list.push(key);
     }
 
-    console.log('[triggers] byTrigger map:', Object.fromEntries(byTrigger));
-
     const run = (key: string, eventData?: Record<string, unknown>) => {
-      console.log('[triggers] running key:', key);
       runActionRef.current({ action: key }, eventData);
     };
 

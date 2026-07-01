@@ -55,7 +55,10 @@ function getModels(): Record<string, ModelLike> {
 function getOverlayStyle(viewportHeight?: number): React.CSSProperties {
   return viewportHeight
     ? { position: 'absolute', top: 0, left: 0, right: 0, height: viewportHeight, zIndex: 9000, overflow: 'hidden' }
-    : { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9000, overflow: 'hidden' };
+    // pointer-events: none lets clicks fall through to page content.
+    // Individual SC children re-enable pointer events with pointerEvents:'auto'
+    // (e.g. modal backdrops, toast dismiss buttons, popover panels).
+    : { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9000, overflow: 'hidden', pointerEvents: 'none' };
 }
 
 interface VisibleEntry {
@@ -177,10 +180,8 @@ export function SharedComponentDynamicRenderer({ context, viewportHeight }: Shar
             data-sc-component={instance.componentId}
             style={getOverlayStyle(viewportHeight)}
             onKeyDown={isBuilderMode ? undefined : (e => { if (e.key === 'Escape') handleEscape(); })}
-            tabIndex={isBuilderMode ? undefined : -1}
-            ref={isBuilderMode ? undefined : (el => { if (el) el.focus(); })}
           >
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: viewportHeight ?? '100vh' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: viewportHeight ?? '100vh', pointerEvents: 'none' }}>
               <SDURendererScoped
                 node={model.content as unknown as SDUINode}
                 context={context}

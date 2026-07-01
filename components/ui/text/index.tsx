@@ -1,24 +1,13 @@
 import React from 'react';
-import { flattenStyle } from '../flatten-style';
+import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
-type TextProps = React.ComponentPropsWithoutRef<'span'> & {
-  className?: string;
-  nativeID?: string;
-};
+type TextProps = RNTextProps & { className?: string };
 
-const Text = React.forwardRef<HTMLSpanElement, TextProps>(function Text(
-  { className, style, nativeID, ...props },
+const Text = React.forwardRef<InstanceType<typeof RNText>, TextProps>(function Text(
+  { className, ...props },
   ref
 ) {
-  return (
-    <span
-      ref={ref}
-      id={nativeID}
-      className={className}
-      style={flattenStyle(style)}
-      {...props}
-    />
-  );
+  return <RNText ref={ref} className={className} {...props} />;
 });
 
 Text.displayName = 'Text';

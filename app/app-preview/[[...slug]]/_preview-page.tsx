@@ -267,9 +267,10 @@ function buildDataSources(
   if (!dsArray.length) return {};
   const result: Record<string, NamedDataSourceDef> = {};
   for (const ds of dsArray) {
-    // Resolve relative URLs (e.g. "/jobs") to the backend run endpoint
-    const resolveUrl = (url: string): string => {
-      if (url.startsWith('/') && projectId) {
+    // Resolve relative URLs (e.g. "/jobs") to the backend run endpoint.
+    // ds.url may be a formula object ({ js: "..." }) — only resolve plain strings.
+    const resolveUrl = (url: unknown): unknown => {
+      if (typeof url === 'string' && url.startsWith('/') && projectId) {
         return `${PREVIEW_BACKEND_URL}/v1/run/${projectId}${url}`;
       }
       return url;
@@ -277,7 +278,7 @@ function buildDataSources(
     if (ds.type === 'rest' && ds.url) {
       result[ds.id] = {
         type: 'rest',
-        url: resolveUrl(ds.url),
+        url: resolveUrl(ds.url) as string,
         method: ds.method as RestNamedDataSourceDef['method'],
         headers: ds.headers,
         queryParams: ds.queryParams,

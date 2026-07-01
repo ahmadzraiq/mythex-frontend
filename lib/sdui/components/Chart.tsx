@@ -35,6 +35,11 @@ interface ChartProps {
   style?: React.CSSProperties;
   'data-builder-id'?: string;
   'data-builder-depth'?: string;
+  // legacy props from imported configs — accepted but ignored
+  showGrid?: boolean;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  editPath?: string;
 }
 
 const DEFAULT_DATA: ChartDataPoint[] = [
@@ -59,10 +64,22 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
       colors = DEFAULT_COLORS,
       className = '',
       style,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      showGrid: _showGrid,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      xAxisLabel: _xAxisLabel,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      yAxisLabel: _yAxisLabel,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      editPath: _editPath,
       ...rest
     },
     ref,
   ) => {
+    // Only forward safe HTML attributes to the DOM div
+    const safeRest = Object.fromEntries(
+      Object.entries(rest).filter(([k]) => k.startsWith('data-') || k.startsWith('aria-') || k === 'id'),
+    );
     const chartData = Array.isArray(data) && data.length ? data : DEFAULT_DATA;
 
     const renderChart = () => {
@@ -101,7 +118,7 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
     };
 
     return (
-      <div ref={ref} style={style} className={`w-full h-[240px] ${className}`} {...rest}>
+      <div ref={ref} style={style} className={`w-full h-[240px] ${className}`} {...safeRest}>
         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           {renderChart()}
         </ResponsiveContainer>

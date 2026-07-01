@@ -312,6 +312,14 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
         (style as Record<string, string>).boxShadow = value;
         break;
 
+      // ── Backdrop filter — backdrop-blur-[14px] ───────────────────────────────
+      case 'backdrop-blur':
+        if (isDimension) {
+          (style as Record<string, string>).backdropFilter = `blur(${value})`;
+          (style as Record<string, string>).WebkitBackdropFilter = `blur(${value})`;
+        }
+        break;
+
       // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
       // bg-[#hex], bg-[rgb(...)], bg-[var(--token)], bg-[url(https://...)]
       case 'bg':
@@ -556,8 +564,11 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   _instanceIdRef.current = _instanceId;
 
   // Fire 'created' and 'mounted' lifecycle workflows on first mount.
+  // Skipped in builder mode: page workflows (auth guards, redirects, data fetches)
+  // must not run inside the canvas — the builder only renders, it does not execute.
   const _lifecycleFiredRef = useRef(false);
   useEffect(() => {
+    if (builderMode) return;
     if (_lifecycleFiredRef.current) return;
     const meta = _sharedMetaRef.current;
     if (!meta) return;
@@ -625,6 +636,7 @@ const SDURendererInner = memo(function SDURendererInner({ node: rawNode, context
   // 'propertyChange' fires whenever any resolved prop changes value (skips first mount).
   const _prevPropsRef = useRef<Record<string, unknown> | null>(null);
   useEffect(() => {
+    if (builderMode) return;
     const meta = _sharedMetaRef.current;
     if (!meta) return;
     const current = _effectiveScopeRef.current?.context

@@ -3116,11 +3116,23 @@ export const AnimatedNode = React.memo(function AnimatedNode({
     if (mouseParallaxX.value !== 0) transforms.push({ translateX: mouseParallaxX.value });
     if (mouseParallaxY.value !== 0) transforms.push({ translateY: mouseParallaxY.value });
 
+    // Guard: Reanimated's interpolateColor cannot process CSS variable strings.
+    // When either endpoint is a CSS var (e.g. "var(--theme-primary)"), skip
+    // interpolation and use the target color directly — the browser resolves it.
+    const smFromIsCssVar = smFromColor.current.indexOf('var(') !== -1;
+    const smToIsCssVar   = smToColor.current.indexOf('var(') !== -1;
     const smBg = smBgColorProg.value > 0
-      ? interpolateColor(smBgColorProg.value, [0, 1], [smFromColor.current, smToColor.current])
+      ? (smFromIsCssVar || smToIsCssVar
+          ? smToColor.current
+          : interpolateColor(smBgColorProg.value, [0, 1], [smFromColor.current, smToColor.current]))
       : undefined;
+
+    const colorFromIsCssVar = colorFrom.current.indexOf('var(') !== -1;
+    const colorToIsCssVar   = colorTo.current.indexOf('var(') !== -1;
     const colorBg = colorProgress.value > 0
-      ? interpolateColor(colorProgress.value, [0, 1], [colorFrom.current, colorTo.current])
+      ? (colorFromIsCssVar || colorToIsCssVar
+          ? colorTo.current
+          : interpolateColor(colorProgress.value, [0, 1], [colorFrom.current, colorTo.current]))
       : undefined;
 
     // Focus ring shadow (cross-platform — Reanimated shadow props)

@@ -11,11 +11,13 @@ type InputFieldProps = TextInputProps & {
 type InputSlotProps = ViewProps & { className?: string };
 type InputIconProps = { children?: React.ReactNode; className?: string };
 
+const INPUT_BASE = 'flex-row overflow-hidden items-center';
+
 const Input = React.forwardRef<View, InputProps>(function Input(
   { className, ...props },
   ref
 ) {
-  return <View ref={ref} className={className} {...props} />;
+  return <View ref={ref} className={className ? `${INPUT_BASE} ${className}` : INPUT_BASE} {...props} />;
 });
 
 const InputField = React.forwardRef<TextInput, InputFieldProps>(function InputField(

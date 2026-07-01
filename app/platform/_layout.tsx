@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, createContext, useContext, useCallback } from 'react';
-import { useNavigate, useLocation, Outlet, Navigate } from 'react-router-dom';
+import { useState, createContext, useContext, useCallback } from 'react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { auth, workspaces as workspacesApi, type User, type Workspace } from '@/lib/platform/api-client';
+import { useAuth } from './_auth-provider';
 import AiTokenMeter from './_ai-token-meter';
 import PricingModal from './_pricing-modal';
 
-// ── Context so children can trigger workspace refetches ─────────────────────
+// ── Platform context (UI-layer extras — pricing modal, AI usage refresh) ─────
 
 interface PlatformCtx {
   user: User | null;
@@ -16,6 +17,7 @@ interface PlatformCtx {
   aiUsageRefreshKey: number;
   bumpAiUsageRefresh: () => void;
 }
+
 const PlatformContext = createContext<PlatformCtx>({
   user: null, workspaces: [], refetchWorkspaces: () => {},
   showPricing: () => {}, aiUsageRefreshKey: 0, bumpAiUsageRefresh: () => {},
@@ -216,92 +218,39 @@ function CreateWorkspaceModal({ onClose, onCreate, onUpgrade }: { onClose: () =>
 export default function PlatformLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [user, setUser] = useState<User | null>(null);
-  const [workspaceList, setWorkspaceList] = useState<Workspace[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Auth state comes from the top-level AuthProvider — no auth.me() call here
+  const { user, workspaces, refetchWorkspaces, setUser, setWorkspaceList } = useAuth();
 
   const [showCreateWs, setShowCreateWs] = useState(false);
   const [pricingModal, setPricingModal] = useState<{ open: boolean; feature?: string }>({ open: false });
   const [aiUsageRefreshKey, setAiUsageRefreshKey] = useState(0);
 
-
-  const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
-  const isPublic = publicPaths.some(p => pathname === p || pathname.startsWith(p + '?'))
-    || pathname.startsWith('/invitations/')
-    || pathname.startsWith('/forgot-password')
-    || pathname.startsWith('/reset-password');
-
   const fetchWorkspaces = useCallback(() => {
     workspacesApi.list()
-      .then(({ workspaces }) => setWorkspaceList(workspaces))
+      .then(({ workspaces: ws }) => setWorkspaceList(ws))
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    auth.me()
-      .then(({ user: u }) => {
-        if (u.emailVerified === false) {
-          navigate('/signup?verify=1', { replace: true });
-          return Promise.reject('unverified');
-        }
-        setUser(u);
-        return workspacesApi.list();
-      })
-      .then(({ workspaces }) => setWorkspaceList(workspaces))
-      .catch((reason) => {
-        if (reason === 'unverified') return;
-        setUser(null);
-        const path = window.location.pathname;
-        const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
-        const onPublic = publicPaths.some(p => path === p || path.startsWith(p + '?'))
-          || path.startsWith('/invitations/')
-          || path.startsWith('/reset-password');
-        if (!onPublic) navigate('/login', { replace: true });
-      })
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bld-bg-panel)' }}>
-        <div style={{ width: 24, height: 24, border: '2px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  // Authenticated user landing on login/signup → send them into the app.
-  const authOnlyPublic = ['/login', '/signup'];
-  if (user && authOnlyPublic.some(p => pathname === p || pathname.startsWith(p + '?'))) {
-    console.log('[Layout] already authenticated on', pathname, '— redirecting to /workspaces');
-    return <Navigate to="/workspaces" replace />;
-  }
-
-  if (isPublic || !user) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--bld-bg-panel)' }}>
-        <Outlet />
-      </div>
-    );
-  }
+  }, [setWorkspaceList]);
 
   const wsMatch = pathname.match(/\/workspaces\/([^/?]+)/);
   const activeWsId = wsMatch?.[1] ?? null;
-  const activeWs = workspaceList.find(w => w.id === activeWsId) ?? null;
+  const activeWs = workspaces.find(w => w.id === activeWsId) ?? null;
 
   const showPricing = (feature?: string) => setPricingModal({ open: true, feature });
   const bumpAiUsageRefresh = () => setAiUsageRefreshKey(k => k + 1);
 
+  // user is guaranteed non-null here because PrivateRoute gates this layout
+  if (!user) return null;
+
   return (
-    <PlatformContext.Provider value={{ user, workspaces: workspaceList, refetchWorkspaces: fetchWorkspaces, showPricing, aiUsageRefreshKey, bumpAiUsageRefresh }}>
+    <PlatformContext.Provider value={{ user, workspaces, refetchWorkspaces: fetchWorkspaces, showPricing, aiUsageRefreshKey, bumpAiUsageRefresh }}>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bld-bg-panel)' }}>
         <Sidebar
           user={user}
-          workspaces={workspaceList}
+          workspaces={workspaces}
           onNewWorkspace={() => {
-            const allFree = workspaceList.every(ws => ws.plan === 'FREE');
-            if (!user.superAdmin && workspaceList.length >= 1 && allFree) {
+            const allFree = workspaces.every(ws => ws.plan === 'FREE');
+            if (!user.superAdmin && workspaces.length >= 1 && allFree) {
               showPricing('Multiple workspaces');
             } else {
               setShowCreateWs(true);
@@ -309,7 +258,9 @@ export default function PlatformLayout() {
           }}
           onSignOut={async () => {
             await auth.logout();
-            navigate('/login');
+            setUser(null);
+            setWorkspaceList([]);
+            navigate('/login', { replace: true });
           }}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -332,7 +283,7 @@ export default function PlatformLayout() {
       {showCreateWs && (
         <CreateWorkspaceModal
           onClose={() => setShowCreateWs(false)}
-          onCreate={ws => setWorkspaceList(prev => [...prev, ws])}
+          onCreate={ws => setWorkspaceList([...workspaces, ws])}
           onUpgrade={() => showPricing('Multiple workspaces')}
         />
       )}

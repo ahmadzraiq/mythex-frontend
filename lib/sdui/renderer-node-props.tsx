@@ -220,8 +220,12 @@ const CLASS_FORMULA_WRAPPERS: Record<string, (v: unknown) => string> = {
   direction:   v => v === 'col' ? 'flex-col' : v === 'row' ? 'flex-row' : `flex-${v}`,
   display:     v => v === 'none' ? 'hidden' : String(v),
   position:    v => String(v),
-  colSpan:     v => v === 'full' ? 'col-span-full' : `col-span-${v}`,
-  shadow:      v => `shadow-${v}`,
+  colSpan:          v => v === 'full' ? 'col-span-full' : `col-span-${v}`,
+  shadow:           v => `shadow-${v}`,
+  borderBottomColor: v => `border-b-[${v}]`,
+  borderTopColor:    v => `border-t-[${v}]`,
+  borderLeftColor:   v => `border-l-[${v}]`,
+  borderRightColor:  v => `border-r-[${v}]`,
 };
 
 /**

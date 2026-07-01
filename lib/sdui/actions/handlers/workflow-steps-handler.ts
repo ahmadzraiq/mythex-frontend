@@ -1148,6 +1148,7 @@ async function runSteps(
         stepResult = await ctx.runOne(sduiDef as unknown as import('../../types').SDUIAction);
       } catch (err) {
         stepError = err instanceof Error ? err.message : String(err);
+        console.error('[runSteps] step error:', step.type, stepError);
       }
       workflowCtx[step.id] = { result: stepResult ?? null, error: stepError };
       flushWorkflowCtx(workflowCtx);

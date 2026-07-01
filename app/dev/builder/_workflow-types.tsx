@@ -66,15 +66,15 @@ export type ActionStepType =
   | 'startLoop'
   | 'stopLoop'
   | 'playEnterAnimation'
-  // Unified shared component management (Phase 9 — replaces 3 separate types below)
+  // Builder picker alias — resolved at runtime to the three specific types below
   | 'modifySharedComponent'
-  // Legacy SC types — kept for backward compat
+  // Runtime SC types (resolved from modifySharedComponent, also valid directly in JSON configs)
   | 'addSharedComponent'
   | 'deleteSharedComponent'
   | 'deleteAllSharedComponents'
-  // Unified popover control (Phase 9 — replaces 3 separate types below)
+  // Builder picker alias — resolved at runtime to the three specific types below
   | 'controlPopover'
-  // Legacy popover types — kept for backward compat
+  // Runtime popover types (resolved from controlPopover, also valid directly in JSON configs)
   | 'openPopover'
   | 'closePopover'
   | 'togglePopover'
@@ -709,11 +709,27 @@ export const FORM_ACTION_CATEGORY: { category: string; items: ActionTypeDef[] } 
   ],
 };
 
-/** Step types that appear in the builder Type dropdown. Only these execute at runtime. */
+/**
+ * All step types that execute at runtime.
+ *
+ * ACTION_CATEGORIES drives the builder's step-type picker. Some types are
+ * runtime-only (not shown in the picker) because the builder uses a higher-level
+ * alias instead:
+ *
+ *   modifySharedComponent  (picker) → addSharedComponent / deleteSharedComponent /
+ *                                      deleteAllSharedComponents  (runtime)
+ *
+ * The runtime-specific types are listed explicitly below so that JSON configs
+ * that reference them directly are still executed correctly.
+ */
 export const SUPPORTED_WORKFLOW_STEP_TYPES = new Set<ActionStepType>([
   ...ACTION_CATEGORIES.flatMap((c) => c.items.map((i) => i.type)),
   ...FORM_ACTION_CATEGORY.items.map((i) => i.type),
   'runProjectWorkflow',
+  // Runtime aliases resolved from modifySharedComponent — valid in any JSON config
+  'addSharedComponent',
+  'deleteSharedComponent',
+  'deleteAllSharedComponents',
 ]);
 
 // ─── Step serialization ───────────────────────────────────────────────────────

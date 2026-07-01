@@ -1,9 +1,10 @@
 'use client';
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { useEffect } from 'react';
 
+import { AuthProvider } from './platform/_auth-provider';
+import { PrivateRoute, PublicOnlyRoute } from './platform/_route-guards';
 import PlatformLayout from './platform/_layout';
 import LoginPage from './platform/login';
 import SignupPage from './platform/signup';
@@ -43,50 +44,60 @@ function PreviewRouter() {
 }
 
 export default function AppRouter() {
-  // Subdomain-based preview: *.preview.localhost or *-preview.* → serve preview only
+  // Subdomain-based preview: *-preview.* → serve preview only
   if (typeof window !== 'undefined' && window.location.hostname.includes('-preview.')) {
     return <PreviewRouter />;
   }
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Platform routes — auth-aware layout with sidebar */}
-        <Route element={<PlatformLayout />}>
-          <Route index element={<Navigate to="/workspaces" replace />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="signup" element={<SignupPage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="reset-password" element={<ResetPasswordPage />} />
-          <Route path="workspaces" element={<WorkspacesPage />} />
-          <Route path="workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
+      <AuthProvider>
+        <Routes>
+          {/* Public-only routes — redirect to /workspaces if already logged in */}
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="login" element={<LoginPage />} />
+            <Route path="signup" element={<SignupPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Protected platform pages — sidebar layout */}
+          <Route element={<PrivateRoute />}>
+            <Route element={<PlatformLayout />}>
+              <Route index element={<Navigate to="/workspaces" replace />} />
+              <Route path="workspaces" element={<WorkspacesPage />} />
+              <Route path="workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
+              <Route path="builder/:projectId" element={<BuilderRedirect />} />
+            </Route>
+          </Route>
+
+          {/* Protected builder — full-screen, no sidebar */}
+          <Route element={<PrivateRoute />}>
+            <Route
+              path="dev/builder"
+              element={
+                <Suspense fallback={null}>
+                  <BuilderPage />
+                </Suspense>
+              }
+            />
+          </Route>
+
+          {/* Neutral — accessible with or without auth */}
           <Route path="invitations/accept" element={<InvitationsAcceptPage />} />
-          <Route path="builder/:projectId" element={<BuilderRedirect />} />
-        </Route>
+          <Route
+            path="app-preview/*"
+            element={
+              <Suspense fallback={null}>
+                <AppPreviewLoader />
+              </Suspense>
+            }
+          />
 
-        {/* Builder — full-screen, no platform layout */}
-        <Route
-          path="dev/builder"
-          element={
-            <Suspense fallback={null}>
-              <BuilderPage />
-            </Suspense>
-          }
-        />
-
-        {/* App preview */}
-        <Route
-          path="app-preview/*"
-          element={
-            <Suspense fallback={null}>
-              <AppPreviewLoader />
-            </Suspense>
-          }
-        />
-
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/workspaces" replace />} />
-      </Routes>
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/workspaces" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
