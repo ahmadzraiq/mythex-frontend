@@ -72,8 +72,8 @@ Image tags: `:latest` (prod), `:staging` (staging), `:<commit-sha>` (both)
 
 ### SSH Access
 ```bash
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@184.33.87.6    # prod (mythex-backend-prod)
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157  # staging (mythex-backend-staging)
+ssh -i ~/.ssh/mythex-key.pem ec2-user@184.33.87.6    # prod (mythex-backend-prod)
+ssh -i ~/.ssh/mythex-key.pem ec2-user@54.218.57.157  # staging (mythex-backend-staging)
 ```
 
 ### Deploy (GitHub Actions — automatic)
@@ -97,7 +97,7 @@ push to develop → docker build → ECR :staging → SSH staging EC2 → docker
 ### Production — RDS PostgreSQL 16
 - **Identifier:** `mythex-frontend-postgres`
 - **Endpoint:** `mythex-frontend-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
-- **DB name:** `mythex` (was `josn_based_platform` — rename if not done)
+- **DB name:** `mythex`
 - **Instance class:** db.t3.micro
 - **Public access:** No (VPC only)
 - **Password:** stored in `/app/.env.backend` on prod EC2
@@ -157,7 +157,7 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 | `AWS_REGION` | `us-west-2` |
 | `PROD_EC2_IP` | `184.33.87.6` |
 | `STAGING_EC2_IP` | `54.218.57.157` |
-| `EC2_SSH_KEY` | contents of `~/.ssh/mythex-frontend-key.pem` |
+| `EC2_SSH_KEY` | contents of `~/.ssh/mythex-key.pem` |
 | `PROD_DATABASE_URL` | RDS PostgreSQL connection string |
 | `STAGING_DATABASE_URL` | Staging postgres connection string |
 | `PROD_JWT_SECRET` | JWT signing secret (prod) |
@@ -252,7 +252,7 @@ docker build --platform linux/amd64 \
 docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-backend:latest
 
 # Deploy on prod EC2
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@184.33.87.6 \
+ssh -i ~/.ssh/mythex-key.pem ec2-user@184.33.87.6 \
   "cd /app && docker compose pull backend && docker compose up -d backend"
 ```
 
