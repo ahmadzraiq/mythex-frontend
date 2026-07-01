@@ -2,17 +2,13 @@
 
 ## Overview
 
-Two environments deployed on AWS (us-west-2 / Oregon):
-
 | | Production | Staging |
 |---|---|---|
-| **URL** | http://44.255.113.95:3000 | http://54.218.57.157:3000 |
+| **Landing** | `mythex.ai` | — |
+| **Builder** | `app.mythex.ai` | `staging.app.mythex.ai` |
+| **App Preview** | `<projectId>.app.mythex.ai` | `<projectId>.staging.app.mythex.ai` |
+| **API** | `api.mythex.ai` | `staging.api.mythex.ai` |
 | **Branch** | `main` | `develop` |
-| **EC2 Instance** | `i-00f618a2701b60ece` (t3.small) | `i-0258c2afc477f64fe` (t3.micro) |
-| **EC2 IP** | `44.255.113.95` (stopped) | `54.218.57.157` |
-| **Database** | RDS PostgreSQL (managed) | Postgres on EC2 (Docker) |
-| **Redis** | Docker on EC2 | Docker on EC2 |
-| **Cost** | ~$45/month | ~$8/month |
 
 ---
 
@@ -24,27 +20,65 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 
 ---
 
-## EC2 Servers
+## Frontend Hosting (S3 + Cloudflare CDN)
 
-### Production — `44.255.113.95`
-- **Instance:** `i-00f618a2701b60ece`
-- **Type:** t3.small (2 vCPU, 2GB RAM)
-- **OS:** Amazon Linux 2023
-- **Storage:** 30GB gp3
-- **App dir:** `/app`
-- **SSH:** `ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95`
+The builder is a Vite SPA — static files served from S3, proxied via Cloudflare (free CDN + HTTPS).
 
-### Staging — `54.218.57.157`
-- **Instance:** `i-0258c2afc477f64fe`
-- **Type:** t3.micro (2 vCPU, 1GB RAM)
-- **OS:** Amazon Linux 2023
-- **Storage:** 20GB gp3
-- **App dir:** `/app`
-- **SSH:** `ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157`
+| | Production | Staging |
+|---|---|---|
+| **S3 Bucket** | `mythex-app-prod` | `mythex-app-staging` |
+| **S3 Website Endpoint** | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
+| **Cloudflare DNS** | `app CNAME → S3 endpoint` (orange cloud) | `staging.app CNAME → S3 endpoint` (orange cloud) |
+| **Wildcard preview** | `*.app CNAME → S3 prod endpoint` | `*.staging.app CNAME → S3 staging endpoint` |
 
-### SSH Key
-- **Name:** `mythex-frontend-key`
-- **Local path:** `~/.ssh/mythex-frontend-key.pem`
+No Docker, no ECR, no CloudFront for the frontend.
+
+### Deploy (GitHub Actions — automatic)
+```
+push to main    → vite build → aws s3 sync → Cloudflare cache purge
+push to develop → vite build → aws s3 sync → Cloudflare cache purge
+```
+
+---
+
+## Backend (EC2 + Docker)
+
+| | Production | Staging |
+|---|---|---|
+| **URL** | `https://api.mythex.ai` | `https://staging.api.mythex.ai` |
+| **Branch** | `main` | `develop` |
+| **EC2 Instance** | `i-00f618a2701b60ece` (t3.small) | `i-0258c2afc477f64fe` (t3.micro) |
+| **EC2 IP** | `44.255.113.95` | `54.218.57.157` |
+| **Database** | RDS PostgreSQL (managed) | Postgres in Docker |
+| **Redis** | Docker on EC2 | Docker on EC2 |
+
+### ECR Repository
+
+```
+948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-backend
+```
+
+Image tags: `:latest` (prod), `:staging` (staging), `:<commit-sha>` (both)
+
+### SSH Access
+```bash
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95   # prod
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157   # staging
+```
+
+### Deploy (GitHub Actions — automatic)
+```
+push to main    → docker build → ECR :latest → SSH prod EC2  → docker compose pull + up
+push to develop → docker build → ECR :staging → SSH staging EC2 → docker compose pull + up
+```
+
+---
+
+## Landing Page (Cloudflare Pages)
+
+- **Repo:** `ahmadzraiq/mythex-landing`
+- **Deploy:** push to `main` → Cloudflare Pages auto-deploy
+- **No build step** — pure static HTML/CSS/JS
 
 ---
 
@@ -54,19 +88,14 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 - **Identifier:** `mythex-frontend-postgres`
 - **Endpoint:** `mythex-frontend-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
 - **DB name:** `josn_based_platform`
-- **User:** `jsonbased`
-- **Password:** stored in `/app/.env.backend` on production EC2
 - **Instance class:** db.t3.micro
-- **Storage:** 20GB gp2
-- **Backups:** disabled (free tier)
 - **Public access:** No (VPC only)
+- **Password:** stored in `/app/.env.backend` on prod EC2
 
 ### Staging — Postgres in Docker
-- Runs as `app-postgres-1` container on the staging EC2
-- **DB name:** `josn_based_staging`
-- **User:** `staging`
-- Data stored in Docker volume `app_pg_data`
-- **Note:** Data is lost if the container is removed
+- Runs as `postgres` container on staging EC2
+- **DB name:** `mythex_staging` / **User:** `staging`
+- Data in Docker volume `mythex_staging_pg_data`
 
 ---
 
@@ -78,86 +107,113 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 ### Security Groups
 | Name | ID | Rules |
 |---|---|---|
-| `mythex-frontend-ec2-sg` | `sg-0b0d70e8449410005` | 22, 80, 443, 3000, 4000 open |
+| `mythex-frontend-ec2-sg` | `sg-0b0d70e8449410005` | 22, 80, 443, 4000 open |
 | `mythex-frontend-rds-sg` | `sg-0cef1d51d484e7b9b` | 5432 from EC2 SG only |
 
 ---
 
-## Container Registry (ECR)
+## Cloudflare DNS Records
 
-| Repo | URI |
-|---|---|
-| Frontend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-frontend` |
-| Backend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend` |
+Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 
-### Image Tags
-| Tag | Environment | Built from |
+| Type | Name | Target |
 |---|---|---|
-| `:latest` | Production | `main` branch |
-| `:staging` | Staging | `develop` branch |
-| `:<commit-sha>` | Both | Every deploy (for rollback) |
-
-### Authenticate ECR locally
-```bash
-aws ecr get-login-password --region us-west-2 | \
-  docker login --username AWS --password-stdin \
-  948075159962.dkr.ecr.us-west-2.amazonaws.com
-```
+| CNAME | `@` | Cloudflare Pages URL |
+| CNAME | `app` | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` |
+| CNAME | `*.app` | `mythex-app-prod.s3-website-us-west-2.amazonaws.com` |
+| CNAME | `staging.app` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
+| CNAME | `*.staging.app` | `mythex-app-staging.s3-website-us-west-2.amazonaws.com` |
+| A | `api` | `44.255.113.95` |
+| A | `staging.api` | `54.218.57.157` |
 
 ---
 
-## IAM Roles
+## GitHub Secrets
 
-| Role | Used by | Permissions |
-|---|---|---|
-| `ecsTaskExecutionRole` | EC2 instances | ECR pull, CloudWatch logs |
-| `mythex-frontend-ec2-role` | Both EC2s | ECR read-only |
-| `mythex-frontend-backend-task-role` | Backend | S3 read/write |
-| `mythex-frontend-frontend-task-role` | Frontend | — |
-
----
-
-## CI/CD Pipelines (GitHub Actions)
-
-### Flow
-```
-push to develop  →  build :staging image  →  push ECR  →  SSH staging EC2  →  docker compose pull + up
-push to main     →  build :latest image   →  push ECR  →  SSH prod EC2     →  docker compose pull + up
-```
-
-### Required GitHub Secrets (both repos)
-| Secret | Value |
+### `mythex-frontend` repo
+| Secret | Description |
 |---|---|
 | `AWS_ACCESS_KEY_ID` | deploy-admin IAM access key |
 | `AWS_SECRET_ACCESS_KEY` | deploy-admin IAM secret key |
+| `PROD_S3_BUCKET` | `mythex-app-prod` |
+| `STAGING_S3_BUCKET` | `mythex-app-staging` |
+| `CF_ZONE_ID` | Cloudflare Zone ID for `mythex.ai` |
+| `CF_API_TOKEN` | Cloudflare API token (Cache Purge permission) |
+
+### `mythex-backend` repo
+| Secret | Description |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | deploy-admin IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | deploy-admin IAM secret key |
+| `AWS_ACCOUNT_ID` | `948075159962` |
+| `AWS_REGION` | `us-west-2` |
 | `PROD_EC2_IP` | `44.255.113.95` |
 | `STAGING_EC2_IP` | `54.218.57.157` |
 | `EC2_SSH_KEY` | contents of `~/.ssh/mythex-frontend-key.pem` |
+| `PROD_DATABASE_URL` | RDS PostgreSQL connection string |
+| `STAGING_DATABASE_URL` | Staging postgres connection string |
+| `PROD_JWT_SECRET` | JWT signing secret (prod) |
+| `STAGING_JWT_SECRET` | JWT signing secret (staging) |
+| `PROD_JWT_REFRESH_SECRET` | JWT refresh secret (prod) |
+| `STAGING_JWT_REFRESH_SECRET` | JWT refresh secret (staging) |
+| `PROD_ANTHROPIC_API_KEY` | Anthropic API key (prod) |
+| `STAGING_ANTHROPIC_API_KEY` | Anthropic API key (staging) |
+| `PROD_OPENAI_API_KEY` | OpenAI API key (prod) |
+| `STAGING_OPENAI_API_KEY` | OpenAI API key (staging) |
+| `PROD_UNSPLASH_ACCESS_KEY` | Unsplash key (prod) |
+| `STAGING_UNSPLASH_ACCESS_KEY` | Unsplash key (staging) |
+| `PROD_PEXELS_API_KEY` | Pexels key (prod) |
+| `STAGING_PEXELS_API_KEY` | Pexels key (staging) |
+| `PROD_S3_PUBLIC_BUCKET` | S3 public assets bucket (prod) |
+| `STAGING_S3_PUBLIC_BUCKET` | S3 public assets bucket (staging) |
+| `PROD_S3_PRIVATE_BUCKET` | S3 private bucket (prod) |
+| `STAGING_S3_PRIVATE_BUCKET` | S3 private bucket (staging) |
+| `STAGING_POSTGRES_PASSWORD` | Staging docker postgres password |
+| `PROD_FREE_PLAN_PROJECT_LIMIT` | Free plan project limit (prod) |
+| `STAGING_FREE_PLAN_PROJECT_LIMIT` | Free plan project limit (staging) |
+| `PROD_FREE_PLAN_ROW_LIMIT` | Free plan row limit |
+| `STAGING_FREE_PLAN_ROW_LIMIT` | Free plan row limit |
+| `PROD_FREE_PLAN_STORAGE_MB` | Free plan storage MB |
+| `STAGING_FREE_PLAN_STORAGE_MB` | Free plan storage MB |
+| `PROD_FREE_PLAN_API_CALLS_PER_MONTH` | Free plan API calls |
+| `STAGING_FREE_PLAN_API_CALLS_PER_MONTH` | Free plan API calls |
 
-### Workflow files
-- Frontend: `.github/workflows/deploy.yml` in `mythex-frontend` repo
-- Backend: `.github/workflows/deploy.yml` in `mythex-frontend-backend` repo
+### `mythex-landing` repo
+| Secret | Description |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Pages deploy token |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 
 ---
 
-## Services on Each EC2
+## EC2 Setup (One-Time Per Server)
 
-Both servers run via Docker Compose at `/app/docker-compose.yml`.
+SSH into each EC2 and run:
 
-### Production containers
-| Container | Image | Port |
-|---|---|---|
-| `app-frontend-1` | ECR `mythex-frontend-frontend:latest` | 3000 |
-| `app-backend-1` | ECR `mythex-frontend-backend:latest` | 4000 |
-| `app-redis-1` | `redis:7-alpine` | 6379 (internal) |
+```bash
+# Install nginx
+sudo yum install -y nginx
 
-### Staging containers
-| Container | Image | Port |
-|---|---|---|
-| `app-frontend-1` | ECR `mythex-frontend-frontend:staging` | 3000 |
-| `app-backend-1` | ECR `mythex-frontend-backend:staging` | 4000 |
-| `app-postgres-1` | `postgres:16-alpine` | 5432 (internal) |
-| `app-redis-1` | `redis:7-alpine` | 6379 (internal) |
+# Copy nginx config (from infra/nginx-ec2.conf in mythex-backend repo)
+sudo cp nginx-ec2.conf /etc/nginx/conf.d/mythex.conf
+
+# Start and enable nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+# Create app directory
+sudo mkdir -p /app
+sudo chown ec2-user:ec2-user /app
+
+# Authenticate Docker with ECR
+aws ecr get-login-password --region us-west-2 | \
+  docker login --username AWS --password-stdin \
+  948075159962.dkr.ecr.us-west-2.amazonaws.com
+
+# Copy docker-compose file (prod or staging)
+cp infra/docker-compose.prod.yml /app/docker-compose.yml  # on prod EC2
+cp infra/docker-compose.staging.yml /app/docker-compose.yml  # on staging EC2
+```
 
 ---
 
@@ -165,74 +221,70 @@ Both servers run via Docker Compose at `/app/docker-compose.yml`.
 
 ### View logs
 ```bash
-# Production
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95
 cd /app && docker compose logs -f backend
-cd /app && docker compose logs -f frontend
-
-# Staging
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.248.35.175
-cd /app && docker compose logs -f backend
+cd /app && docker compose logs -f redis
 ```
 
 ### Restart a service
 ```bash
 cd /app && docker compose restart backend
-cd /app && docker compose restart frontend
-```
-
-### Manual deploy (without GitHub Actions)
-```bash
-# 1. Build and push from your Mac
-cd /Users/ahmadzraiq/Desktop/mythex-frontend-backend
-docker build --platform linux/amd64 -t 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend:latest .
-docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend:latest
-
-# 2. Deploy on server
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
-  "cd /app && docker compose pull backend && docker compose up -d backend"
 ```
 
 ### Run Prisma migrations
 ```bash
-ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95
-cd /app
-docker compose exec backend sh -c "npx prisma migrate deploy"
+cd /app && docker compose exec backend sh -c "npx prisma migrate deploy"
 ```
 
-### Full schema sync (if migrations are out of sync)
+### Manual deploy (without GitHub Actions)
 ```bash
-docker compose exec -T backend sh -c "npx prisma db push --skip-generate --accept-data-loss"
+# Build and push from local
+cd /Users/ahmadzraiq/Desktop/mythex-backend
+docker build --platform linux/amd64 \
+  -t 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-backend:latest .
+docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-backend:latest
+
+# Deploy on prod EC2
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
+  "cd /app && docker compose pull backend && docker compose up -d backend"
 ```
 
 ---
 
-## Known Fixes Applied
+## Monthly Cost Estimate
 
-| Issue | Fix |
+| Resource | Cost |
 |---|---|
-| Middleware treated IP `44.x.x.x` as project subdomain | Added `isIpHost()` check in `middleware.ts` |
-| `auth_token` cookie not set over HTTP | Changed `secure` flag from `NODE_ENV=production` to `COOKIE_SECURE=true` env var |
-| Builder page crashed with `useSearchParams` during Next.js build | Wrapped `BuilderPageInner` in `<Suspense>` and added `export const dynamic = 'force-dynamic'` |
-| Prisma binary target mismatch on Alpine | Added `linux-musl-openssl-3.0.x` to `binaryTargets` in `schema.prisma` |
-| `refresh_tokens` table missing | Ran `prisma db push` after initial migration deploy |
+| EC2 prod (t3.small) | ~$15/mo |
+| EC2 staging (t3.micro) | ~$8/mo |
+| RDS prod (db.t3.micro + 20GB) | ~$15/mo |
+| S3 (2 buckets, ~20MB SPA) | ~$0.05/mo |
+| ECR (mythex-backend images) | ~$0.50/mo |
+| Cloudflare CDN + Pages | $0 |
+| **Total** | **~$39/mo** |
 
 ---
 
-## Upgrading to HTTPS (when you get a domain)
+## AWS Cleanup Commands (Old Resources)
 
-1. Point your domain DNS to the EC2 IP via Cloudflare (free, enables HTTPS)
-2. Update `ALLOWED_ORIGINS` in `/app/.env.backend` on each server
-3. Update `BACKEND_URL` in `/app/.env.frontend` on each server
-4. Set `COOKIE_SECURE=true` in `/app/.env.backend` on each server
-5. Restart: `cd /app && docker compose up -d`
+Run once after verifying new setup is live:
 
----
+```bash
+# Delete old ECR repos
+aws ecr delete-repository --repository-name mythex-frontend-frontend --region us-west-2 --force
+aws ecr delete-repository --repository-name mythex-frontend-backend --region us-west-2 --force
 
-## Scaling Up (when needed)
+# Deregister old ECS task definitions
+aws ecs list-task-definitions --family-prefix mythex-frontend-frontend --region us-west-2
+# aws ecs deregister-task-definition --task-definition mythex-frontend-frontend:1 --region us-west-2
 
-When traffic grows, upgrade to ECS Fargate:
-- All Dockerfiles, task definitions, and ECS config are already in `infra/` folders
-- Run `infra/aws-setup.sh` to provision VPC, RDS Multi-AZ, ElastiCache
-- Update GitHub Actions workflows (swap SSH deploy steps for ECS deploy steps)
-- Estimated cost at scale: $180–$320/month
+# Delete old CloudWatch log groups
+aws logs delete-log-group --log-group-name /ecs/mythex-frontend-frontend --region us-west-2
+aws logs delete-log-group --log-group-name /ecs/mythex-frontend-frontend-staging --region us-west-2
+
+# Delete unused IAM role
+aws iam delete-role --role-name mythex-frontend-frontend-task-role
+
+# Check for unattached Elastic IPs (costs $3.60/mo each)
+aws ec2 describe-addresses --region us-west-2 --query 'Addresses[?AssociationId==null]'
+# aws ec2 release-address --allocation-id <eipalloc-id> --region us-west-2
+```

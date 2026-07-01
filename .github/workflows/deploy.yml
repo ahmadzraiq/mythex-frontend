@@ -9,21 +9,37 @@ concurrency:
   group: deploy-frontend-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: mythex-frontend-frontend
-  DEPLOY_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
-
 jobs:
-  build-push:
-    name: Build & Push to ECR
+  deploy:
+    name: Deploy to ${{ github.ref_name == 'main' && 'Production' || 'Staging' }}
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.build.outputs.image }}
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+
+    env:
+      AWS_REGION: us-west-2
+      S3_BUCKET: ${{ github.ref_name == 'main' && secrets.PROD_S3_BUCKET || secrets.STAGING_S3_BUCKET }}
+      VITE_BACKEND_URL: ${{ github.ref_name == 'main' && 'https://api.mythex.ai' || 'https://staging.api.mythex.ai' }}
+      VITE_BACKEND_WS_URL: ${{ github.ref_name == 'main' && 'wss://api.mythex.ai' || 'wss://staging.api.mythex.ai' }}
+      VITE_APP_DOMAIN: ${{ github.ref_name == 'main' && 'app.mythex.ai' || 'staging.app.mythex.ai' }}
 
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        env:
+          VITE_BACKEND_URL: ${{ env.VITE_BACKEND_URL }}
+          VITE_BACKEND_WS_URL: ${{ env.VITE_BACKEND_WS_URL }}
+          VITE_APP_DOMAIN: ${{ env.VITE_APP_DOMAIN }}
+        run: npm run build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,67 +47,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image
-        id: build
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-          ENV_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
+      - name: Sync hashed assets (long cache)
         run: |
-          docker build \
-            --platform linux/amd64 \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ENV_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          aws s3 sync dist/assets/ s3://${{ env.S3_BUCKET }}/assets/ \
+            --delete \
+            --cache-control "max-age=31536000,immutable"
 
-  deploy:
-    name: Deploy to ${{ github.ref_name == 'main' && 'Production' || 'Staging' }} EC2
-    needs: build-push
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      - name: Upload index.html (no-cache)
+        run: |
+          aws s3 cp dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
+            --cache-control "no-cache,no-store,must-revalidate"
 
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+      - name: Sync remaining files
+        run: |
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --delete \
+            --exclude "assets/*" \
+            --exclude "index.html"
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Purge Cloudflare cache
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}'
 
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          ANTHROPIC_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_ANTHROPIC_API_KEY || secrets.STAGING_ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_OPENAI_API_KEY || secrets.STAGING_OPENAI_API_KEY }}
-          UNSPLASH_ACCESS_KEY: ${{ github.ref_name == 'main' && secrets.PROD_UNSPLASH_ACCESS_KEY || secrets.STAGING_UNSPLASH_ACCESS_KEY }}
-          PEXELS_API_KEY: ${{ github.ref_name == 'main' && secrets.PROD_PEXELS_API_KEY || secrets.STAGING_PEXELS_API_KEY }}
-          APP_DOMAIN: ${{ github.ref_name == 'main' && secrets.PROD_APP_DOMAIN || secrets.STAGING_APP_DOMAIN }}
-        with:
-          host: ${{ github.ref_name == 'main' && secrets.PROD_EC2_IP || secrets.STAGING_EC2_IP }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_REGION,AWS_ACCOUNT_ID,ANTHROPIC_API_KEY,OPENAI_API_KEY,UNSPLASH_ACCESS_KEY,PEXELS_API_KEY,APP_DOMAIN
-          script: |
-            aws ecr get-login-password --region $AWS_REGION | \
-              docker login --username AWS --password-stdin \
-              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-
-            printf 'ANTHROPIC_API_KEY=%s\nOPENAI_API_KEY=%s\nUNSPLASH_ACCESS_KEY=%s\nPEXELS_API_KEY=%s\nBACKEND_URL=http://backend:4000\nAPP_DOMAIN=%s\n' \
-              "$ANTHROPIC_API_KEY" "$OPENAI_API_KEY" "$UNSPLASH_ACCESS_KEY" "$PEXELS_API_KEY" "$APP_DOMAIN" \
-              > /app/.env.frontend
-
-            cd /app
-            docker compose pull frontend
-            docker compose up -d frontend
-            echo "Deployed frontend ${{ github.sha }} to ${{ env.DEPLOY_ENV }}"
+      - name: Summary
+        run: echo "Deployed frontend ${{ github.sha }} to ${{ github.ref_name == 'main' && 'production' || 'staging' }} (s3://${{ env.S3_BUCKET }})"
