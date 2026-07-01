@@ -417,10 +417,15 @@ export default function AppPreviewPage() {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get('projectId');
 
-    // Subdomain-based preview: extract projectId from "{projectId}-preview.hostname"
-    // or "{projectId}-staging-preview.hostname" — strip the optional "-staging" suffix.
-    const subdomainMatch = window.location.hostname.match(/^(.+?)(?:-staging)?-preview\./);
-    const fromSubdomain = subdomainMatch?.[1] ?? null;
+    // Extract projectId from subdomain — handles all four patterns:
+    //   <id>-preview.mythex.ai          (builder preview, prod)
+    //   <id>-staging-preview.mythex.ai  (builder preview, staging)
+    //   <id>-app.mythex.ai              (deployed live, prod)
+    //   <id>-staging.mythex.ai          (deployed live, staging)
+    const firstSegment = window.location.hostname.split('.')[0] ?? '';
+    const SUBDOMAIN_SUFFIXES = ['-staging-preview', '-staging', '-preview', '-app'];
+    const matchedSuffix = SUBDOMAIN_SUFFIXES.find(s => firstSegment.endsWith(s));
+    const fromSubdomain = matchedSuffix ? firstSegment.slice(0, -matchedSuffix.length) : null;
 
     // Builder preview passes a short-lived JWT as ?token= — store it as a cookie
     // so subsequent in-preview navigations can still reach the authenticated endpoint.

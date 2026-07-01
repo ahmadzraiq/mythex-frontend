@@ -6,4 +6,6 @@ account_id = "905e17326845b199c805398d7ecee945"
 routes = [
   { pattern = "*-preview.mythex.ai/*", zone_name = "mythex.ai" },
   { pattern = "*-staging-preview.mythex.ai/*", zone_name = "mythex.ai" },
+  { pattern = "*-app.mythex.ai/*", zone_name = "mythex.ai" },
+  { pattern = "*-staging.mythex.ai/*", zone_name = "mythex.ai" },
 ]

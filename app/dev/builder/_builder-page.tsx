@@ -920,14 +920,13 @@ function TopBar({
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
 
-  // Compute live URL using the same single-level subdomain pattern as the preview button
-  // (*.mythex.ai is covered by Cloudflare Universal SSL; *.app.mythex.ai is not)
-  const _liveHost = typeof window !== 'undefined' ? window.location.host : '';
-  const liveUrl = _liveHost === 'staging.app.mythex.ai'
-    ? `https://${projectId}-staging-preview.mythex.ai`
-    : _liveHost === 'app.mythex.ai'
-      ? `https://${projectId}-preview.mythex.ai`
-      : `http://${projectId}-preview.${_liveHost || 'localhost:3001'}`;
+  // Deployed live URL — single-level subdomains covered by Cloudflare Universal SSL
+  const _builderHost = typeof window !== 'undefined' ? window.location.host : '';
+  const liveUrl = _builderHost === 'staging.app.mythex.ai'
+    ? `https://${projectId}-staging.mythex.ai`
+    : _builderHost === 'app.mythex.ai'
+      ? `https://${projectId}-app.mythex.ai`
+      : `http://${projectId}-app.localhost:3001`;
 
   // Load deploy status + version history when modal opens
   useEffect(() => {
@@ -1654,7 +1653,7 @@ function TopBar({
               {customDomain && !customDomainVerified && (
                 <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-input)', borderRadius: 7, padding: '10px 12px', lineHeight: 1.5 }}>
                   Add a CNAME record pointing:<br />
-                  <code style={{ color: '#93c5fd' }}>{customDomain}</code> → <code style={{ color: '#86efac' }}>{liveUrl.replace('https://', '').replace('http://', '')}</code>
+                  <code style={{ color: '#93c5fd' }}>{customDomain}</code> → <code style={{ color: '#86efac' }}>{liveUrl.replace(/^https?:\/\//, '')}</code>
                 </div>
               )}
 

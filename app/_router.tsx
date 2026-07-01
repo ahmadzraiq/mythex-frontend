@@ -44,15 +44,20 @@ function PreviewRouter() {
 }
 
 export default function AppRouter() {
-  // Subdomain-based preview: <projectId>-preview.mythex.ai or <projectId>-staging-preview.mythex.ai
-  // Covered by Cloudflare Universal SSL (*.mythex.ai — single level deep).
+  // Subdomain-based app rendering — all patterns use single-level subdomains (*.mythex.ai)
+  // covered by Cloudflare Universal SSL.
+  //
+  // Builder preview (temporary):  <id>-preview.mythex.ai / <id>-staging-preview.mythex.ai
+  // Deployed live URL (public):   <id>-app.mythex.ai    / <id>-staging.mythex.ai
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    const isPreview =
+    const isAppSubdomain =
       /^.+-preview\.mythex\.ai$/.test(host) ||
       /^.+-staging-preview\.mythex\.ai$/.test(host) ||
-      /^.+-preview\.localhost(:\d+)?$/.test(host);
-    if (isPreview) return <PreviewRouter />;
+      /^.+-app\.mythex\.ai$/.test(host) ||
+      /^.+-staging\.mythex\.ai$/.test(host) ||
+      /^.+-(preview|app)\.localhost(:\d+)?$/.test(host);
+    if (isAppSubdomain) return <PreviewRouter />;
   }
 
   return (
