@@ -320,8 +320,7 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
         }
         break;
 
-      // ── Colors — hex, rgb(...), var(--...), etc. ─────────────────────────────
-      // bg-[#hex], bg-[rgb(...)], bg-[var(--token)], bg-[url(https://...)]
+      // ── Colors — hex, rgb/rgba values, css variables, url() images ─────────────
       case 'bg':
         if (isHexColor || isCssFn) {
           // Gradients and image URLs belong on backgroundImage, not backgroundColor
@@ -332,12 +331,12 @@ function classToInlineStyle(className: string | undefined): Record<string, strin
           }
         }
         break;
-      // text-[#hex] / text-[var(...)] → color; text-[16px] → fontSize
+      // text with hex or css-fn value → color; text with pixel value → fontSize
       case 'text':
         if (isHexColor || isCssFn) style.color = value;
         else if (isNumeric) style.fontSize = value;
         break;
-      // border-[#hex] / border-[var(...)] → borderColor; border-[2px] → borderWidth
+      // border with hex or css-fn value → borderColor; border with numeric value → borderWidth
       case 'border':
         if (isHexColor || isCssFn) style.borderColor = value;
         else if (isNumeric) style.borderWidth = value;
