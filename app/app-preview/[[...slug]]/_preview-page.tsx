@@ -413,6 +413,7 @@ export default function AppPreviewPage() {
   }, []);
 
   useEffect(() => {
+    void (async () => {
     // Resolve projectId: URL query → subdomain → cookie → sessionStorage
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get('projectId');
@@ -496,6 +497,7 @@ export default function AppPreviewPage() {
 
     setProjectId(projectId);
     void fetchConfig(projectId, isReload || hasBuilderBust);
+    })();
   }, [fetchConfig]);
 
   // Find the page matching the current app path (supports :param segments)
