@@ -45,12 +45,15 @@ function PreviewRouter() {
 
 export default function AppRouter() {
   // Subdomain-based preview: <projectId>-preview.app.mythex.ai or <projectId>-preview.staging.app.mythex.ai
-  // Exclude known builder hostnames: app.mythex.ai, staging.app.mythex.ai
+  // Known builder hosts are excluded explicitly.
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    const isPreview =
-      /^[^.]+\.app\.mythex\.ai$/.test(host) && host !== 'app.mythex.ai' ||
-      /^[^.]+\.staging\.app\.mythex\.ai$/.test(host) && host !== 'staging.app.mythex.ai';
+    const BUILDER_HOSTS = ['app.mythex.ai', 'staging.app.mythex.ai', 'localhost'];
+    const isPreview = !BUILDER_HOSTS.includes(host) && (
+      /^[^.]+\.app\.mythex\.ai$/.test(host) ||
+      /^[^.]+\.staging\.app\.mythex\.ai$/.test(host) ||
+      /^[^.]+\.localhost(:\d+)?$/.test(host)
+    );
     if (isPreview) return <PreviewRouter />;
   }
 
