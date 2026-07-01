@@ -1,15 +1,15 @@
 {
-  "family": "json-based-frontend-staging",
+  "family": "mythex-frontend-frontend-staging",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
   "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/json-based-frontend-task-role",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/mythex-frontend-frontend-task-role",
   "containerDefinitions": [
     {
-      "name": "json-based-frontend",
-      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/json-based-frontend:staging",
+      "name": "mythex-frontend-frontend",
+      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/mythex-frontend-frontend:staging",
       "essential": true,
       "portMappings": [
         {
@@ -26,25 +26,25 @@
       "secrets": [
         {
           "name": "ANTHROPIC_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:json-based/staging/ANTHROPIC_API_KEY"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:mythex-frontend/staging/ANTHROPIC_API_KEY"
         },
         {
           "name": "OPENAI_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:json-based/staging/OPENAI_API_KEY"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:mythex-frontend/staging/OPENAI_API_KEY"
         },
         {
           "name": "UNSPLASH_ACCESS_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:json-based/staging/UNSPLASH_ACCESS_KEY"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:mythex-frontend/staging/UNSPLASH_ACCESS_KEY"
         },
         {
           "name": "PEXELS_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:json-based/staging/PEXELS_API_KEY"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:mythex-frontend/staging/PEXELS_API_KEY"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/json-based-frontend-staging",
+          "awslogs-group": "/ecs/mythex-frontend-frontend-staging",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs",
           "awslogs-create-group": "true"

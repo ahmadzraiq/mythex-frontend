@@ -10,7 +10,7 @@ module.exports = {
     './config/**/*.json',
     // External config — screens and shared components live here after seeding from Desktop/config
     '/Users/ahmadzraiq/Desktop/config/**/*.json',
-    './*.{html,js,jsx,ts,tsx,mdx}',
+    './*.{html,jsx,ts,tsx,mdx}',
     './src/**/*.{html,js,jsx,ts,tsx,mdx}',
   ],
   presets: [require('nativewind/preset')],

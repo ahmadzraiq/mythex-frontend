@@ -79,7 +79,7 @@ export default function LoginPage() {
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Sign in</h1>
           <p style={{ fontSize: 13, color: 'var(--bld-text-disabled)', marginTop: 6 }}>
-            {inviteToken ? 'Sign in to accept your invitation' : 'Welcome back to Builder Platform'}
+            {inviteToken ? 'Sign in to accept your invitation' : 'Welcome back to Mythex'}
           </p>
         </div>
 

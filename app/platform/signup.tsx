@@ -287,7 +287,7 @@ function SignupContent() {
               <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
             </svg>
           </div>
-          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: '#64748b' }}>Builder Platform</p>
+          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: '#64748b' }}>Mythex</p>
           <h1 style={{ fontSize: 'clamp(1.65rem, 4.2vw, 2.125rem)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1.18, margin: 0, color: '#f8fafc' }}>
             {step === 'verify'
               ? <>Check your <span style={heroGradientText}>email</span></>

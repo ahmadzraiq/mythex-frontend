@@ -32,7 +32,7 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 - **OS:** Amazon Linux 2023
 - **Storage:** 30GB gp3
 - **App dir:** `/app`
-- **SSH:** `ssh -i ~/.ssh/json-based-key.pem ec2-user@44.255.113.95`
+- **SSH:** `ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95`
 
 ### Staging — `54.218.57.157`
 - **Instance:** `i-0258c2afc477f64fe`
@@ -40,19 +40,19 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 - **OS:** Amazon Linux 2023
 - **Storage:** 20GB gp3
 - **App dir:** `/app`
-- **SSH:** `ssh -i ~/.ssh/json-based-key.pem ec2-user@54.218.57.157`
+- **SSH:** `ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@54.218.57.157`
 
 ### SSH Key
-- **Name:** `json-based-key`
-- **Local path:** `~/.ssh/json-based-key.pem`
+- **Name:** `mythex-frontend-key`
+- **Local path:** `~/.ssh/mythex-frontend-key.pem`
 
 ---
 
 ## Database
 
 ### Production — RDS PostgreSQL 16
-- **Identifier:** `json-based-postgres`
-- **Endpoint:** `json-based-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
+- **Identifier:** `mythex-frontend-postgres`
+- **Endpoint:** `mythex-frontend-postgres.c746o20miixe.us-west-2.rds.amazonaws.com:5432`
 - **DB name:** `josn_based_platform`
 - **User:** `jsonbased`
 - **Password:** stored in `/app/.env.backend` on production EC2
@@ -78,8 +78,8 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 ### Security Groups
 | Name | ID | Rules |
 |---|---|---|
-| `json-based-ec2-sg` | `sg-0b0d70e8449410005` | 22, 80, 443, 3000, 4000 open |
-| `json-based-rds-sg` | `sg-0cef1d51d484e7b9b` | 5432 from EC2 SG only |
+| `mythex-frontend-ec2-sg` | `sg-0b0d70e8449410005` | 22, 80, 443, 3000, 4000 open |
+| `mythex-frontend-rds-sg` | `sg-0cef1d51d484e7b9b` | 5432 from EC2 SG only |
 
 ---
 
@@ -87,8 +87,8 @@ Two environments deployed on AWS (us-west-2 / Oregon):
 
 | Repo | URI |
 |---|---|
-| Frontend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/json-based-frontend` |
-| Backend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/json-based-backend` |
+| Frontend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-frontend` |
+| Backend | `948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend` |
 
 ### Image Tags
 | Tag | Environment | Built from |
@@ -111,9 +111,9 @@ aws ecr get-login-password --region us-west-2 | \
 | Role | Used by | Permissions |
 |---|---|---|
 | `ecsTaskExecutionRole` | EC2 instances | ECR pull, CloudWatch logs |
-| `json-based-ec2-role` | Both EC2s | ECR read-only |
-| `json-based-backend-task-role` | Backend | S3 read/write |
-| `json-based-frontend-task-role` | Frontend | — |
+| `mythex-frontend-ec2-role` | Both EC2s | ECR read-only |
+| `mythex-frontend-backend-task-role` | Backend | S3 read/write |
+| `mythex-frontend-frontend-task-role` | Frontend | — |
 
 ---
 
@@ -132,11 +132,11 @@ push to main     →  build :latest image   →  push ECR  →  SSH prod EC2    
 | `AWS_SECRET_ACCESS_KEY` | deploy-admin IAM secret key |
 | `PROD_EC2_IP` | `44.255.113.95` |
 | `STAGING_EC2_IP` | `54.218.57.157` |
-| `EC2_SSH_KEY` | contents of `~/.ssh/json-based-key.pem` |
+| `EC2_SSH_KEY` | contents of `~/.ssh/mythex-frontend-key.pem` |
 
 ### Workflow files
-- Frontend: `.github/workflows/deploy.yml` in `json-based` repo
-- Backend: `.github/workflows/deploy.yml` in `json-based-backend` repo
+- Frontend: `.github/workflows/deploy.yml` in `mythex-frontend` repo
+- Backend: `.github/workflows/deploy.yml` in `mythex-frontend-backend` repo
 
 ---
 
@@ -147,15 +147,15 @@ Both servers run via Docker Compose at `/app/docker-compose.yml`.
 ### Production containers
 | Container | Image | Port |
 |---|---|---|
-| `app-frontend-1` | ECR `json-based-frontend:latest` | 3000 |
-| `app-backend-1` | ECR `json-based-backend:latest` | 4000 |
+| `app-frontend-1` | ECR `mythex-frontend-frontend:latest` | 3000 |
+| `app-backend-1` | ECR `mythex-frontend-backend:latest` | 4000 |
 | `app-redis-1` | `redis:7-alpine` | 6379 (internal) |
 
 ### Staging containers
 | Container | Image | Port |
 |---|---|---|
-| `app-frontend-1` | ECR `json-based-frontend:staging` | 3000 |
-| `app-backend-1` | ECR `json-based-backend:staging` | 4000 |
+| `app-frontend-1` | ECR `mythex-frontend-frontend:staging` | 3000 |
+| `app-backend-1` | ECR `mythex-frontend-backend:staging` | 4000 |
 | `app-postgres-1` | `postgres:16-alpine` | 5432 (internal) |
 | `app-redis-1` | `redis:7-alpine` | 6379 (internal) |
 
@@ -166,12 +166,12 @@ Both servers run via Docker Compose at `/app/docker-compose.yml`.
 ### View logs
 ```bash
 # Production
-ssh -i ~/.ssh/json-based-key.pem ec2-user@44.255.113.95
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95
 cd /app && docker compose logs -f backend
 cd /app && docker compose logs -f frontend
 
 # Staging
-ssh -i ~/.ssh/json-based-key.pem ec2-user@44.248.35.175
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.248.35.175
 cd /app && docker compose logs -f backend
 ```
 
@@ -184,18 +184,18 @@ cd /app && docker compose restart frontend
 ### Manual deploy (without GitHub Actions)
 ```bash
 # 1. Build and push from your Mac
-cd /Users/ahmadzraiq/Desktop/josn-based-backend
-docker build --platform linux/amd64 -t 948075159962.dkr.ecr.us-west-2.amazonaws.com/json-based-backend:latest .
-docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/json-based-backend:latest
+cd /Users/ahmadzraiq/Desktop/mythex-frontend-backend
+docker build --platform linux/amd64 -t 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend:latest .
+docker push 948075159962.dkr.ecr.us-west-2.amazonaws.com/mythex-frontend-backend:latest
 
 # 2. Deploy on server
-ssh -i ~/.ssh/json-based-key.pem ec2-user@44.255.113.95 \
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95 \
   "cd /app && docker compose pull backend && docker compose up -d backend"
 ```
 
 ### Run Prisma migrations
 ```bash
-ssh -i ~/.ssh/json-based-key.pem ec2-user@44.255.113.95
+ssh -i ~/.ssh/mythex-frontend-key.pem ec2-user@44.255.113.95
 cd /app
 docker compose exec backend sh -c "npx prisma migrate deploy"
 ```

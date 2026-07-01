@@ -11,7 +11,7 @@
  *   6. Save a builder config with 3 pages wired to REST data sources
  *
  * Usage:
- *   cd /Users/ahmadzraiq/Desktop/json-based
+ *   cd /Users/ahmadzraiq/Desktop/mythex-frontend
  *   npx tsx scripts/seed-ecommerce.ts
  */
 

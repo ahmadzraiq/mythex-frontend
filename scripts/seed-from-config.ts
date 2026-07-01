@@ -10,7 +10,7 @@
  *   5. PATCH /v1/projects/:id/config with the full blob
  *
  * Usage:
- *   cd /Users/ahmadzraiq/Desktop/json-based
+ *   cd /Users/ahmadzraiq/Desktop/mythex-frontend
  *   npx tsx scripts/seed-from-config.ts
  *
  * Env overrides:
