@@ -15,7 +15,7 @@
  *
  * Env overrides:
  *   SEED_EMAIL          (default: ahmadzraiqq@gmail.com)
- *   SEED_PASSWORD       (default: asdASDasd58617!)
+ *   SEED_PASSWORD       (default: asdASDasd582617!)
  *   SEED_PROJECT_NAME   (default: Vendure Store)
  *   SOURCE_DIR          (default: /Users/ahmadzraiq/Desktop/config)
  *   BACKEND_URL         (default: http://localhost:4000)
@@ -27,7 +27,7 @@ import * as path from 'path';
 const BASE         = process.env.BACKEND_URL      ?? 'http://localhost:4000';
 const V1           = `${BASE}/v1`;
 const SEED_EMAIL   = process.env.SEED_EMAIL       ?? 'ahmadzraiqq@gmail.com';
-const SEED_PASS    = process.env.SEED_PASSWORD    ?? 'asdASDasd58617!';
+const SEED_PASS    = process.env.SEED_PASSWORD    ?? 'asdASDasd582617!';
 const PROJECT_NAME = process.env.SEED_PROJECT_NAME ?? 'Vendure Store';
 const SOURCE_DIR   = process.env.SOURCE_DIR        ?? '/Users/ahmadzraiq/Desktop/config';
 
