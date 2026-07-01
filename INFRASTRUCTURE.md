@@ -164,14 +164,10 @@ Set in Cloudflare dashboard for `mythex.ai`. All orange cloud (proxied).
 | `STAGING_JWT_SECRET` | JWT signing secret (staging) |
 | `PROD_JWT_REFRESH_SECRET` | JWT refresh secret (prod) |
 | `STAGING_JWT_REFRESH_SECRET` | JWT refresh secret (staging) |
-| `PROD_ANTHROPIC_API_KEY` | Anthropic API key (prod) |
-| `STAGING_ANTHROPIC_API_KEY` | Anthropic API key (staging) |
-| `PROD_OPENAI_API_KEY` | OpenAI API key (prod) |
-| `STAGING_OPENAI_API_KEY` | OpenAI API key (staging) |
-| `PROD_UNSPLASH_ACCESS_KEY` | Unsplash key (prod) |
-| `STAGING_UNSPLASH_ACCESS_KEY` | Unsplash key (staging) |
-| `PROD_PEXELS_API_KEY` | Pexels key (prod) |
-| `STAGING_PEXELS_API_KEY` | Pexels key (staging) |
+| `ANTHROPIC_API_KEY` | Anthropic API key (shared across envs) |
+| `OPENAI_API_KEY` | OpenAI API key (shared across envs) |
+| `UNSPLASH_ACCESS_KEY` | Unsplash key (shared across envs) |
+| `PEXELS_API_KEY` | Pexels key (shared across envs) |
 | `PROD_S3_PUBLIC_BUCKET` | S3 public assets bucket (prod) |
 | `STAGING_S3_PUBLIC_BUCKET` | S3 public assets bucket (staging) |
 | `PROD_S3_PRIVATE_BUCKET` | S3 private bucket (prod) |
