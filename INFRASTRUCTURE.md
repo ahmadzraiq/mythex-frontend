@@ -7,7 +7,7 @@
 | **Landing** | `mythex.ai` | — |
 | **Builder** | `app.mythex.ai` | `staging.app.mythex.ai` |
 | **App Preview** | `<projectId>.app.mythex.ai` | `<projectId>.staging.app.mythex.ai` |
-| **API** | `api.mythex.ai` | `staging.api.mythex.ai` |
+| **API** | `api.mythex.ai` | `api-staging.mythex.ai` |
 | **Branch** | `main` | `develop` |
 
 ---
@@ -54,7 +54,7 @@ No Docker, no ECR, no S3 for the frontend.
 
 | | Production | Staging |
 |---|---|---|
-| **URL** | `https://api.mythex.ai` | `https://staging.api.mythex.ai` |
+| **URL** | `https://api.mythex.ai` | `https://api-staging.mythex.ai` |
 | **Branch** | `main` | `develop` |
 | **EC2 Name** | `mythex-backend-prod` (t3.small) | `mythex-backend-staging` (t3.micro) |
 | **EC2 Instance** | `i-00f618a2701b60ece` | `i-0258c2afc477f64fe` |

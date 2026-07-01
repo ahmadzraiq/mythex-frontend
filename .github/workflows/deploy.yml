@@ -16,8 +16,8 @@ jobs:
     environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
 
     env:
-      VITE_BACKEND_URL: ${{ github.ref_name == 'main' && 'https://api.mythex.ai' || 'https://staging.api.mythex.ai' }}
-      VITE_BACKEND_WS_URL: ${{ github.ref_name == 'main' && 'wss://api.mythex.ai' || 'wss://staging.api.mythex.ai' }}
+      VITE_BACKEND_URL: ${{ github.ref_name == 'main' && 'https://api.mythex.ai' || 'https://api-staging.mythex.ai' }}
+      VITE_BACKEND_WS_URL: ${{ github.ref_name == 'main' && 'wss://api.mythex.ai' || 'wss://api-staging.mythex.ai' }}
       VITE_APP_DOMAIN: ${{ github.ref_name == 'main' && 'app.mythex.ai' || 'staging.app.mythex.ai' }}
 
     steps:
