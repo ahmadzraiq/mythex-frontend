@@ -43,6 +43,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: mythex-app
+          projectName: mythex-frontend
           directory: dist
           branch: ${{ github.ref_name }}
