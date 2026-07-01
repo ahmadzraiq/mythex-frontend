@@ -422,7 +422,8 @@ export default function AppPreviewPage() {
     //   <id>-staging-preview.mythex.ai  (builder preview, staging)
     //   <id>-app.mythex.ai              (deployed live, prod)
     //   <id>-staging.mythex.ai          (deployed live, staging)
-    const firstSegment = window.location.hostname.split('.')[0] ?? '';
+    const hostname = window.location.hostname;
+    const firstSegment = hostname.split('.')[0] ?? '';
     const SUBDOMAIN_SUFFIXES = ['-staging-preview', '-staging', '-preview', '-app'];
     const matchedSuffix = SUBDOMAIN_SUFFIXES.find(s => firstSegment.endsWith(s));
     const fromSubdomain = matchedSuffix ? firstSegment.slice(0, -matchedSuffix.length) : null;
@@ -455,6 +456,24 @@ export default function AppPreviewPage() {
     } else if (fromSubdomain) {
       // Persist so in-preview navigation (path changes) still resolves the project
       sessionStorage.setItem(PREVIEW_SESSION_KEY, fromSubdomain);
+    }
+
+    // Custom domain fallback — hostname doesn't match any known *.mythex.ai pattern.
+    // Look up the projectId from the backend via the verified customDomain field.
+    if (!projectId && !hostname.endsWith('.mythex.ai') && !hostname.endsWith('.localhost') && hostname !== 'localhost') {
+      try {
+        const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+        const domainRes = await fetch(`${BACKEND_BASE}/v1/projects/by-domain?domain=${encodeURIComponent(hostname)}`);
+        if (domainRes.ok) {
+          const { projectId: resolvedId } = await domainRes.json() as { projectId?: string };
+          if (resolvedId) {
+            projectId = resolvedId;
+            sessionStorage.setItem(PREVIEW_SESSION_KEY, resolvedId);
+          }
+        }
+      } catch {
+        // Network error — fall through to "No project ID found" error
+      }
     }
 
     if (!projectId) {

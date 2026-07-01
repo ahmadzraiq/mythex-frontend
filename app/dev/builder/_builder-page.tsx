@@ -1652,8 +1652,12 @@ function TopBar({
 
               {customDomain && !customDomainVerified && (
                 <div style={{ fontSize: 11, color: 'var(--bld-text-disabled)', background: 'var(--bld-bg-input)', borderRadius: 7, padding: '10px 12px', lineHeight: 1.5 }}>
-                  Add a CNAME record pointing:<br />
-                  <code style={{ color: '#93c5fd' }}>{customDomain}</code> → <code style={{ color: '#86efac' }}>{liveUrl.replace(/^https?:\/\//, '')}</code>
+                  Add a <strong>CNAME</strong> record in your DNS provider:<br /><br />
+                  <code style={{ color: '#93c5fd' }}>{customDomain}</code> →{' '}
+                  <code style={{ color: '#86efac' }}>
+                    {_builderHost === 'staging.app.mythex.ai' ? 'mythex-frontend-staging.pages.dev' : 'mythex-frontend.pages.dev'}
+                  </code><br /><br />
+                  Then click <strong>Verify DNS</strong> to confirm.
                 </div>
               )}
 

@@ -51,6 +51,8 @@ export default function AppRouter() {
   // Deployed live URL (public):   <id>-app.mythex.ai    / <id>-staging.mythex.ai
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
+
+    // Known *.mythex.ai project subdomain patterns (covered by Cloudflare Universal SSL)
     const isAppSubdomain =
       /^.+-preview\.mythex\.ai$/.test(host) ||
       /^.+-staging-preview\.mythex\.ai$/.test(host) ||
@@ -58,6 +60,18 @@ export default function AppRouter() {
       /^.+-staging\.mythex\.ai$/.test(host) ||
       /^.+-(preview|app)\.localhost(:\d+)?$/.test(host);
     if (isAppSubdomain) return <PreviewRouter />;
+
+    // Custom domain — any host that is not a Mythex builder/API host
+    const BUILDER_HOSTS = [
+      'app.mythex.ai', 'staging.app.mythex.ai',
+      'mythex.ai', 'api.mythex.ai', 'api-staging.mythex.ai',
+      'localhost', '127.0.0.1',
+    ];
+    const isCustomDomain =
+      !BUILDER_HOSTS.includes(host) &&
+      !host.endsWith('.mythex.ai') &&
+      !host.endsWith('.localhost');
+    if (isCustomDomain) return <PreviewRouter />;
   }
 
   return (
