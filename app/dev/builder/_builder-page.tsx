@@ -2097,12 +2097,19 @@ function BuilderPageInner() {
       // window.open() call that comes after an await silently navigates the
       // current tab (destroying its history) instead of opening a new one.
       //
-      // URL: {projectId}.{baseHost}{pageRoute}
-      // Each project has its own subdomain origin — localStorage is isolated
-      // without any code-level namespacing.
-      const baseHost = window.location.host
-        .replace(/^builder-dev\./, '')
-        .replace(/^preview\./, '');
+      // URL: {projectId}-preview.{rootDomain}{pageRoute}  (or -staging-preview for staging)
+      // Preview subdomains must be single-level deep to be covered by Cloudflare Universal SSL.
+      const host = window.location.host;
+      let previewSuffix: string;
+      if (host === 'staging.app.mythex.ai') {
+        previewSuffix = '-staging-preview.mythex.ai';
+      } else if (host === 'app.mythex.ai') {
+        previewSuffix = '-preview.mythex.ai';
+      } else {
+        // Local dev: strip leading builder-dev./preview. and use -preview.<host>
+        const baseHost = host.replace(/^builder-dev\./, '').replace(/^preview\./, '');
+        previewSuffix = `-preview.${baseHost}`;
+      }
       const pageRoute = currentPage?.route ?? '/';
       const previewWin = window.open('about:blank', 'sdui-preview');
 
@@ -2149,7 +2156,7 @@ function BuilderPageInner() {
       // Navigate to the project-specific preview subdomain ({projectId}-preview.*).
       // The middleware requires a preview_token cookie — passed via query param
       // on first load and then stored as a cookie.
-      let previewUrl = `${window.location.protocol}//${projectId}-preview.${baseHost}${pageRoute}`;
+      let previewUrl = `${window.location.protocol}//${projectId}${previewSuffix}${pageRoute}`;
       // Always include a cache-bust timestamp so the preview tab fetches fresh
       // data from the backend instead of serving a stale sessionStorage hit.
       const sep = pageRoute.includes('?') ? '&' : '?';

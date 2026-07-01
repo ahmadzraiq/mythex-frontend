@@ -44,16 +44,14 @@ function PreviewRouter() {
 }
 
 export default function AppRouter() {
-  // Subdomain-based preview: <projectId>-preview.app.mythex.ai or <projectId>-preview.staging.app.mythex.ai
-  // Known builder hosts are excluded explicitly.
+  // Subdomain-based preview: <projectId>-preview.mythex.ai or <projectId>-staging-preview.mythex.ai
+  // Covered by Cloudflare Universal SSL (*.mythex.ai — single level deep).
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    const BUILDER_HOSTS = ['app.mythex.ai', 'staging.app.mythex.ai', 'localhost'];
-    const isPreview = !BUILDER_HOSTS.includes(host) && (
-      /^[^.]+\.app\.mythex\.ai$/.test(host) ||
-      /^[^.]+\.staging\.app\.mythex\.ai$/.test(host) ||
-      /^[^.]+\.localhost(:\d+)?$/.test(host)
-    );
+    const isPreview =
+      /^.+-preview\.mythex\.ai$/.test(host) ||
+      /^.+-staging-preview\.mythex\.ai$/.test(host) ||
+      /^.+-preview\.localhost(:\d+)?$/.test(host);
     if (isPreview) return <PreviewRouter />;
   }
 
