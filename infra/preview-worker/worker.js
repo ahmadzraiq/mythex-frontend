@@ -22,6 +22,18 @@ export default {
     const url = new URL(request.url);
     const host = url.hostname;
 
+    // Pass known infrastructure hosts straight to origin (EC2 backend, builder)
+    const PASSTHROUGH_HOSTS = [
+      'api-staging.mythex.ai',
+      'api.mythex.ai',
+      'app.mythex.ai',
+      'staging.app.mythex.ai',
+      'mythex.ai',
+    ];
+    if (PASSTHROUGH_HOSTS.includes(host)) {
+      return fetch(request);
+    }
+
     let targetHost;
     if (host.endsWith('-staging-preview.mythex.ai') || host.endsWith('-staging.mythex.ai')) {
       // Staging (preview or deployed) → staging Pages project
