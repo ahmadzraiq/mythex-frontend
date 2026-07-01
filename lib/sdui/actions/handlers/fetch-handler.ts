@@ -10,6 +10,7 @@
 
 import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
+import { getApiBase } from '../../api-base';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef) => Promise<unknown> =
@@ -69,7 +70,7 @@ export const fetchHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDef)
       let res: Response;
 
       if (useProxy) {
-        const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+        const backendBase = getApiBase();
         res = await fetch(`${backendBase}/v1/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

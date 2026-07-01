@@ -11,6 +11,7 @@
 
 import { getNestedValue } from '../../nested-utils';
 import { resolveValue, interpolateUrl } from '../resolve-value';
+import { getApiBase } from '../../api-base';
 import type { ActionDef, ActionHandlerContext } from './types';
 
 // ─── Simple LRU cache ────────────────────────────────────────────────────────
@@ -121,7 +122,7 @@ export const graphqlHandler: (ctx: ActionHandlerContext) => (actionDef: ActionDe
 
       let res: Response;
       if (useProxy) {
-        const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+        const backendBase = getApiBase();
         const { 'Content-Type': _ct, ...forwardHeaders } = { ...actionHeaders };
         res = await fetch(`${backendBase}/v1/proxy`, {
           method: 'POST',

@@ -31,6 +31,7 @@ import { registerGlobalFormulas } from '@/lib/sdui/formula-evaluator';
 import { useSduiStore } from '@/store/sdui-store';
 import { patchThemeColors } from '@/lib/sdui/engine-static-data';
 import { loadSharedComponents } from '@/lib/builder/shared-component-data';
+import { getApiBase } from '@/lib/sdui/api-base';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const app = appConfig as any;
@@ -253,8 +254,9 @@ import type { NamedDataSourceDef, RestNamedDataSourceDef } from '@/lib/sdui/engi
 import { matchRoute, sortRoutes } from '@/lib/sdui/route-utils';
 
 // Base URL for the backend run endpoint — resolves relative datasource paths like "/jobs"
-// to "http://localhost:4000/v1/run/{projectId}/jobs".
-const PREVIEW_BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+// to "<origin>/api/v1/run/{projectId}/jobs" on custom domains, or the absolute
+// VITE_BACKEND_URL on native *.mythex.ai domains.
+const PREVIEW_BACKEND_URL = getApiBase();
 
 function buildDataSources(
   pageDataSources: ProjectDataSource[] | Record<string, ProjectDataSource> | undefined,
@@ -357,7 +359,7 @@ export default function AppPreviewPage() {
       // Public deploy subdomain has no preview_token — use the public-config endpoint.
       const token = getPreviewToken();
 
-      const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+      const BACKEND_BASE = getApiBase();
       let res: Response;
       if (token) {
         res = await fetch(`${BACKEND_BASE}/v1/projects/${projectId}/preview-config`, {
@@ -463,7 +465,7 @@ export default function AppPreviewPage() {
     // Look up the projectId from the backend via the verified customDomain field.
     if (!projectId && !hostname.endsWith('.mythex.ai') && !hostname.endsWith('.localhost') && hostname !== 'localhost') {
       try {
-        const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+        const BACKEND_BASE = getApiBase();
         const domainRes = await fetch(`${BACKEND_BASE}/v1/projects/by-domain?domain=${encodeURIComponent(hostname)}`);
         if (domainRes.ok) {
           const { projectId: resolvedId } = await domainRes.json() as { projectId?: string };

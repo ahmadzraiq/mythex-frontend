@@ -20,8 +20,7 @@ import { extractReferencedDataSources } from './nested-utils';
 import { computeMergedState as computeMergedStateFn, finalizeMergedWithVariableStore } from './merge-state';
 import type { SDUIConfig } from './types';
 import type { NamedDataSourceDef } from './engine-types';
-
-const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+import { getApiBase } from './api-base';
 
 function getAllSCs(): Record<string, { content?: unknown }> {
   try {
@@ -248,7 +247,7 @@ export function useNamedDataSourceFetcher(
 
           // Route through backend proxy when ds.proxy is true (per-datasource opt-in).
           const useProxy = !!ds.proxy;
-          const fetchUrl = useProxy ? `${BACKEND_BASE}/v1/proxy` : endpoint;
+          const fetchUrl = useProxy ? `${getApiBase()}/v1/proxy` : endpoint;
           const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extraHeaders };
           const body = useProxy
             ? JSON.stringify({
@@ -350,7 +349,7 @@ export function useNamedDataSourceFetcher(
 
           if (ds.proxy) {
             // Route through backend proxy — generic HTTP forwarder
-            fetch(`${BACKEND_BASE}/v1/proxy`, {
+            fetch(`${getApiBase()}/v1/proxy`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
