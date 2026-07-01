@@ -167,7 +167,7 @@ export function useJsonAgent(projectId?: string) {
 
     // Load threads + persisted session map
     void loadThreads();
-    fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config/meta`)
+    fetch(`${BACKEND_BASE}/v1/projects/${projectId}/config/meta`, { credentials: 'include' })
       .then(r => r.json())
       .then((data: unknown) => {
         const meta = data as Record<string, unknown> | undefined;
@@ -411,6 +411,7 @@ export function useJsonAgent(projectId?: string) {
       const res = await fetch(`${BACKEND_BASE}/v1/ai/json-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           prompt:          userText,
           projectId,

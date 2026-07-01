@@ -583,6 +583,7 @@ export default function CreateAiProjectWizard({
       const res = await fetch(`${BACKEND_BASE}/v1/ai/classify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ description: state.businessDescription }),
       });
       const data = await res.json();
@@ -609,6 +610,7 @@ export default function CreateAiProjectWizard({
       const res = await fetch(`${BACKEND_BASE}/v1/ai/generate-theme`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ description: state.businessDescription, mood: state.mood }),
       });
       const data = await res.json();
@@ -632,6 +634,7 @@ export default function CreateAiProjectWizard({
       const res = await fetch(`${BACKEND_BASE}/v1/ai/generate-theme`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ description: state.businessDescription, mood: state.mood }),
       });
       const data = await res.json();
@@ -648,6 +651,7 @@ export default function CreateAiProjectWizard({
       const res = await fetch(`${BACKEND_BASE}/v1/ai/generate-theme`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ description: state.businessDescription, mood: state.mood }),
       });
       const data = await res.json();
@@ -665,6 +669,7 @@ export default function CreateAiProjectWizard({
       const res = await fetch(`${BACKEND_BASE}/v1/ai/generate-page-names`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ description: state.businessDescription, category: state.category, mood: state.mood }),
       });
       const data = await res.json();
@@ -688,6 +693,7 @@ export default function CreateAiProjectWizard({
           const sRes = await fetch(`${BACKEND_BASE}/v1/ai/generate-sections`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               pageId: stub.id,
               pageName: stub.name,
