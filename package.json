@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed": "npx tsx scripts/seed-all.ts",
+    "seed:config": "npx tsx scripts/seed-from-config.ts",
     "test:builder:all": "npx playwright test e2e/builder.spec.ts e2e/builder-features.spec.ts e2e/builder-bugfixes.spec.ts e2e/builder-logic.spec.ts e2e/test-dnd.spec.ts e2e/snap-engine.spec.ts e2e/panel-color-picker.spec.ts e2e/panel-interactive.spec.ts e2e/panel-media.spec.ts e2e/panel-overlays.spec.ts e2e/panel-rotate-smooth.spec.ts e2e/panel-rotate-timing.spec.ts e2e/panel-display.spec.ts e2e/panel-charts.spec.ts e2e/panel-layout.spec.ts e2e/panel-form.spec.ts --workers=1"
   },
   "dependencies": {

@@ -667,7 +667,7 @@ export function RestForm({ initial, onSave, onBack, onWidthChange }: {
     // Resolve relative URLs (e.g. /jobs) to the full backend run URL
     if (urlStr.startsWith('/')) {
       const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
-      const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
+      const projId = new URLSearchParams(window.location.search).get('projectId');
       urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
     }
     setFetchState({ status: 'loading' });
@@ -1042,7 +1042,7 @@ export function GraphQLForm({ initial, onSave, onBack, onWidthChange }: {
     // Resolve relative URLs to the full backend run URL
     if (urlStr.startsWith('/')) {
       const backendBase = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
-      const projId = window.location.pathname.split('/').find((_, i, arr) => arr[i - 1] === 'builder');
+      const projId = new URLSearchParams(window.location.search).get('projectId');
       urlStr = `${backendBase}/v1/run/${projId}${urlStr}`;
     }
     setFetchState({ status: 'loading' });
